@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
@@ -74,6 +75,7 @@ export default function AIRiskAssessmentPage() {
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const { permissions } = useTenantContext();
+    const tx = useTranslations('risks');
 
     // Phase state
     const [phase, setPhase] = useState<Phase>('form');
@@ -121,8 +123,8 @@ export default function AIRiskAssessmentPage() {
                 }),
             });
             if (!res.ok) {
-                const err = await res.json().catch(() => ({ error: { message: 'Generation failed' } }));
-                throw new Error(err.error?.message ?? 'Generation failed');
+                const err = await res.json().catch(() => ({ error: { message: tx('ai.generationFailed') } }));
+                throw new Error(err.error?.message ?? tx('ai.generationFailed'));
             }
             const data = await res.json();
             const sess: Session = data.session
@@ -138,7 +140,7 @@ export default function AIRiskAssessmentPage() {
             setDecisions(decs);
             setPhase('review');
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Generation failed');
+            setError(e instanceof Error ? e.message : tx('ai.generationFailed'));
             setPhase('form');
         }
     };
@@ -147,7 +149,7 @@ export default function AIRiskAssessmentPage() {
     const handleApply = async () => {
         if (!session) return;
         const accepted = Object.entries(decisions).filter(([, d]) => d === 'accept').map(([id]) => id);
-        if (accepted.length === 0) { setError('Select at least one suggestion to accept'); return; }
+        if (accepted.length === 0) { setError(tx('ai.selectOne')); return; }
 
         setError('');
         setPhase('applying');
@@ -158,15 +160,15 @@ export default function AIRiskAssessmentPage() {
                 body: JSON.stringify({ acceptedItemIds: accepted }),
             });
             if (!res.ok) {
-                const err = await res.json().catch(() => ({ error: { message: 'Apply failed' } }));
-                throw new Error(err.error?.message ?? 'Apply failed');
+                const err = await res.json().catch(() => ({ error: { message: tx('ai.applyFailed') } }));
+                throw new Error(err.error?.message ?? tx('ai.applyFailed'));
             }
             const updated = await res.json();
             setSession(updated);
             setAppliedCount(accepted.length);
             setPhase('done');
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Apply failed');
+            setError(e instanceof Error ? e.message : tx('ai.applyFailed'));
             setPhase('review');
         }
     };
@@ -221,10 +223,10 @@ export default function AIRiskAssessmentPage() {
     // ─── Risk Level Badge ───
     const riskBadge = (l: number, i: number) => {
         const score = l * i;
-        if (score <= 5) return <StatusBadge variant="success">Low</StatusBadge>;
-        if (score <= 12) return <StatusBadge variant="warning">Medium</StatusBadge>;
-        if (score <= 18) return <StatusBadge variant="error">High</StatusBadge>;
-        return <StatusBadge variant="error">Critical</StatusBadge>;
+        if (score <= 5) return <StatusBadge variant="success">{tx('eval.bandLow')}</StatusBadge>;
+        if (score <= 12) return <StatusBadge variant="warning">{tx('eval.bandMedium')}</StatusBadge>;
+        if (score <= 18) return <StatusBadge variant="error">{tx('eval.bandHigh')}</StatusBadge>;
+        return <StatusBadge variant="error">{tx('eval.bandCritical')}</StatusBadge>;
     };
 
     // Roadmap-2 PR-7 — confidence indicators are tone-mapped pills
@@ -235,9 +237,9 @@ export default function AIRiskAssessmentPage() {
     // singular.
     const confidenceBadge = (c: string | null) => {
         switch (c) {
-            case 'high': return <StatusBadge variant="success">● High confidence</StatusBadge>;
-            case 'medium': return <StatusBadge variant="warning">● Medium confidence</StatusBadge>;
-            case 'low': return <StatusBadge variant="neutral">● Low confidence</StatusBadge>;
+            case 'high': return <StatusBadge variant="success">● {tx('ai.confidenceHigh')}</StatusBadge>;
+            case 'medium': return <StatusBadge variant="warning">● {tx('ai.confidenceMedium')}</StatusBadge>;
+            case 'low': return <StatusBadge variant="neutral">● {tx('ai.confidenceLow')}</StatusBadge>;
             default: return null;
         }
     };
@@ -260,13 +262,13 @@ export default function AIRiskAssessmentPage() {
                     <div className="flex items-center gap-compact">
                         <Link href={tenantHref('/risks')} className="text-content-muted hover:text-content-emphasis transition text-lg">←</Link>
                         <div>
-                            <Heading level={1} id="ai-risk-title">AI-Assisted Risk Assessment</Heading>
-                            <p className="text-content-muted text-sm">Generate and review AI-suggested risks for your organization</p>
+                            <Heading level={1} id="ai-risk-title">{tx('ai.title')}</Heading>
+                            <p className="text-content-muted text-sm">{tx('ai.subtitle')}</p>
                         </div>
                     </div>
                 </div>
                 <div className="flex items-center gap-tight">
-                    <StatusBadge variant="info">AI-Powered</StatusBadge>
+                    <StatusBadge variant="info">{tx('ai.poweredBadge')}</StatusBadge>
                 </div>
             </div>
 
@@ -280,11 +282,11 @@ export default function AIRiskAssessmentPage() {
             {/* ═══ PHASE: FORM ═══ */}
             {phase === 'form' && (
                 <div className={cn(cardVariants(), 'space-y-section')} id="ai-generate-form">
-                    <Heading level={2}>Configure Assessment</Heading>
+                    <Heading level={2}>{tx('ai.configureHeading')}</Heading>
 
                     {/* Framework Selection */}
                     <div>
-                        <label className="input-label">Compliance Frameworks</label>
+                        <label className="input-label">{tx('ai.frameworksLabel')}</label>
                         <div className="flex flex-wrap gap-tight mt-2" id="ai-framework-pills">
                             {['ISO27001', 'NIS2', 'SOC2'].map(fw => (
                                 <button
@@ -305,7 +307,7 @@ export default function AIRiskAssessmentPage() {
 
                     {/* Asset Selection */}
                     <div>
-                        <label className="input-label">Assets to Assess</label>
+                        <label className="input-label">{tx('ai.assetsLabel')}</label>
                         <Button
                             variant="secondary"
                             size="xs"
@@ -313,11 +315,11 @@ export default function AIRiskAssessmentPage() {
                             onClick={loadAssets}
                             id="load-assets-btn"
                         >
-                            {assetsLoaded ? `${assets.length} assets loaded` : 'Load Assets'}
+                            {assetsLoaded ? tx('ai.assetsLoaded', { count: assets.length }) : tx('ai.loadAssets')}
                         </Button>
                         {assetsLoaded && (
                             <div className="mt-2 max-h-48 overflow-y-auto space-y-1" id="ai-asset-list">
-                                {assets.length === 0 && <p className="text-sm text-content-subtle">No assets found. Suggestions will be general.</p>}
+                                {assets.length === 0 && <p className="text-sm text-content-subtle">{tx('ai.assetsNone')}</p>}
                                 {assets.map(a => (
                                     <label key={a.id} className="flex items-center gap-tight px-3 py-2 rounded-lg hover:bg-bg-muted/50 cursor-pointer text-sm">
                                         <input
@@ -337,16 +339,16 @@ export default function AIRiskAssessmentPage() {
 
                     {/* Context */}
                     <div>
-                        <label className="input-label" htmlFor="ai-context-input">Additional Context (optional)</label>
+                        <label className="input-label" htmlFor="ai-context-input">{tx('ai.contextLabel')}</label>
                         <textarea
                             id="ai-context-input"
                             className="input w-full h-24 resize-none"
-                            placeholder="Describe your industry, business model, regulatory environment, or specific concerns..."
+                            placeholder={tx('ai.contextPlaceholder')}
                             value={context}
                             onChange={e => setContext(e.target.value)}
                             maxLength={2000}
                         />
-                        <p className="text-xs text-content-subtle mt-1">{context.length}/2000 characters</p>
+                        <p className="text-xs text-content-subtle mt-1">{tx('ai.charCount', { count: context.length })}</p>
                     </div>
 
                     {/* Generate Button */}
@@ -357,7 +359,7 @@ export default function AIRiskAssessmentPage() {
                             onClick={handleGenerate}
                             id="ai-generate-btn"
                         >
-                            Generate Risk Suggestions
+                            {tx('ai.generateBtn')}
                         </Button>
                     </RequirePermission>
                 </div>
@@ -367,9 +369,9 @@ export default function AIRiskAssessmentPage() {
             {phase === 'generating' && (
                 <div className={cn(cardVariants({ density: 'spacious' }), 'text-center')} id="ai-generating">
                     <div className="animate-pulse text-4xl mb-4">...</div>
-                    <Heading level={2}>Analyzing your environment…</Heading>
-                    <p className="text-content-muted text-sm mt-2">The AI is generating risk suggestions based on your assets, frameworks, and context.</p>
-                    <p className="text-content-subtle text-xs mt-4">This may take a few seconds</p>
+                    <Heading level={2}>{tx('ai.analyzing')}</Heading>
+                    <p className="text-content-muted text-sm mt-2">{tx('ai.analyzingDesc')}</p>
+                    <p className="text-content-subtle text-xs mt-4">{tx('ai.analyzingHint')}</p>
                 </div>
             )}
 
@@ -380,29 +382,29 @@ export default function AIRiskAssessmentPage() {
                     <div className={cn(cardVariants({ density: 'compact' }), 'flex items-center justify-between')}>
                         <div className="flex items-center gap-default">
                             <span className="text-sm text-content-muted">
-                                {session.items.length} suggestions • Provider: <strong className="text-content-default">{session.provider}</strong>
+                                {session.items.length} {tx('ai.suggestions')} • {tx('ai.provider')}: <strong className="text-content-default">{session.provider}</strong>
                             </span>
                             {session.isFallback ? (
                                 <span className="text-xs px-2 py-1 rounded bg-bg-warning text-content-warning ring-1 ring-[var(--border-warning)]" id="fallback-notice">
-                                    [Fallback] Baseline suggestions (AI unavailable)
+                                    {tx('ai.fallbackNotice')}
                                 </span>
                             ) : (
                                 <span className="text-xs text-content-subtle">
-                                    AI-generated -- review before applying
+                                    {tx('ai.aiGeneratedNote')}
                                 </span>
                             )}
                         </div>
                         <div className="flex gap-tight">
-                            <Button variant="secondary" size="xs" onClick={acceptAll} id="accept-all-btn">Accept All</Button>
-                            <Button variant="secondary" size="xs" onClick={rejectAll} id="reject-all-btn">Reject All</Button>
+                            <Button variant="secondary" size="xs" onClick={acceptAll} id="accept-all-btn">{tx('ai.acceptAll')}</Button>
+                            <Button variant="secondary" size="xs" onClick={rejectAll} id="reject-all-btn">{tx('ai.rejectAll')}</Button>
                         </div>
                     </div>
 
                     {/* Decision summary */}
                     <div className="flex gap-compact text-sm">
-                        <span className="text-content-success" id="accepted-count">[+] {acceptedCount} accepted</span>
-                        <span className="text-content-error" id="rejected-count">[-] {rejectedCount} rejected</span>
-                        <span className="text-content-muted" id="pending-count">○ {pendingCount} pending</span>
+                        <span className="text-content-success" id="accepted-count">[+] {tx('ai.accepted', { count: acceptedCount })}</span>
+                        <span className="text-content-error" id="rejected-count">[-] {tx('ai.rejected', { count: rejectedCount })}</span>
+                        <span className="text-content-muted" id="pending-count">○ {tx('ai.pending', { count: pendingCount })}</span>
                     </div>
 
                     {/* Suggestion cards */}
@@ -438,7 +440,7 @@ export default function AIRiskAssessmentPage() {
                                             )}
                                             {item.category && <StatusBadge variant="info">{item.category}</StatusBadge>}
                                             {confidenceBadge(item.confidence)}
-                                            <StatusBadge variant="neutral">{item.isFallback ? 'Baseline' : 'AI Suggested'}</StatusBadge>
+                                            <StatusBadge variant="neutral">{item.isFallback ? tx('ai.baseline') : tx('ai.aiSuggested')}</StatusBadge>
                                         </div>
 
                                         {/* Description */}
@@ -456,8 +458,8 @@ export default function AIRiskAssessmentPage() {
                                         {/* Threat / Vulnerability */}
                                         {(item.threat || item.vulnerability) && !isEditing && (
                                             <div className="grid grid-cols-2 gap-default text-xs">
-                                                {item.threat && <div><span className="text-content-subtle uppercase font-semibold">Threat</span><p className="text-content-muted mt-0.5">{item.threat}</p></div>}
-                                                {item.vulnerability && <div><span className="text-content-subtle uppercase font-semibold">Vulnerability</span><p className="text-content-muted mt-0.5">{item.vulnerability}</p></div>}
+                                                {item.threat && <div><span className="text-content-subtle uppercase font-semibold">{tx('threat')}</span><p className="text-content-muted mt-0.5">{item.threat}</p></div>}
+                                                {item.vulnerability && <div><span className="text-content-subtle uppercase font-semibold">{tx('vulnerability')}</span><p className="text-content-muted mt-0.5">{item.vulnerability}</p></div>}
                                             </div>
                                         )}
 
@@ -502,19 +504,19 @@ export default function AIRiskAssessmentPage() {
                                             <div className="bg-bg-default/50 rounded-lg p-3 text-xs text-content-muted space-y-tight">
                                                 {item.rationale && (
                                                     <div>
-                                                        <span className="text-content-subtle uppercase font-semibold block mb-1">Rationale</span>
+                                                        <span className="text-content-subtle uppercase font-semibold block mb-1">{tx('ai.rationale')}</span>
                                                         {item.rationale}
                                                     </div>
                                                 )}
                                                 {sr && sr.whyThisRisk && (
                                                     <div>
-                                                        <span className="text-content-subtle uppercase font-semibold block mb-1">Why This Risk</span>
+                                                        <span className="text-content-subtle uppercase font-semibold block mb-1">{tx('ai.whyThisRisk')}</span>
                                                         <p className="text-content-default">{sr.whyThisRisk}</p>
                                                     </div>
                                                 )}
                                                 {sr && sr.affectedAssetCharacteristics.length > 0 && (
                                                     <div>
-                                                        <span className="text-content-subtle uppercase font-semibold block mb-1">Affected Asset Characteristics</span>
+                                                        <span className="text-content-subtle uppercase font-semibold block mb-1">{tx('ai.affectedChars')}</span>
                                                         <div className="flex flex-wrap gap-1">
                                                             {sr.affectedAssetCharacteristics.map((c, ci) => (
                                                                 <span key={ci} className="px-2 py-0.5 rounded bg-bg-elevated/60 text-content-default">{c}</span>
@@ -524,7 +526,7 @@ export default function AIRiskAssessmentPage() {
                                                 )}
                                                 {sr && sr.suggestedControlThemes.length > 0 && (
                                                     <div>
-                                                        <span className="text-content-subtle uppercase font-semibold block mb-1">Control Themes</span>
+                                                        <span className="text-content-subtle uppercase font-semibold block mb-1">{tx('ai.controlThemes')}</span>
                                                         <div className="flex flex-wrap gap-1">
                                                             {sr.suggestedControlThemes.map((t, ti) => (
                                                                 <span key={ti} className="px-2 py-0.5 rounded bg-indigo-900/40 text-indigo-300 ring-1 ring-indigo-500/20">{t}</span>
@@ -538,7 +540,7 @@ export default function AIRiskAssessmentPage() {
                                         {/* Suggested Controls */}
                                         {controls.length > 0 && !isEditing && (
                                             <div className="flex flex-wrap gap-1.5">
-                                                <span className="text-xs text-content-subtle mr-1">Suggested controls:</span>
+                                                <span className="text-xs text-content-subtle mr-1">{tx('ai.suggestedControls')}</span>
                                                 {controls.map((c, ci) => (
                                                     <span key={ci} className="text-xs bg-bg-info text-content-info px-2 py-0.5 rounded">{c}</span>
                                                 ))}
@@ -556,9 +558,9 @@ export default function AIRiskAssessmentPage() {
                                                     onClick={() => { cancelEdit(); setDecision(item.id, 'accept'); }}
                                                     id={`save-edit-${idx}`}
                                                 >
-                                                    Save & Accept
+                                                    {tx('ai.saveAccept')}
                                                 </Button>
-                                                <Button variant="secondary" size="xs" onClick={cancelEdit}>Cancel</Button>
+                                                <Button variant="secondary" size="xs" onClick={cancelEdit}>{tx('edit.cancel')}</Button>
                                             </>
                                         ) : (
                                             <>
@@ -569,7 +571,7 @@ export default function AIRiskAssessmentPage() {
                                                     onClick={() => setDecision(item.id, 'accept')}
                                                     id={`accept-${idx}`}
                                                 >
-                                                    [+] Accept
+                                                    [+] {tx('ai.accept')}
                                                 </Button>
                                                 <Button
                                                     variant={dec === 'reject' ? 'destructive' : 'secondary'}
@@ -578,7 +580,7 @@ export default function AIRiskAssessmentPage() {
                                                     onClick={() => setDecision(item.id, 'reject')}
                                                     id={`reject-${idx}`}
                                                 >
-                                                    [-] Reject
+                                                    [-] {tx('ai.reject')}
                                                 </Button>
                                                 {permissions.canWrite && (
                                                     <Button
@@ -587,7 +589,7 @@ export default function AIRiskAssessmentPage() {
                                                         onClick={() => startEdit(item)}
                                                         id={`edit-${idx}`}
                                                     >
-                                                        Edit
+                                                        {tx('ai.edit')}
                                                     </Button>
                                                 )}
                                             </>
@@ -600,7 +602,7 @@ export default function AIRiskAssessmentPage() {
 
                     {/* Action bar */}
                     <div className={cn(cardVariants({ density: 'compact' }), 'flex items-center justify-between')} id="ai-action-bar">
-                        <Button variant="secondary" onClick={handleDismiss} id="dismiss-btn">Dismiss All</Button>
+                        <Button variant="secondary" onClick={handleDismiss} id="dismiss-btn">{tx('ai.dismissAll')}</Button>
                         <RequirePermission resource="risks" action="create">
                             <Button
                                 variant="primary"
@@ -608,7 +610,7 @@ export default function AIRiskAssessmentPage() {
                                 disabled={acceptedCount === 0}
                                 id="apply-btn"
                             >
-                                Apply {acceptedCount} Accepted Suggestions →
+                                {tx('ai.applyBtn', { count: acceptedCount })}
                             </Button>
                         </RequirePermission>
                     </div>
@@ -619,27 +621,27 @@ export default function AIRiskAssessmentPage() {
             {phase === 'applying' && (
                 <div className={cn(cardVariants({ density: 'spacious' }), 'text-center')}>
                     <div className="animate-pulse text-4xl mb-4">...</div>
-                    <Heading level={2}>Creating risk records…</Heading>
-                    <p className="text-content-muted text-sm mt-2">Adding accepted suggestions to your Risk Register.</p>
+                    <Heading level={2}>{tx('ai.creatingRecords')}</Heading>
+                    <p className="text-content-muted text-sm mt-2">{tx('ai.creatingDesc')}</p>
                 </div>
             )}
 
             {/* ═══ PHASE: DONE ═══ */}
             {phase === 'done' && (
                 <Card className="text-center space-y-default" id="ai-done">
-                    <div className="text-4xl">Done</div>
+                    <div className="text-4xl">{tx('ai.doneLabel')}</div>
                     <Heading level={2}>
-                        {appliedCount} risk{appliedCount !== 1 ? 's' : ''} added to your register
+                        {tx('ai.doneHeading', { count: appliedCount })}
                     </Heading>
                     <p className="text-sm text-content-muted">
-                        AI suggestions have been applied. You can review and refine them in the Risk Register.
+                        {tx('ai.doneDesc')}
                     </p>
                     <div className="flex gap-compact justify-center pt-2">
                         <Link href={tenantHref('/risks')} className={buttonVariants({ variant: 'primary' })} id="view-risks-btn">
-                            View Risk Register →
+                            {tx('ai.viewRegister')}
                         </Link>
                         <Button variant="secondary" onClick={() => { setPhase('form'); setSession(null); }} id="new-assessment-btn">
-                            New Assessment
+                            {tx('ai.newAssessment')}
                         </Button>
                     </div>
                 </Card>

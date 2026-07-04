@@ -7,6 +7,7 @@
  */
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Plus } from '@/components/ui/icons/nucleo/plus';
 import { Robot } from '@/components/ui/icons/nucleo/robot';
 import { EntityListPage } from '@/components/layout/EntityListPage';
@@ -57,6 +58,7 @@ export function AiSystemsClient(props: Props) {
 
 function AiSystemsInner({ initialRows, tenantSlug, canWrite }: Props) {
     const router = useRouter();
+    const tx = useTranslations('risks');
     const { state, hasActive } = useFilters();
     const [showNew, setShowNew] = useState(false);
 
@@ -76,7 +78,7 @@ function AiSystemsInner({ initialRows, tenantSlug, canWrite }: Props) {
             createColumns<AiSystemRow>([
                 {
                     id: 'name',
-                    header: 'System',
+                    header: tx('aiSystems.colSystem'),
                     accessorFn: (r) => r.name,
                     cell: ({ row }) => (
                         <div className="min-w-0" data-testid={`ai-system-row-${row.original.id}`}>
@@ -89,7 +91,7 @@ function AiSystemsInner({ initialRows, tenantSlug, canWrite }: Props) {
                 },
                 {
                     id: 'riskTier',
-                    header: 'Risk tier',
+                    header: tx('aiSystems.colRiskTier'),
                     accessorFn: (r) => r.riskTier,
                     cell: ({ row }) => (
                         <StatusBadge variant={TIER_VARIANT[row.original.riskTier] ?? 'neutral'}>
@@ -99,7 +101,7 @@ function AiSystemsInner({ initialRows, tenantSlug, canWrite }: Props) {
                 },
                 {
                     id: 'clause',
-                    header: 'Basis',
+                    header: tx('aiSystems.colBasis'),
                     accessorFn: (r) => r.classificationClauseId ?? '',
                     cell: ({ row }) => (
                         <span className="tabular-nums text-content-muted">
@@ -109,7 +111,7 @@ function AiSystemsInner({ initialRows, tenantSlug, canWrite }: Props) {
                 },
                 {
                     id: 'role',
-                    header: 'Role',
+                    header: tx('aiSystems.colRole'),
                     accessorFn: (r) => r.deploymentRole,
                     cell: ({ row }) => (
                         <span className="text-content-muted">{ROLE_LABEL[row.original.deploymentRole] ?? row.original.deploymentRole}</span>
@@ -117,14 +119,14 @@ function AiSystemsInner({ initialRows, tenantSlug, canWrite }: Props) {
                 },
                 {
                     id: 'obligations',
-                    header: 'Obligations',
+                    header: tx('aiSystems.colObligations'),
                     accessorFn: (r) => r._count.requirementLinks,
                     cell: ({ row }) => (
                         <span className="tabular-nums text-content-muted">{row.original._count.requirementLinks}</span>
                     ),
                 },
             ]),
-        [],
+        [tx],
     );
 
     return (
@@ -133,20 +135,24 @@ function AiSystemsInner({ initialRows, tenantSlug, canWrite }: Props) {
                 header={{
                     back: { smart: true },
                     breadcrumbs: [
-                        { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
-                        { label: 'Risks', href: `/t/${tenantSlug}/risks` },
-                        { label: 'AI Systems' },
+                        { label: tx('breadcrumbDashboard'), href: `/t/${tenantSlug}/dashboard` },
+                        { label: tx('aiSystems.risksCrumb'), href: `/t/${tenantSlug}/risks` },
+                        { label: tx('aiSystems.title') },
                     ],
                     title: (
                         <>
                             <Robot className="inline-block mr-2 h-5 w-5 align-text-bottom" />
-                            AI Systems
+                            {tx('aiSystems.title')}
                         </>
                     ),
-                    description: `${summary.total} AI system${summary.total === 1 ? '' : 's'} registered · ${summary.high} high-risk · ${summary.prohibited} prohibited. Each classified against the EU AI Act (Regulation (EU) 2024/1689) and mapped to its obligations.`,
+                    description: tx('aiSystems.description', {
+                        total: summary.total,
+                        high: summary.high,
+                        prohibited: summary.prohibited,
+                    }),
                     actions: canWrite ? (
                         <Button variant="primary" icon={<Plus />} onClick={() => setShowNew(true)}>
-                            System
+                            {tx('aiSystems.addSystem')}
                         </Button>
                     ) : undefined,
                 }}
@@ -156,15 +162,16 @@ function AiSystemsInner({ initialRows, tenantSlug, canWrite }: Props) {
                     columns,
                     getRowId: (r) => r.id,
                     onRowClick: (row) => router.push(`/t/${tenantSlug}/risks/ai-systems/${row.original.id}`),
-                    resourceName: (plural) => (plural ? 'systems' : 'system'),
+                    resourceName: (plural) =>
+                        plural ? tx('aiSystems.resourcePlural') : tx('aiSystems.resourceSingular'),
                     emptyState: (
                         <EmptyState
                             icon={Robot}
-                            title={hasActive ? 'No matching AI systems' : 'No AI systems registered yet'}
+                            title={hasActive ? tx('aiSystems.emptyMatchingTitle') : tx('aiSystems.emptyTitle')}
                             description={
                                 hasActive
-                                    ? 'Try clearing a filter.'
-                                    : 'Register an AI system to classify its EU AI Act risk tier and map it to the obligations that tier requires.'
+                                    ? tx('aiSystems.emptyMatchingDesc')
+                                    : tx('aiSystems.emptyDesc')
                             }
                         />
                     ),

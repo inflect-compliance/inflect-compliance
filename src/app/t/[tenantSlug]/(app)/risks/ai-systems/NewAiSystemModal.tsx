@@ -7,6 +7,7 @@
  * blank yields MINIMAL risk (Art 95).
  */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -56,6 +57,7 @@ interface Props {
 }
 
 export function NewAiSystemModal({ tenantSlug, onClose, onCreated }: Props) {
+    const tx = useTranslations('risks');
     const [apiError, setApiError] = useState<string | null>(null);
     const {
         register,
@@ -100,12 +102,12 @@ export function NewAiSystemModal({ tenantSlug, onClose, onCreated }: Props) {
             });
             if (!res.ok) {
                 const body = (await res.json().catch(() => null)) as { error?: string } | null;
-                throw new Error(body?.error ?? 'Failed to register AI system');
+                throw new Error(body?.error ?? tx('aiSystems.new.errorFallback'));
             }
             const created = (await res.json()) as { id: string };
             await onCreated(created.id);
         } catch (e) {
-            setApiError(e instanceof Error ? e.message : 'Failed to register AI system');
+            setApiError(e instanceof Error ? e.message : tx('aiSystems.new.errorFallback'));
         }
     };
 
@@ -141,11 +143,11 @@ export function NewAiSystemModal({ tenantSlug, onClose, onCreated }: Props) {
                 if (!v && !isSubmitting) onClose();
             }}
             size="lg"
-            title="Register AI system"
-            description="Register an AI system and classify its EU AI Act risk tier."
+            title={tx('aiSystems.new.title')}
+            description={tx('aiSystems.new.descShort')}
             preventDefaultClose={isSubmitting}
         >
-            <Modal.Header title="Register AI system" description="Classify against the EU AI Act (Regulation (EU) 2024/1689)." />
+            <Modal.Header title={tx('aiSystems.new.title')} description={tx('aiSystems.new.descLong')} />
             <Modal.Form onSubmit={handleSubmit(onSubmit)}>
                 <Modal.Body>
                     {apiError && (
@@ -154,14 +156,14 @@ export function NewAiSystemModal({ tenantSlug, onClose, onCreated }: Props) {
                         </div>
                     )}
                     <div className="space-y-default">
-                        <FormField label="System name" required error={errors.name?.message}>
-                            <Input id="ai-name-input" type="text" placeholder="e.g. Candidate screening model" autoComplete="off" {...register('name')} />
+                        <FormField label={tx('aiSystems.new.nameLabel')} required error={errors.name?.message}>
+                            <Input id="ai-name-input" type="text" placeholder={tx('aiSystems.new.namePlaceholder')} autoComplete="off" {...register('name')} />
                         </FormField>
                         <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
-                            <FormField label="Provider / vendor" error={errors.provider?.message}>
-                                <Input id="ai-provider-input" type="text" placeholder="e.g. OpenAI, in-house" autoComplete="off" {...register('provider')} />
+                            <FormField label={tx('aiSystems.new.providerLabel')} error={errors.provider?.message}>
+                                <Input id="ai-provider-input" type="text" placeholder={tx('aiSystems.new.providerPlaceholder')} autoComplete="off" {...register('provider')} />
                             </FormField>
-                            <FormField label="Our role" required error={errors.deploymentRole?.message}>
+                            <FormField label={tx('aiSystems.new.roleLabel')} required error={errors.deploymentRole?.message}>
                                 <Controller
                                     control={control}
                                     name="deploymentRole"
@@ -172,7 +174,7 @@ export function NewAiSystemModal({ tenantSlug, onClose, onCreated }: Props) {
                                             options={ROLE_OPTIONS}
                                             selected={ROLE_OPTIONS.find((o) => o.value === field.value) ?? ROLE_OPTIONS[0]}
                                             setSelected={(o) => field.onChange(o?.value ?? 'DEPLOYER')}
-                                            placeholder="Select role…"
+                                            placeholder={tx('aiSystems.new.rolePlaceholder')}
                                             hideSearch
                                             matchTriggerWidth
                                             forceDropdown
@@ -183,38 +185,38 @@ export function NewAiSystemModal({ tenantSlug, onClose, onCreated }: Props) {
                                 />
                             </FormField>
                         </div>
-                        <FormField label="Intended purpose" hint="Encrypted at rest" error={errors.purpose?.message}>
-                            <Textarea id="ai-purpose-input" rows={2} placeholder="What the system is for…" {...register('purpose')} />
+                        <FormField label={tx('aiSystems.new.purposeLabel')} hint={tx('aiSystems.new.encryptedHint')} error={errors.purpose?.message}>
+                            <Textarea id="ai-purpose-input" rows={2} placeholder={tx('aiSystems.new.purposePlaceholder')} {...register('purpose')} />
                         </FormField>
-                        <FormField label="Use context" hint="Encrypted at rest" error={errors.useContext?.message}>
-                            <Textarea id="ai-usecontext-input" rows={2} placeholder="Where and how it is deployed…" {...register('useContext')} />
+                        <FormField label={tx('aiSystems.new.useContextLabel')} hint={tx('aiSystems.new.encryptedHint')} error={errors.useContext?.message}>
+                            <Textarea id="ai-usecontext-input" rows={2} placeholder={tx('aiSystems.new.useContextPlaceholder')} {...register('useContext')} />
                         </FormField>
 
                         <div className="rounded-lg border border-border-subtle bg-bg-subtle p-3 space-y-default">
-                            <p className="text-sm font-medium text-content-emphasis">EU AI Act classification</p>
-                            <p className="text-xs text-content-subtle">Answer what applies. Leave everything blank for a minimal-risk system. The tier is computed on the server.</p>
-                            <FormField label="Article 5 — prohibited practice?">
-                                {classificationSelect('prohibitedPractice', PROHIBITED_OPTIONS, 'None / not applicable')}
+                            <p className="text-sm font-medium text-content-emphasis">{tx('aiSystems.new.classificationHeading')}</p>
+                            <p className="text-xs text-content-subtle">{tx('aiSystems.new.classificationHelp')}</p>
+                            <FormField label={tx('aiSystems.new.art5Label')}>
+                                {classificationSelect('prohibitedPractice', PROHIBITED_OPTIONS, tx('aiSystems.new.noneApplicable'))}
                             </FormField>
-                            <FormField label="Annex III — high-risk use-case?">
-                                {classificationSelect('annexIIIArea', ANNEX_III_OPTIONS, 'None / not applicable')}
+                            <FormField label={tx('aiSystems.new.annexIIILabel')}>
+                                {classificationSelect('annexIIIArea', ANNEX_III_OPTIONS, tx('aiSystems.new.noneApplicable'))}
                             </FormField>
                             <label className="flex items-center gap-tight text-sm text-content-default">
                                 <input id="ai-annexi-input" type="checkbox" {...register('isAnnexIProductSafetyComponent')} />
-                                Article 6(1) — safety component of an Annex I regulated product
+                                {tx('aiSystems.new.art6Checkbox')}
                             </label>
-                            <FormField label="Article 50 — transparency trigger?">
-                                {classificationSelect('transparencyCase', ART50_OPTIONS, 'None / not applicable')}
+                            <FormField label={tx('aiSystems.new.art50Label')}>
+                                {classificationSelect('transparencyCase', ART50_OPTIONS, tx('aiSystems.new.noneApplicable'))}
                             </FormField>
                         </div>
                     </div>
                 </Modal.Body>
                 <Modal.Footer>
                     <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
-                        Cancel
+                        {tx('edit.cancel')}
                     </Button>
                     <Button type="submit" variant="primary" disabled={isSubmitting}>
-                        {isSubmitting ? 'Classifying…' : 'Register & classify'}
+                        {isSubmitting ? tx('aiSystems.new.classifying') : tx('aiSystems.new.submit')}
                     </Button>
                 </Modal.Footer>
             </Modal.Form>
