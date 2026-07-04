@@ -21,7 +21,9 @@
         "reject": "Reject",
         "export": "Export",
         "actions": "Actions",
-        "details": "Details"
+        "details": "Details",
+        "theme": "Theme",
+        "language": "Language"
     },
     "login": {
         "title": "Inflect Compliance",

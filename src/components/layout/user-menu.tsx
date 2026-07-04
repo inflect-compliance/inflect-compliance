@@ -37,9 +37,12 @@ import Link from 'next/link';
 import { signOut } from 'next-auth/react';
 import { LogOut, ShieldCheck } from 'lucide-react';
 
+import { useTranslations } from 'next-intl';
+
 import { Popover } from '@/components/ui/popover';
 import { InitialsAvatar } from '@/components/ui/initials-avatar';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { LocaleSwitcher } from './LocaleSwitcher';
 import { NAV_BAR_SLOT_PRESS } from './nav-bar';
 
 // ─── Props ────────────────────────────────────────────────────────
@@ -82,6 +85,7 @@ export function UserMenu({
     displayEmail,
     displayImage,
 }: UserMenuProps) {
+    const t = useTranslations('common');
     const [open, setOpen] = useState(false);
     const close = useCallback(() => setOpen(false), []);
 
@@ -135,8 +139,21 @@ export function UserMenu({
                         className="px-2.5 py-1.5 flex items-center justify-between text-sm text-content-default"
                         data-testid="user-menu-theme-row"
                     >
-                        <span>Theme</span>
+                        <span>{t('theme')}</span>
                         <ThemeToggle id="user-menu-theme-toggle" />
+                    </div>
+
+                    <Popover.Separator />
+
+                    {/* Language switcher — persists to the inflect_locale
+                        cookie + refreshes so server components re-render in
+                        the chosen locale. */}
+                    <div
+                        className="px-2.5 py-1.5 flex items-center justify-between gap-compact text-sm text-content-default"
+                        data-testid="user-menu-language-row"
+                    >
+                        <span>{t('language')}</span>
+                        <LocaleSwitcher />
                     </div>
 
                     <Popover.Separator />
