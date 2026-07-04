@@ -12,6 +12,7 @@ import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
+import { useTranslations } from 'next-intl';
 
 interface Matrix { riskIds: string[]; riskTitles: string[]; matrix: number[][]; isPositiveSemiDefinite: boolean }
 interface Suggestion { riskAId: string; riskBId: string; suggestedCoefficient: number; reason: string }
@@ -27,6 +28,7 @@ function cellClass(v: number): string {
 }
 
 export default function CorrelationMatrixPage() {
+    const t = useTranslations('risks');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const [m, setM] = useState<Matrix | null>(null);
@@ -63,23 +65,23 @@ export default function CorrelationMatrixPage() {
     return (
         <div className="space-y-section">
             <BackAffordance />
-            <PageBreadcrumbs items={[{ label: 'Risks', href: tenantHref('/risks') }, { label: 'Correlations' }]} />
+            <PageBreadcrumbs items={[{ label: t('breadcrumbRoot'), href: tenantHref('/risks') }, { label: t('correlations.breadcrumb') }]} />
             <div className="flex items-center justify-between">
-                <Heading level={1}>Risk Correlation Matrix</Heading>
-                <Button variant="secondary" size="sm" onClick={autoSuggest}>Auto-suggest</Button>
+                <Heading level={1}>{t('correlations.title')}</Heading>
+                <Button variant="secondary" size="sm" onClick={autoSuggest}>{t('correlations.autoSuggest')}</Button>
             </div>
 
             {!m ? (
                 <SkeletonCard lines={4} />
             ) : m.riskIds.length === 0 ? (
-                <Card className="p-6"><p className="text-sm text-content-muted">No risks to correlate.</p></Card>
+                <Card className="p-6"><p className="text-sm text-content-muted">{t('correlations.emptyMatrix')}</p></Card>
             ) : (
                 <Card className="space-y-default p-6">
                     <div className="flex items-center gap-default">
                         <StatusBadge variant={m.isPositiveSemiDefinite ? 'success' : 'error'}>
-                            {m.isPositiveSemiDefinite ? 'Matrix is positive semi-definite' : 'Not PSD — adjust cells'}
+                            {m.isPositiveSemiDefinite ? t('correlations.isPsd') : t('correlations.notPsd')}
                         </StatusBadge>
-                        <span className="text-xs text-content-subtle">Click a cell in the upper triangle to edit a pair.</span>
+                        <span className="text-xs text-content-subtle">{t('correlations.clickHint')}</span>
                     </div>
                     <div className="overflow-auto">
                         <table className="border-collapse text-xs">
@@ -117,11 +119,11 @@ export default function CorrelationMatrixPage() {
                     {sel && (
                         <div className="flex flex-wrap items-end gap-default rounded-md border border-border-emphasis p-default">
                             <span className="text-sm text-content-emphasis">{m.riskTitles[sel.i]} ↔ {m.riskTitles[sel.j]}</span>
-                            <label className="block w-24 sm:w-32"><span className="text-xs text-content-muted">Coefficient (−1..1)</span>
+                            <label className="block w-24 sm:w-32"><span className="text-xs text-content-muted">{t('correlations.coefficient')}</span>
                                 <Input type="text" inputMode="decimal" value={coef} onChange={(e) => setCoef(e.target.value)} />
                             </label>
-                            <Button variant="primary" size="sm" onClick={save}>Save</Button>
-                            <Button variant="ghost" size="sm" onClick={() => setSel(null)}>Cancel</Button>
+                            <Button variant="primary" size="sm" onClick={save}>{t('edit.save')}</Button>
+                            <Button variant="ghost" size="sm" onClick={() => setSel(null)}>{t('edit.cancel')}</Button>
                         </div>
                     )}
                 </Card>
@@ -129,13 +131,13 @@ export default function CorrelationMatrixPage() {
 
             {suggestions.length > 0 && (
                 <Card className="space-y-default p-6">
-                    <Heading level={2}>Suggested correlations</Heading>
+                    <Heading level={2}>{t('correlations.suggested')}</Heading>
                     <ul className="divide-y divide-border-subtle">
                         {suggestions.map((s) => (
                             <li key={`${s.riskAId}-${s.riskBId}`} className="flex items-center gap-default py-default text-sm">
                                 <span className="text-content-muted">{s.reason}</span>
                                 <span className="tabular-nums text-content-emphasis">{s.suggestedCoefficient.toFixed(2)}</span>
-                                <Button size="sm" variant="secondary" className="ml-auto" onClick={() => applySuggestion(s)}>Apply</Button>
+                                <Button size="sm" variant="secondary" className="ml-auto" onClick={() => applySuggestion(s)}>{t('correlations.apply')}</Button>
                             </li>
                         ))}
                     </ul>

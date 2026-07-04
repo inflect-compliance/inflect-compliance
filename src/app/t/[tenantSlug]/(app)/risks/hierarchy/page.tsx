@@ -10,24 +10,26 @@ import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useMoneyFormatter } from '@/lib/tenant-context-provider';
+import { useTranslations } from 'next-intl';
 
 interface Agg { nodeId: string; nodeName: string; riskCount: number; totalAle: number; children: Agg[] }
 const TYPES = [
-    { value: 'BUSINESS_UNIT', label: 'Business Unit' },
-    { value: 'GEOGRAPHY', label: 'Geography' },
-    { value: 'ASSET_CLASS', label: 'Asset Class' },
-    { value: 'CUSTOM', label: 'Custom' },
-];
+    { value: 'BUSINESS_UNIT', labelKey: 'hierarchy.typeBusinessUnit' },
+    { value: 'GEOGRAPHY', labelKey: 'hierarchy.typeGeography' },
+    { value: 'ASSET_CLASS', labelKey: 'hierarchy.typeAssetClass' },
+    { value: 'CUSTOM', labelKey: 'hierarchy.typeCustom' },
+] as const;
 // RQ3-OB-A — money speaks the tenant's currency (useMoneyFormatter).
 
 function TreeRow({ node, depth, max }: { node: Agg; depth: number; max: number }) {
     const money = useMoneyFormatter();
+    const t = useTranslations('risks');
     return (
         <>
             <div className="flex items-center gap-default py-tight text-sm" style={{ paddingLeft: `${depth * 16}px` }}>
                 <span className="w-full sm:w-48 truncate text-content-emphasis">{node.nodeName}</span>
                 <div className="flex-1">
-                    <ProgressBar value={node.totalAle} max={max || 1} aria-label={`${node.nodeName} ALE share`} />
+                    <ProgressBar value={node.totalAle} max={max || 1} aria-label={t('hierarchy.aleShareAria', { name: node.nodeName })} />
                 </div>
                 <span className="w-24 sm:w-28 text-right tabular-nums text-content-muted">{money(node.totalAle)}</span>
                 <span className="w-16 text-right tabular-nums text-content-subtle">{node.riskCount}</span>
@@ -38,6 +40,7 @@ function TreeRow({ node, depth, max }: { node: Agg; depth: number; max: number }
 }
 
 export default function RiskHierarchyPage() {
+    const t = useTranslations('risks');
     const apiUrl = useTenantApiUrl();
     const money = useMoneyFormatter();
     const tenantHref = useTenantHref();
@@ -64,34 +67,34 @@ export default function RiskHierarchyPage() {
     return (
         <div className="space-y-section">
             <BackAffordance />
-            <PageBreadcrumbs items={[{ label: 'Risks', href: tenantHref('/risks') }, { label: 'Hierarchy' }]} />
-            <Heading level={1}>Risk Hierarchy</Heading>
+            <PageBreadcrumbs items={[{ label: t('breadcrumbRoot'), href: tenantHref('/risks') }, { label: t('hierarchy.breadcrumb') }]} />
+            <Heading level={1}>{t('hierarchy.title')}</Heading>
 
             <Card className="space-y-default p-6">
                 <div className="flex flex-wrap gap-tight">
                     {TYPES.map((tt) => (
-                        <Button key={tt.value} size="sm" variant={type === tt.value ? 'primary' : 'secondary'} onClick={() => setType(tt.value)}>{tt.label}</Button>
+                        <Button key={tt.value} size="sm" variant={type === tt.value ? 'primary' : 'secondary'} onClick={() => setType(tt.value)}>{t(tt.labelKey)}</Button>
                     ))}
                 </div>
                 <div className="flex flex-wrap items-end gap-default">
-                    <label className="block flex-1"><span className="text-xs text-content-muted">New node name</span>
-                        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Engineering" />
+                    <label className="block flex-1"><span className="text-xs text-content-muted">{t('hierarchy.newNodeName')}</span>
+                        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('hierarchy.newNodePlaceholder')} />
                     </label>
-                    <Button variant="primary" onClick={addNode} disabled={busy || !name.trim()}>Add node</Button>
+                    <Button variant="primary" onClick={addNode} disabled={busy || !name.trim()}>{t('hierarchy.addNode')}</Button>
                 </div>
             </Card>
 
             <Card className="space-y-default p-6">
                 <div className="flex items-center justify-between">
-                    <Heading level={2}>Exposure roll-up</Heading>
-                    <span className="text-sm text-content-muted">Total {money(total)} ALE/yr</span>
+                    <Heading level={2}>{t('hierarchy.rollup')}</Heading>
+                    <span className="text-sm text-content-muted">{t('hierarchy.totalAleYr', { money: money(total) })}</span>
                 </div>
                 {treemap.length === 0 ? (
-                    <p className="text-sm text-content-muted">No nodes yet. Add a node, then link risks to it (via the hierarchy API or the risk form).</p>
+                    <p className="text-sm text-content-muted">{t('hierarchy.empty')}</p>
                 ) : (
                     <div>
                         <div className="flex items-center gap-default border-b border-border-subtle pb-tight text-xs text-content-subtle">
-                            <span className="w-full sm:w-48">Node</span><span className="flex-1">ALE share</span><span className="w-24 sm:w-28 text-right">Total ALE</span><span className="w-16 text-right">Risks</span>
+                            <span className="w-full sm:w-48">{t('hierarchy.colNode')}</span><span className="flex-1">{t('hierarchy.colAleShare')}</span><span className="w-24 sm:w-28 text-right">{t('hierarchy.colTotalAle')}</span><span className="w-16 text-right">{t('hierarchy.colRisks')}</span>
                         </div>
                         {treemap.map((n) => <TreeRow key={n.nodeId} node={n} depth={0} max={max} />)}
                     </div>
