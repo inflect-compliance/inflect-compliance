@@ -506,5 +506,90 @@
             "required": "Задължително",
             "invalid": "Невалидно"
         }
+    },
+    "vendors": {
+        "breadcrumbDashboard": "Табло",
+        "title": "Регистър на доставчици",
+        "subtitle": "Взаимоотношения с трети страни, оценявани и подновявани по график.",
+        "searchPlaceholder": "Търсене на доставчици…",
+        "createButton": "Доставчик",
+        "dashboardTooltip": "Табло",
+        "kpi": {
+            "total": "Общо доставчици",
+            "active": "Активни",
+            "critical": "Критични",
+            "reviewOverdue": "Просрочен преглед"
+        },
+        "columns": {
+            "name": "Име",
+            "status": "Статус",
+            "criticality": "Критичност",
+            "risk": "Риск",
+            "nextReview": "Следващ преглед",
+            "contractRenewal": "Подновяване на договор",
+            "owner": "Отговорник"
+        },
+        "badge": {
+            "overdue": "Просрочено",
+            "due": "Предстои"
+        },
+        "bulk": {
+            "setStatus": "Задай статус",
+            "selectStatus": "Изберете статус...",
+            "assignOwner": "Назначи отговорник",
+            "ownerPlaceholder": "Отговорник (празно = премахване)",
+            "delete": "Изтрий"
+        },
+        "statusOption": {
+            "ACTIVE": "Активен",
+            "ONBOARDING": "Включване",
+            "OFFBOARDING": "Изключване",
+            "OFFBOARDED": "Изключен"
+        },
+        "empty": {
+            "noResultsTitle": "Няма доставчици, отговарящи на филтрите",
+            "noResultsDescription": "Опитайте да разширите търсенето или да изчистите някой от активните филтри.",
+            "clearFilters": "Изчисти филтрите",
+            "noRecordsTitle": "Все още няма доставчици",
+            "noRecordsDescription": "Регистрирайте подизпълнители и доставчици, за да проследявате споразумения за обработка на данни, договори и прегледи на риска на едно място."
+        },
+        "entityLabel": "доставчик",
+        "entityLabelPlural": "доставчици",
+        "modal": {
+            "title": "Нов доставчик",
+            "description": "Създайте доставчик за проследяване на риска от трети страни.",
+            "cancel": "Отказ",
+            "creating": "Създаване…",
+            "create": "Създай доставчик",
+            "discardConfirm": "Да се отхвърли ли доставчикът? Въведените данни ще бъдат загубени."
+        },
+        "form": {
+            "name": "Име на доставчик",
+            "legalName": "Юридическо име",
+            "domain": "Домейн",
+            "domainPlaceholder": "напр. aws.amazon.com",
+            "websiteUrl": "Уеб адрес",
+            "country": "Държава",
+            "description": "Описание",
+            "status": "Статус",
+            "criticality": "Критичност",
+            "criticalityPlaceholder": "Изберете критичност…",
+            "dataAccess": "Достъп до данни",
+            "dataAccessPlaceholder": "— Няма —",
+            "nextReviewDate": "Дата на следващ преглед",
+            "contractRenewalDate": "Дата на подновяване на договор",
+            "datePlaceholder": "Изберете дата",
+            "isSubprocessor": "Този доставчик е подизпълнител",
+            "statusActive": "Активен",
+            "statusOnboarding": "Включване",
+            "critLow": "Ниска",
+            "critMedium": "Средна",
+            "critHigh": "Висока",
+            "critCritical": "Критична",
+            "dataNone": "Няма",
+            "dataLow": "Нисък",
+            "dataMedium": "Среден",
+            "dataHigh": "Висок"
+        }
     }
 }

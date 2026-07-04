@@ -506,5 +506,90 @@
             "required": "Required",
             "invalid": "Invalid"
         }
+    },
+    "vendors": {
+        "breadcrumbDashboard": "Dashboard",
+        "title": "Vendor Register",
+        "subtitle": "Third-party relationships, assessed and renewed on a cadence.",
+        "searchPlaceholder": "Search vendors…",
+        "createButton": "Vendor",
+        "dashboardTooltip": "Dashboard",
+        "kpi": {
+            "total": "Total vendors",
+            "active": "Active",
+            "critical": "Critical",
+            "reviewOverdue": "Review overdue"
+        },
+        "columns": {
+            "name": "Name",
+            "status": "Status",
+            "criticality": "Criticality",
+            "risk": "Risk",
+            "nextReview": "Next Review",
+            "contractRenewal": "Contract Renewal",
+            "owner": "Owner"
+        },
+        "badge": {
+            "overdue": "Overdue",
+            "due": "Due"
+        },
+        "bulk": {
+            "setStatus": "Set status",
+            "selectStatus": "Select status...",
+            "assignOwner": "Assign owner",
+            "ownerPlaceholder": "Owner (blank = unassign)",
+            "delete": "Delete"
+        },
+        "statusOption": {
+            "ACTIVE": "Active",
+            "ONBOARDING": "Onboarding",
+            "OFFBOARDING": "Offboarding",
+            "OFFBOARDED": "Offboarded"
+        },
+        "empty": {
+            "noResultsTitle": "No vendors match your filters",
+            "noResultsDescription": "Try widening your search or clearing one of the active filters.",
+            "clearFilters": "Clear filters",
+            "noRecordsTitle": "No vendors yet",
+            "noRecordsDescription": "Register sub-processors and suppliers to track DPAs, contracts, and risk reviews in one place."
+        },
+        "entityLabel": "vendor",
+        "entityLabelPlural": "vendors",
+        "modal": {
+            "title": "New vendor",
+            "description": "Create a vendor to track third-party risk.",
+            "cancel": "Cancel",
+            "creating": "Creating…",
+            "create": "Create Vendor",
+            "discardConfirm": "Discard vendor? Any details you entered will be lost."
+        },
+        "form": {
+            "name": "Vendor Name",
+            "legalName": "Legal Name",
+            "domain": "Domain",
+            "domainPlaceholder": "e.g. aws.amazon.com",
+            "websiteUrl": "Website URL",
+            "country": "Country",
+            "description": "Description",
+            "status": "Status",
+            "criticality": "Criticality",
+            "criticalityPlaceholder": "Select criticality…",
+            "dataAccess": "Data Access",
+            "dataAccessPlaceholder": "— None —",
+            "nextReviewDate": "Next Review Date",
+            "contractRenewalDate": "Contract Renewal Date",
+            "datePlaceholder": "Select date",
+            "isSubprocessor": "This vendor is a sub-processor",
+            "statusActive": "Active",
+            "statusOnboarding": "Onboarding",
+            "critLow": "Low",
+            "critMedium": "Medium",
+            "critHigh": "High",
+            "critCritical": "Critical",
+            "dataNone": "None",
+            "dataLow": "Low",
+            "dataMedium": "Medium",
+            "dataHigh": "High"
+        }
     }
 }

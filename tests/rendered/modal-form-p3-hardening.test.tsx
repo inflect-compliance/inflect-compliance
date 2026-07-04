@@ -28,7 +28,13 @@ interface HardenedFlow {
     hookPath: string;
     hookExport: string;
     modalPath: string;
+    /** The human-readable discard copy. For i18n-migrated flows this is
+     *  asserted against the resolved en.json value rather than the source. */
     confirmCopy: RegExp;
+    /** Set when the modal sources the discard copy from the catalog via
+     *  `t('<key>')` (dotted, relative to the page's useTranslations namespace,
+     *  which matches the flow label). */
+    i18nConfirmKey?: string;
 }
 
 const FLOWS: HardenedFlow[] = [
@@ -52,6 +58,7 @@ const FLOWS: HardenedFlow[] = [
         hookExport: 'useNewVendorForm',
         modalPath: 'vendors/NewVendorModal.tsx',
         confirmCopy: /Discard vendor\?/,
+        i18nConfirmKey: 'modal.discardConfirm',
     },
     {
         label: 'assets',
@@ -136,7 +143,27 @@ describe.each(FLOWS)('modal-form P3 — $label modal wires the guard', (flow) =>
 
     it('guard prompts before discarding', () => {
         expect(src).toMatch(/window\.confirm\(/);
-        expect(src).toMatch(flow.confirmCopy);
+        if (flow.i18nConfirmKey) {
+            // i18n'd flow: the modal calls t('<key>'); the human copy lives
+            // in the catalog. Verify both the wiring AND the resolved value.
+            expect(src).toContain(`t('${flow.i18nConfirmKey}')`);
+            const en = JSON.parse(
+                fs.readFileSync(path.join(ROOT, 'messages/en.json'), 'utf8'),
+            ) as Record<string, unknown>;
+            const resolved = flow.i18nConfirmKey
+                .split('.')
+                .reduce<unknown>(
+                    (o, k) =>
+                        o && typeof o === 'object'
+                            ? (o as Record<string, unknown>)[k]
+                            : undefined,
+                    en[flow.label],
+                );
+            expect(typeof resolved).toBe('string');
+            expect(resolved as string).toMatch(flow.confirmCopy);
+        } else {
+            expect(src).toMatch(flow.confirmCopy);
+        }
     });
 
     it("Modal's setShowModal receives the guarded setter (not bare setOpen)", () => {
