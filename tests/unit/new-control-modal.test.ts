@@ -27,6 +27,10 @@ function read(rel: string): string {
 const MODAL_SRC = read('src/app/t/[tenantSlug]/(app)/controls/NewControlModal.tsx');
 const CLIENT_SRC = read('src/app/t/[tenantSlug]/(app)/controls/ControlsClient.tsx');
 const NEW_PAGE_SRC = read('src/app/t/[tenantSlug]/(app)/controls/new/page.tsx');
+// User-facing strings migrated to next-intl; resolve keys against en.json.
+const EN_CONTROLS = JSON.parse(read('messages/en.json')).controls as {
+    new: Record<string, string>;
+};
 
 // ─── 1. Modal composition ────────────────────────────────────────
 
@@ -51,8 +55,10 @@ describe('NewControlModal — shared Modal composition', () => {
     });
 
     it('passes title + description for a11y naming', () => {
-        expect(MODAL_SRC).toMatch(/title=["']New control["']/);
-        expect(MODAL_SRC).toMatch(/description=["']Create a custom control for your register\.["']/);
+        expect(MODAL_SRC).toMatch(/title=\{t\('new\.ariaTitle'\)\}/);
+        expect(MODAL_SRC).toMatch(/description=\{t\('new\.desc'\)\}/);
+        expect(EN_CONTROLS.new.ariaTitle).toBe('New control');
+        expect(EN_CONTROLS.new.desc).toBe('Create a custom control for your register.');
     });
 
     it('guards close-during-save via preventDefaultClose tied to RHF isSubmitting', () => {
@@ -135,8 +141,9 @@ describe('NewControlModal — business behaviour preserved', () => {
     it('surfaces API error messages in an alert region', () => {
         expect(MODAL_SRC).toMatch(/role=["']alert["']/);
         expect(MODAL_SRC).toMatch(/id=["']new-control-error["']/);
-        // Falls back to the shared "Failed to create control" message.
-        expect(MODAL_SRC).toMatch(/Failed to create control/);
+        // Falls back to the shared "Failed to create control" message (i18n key).
+        expect(MODAL_SRC).toMatch(/t\('new\.createFailed'\)/);
+        expect(EN_CONTROLS.new.createFailed).toBe('Failed to create control');
     });
 
     it('enforces required-name + NA-needs-justification via Zod', () => {

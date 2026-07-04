@@ -34,8 +34,13 @@ describe('UI-13 — browse expand toggle is a chevron, not a text button', () =>
         expect(SRC).not.toMatch(/>\s*\{allExpanded \? 'Collapse all' : 'Expand all'\}\s*</);
     });
     it('keeps the canonical Tooltip hint + preserved test-id + aria-label', () => {
-        expect(SRC).toMatch(/<Tooltip\s+content=\{allExpanded \? 'Collapse all' : 'Expand all'\}/);
+        // The hint copy migrated to next-intl; the toggle still branches on
+        // allExpanded and the keys resolve to the canonical Collapse/Expand copy.
+        expect(SRC).toMatch(/<Tooltip\s+content=\{allExpanded \? t\('list\.collapseAll'\) : t\('list\.expandAll'\)\}/);
         expect(SRC).toMatch(/data-testid="controls-browse-expand-all"/);
-        expect(SRC).toMatch(/aria-label=\{allExpanded \? 'Collapse all' : 'Expand all'\}/);
+        expect(SRC).toMatch(/aria-label=\{allExpanded \? t\('list\.collapseAll'\) : t\('list\.expandAll'\)\}/);
+        const en = require('../../messages/en.json') as { controls: { list: Record<string, string> } };
+        expect(en.controls.list.collapseAll).toBe('Collapse all');
+        expect(en.controls.list.expandAll).toBe('Expand all');
     });
 });

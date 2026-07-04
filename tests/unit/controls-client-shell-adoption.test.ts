@@ -25,6 +25,10 @@ const CONTROLS_CLIENT = path.resolve(
 );
 
 const source = readFileSync(CONTROLS_CLIENT, 'utf8');
+// searchPlaceholder migrated to next-intl; resolve the key against en.json.
+const EN_CONTROLS = JSON.parse(
+    readFileSync(path.resolve(__dirname, '../../messages/en.json'), 'utf8'),
+).controls as Record<string, string>;
 
 describe('ControlsClient — EntityListPage adoption', () => {
     it('imports EntityListPage from the canonical path', () => {
@@ -63,7 +67,8 @@ describe('ControlsClient — EntityListPage adoption', () => {
         expect(source).toMatch(/filters\s*=\s*\{\{/);
         expect(source).toContain('defs: liveFilterDefs');
         expect(source).toContain("searchId: 'controls-search'");
-        expect(source).toMatch(/searchPlaceholder:\s*['"]Search controls/);
+        expect(source).toMatch(/searchPlaceholder:\s*t\('searchPlaceholder'\)/);
+        expect(EN_CONTROLS.searchPlaceholder).toMatch(/^Search controls/);
     });
 
     it('threads the table config through the shell', () => {

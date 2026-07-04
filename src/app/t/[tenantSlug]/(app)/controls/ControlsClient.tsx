@@ -6,6 +6,7 @@
 
 /* eslint-disable react-hooks/exhaustive-deps -- Various useMemo dep arrays in this file deliberately omit identity-unstable callbacks (handlers/derived arrays recreated each render). The proper structural fix is wrapping parent-level callbacks in useCallback. Tracked as follow-up; existing per-line eslint-disable-next-line markers preserved. */
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import type { Row, RowSelectionState } from '@tanstack/react-table';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -209,6 +210,7 @@ function ControlsPageInner({
     );
     const router = useRouter();
     const prefetchData = usePrefetchTenant();
+    const t = useTranslations('controls');
 
     const filterCtx = useFilters();
     const { state, search, clearAll, hasActive } = filterCtx;
@@ -345,10 +347,10 @@ function ControlsPageInner({
     // toolbar still gets the full `liveFilterDefs`.
     const kpiCards: CardDefinition[] = useMemo(
         () => [
-            { id: 'total', label: 'Total controls', kind: 'kpi' },
-            { id: 'implemented', label: 'Implemented', kind: 'kpi' },
-            { id: 'inProgress', label: 'In progress', kind: 'kpi' },
-            { id: 'notStarted', label: 'Not started', kind: 'kpi' },
+            { id: 'total', label: t('kpi.total'), kind: 'kpi' },
+            { id: 'implemented', label: t('kpi.implemented'), kind: 'kpi' },
+            { id: 'inProgress', label: t('kpi.inProgress'), kind: 'kpi' },
+            { id: 'notStarted', label: t('kpi.notStarted'), kind: 'kpi' },
         ],
         [],
     );
@@ -435,20 +437,20 @@ function ControlsPageInner({
     // (ListPageShell.Body + DataTable fillBody) shows all rows.
     const controlColumnList = useMemo(
         () => [
-            { id: 'code', label: 'Code', defaultVisible: false },
-            { id: 'name', label: 'Title' },
+            { id: 'code', label: t('colVis.code'), defaultVisible: false },
+            { id: 'name', label: t('colVis.title') },
             // Framework + Category, split into two columns (2026-06-07).
             // Both derived per-control via `categorizeControl` (ISO 27001
             // granular Annex domain, or the framework-native category) —
             // mirrors the Browse rail's grouping.
-            { id: 'framework', label: 'Framework' },
-            { id: 'category', label: 'Category' },
-            { id: 'status', label: 'Status' },
-            { id: 'applicability', label: 'Applicability' },
-            { id: 'owner', label: 'Owner' },
-            { id: 'frequency', label: 'Frequency', defaultVisible: false },
-            { id: 'tasks', label: 'Tasks' },
-            { id: 'evidence', label: 'Evidence' },
+            { id: 'framework', label: t('colVis.framework') },
+            { id: 'category', label: t('colVis.category') },
+            { id: 'status', label: t('colVis.status') },
+            { id: 'applicability', label: t('colVis.applicability') },
+            { id: 'owner', label: t('colVis.owner') },
+            { id: 'frequency', label: t('colVis.frequency'), defaultVisible: false },
+            { id: 'tasks', label: t('colVis.tasks') },
+            { id: 'evidence', label: t('colVis.evidence') },
         ],
         [],
     );
@@ -531,7 +533,7 @@ function ControlsPageInner({
         () => [
             {
                 value: 'status',
-                label: 'Set status',
+                label: t('bulk.setStatus'),
                 canApply: (v) => v !== '',
                 renderInput: ({ value, setValue }) => (
                     <Combobox
@@ -540,7 +542,7 @@ function ControlsPageInner({
                         selected={CONTROL_STATUS_OPTIONS.find((o) => o.value === value) ?? null}
                         setSelected={(opt) => setValue(opt?.value ?? '')}
                         options={CONTROL_STATUS_OPTIONS}
-                        placeholder="Select status..."
+                        placeholder={t('bulk.selectStatus')}
                         matchTriggerWidth
                         buttonProps={{ className: 'text-sm' }}
                     />
@@ -548,7 +550,7 @@ function ControlsPageInner({
             },
             {
                 value: 'assign',
-                label: 'Assign owner',
+                label: t('bulk.assignOwner'),
                 renderInput: ({ value, setValue, setLabel }) => (
                     <UserCombobox
                         tenantSlug={tenantSlug}
@@ -559,13 +561,13 @@ function ControlsPageInner({
                         }}
                         forceDropdown
                         matchTriggerWidth
-                        placeholder="Owner (blank = unassign)"
+                        placeholder={t('bulk.ownerBlank')}
                         className="w-full sm:w-44"
                         id="bulk-value-input"
                     />
                 ),
             },
-            { value: 'delete', label: 'Delete', confirm: true },
+            { value: 'delete', label: t('bulk.delete'), confirm: true },
         ],
         [tenantSlug],
     );
@@ -612,7 +614,7 @@ function ControlsPageInner({
     useKeyboardShortcut(['Escape'], closeQuickView, {
         enabled: !!(selectedControl || selectedTask),
         scope: 'global',
-        description: 'Close the control quick view',
+        description: t('list.closeQuickView'),
     });
     // Evidence cell renderer shared with the inline task sub-rows so their
     // Evidence column matches the control row's exactly (same Paperclip glyph,
@@ -679,14 +681,14 @@ function ControlsPageInner({
         {
             accessorFn: (c) => c.code || c.annexId || '',
             id: 'code',
-            header: 'Code',
+            header: t('colHeaders.code'),
             cell: ({ getValue }) => (
                 <span className="text-xs text-content-muted font-mono">{getValue<string>() || '—'}</span>
             ),
         },
         {
             accessorKey: 'name',
-            header: 'Title',
+            header: t('colHeaders.title'),
             // PR-2/PR-4 — single-click the NAME opens the control quick-view
             // side panel (mirrors the Assets title-button pattern) AND expands
             // the control's inline task rows in the table, so the related
@@ -716,7 +718,7 @@ function ControlsPageInner({
             // The framework a control belongs to, derived via
             // `categorizeControl`, as a small uppercase tag.
             id: 'framework',
-            header: 'Framework',
+            header: t('colHeaders.framework'),
             accessorFn: (c) => categorizeControl(c)?.frameworkLabel || '',
             cell: ({ row }) => {
                 const label = categorizeControl(row.original)?.frameworkLabel;
@@ -736,7 +738,7 @@ function ControlsPageInner({
             // ISO 27001 → granular Annex domain; other frameworks → their
             // persisted TSC / section category. No category → `—`.
             id: 'category',
-            header: 'Category',
+            header: t('colHeaders.category'),
             accessorFn: sortAccessors.category,
             cell: ({ row }) => {
                 const cat = categorizeControl(row.original);
@@ -748,7 +750,7 @@ function ControlsPageInner({
         },
         {
             accessorKey: 'status',
-            header: 'Status',
+            header: t('colHeaders.status'),
             cell: ({ row }) => {
                 const c = row.original;
                 // 2026-05-19 — inline-edit dropdown retired. The
@@ -771,7 +773,7 @@ function ControlsPageInner({
         },
         {
             accessorKey: 'applicability',
-            header: 'Applicability',
+            header: t('colHeaders.applicability'),
             cell: ({ row }) => {
                 const c = row.original;
                 // 2026-05-19 — inline-edit dropdown retired alongside
@@ -785,14 +787,14 @@ function ControlsPageInner({
                         variant={c.applicability === 'NOT_APPLICABLE' ? 'warning' : 'success'}
                         size="sm"
                     >
-                        {c.applicability === 'NOT_APPLICABLE' ? 'N/A' : 'Yes'}
+                        {c.applicability === 'NOT_APPLICABLE' ? t('list.na') : t('list.yes')}
                     </StatusBadge>
                 );
             },
         },
         {
             id: 'owner',
-            header: 'Owner',
+            header: t('colHeaders.owner'),
             accessorFn: (c) => ownerDisplayName(c.owner?.name, c.owner?.email) || '—',
             cell: ({ row }) => {
                 const c = row.original;
@@ -825,7 +827,7 @@ function ControlsPageInner({
         },
         {
             id: 'frequency',
-            header: 'Frequency',
+            header: t('colHeaders.frequency'),
             accessorFn: (c) => c.frequency ? FREQ_LABELS[c.frequency] || c.frequency : '—',
             cell: ({ getValue }) => (
                 <span className="text-xs text-content-muted">{getValue<string>()}</span>
@@ -833,7 +835,7 @@ function ControlsPageInner({
         },
         {
             id: 'tasks',
-            header: 'Tasks',
+            header: t('colHeaders.tasks'),
             accessorFn: (c) => {
                 const ts = taskStats(c);
                 return `${ts.done}/${ts.total}`;
@@ -849,7 +851,7 @@ function ControlsPageInner({
         },
         {
             id: 'evidence',
-            header: 'Evidence',
+            header: t('colHeaders.evidence'),
             accessorFn: (c) => c._count?.evidenceLinks ?? 0,
             cell: ({ getValue, row }) => {
                 const n = getValue<number>();
@@ -948,7 +950,7 @@ function ControlsPageInner({
     // plain wrap is safe). Only meaningful when there are sections to toggle.
     const browseExpandAll =
         categoryGroups.length > 0 ? (
-            <Tooltip content={allExpanded ? 'Collapse all' : 'Expand all'}>
+            <Tooltip content={allExpanded ? t('list.collapseAll') : t('list.expandAll')}>
                 <button
                     type="button"
                     onClick={() =>
@@ -956,7 +958,7 @@ function ControlsPageInner({
                     }
                     className="flex items-center justify-center rounded-md p-1 text-content-muted hover:bg-bg-muted/50 hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:h-4 [&_svg]:w-4"
                     data-testid="controls-browse-expand-all"
-                    aria-label={allExpanded ? 'Collapse all' : 'Expand all'}
+                    aria-label={allExpanded ? t('list.collapseAll') : t('list.expandAll')}
                     aria-expanded={allExpanded}
                 >
                     {allExpanded ? <ChevronDown /> : <ChevronLeft />}
@@ -966,7 +968,7 @@ function ControlsPageInner({
 
     const browseAside = (
         <AsidePanel
-            title="Browse"
+            title={t('list.browse')}
             surfaceKey="controls-list-browse"
             defaultWidth={480}
             // The Browse rail starts collapsed-to-spine — the table is the
@@ -979,7 +981,7 @@ function ControlsPageInner({
             <div data-testid="controls-browse-aside" className="space-y-default">
                 {categoryGroups.length === 0 ? (
                     <p className="px-2 py-1 text-xs text-content-subtle">
-                        No categorised controls yet.
+                        {t('list.categorisedEmpty')}
                     </p>
                 ) : (
                     <>
@@ -1076,7 +1078,7 @@ function ControlsPageInner({
     // shared co-pilot across registers, not a stub.
     const aiAssistAside = appPermissions.controls.edit ? (
         <AsidePanel
-            title="AI Assist"
+            title={t('list.aiAssist')}
             surfaceKey="controls-list-ai"
             defaultCollapsed
             icon={<Sparkle3 className="h-4 w-4" />}
@@ -1103,7 +1105,7 @@ function ControlsPageInner({
     const quickViewAside = selectedTask ? (
         <AsidePanel
             key={`qv-task-${selectedTask.id}`}
-            title="Task"
+            title={t('list.task')}
             surfaceKey="controls-quickview"
             // A wide dedicated PANEL for the tabbed editor — not the narrow
             // browse/assist rail width.
@@ -1122,7 +1124,7 @@ function ControlsPageInner({
     ) : selectedControl ? (
         <AsidePanel
             key={`qv-control-${selectedControl.id}`}
-            title="Control"
+            title={t('list.control')}
             surfaceKey="controls-quickview"
             // A wide dedicated PANEL for the tabbed editor — not the narrow
             // browse/assist rail width.
@@ -1169,14 +1171,14 @@ function ControlsPageInner({
                     // 180s test timeout in every Playwright spec on this
                     // page (create-control-modal, controls-filter-epic53,
                     // control-edit-modal, controls-enhanced).
-                    { label: 'Dashboard', href: tenantHref('/dashboard') },
-                    { label: 'Controls' },
+                    { label: t('list.breadcrumbDashboard'), href: tenantHref('/dashboard') },
+                    { label: t('list.breadcrumbControls') },
                 ],
                 title: (
                     <>
                         <AppIcon name="controls" className="inline-block mr-2 align-text-bottom" />
                         {' '}
-                        Controls
+                        {t('list.pageTitle')}
                     </>
                 ),
                 // Roadmap-2 PR-4 + PR-11 — editorial framing
@@ -1184,8 +1186,7 @@ function ControlsPageInner({
                 // the count in the table body (DataTable shows
                 // row count); the header line carries the
                 // editorial intent.
-                description:
-                    'Every control mapped to its requirements and evidence.',
+                description: t('listDescription'),
                 // Item 4/5 — the create button moved to the toolbar's
                 // leading slot and the nav icons moved into the toolbar's
                 // actions slot, so the page header action cluster is empty.
@@ -1256,7 +1257,7 @@ function ControlsPageInner({
             filters={{
                 defs: liveFilterDefs,
                 searchId: 'controls-search',
-                searchPlaceholder: 'Search controls…',
+                searchPlaceholder: t('searchPlaceholder'),
                 // Item 4 — primary create button lives in the toolbar's
                 // leading slot (left of the Filter trigger).
                 toolbarLeading: appPermissions.controls.create ? (
@@ -1266,7 +1267,7 @@ function ControlsPageInner({
                         id="new-control-btn"
                         onClick={() => setIsCreateOpen(true)}
                     >
-                        Control
+                        {t('addControl')}
                     </Button>
                 ) : undefined,
                 // Item 5 — nav icon links sit in the toolbar actions slot,
@@ -1277,20 +1278,20 @@ function ControlsPageInner({
                             outside the create-permission gate so READERs
                             can still glance at the asset → risk → control
                             flow. */}
-                        <Tooltip content="Sankey flow">
-                            <Link href={tenantHref('/controls/sankey')} aria-label="Sankey flow" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="controls-sankey-btn">
+                        <Tooltip content={t('list.sankeyFlow')}>
+                            <Link href={tenantHref('/controls/sankey')} aria-label={t('list.sankeyFlow')} className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="controls-sankey-btn">
                                 <AppIcon name="share" size={16} />
                             </Link>
                         </Tooltip>
                         {appPermissions.controls.create && (
                             <>
-                                <Tooltip content="Controls dashboard">
-                                    <Link href={tenantHref('/controls/dashboard')} aria-label="Controls dashboard" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="controls-dashboard-btn">
+                                <Tooltip content={t('list.controlsDashboard')}>
+                                    <Link href={tenantHref('/controls/dashboard')} aria-label={t('list.controlsDashboard')} className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="controls-dashboard-btn">
                                         <AppIcon name="dashboard" size={16} />
                                     </Link>
                                 </Tooltip>
-                                <Tooltip content="Install from templates">
-                                    <Link href={tenantHref('/controls/templates')} aria-label="Install from templates" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="install-templates-btn">
+                                <Tooltip content={t('list.installTemplates')}>
+                                    <Link href={tenantHref('/controls/templates')} aria-label={t('list.installTemplates')} className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="install-templates-btn">
                                         <AppIcon name="templates" size={16} />
                                     </Link>
                                 </Tooltip>
@@ -1339,10 +1340,10 @@ function ControlsPageInner({
                     <EmptyState
                         size="sm"
                         variant="no-results"
-                        title="No controls match your filters"
-                        description="Try widening your search or clearing one of the active filters."
+                        title={t('empty.filterTitle')}
+                        description={t('empty.filterDesc')}
                         secondaryAction={{
-                            label: 'Clear filters',
+                            label: t('empty.clearFilters'),
                             onClick: () => clearAll(),
                         }}
                     />
@@ -1350,14 +1351,14 @@ function ControlsPageInner({
                     <EmptyState
                         size="sm"
                         variant="no-records"
-                        title="No controls yet"
-                        description="Start with a pre-built framework or define your own control."
+                        title={t('empty.noRecordsTitle')}
+                        description={t('empty.recordsDesc')}
                         primaryAction={{
-                            label: 'Install templates',
+                            label: t('empty.installTemplates'),
                             href: tenantHref('/controls/templates'),
                         }}
                         secondaryAction={{
-                            label: 'Create control',
+                            label: t('empty.createControl'),
                             onClick: () => setIsCreateOpen(true),
                         }}
                     />
@@ -1378,7 +1379,7 @@ function ControlsPageInner({
                               onApply={handleBulkApply}
                               applying={bulkApplying}
                               selectedCount={selectedIds.length}
-                              entityLabel="controls"
+                              entityLabel={t('bulk.entityLabel')}
                           />
                       )
                     : undefined,
