@@ -166,6 +166,11 @@ export function AuditsClient({ initialAudits, tenantSlug, hasNis2, translations:
     return (
         <>
             <PageHeader
+                // Internal Audit leads with its action cluster on the LEFT
+                // (primary "New Audit" first, the navigational pills after it) —
+                // override the shared header's default right-alignment for this
+                // page only (twMerge: justify-start wins over justify-between).
+                className="justify-start"
                 breadcrumbs={[
                     { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
                     { label: t.title },
@@ -174,6 +179,7 @@ export function AuditsClient({ initialAudits, tenantSlug, hasNis2, translations:
                 description={t.listDescription || undefined}
                 actions={
                     <div className="flex flex-wrap gap-tight">
+                        <Button variant="primary" icon={<Plus className="-ml-0.5 -mr-2.5" />} onClick={() => setIsCreateOpen(true)} id="new-audit-btn">{t.newAudit}</Button>
                         <Link
                             href={`/t/${tenantSlug}/frameworks`}
                             className={cn(buttonVariants({ variant: 'secondary' }))}
@@ -235,7 +241,6 @@ export function AuditsClient({ initialAudits, tenantSlug, hasNis2, translations:
                         >
                             Business Continuity
                         </Link>
-                        <Button variant="primary" icon={<Plus className="-ml-0.5 -mr-2.5" />} onClick={() => setIsCreateOpen(true)} id="new-audit-btn">{t.newAudit}</Button>
                     </div>
                 }
             />
