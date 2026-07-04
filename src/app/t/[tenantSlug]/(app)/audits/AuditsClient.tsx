@@ -166,6 +166,10 @@ export function AuditsClient({ initialAudits, tenantSlug, hasNis2, translations:
     return (
         <>
             <PageHeader
+                // The Internal Audit action row (6 pills + New Audit) is wide
+                // enough to wrap onto its own header line; ml-auto keeps it
+                // right-aligned there instead of landing left under justify-between.
+                actionsClassName="ml-auto"
                 breadcrumbs={[
                     { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
                     { label: t.title },
