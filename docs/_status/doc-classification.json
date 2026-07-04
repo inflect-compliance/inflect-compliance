@@ -1414,6 +1414,9 @@
     },
     "docs/implementation-notes/2026-07-03-ai-injection-egress-guard.md": {
       "class": "historical"
+    },
+    "docs/implementation-notes/2026-07-04-i18n-adoption-ratchet.md": {
+      "class": "historical"
     }
   }
 }
