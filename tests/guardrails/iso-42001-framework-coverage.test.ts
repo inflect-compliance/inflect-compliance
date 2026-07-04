@@ -83,7 +83,7 @@ describe('ISO 42001 library — iso-42001.yaml', () => {
     it('the copyright points at ISO and disclaims verbatim reproduction', () => {
         const yaml = read(`${LIB}/iso-42001.yaml`);
         const copyrightBlock = yaml.slice(yaml.indexOf('copyright:'));
-        expect(copyrightBlock).toMatch(/iso\.org/i);
+        expect(copyrightBlock.toLowerCase()).toContain('iso.org');
         expect(copyrightBlock).toMatch(/NOT a reproduction|structural outline/i);
     });
 });

@@ -96,6 +96,15 @@ describe('AISVS C7.3.3 — strip content that could trigger outbound requests', 
         expect(stripOutboundContent('[click here](http://evil)')).toBe('click here');
     });
 
+    it('fully strips nested/overlapping tags that a single pass would re-expose', () => {
+        // Removing the inner `<script>` from `<scr<script>ipt>` leaves `<script>`;
+        // the guard loops tag removal until stable so no tag survives.
+        expect(stripOutboundContent('<scr<script>ipt>alert(1)</scr</script>ipt>')).not.toMatch(
+            /<[^>]+>/,
+        );
+        expect(stripOutboundContent('<<img>img src=x>')).not.toMatch(/<[^>]+>/);
+    });
+
     it('strips data: URIs', () => {
         expect(stripOutboundContent('data:text/html,<script>alert(1)</script>')).not.toMatch(
             /data:/,

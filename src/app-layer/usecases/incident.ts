@@ -24,7 +24,7 @@ import { logEvent } from '../events/audit';
 import { notFound, badRequest } from '@/lib/errors/types';
 import { runInTenantContext, PrismaTx } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
-import { computeDeadlines, nextPhase, suggestsReportable } from '@/lib/incidents/deadlines';
+import { computeDeadlines, nextPhase } from '@/lib/incidents/deadlines';
 import type { IncidentPhase, IncidentSeverity } from '@prisma/client';
 import type {
     CreateIncidentInput,

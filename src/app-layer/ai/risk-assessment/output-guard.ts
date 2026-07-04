@@ -59,10 +59,20 @@ const REDACTED = '[redacted]';
  * removed entirely.
  */
 export function stripOutboundContent(value: string): string {
-    return value
+    let out = value
         .replace(/!\[[^\]]*\]\([^)]*\)/g, '') // markdown image — drop entirely
-        .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // markdown link — keep text, drop href
-        .replace(/<[^>]+>/g, '') // any HTML tag
+        .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1'); // markdown link — keep text, drop href
+
+    // Strip HTML tags REPEATEDLY: removing one tag can expose a new one from
+    // the surrounding text (e.g. `<scr<script>ipt>` → `<script>`), so a single
+    // pass is incomplete. Loop until the string stops changing.
+    let prev: string;
+    do {
+        prev = out;
+        out = out.replace(/<[^>]+>/g, '');
+    } while (out !== prev);
+
+    return out
         .replace(/\bhttps?:\/\/\S+/gi, '[link removed]') // bare http(s) URL
         .replace(/\bwww\.[^\s]+/gi, '[link removed]') // bare www URL
         .replace(/\bdata:[^\s]+/gi, '[data removed]') // data: URIs

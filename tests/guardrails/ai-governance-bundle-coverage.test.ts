@@ -61,7 +61,7 @@ describe('AI-governance bundle — per-source license handling', () => {
 
     it('ISO 42001 is paraphrase-only (no verbatim ISO text), pointing at ISO', () => {
         const y = read(`${LIB}/iso-42001.yaml`);
-        expect(y.slice(y.indexOf('copyright:'))).toMatch(/iso\.org/i);
+        expect(y.slice(y.indexOf('copyright:')).toLowerCase()).toContain('iso.org');
         // Every assessable node carries a (Paraphrase) marker + a short title.
         for (const n of iso.framework.nodes.filter((x) => x.assessable)) {
             expect(n.description ?? '').toMatch(/\(Paraphrase/i);
