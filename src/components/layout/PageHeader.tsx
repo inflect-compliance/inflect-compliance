@@ -131,6 +131,13 @@ export interface PageHeaderProps {
     meta?: React.ReactNode;
     /** Right-aligned actions (button cluster, overflow menu). */
     actions?: React.ReactNode;
+    /**
+     * Layout overrides forwarded to the `<PageActions>` wrapper around the
+     * actions cluster. Use for a page whose action row is wide enough to wrap
+     * onto its own header line (a single wrapped flex item lands left under the
+     * header's `justify-between`) — pass `ml-auto` to keep it right-aligned.
+     */
+    actionsClassName?: string;
     /** Layout overrides on the outer `<header>` element. */
     className?: string;
     /** Forwarded to the outer `<header>` element. */
@@ -146,6 +153,7 @@ export function PageHeader({
     description,
     meta,
     actions,
+    actionsClassName,
     className,
     "data-testid": dataTestId,
 }: PageHeaderProps) {
@@ -239,7 +247,7 @@ export function PageHeader({
                 // wrap-reverse cluster geometry. Pages don't need
                 // to wrap their own actions — passing fragment
                 // children to the slot is enough.
-                <PageActions data-testid="page-header-actions">
+                <PageActions className={actionsClassName} data-testid="page-header-actions">
                     {actions}
                 </PageActions>
             )}
