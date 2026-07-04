@@ -28,6 +28,10 @@ const usecase = read('src/app-layer/usecases/risk-appetite.ts');
 const route = read('src/app/api/t/[tenantSlug]/risk-appetite/breaches/[id]/remediation-task/route.ts');
 const chart = read('src/components/ui/charts/loss-exceedance-curve.tsx');
 const mcPanel = read('src/app/t/[tenantSlug]/(app)/risks/dashboard/MonteCarloPanel.tsx');
+// The panel's appetite label moved to next-intl; resolve it against en.
+const enMessages = JSON.parse(read('messages/en.json')) as {
+    risks: { monteCarlo: Record<string, string> };
+};
 const adminPage = read('src/app/t/[tenantSlug]/(app)/admin/risk-appetite/page.tsx');
 const schema = read('prisma/schema/compliance.prisma');
 const migration = read('prisma/migrations/20260611120000_rq2_6_breach_remediation_task/migration.sql');
@@ -42,7 +46,8 @@ describe('RQ2-6 — appetite thresholds on the LEC', () => {
     test('on the simulated portfolio curve the ceiling is the line — the per-risk cap is a note, never a line', () => {
         // The Σ-constraint IS the x-threshold on the portfolio axis.
         expect(mcPanel).toMatch(/totalAleThreshold/);
-        expect(mcPanel).toMatch(/Portfolio appetite/);
+        expect(mcPanel).toMatch(/t\('monteCarlo\.portfolioAppetite'\)/);
+        expect(enMessages.risks.monteCarlo.portfolioAppetite).toBe('Portfolio appetite');
         expect(mcPanel).toMatch(/lec-portfolio-appetite-note/);
         // The per-risk cap stays off the portfolio curve: it must be
         // consumed only by the per-risk note, never pushed into

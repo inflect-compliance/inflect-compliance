@@ -10,6 +10,7 @@ import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useMoneyFormatter } from '@/lib/tenant-context-provider';
+import { useTranslations } from 'next-intl';
 
 interface Scenario { id: string; name: string; status: string; investmentCost: number | null; computedRoi: number | null; createdAt: string }
 interface Comparison {
@@ -21,6 +22,7 @@ interface Comparison {
 // RQ3-OB-A — money speaks the tenant's currency (useMoneyFormatter).
 
 export default function RiskScenariosPage() {
+    const t = useTranslations('risks');
     const apiUrl = useTenantApiUrl();
     const money = useMoneyFormatter();
     const signed = (n: number) => `${n < 0 ? '−' : '+'}${money(Math.abs(n))}`;
@@ -61,34 +63,34 @@ export default function RiskScenariosPage() {
     return (
         <div className="space-y-section">
             <BackAffordance />
-            <PageBreadcrumbs items={[{ label: 'Risks', href: tenantHref('/risks') }, { label: 'Scenarios' }]} />
-            <Heading level={1}>Risk Scenarios</Heading>
+            <PageBreadcrumbs items={[{ label: t('breadcrumbRoot'), href: tenantHref('/risks') }, { label: t('scenarios.breadcrumb') }]} />
+            <Heading level={1}>{t('scenarios.title')}</Heading>
 
             <Card className="space-y-default p-6">
-                <Heading level={2}>New scenario</Heading>
-                <p className="text-sm text-content-muted">Create a what-if scenario, then simulate to compare its portfolio VaR against the live baseline. Overrides (field patches / synthetic risks) are authored via the scenarios API.</p>
+                <Heading level={2}>{t('scenarios.newScenario')}</Heading>
+                <p className="text-sm text-content-muted">{t('scenarios.intro')}</p>
                 <div className="flex flex-wrap items-end gap-default">
-                    <label className="block flex-1"><span className="text-xs text-content-muted">Name</span><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="WAF implementation" /></label>
-                    <label className="block"><span className="text-xs text-content-muted">Investment ($)</span><Input type="text" inputMode="decimal" value={investment} onChange={(e) => setInvestment(e.target.value)} placeholder="130000" /></label>
-                    <Button variant="primary" onClick={create} disabled={busy || !name.trim()}>Create</Button>
+                    <label className="block flex-1"><span className="text-xs text-content-muted">{t('scenarios.name')}</span><Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('scenarios.namePlaceholder')} /></label>
+                    <label className="block"><span className="text-xs text-content-muted">{t('scenarios.investment')}</span><Input type="text" inputMode="decimal" value={investment} onChange={(e) => setInvestment(e.target.value)} placeholder={t('scenarios.investmentPlaceholder')} /></label>
+                    <Button variant="primary" onClick={create} disabled={busy || !name.trim()}>{t('scenarios.create')}</Button>
                 </div>
             </Card>
 
             <Card className="space-y-default p-6">
-                <Heading level={2}>Scenarios</Heading>
+                <Heading level={2}>{t('scenarios.breadcrumb')}</Heading>
                 {scenarios.length === 0 ? (
-                    <p className="text-sm text-content-muted">No scenarios yet.</p>
+                    <p className="text-sm text-content-muted">{t('scenarios.empty')}</p>
                 ) : (
                     <ul className="divide-y divide-border-subtle">
                         {scenarios.map((s) => (
                             <li key={s.id} className="flex flex-wrap items-center gap-default py-default text-sm">
                                 <StatusBadge variant={s.status === 'SIMULATED' ? 'success' : s.status === 'ARCHIVED' ? 'neutral' : 'info'}>{s.status}</StatusBadge>
                                 <span className="font-medium text-content-emphasis">{s.name}</span>
-                                {s.investmentCost != null && <span className="text-content-muted">invest {money(s.investmentCost)}</span>}
-                                {s.computedRoi != null && <span className="text-content-muted">ROI {s.computedRoi.toFixed(1)}×</span>}
+                                {s.investmentCost != null && <span className="text-content-muted">{t('scenarios.invest', { money: money(s.investmentCost) })}</span>}
+                                {s.computedRoi != null && <span className="text-content-muted">{t('scenarios.roi', { roi: s.computedRoi.toFixed(1) })}</span>}
                                 <span className="ml-auto flex gap-tight">
-                                    {s.status !== 'ARCHIVED' && <Button size="sm" variant="secondary" onClick={() => simulate(s.id)} disabled={busy}>Simulate</Button>}
-                                    {s.status !== 'ARCHIVED' && <Button size="sm" variant="ghost" onClick={() => archive(s.id)}>Archive</Button>}
+                                    {s.status !== 'ARCHIVED' && <Button size="sm" variant="secondary" onClick={() => simulate(s.id)} disabled={busy}>{t('scenarios.simulate')}</Button>}
+                                    {s.status !== 'ARCHIVED' && <Button size="sm" variant="ghost" onClick={() => archive(s.id)}>{t('scenarios.archive')}</Button>}
                                 </span>
                             </li>
                         ))}
@@ -98,19 +100,19 @@ export default function RiskScenariosPage() {
 
             {cmp && (
                 <Card className="space-y-default p-6" data-testid="scenario-comparison">
-                    <Heading level={2}>Baseline vs scenario</Heading>
+                    <Heading level={2}>{t('scenarios.baselineVsScenario')}</Heading>
                     <table className="w-full text-sm">
-                        <thead><tr className="text-content-muted"><th className="text-left">Metric</th><th className="text-right">Baseline</th><th className="text-right">Scenario</th><th className="text-right">Δ</th></tr></thead>
+                        <thead><tr className="text-content-muted"><th className="text-left">{t('scenarios.colMetric')}</th><th className="text-right">{t('scenarios.colBaseline')}</th><th className="text-right">{t('scenarios.colScenario')}</th><th className="text-right">{t('scenarios.colDelta')}</th></tr></thead>
                         <tbody className="tabular-nums">
-                            <tr><td>Mean ALE</td><td className="text-right">{money(cmp.baseline.portfolioAle.mean)}</td><td className="text-right">{money(cmp.scenario.portfolioAle.mean)}</td><td className="text-right">{signed(cmp.delta.meanAleDelta)}</td></tr>
-                            <tr><td>VaR-95</td><td className="text-right">{money(cmp.baseline.portfolioAle.p95)}</td><td className="text-right">{money(cmp.scenario.portfolioAle.p95)}</td><td className="text-right">{signed(cmp.delta.varP95Delta)}</td></tr>
-                            <tr><td>VaR-99</td><td className="text-right">{money(cmp.baseline.portfolioAle.p99)}</td><td className="text-right">{money(cmp.scenario.portfolioAle.p99)}</td><td className="text-right">{signed(cmp.delta.varP99Delta)}</td></tr>
-                            {cmp.delta.roi != null && <tr><td>ROI</td><td /><td /><td className="text-right">{cmp.delta.roi.toFixed(1)}×</td></tr>}
+                            <tr><td>{t('scenarios.meanAle')}</td><td className="text-right">{money(cmp.baseline.portfolioAle.mean)}</td><td className="text-right">{money(cmp.scenario.portfolioAle.mean)}</td><td className="text-right">{signed(cmp.delta.meanAleDelta)}</td></tr>
+                            <tr><td>{t('scenarios.var95')}</td><td className="text-right">{money(cmp.baseline.portfolioAle.p95)}</td><td className="text-right">{money(cmp.scenario.portfolioAle.p95)}</td><td className="text-right">{signed(cmp.delta.varP95Delta)}</td></tr>
+                            <tr><td>{t('scenarios.var99')}</td><td className="text-right">{money(cmp.baseline.portfolioAle.p99)}</td><td className="text-right">{money(cmp.scenario.portfolioAle.p99)}</td><td className="text-right">{signed(cmp.delta.varP99Delta)}</td></tr>
+                            {cmp.delta.roi != null && <tr><td>{t('scenarios.roiLabel')}</td><td /><td /><td className="text-right">{cmp.delta.roi.toFixed(1)}×</td></tr>}
                         </tbody>
                     </table>
                     {cmp.perRiskDeltas.length > 0 && (
                         <div>
-                            <Heading level={3} className="mb-2">Per-risk impact</Heading>
+                            <Heading level={3} className="mb-2">{t('scenarios.perRiskImpact')}</Heading>
                             <ul className="space-y-tight">
                                 {cmp.perRiskDeltas.map((d) => (
                                     <li key={d.riskId} className="flex justify-between gap-default text-sm">

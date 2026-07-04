@@ -28,6 +28,7 @@ import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useMoneyFormatter } from '@/lib/tenant-context-provider';
 import { formatDate } from '@/lib/format-date';
+import { useTranslations } from 'next-intl';
 
 type Source = 'USER' | 'FINDING' | 'INCIDENT';
 interface Row {
@@ -60,6 +61,7 @@ const SOURCE_VARIANT: Record<Source, 'info' | 'warning' | 'error'> = {
 };
 
 export default function LossEventsPage() {
+    const t = useTranslations('risks');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const money = useMoneyFormatter();
@@ -68,6 +70,9 @@ export default function LossEventsPage() {
     const [run, setRun] = useState<Run | null>(null);
     const [busy, setBusy] = useState(false);
     const [msg, setMsg] = useState<string | null>(null);
+    // Track success independently of the message text (i18n-safe — a
+    // translated string can't be compared against an English literal).
+    const [msgOk, setMsgOk] = useState(false);
 
     // Form state.
     const [occurredAt, setOccurredAt] = useState<DateValue>(() => {
@@ -108,11 +113,11 @@ export default function LossEventsPage() {
                 }),
             });
             if (res.ok) {
-                setMsg('Loss recorded.');
+                setMsg(t('lossEvents.lossRecorded')); setMsgOk(true);
                 setAmount(''); setDescription('');
                 await load();
             } else {
-                setMsg('Save failed.');
+                setMsg(t('lossEvents.saveFailed')); setMsgOk(false);
             }
         } finally {
             setBusy(false);
@@ -133,37 +138,33 @@ export default function LossEventsPage() {
             <BackAffordance />
             <PageBreadcrumbs
                 items={[
-                    { label: 'Risks', href: tenantHref('/risks') },
-                    { label: 'Loss events' },
+                    { label: t('breadcrumbRoot'), href: tenantHref('/risks') },
+                    { label: t('lossEvents.breadcrumb') },
                 ]}
             />
-            <Heading level={1}>Loss events</Heading>
+            <Heading level={1}>{t('lossEvents.title')}</Heading>
             <p className="text-sm text-content-muted">
-                The system predicts losses everywhere — FAIR ALE, the simulated portfolio
-                P50/P90, the loss-exceedance curve. This is where the world&apos;s answer comes
-                back, so the forecasts can be scored.
+                {t('lossEvents.intro')}
             </p>
 
             {/* Predicted-vs-actual overlay */}
             <Card className="space-y-default p-6" data-testid="loss-events-rollup">
-                <Heading level={2}>Predicted vs actual</Heading>
+                <Heading level={2}>{t('lossEvents.predictedVsActual')}</Heading>
                 {!agg || agg.count === 0 ? (
                     <p className="text-sm text-content-muted" data-testid="loss-events-empty">
-                        No actuals recorded yet — the forecasting stack is unfalsifiable
-                        until losses come back in. Record the next one below, or enable the
-                        finding / incident close-out integration to record them automatically.
+                        {t('lossEvents.emptyActuals')}
                     </p>
                 ) : (
                     <>
                         <div className="grid grid-cols-2 gap-default md:grid-cols-3">
                             <div className="rounded-md bg-bg-muted/30 px-default py-default" data-testid="loss-events-total">
-                                <KPIStat value={money(agg.total)} label="Total recorded losses" />
+                                <KPIStat value={money(agg.total)} label={t('lossEvents.totalLosses')} />
                             </div>
                             <div className="rounded-md bg-bg-muted/30 px-default py-default" data-testid="loss-events-count">
-                                <KPIStat value={agg.count} label="Loss events" />
+                                <KPIStat value={agg.count} label={t('lossEvents.lossEventsStat')} />
                             </div>
                             <div className="rounded-md bg-bg-muted/30 px-default py-default" data-testid="loss-events-years">
-                                <KPIStat value={agg.byYear.length} label="Calendar years" />
+                                <KPIStat value={agg.byYear.length} label={t('lossEvents.calendarYears')} />
                             </div>
                         </div>
                         {/* Per-year mini-bars: the actuals, with the
@@ -177,7 +178,7 @@ export default function LossEventsPage() {
                                         <ProgressBar
                                             value={y.total}
                                             max={yearMax || 1}
-                                            aria-label={`Actual losses in ${y.year}: ${money(y.total)}`}
+                                            aria-label={t('lossEvents.yearAria', { year: y.year, money: money(y.total) })}
                                         />
                                     </div>
                                     <span className="w-24 shrink-0 text-right tabular-nums text-content-muted">{money(y.total)}</span>
@@ -187,9 +188,9 @@ export default function LossEventsPage() {
                         </div>
                         {run && (run.portfolioMean != null || run.portfolioP90 != null) && (
                             <p className="mt-tight text-xs text-content-subtle" data-testid="loss-events-prediction-line">
-                                Simulator&apos;s annual prediction
-                                {run.portfolioMean != null && <> — mean {money(run.portfolioMean)}</>}
-                                {run.portfolioP90 != null && <> · P90 {money(run.portfolioP90)}</>}
+                                {t('lossEvents.predictionLine')}
+                                {run.portfolioMean != null && <>{t('lossEvents.predMean', { money: money(run.portfolioMean) })}</>}
+                                {run.portfolioP90 != null && <>{t('lossEvents.predP90', { money: money(run.portfolioP90) })}</>}
                             </p>
                         )}
                     </>
@@ -198,32 +199,32 @@ export default function LossEventsPage() {
 
             {/* Record loss form */}
             <Card className="space-y-default p-6" data-testid="loss-events-form">
-                <Heading level={2}>Record loss</Heading>
+                <Heading level={2}>{t('lossEvents.recordLoss')}</Heading>
                 <div className="flex flex-wrap items-end gap-default">
                     <div className="block">
-                        <span className="mb-0.5 block text-xs text-content-muted">Date</span>
+                        <span className="mb-0.5 block text-xs text-content-muted">{t('lossEvents.date')}</span>
                         <DatePicker
                             value={occurredAt}
                             onChange={setOccurredAt}
-                            placeholder="When did it occur"
+                            placeholder={t('lossEvents.datePlaceholder')}
                         />
                     </div>
                     <label className="block">
-                        <span className="text-xs text-content-muted">Amount</span>
+                        <span className="text-xs text-content-muted">{t('lossEvents.amount')}</span>
                         <Input
                             type="text"
                             inputMode="decimal"
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
-                            placeholder="50000"
+                            placeholder={t('lossEvents.amountPlaceholder')}
                         />
                     </label>
                     <label className="block flex-1 min-w-[12rem]">
-                        <span className="text-xs text-content-muted">What happened</span>
+                        <span className="text-xs text-content-muted">{t('lossEvents.whatHappened')}</span>
                         <Input
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Customer breach response — settlement + vendor X"
+                            placeholder={t('lossEvents.whatHappenedPlaceholder')}
                         />
                     </label>
                     <div className="flex gap-tight">
@@ -239,17 +240,17 @@ export default function LossEventsPage() {
                         ))}
                     </div>
                     <Button variant="primary" onClick={record} disabled={busy || !amount.trim()}>
-                        {busy ? 'Recording…' : 'Record'}
+                        {busy ? t('lossEvents.recording') : t('lossEvents.record')}
                     </Button>
                 </div>
-                {msg && <InlineNotice variant={msg === 'Loss recorded.' ? 'success' : 'error'}>{msg}</InlineNotice>}
+                {msg && <InlineNotice variant={msgOk ? 'success' : 'error'}>{msg}</InlineNotice>}
             </Card>
 
             {/* Register */}
             <Card className="space-y-default p-6" data-testid="loss-events-list">
-                <Heading level={2}>Register</Heading>
+                <Heading level={2}>{t('lossEvents.register')}</Heading>
                 {rows.length === 0 ? (
-                    <p className="text-sm text-content-muted">No loss events yet.</p>
+                    <p className="text-sm text-content-muted">{t('lossEvents.emptyRegister')}</p>
                 ) : (
                     <ul className="divide-y divide-border-subtle">
                         {rows.map((r) => (
@@ -266,7 +267,7 @@ export default function LossEventsPage() {
                                 )}
                                 <span className="ml-auto flex gap-tight">
                                     <Button size="sm" variant="ghost" onClick={() => remove(r.id)}>
-                                        Remove
+                                        {t('lossEvents.remove')}
                                     </Button>
                                 </span>
                             </li>

@@ -10,11 +10,13 @@ import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { formatDateTime } from '@/lib/format-date';
+import { useTranslations } from 'next-intl';
 
 interface Template { id: string; name: string; description: string | null; type: string }
 interface Run { id: string; format: string; status: string; createdAt: string; templateId: string }
 
 export default function RiskReportsPage() {
+    const t = useTranslations('risks');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const [templates, setTemplates] = useState<Template[]>([]);
@@ -34,36 +36,36 @@ export default function RiskReportsPage() {
         } finally { setBusy(false); }
     };
 
-    const nameOf = (id: string) => templates.find((t) => t.id === id)?.name ?? '—';
+    const nameOf = (id: string) => templates.find((tpl) => tpl.id === id)?.name ?? '—';
     const statusVariant = (s: string) => (s === 'COMPLETED' ? 'success' : s === 'FAILED' ? 'error' : 'info');
 
     return (
         <div className="space-y-section">
             <BackAffordance />
-            <PageBreadcrumbs items={[{ label: 'Risks', href: tenantHref('/risks') }, { label: 'Reports' }]} />
-            <Heading level={1}>Risk Reports</Heading>
+            <PageBreadcrumbs items={[{ label: t('breadcrumbRoot'), href: tenantHref('/risks') }, { label: t('reports.breadcrumb') }]} />
+            <Heading level={1}>{t('reports.title')}</Heading>
 
             <Card className="space-y-default p-6">
-                <Heading level={2}>Templates</Heading>
+                <Heading level={2}>{t('reports.templates')}</Heading>
                 <ul className="divide-y divide-border-subtle">
-                    {templates.map((t) => (
-                        <li key={t.id} className="flex flex-wrap items-center gap-default py-default text-sm">
+                    {templates.map((tpl) => (
+                        <li key={tpl.id} className="flex flex-wrap items-center gap-default py-default text-sm">
                             <div className="flex-1">
-                                <div className="font-medium text-content-emphasis">{t.name}</div>
-                                {t.description && <div className="text-xs text-content-muted">{t.description}</div>}
+                                <div className="font-medium text-content-emphasis">{tpl.name}</div>
+                                {tpl.description && <div className="text-xs text-content-muted">{tpl.description}</div>}
                             </div>
-                            <Button size="sm" variant="primary" onClick={() => generate(t.id, 'PDF')} disabled={busy}>Generate PDF</Button>
-                            <Button size="sm" variant="secondary" onClick={() => generate(t.id, 'PPTX')} disabled={busy}>PPTX</Button>
-                            <Button size="sm" variant="secondary" onClick={() => generate(t.id, 'CSV')} disabled={busy}>CSV</Button>
+                            <Button size="sm" variant="primary" onClick={() => generate(tpl.id, 'PDF')} disabled={busy}>{t('reports.generatePdf')}</Button>
+                            <Button size="sm" variant="secondary" onClick={() => generate(tpl.id, 'PPTX')} disabled={busy}>PPTX</Button>
+                            <Button size="sm" variant="secondary" onClick={() => generate(tpl.id, 'CSV')} disabled={busy}>CSV</Button>
                         </li>
                     ))}
                 </ul>
             </Card>
 
             <Card className="space-y-default p-6">
-                <Heading level={2}>Recent reports</Heading>
+                <Heading level={2}>{t('reports.recent')}</Heading>
                 {reports.length === 0 ? (
-                    <p className="text-sm text-content-muted">No reports generated yet.</p>
+                    <p className="text-sm text-content-muted">{t('reports.empty')}</p>
                 ) : (
                     <ul className="divide-y divide-border-subtle">
                         {reports.map((r) => (
@@ -74,7 +76,7 @@ export default function RiskReportsPage() {
                                 <StatusBadge variant={statusVariant(r.status)}>{r.status}</StatusBadge>
                                 {r.status === 'COMPLETED' && (
                                     <a className="ml-auto" href={apiUrl(`/risks/reports/${r.id}/download`)}>
-                                        <Button size="sm" variant="ghost">Download</Button>
+                                        <Button size="sm" variant="ghost">{t('reports.download')}</Button>
                                     </a>
                                 )}
                             </li>

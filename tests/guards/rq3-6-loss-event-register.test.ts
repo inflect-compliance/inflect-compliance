@@ -32,6 +32,11 @@ const aggregateRoute = read('src/app/api/t/[tenantSlug]/loss-events/aggregate/ro
 const itemRoute = read('src/app/api/t/[tenantSlug]/loss-events/[id]/route.ts');
 const page = read('src/app/t/[tenantSlug]/(app)/risks/loss-events/page.tsx');
 const risksClient = read('src/app/t/[tenantSlug]/(app)/risks/RisksClient.tsx');
+// The page's user-facing copy moved to next-intl; resolve moved literals
+// against the en catalog so the intent still holds.
+const enMessages = JSON.parse(read('messages/en.json')) as {
+    risks: { lossEvents: Record<string, string> };
+};
 const encryptionManifest = read('src/lib/security/encrypted-fields.ts');
 
 describe('RQ3-6 — schema + RLS + encryption', () => {
@@ -111,7 +116,8 @@ describe('RQ3-6 — the register page surfaces the predicted-vs-actual overlay',
     test('page renders the roll-up, empty-state explanation, the form, and the register', () => {
         expect(page).toMatch(/data-testid="loss-events-rollup"/);
         expect(page).toMatch(/loss-events-empty/);
-        expect(page).toMatch(/forecasting stack is unfalsifiable/);
+        expect(page).toMatch(/t\('lossEvents\.emptyActuals'\)/);
+        expect(enMessages.risks.lossEvents.emptyActuals).toMatch(/forecasting stack is unfalsifiable/);
         expect(page).toMatch(/loss-events-form/);
         expect(page).toMatch(/loss-events-list/);
         expect(page).toMatch(/loss-events-by-year/);
