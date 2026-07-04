@@ -24,6 +24,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { useToast } from '@/components/ui/hooks';
 import { Button } from '@/components/ui/button';
@@ -96,6 +97,7 @@ export function RiskAssessmentPanel({
     /** Bridge to the Traceability tab (where controls are linked). */
     onLinkControls: () => void;
 }) {
+    const t = useTranslations('risks');
     const apiUrl = useTenantApiUrl();
     const toast = useToast();
 
@@ -145,11 +147,11 @@ export function RiskAssessmentPanel({
                 const cfg = await configRes.json();
                 if (!cancelled) setConfig(cfg);
             } catch (err) {
-                if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load');
+                if (!cancelled) setError(err instanceof Error ? err.message : t('assessment.failedLoad'));
             }
         })();
         return () => { cancelled = true; };
-    }, [apiUrl, loadSuggestion]);
+    }, [apiUrl, loadSuggestion, t]);
 
     // RQ3-7 — load the KRI breach signal independently (failure-soft:
     // never blocks the panel, just hides the nudge on error).
@@ -189,7 +191,7 @@ export function RiskAssessmentPanel({
             onRiskUpdated();
             await loadSuggestion();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to save');
+            setError(err instanceof Error ? err.message : t('assessment.failedSave'));
         } finally {
             setSavingInherent(false);
         }
@@ -214,11 +216,11 @@ export function RiskAssessmentPanel({
             // client draft state, which could disagree.
             const body = await res.json().catch(() => null);
             const summary: string | undefined = body?.accepted?.summary;
-            toast.success(summary ?? 'Residual suggestion accepted');
+            toast.success(summary ?? t('assessment.residualAccepted'));
             onRiskUpdated();
             await loadSuggestion();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to accept');
+            setError(err instanceof Error ? err.message : t('assessment.failedAccept'));
         } finally {
             setAccepting(false);
         }
@@ -243,7 +245,7 @@ export function RiskAssessmentPanel({
             onRiskUpdated();
             await loadSuggestion();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to save');
+            setError(err instanceof Error ? err.message : t('assessment.failedSave'));
         } finally {
             setSavingResidual(false);
         }
@@ -267,13 +269,11 @@ export function RiskAssessmentPanel({
                 >
                     <p className="font-medium">
                         {kriBreaches.length === 1
-                            ? `Key risk indicator "${kriBreaches[0].name}" is breached (RED).`
-                            : `${kriBreaches.length} key risk indicators are breached (RED).`}
+                            ? t('assessment.kriBreachedOne', { name: kriBreaches[0].name })
+                            : t('assessment.kriBreachedMany', { count: kriBreaches.length })}
                     </p>
                     <p className="mt-0.5 text-content-muted">
-                        A leading signal has moved since this risk was last assessed —
-                        re-assess the likelihood and impact below to bring the conclusion
-                        in line with the indicator.
+                        {t('assessment.kriNudge')}
                     </p>
                 </div>
             )}
@@ -281,12 +281,12 @@ export function RiskAssessmentPanel({
             {/* ── Step 1 — Inherent ─────────────────────────────── */}
             <div className={cn(cardVariants(), 'space-y-default')}>
                 <div className="flex items-center justify-between">
-                    <Heading level={3}>1 · Inherent assessment</Heading>
+                    <Heading level={3}>{t('assessment.step1')}</Heading>
                     <BandChip score={draftInherentScore} config={config} />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-default">
                     <div>
-                        <Eyebrow>{config.axisLikelihoodLabel || 'Likelihood'}</Eyebrow>
+                        <Eyebrow>{config.axisLikelihoodLabel || t('assessment.likelihood')}</Eyebrow>
                         <NumberStepper
                             id="assessment-likelihood"
                             value={likelihood}
@@ -294,12 +294,12 @@ export function RiskAssessmentPanel({
                             min={1}
                             max={config.likelihoodLevels}
                             disabled={!canWrite}
-                            ariaLabel="Likelihood level"
+                            ariaLabel={t('assessment.likelihoodLevel')}
                             formatValue={(v) => levelLabel(config, 'likelihood', v)}
                         />
                     </div>
                     <div>
-                        <Eyebrow>{config.axisImpactLabel || 'Impact'}</Eyebrow>
+                        <Eyebrow>{config.axisImpactLabel || t('assessment.impact')}</Eyebrow>
                         <NumberStepper
                             id="assessment-impact"
                             value={impact}
@@ -307,7 +307,7 @@ export function RiskAssessmentPanel({
                             min={1}
                             max={config.impactLevels}
                             disabled={!canWrite}
-                            ariaLabel="Impact level"
+                            ariaLabel={t('assessment.impactLevel')}
                             formatValue={(v) => levelLabel(config, 'impact', v)}
                         />
                     </div>
@@ -320,7 +320,7 @@ export function RiskAssessmentPanel({
                             onClick={saveInherent}
                             disabled={savingInherent}
                         >
-                            {savingInherent ? 'Saving…' : 'Save assessment'}
+                            {savingInherent ? t('saving') : t('assessment.saveAssessment')}
                         </Button>
                     </div>
                 )}
@@ -328,7 +328,7 @@ export function RiskAssessmentPanel({
 
             {/* ── Step 2 — Controls ─────────────────────────────── */}
             <div className={cn(cardVariants(), 'space-y-default')} id="assessment-controls">
-                <Heading level={3}>2 · What your controls justify</Heading>
+                <Heading level={3}>{t('assessment.step2')}</Heading>
                 <p className="text-sm text-content-muted">{suggestion.summary}</p>
                 {participating.length > 0 && (
                     <ul className="space-y-tight">
@@ -338,8 +338,11 @@ export function RiskAssessmentPanel({
                                     {c.code ? `${c.code} — ` : ''}{c.name}
                                 </span>
                                 <span className="text-content-muted">
-                                    {c.effectiveness}% effective ({c.source === 'MEASURED' ? 'measured from tests' : 'declared'})
-                                    {' → '}reduces {c.affects === 'LIKELIHOOD' ? 'likelihood' : 'impact'}
+                                    {t('assessment.effective', {
+                                        pct: c.effectiveness ?? '',
+                                        source: c.source === 'MEASURED' ? t('assessment.measuredFromTests') : t('assessment.declared'),
+                                    })}
+                                    {' → '}{c.affects === 'LIKELIHOOD' ? t('assessment.reducesLikelihood') : t('assessment.reducesImpact')}
                                 </span>
                             </li>
                         ))}
@@ -347,14 +350,14 @@ export function RiskAssessmentPanel({
                 )}
                 {excluded.length > 0 && (
                     <div className="text-xs text-content-muted">
-                        <Eyebrow>Not participating</Eyebrow>
+                        <Eyebrow>{t('assessment.notParticipating')}</Eyebrow>
                         <ul className="space-y-tight">
                             {excluded.map((c) => (
                                 <li key={c.controlId}>
                                     {c.code ? `${c.code} — ` : ''}{c.name}:{' '}
                                     {c.excludedReason === 'NO_EFFECTIVENESS'
-                                        ? 'no effectiveness signal (run a test or declare effectiveness)'
-                                        : 'no mitigation type set'}
+                                        ? t('assessment.noEffectivenessSignal')
+                                        : t('assessment.noMitigationType')}
                                 </li>
                             ))}
                         </ul>
@@ -362,41 +365,41 @@ export function RiskAssessmentPanel({
                 )}
                 {suggestion.combined.contributions.length === 0 && (
                     <p className="text-sm text-content-muted">
-                        No controls linked yet.{' '}
+                        {t('assessment.controlsUnlinked')}{' '}
                         <button
                             type="button"
                             className="underline text-content-default"
                             onClick={onLinkControls}
                             id="assessment-link-controls"
                         >
-                            Link controls in Traceability
+                            {t('assessment.linkControlsInTraceability')}
                         </button>
-                        {' '}to derive a residual from your control stack.
+                        {' '}{t('assessment.deriveResidualSuffix')}
                     </p>
                 )}
             </div>
 
             {/* ── Step 3 — Residual ─────────────────────────────── */}
             <div className={cn(cardVariants(), 'space-y-default')} id="assessment-residual">
-                <Heading level={3}>3 · Residual</Heading>
+                <Heading level={3}>{t('assessment.step3')}</Heading>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-default">
                     <div className={cn(cardVariants({ density: 'compact' }), 'space-y-tight')}>
-                        <Eyebrow>Current (asserted)</Eyebrow>
+                        <Eyebrow>{t('assessment.currentAsserted')}</Eyebrow>
                         {risk.residualScore !== null ? (
                             <>
                                 <BandChip score={risk.residualScore} config={config} />
                                 <p className="text-xs text-content-muted">
                                     {risk.residualLikelihood !== null && risk.residualImpact !== null
                                         ? `${levelLabel(config, 'likelihood', risk.residualLikelihood)} × ${levelLabel(config, 'impact', risk.residualImpact)}`
-                                        : 'Set before decomposition — dimensions unknown (legacy formula).'}
+                                        : t('assessment.legacyDimsUnknown')}
                                 </p>
                             </>
                         ) : (
-                            <p className="text-sm text-content-muted">Not assessed yet.</p>
+                            <p className="text-sm text-content-muted">{t('assessment.notAssessedYet')}</p>
                         )}
                     </div>
                     <div className={cn(cardVariants({ density: 'compact' }), 'space-y-tight')}>
-                        <Eyebrow>Suggested from controls</Eyebrow>
+                        <Eyebrow>{t('assessment.suggestedFromControls')}</Eyebrow>
                         {suggestion.suggestion ? (
                             <>
                                 <BandChip score={suggestion.suggestion.residualScore} config={config} />
@@ -411,13 +414,13 @@ export function RiskAssessmentPanel({
                                         onClick={acceptSuggestion}
                                         disabled={accepting}
                                     >
-                                        {accepting ? 'Accepting…' : 'Accept suggestion'}
+                                        {accepting ? t('assessment.accepting') : t('assessment.acceptSuggestion')}
                                     </Button>
                                 )}
                             </>
                         ) : (
                             <p className="text-sm text-content-muted">
-                                No derivable residual — link controls with an effectiveness signal.
+                                {t('assessment.residualNotDerivable')}
                             </p>
                         )}
                     </div>
@@ -425,7 +428,7 @@ export function RiskAssessmentPanel({
 
                 {canWrite && !overriding && (
                     <Button variant="secondary" id="override-residual-btn" onClick={() => setOverriding(true)}>
-                        Assess residual manually
+                        {t('assessment.assessResidualManually')}
                     </Button>
                 )}
                 {canWrite && overriding && (
@@ -441,47 +444,45 @@ export function RiskAssessmentPanel({
                                 className="rounded-md border border-border-warning bg-bg-warning/20 p-2 text-xs text-content-warning"
                                 data-testid="residual-baseline-warning"
                             >
-                                Inherent has changed since you opened the residual
-                                draft — your residual now applies to L={risk.likelihood} × I={risk.impact}.
-                                Re-check the dimensions before saving.
+                                {t('assessment.baselineWarning', { l: risk.likelihood, i: risk.impact })}
                             </div>
                         )}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-default">
                             <div>
-                                <Eyebrow>Residual {config.axisLikelihoodLabel || 'likelihood'}</Eyebrow>
+                                <Eyebrow>{t('assessment.residualPrefix')} {config.axisLikelihoodLabel || t('assessment.dimLikelihood')}</Eyebrow>
                                 <NumberStepper
                                     id="residual-likelihood"
                                     value={residualLikelihood}
                                     onChange={setResidualLikelihood}
                                     min={1}
                                     max={config.likelihoodLevels}
-                                    ariaLabel="Residual likelihood level"
+                                    ariaLabel={t('assessment.residualLikelihoodLevel')}
                                     formatValue={(v) => levelLabel(config, 'likelihood', v)}
                                 />
                             </div>
                             <div>
-                                <Eyebrow>Residual {config.axisImpactLabel || 'impact'}</Eyebrow>
+                                <Eyebrow>{t('assessment.residualPrefix')} {config.axisImpactLabel || t('assessment.dimImpact')}</Eyebrow>
                                 <NumberStepper
                                     id="residual-impact"
                                     value={residualImpact}
                                     onChange={setResidualImpact}
                                     min={1}
                                     max={config.impactLevels}
-                                    ariaLabel="Residual impact level"
+                                    ariaLabel={t('assessment.residualImpactLevel')}
                                     formatValue={(v) => levelLabel(config, 'impact', v)}
                                 />
                             </div>
                         </div>
                         <div className="flex items-center gap-tight text-sm">
-                            <span className="text-content-muted">Resulting score:</span>
+                            <span className="text-content-muted">{t('assessment.resultingScore')}</span>
                             <BandChip score={draftResidualScore} config={config} />
                         </div>
-                        <FormField label="Justification">
+                        <FormField label={t('assessment.justification')}>
                             <Input
                                 id="residual-justification"
                                 value={justification}
                                 onChange={(e) => setJustification(e.target.value)}
-                                placeholder="Why this residual differs from the derived suggestion"
+                                placeholder={t('assessment.justificationPlaceholder')}
                                 maxLength={2000}
                             />
                         </FormField>
@@ -493,7 +494,7 @@ export function RiskAssessmentPanel({
                                     setResidualBaselineDirty(false);
                                 }}
                             >
-                                Cancel
+                                {t('assessment.cancel')}
                             </Button>
                             <Button
                                 variant="secondary"
@@ -501,7 +502,7 @@ export function RiskAssessmentPanel({
                                 onClick={saveResidualOverride}
                                 disabled={savingResidual}
                             >
-                                {savingResidual ? 'Saving…' : 'Save residual'}
+                                {savingResidual ? t('saving') : t('assessment.saveResidual')}
                             </Button>
                         </div>
                     </div>
@@ -522,11 +523,11 @@ export function RiskAssessmentPanel({
             >
                 <p className="text-sm text-content-muted">
                     {risk.fairAle != null
-                        ? 'This risk already carries a FAIR loss estimate. Review or refine the analysis.'
-                        : 'Need loss numbers instead of bands? Run the FAIR analysis on this risk.'}
+                        ? t('assessment.quantifiedHelp')
+                        : t('assessment.notQuantifiedHelp')}
                 </p>
                 <Button variant="secondary" id="quantify-bridge-btn" onClick={onQuantify}>
-                    {risk.fairAle != null ? 'Review the FAIR analysis' : 'Quantify this risk'}
+                    {risk.fairAle != null ? t('assessment.reviewFair') : t('assessment.quantify')}
                 </Button>
             </div>
         </div>
