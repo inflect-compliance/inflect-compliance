@@ -257,7 +257,15 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     };
     const evidenceBulkActions: BulkActionDef[] = useMemo(
         () => [
-            { value: 'approve', label: 'Approve', confirm: true },
+            {
+                value: 'approve',
+                label: 'Approve',
+                confirm: {
+                    tone: 'info',
+                    confirmLabel: 'Approve',
+                    description: 'Selected evidence will be marked Approved. This bypasses the review step.',
+                },
+            },
             {
                 value: 'assign',
                 label: 'Assign owner',

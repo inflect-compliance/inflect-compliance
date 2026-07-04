@@ -73,11 +73,14 @@ describe('bulk-delete coverage', () => {
         }
     });
 
-    it('BulkActionBar supports a confirm dialog for destructive actions', () => {
+    it('BulkActionBar supports a confirm dialog for destructive actions (danger is the default tone)', () => {
         const bar = read('src/components/ui/bulk-action-bar.tsx');
         expect(bar).toMatch(/confirm\?:/);
         expect(bar).toMatch(/Modal\.Confirm/);
-        expect(bar).toMatch(/tone="danger"/);
+        // The confirm dialog now takes a per-action tone; `confirm: true`
+        // (a bare bulk Delete) still resolves to the danger tone by default.
+        expect(bar).toMatch(/tone=\{tone\}/);
+        expect(bar).toMatch(/cfg\.tone \?\? 'danger'/);
     });
 
     it('ControlTestPlan is enrolled in SOFT_DELETE_MODELS', () => {
