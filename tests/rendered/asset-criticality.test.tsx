@@ -10,6 +10,24 @@ import * as React from 'react';
 import { SWRConfig } from 'swr';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
+// next-intl is ESM (jest can't parse its export); mock it to resolve real
+// en.json values so the components render English and text assertions hold.
+jest.mock('next-intl', () => {
+    const en = require('../../messages/en.json');
+    return {
+        useTranslations: (ns: string) => (key: string) => {
+            const v = key
+                .split('.')
+                .reduce((o: unknown, k) =>
+                    o && typeof o === 'object'
+                        ? (o as Record<string, unknown>)[k]
+                        : undefined, en[ns]);
+            return typeof v === 'string' ? v : key;
+        },
+        useLocale: () => 'en',
+    };
+});
+
 jest.mock('next/navigation', () => ({
     useRouter: () => ({ push: jest.fn(), replace: jest.fn(), refresh: jest.fn(), prefetch: jest.fn() }),
     usePathname: () => '/t/acme/assets',
@@ -92,7 +110,7 @@ describe('AssetCriticalityBadge (A3 — detail Overview)', () => {
     it('shows the score + label and no sliders', () => {
         // C=4, I=1, A=2 → top two {4,2} → mean 3 → Medium (under the
         // item-25 model; was High under the old high-water-mark rule).
-        const { container } = render(
+        const { container } = withProviders(
             <AssetCriticalityBadge confidentiality={4} integrity={1} availability={2} />,
         );
         expect(container.querySelectorAll('input[type="range"]').length).toBe(0);

@@ -138,7 +138,81 @@
         "searchControls": "Search controls…",
         "noControlsAvailable": "No controls yet",
         "controlsNote": "Tag controls related to this asset for traceability.",
-        "alreadyLinked": "Already linked to another asset"
+        "alreadyLinked": "Already linked to another asset",
+        "breadcrumbDashboard": "Dashboard",
+        "searchPlaceholder": "Search assets…",
+        "coverageTooltip": "Coverage",
+        "entityLabel": "asset",
+        "entityLabelPlural": "assets",
+        "shortcutNextAsset": "Next asset",
+        "shortcutPrevAsset": "Previous asset",
+        "kpi": {
+            "total": "Total assets",
+            "active": "Active",
+            "highCriticality": "High criticality",
+            "retired": "Retired"
+        },
+        "colHeaders": {
+            "code": "Code",
+            "criticality": "Criticality",
+            "tasks": "Tasks"
+        },
+        "colVis": {
+            "code": "Code",
+            "name": "Name",
+            "type": "Type",
+            "criticality": "Criticality",
+            "classification": "Classification",
+            "owner": "Owner",
+            "controls": "Controls",
+            "tasks": "Tasks"
+        },
+        "bulk": {
+            "setStatus": "Set status",
+            "selectStatus": "Select status...",
+            "assignOwner": "Assign owner",
+            "ownerPlaceholder": "Owner (blank = unassign)",
+            "delete": "Delete"
+        },
+        "statusOption": {
+            "ACTIVE": "Active",
+            "RETIRED": "Retired"
+        },
+        "empty": {
+            "noResultsTitle": "No assets match your filters",
+            "filtersHint": "Try widening your search or clearing one of the active filters.",
+            "clearFilters": "Clear filters",
+            "recordsHint": "Register the systems, applications, and data stores in scope before mapping risks and controls.",
+            "addAssetAction": "Add asset"
+        },
+        "form": {
+            "status": "Status",
+            "typePlaceholder": "Select type…",
+            "unassigned": "Unassigned",
+            "statusPlaceholder": "Select status…",
+            "nameRequired": "Name *",
+            "selectClassification": "Select classification…",
+            "selectResidency": "Select residency…"
+        },
+        "crit": {
+            "heading": "Asset Criticality",
+            "badge": "Criticality",
+            "aboutPrefix": "About ",
+            "confidentialityHelp": "Impact of unauthorised disclosure. 1 = public, 5 = highly sensitive / regulated.",
+            "integrityHelp": "Impact of unauthorised modification or loss of accuracy. 1 = trivial, 5 = safety/financial-critical.",
+            "availabilityHelp": "Impact of an outage. 1 = tolerable, 5 = business-critical / no downtime acceptable."
+        },
+        "modal": {
+            "newDescription": "Register an information asset to track inside risk + control coverage.",
+            "discardConfirm": "Discard asset? Any details you entered will be lost.",
+            "creating": "Creating…",
+            "editTitle": "Edit asset",
+            "editDescription": "Update the asset's metadata.",
+            "editDiscardConfirm": "Discard changes? Any edits you made will be lost.",
+            "saving": "Saving…",
+            "save": "Save"
+        },
+        "cancel": "Cancel"
     },
     "risks": {
         "title": "Risk Register",

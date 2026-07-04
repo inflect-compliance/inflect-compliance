@@ -14,6 +14,7 @@
  * applies the updated row to the detail-page state.
  */
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
+import { useTranslations } from 'next-intl';
 import type { AssetDetail } from './[id]/page';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
@@ -39,6 +40,7 @@ export function EditAssetModal({
     initial,
     onSaved,
 }: EditAssetModalProps) {
+    const t = useTranslations('assets');
     const { tenantSlug } = useTenantContext();
     const form = useEditAssetForm({
         assetId,
@@ -58,16 +60,14 @@ export function EditAssetModal({
                 if (form.submitting) return;
                 if (
                     form.isDirty &&
-                    !window.confirm(
-                        'Discard changes? Any edits you made will be lost.',
-                    )
+                    !window.confirm(t('modal.editDiscardConfirm'))
                 ) {
                     return;
                 }
             }
             setOpen(next);
         },
-        [form.submitting, form.isDirty, setOpen],
+        [form.submitting, form.isDirty, setOpen, t],
     );
     const close = () => guardedSetOpen(false);
 
@@ -81,13 +81,13 @@ export function EditAssetModal({
             showModal={open}
             setShowModal={guardedSetOpen}
             size="lg"
-            title="Edit asset"
-            description="Update the asset's metadata."
+            title={t('modal.editTitle')}
+            description={t('modal.editDescription')}
             preventDefaultClose={form.submitting}
         >
             <Modal.Header
-                title="Edit asset"
-                description="Update the asset's metadata."
+                title={t('modal.editTitle')}
+                description={t('modal.editDescription')}
             />
             <Modal.Form id="edit-asset-form" onSubmit={handleSubmit}>
                 <Modal.Body>
@@ -115,7 +115,7 @@ export function EditAssetModal({
                         disabled={form.submitting}
                         id="edit-asset-cancel-btn"
                     >
-                        Cancel
+                        {t('cancel')}
                     </Button>
                     <Button
                         type="submit"
@@ -124,7 +124,7 @@ export function EditAssetModal({
                         disabled={!form.canSubmit}
                         id="save-asset-btn"
                     >
-                        {form.submitting ? 'Saving…' : 'Save'}
+                        {form.submitting ? t('modal.saving') : t('modal.save')}
                     </Button>
                 </Modal.Actions>
             </Modal.Form>

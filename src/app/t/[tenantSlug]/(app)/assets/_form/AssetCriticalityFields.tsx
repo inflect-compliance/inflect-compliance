@@ -8,6 +8,7 @@
  * way. `idPrefix` keeps element ids stable ('asset' for create,
  * 'asset-edit' for edit).
  */
+import { useTranslations } from 'next-intl';
 import { InfoTooltip } from '@/components/ui/tooltip';
 import {
     getAssetCriticality,
@@ -27,6 +28,7 @@ export function AssetCriticalityBadge({
     integrity: number;
     availability: number;
 }) {
+    const t = useTranslations('assets');
     const crit = getAssetCriticality(confidentiality, integrity, availability);
     return (
         <div
@@ -34,7 +36,7 @@ export function AssetCriticalityBadge({
             data-testid="asset-criticality-score"
         >
             <p className="text-xs uppercase tracking-wider opacity-75">
-                Criticality
+                {t('crit.badge')}
             </p>
             <p className="text-xl font-bold">{crit.score}</p>
             <p className="text-xs font-medium">{crit.label}</p>
@@ -42,35 +44,17 @@ export function AssetCriticalityBadge({
     );
 }
 
-interface Dim {
-    key: 'confidentiality' | 'integrity' | 'availability';
-    label: string;
-    help: string;
-}
+type DimKey = 'confidentiality' | 'integrity' | 'availability';
 
-const DIMENSIONS: Dim[] = [
-    {
-        key: 'confidentiality',
-        label: 'Confidentiality',
-        help: 'Impact of unauthorised disclosure. 1 = public, 5 = highly sensitive / regulated.',
-    },
-    {
-        key: 'integrity',
-        label: 'Integrity',
-        help: 'Impact of unauthorised modification or loss of accuracy. 1 = trivial, 5 = safety/financial-critical.',
-    },
-    {
-        key: 'availability',
-        label: 'Availability',
-        help: 'Impact of an outage. 1 = tolerable, 5 = business-critical / no downtime acceptable.',
-    },
-];
+// Label + help are resolved from the catalog at render (label reuses the
+// top-level `assets.<key>` keys; help lives under `assets.crit.<key>Help`).
+const DIMENSION_KEYS: DimKey[] = ['confidentiality', 'integrity', 'availability'];
 
 export interface AssetCriticalityFieldsProps {
     confidentiality: number;
     integrity: number;
     availability: number;
-    onChange: (key: Dim['key'], value: number) => void;
+    onChange: (key: DimKey, value: number) => void;
     idPrefix?: string;
 }
 
@@ -81,32 +65,34 @@ export function AssetCriticalityFields({
     onChange,
     idPrefix = 'asset',
 }: AssetCriticalityFieldsProps) {
+    const t = useTranslations('assets');
     const values = { confidentiality, integrity, availability };
     const crit = getAssetCriticality(confidentiality, integrity, availability);
     return (
         <div className="space-y-default rounded-lg border border-border-subtle bg-bg-subtle p-4">
             <p className="text-sm font-medium text-content-emphasis">
-                Asset Criticality
+                {t('crit.heading')}
             </p>
             <div className="grid grid-cols-1 gap-default sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
-                {DIMENSIONS.map((dim) => {
-                    const id = `${idPrefix}-${dim.key}`;
+                {DIMENSION_KEYS.map((dimKey) => {
+                    const id = `${idPrefix}-${dimKey}`;
+                    const label = t(dimKey);
                     return (
-                        <div key={dim.key}>
+                        <div key={dimKey}>
                             <div className="mb-1 flex items-center gap-1.5">
                                 <label
                                     className="text-sm text-content-default"
                                     htmlFor={id}
                                 >
-                                    {dim.label} ·{' '}
+                                    {label} ·{' '}
                                     <span className="font-semibold text-content-emphasis">
-                                        {values[dim.key]}
+                                        {values[dimKey]}
                                     </span>
                                 </label>
                                 <InfoTooltip
-                                    aria-label={`About ${dim.label.toLowerCase()}`}
+                                    aria-label={`${t('crit.aboutPrefix')}${label.toLowerCase()}`}
                                     iconClassName="h-3.5 w-3.5"
-                                    content={dim.help}
+                                    content={t(`crit.${dimKey}Help`)}
                                 />
                             </div>
                             <input
@@ -114,9 +100,9 @@ export function AssetCriticalityFields({
                                 type="range"
                                 min={1}
                                 max={5}
-                                value={values[dim.key]}
+                                value={values[dimKey]}
                                 onChange={(e) =>
-                                    onChange(dim.key, Number(e.target.value))
+                                    onChange(dimKey, Number(e.target.value))
                                 }
                                 className="w-full accent-brand-emphasis"
                             />
@@ -128,7 +114,7 @@ export function AssetCriticalityFields({
                     data-testid={`${idPrefix}-criticality-score`}
                 >
                     <p className="text-xs uppercase tracking-wider opacity-75">
-                        Criticality
+                        {t('crit.badge')}
                     </p>
                     <p className="text-xl font-bold">{crit.score}</p>
                     <p className="text-[11px] font-medium">{crit.label}</p>
