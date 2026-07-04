@@ -80,7 +80,7 @@ describe('AISVS library — owasp-aisvs-1.0.yaml', () => {
     it('every requirement carries its AISVS level (L1/L2/L3) + a canonical link', () => {
         for (const n of aisvs.framework.nodes.filter((x) => x.assessable)) {
             expect(n.annotation ?? '').toMatch(/AISVS Level:\s*L[123]/);
-            expect(n.annotation ?? '').toMatch(/github\.com\/OWASP\/AISVS/);
+            expect(n.annotation ?? '').toContain('github.com/OWASP/AISVS');
         }
     });
 
@@ -96,7 +96,7 @@ describe('AISVS library — owasp-aisvs-1.0.yaml', () => {
         const copyrightBlock = yaml.slice(yaml.indexOf('copyright:'));
         expect(copyrightBlock).toMatch(/CC-BY-SA-4\.0/);
         expect(copyrightBlock).toMatch(/OWASP/);
-        expect(copyrightBlock).toMatch(/github\.com\/OWASP\/AISVS/);
+        expect(copyrightBlock).toContain('github.com/OWASP/AISVS');
         // Pinned version present in the file metadata.
         expect(yaml).toMatch(/ref_id:\s*AISVS-1\.0/);
     });

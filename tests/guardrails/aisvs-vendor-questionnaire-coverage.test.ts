@@ -81,7 +81,7 @@ describe('AISVS vendor questionnaire — fixture', () => {
     it('carries the CC-BY-SA-4.0 + OWASP attribution', () => {
         expect(fixture.attribution).toMatch(/CC-BY-SA-4\.0/);
         expect(fixture.attribution).toMatch(/OWASP/);
-        expect(fixture.attribution).toMatch(/github\.com\/OWASP\/AISVS/);
+        expect(fixture.attribution).toContain('github.com/OWASP/AISVS');
     });
 });
 

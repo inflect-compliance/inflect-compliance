@@ -186,7 +186,7 @@ describe("computeAutoLayout (dagre)", () => {
                 filter,
             );
             const beforeCx = (1000 + 1100) / 2;
-            const beforeCy = (1000 + 1000) / 2;
+            const beforeCy = 1000; // both nodes share y=1000, so the centroid y is 1000
             const afterCx = (res.positions.a.x + res.positions.b.x) / 2;
             const afterCy = (res.positions.a.y + res.positions.b.y) / 2;
             // Centroid preserved within a node's worth of slack.
