@@ -25,9 +25,31 @@ jest.mock('next/navigation', () => ({
     useSearchParams: () => new URLSearchParams(),
 }));
 
-jest.mock('next-intl', () => ({
-    useTranslations: () => (key: string) => key,
-}));
+jest.mock('next-intl', () => {
+    const en = require('../../messages/en.json');
+    const make = (ns: string) => {
+        const dict = en[ns] || {};
+        const resolve = (key: string) =>
+            key.split('.').reduce(
+                (o: unknown, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined),
+                dict,
+            );
+        const t = (key: string, params?: Record<string, unknown>) => {
+            let v = resolve(key);
+            if (typeof v !== 'string') return key;
+            if (params) for (const [p, val] of Object.entries(params)) v = (v as string).replace(new RegExp(`\\{${p}\\}`, 'g'), String(val));
+            return v;
+        };
+        t.rich = (key: string, params?: Record<string, unknown>) => {
+            let v = resolve(key);
+            if (typeof v !== 'string') return key;
+            if (params) for (const [p, val] of Object.entries(params)) if (typeof val !== 'function') v = (v as string).replace(new RegExp(`\\{${p}\\}`, 'g'), String(val));
+            return (v as string).replace(/<\/?\w+>/g, '');
+        };
+        return t;
+    };
+    return { useTranslations: (ns: string) => make(ns), useLocale: () => 'en' };
+});
 
 // The list reads via `useTenantSWR`, which resolves the tenant-relative
 // path through `useTenantApiUrl`. Mock that seam so no TenantProvider is

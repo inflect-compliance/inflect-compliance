@@ -103,14 +103,9 @@ function rel(abs: string): string {
 // This list ONLY shrinks. When you localise a file, remove it here
 // in the same PR (the no-stale test enforces this).
 const UNMIGRATED_BASELINE: ReadonlySet<string> = new Set([
-    "src/app/t/[tenantSlug]/(app)/access-reviews/AccessReviewsClient.tsx",
-    "src/app/t/[tenantSlug]/(app)/access-reviews/[reviewId]/AccessReviewDetailClient.tsx",
     "src/app/t/[tenantSlug]/(app)/auth/mfa/page.tsx",
-    "src/app/t/[tenantSlug]/(app)/calendar/CalendarClient.tsx",
     "src/app/t/[tenantSlug]/(app)/clauses/loading.tsx",
     "src/app/t/[tenantSlug]/(app)/controls/page.tsx",
-    "src/app/t/[tenantSlug]/(app)/coverage/CoverageClient.tsx",
-    "src/app/t/[tenantSlug]/(app)/coverage/loading.tsx",
     "src/app/t/[tenantSlug]/(app)/dashboard/page.tsx",
     "src/app/t/[tenantSlug]/(app)/error.tsx",
     "src/app/t/[tenantSlug]/(app)/framework-updates/FrameworkUpdatesClient.tsx",

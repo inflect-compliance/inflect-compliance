@@ -11,6 +11,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -65,6 +66,7 @@ interface Props {
 }
 
 export function AccessReviewsClient({ tenantSlug, initialReviews }: Props) {
+    const t = useTranslations('accessReviews');
     const router = useRouter();
 
     const reviewsQuery = useTenantSWR<CappedList<AccessReviewSummary>>(
@@ -80,7 +82,7 @@ export function AccessReviewsClient({ tenantSlug, initialReviews }: Props) {
             createColumns<AccessReviewSummary>([
                 {
                     id: 'name',
-                    header: 'Campaign',
+                    header: t('colCampaign'),
                     cell: ({ row }) => (
                         <Link
                             href={`/t/${tenantSlug}/access-reviews/${row.original.id}`}
@@ -92,7 +94,7 @@ export function AccessReviewsClient({ tenantSlug, initialReviews }: Props) {
                 },
                 {
                     id: 'status',
-                    header: 'Status',
+                    header: t('colStatus'),
                     cell: ({ row }) => (
                         <StatusBadge variant={STATUS_VARIANT[row.original.status]}>
                             {row.original.status}
@@ -101,7 +103,7 @@ export function AccessReviewsClient({ tenantSlug, initialReviews }: Props) {
                 },
                 {
                     id: 'scope',
-                    header: 'Scope',
+                    header: t('colScope'),
                     cell: ({ row }) => (
                         <span className="text-sm text-content-muted">
                             {row.original.scope.replace('_', ' ').toLowerCase()}
@@ -110,7 +112,7 @@ export function AccessReviewsClient({ tenantSlug, initialReviews }: Props) {
                 },
                 {
                     id: 'period',
-                    header: 'Period',
+                    header: t('colPeriod'),
                     cell: ({ row }) =>
                         row.original.periodStartAt && row.original.periodEndAt
                             ? `${formatDate(row.original.periodStartAt)} → ${formatDate(row.original.periodEndAt)}`
@@ -118,13 +120,13 @@ export function AccessReviewsClient({ tenantSlug, initialReviews }: Props) {
                 },
                 {
                     id: 'dueAt',
-                    header: 'Due',
+                    header: t('colDue'),
                     cell: ({ row }) =>
                         row.original.dueAt ? formatDate(row.original.dueAt) : '—',
                 },
                 {
                     id: 'progress',
-                    header: 'Progress',
+                    header: t('colProgress'),
                     cell: ({ row }) => {
                         const total = row.original._count.decisions;
                         const decided = row.original.decidedCount ?? 0;
@@ -143,7 +145,7 @@ export function AccessReviewsClient({ tenantSlug, initialReviews }: Props) {
                                     value={pct}
                                     variant={variant}
                                     size="sm"
-                                    aria-label={`${decided} of ${total} decisions made`}
+                                    aria-label={t('decisionsAria', { decided, total })}
                                 />
                                 <span className="text-xs text-content-muted whitespace-nowrap">
                                     {decided}/{total}
@@ -153,7 +155,7 @@ export function AccessReviewsClient({ tenantSlug, initialReviews }: Props) {
                     },
                 },
             ]),
-        [tenantSlug],
+        [tenantSlug, t],
     );
 
     return (
@@ -163,16 +165,16 @@ export function AccessReviewsClient({ tenantSlug, initialReviews }: Props) {
                     <div>
                         <PageBreadcrumbs
                             items={[
-                                { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
-                                { label: 'Access Reviews' },
+                                { label: t('crumbDashboard'), href: `/t/${tenantSlug}/dashboard` },
+                                { label: t('crumbList') },
                             ]}
                             className="mb-1"
                         />
                         <Heading level={1} data-testid="access-reviews-title">
-                            Access Reviews
+                            {t('title')}
                         </Heading>
                         <p className="text-sm text-content-muted">
-                            {reviews.length} campaign{reviews.length === 1 ? '' : 's'}
+                            {t('campaignsCount', { count: reviews.length })}
                         </p>
                     </div>
                     <CreateCampaignButton
@@ -194,7 +196,7 @@ export function AccessReviewsClient({ tenantSlug, initialReviews }: Props) {
                         data-testid="access-reviews-empty"
                     >
                         <p className="text-content-muted">
-                            No access reviews yet. Click <strong>New campaign</strong> to start one.
+                            {t.rich('emptyList', { b: (c) => <strong>{c}</strong> })}
                         </p>
                     </div>
                 ) : (
@@ -236,6 +238,7 @@ function CreateCampaignButton({
     tenantSlug,
     onCreated,
 }: CreateCampaignButtonProps) {
+    const t = useTranslations('accessReviews');
     const [open, setOpen] = useState(false);
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -265,7 +268,7 @@ function CreateCampaignButton({
             });
             if (!res.ok) {
                 const text = await res.text();
-                throw new Error(text || 'Failed to create campaign');
+                throw new Error(text || t('createFailed'));
             }
             const data = (await res.json()) as { accessReviewId: string };
             setOpen(false);
@@ -275,7 +278,7 @@ function CreateCampaignButton({
             setDueAt(null);
             onCreated(data.accessReviewId);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Unknown error');
+            setError(err instanceof Error ? err.message : t('unknownError'));
         } finally {
             setSubmitting(false);
         }
@@ -283,7 +286,7 @@ function CreateCampaignButton({
 
     const submit = () => {
         if (!name.trim() || !reviewerUserId.trim()) {
-            setError('Name and reviewer are required.');
+            setError(t('nameReviewerRequired'));
             return;
         }
         void handleCreate();
@@ -294,24 +297,22 @@ function CreateCampaignButton({
             <Button
                 onClick={() => setOpen(true)}
                 data-testid="access-review-new-campaign-button"
-            >
-                New campaign
-            </Button>
+            >{t('newCampaign')}</Button>
             {open ? (
                 <Modal showModal={open} setShowModal={setOpen}>
-                    <Modal.Header title="New access review campaign" />
+                    <Modal.Header title={t('createTitle')} />
                     <Modal.Body>
                         <div className="space-y-default">
-                            <FormField label="Name" required>
+                            <FormField label={t('fieldName')} required>
                                 <input
                                     className="input"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    placeholder="Q1 2026 access review"
+                                    placeholder={t('namePlaceholder')}
                                     data-testid="access-review-new-name"
                                 />
                             </FormField>
-                            <FormField label="Description (optional)">
+                            <FormField label={t('fieldDescription')}>
                                 <textarea
                                     className="input"
                                     rows={3}
@@ -319,10 +320,10 @@ function CreateCampaignButton({
                                     onChange={(e) =>
                                         setDescription(e.target.value)
                                     }
-                                    placeholder="Focus and rationale for this campaign"
+                                    placeholder={t('descPlaceholder')}
                                 />
                             </FormField>
-                            <FormField label="Scope">
+                            <FormField label={t('fieldScope')}>
                                 <RadioGroup
                                     value={scope}
                                     onValueChange={(v) =>
@@ -334,8 +335,8 @@ function CreateCampaignButton({
                                 >
                                     {(
                                         [
-                                            ['ALL_USERS', 'All users'],
-                                            ['ADMIN_ONLY', 'Owners + admins only'],
+                                            ['ALL_USERS', t('scopeAllUsers')],
+                                            ['ADMIN_ONLY', t('scopeAdminOnly')],
                                         ] as const
                                     ).map(([value, labelText]) => (
                                         <label
@@ -353,7 +354,7 @@ function CreateCampaignButton({
                                     ))}
                                 </RadioGroup>
                             </FormField>
-                            <FormField label="Reviewer" required>
+                            <FormField label={t('fieldReviewer')} required>
                                 {/* People-picker over the tenant's members
                                     (replaces the raw "usr_…" id input). The
                                     wrapping div keeps the stable test id; the
@@ -365,15 +366,15 @@ function CreateCampaignButton({
                                         onChange={(userId) =>
                                             setReviewerUserId(userId ?? '')
                                         }
-                                        placeholder="Select a reviewer"
-                                        searchPlaceholder="Search members…"
+                                        placeholder={t('reviewerPlaceholder')}
+                                        searchPlaceholder={t('searchMembers')}
                                         forceDropdown
                                         matchTriggerWidth
                                         id="access-review-reviewer-select"
                                     />
                                 </div>
                             </FormField>
-                            <FormField label="Due date (optional)">
+                            <FormField label={t('fieldDue')}>
                                 <DatePicker
                                     value={dueAt}
                                     onChange={setDueAt}
@@ -394,15 +395,13 @@ function CreateCampaignButton({
                         <Button
                             variant="secondary"
                             onClick={() => setOpen(false)}
-                        >
-                            Cancel
-                        </Button>
+                        >{t('cancel')}</Button>
                         <Button
                             onClick={submit}
                             disabled={submitting}
                             data-testid="access-review-new-submit"
                         >
-                            {submitting ? 'Creating…' : 'Create campaign'}
+                            {submitting ? t('creating') : t('createCampaign')}
                         </Button>
                     </Modal.Footer>
                 </Modal>
