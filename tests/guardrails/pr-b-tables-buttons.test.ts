@@ -40,9 +40,14 @@ describe('PR-B — table & button hygiene', () => {
         });
 
         it('Status is its own column with `id: "status"`', () => {
+            // Header label migrated to next-intl; resolve the key via en.json.
             expect(src).toMatch(
-                /id:\s*['"]status['"],\s*header:\s*['"]Status['"]/,
+                /id:\s*['"]status['"],\s*header:\s*t\w*\('colHeaders\.status'\)/,
             );
+            const en = JSON.parse(read('messages/en.json')) as {
+                controlTests: { colHeaders: Record<string, string> };
+            };
+            expect(en.controlTests.colHeaders.status).toBe('Status');
         });
 
         it('Status is positioned immediately after Name (not at end)', () => {

@@ -1,6 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { Button } from '@/components/ui/button';
@@ -93,6 +94,7 @@ export function IncidentsClient(props: IncidentsClientProps) {
 }
 
 function IncidentsPageInner({ initialIncidents, tenantSlug, canManage }: IncidentsClientProps) {
+    const t = useTranslations('incidents');
     const router = useRouter();
     const [isCreateOpen, setIsCreateOpen] = useState(false);
 
@@ -134,17 +136,17 @@ function IncidentsPageInner({ initialIncidents, tenantSlug, canManage }: Inciden
             createColumns<IncidentRow>([
                 {
                     accessorKey: 'reference',
-                    header: 'Reference',
+                    header: t('colHeaders.reference'),
                     cell: ({ getValue }) => (
                         <span className="font-medium text-content-emphasis">
                             {String(getValue() ?? '')}
                         </span>
                     ),
                 },
-                { accessorKey: 'title', header: 'Title' },
+                { accessorKey: 'title', header: t('colHeaders.title') },
                 {
                     accessorKey: 'severity',
-                    header: 'Severity',
+                    header: t('colHeaders.severity'),
                     cell: ({ getValue }) => {
                         const s = String(getValue() ?? '');
                         return (
@@ -156,7 +158,7 @@ function IncidentsPageInner({ initialIncidents, tenantSlug, canManage }: Inciden
                 },
                 {
                     accessorKey: 'phase',
-                    header: 'Phase',
+                    header: t('colHeaders.phase'),
                     cell: ({ getValue }) => {
                         const p = String(getValue() ?? '');
                         return (
@@ -168,7 +170,7 @@ function IncidentsPageInner({ initialIncidents, tenantSlug, canManage }: Inciden
                 },
                 {
                     id: 'nextDeadline',
-                    header: 'Next deadline',
+                    header: t('colHeaders.nextDeadline'),
                     cell: ({ row }) => {
                         const next = nextOpenDeadline(row.original.notifications);
                         if (!next) return <span className="text-content-muted">—</span>;
@@ -186,15 +188,15 @@ function IncidentsPageInner({ initialIncidents, tenantSlug, canManage }: Inciden
                 },
                 {
                     accessorKey: 'ownerUserId',
-                    header: 'Owner',
+                    header: t('colHeaders.owner'),
                     cell: ({ getValue }) => (
                         <span className="text-content-muted">
-                            {getValue() ? 'Assigned' : '—'}
+                            {getValue() ? t('assigned') : '—'}
                         </span>
                     ),
                 },
             ]),
-        [],
+        [t],
     );
 
     return (
@@ -202,14 +204,13 @@ function IncidentsPageInner({ initialIncidents, tenantSlug, canManage }: Inciden
             header={{
                 back: { smart: true },
                 breadcrumbs: [
-                    { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
-                    { label: 'Internal Audits', href: `/t/${tenantSlug}/audits` },
-                    { label: 'Incidents' },
+                    { label: t('crumb.dashboard'), href: `/t/${tenantSlug}/dashboard` },
+                    { label: t('crumb.internalAudits'), href: `/t/${tenantSlug}/audits` },
+                    { label: t('crumb.incidents') },
                 ],
-                title: 'Incidents',
-                count: `${incidents.length} incident${incidents.length === 1 ? '' : 's'}`,
-                description:
-                    'NIS2 Article 23 incident response. Reporting thresholds + deadlines are operational aids — they are not legal advice; your DPO/legal owns the determination.',
+                title: t('title'),
+                count: t('count', { count: incidents.length }),
+                description: t('description'),
                 actions: canManage ? (
                     <Button
                         variant="primary"
@@ -217,16 +218,16 @@ function IncidentsPageInner({ initialIncidents, tenantSlug, canManage }: Inciden
                         onClick={() => setIsCreateOpen(true)}
                         id="new-incident-btn"
                     >
-                        Incident
+                        {t('addBtn')}
                     </Button>
                 ) : undefined,
             }}
             kpis={
                 <div className="grid grid-cols-1 gap-default sm:grid-cols-3">
-                    <KpiFilterCard label="Open incidents" value={openCount} />
-                    <KpiFilterCard label="Reportable" value={reportableCount} />
+                    <KpiFilterCard label={t('kpi.open')} value={openCount} />
+                    <KpiFilterCard label={t('kpi.reportable')} value={reportableCount} />
                     <KpiFilterCard
-                        label="Deadlines due / overdue"
+                        label={t('kpi.deadlines')}
                         value={dueOrOverdueCount}
                         tone={dueOrOverdueCount > 0 ? 'critical' : 'default'}
                     />
@@ -235,7 +236,7 @@ function IncidentsPageInner({ initialIncidents, tenantSlug, canManage }: Inciden
             filters={{
                 defs: [...incidentFilterDefs.filters],
                 searchId: 'incidents-search',
-                searchPlaceholder: 'Search incidents…',
+                searchPlaceholder: t('searchPlaceholder'),
             }}
             table={{
                 data: filtered,
@@ -248,8 +249,8 @@ function IncidentsPageInner({ initialIncidents, tenantSlug, canManage }: Inciden
                     <EmptyState
                         size="sm"
                         variant="no-records"
-                        title="No incidents yet"
-                        description="When a security incident is detected, open it here to start the NIS2 Article 23 response clock."
+                        title={t('emptyTitle')}
+                        description={t('emptyDesc')}
                     />
                 ),
             }}

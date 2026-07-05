@@ -6,6 +6,7 @@
 
 import { formatDate } from '@/lib/format-date';
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { ListPageShell } from '@/components/layout/ListPageShell';
@@ -40,6 +41,7 @@ const FREQ_LABELS: Record<string, string> = {
 };
 
 export default function DueQueuePage() {
+    const t = useTranslations('controlTests');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const { permissions } = useTenantContext();
@@ -74,7 +76,7 @@ export default function DueQueuePage() {
                 setPlanningResult(result);
                 await fetchQueue();
             } else {
-                setError('Failed to run due planning');
+                setError(t('due.planningFailed'));
             }
         } finally {
             setPlanning(false);
@@ -96,7 +98,7 @@ export default function DueQueuePage() {
     const overdueCount = queue.filter(p => p.isOverdue).length;
     const pendingCount = queue.filter(p => p.hasPendingRun).length;
 
-    if (loading) return <div className="p-12 text-center text-content-subtle animate-pulse">Loading due queue...</div>;
+    if (loading) return <div className="p-12 text-center text-content-subtle animate-pulse">{t('due.loading')}</div>;
 
     return (
         <ListPageShell className="animate-fadeIn gap-section">
@@ -104,12 +106,12 @@ export default function DueQueuePage() {
                 <BackAffordance />
                 <div className="flex items-center justify-between">
                     <div>
-                        <Heading level={1} id="due-queue-title">Due Queue</Heading>
-                        <p className="text-sm text-content-muted mt-1">Test plans due or overdue for execution</p>
+                        <Heading level={1} id="due-queue-title">{t('due.title')}</Heading>
+                        <p className="text-sm text-content-muted mt-1">{t('due.description')}</p>
                     </div>
                     <div className="flex gap-compact">
-                        <Link href={tenantHref('/tests')} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>← Tests</Link>
-                        <Link href={tenantHref('/tests/dashboard')} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>Dashboard</Link>
+                        <Link href={tenantHref('/tests')} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>{t('due.backTests')}</Link>
+                        <Link href={tenantHref('/tests/dashboard')} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>{t('nav.dashboard')}</Link>
                         {permissions.canWrite && (
                             <IconAction
                                 variant="primary"
@@ -117,7 +119,7 @@ export default function DueQueuePage() {
                                 loading={planning}
                                 id="run-due-planning-btn"
                                 icon={<AppIcon name="run" size={16} />}
-                                label="Run due planning"
+                                label={t('due.runPlanning')}
                             />
                         )}
                     </div>
@@ -129,9 +131,11 @@ export default function DueQueuePage() {
             {planningResult && (
                 <div className={cn(cardVariants({ density: 'compact' }), 'border border-border-success bg-bg-success')} id="planning-result">
                     <p className="text-sm text-content-success">
-                        Due planning complete: checked {planningResult.checked} plans,
-                        created {planningResult.created} new runs,
-                        {planningResult.alreadyPending} already had pending runs.
+                        {t('due.planningResult', {
+                            checked: planningResult.checked,
+                            created: planningResult.created,
+                            alreadyPending: planningResult.alreadyPending,
+                        })}
                     </p>
                 </div>
             )}
@@ -140,13 +144,13 @@ export default function DueQueuePage() {
             {/* Stats — Polish PR-2: KPIStat primitive. */}
             <div className="grid grid-cols-3 gap-default">
                 <div className={cardVariants({ density: 'compact' })}>
-                    <KPIStat value={queue.length} label="Due / Due Soon" />
+                    <KPIStat value={queue.length} label={t('due.kpi.due')} />
                 </div>
                 <div className={cardVariants({ density: 'compact' })}>
-                    <KPIStat value={overdueCount} label="Overdue" tone={overdueCount > 0 ? 'critical' : 'success'} />
+                    <KPIStat value={overdueCount} label={t('due.kpi.overdue')} tone={overdueCount > 0 ? 'critical' : 'success'} />
                 </div>
                 <div className={cardVariants({ density: 'compact' })}>
-                    <KPIStat value={pendingCount} label="Pending Runs" tone={pendingCount > 0 ? 'attention' : 'default'} />
+                    <KPIStat value={pendingCount} label={t('due.kpi.pending')} tone={pendingCount > 0 ? 'attention' : 'default'} />
                 </div>
             </div>
 
@@ -157,7 +161,7 @@ export default function DueQueuePage() {
                 {(() => {
                 const dueColumns = createColumns<DuePlan>([
                     {
-                        id: 'plan', header: 'Plan', accessorKey: 'name',
+                        id: 'plan', header: t('due.col.plan'), accessorKey: 'name',
                         cell: ({ row }) => (
                             <Link href={tenantHref(`/controls/${row.original.controlId}/tests/${row.original.id}`)} className="text-content-emphasis font-medium hover:text-[var(--brand-default)] transition">
                                 {row.original.name}
@@ -165,16 +169,16 @@ export default function DueQueuePage() {
                         ),
                     },
                     {
-                        id: 'control', header: 'Control', accessorFn: (p) => p.control?.code || p.control?.name || '—',
+                        id: 'control', header: t('due.col.control'), accessorFn: (p) => p.control?.code || p.control?.name || '—',
                         cell: ({ row }) => (
                             <Link href={tenantHref(`/controls/${row.original.controlId}`)} className="text-content-muted hover:text-content-emphasis text-xs transition">
                                 {row.original.control?.code || row.original.control?.name || '—'}
                             </Link>
                         ),
                     },
-                    { id: 'frequency', header: 'Frequency', accessorFn: (p) => FREQ_LABELS[p.frequency] || p.frequency },
+                    { id: 'frequency', header: t('due.col.frequency'), accessorFn: (p) => FREQ_LABELS[p.frequency] || p.frequency },
                     {
-                        id: 'dueDate', header: 'Due Date', accessorKey: 'nextDueAt',
+                        id: 'dueDate', header: t('due.col.dueDate'), accessorKey: 'nextDueAt',
                         cell: ({ row }) => (
                             <span className={row.original.isOverdue ? 'text-content-error font-semibold' : 'text-content-warning'}>
                                 {formatDate(row.original.nextDueAt)}
@@ -182,17 +186,17 @@ export default function DueQueuePage() {
                             </span>
                         ),
                     },
-                    { id: 'owner', header: 'Owner', accessorFn: (p) => p.owner?.name || p.owner?.email || '—', cell: ({ getValue }) => <span className="text-content-muted text-xs">{getValue()}</span> },
+                    { id: 'owner', header: t('due.col.owner'), accessorFn: (p) => p.owner?.name || p.owner?.email || '—', cell: ({ getValue }) => <span className="text-content-muted text-xs">{getValue()}</span> },
                     {
-                        id: 'status', header: 'Status',
+                        id: 'status', header: t('due.col.status'),
                         cell: ({ row }) => row.original.hasPendingRun
-                            ? <StatusBadge variant="warning" size="sm">Run Pending</StatusBadge>
-                            : <StatusBadge variant="error" size="sm">Needs Run</StatusBadge>,
+                            ? <StatusBadge variant="warning" size="sm">{t('due.runPending')}</StatusBadge>
+                            : <StatusBadge variant="error" size="sm">{t('due.needsRun')}</StatusBadge>,
                     },
                     {
                         id: 'actions', header: '',
                         cell: ({ row }) => !row.original.hasPendingRun && permissions.canWrite ? (
-                            <Button variant="primary" size="xs" onClick={() => handleQuickRun(row.original.id)}>Run Now</Button>
+                            <Button variant="primary" size="xs" onClick={() => handleQuickRun(row.original.id)}>{t('due.runNow')}</Button>
                         ) : null,
                     },
                 ]);
@@ -202,8 +206,8 @@ export default function DueQueuePage() {
                         data={queue}
                         columns={dueColumns}
                         getRowId={(p) => p.id}
-                        emptyState="No tests are due! All plans are on schedule."
-                        resourceName={(p) => p ? 'test plans' : 'test plan'}
+                        emptyState={t('due.empty')}
+                        resourceName={(p) => p ? t('list.entityPlural') : t('list.entitySingular')}
                         data-testid="due-queue-table"
                     />
                 );

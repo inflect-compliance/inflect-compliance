@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -37,6 +38,7 @@ export interface NewIncidentModalProps {
 }
 
 export function NewIncidentModal({ open, onClose, tenantSlug, onCreated }: NewIncidentModalProps) {
+    const t = useTranslations('incidents');
     const [apiError, setApiError] = useState<string | null>(null);
     const [detectedAt, setDetectedAt] = useState<Date | undefined>(new Date());
 
@@ -70,11 +72,11 @@ export function NewIncidentModal({ open, onClose, tenantSlug, onCreated }: NewIn
                     detectedAt: detectedAt ? detectedAt.toISOString() : undefined,
                 }),
             });
-            if (!res.ok) throw new Error('Failed to open incident');
+            if (!res.ok) throw new Error(t('new.createFailed'));
             const created = (await res.json()) as { id: string };
             await onCreated(created.id);
         } catch (e) {
-            setApiError(e instanceof Error ? e.message : 'Failed to open incident');
+            setApiError(e instanceof Error ? e.message : t('new.createFailed'));
         }
     };
 
@@ -85,13 +87,13 @@ export function NewIncidentModal({ open, onClose, tenantSlug, onCreated }: NewIn
                 if (!v && !isSubmitting) onClose();
             }}
             size="lg"
-            title="Open incident"
-            description="Record a live security incident to start the NIS2 Article 23 response."
+            title={t('new.title')}
+            description={t('new.desc')}
             preventDefaultClose={isSubmitting}
         >
             <Modal.Header
-                title="Open incident"
-                description="Record a live security incident to start the NIS2 Article 23 response clock."
+                title={t('new.title')}
+                description={t('new.descLong')}
             />
             <Modal.Form onSubmit={handleSubmit(onSubmit)}>
                 <Modal.Body>
@@ -105,25 +107,25 @@ export function NewIncidentModal({ open, onClose, tenantSlug, onCreated }: NewIn
                         </div>
                     )}
                     <div className="space-y-default">
-                        <FormField label="Title" required error={errors.title?.message}>
+                        <FormField label={t('new.fields.title')} required error={errors.title?.message}>
                             <Input
                                 id="incident-title-input"
                                 type="text"
-                                placeholder="e.g. Ransomware on the billing cluster"
+                                placeholder={t('new.placeholders.title')}
                                 autoComplete="off"
                                 {...register('title')}
                             />
                         </FormField>
-                        <FormField label="Description" error={errors.description?.message}>
+                        <FormField label={t('new.fields.description')} error={errors.description?.message}>
                             <Textarea
                                 id="incident-description-input"
                                 rows={3}
-                                placeholder="What happened, what's affected, what's known so far"
+                                placeholder={t('new.placeholders.description')}
                                 {...register('description')}
                             />
                         </FormField>
                         <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
-                            <FormField label="Severity" required error={errors.severity?.message}>
+                            <FormField label={t('new.fields.severity')} required error={errors.severity?.message}>
                                 <Controller
                                     control={control}
                                     name="severity"
@@ -134,7 +136,7 @@ export function NewIncidentModal({ open, onClose, tenantSlug, onCreated }: NewIn
                                             options={SEVERITY_OPTIONS}
                                             selected={SEVERITY_OPTIONS.find((o) => o.value === field.value) ?? null}
                                             setSelected={(o) => field.onChange(o?.value ?? 'MEDIUM')}
-                                            placeholder="Select severity…"
+                                            placeholder={t('new.placeholders.severity')}
                                             hideSearch
                                             matchTriggerWidth
                                             forceDropdown
@@ -144,7 +146,7 @@ export function NewIncidentModal({ open, onClose, tenantSlug, onCreated }: NewIn
                                     )}
                                 />
                             </FormField>
-                            <FormField label="Type" required error={errors.incidentType?.message}>
+                            <FormField label={t('new.fields.type')} required error={errors.incidentType?.message}>
                                 <Controller
                                     control={control}
                                     name="incidentType"
@@ -155,7 +157,7 @@ export function NewIncidentModal({ open, onClose, tenantSlug, onCreated }: NewIn
                                             options={TYPE_OPTIONS}
                                             selected={TYPE_OPTIONS.find((o) => o.value === field.value) ?? null}
                                             setSelected={(o) => field.onChange(o?.value ?? 'OTHER')}
-                                            placeholder="Select type…"
+                                            placeholder={t('new.placeholders.type')}
                                             hideSearch
                                             matchTriggerWidth
                                             forceDropdown
@@ -167,14 +169,14 @@ export function NewIncidentModal({ open, onClose, tenantSlug, onCreated }: NewIn
                             </FormField>
                         </div>
                         <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
-                            <FormField label="Detected at" hint="The clock that drives the 24h / 72h / 1-month deadlines.">
+                            <FormField label={t('new.fields.detectedAt')} hint={t('new.detectedHint')}>
                                 <DatePicker
                                     value={detectedAt ?? null}
                                     onChange={(d) => setDetectedAt(d ?? undefined)}
-                                    placeholder="When was it detected"
+                                    placeholder={t('new.placeholders.detectedAt')}
                                 />
                             </FormField>
-                            <FormField label="Incident commander">
+                            <FormField label={t('new.fields.commander')}>
                                 <Controller
                                     control={control}
                                     name="ownerUserId"
@@ -185,7 +187,7 @@ export function NewIncidentModal({ open, onClose, tenantSlug, onCreated }: NewIn
                                             onChange={(id) => field.onChange(id ?? '')}
                                             forceDropdown
                                             matchTriggerWidth
-                                            placeholder="Assign an owner"
+                                            placeholder={t('new.placeholders.commander')}
                                             id="incident-owner-input"
                                         />
                                     )}
@@ -204,7 +206,7 @@ export function NewIncidentModal({ open, onClose, tenantSlug, onCreated }: NewIn
                         }}
                         disabled={isSubmitting}
                     >
-                        Cancel
+                        {t('new.cancel')}
                     </Button>
                     <Button
                         type="submit"
@@ -213,7 +215,7 @@ export function NewIncidentModal({ open, onClose, tenantSlug, onCreated }: NewIn
                         id="create-incident-btn"
                         disabled={isSubmitting || titleValue.trim().length === 0}
                     >
-                        {isSubmitting ? 'Creating…' : 'Create incident'}
+                        {isSubmitting ? t('new.creating') : t('new.create')}
                     </Button>
                 </Modal.Actions>
             </Modal.Form>
