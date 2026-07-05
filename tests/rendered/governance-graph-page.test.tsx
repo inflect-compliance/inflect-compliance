@@ -4,6 +4,24 @@
 import { render, screen } from '@testing-library/react';
 import * as React from 'react';
 
+// next-intl is ESM (jest can't parse its export); mock it to resolve real
+// en.json values so text assertions track the original English.
+jest.mock('next-intl', () => {
+    const en = require('../../messages/en.json');
+    return {
+        useTranslations: (ns: string) => (key: string, params?: Record<string, unknown>) => {
+            let v = key
+                .split('.')
+                .reduce((o: unknown, k) =>
+                    o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined, en[ns]);
+            if (typeof v !== 'string') return key;
+            if (params) for (const [p, val] of Object.entries(params)) v = (v as string).replace(new RegExp(`\\{${p}\\}`, 'g'), String(val));
+            return v;
+        },
+        useLocale: () => 'en',
+    };
+});
+
 const mockSWR = jest.fn();
 jest.mock('@/lib/hooks/use-tenant-swr', () => ({
     useTenantSWR: (...a: unknown[]) => mockSWR(...a),

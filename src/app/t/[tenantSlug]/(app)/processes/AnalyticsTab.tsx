@@ -8,6 +8,7 @@
  * rules. Reads the aggregated /automation/analytics endpoint.
  */
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { Card } from '@/components/ui/card';
@@ -41,6 +42,7 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 }
 
 export function AnalyticsTab() {
+    const t = useTranslations('processes');
     const [days, setDays] = useState<number>(30);
     const { data, isLoading } = useTenantSWR<Analytics>(
         `${CACHE_KEYS.automation.analytics()}?days=${days}`,
@@ -59,8 +61,8 @@ export function AnalyticsTab() {
         return (
             <div className="p-default">
                 <EmptyState
-                    title="No automation rules yet"
-                    description="Create a rule to start seeing execution analytics here."
+                    title={t('analytics.emptyTitle')}
+                    description={t('analytics.emptyDesc')}
                 />
             </div>
         );
@@ -82,30 +84,30 @@ export function AnalyticsTab() {
             </div>
 
             <div className="grid grid-cols-2 gap-default md:grid-cols-3 lg:grid-cols-6">
-                <Stat label="Enabled rules" value={`${data?.enabledRules ?? 0}/${data?.totalRules ?? 0}`} />
-                <Stat label={`Executions (${days}d)`} value={data?.totalExecutions ?? 0} />
-                <Stat label="Success rate" value={`${100 - (data?.errorRate ?? 0)}%`} />
-                <Stat label="Avg duration" value={`${data?.avgDurationMs ?? 0}ms`} />
-                <Stat label="SLA breaches" value={data?.slaBreaches ?? 0} />
-                <Stat label="Error rate" value={`${data?.errorRate ?? 0}%`} />
+                <Stat label={t('analytics.enabledRules')} value={`${data?.enabledRules ?? 0}/${data?.totalRules ?? 0}`} />
+                <Stat label={t('analytics.executions', { days })} value={data?.totalExecutions ?? 0} />
+                <Stat label={t('analytics.successRate')} value={`${100 - (data?.errorRate ?? 0)}%`} />
+                <Stat label={t('analytics.avgDuration')} value={`${data?.avgDurationMs ?? 0}ms`} />
+                <Stat label={t('analytics.slaBreaches')} value={data?.slaBreaches ?? 0} />
+                <Stat label={t('analytics.errorRate')} value={`${data?.errorRate ?? 0}%`} />
             </div>
 
             <Card>
                 <p className="mb-default text-[11px] uppercase tracking-wide text-content-subtle">
-                    Executions over time
+                    {t('analytics.executionsOverTime')}
                 </p>
                 {series.length >= 2 ? (
                     <div className="h-40 w-full">
-                        <MiniAreaChart data={series} variant="brand" aria-label="Executions over time" className="h-full w-full" />
+                        <MiniAreaChart data={series} variant="brand" aria-label={t('analytics.executionsOverTime')} className="h-full w-full" />
                     </div>
                 ) : (
-                    <p className="text-sm text-content-muted">Not enough data yet.</p>
+                    <p className="text-sm text-content-muted">{t('analytics.notEnoughData')}</p>
                 )}
             </Card>
 
             <Card>
                 <p className="mb-default text-[11px] uppercase tracking-wide text-content-subtle">
-                    Most-fired rules
+                    {t('analytics.mostFired')}
                 </p>
                 {data && data.topRules.length > 0 ? (
                     <ul className="space-y-tight">
@@ -113,13 +115,13 @@ export function AnalyticsTab() {
                             <li key={r.ruleId} className="flex items-center justify-between gap-default text-sm">
                                 <span className="truncate text-content-default">{r.name}</span>
                                 <span className="shrink-0 tabular-nums text-content-muted">
-                                    {r.count} runs · {r.successRate}% ok
+                                    {t('analytics.runsOk', { count: r.count, rate: r.successRate })}
                                 </span>
                             </li>
                         ))}
                     </ul>
                 ) : (
-                    <p className="text-sm text-content-muted">No executions in this window.</p>
+                    <p className="text-sm text-content-muted">{t('analytics.executionsEmpty')}</p>
                 )}
             </Card>
         </div>
