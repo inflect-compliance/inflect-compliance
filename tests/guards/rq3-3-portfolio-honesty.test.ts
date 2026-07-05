@@ -40,8 +40,12 @@ describe('RQ3-3 — the headline is a distribution, not a sum', () => {
 
     test('the naive Σ is demoted to a subordinate line with the gap tooltip', () => {
         expect(dashboard).toMatch(/risk-quant-sum-line/);
-        expect(dashboard).toMatch(/sum of\s+\n?\s*averages, not a distribution/);
-        expect(dashboard).toMatch(/<InfoTooltip content="Summing each risk's mean ALE ignores correlation/);
+        // copy migrated to next-intl (riskManager.dash.*); resolve it there.
+        const dash = (JSON.parse(read('messages/en.json')) as {
+            riskManager: { dash: Record<string, string> };
+        }).riskManager.dash;
+        expect(dash.sumLine).toMatch(/a sum of averages, not a distribution/);
+        expect(dash.sumTooltip).toMatch(/Summing each risk's mean ALE ignores correlation/);
         // The Σ tile (headline position) exists ONLY in the no-run branch,
         // which carries the run-a-simulation nudge.
         expect(dashboard).toMatch(/risk-quant-sum-nudge/);

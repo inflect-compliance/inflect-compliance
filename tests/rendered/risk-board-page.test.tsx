@@ -25,9 +25,47 @@ jest.mock('@/lib/tenant-context-provider', () => ({
     useMoneyFormatter: () => (v: number | null | undefined) =>
         jest.requireActual('@/lib/risk-coherence').formatCompactCurrency(v),
 }));
-jest.mock('next-intl', () => ({
-    useTranslations: () => (key: string) => key,
-}));
+// next-intl is ESM — mock it, resolving real en.json values (with
+// {param} interpolation + t.rich tag rendering) so the board's copy +
+// the board-hygiene-pct span (which lives inside a t.rich tag) render.
+jest.mock('next-intl', () => {
+    const en = require('../../messages/en.json');
+    const React = require('react');
+    const resolve = (ns: string, key: string) =>
+        key.split('.').reduce(
+            (o: unknown, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined),
+            en[ns],
+        );
+    const sub = (v: string, params?: Record<string, unknown>) => {
+        let s = v;
+        if (params) for (const [p, val] of Object.entries(params)) if (typeof val !== 'function') s = s.replace(new RegExp(`\\{${p}\\}`, 'g'), String(val));
+        return s;
+    };
+    const make = (ns: string) => {
+        const t = (key: string, params?: Record<string, unknown>) => {
+            const v = resolve(ns, key);
+            return typeof v === 'string' ? sub(v, params) : key;
+        };
+        t.rich = (key: string, params?: Record<string, unknown>) => {
+            const v = resolve(ns, key);
+            if (typeof v !== 'string') return key;
+            const s = sub(v, params);
+            const nodes: React.ReactNode[] = [];
+            const re = /<(\w+)>([\s\S]*?)<\/\1>/g;
+            let last = 0, m: RegExpExecArray | null, i = 0;
+            while ((m = re.exec(s))) {
+                if (m.index > last) nodes.push(s.slice(last, m.index));
+                const fn = params?.[m[1]] as ((c: React.ReactNode) => React.ReactElement) | undefined;
+                nodes.push(fn ? React.cloneElement(fn(m[2]), { key: i++ }) : m[2]);
+                last = re.lastIndex;
+            }
+            if (last < s.length) nodes.push(s.slice(last));
+            return nodes;
+        };
+        return t;
+    };
+    return { useTranslations: (ns: string) => make(ns), useLocale: () => 'en' };
+});
 
 import { TooltipProvider } from '@/components/ui/tooltip';
 import RiskBoardPage from '@/app/t/[tenantSlug]/(app)/risks/board/page';

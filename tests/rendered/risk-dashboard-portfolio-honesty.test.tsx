@@ -16,9 +16,23 @@ jest.mock('@/lib/tenant-context-provider', () => ({
     useMoneyFormatter: () => (v: number | null | undefined) =>
         jest.requireActual('@/lib/risk-coherence').formatCompactCurrency(v),
 }));
-jest.mock('next-intl', () => ({
-    useTranslations: () => (key: string) => key,
-}));
+// next-intl is ESM — mock it, resolving real en.json values with {param}
+// interpolation so the sum-line / nudge copy renders (not the raw key).
+jest.mock('next-intl', () => {
+    const en = require('../../messages/en.json');
+    return {
+        useTranslations: (ns: string) => (key: string, params?: Record<string, unknown>) => {
+            let v = key.split('.').reduce(
+                (o: unknown, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined),
+                en[ns],
+            );
+            if (typeof v !== 'string') return key;
+            if (params) for (const [p, val] of Object.entries(params)) v = (v as string).replace(new RegExp(`\\{${p}\\}`, 'g'), String(val));
+            return v;
+        },
+        useLocale: () => 'en',
+    };
+});
 jest.mock('@visx/responsive', () => ({
     ParentSize: ({ children }: { children: (s: { width: number }) => React.ReactNode }) =>
         children({ width: 600 }),
