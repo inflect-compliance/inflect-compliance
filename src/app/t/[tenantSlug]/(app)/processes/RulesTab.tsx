@@ -12,6 +12,7 @@
  * Epic 1 ships the read-only inventory.
  */
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { RuleDetailSheet } from '@/components/processes/RuleDetailSheet';
 import { RuleBuilderModal } from '@/components/processes/RuleBuilderModal';
@@ -79,6 +80,7 @@ export function RulesTab({ tenantSlug }: { tenantSlug: string }) {
 }
 
 function RulesTabInner({ tenantSlug }: { tenantSlug: string }) {
+    const t = useTranslations('processes');
     const { state, search } = useFilters();
     const { data, isLoading, error } = useTenantSWR<AutomationRuleRow[]>(
         CACHE_KEYS.automation.rules.list(),
@@ -108,7 +110,7 @@ function RulesTabInner({ tenantSlug }: { tenantSlug: string }) {
             createColumns<AutomationRuleRow>([
                 {
                     accessorKey: 'name',
-                    header: 'Name',
+                    header: t('rules.colName'),
                     cell: ({ row }) => (
                         <span className="font-medium text-content-emphasis">
                             {row.original.name}
@@ -117,7 +119,7 @@ function RulesTabInner({ tenantSlug }: { tenantSlug: string }) {
                 },
                 {
                     accessorKey: 'triggerEvent',
-                    header: 'Trigger',
+                    header: t('rules.colTrigger'),
                     cell: ({ row }) => (
                         <span className="text-sm text-content-default">
                             {humanizeEvent(row.original.triggerEvent)}
@@ -126,7 +128,7 @@ function RulesTabInner({ tenantSlug }: { tenantSlug: string }) {
                 },
                 {
                     accessorKey: 'actionType',
-                    header: 'Action',
+                    header: t('rules.colAction'),
                     cell: ({ row }) => (
                         <span className="text-sm text-content-muted">
                             {RULE_ACTION_LABELS[row.original.actionType] ??
@@ -136,7 +138,7 @@ function RulesTabInner({ tenantSlug }: { tenantSlug: string }) {
                 },
                 {
                     accessorKey: 'status',
-                    header: 'Status',
+                    header: t('rules.colStatus'),
                     cell: ({ row }) => (
                         <StatusBadge
                             variant={STATUS_VARIANT[row.original.status] ?? 'neutral'}
@@ -147,19 +149,19 @@ function RulesTabInner({ tenantSlug }: { tenantSlug: string }) {
                 },
                 {
                     accessorKey: 'lastTriggeredAt',
-                    header: 'Last Triggered',
+                    header: t('rules.colLastTriggered'),
                     cell: ({ row }) =>
                         row.original.lastTriggeredAt ? (
                             <span className="text-sm text-content-muted tabular-nums">
                                 {formatDate(row.original.lastTriggeredAt)}
                             </span>
                         ) : (
-                            <span className="text-sm text-content-subtle">Never</span>
+                            <span className="text-sm text-content-subtle">{t('rules.never')}</span>
                         ),
                 },
                 {
                     accessorKey: 'executionCount',
-                    header: 'Runs',
+                    header: t('rules.colRuns'),
                     cell: ({ row }) => (
                         <span className="text-sm tabular-nums text-content-muted">
                             {row.original.executionCount}
@@ -168,7 +170,7 @@ function RulesTabInner({ tenantSlug }: { tenantSlug: string }) {
                 },
                 {
                     accessorKey: 'priority',
-                    header: 'Priority',
+                    header: t('rules.colPriority'),
                     cell: ({ row }) => (
                         <span className="text-sm tabular-nums text-content-muted">
                             {row.original.priority}
@@ -176,22 +178,22 @@ function RulesTabInner({ tenantSlug }: { tenantSlug: string }) {
                     ),
                 },
             ]),
-        [],
+        [t],
     );
 
     return (
         <>
             <EntityListPage<AutomationRuleRow>
                 header={{
-                    eyebrow: 'Automation',
-                    title: 'Rules',
-                    count: `${rows.length} ${rows.length === 1 ? 'rule' : 'rules'}`,
+                    eyebrow: t('rules.eyebrow'),
+                    title: t('rules.title'),
+                    count: t('rules.count', { count: rows.length }),
                 }}
                 filters={{
                     defs: buildRuleFilters(),
                     toolbarActions: (
                         <Button variant="secondary" onClick={() => setTemplatesOpen(true)}>
-                            Templates
+                            {t('rules.templates')}
                         </Button>
                     ),
                     toolbarPrimary: (
@@ -204,7 +206,7 @@ function RulesTabInner({ tenantSlug }: { tenantSlug: string }) {
                             }}
                             id="new-rule-btn"
                         >
-                            Rule
+                            {t('rules.addRule')}
                         </Button>
                     ),
                 }}
@@ -212,17 +214,17 @@ function RulesTabInner({ tenantSlug }: { tenantSlug: string }) {
                     data: rows,
                     columns,
                     loading: isLoading,
-                    error: error ? 'Failed to load automation rules' : undefined,
+                    error: error ? t('rules.loadError') : undefined,
                     getRowId: (r) => r.id,
-                    resourceName: (plural) => (plural ? 'rules' : 'rule'),
+                    resourceName: (plural) => (plural ? t('rules.resPlural') : t('rules.resSingular')),
                     onRowClick: (r) => {
                         setSelected(r.original);
                         setSheetOpen(true);
                     },
                     emptyState: (
                         <EmptyState
-                            title="No automation rules yet"
-                            description="Automation rules fire actions when domain events occur. The rule builder arrives in a later release."
+                            title={t('rules.emptyTitle')}
+                            description={t('rules.emptyDesc')}
                         />
                     ),
                     'data-testid': 'automation-rules-table',

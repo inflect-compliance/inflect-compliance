@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { Download } from 'lucide-react';
 import { SoAClient } from './soa/SoAClient';
 import { PdfExportButton } from '@/components/PdfExportButton';
@@ -50,6 +51,7 @@ interface RiskRegisterRow {
     controls: string;
 }
 export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, translations: t }: ReportsClientProps) {
+    const tx = useTranslations('reports');
     const [tab, setTab] = useState<'soa' | 'risk'>('soa');
 
 
@@ -122,7 +124,7 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
                     <div>
                         <PageBreadcrumbs
                             items={[
-                                { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
+                                { label: tx('crumbDashboard'), href: `/t/${tenantSlug}/dashboard` },
                                 { label: t.title },
                             ]}
                             className="mb-1"
@@ -148,13 +150,13 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
                                         download
                                         id="export-soa-btn"
                                     >
-                                        <Download className="w-3.5 h-3.5" /> Export CSV
+                                        <Download className="w-3.5 h-3.5" /> {tx('exportCsv')}
                                     </a>
                                     <UpgradeGate feature="PDF_EXPORTS">
                                         <PdfExportButton
                                             tenantSlug={tenantSlug}
                                             reportType="AUDIT_READINESS"
-                                            label="Audit Readiness"
+                                            label={tx('auditReadiness')}
                                             allowSave={canEdit}
                                         />
                                     </UpgradeGate>
@@ -162,7 +164,7 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
                                         <PdfExportButton
                                             tenantSlug={tenantSlug}
                                             reportType="GAP_ANALYSIS"
-                                            label="Gap Analysis"
+                                            label={tx('gapAnalysis')}
                                             allowSave={canEdit}
                                         />
                                     </UpgradeGate>
@@ -174,7 +176,7 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
                                         <PdfExportButton
                                             tenantSlug={tenantSlug}
                                             reportType="RISK_REGISTER"
-                                            label="Risk Register"
+                                            label={tx('riskRegisterExport')}
                                             allowSave={canEdit}
                                         />
                                     </UpgradeGate>
@@ -190,7 +192,7 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
                     preserve `#soa-tab-btn` / `#risk-tab-btn` E2E selectors
                     used by tests/e2e/reporting.spec.ts. */}
                 <ToggleGroup
-                    ariaLabel="Report"
+                    ariaLabel={tx('reportAria')}
                     options={[
                         { value: 'soa', label: t.soa, id: 'soa-tab-btn' },
                         { value: 'risk', label: t.riskRegister, id: 'risk-tab-btn' },
@@ -214,7 +216,7 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
                         data={data.riskRegister}
                         columns={riskColumns}
                         getRowId={(r) => r.id}
-                        emptyState="No risks in the register"
+                        emptyState={tx('emptyRisks')}
                         resourceName={(p) => p ? 'risks' : 'risk'}
                         data-testid="risk-table"
                     />

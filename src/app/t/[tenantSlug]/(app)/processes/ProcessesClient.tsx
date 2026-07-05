@@ -27,6 +27,7 @@
  *     own its xyflow state without prop-drilling.
  */
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/cn";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
@@ -96,15 +97,16 @@ export function ProcessesClient({
     // (border-b accent + emphasis text) — the single-tab-pattern ratchet
     // reserves the pill primitive out of app pages. Epic 9 extends this
     // with Analytics; Epic 10 adds Monitor.
+    const t = useTranslations("processes");
     const [tab, setTab] = useState<"canvas" | "rules" | "analytics" | "monitor">("canvas");
     const TABS: ReadonlyArray<{
         key: "canvas" | "rules" | "analytics" | "monitor";
         label: string;
     }> = [
-        { key: "canvas", label: "Canvas" },
-        { key: "rules", label: "Rules" },
-        { key: "analytics", label: "Analytics" },
-        { key: "monitor", label: "Monitor" },
+        { key: "canvas", label: t("tabCanvas") },
+        { key: "rules", label: t("tabRules") },
+        { key: "analytics", label: t("tabAnalytics") },
+        { key: "monitor", label: t("tabMonitor") },
     ];
 
     return (
@@ -112,7 +114,7 @@ export function ProcessesClient({
             <nav
                 className="flex gap-1 border-b border-border-default overflow-x-auto"
                 role="tablist"
-                aria-label="Process page sections"
+                aria-label={t("tabsAria")}
             >
                 {TABS.map((t) => {
                     const isActive = tab === t.key;
@@ -142,7 +144,7 @@ export function ProcessesClient({
                     className="ml-auto self-center px-4 py-2 text-sm font-medium text-content-muted hover:text-content-emphasis whitespace-nowrap"
                     data-testid="governance-graph-link"
                 >
-                    Governance graph →
+                    {t("governanceLink")}
                 </a>
             </nav>
             <div className="flex min-h-0 flex-1 flex-col pt-3">
@@ -246,17 +248,15 @@ function ProcessListMobile({
 }: {
     processes: ProcessMapSummary[];
 }) {
+    const t = useTranslations("processes");
     return (
         <div className="space-y-default" data-testid="processes-mobile-list">
             <div className="rounded-lg border border-border-subtle bg-bg-subtle p-3 text-sm text-content-muted">
-                <p>
-                    Process maps are edited on a larger screen. Open this page on a
-                    desktop to design the canvas.
-                </p>
+                <p>{t("mobileHint")}</p>
             </div>
             {processes.length === 0 ? (
                 <p className="px-1 py-8 text-center text-sm text-content-subtle">
-                    No process maps yet.
+                    {t("mobileEmpty")}
                 </p>
             ) : (
                 <ul className="space-y-default">
@@ -283,8 +283,8 @@ function ProcessListMobile({
                                 </p>
                             )}
                             <p className="text-xs text-content-subtle">
-                                {p.nodeCount} {p.nodeCount === 1 ? "step" : "steps"} ·{" "}
-                                {p.edgeCount} {p.edgeCount === 1 ? "link" : "links"} · v
+                                {t("steps", { count: p.nodeCount })} ·{" "}
+                                {t("links", { count: p.edgeCount })} · v
                                 {p.version}
                             </p>
                         </li>
