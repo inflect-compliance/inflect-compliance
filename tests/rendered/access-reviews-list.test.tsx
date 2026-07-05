@@ -44,7 +44,16 @@ jest.mock('next-intl', () => {
             let v = resolve(key);
             if (typeof v !== 'string') return key;
             if (params) for (const [p, val] of Object.entries(params)) if (typeof val !== 'function') v = (v as string).replace(new RegExp(`\\{${p}\\}`, 'g'), String(val));
-            return (v as string).replace(/<\/?\w+>/g, '');
+            // Strip the rich-text tags to their inner text. Loop to a fixed
+            // point so crafted nesting can't leave a residual tag (satisfies
+            // CodeQL js/incomplete-multi-character-sanitization).
+            let s = v as string;
+            let prev: string;
+            do {
+                prev = s;
+                s = s.replace(/<[^<>]*>/g, '');
+            } while (s !== prev);
+            return s;
         };
         return t;
     };
