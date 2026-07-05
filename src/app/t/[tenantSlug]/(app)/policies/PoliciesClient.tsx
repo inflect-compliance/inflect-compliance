@@ -2,6 +2,7 @@
 /* eslint-disable react-hooks/exhaustive-deps -- Various useEffect/useMemo dep arrays in this file deliberately omit identity-unstable callbacks (handlers recreated each render) or use selector functions whose change-detection happens elsewhere. Adding the deps would either trigger unnecessary re-runs OR cause infinite render loops; the proper structural fix is to wrap parent-level callbacks in useCallback. Tracked as follow-up. */
 import { TimestampTooltip } from '@/components/ui/timestamp-tooltip';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { NewPolicyModal } from './NewPolicyModal';
 import { Button } from '@/components/ui/button';
@@ -114,6 +115,7 @@ function PoliciesPageInner({
     permissions,
     translations: t,
 }: PoliciesClientProps) {
+    const tx = useTranslations('policies');
     const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
     const router = useRouter();
     // Null on SSR + first client render so the "Overdue" badge doesn't
@@ -272,7 +274,7 @@ function PoliciesPageInner({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
             });
-            if (!res.ok) throw new Error('Bulk action failed');
+            if (!res.ok) throw new Error(tx('bulk.failed'));
             await policiesQuery.mutate();
             setSelected(new Set());
         } finally {
@@ -283,7 +285,7 @@ function PoliciesPageInner({
         const defs: BulkActionDef[] = [
             {
                 value: 'assign',
-                label: 'Assign owner',
+                label: tx('bulk.assignOwner'),
                 renderInput: ({ value, setValue, setLabel }) => (
                     <UserCombobox
                         tenantSlug={tenantSlug}
@@ -294,7 +296,7 @@ function PoliciesPageInner({
                         }}
                         forceDropdown
                         matchTriggerWidth
-                        placeholder="Owner (blank = unassign)"
+                        placeholder={tx('bulk.ownerBlank')}
                         className="w-full sm:w-44"
                         id="bulk-value-input"
                     />
@@ -304,11 +306,11 @@ function PoliciesPageInner({
         // Archive + Delete are admin-gated (mirror the OWNER/ADMIN guards on
         // archivePolicy / bulkDeletePolicy).
         if (permissions.canAdmin) {
-            defs.push({ value: 'archive', label: 'Archive' });
-            defs.push({ value: 'delete', label: 'Delete', confirm: true });
+            defs.push({ value: 'archive', label: tx('bulk.archive') });
+            defs.push({ value: 'delete', label: tx('bulk.delete'), confirm: true });
         }
         return defs;
-    }, [tenantSlug, permissions.canAdmin]);
+    }, [tenantSlug, permissions.canAdmin, tx]);
 
     const liveFilters = useMemo(
         () => buildPolicyFilters(policies),
@@ -393,15 +395,15 @@ function PoliciesPageInner({
     // ─── Column visibility (Epic 52 / R10-PR6) ───
     const policyColumnList = useMemo(
         () => [
-            { id: 'title', label: 'Title' },
-            { id: 'status', label: 'Status' },
-            { id: 'category', label: 'Category' },
-            { id: 'owner', label: 'Owner' },
-            { id: 'version', label: 'Version' },
-            { id: 'nextReviewAt', label: 'Next Review' },
-            { id: 'updatedAt', label: 'Updated' },
+            { id: 'title', label: tx('colHeaders.title') },
+            { id: 'status', label: tx('colHeaders.status') },
+            { id: 'category', label: tx('colHeaders.category') },
+            { id: 'owner', label: tx('colHeaders.owner') },
+            { id: 'version', label: tx('colHeaders.version') },
+            { id: 'nextReviewAt', label: tx('colHeaders.nextReview') },
+            { id: 'updatedAt', label: tx('colHeaders.updated') },
         ],
-        [],
+        [tx],
     );
     const {
         columnVisibility,
@@ -416,7 +418,7 @@ function PoliciesPageInner({
     const policyColumns = useMemo(() => createColumns<PolicyRow>([
         {
             accessorKey: 'title',
-            header: 'Title',
+            header: tx('colHeaders.title'),
             // R12-PR2 — drop the block-level <p> description that
             // pushed rows to 60+px. Title cell stays single-line so
             // every row across the product reads at the same
@@ -433,7 +435,7 @@ function PoliciesPageInner({
         },
         {
             accessorKey: 'status',
-            header: 'Status',
+            header: tx('colHeaders.status'),
             // Pulls labels from the canonical POLICY_STATUS_LABELS so
             // the badge copy and the filter copy cannot drift.
             cell: ({ row }) => {
@@ -451,7 +453,7 @@ function PoliciesPageInner({
         },
         {
             id: 'category',
-            header: 'Category',
+            header: tx('colHeaders.category'),
             accessorFn: (p) => p.category || '—',
             cell: ({ getValue }) => (
                 <span className="text-xs text-content-muted">{getValue()}</span>
@@ -459,7 +461,7 @@ function PoliciesPageInner({
         },
         {
             id: 'owner',
-            header: 'Owner',
+            header: tx('colHeaders.owner'),
             // UI-14 (capstone): name-only via ownerDisplayName — name, or the
             // email local-part as a username, never the full email address.
             accessorFn: (p) =>
@@ -495,7 +497,7 @@ function PoliciesPageInner({
         },
         {
             id: 'version',
-            header: 'Version',
+            header: tx('colHeaders.version'),
             // Prefer the bound `currentVersion.versionNumber` (the
             // operator-visible counter that ratchets only on
             // publish). Falls back to `lifecycleVersion` (which
@@ -524,7 +526,7 @@ function PoliciesPageInner({
         },
         {
             id: 'nextReviewAt',
-            header: 'Next Review',
+            header: tx('colHeaders.nextReview'),
             accessorFn: (p) => p.nextReviewAt || '',
             cell: ({ row }) => {
                 const p = row.original;
@@ -540,7 +542,7 @@ function PoliciesPageInner({
                         <TimestampTooltip date={p.nextReviewAt} />
                         {isOverdue && (
                             <StatusBadge variant="error" data-testid={`policy-overdue-${p.id}`}>
-                                Overdue
+                                {tx('list.overdue')}
                             </StatusBadge>
                         )}
                     </span>
@@ -550,7 +552,7 @@ function PoliciesPageInner({
         },
         {
             id: 'updatedAt',
-            header: 'Updated',
+            header: tx('colHeaders.updated'),
             accessorFn: (p) => p.updatedAt,
             cell: ({ getValue }) => (
                 <TimestampTooltip
@@ -559,7 +561,7 @@ function PoliciesPageInner({
                 />
             ),
         },
-    ]), [tenantHref, hydratedNow]);
+    ]), [tenantHref, hydratedNow, tx]);
 
     return (
         <EntityListPage<PolicyRow>
@@ -567,7 +569,7 @@ function PoliciesPageInner({
             banner={<TruncationBanner truncated={truncated} />}
             header={{
                 breadcrumbs: [
-                    { label: 'Dashboard', href: tenantHref('/dashboard') },
+                    { label: tx('list.dashboard'), href: tenantHref('/dashboard') },
                     { label: t.title },
                 ],
                 title: t.title,
@@ -584,7 +586,7 @@ function PoliciesPageInner({
                    kpis slot (added in R23-PR-D). */
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
                     <KpiFilterCard
-                        label="Total policies"
+                        label={tx('list.kpiTotal')}
                         value={totalPolicies}
                         sparkline={policyTrends.total}
                         sparklineVariant={sparkColors.total}
@@ -593,7 +595,7 @@ function PoliciesPageInner({
                         selected={activePolicyKpi === 'total'}
                     />
                     <KpiFilterCard
-                        label="Draft"
+                        label={tx('list.kpiDraft')}
                         value={draftPolicies}
                         tone="attention"
                         sparkline={policyTrends.draft}
@@ -603,7 +605,7 @@ function PoliciesPageInner({
                         selected={activePolicyKpi === 'draft'}
                     />
                     <KpiFilterCard
-                        label="In review"
+                        label={tx('list.kpiInReview')}
                         value={inReviewPolicies}
                         tone="default"
                         sparkline={policyTrends.inReview}
@@ -613,7 +615,7 @@ function PoliciesPageInner({
                         selected={activePolicyKpi === 'inReview'}
                     />
                     <KpiFilterCard
-                        label="Approved"
+                        label={tx('list.kpiApproved')}
                         value={approvedPolicies}
                         tone="success"
                         sparkline={policyTrends.approved}
@@ -627,7 +629,7 @@ function PoliciesPageInner({
             filters={{
                 defs: visibleFilterDefs,
                 searchId: 'policies-search',
-                searchPlaceholder: 'Search policies…',
+                searchPlaceholder: tx('list.searchPlaceholder'),
                 toolbarLeading: permissions.canWrite ? (
                     <Button
                         variant="primary"
@@ -638,7 +640,7 @@ function PoliciesPageInner({
                         }}
                         id="new-policy-btn"
                     >
-                        Policy
+                        {tx('list.addBtn')}
                     </Button>
                 ) : undefined,
                 // "From template" now lives in the new-policy modal's
@@ -671,10 +673,10 @@ function PoliciesPageInner({
                     <EmptyState
                         size="sm"
                         variant="no-results"
-                        title="No policies match your filters"
-                        description="Try widening your search or clearing one of the active filters."
+                        title={tx('list.emptyFilterTitle')}
+                        description={tx('list.emptyFilterDesc')}
                         secondaryAction={{
-                            label: 'Clear filters',
+                            label: tx('list.clearFilters'),
                             onClick: () => filterCtx.clearAll(),
                         }}
                     />
@@ -682,11 +684,11 @@ function PoliciesPageInner({
                     <EmptyState
                         size="sm"
                         variant="no-records"
-                        title="No policies yet"
-                        description="Author the documents that govern how your organisation operates — security, privacy, acceptable use, incident response."
+                        title={tx('noPolicies')}
+                        description={tx('list.emptyDesc')}
                     />
                 ),
-                resourceName: (p) => (p ? 'policies' : 'policy'),
+                resourceName: (p) => (p ? tx('list.resourcePlural') : tx('list.resourceSingular')),
                 columnVisibility,
                 onColumnVisibilityChange: setColumnVisibility,
                 'data-testid': 'policies-table',
@@ -706,7 +708,7 @@ function PoliciesPageInner({
                               onApply={handleBulkApply}
                               applying={bulkApplying}
                               selectedCount={selected.size}
-                              entityLabel="policies"
+                              entityLabel={tx('list.entityLabel')}
                           />
                       )
                     : undefined,

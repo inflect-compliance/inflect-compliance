@@ -9,6 +9,7 @@
  * and the future `<NewPolicyModal>` (P2) render this component
  * unchanged; the wrapper supplies its own submit button + chrome.
  */
+import { useTranslations } from 'next-intl';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,7 @@ const POLICY_CATEGORIES: ComboboxOption[] = [
 ].map((c) => ({ value: c, label: c }));
 
 export function NewPolicyFields({ form }: { form: NewPolicyFormReturn }) {
+    const t = useTranslations('policies');
     return (
         <>
             {/* Template picker — only in template mode. */}
@@ -42,10 +44,10 @@ export function NewPolicyFields({ form }: { form: NewPolicyFormReturn }) {
                         'space-y-compact',
                     )}
                 >
-                    <Heading level={3}>Choose a Template</Heading>
+                    <Heading level={3}>{t('new.chooseTemplate')}</Heading>
                     {form.templates.length === 0 ? (
                         <p className="text-sm text-content-subtle">
-                            No templates available.
+                            {t('new.templatesEmpty')}
                         </p>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-tight max-h-60 overflow-y-auto">
@@ -75,11 +77,11 @@ export function NewPolicyFields({ form }: { form: NewPolicyFormReturn }) {
 
             {/* Form fields */}
             <FormField
-                label="Title"
+                label={t('new.fieldTitle')}
                 required
                 error={
                     form.fields.title.length > 0 && !form.fields.title.trim()
-                        ? 'Title cannot be empty.'
+                        ? t('new.titleEmpty')
                         : undefined
                 }
             >
@@ -88,17 +90,17 @@ export function NewPolicyFields({ form }: { form: NewPolicyFormReturn }) {
                     required
                     value={form.fields.title}
                     onChange={(e) => form.setField('title', e.target.value)}
-                    placeholder="e.g. Information Security Policy"
+                    placeholder={t('new.titlePlaceholder')}
                 />
             </FormField>
-            <FormField label="Description">
+            <FormField label={t('new.fieldDescription')}>
                 <Input
                     value={form.fields.description}
                     onChange={(e) => form.setField('description', e.target.value)}
-                    placeholder="Brief description of this policy"
+                    placeholder={t('new.descriptionPlaceholder')}
                 />
             </FormField>
-            <FormField label="Category">
+            <FormField label={t('new.fieldCategory')}>
                 <Combobox
                     id="policy-category-select"
                     name="category"
@@ -109,8 +111,8 @@ export function NewPolicyFields({ form }: { form: NewPolicyFormReturn }) {
                         ) ?? null
                     }
                     setSelected={(o) => form.setField('category', o?.value ?? '')}
-                    placeholder="Select category…"
-                    searchPlaceholder="Search categories…"
+                    placeholder={t('new.categoryPlaceholder')}
+                    searchPlaceholder={t('new.categorySearch')}
                     matchTriggerWidth
                     buttonProps={{ className: 'w-full' }}
                     caret
@@ -119,13 +121,13 @@ export function NewPolicyFields({ form }: { form: NewPolicyFormReturn }) {
 
             {/* Initial content for blank mode only */}
             {!form.isTemplateMode && (
-                <FormField label="Initial Content (Markdown)">
+                <FormField label={t('new.fieldContent')}>
                     <Textarea
                         id="policy-content-input"
                         className="min-h-[200px] font-mono text-sm"
                         value={form.fields.content}
                         onChange={(e) => form.setField('content', e.target.value)}
-                        placeholder="# Policy Content&#10;&#10;Write your policy here in Markdown..."
+                        placeholder={t('new.contentPlaceholder')}
                     />
                 </FormField>
             )}

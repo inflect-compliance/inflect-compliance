@@ -44,6 +44,7 @@ const FLOWS: HardenedFlow[] = [
         hookExport: 'useNewPolicyForm',
         modalPath: 'policies/NewPolicyModal.tsx',
         confirmCopy: /Discard policy\?/,
+        i18nConfirmKey: 'new.discard',
     },
     {
         label: 'tasks',

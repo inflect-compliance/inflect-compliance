@@ -27,6 +27,11 @@ const FILTER_DEFS = path.resolve(
 
 const clientSrc = readFileSync(POLICIES_CLIENT, 'utf8');
 const filterDefsSrc = readFileSync(FILTER_DEFS, 'utf8');
+// Search placeholder + column headers migrated to next-intl; resolve keys
+// against the en catalog.
+const EN_POLICIES = JSON.parse(
+    readFileSync(path.resolve(__dirname, '..', '..', 'messages/en.json'), 'utf8'),
+).policies as { list: Record<string, string>; colHeaders: Record<string, string> };
 
 describe('Policies list — Epic 45.1 shell + column wiring', () => {
     it('imports <EntityListPage> from the canonical path', () => {
@@ -68,7 +73,8 @@ describe('Policies list — Epic 45.1 shell + column wiring', () => {
         // policies page wires both props through the EntityListPage
         // `filters` seam.
         expect(clientSrc).toContain("searchId: 'policies-search'");
-        expect(clientSrc).toMatch(/searchPlaceholder:\s*['"]Search policies/);
+        expect(clientSrc).toMatch(/searchPlaceholder:\s*tx\('list\.searchPlaceholder'\)/);
+        expect(EN_POLICIES.list.searchPlaceholder).toMatch(/^Search policies/);
     });
 
     it('preserves row navigation to the detail page', () => {
@@ -79,7 +85,8 @@ describe('Policies list — Epic 45.1 shell + column wiring', () => {
 
     it('exposes the new Version column with currentVersion → lifecycleVersion fallback', () => {
         expect(clientSrc).toContain("id: 'version'");
-        expect(clientSrc).toContain("header: 'Version'");
+        expect(clientSrc).toContain("header: tx('colHeaders.version')");
+        expect(EN_POLICIES.colHeaders.version).toBe('Version');
         expect(clientSrc).toMatch(
             /p\.currentVersion\?\.versionNumber\s*\?\?\s*p\.lifecycleVersion/,
         );
