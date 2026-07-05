@@ -148,9 +148,6 @@ const UNMIGRATED_BASELINE: ReadonlySet<string> = new Set([
     "src/app/t/[tenantSlug]/(app)/tests/due/page.tsx",
     "src/app/t/[tenantSlug]/(app)/tests/page.tsx",
     "src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx",
-    "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/assessment/[assessmentId]/_components/AssessmentPrefillPanel.tsx",
-    "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/assessment/[assessmentId]/page.tsx",
-    "src/app/t/[tenantSlug]/(app)/vendors/dashboard/page.tsx",
     "src/app/t/[tenantSlug]/(app)/vendors/page.tsx",
     "src/app/t/[tenantSlug]/(app)/vulnerabilities/VulnerabilitiesClient.tsx",
 ]);
