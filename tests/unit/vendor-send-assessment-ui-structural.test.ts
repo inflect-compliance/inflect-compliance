@@ -30,7 +30,12 @@ describe('vendor detail — G-3 send-assessment wiring', () => {
     it('renders the Send-to-vendor trigger + modal confirm', () => {
         expect(src).toContain('send-assessment-btn');
         expect(src).toContain('confirm-send-assessment');
-        expect(src).toContain('Send assessment');
+        // "Send assessment" label migrated to next-intl; resolve against en.json
+        expect(src).toMatch(/tx\('detail\.sendAssessment'\)/);
+        const en = JSON.parse(
+            fs.readFileSync(path.resolve(__dirname, '../../messages/en.json'), 'utf8'),
+        ) as { vendors: { detail: Record<string, string> } };
+        expect(en.vendors.detail.sendAssessment).toBe('Send assessment');
     });
 
     it('uses the platform Modal / FormField / Combobox / CopyText primitives', () => {
