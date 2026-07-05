@@ -5,6 +5,7 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { AppIcon } from '@/components/icons/AppIcon';
@@ -32,6 +33,7 @@ export default function ControlTemplatesPage() {
     const tenantHref = useTenantHref();
     const router = useRouter();
     const { permissions } = useTenantContext();
+    const t = useTranslations('controls');
 
 
     const [templates, setTemplates] = useState<ControlTemplateRow[]>([]);
@@ -83,11 +85,11 @@ export default function ControlTemplatesPage() {
             });
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
-                throw new Error(typeof data.error === 'string' ? data.error : data.message || 'Failed to install templates');
+                throw new Error(typeof data.error === 'string' ? data.error : data.message || t('templates.installFailed'));
             }
             const result = await res.json();
             const count = Array.isArray(result) ? result.length : 1;
-            setSuccess(`Installed ${count} control(s) successfully!`);
+            setSuccess(t('templates.installed', { count }));
             setTimeout(() => router.push(tenantHref('/controls')), 1500);
 
         } catch (e) {
@@ -106,8 +108,8 @@ export default function ControlTemplatesPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <Heading level={1} id="templates-heading"><AppIcon name="templates" className="inline-block mr-2 align-text-bottom" /> Control Templates</Heading>
-                    <p className="text-content-muted text-sm">Select templates to install as controls in your register</p>
+                    <Heading level={1} id="templates-heading"><AppIcon name="templates" className="inline-block mr-2 align-text-bottom" /> {t('templates.title')}</Heading>
+                    <p className="text-content-muted text-sm">{t('templates.subtitle')}</p>
                 </div>
             </div>
 
@@ -130,7 +132,7 @@ export default function ControlTemplatesPage() {
                             disabled={selectedIds.size === 0 || installing}
                             id="install-selected-btn"
                         >
-                            {installing ? 'Installing...' : `Install Selected (${selectedIds.size})`}
+                            {installing ? t('templates.installing') : t('templates.installSelected', { count: selectedIds.size })}
                         </Button>
                     </div>
                 </div>
@@ -139,11 +141,11 @@ export default function ControlTemplatesPage() {
             {/* Template list */}
             <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                 {loading ? (
-                    <div className="p-12 text-center text-content-subtle animate-pulse">Loading templates…</div>
+                    <div className="p-12 text-center text-content-subtle animate-pulse">{t('templates.loading')}</div>
                 ) : filtered.length === 0 ? (
                     <InlineEmptyState
-                        title="No templates yet"
-                        description="Templates are seeded by your admin."
+                        title={t('templates.emptyTitle')}
+                        description={t('templates.emptyDesc')}
                     />
                 ) : (
                     (() => {
@@ -156,13 +158,13 @@ export default function ControlTemplatesPage() {
                                     <input type="checkbox" checked={selectedIds.has(row.original.id)} onChange={() => toggle(row.original.id)} className="rounded" />
                                 ),
                             },
-                            { accessorKey: 'code', header: 'Code', cell: ({ getValue }) => <span className="text-xs text-content-muted font-mono">{getValue() || '—'}</span> },
-                            { accessorKey: 'title', header: 'Name', cell: ({ getValue }) => <span className="font-medium text-content-emphasis">{getValue()}</span> },
+                            { accessorKey: 'code', header: t('templates.colCode'), cell: ({ getValue }) => <span className="text-xs text-content-muted font-mono">{getValue() || '—'}</span> },
+                            { accessorKey: 'title', header: t('templates.colName'), cell: ({ getValue }) => <span className="font-medium text-content-emphasis">{getValue()}</span> },
                             {
-                                accessorKey: 'category', header: 'Category',
+                                accessorKey: 'category', header: t('templates.colCategory'),
                                 cell: ({ getValue }) => getValue() ? <StatusBadge variant="info">{getValue()}</StatusBadge> : null,
                             },
-                            { accessorKey: 'description', header: 'Description', cell: ({ getValue }) => <span className="text-xs text-content-subtle truncate max-w-xs">{getValue() || '—'}</span> },
+                            { accessorKey: 'description', header: t('templates.colDescription'), cell: ({ getValue }) => <span className="text-xs text-content-subtle truncate max-w-xs">{getValue() || '—'}</span> },
                         ]);
                         return (
                             <DataTable
@@ -172,11 +174,11 @@ export default function ControlTemplatesPage() {
                                 onRowClick={(row) => toggle(row.original.id)}
                                 emptyState={
                                     <TableEmptyState
-                                        title="No templates yet"
-                                        description="Templates are seeded by your admin."
+                                        title={t('templates.emptyTitle')}
+                                        description={t('templates.emptyDesc')}
                                     />
                                 }
-                                resourceName={(p) => p ? 'templates' : 'template'}
+                                resourceName={(p) => p ? t('templates.resourcePlural') : t('templates.resourceSingular')}
                                 data-testid="templates-table"
                             />
                         );

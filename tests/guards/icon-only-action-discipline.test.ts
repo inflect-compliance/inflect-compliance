@@ -42,11 +42,12 @@ describe('icon-only action discipline', () => {
     // distinctive enough that its presence proves the icon-only button is
     // wired — and a revert to a text `<Button>Freeze Pack</Button>` would
     // drop the `label=`/`aria-label=` and fail here.
-    const ICON_ACTION_SITES: Array<{ file: string; label: string }> = [
+    const ICON_ACTION_SITES: Array<{ file: string; label: string; i18nKey?: string }> = [
         { file: `${APP}/audits/packs/[packId]/page.tsx`, label: 'Freeze pack' },
         { file: `${APP}/audits/packs/[packId]/page.tsx`, label: 'Generate share link' },
         { file: `${APP}/audits/packs/[packId]/page.tsx`, label: 'Clone for retest' },
-        { file: `${APP}/controls/dashboard/page.tsx`, label: 'Consistency check' },
+        // label migrated to next-intl — resolves through the controls catalog.
+        { file: `${APP}/controls/dashboard/page.tsx`, label: 'Consistency check', i18nKey: 'dashboard.consistencyCheck' },
         { file: `${APP}/tests/due/page.tsx`, label: 'Run due planning' },
         // UI-18: the evidence "Upload file" + "Import ZIP" icon buttons were
         // removed — the +Evidence button opens the upload modal directly.
@@ -55,13 +56,24 @@ describe('icon-only action discipline', () => {
         // it's no longer an app-layer site.
     ];
 
-    for (const { file, label } of ICON_ACTION_SITES) {
+    for (const { file, label, i18nKey } of ICON_ACTION_SITES) {
         it(`IconAction site stays icon-only: "${label}"`, () => {
             const src = read(file);
             expect(src).toMatch(/import \{ IconAction \} from '@\/components\/ui\/icon-action'/);
-            expect(src).toMatch(
-                new RegExp(`<IconAction[\\s\\S]*?label="${label}"`),
-            );
+            if (i18nKey) {
+                expect(src).toMatch(
+                    new RegExp(`<IconAction[\\s\\S]*?label=\\{t\\('${i18nKey.replace(/\./g, '\\.')}'\\)\\}`),
+                );
+                const en = JSON.parse(read('messages/en.json')) as { controls: Record<string, unknown> };
+                const resolved = i18nKey
+                    .split('.')
+                    .reduce<unknown>((o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), en.controls);
+                expect(resolved).toBe(label);
+            } else {
+                expect(src).toMatch(
+                    new RegExp(`<IconAction[\\s\\S]*?label="${label}"`),
+                );
+            }
         });
     }
 

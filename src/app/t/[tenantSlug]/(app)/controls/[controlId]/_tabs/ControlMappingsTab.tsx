@@ -14,6 +14,7 @@
  * Mappings tab-badge count stays in sync after a map / unmap.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useToastWithUndo } from '@/components/ui/hooks';
@@ -25,6 +26,7 @@ import { CopyText } from '@/components/ui/copy-text';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 import { DataTable, createColumns } from '@/components/ui/table';
+import { Plus } from '@/components/ui/icons/nucleo';
 import type { FrameworkDTO, RequirementDTO, FrameworkMappingDTO } from '@/lib/dto';
 
 interface ControlMappingsTabProps {
@@ -40,6 +42,7 @@ export function ControlMappingsTab({
     onMutated,
 }: ControlMappingsTabProps) {
     const apiUrl = useTenantApiUrl();
+    const t = useTranslations('controls');
     const triggerUndoToast = useToastWithUndo();
 
     const mappingsSWR = useTenantSWR<FrameworkMappingDTO[]>(
@@ -106,8 +109,8 @@ export function ControlMappingsTab({
             );
         }
         triggerUndoToast({
-            message: 'Requirement unmapped',
-            undoMessage: 'Undo',
+            message: t('mappingsTab.unmapped'),
+            undoMessage: t('mappingsTab.undo'),
             action: async () => {
                 const res = await fetch(
                     apiUrl(`/controls/${controlId}/requirements`),
@@ -117,7 +120,7 @@ export function ControlMappingsTab({
                         body: JSON.stringify({ requirementId: reqId }),
                     },
                 );
-                if (!res.ok) throw new Error('Unmap failed');
+                if (!res.ok) throw new Error(t('mappingsTab.unmapFailed'));
                 await mappingsSWR.mutate();
                 onMutated();
             },
@@ -144,7 +147,7 @@ export function ControlMappingsTab({
             createColumns<FrameworkMappingDTO>([
                 {
                     id: 'framework',
-                    header: 'Framework',
+                    header: t('mappingsTab.colFramework'),
                     cell: ({ row }) => (
                         <span className="text-sm text-content-emphasis">
                             {row.original.fromRequirement?.framework?.name || '—'}
@@ -153,7 +156,7 @@ export function ControlMappingsTab({
                 },
                 {
                     id: 'requirement',
-                    header: 'Requirement',
+                    header: t('mappingsTab.colRequirement'),
                     cell: ({ row }) => {
                         const fromReq = row.original.fromRequirement;
                         return (
@@ -161,8 +164,8 @@ export function ControlMappingsTab({
                                 {fromReq?.code && (
                                     <CopyText
                                         value={fromReq.code}
-                                        label={`Copy requirement code ${fromReq.code}`}
-                                        successMessage="Requirement code copied"
+                                        label={t('mappingsTab.copyCode', { code: fromReq.code })}
+                                        successMessage={t('mappingsTab.codeCopied')}
                                         className="mr-2 text-content-subtle"
                                     >
                                         {fromReq.code}
@@ -177,7 +180,7 @@ export function ControlMappingsTab({
                     ? [
                           {
                               id: 'actions',
-                              header: 'Actions',
+                              header: t('mappingsTab.colActions'),
                               cell: ({ row }: { row: { original: FrameworkMappingDTO } }) => (
                                   <button
                                       className="text-content-error text-xs hover:text-content-error"
@@ -190,7 +193,7 @@ export function ControlMappingsTab({
                                       }
                                       id={`unmap-${row.original.id}`}
                                   >
-                                      × Remove
+                                      {t('mappingsTab.remove')}
                                   </button>
                               ),
                           },
@@ -207,8 +210,8 @@ export function ControlMappingsTab({
         <div className="space-y-default">
             {canWrite && (
                 <div className="flex justify-end">
-                    <Button variant="primary" onClick={() => setShowMapForm(!showMapForm)} id="map-requirement-btn">
-                        + Map Requirement
+                    <Button variant="primary" icon={<Plus className="-ml-0.5 -mr-2.5" />} onClick={() => setShowMapForm(!showMapForm)} id="map-requirement-btn">
+                        {t('mappingsTab.addMapping')}
                     </Button>
                 </div>
             )}
@@ -219,7 +222,7 @@ export function ControlMappingsTab({
                         selected={frameworks.map((f) => ({ value: f.key ?? f.id ?? '', label: f.name })).find((o) => o.value === selectedFramework) ?? null}
                         setSelected={(opt) => setSelectedFramework(opt?.value ?? '')}
                         options={frameworks.map((f) => ({ value: f.key ?? f.id ?? '', label: f.name }))}
-                        placeholder="Select Framework..."
+                        placeholder={t('mappingsTab.selectFramework')}
                         matchTriggerWidth
                     />
                     {requirements.length > 0 && (
@@ -229,11 +232,11 @@ export function ControlMappingsTab({
                                 selected={requirements.map((r) => ({ value: r.id, label: `${r.code ? `${r.code} — ` : ''}${r.title || r.description}` })).find((o) => o.value === selectedReq) ?? null}
                                 setSelected={(opt) => setSelectedReq(opt?.value ?? '')}
                                 options={requirements.map((r) => ({ value: r.id, label: `${r.code ? `${r.code} — ` : ''}${r.title || r.description}` }))}
-                                placeholder="Select Requirement..."
+                                placeholder={t('mappingsTab.selectRequirement')}
                                 matchTriggerWidth
                             />
                             <Button variant="primary" onClick={mapRequirement} disabled={!selectedReq || savingMap} id="submit-mapping-btn">
-                                {savingMap ? 'Mapping...' : 'Map'}
+                                {savingMap ? t('mappingsTab.mapping') : t('mappingsTab.map')}
                             </Button>
                         </>
                     )}
@@ -241,8 +244,8 @@ export function ControlMappingsTab({
             )}
             {mappingsSWR.error && !mappingsSWR.isLoading ? (
                 <InlineEmptyState
-                    title="Couldn't load mappings"
-                    description="Something went wrong fetching this control's framework mappings. Reload the page to try again."
+                    title={t('mappingsTab.errorTitle')}
+                    description={t('mappingsTab.errorDesc')}
                 />
             ) : (mappingsSWR.data?.length ?? 0) === 0 ? (
                 // Pre-migration the empty branch rendered an
@@ -260,8 +263,8 @@ export function ControlMappingsTab({
                     selectionEnabled={false}
                     emptyState={
                         <InlineEmptyState
-                            title="No framework mappings"
-                            description="Map this control to specific framework requirements to track coverage."
+                            title={t('mappingsTab.emptyTitle')}
+                            description={t('mappingsTab.emptyDesc')}
                         />
                     }
                 />
