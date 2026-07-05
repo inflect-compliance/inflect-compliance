@@ -123,7 +123,8 @@ describe("Controls editable side-panel interaction", () => {
         it("has an Activity tab backed by the activity feed", () => {
             expect(editPanel).toMatch(/PanelActivityFeed/);
             expect(editPanel).toMatch(/\/controls\/\$\{control\.id\}\/activity/);
-            expect(editPanel).toMatch(/label: "Activity"/);
+            expect(editPanel).toMatch(/label: tx\("detail\.tabs\.activity"\)/);
+            expect(JSON.parse(read("messages/en.json")).controls.detail.tabs.activity).toBe("Activity");
         });
     });
 

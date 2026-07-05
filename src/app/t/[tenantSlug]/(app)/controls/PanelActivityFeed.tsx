@@ -7,6 +7,7 @@
  * ago" — rather than a raw action-code log. Shared by both edit panels.
  */
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { formatRelativeTime } from "@/lib/format-date";
 
 interface ActivityEntry {
@@ -104,6 +105,7 @@ export function PanelActivityFeed({
     /** Tenant-scoped path, e.g. `/controls/{id}/activity` or `/tasks/{id}/activity`. */
     endpoint: string;
 }) {
+    const tx = useTranslations("controls");
     const [entries, setEntries] = useState<ActivityEntry[] | null>(null);
     const [error, setError] = useState(false);
 
@@ -125,13 +127,13 @@ export function PanelActivityFeed({
     }, [tenantSlug, endpoint]);
 
     if (error) {
-        return <p className="py-3 text-xs text-content-error">Couldn&apos;t load activity.</p>;
+        return <p className="py-3 text-xs text-content-error">{tx("detail.activity.error")}</p>;
     }
     if (entries === null) {
-        return <p className="py-3 text-xs text-content-subtle">Loading activity…</p>;
+        return <p className="py-3 text-xs text-content-subtle">{tx("detail.activity.loading")}</p>;
     }
     if (entries.length === 0) {
-        return <p className="py-3 text-xs text-content-subtle">No activity yet.</p>;
+        return <p className="py-3 text-xs text-content-subtle">{tx("detail.activity.empty")}</p>;
     }
 
     // Entries only render after the client fetch, so a render-time `now` is
@@ -141,7 +143,7 @@ export function PanelActivityFeed({
     return (
         <ol className="space-y-default" data-testid="panel-activity-feed">
             {entries.map((e) => {
-                const actor = e.user?.name || e.user?.email || "The system";
+                const actor = e.user?.name || e.user?.email || tx("detail.activity.system");
                 const detail = humanizeDetail(e.details);
                 return (
                     <li key={e.id} className="border-l-2 border-border-subtle pl-3">

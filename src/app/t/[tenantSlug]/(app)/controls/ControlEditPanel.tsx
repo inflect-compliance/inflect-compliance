@@ -13,6 +13,7 @@
  * blur and no separate edit button.
  */
 import { useCallback, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Heading } from "@/components/ui/typography";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
@@ -67,6 +68,7 @@ export function ControlEditPanel({
     /** Called after a successful save so the list reflects new name/owner. */
     onSaved: () => void;
 }) {
+    const tx = useTranslations("controls");
     const [tab, setTab] = useState<Tab>("details");
     const base = `/api/t/${tenantSlug}/controls/${control.id}`;
 
@@ -96,7 +98,7 @@ export function ControlEditPanel({
         if (!canWrite) return;
         const f = fieldsRef.current;
         if (f.name.trim().length < 3) {
-            setError("Name must be at least 3 characters — not saved.");
+            setError(tx("detail.errors.nameMin"));
             setSaveState("error");
             return;
         }
@@ -112,14 +114,14 @@ export function ControlEditPanel({
                     frequency: f.frequency || null,
                 }),
             });
-            if (!res.ok) throw new Error("Save failed");
+            if (!res.ok) throw new Error(tx("detail.errors.saveFailed"));
             setSaveState("saved");
             onSaved();
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Save failed");
+            setError(err instanceof Error ? err.message : tx("detail.errors.saveFailed"));
             setSaveState("error");
         }
-    }, [canWrite, base, onSaved]);
+    }, [canWrite, base, onSaved, tx]);
 
     const scheduleCommit = useCallback(() => {
         if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -156,19 +158,19 @@ export function ControlEditPanel({
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ ownerUserId: userId || null }),
                 });
-                if (!res.ok) throw new Error("Owner update failed");
+                if (!res.ok) throw new Error(tx("detail.errors.ownerUpdateFailed"));
                 setSaveState("saved");
                 onSaved();
             } catch (err) {
-                setError(err instanceof Error ? err.message : "Owner update failed");
+                setError(err instanceof Error ? err.message : tx("detail.errors.ownerUpdateFailed"));
                 setSaveState("error");
             }
         },
-        [canWrite, base, onSaved],
+        [canWrite, base, onSaved, tx],
     );
 
     return (
-        <div className="space-y-default" role="region" aria-label="Control editor" data-testid="control-edit-panel">
+        <div className="space-y-default" role="region" aria-label={tx("detail.editorAria.control")} data-testid="control-edit-panel">
             <div className="flex items-center gap-tight">
                 {(control.code || control.annexId) && (
                     <span className="font-mono text-xs text-content-muted">
@@ -183,7 +185,7 @@ export function ControlEditPanel({
             <Heading level={3} className="break-words">{control.name}</Heading>
 
             <PanelTabs<Tab>
-                tabs={[{ id: "details", label: "Details" }, { id: "activity", label: "Activity" }]}
+                tabs={[{ id: "details", label: tx("detail.tabs.details") }, { id: "activity", label: tx("detail.tabs.activity") }]}
                 active={tab}
                 onSelect={setTab}
             />
@@ -200,7 +202,7 @@ export function ControlEditPanel({
                         <fieldset className="space-y-default" disabled={!canWrite}>
                             <div>
                                 <label className="mb-1 block text-sm text-content-default" htmlFor="panel-name-input">
-                                    Name <RequiredMarker />
+                                    {tx("detail.fields.name")} <RequiredMarker />
                                 </label>
                                 <input
                                     id="panel-name-input"
@@ -216,7 +218,7 @@ export function ControlEditPanel({
                             </div>
                             <div>
                                 <label className="mb-1 block text-sm text-content-default" htmlFor="panel-category-input">
-                                    Category
+                                    {tx("detail.fields.category")}
                                 </label>
                                 <Combobox
                                     id="panel-category-input"
@@ -225,7 +227,7 @@ export function ControlEditPanel({
                                     selected={CATEGORY_OPTIONS.find((o) => o.value === category) ?? null}
                                     setSelected={(o) => update({ category: o?.value ?? "" }, true)}
                                     placeholder="—"
-                                    searchPlaceholder="Search categories…"
+                                    searchPlaceholder={tx("detail.fields.searchCategories")}
                                     disabled={!canWrite}
                                     matchTriggerWidth
                                     forceDropdown
@@ -235,7 +237,7 @@ export function ControlEditPanel({
                             </div>
                             <div>
                                 <label className="mb-1 block text-sm text-content-default" htmlFor="panel-frequency-input">
-                                    Frequency
+                                    {tx("detail.fields.frequency")}
                                 </label>
                                 <Combobox
                                     id="panel-frequency-input"
@@ -252,7 +254,7 @@ export function ControlEditPanel({
                                     caret
                                 />
                             </div>
-                            <FormField label="Owner" description="Search members to assign, or clear to unassign.">
+                            <FormField label={tx("detail.fields.owner")} description={tx("detail.fields.ownerHint")}>
                                 <UserCombobox
                                     id="panel-owner-input"
                                     name="ownerUserId"
@@ -264,7 +266,7 @@ export function ControlEditPanel({
                                         setOwnerId(userId ?? "");
                                         void commitOwner(userId ?? "");
                                     }}
-                                    placeholder={control.owner?.name || control.owner?.email || "Unassigned"}
+                                    placeholder={control.owner?.name || control.owner?.email || tx("detail.fields.unassigned")}
                                 />
                             </FormField>
                         </fieldset>
@@ -275,12 +277,12 @@ export function ControlEditPanel({
                                 aria-live="polite"
                             >
                                 {saveState === "saving"
-                                    ? "Saving…"
+                                    ? tx("detail.autosave.saving")
                                     : saveState === "saved"
-                                      ? "Saved"
+                                      ? tx("detail.autosave.saved")
                                       : saveState === "error"
-                                        ? "Not saved — see above"
-                                        : "Changes save automatically."}
+                                        ? tx("detail.autosave.notSaved")
+                                        : tx("detail.autosave.auto")}
                             </p>
                         )}
                     </div>

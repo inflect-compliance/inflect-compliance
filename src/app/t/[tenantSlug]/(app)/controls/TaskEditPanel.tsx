@@ -12,6 +12,7 @@
  * visible). Seeds the form from a fresh GET /tasks/{id} on mount.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Heading } from "@/components/ui/typography";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
@@ -79,6 +80,7 @@ export function TaskEditPanel({
     onClose?: () => void;
     onSaved: () => void;
 }) {
+    const tx = useTranslations("controls");
     const [tab, setTab] = useState<Tab>("details");
     const base = `/api/t/${tenantSlug}/tasks/${task.id}`;
 
@@ -145,7 +147,7 @@ export function TaskEditPanel({
         if (!canWrite || !loadedRef.current) return;
         const f = fieldsRef.current;
         if (f.title.trim().length < 1) {
-            setError("Title is required — not saved.");
+            setError(tx("detail.errors.titleRequired"));
             setSaveState("error");
             return;
         }
@@ -164,14 +166,14 @@ export function TaskEditPanel({
                     dueAt: f.dueAt || null,
                 }),
             });
-            if (!res.ok) throw new Error("Save failed");
+            if (!res.ok) throw new Error(tx("detail.errors.saveFailed"));
             setSaveState("saved");
             onSaved();
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Save failed");
+            setError(err instanceof Error ? err.message : tx("detail.errors.saveFailed"));
             setSaveState("error");
         }
-    }, [canWrite, base, onSaved]);
+    }, [canWrite, base, onSaved, tx]);
 
     const scheduleCommit = useCallback(() => {
         if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -211,19 +213,19 @@ export function TaskEditPanel({
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ assigneeUserId: userId || null }),
                 });
-                if (!res.ok) throw new Error("Assignee update failed");
+                if (!res.ok) throw new Error(tx("detail.errors.assigneeUpdateFailed"));
                 setSaveState("saved");
                 onSaved();
             } catch (err) {
-                setError(err instanceof Error ? err.message : "Assignee update failed");
+                setError(err instanceof Error ? err.message : tx("detail.errors.assigneeUpdateFailed"));
                 setSaveState("error");
             }
         },
-        [canWrite, base, onSaved],
+        [canWrite, base, onSaved, tx],
     );
 
     return (
-        <div className="space-y-default" role="region" aria-label="Task editor" data-testid="task-edit-panel">
+        <div className="space-y-default" role="region" aria-label={tx("detail.editorAria.task")} data-testid="task-edit-panel">
             <div className="flex items-center gap-tight">
                 {task.key && <span className="font-mono text-xs text-content-muted">{task.key}</span>}
                 <StatusBadge variant={TASK_STATUS_BADGE[task.status] ?? "neutral"} size="sm">
@@ -233,7 +235,7 @@ export function TaskEditPanel({
             <Heading level={3} className="break-words">{task.title}</Heading>
 
             <PanelTabs<Tab>
-                tabs={[{ id: "details", label: "Details" }, { id: "activity", label: "Activity" }]}
+                tabs={[{ id: "details", label: tx("detail.tabs.details") }, { id: "activity", label: tx("detail.tabs.activity") }]}
                 active={tab}
                 onSelect={setTab}
             />
@@ -250,7 +252,7 @@ export function TaskEditPanel({
                         <fieldset className="space-y-default" disabled={!canWrite}>
                             <div>
                                 <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-title">
-                                    Title <RequiredMarker />
+                                    {tx("detail.fields.title")} <RequiredMarker />
                                 </label>
                                 <input
                                     id="task-panel-title"
@@ -265,7 +267,7 @@ export function TaskEditPanel({
                             </div>
                             <div>
                                 <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-description">
-                                    Description
+                                    {tx("detail.fields.description")}
                                 </label>
                                 <textarea
                                     id="task-panel-description"
@@ -277,7 +279,7 @@ export function TaskEditPanel({
                                 />
                             </div>
                             <div>
-                                <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-type">Type</label>
+                                <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-type">{tx("detail.fields.type")}</label>
                                 <Combobox
                                     id="task-panel-type"
                                     name="type"
@@ -294,7 +296,7 @@ export function TaskEditPanel({
                             </div>
                             <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
                                 <div>
-                                    <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-severity">Severity</label>
+                                    <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-severity">{tx("detail.fields.severity")}</label>
                                     <Combobox
                                         id="task-panel-severity"
                                         name="severity"
@@ -310,7 +312,7 @@ export function TaskEditPanel({
                                     />
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-priority">Priority</label>
+                                    <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-priority">{tx("detail.fields.priority")}</label>
                                     <Combobox
                                         id="task-panel-priority"
                                         name="priority"
@@ -326,20 +328,20 @@ export function TaskEditPanel({
                                     />
                                 </div>
                             </div>
-                            <FormField label="Due Date">
+                            <FormField label={tx("detail.fields.dueDate")}>
                                 <DatePicker
                                     id="task-panel-due"
                                     className="w-full"
-                                    placeholder="Select date"
+                                    placeholder={tx("detail.fields.selectDate")}
                                     clearable
                                     align="start"
                                     value={parseYMD(dueAt)}
                                     onChange={(next) => update({ dueAt: toYMD(next) ?? "" }, true)}
                                     disabledDays={{ before: startOfUtcDay(new Date()) }}
-                                    aria-label="Due date"
+                                    aria-label={tx("detail.fields.dueDateAria")}
                                 />
                             </FormField>
-                            <FormField label="Assignee" description="Search members to assign, or clear to unassign.">
+                            <FormField label={tx("detail.fields.assignee")} description={tx("detail.fields.ownerHint")}>
                                 <UserCombobox
                                     id="task-panel-assignee"
                                     name="assigneeUserId"
@@ -351,7 +353,7 @@ export function TaskEditPanel({
                                         setAssigneeId(userId ?? "");
                                         void commitAssignee(userId ?? "");
                                     }}
-                                    placeholder={task.assignee?.name || "Unassigned"}
+                                    placeholder={task.assignee?.name || tx("detail.fields.unassigned")}
                                 />
                             </FormField>
                         </fieldset>
@@ -362,12 +364,12 @@ export function TaskEditPanel({
                                 aria-live="polite"
                             >
                                 {saveState === "saving"
-                                    ? "Saving…"
+                                    ? tx("detail.autosave.saving")
                                     : saveState === "saved"
-                                      ? "Saved"
+                                      ? tx("detail.autosave.saved")
                                       : saveState === "error"
-                                        ? "Not saved — see above"
-                                        : "Changes save automatically."}
+                                        ? tx("detail.autosave.notSaved")
+                                        : tx("detail.autosave.auto")}
                             </p>
                         )}
                     </div>

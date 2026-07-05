@@ -917,7 +917,76 @@
             "submit": "Create Control",
             "createFailed": "Failed to create control"
         },
-        "addControl": "Control"
+        "addControl": "Control",
+        "detail": {
+            "sheet": {
+                "controlDetail": "Control detail",
+                "loadingTitle": "Loading…",
+                "loadingControl": "Loading control…",
+                "controlTitle": "Control",
+                "loadFailed": "Failed to load control.",
+                "discardConfirm": "Discard unsaved changes?",
+                "code": "Code",
+                "applicability": "Applicability",
+                "na": "N/A",
+                "yes": "Yes",
+                "openFull": "Open full detail →",
+                "saveChanges": "Save changes",
+                "cancel": "Cancel"
+            },
+            "fields": {
+                "name": "Name",
+                "category": "Category",
+                "frequency": "Frequency",
+                "owner": "Owner",
+                "title": "Title",
+                "description": "Description",
+                "type": "Type",
+                "severity": "Severity",
+                "priority": "Priority",
+                "dueDate": "Due Date",
+                "assignee": "Assignee",
+                "searchCategories": "Search categories…",
+                "ownerHint": "Search members to assign, or clear to unassign.",
+                "unassigned": "Unassigned",
+                "selectDate": "Select date",
+                "dueDateAria": "Due date"
+            },
+            "autosave": {
+                "saving": "Saving…",
+                "saved": "Saved",
+                "notSaved": "Not saved — see above",
+                "auto": "Changes save automatically."
+            },
+            "errors": {
+                "nameMin": "Name must be at least 3 characters — not saved.",
+                "titleRequired": "Title is required — not saved.",
+                "saveFailed": "Save failed",
+                "ownerUpdateFailed": "Owner update failed",
+                "assigneeUpdateFailed": "Assignee update failed",
+                "updateFailed": "Update failed"
+            },
+            "tabs": {
+                "details": "Details",
+                "activity": "Activity",
+                "ariaLabel": "Panel sections"
+            },
+            "editorAria": {
+                "control": "Control editor",
+                "task": "Task editor"
+            },
+            "activity": {
+                "error": "Couldn't load activity.",
+                "loading": "Loading activity…",
+                "empty": "No activity yet.",
+                "system": "The system"
+            },
+            "taskRows": {
+                "error": "Couldn't load tasks.",
+                "loading": "Loading tasks…",
+                "empty": "No tasks for this control."
+            }
+        }
     },
     "evidence": {
         "title": "Evidence Library",

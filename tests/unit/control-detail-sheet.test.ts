@@ -19,6 +19,24 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+// next-intl is ESM (jest can't parse its export); mock it to resolve real
+// en.json values so any component load/render yields the original English.
+jest.mock('next-intl', () => {
+    const en = require('../../messages/en.json');
+    return {
+        useTranslations: (ns: string) => (key: string, params?: Record<string, unknown>) => {
+            let v = key
+                .split('.')
+                .reduce((o: unknown, k) =>
+                    o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined, en[ns]);
+            if (typeof v !== 'string') return key;
+            if (params) for (const [p, val] of Object.entries(params)) v = (v as string).replace(new RegExp(`\\{${p}\\}`, 'g'), String(val));
+            return v;
+        },
+        useLocale: () => 'en',
+    };
+});
+
 const ROOT = path.resolve(__dirname, '../../');
 function read(rel: string): string {
     return fs.readFileSync(path.join(ROOT, rel), 'utf-8');
@@ -26,6 +44,10 @@ function read(rel: string): string {
 
 const SHEET_SRC = read('src/app/t/[tenantSlug]/(app)/controls/ControlDetailSheet.tsx');
 const CLIENT_SRC = read('src/app/t/[tenantSlug]/(app)/controls/ControlsClient.tsx');
+// Catalog for source-grep assertions on strings migrated to next-intl keys.
+const EN_CONTROLS = JSON.parse(read('messages/en.json')).controls as {
+    detail: { sheet: Record<string, string> };
+};
 
 // ─── 1. Sheet composition ────────────────────────────────────────
 
@@ -118,13 +140,15 @@ describe('ControlDetailSheet — UX invariants', () => {
     });
 
     it('unsaved-changes guard prompts before close', () => {
-        expect(SHEET_SRC).toMatch(/window\.confirm\(['"]Discard unsaved changes\?['"]\)/);
+        expect(SHEET_SRC).toMatch(/window\.confirm\(tx\('detail\.sheet\.discardConfirm'\)\)/);
+        expect(EN_CONTROLS.detail.sheet.discardConfirm).toBe('Discard unsaved changes?');
     });
 
     it('renders a read-only summary card (status / applicability / owner / code)', () => {
         expect(SHEET_SRC).toMatch(/data-testid=["']control-sheet-summary["']/);
-        expect(SHEET_SRC).toMatch(/Applicability/);
-        expect(SHEET_SRC).toMatch(/Owner/);
+        expect(SHEET_SRC).toMatch(/tx\('detail\.sheet\.applicability'\)/);
+        expect(EN_CONTROLS.detail.sheet.applicability).toBe('Applicability');
+        expect(SHEET_SRC).toMatch(/tx\('detail\.fields\.owner'\)/);
     });
 
     it('"Open full detail" link routes to the canonical control page', () => {
