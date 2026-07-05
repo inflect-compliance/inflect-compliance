@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/cn';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { MetaStrip, type MetaItem } from '@/components/ui/meta-strip';
@@ -53,58 +54,59 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export function BiaDetailClient({ bia, tenantSlug }: { bia: BiaDetail; tenantSlug: string }) {
+    const tx = useTranslations('audits');
     const metaItems: MetaItem[] = [
-        { kind: 'status', label: 'Criticality', value: bia.criticality, variant: CRITICALITY_VARIANT[bia.criticality] ?? 'neutral' },
+        { kind: 'status', label: tx('biaDetail.metaCriticality'), value: bia.criticality, variant: CRITICALITY_VARIANT[bia.criticality] ?? 'neutral' },
     ];
-    if (bia.recovery) metaItems.push({ kind: 'status', label: 'Recovery', value: `#${bia.recovery.rank}`, variant: 'info' });
-    if (bia.ownerUser) metaItems.push({ kind: 'text', label: 'Owner', value: bia.ownerUser.name ?? bia.ownerUser.email });
+    if (bia.recovery) metaItems.push({ kind: 'status', label: tx('biaDetail.metaRecovery'), value: `#${bia.recovery.rank}`, variant: 'info' });
+    if (bia.ownerUser) metaItems.push({ kind: 'text', label: tx('biaDetail.metaOwner'), value: bia.ownerUser.name ?? bia.ownerUser.email });
 
     return (
         <EntityDetailLayout
             back={{ smart: true }}
             breadcrumbs={[
-                { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
-                { label: 'Internal Audit', href: `/t/${tenantSlug}/audits` },
-                { label: 'Business Continuity', href: `/t/${tenantSlug}/audits/business-continuity` },
+                { label: tx('crumb.dashboard'), href: `/t/${tenantSlug}/dashboard` },
+                { label: tx('crumb.internalAudit'), href: `/t/${tenantSlug}/audits` },
+                { label: tx('crumb.businessContinuity'), href: `/t/${tenantSlug}/audits/business-continuity` },
                 { label: bia.name },
             ]}
             title={bia.name}
             meta={<MetaStrip items={metaItems} />}
         >
             <div className="space-y-section">
-                <Section title="Recovery objectives">
+                <Section title={tx('biaDetail.secRecoveryObjectives')}>
                     <div className="grid grid-cols-1 gap-default sm:grid-cols-3">
                         <div className="p-3 rounded-lg bg-bg-default/50">
-                            <KPIStat id="bia-rto" value={hrs(bia.rtoHours)} label="RTO — recovery time" />
+                            <KPIStat id="bia-rto" value={hrs(bia.rtoHours)} label={tx('biaDetail.kpiRto')} />
                         </div>
                         <div className="p-3 rounded-lg bg-bg-default/50">
-                            <KPIStat value={hrs(bia.rpoHours)} label="RPO — data-loss window" />
+                            <KPIStat value={hrs(bia.rpoHours)} label={tx('biaDetail.kpiRpo')} />
                         </div>
                         <div className="p-3 rounded-lg bg-bg-default/50">
-                            <KPIStat value={hrs(bia.mtpdHours)} label="MTPD — max tolerable disruption" tone="attention" />
+                            <KPIStat value={hrs(bia.mtpdHours)} label={tx('biaDetail.kpiMtpd')} tone="attention" />
                         </div>
                     </div>
                 </Section>
 
                 {bia.recovery && (
-                    <Section title="Recovery priority">
+                    <Section title={tx('biaDetail.secRecoveryPriority')}>
                         <p className="text-sm text-content-default">
-                            <span className="font-semibold">Recovers #{bia.recovery.rank}</span> in the tenant sequence.
+                            {tx.rich('biaDetail.recoversSeq', { rank: bia.recovery.rank, b: (c) => <span className="font-semibold">{c}</span> })}
                         </p>
                         <p className="text-sm text-content-muted">{bia.recovery.rationale}</p>
                     </Section>
                 )}
 
                 {bia.impactProfile && bia.impactProfile.length > 0 && (
-                    <Section title="Impact over time">
+                    <Section title={tx('biaDetail.secImpact')}>
                         {/* A compact CSS grid (Epic 52 bans raw table elements in app
                             pages); impact ramps by financial/operational/reputational/legal. */}
                         <div className="grid grid-cols-5 gap-x-4 gap-y-1 text-sm">
-                            <div className="font-medium text-content-subtle">At</div>
-                            <div className="font-medium text-content-subtle">Financial</div>
-                            <div className="font-medium text-content-subtle">Operational</div>
-                            <div className="font-medium text-content-subtle">Reputational</div>
-                            <div className="font-medium text-content-subtle">Legal</div>
+                            <div className="font-medium text-content-subtle">{tx('biaDetail.impactAt')}</div>
+                            <div className="font-medium text-content-subtle">{tx('biaDetail.impactFinancial')}</div>
+                            <div className="font-medium text-content-subtle">{tx('biaDetail.impactOperational')}</div>
+                            <div className="font-medium text-content-subtle">{tx('biaDetail.impactReputational')}</div>
+                            <div className="font-medium text-content-subtle">{tx('biaDetail.impactLegal')}</div>
                             {bia.impactProfile.map((p, i) => (
                                 <div key={i} className="contents">
                                     <div className="tabular-nums border-t border-border-subtle pt-1">{p.atHours}h</div>
@@ -118,9 +120,9 @@ export function BiaDetailClient({ bia, tenantSlug }: { bia: BiaDetail; tenantSlu
                     </Section>
                 )}
 
-                <Section title="Dependencies">
+                <Section title={tx('biaDetail.secDependencies')}>
                     {bia.dependencies.length === 0 ? (
-                        <p className="text-sm text-content-subtle">No dependencies recorded.</p>
+                        <p className="text-sm text-content-subtle">{tx('biaDetail.dependenciesEmpty')}</p>
                     ) : (
                         <ul className="space-y-tight">
                             {bia.dependencies.map((d) => (
@@ -132,10 +134,10 @@ export function BiaDetailClient({ bia, tenantSlug }: { bia: BiaDetail; tenantSlu
                     )}
                 </Section>
 
-                <Section title="Linked process & controls">
+                <Section title={tx('biaDetail.secLinked')}>
                     {bia.processNode ? (
                         <p className="text-sm text-content-default">
-                            Process node:{' '}
+                            {tx('biaDetail.processNodePrefix')}{' '}
                             <Link
                                 href={`/t/${tenantSlug}/processes/${bia.processNode.processMapId}`}
                                 className="text-content-link hover:underline"
@@ -144,23 +146,22 @@ export function BiaDetailClient({ bia, tenantSlug }: { bia: BiaDetail; tenantSlu
                             </Link>
                         </p>
                     ) : (
-                        <p className="text-sm text-content-subtle">Not attached to a modeled process node.</p>
+                        <p className="text-sm text-content-subtle">{tx('biaDetail.notAttached')}</p>
                     )}
                     <p className="text-sm text-content-muted">
-                        {bia.evidenceLinks.length} continuity control{bia.evidenceLinks.length === 1 ? '' : 's'} link this BIA as
-                        evidence.
+                        {tx('biaDetail.controlsLink', { count: bia.evidenceLinks.length })}
                     </p>
                 </Section>
 
-                <Section title="Framework">
-                    <StatusBadge variant="success">Satisfies NIS2 Art.21(2)(c)</StatusBadge>
+                <Section title={tx('biaDetail.secFramework')}>
+                    <StatusBadge variant="success">{tx('biaDetail.satisfiesNis2')}</StatusBadge>
                     <p className="text-sm text-content-muted">
-                        Business continuity and crisis management — this analysis is the operational artifact for the requirement.
+                        {tx('biaDetail.frameworkDesc')}
                     </p>
                 </Section>
 
                 {bia.notes && (
-                    <Section title="Notes">
+                    <Section title={tx('biaDetail.secNotes')}>
                         <p className="whitespace-pre-wrap text-sm text-content-default">{bia.notes}</p>
                     </Section>
                 )}

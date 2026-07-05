@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -38,6 +39,7 @@ interface Props {
 }
 
 export function NewBiaModal({ tenantSlug, processNodeId, onClose, onCreated }: Props) {
+    const tx = useTranslations('audits');
     const [apiError, setApiError] = useState<string | null>(null);
     const {
         register,
@@ -66,11 +68,11 @@ export function NewBiaModal({ tenantSlug, processNodeId, onClose, onCreated }: P
                     processNodeId: processNodeId || undefined,
                 }),
             });
-            if (!res.ok) throw new Error('Failed to create BIA');
+            if (!res.ok) throw new Error(tx('bia.createFailed'));
             const created = (await res.json()) as { id: string };
             await onCreated(created.id);
         } catch (e) {
-            setApiError(e instanceof Error ? e.message : 'Failed to create BIA');
+            setApiError(e instanceof Error ? e.message : tx('bia.createFailed'));
         }
     };
 
@@ -81,11 +83,11 @@ export function NewBiaModal({ tenantSlug, processNodeId, onClose, onCreated }: P
                 if (!v && !isSubmitting) onClose();
             }}
             size="lg"
-            title="Create BIA"
-            description="Analyse a process's recovery objectives for business continuity."
+            title={tx('bia.createTitle')}
+            description={tx('bia.createDescShort')}
             preventDefaultClose={isSubmitting}
         >
-            <Modal.Header title="Create BIA" description="Analyse a process's recovery objectives (ISO 22301 / NIS2 Art.21(2)(c))." />
+            <Modal.Header title={tx('bia.createTitle')} description={tx('bia.createDescLong')} />
             <Modal.Form onSubmit={handleSubmit(onSubmit)}>
                 <Modal.Body>
                     {apiError && (
@@ -94,10 +96,10 @@ export function NewBiaModal({ tenantSlug, processNodeId, onClose, onCreated }: P
                         </div>
                     )}
                     <div className="space-y-default">
-                        <FormField label="Process / service" required error={errors.name?.message}>
-                            <Input id="bia-name-input" type="text" placeholder="e.g. Payment Processing" autoComplete="off" {...register('name')} />
+                        <FormField label={tx('bia.fieldProcess')} required error={errors.name?.message}>
+                            <Input id="bia-name-input" type="text" placeholder={tx('bia.phProcess')} autoComplete="off" {...register('name')} />
                         </FormField>
-                        <FormField label="Criticality" required error={errors.criticality?.message}>
+                        <FormField label={tx('bia.fieldCriticality')} required error={errors.criticality?.message}>
                             <Controller
                                 control={control}
                                 name="criticality"
@@ -108,7 +110,7 @@ export function NewBiaModal({ tenantSlug, processNodeId, onClose, onCreated }: P
                                         options={CRITICALITY_OPTIONS}
                                         selected={CRITICALITY_OPTIONS.find((o) => o.value === field.value) ?? null}
                                         setSelected={(o) => field.onChange(o?.value ?? 'HIGH')}
-                                        placeholder="Select criticality…"
+                                        placeholder={tx('bia.phCriticality')}
                                         hideSearch
                                         matchTriggerWidth
                                         forceDropdown
@@ -119,27 +121,27 @@ export function NewBiaModal({ tenantSlug, processNodeId, onClose, onCreated }: P
                             />
                         </FormField>
                         <div className="grid grid-cols-1 gap-default sm:grid-cols-3">
-                            <FormField label="RTO (hours)" hint="Recovery Time Objective" error={errors.rtoHours?.message}>
-                                <Input id="bia-rto-input" type="text" inputMode="numeric" placeholder="e.g. 4" {...register('rtoHours', { setValueAs: numberSetValueAs })} />
+                            <FormField label={tx('bia.fieldRto')} hint={tx('bia.hintRto')} error={errors.rtoHours?.message}>
+                                <Input id="bia-rto-input" type="text" inputMode="numeric" placeholder={tx('bia.phRto')} {...register('rtoHours', { setValueAs: numberSetValueAs })} />
                             </FormField>
-                            <FormField label="RPO (hours)" hint="Recovery Point Objective" error={errors.rpoHours?.message}>
-                                <Input id="bia-rpo-input" type="text" inputMode="numeric" placeholder="e.g. 1" {...register('rpoHours', { setValueAs: numberSetValueAs })} />
+                            <FormField label={tx('bia.fieldRpo')} hint={tx('bia.hintRpo')} error={errors.rpoHours?.message}>
+                                <Input id="bia-rpo-input" type="text" inputMode="numeric" placeholder={tx('bia.phRpo')} {...register('rpoHours', { setValueAs: numberSetValueAs })} />
                             </FormField>
-                            <FormField label="MTPD (hours)" hint="Max Tolerable Period of Disruption" error={errors.mtpdHours?.message}>
-                                <Input id="bia-mtpd-input" type="text" inputMode="numeric" placeholder="e.g. 8" {...register('mtpdHours', { setValueAs: numberSetValueAs })} />
+                            <FormField label={tx('bia.fieldMtpd')} hint={tx('bia.hintMtpd')} error={errors.mtpdHours?.message}>
+                                <Input id="bia-mtpd-input" type="text" inputMode="numeric" placeholder={tx('bia.phMtpd')} {...register('mtpdHours', { setValueAs: numberSetValueAs })} />
                             </FormField>
                         </div>
-                        <FormField label="Notes" error={errors.notes?.message}>
-                            <Textarea id="bia-notes-input" rows={3} placeholder="Single points of failure, recovery gaps, dependency notes…" {...register('notes')} />
+                        <FormField label={tx('bia.fieldNotes')} error={errors.notes?.message}>
+                            <Textarea id="bia-notes-input" rows={3} placeholder={tx('bia.phNotes')} {...register('notes')} />
                         </FormField>
                     </div>
                 </Modal.Body>
                 <Modal.Footer>
                     <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
-                        Cancel
+                        {tx('bia.cancel')}
                     </Button>
                     <Button type="submit" variant="primary" disabled={isSubmitting}>
-                        {isSubmitting ? 'Creating…' : 'Create BIA'}
+                        {isSubmitting ? tx('bia.creating') : tx('bia.create')}
                     </Button>
                 </Modal.Footer>
             </Modal.Form>

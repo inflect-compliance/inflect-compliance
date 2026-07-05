@@ -8,6 +8,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Plus } from '@/components/ui/icons/nucleo/plus';
 import { LifeRing } from '@/components/ui/icons/nucleo/life-ring';
 import { EntityListPage } from '@/components/layout/EntityListPage';
@@ -65,6 +66,7 @@ export function BusinessContinuityClient(props: Props) {
 }
 
 function BusinessContinuityInner({ initialRows, tenantSlug, canWrite }: Props) {
+    const tx = useTranslations('audits');
     const router = useRouter();
     const searchParams = useSearchParams();
     const { state, hasActive } = useFilters();
@@ -113,7 +115,7 @@ function BusinessContinuityInner({ initialRows, tenantSlug, canWrite }: Props) {
                 },
                 {
                     id: 'name',
-                    header: 'Process',
+                    header: tx('bia.colProcess'),
                     accessorFn: (r) => r.name,
                     cell: ({ row }) => (
                         <div className="min-w-0" data-testid={`bia-row-${row.original.id}`}>
@@ -126,7 +128,7 @@ function BusinessContinuityInner({ initialRows, tenantSlug, canWrite }: Props) {
                 },
                 {
                     id: 'criticality',
-                    header: 'Criticality',
+                    header: tx('bia.colCriticality'),
                     accessorFn: (r) => r.criticality,
                     cell: ({ row }) => (
                         <StatusBadge variant={CRITICALITY_VARIANT[row.original.criticality] ?? 'neutral'}>
@@ -139,7 +141,7 @@ function BusinessContinuityInner({ initialRows, tenantSlug, canWrite }: Props) {
                 { id: 'mtpd', header: 'MTPD', accessorFn: (r) => r.mtpdHours ?? -1, cell: ({ row }) => <span className="tabular-nums text-content-muted">{hrs(row.original.mtpdHours)}</span> },
                 {
                     id: 'owner',
-                    header: 'Owner',
+                    header: tx('bia.colOwner'),
                     accessorFn: (r) => r.ownerUser?.name ?? r.ownerUser?.email ?? '',
                     cell: ({ row }) => (
                         <span className="text-content-muted">
@@ -149,17 +151,17 @@ function BusinessContinuityInner({ initialRows, tenantSlug, canWrite }: Props) {
                 },
                 {
                     id: 'reviewed',
-                    header: 'Reviewed',
+                    header: tx('bia.colReviewed'),
                     accessorFn: (r) => r.reviewedAt ?? '',
                     cell: ({ row }) =>
                         isReviewOverdue(row.original.reviewedAt) ? (
-                            <StatusBadge variant="warning">Review overdue</StatusBadge>
+                            <StatusBadge variant="warning">{tx('bia.reviewOverdue')}</StatusBadge>
                         ) : (
                             <span className="text-content-muted">{formatDate(row.original.reviewedAt!)}</span>
                         ),
                 },
             ]),
-        [],
+        [tx],
     );
 
     return (
@@ -168,20 +170,20 @@ function BusinessContinuityInner({ initialRows, tenantSlug, canWrite }: Props) {
                 header={{
                     back: { smart: true },
                     breadcrumbs: [
-                        { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
-                        { label: 'Internal Audit', href: `/t/${tenantSlug}/audits` },
-                        { label: 'Business Continuity' },
+                        { label: tx('crumb.dashboard'), href: `/t/${tenantSlug}/dashboard` },
+                        { label: tx('crumb.internalAudit'), href: `/t/${tenantSlug}/audits` },
+                        { label: tx('crumb.businessContinuity') },
                     ],
                     title: (
                         <>
                             <LifeRing className="inline-block mr-2 h-5 w-5 align-text-bottom" />
-                            Business Continuity
+                            {tx('crumb.businessContinuity')}
                         </>
                     ),
-                    description: `${summary.total} process${summary.total === 1 ? '' : 'es'} analysed · ${summary.critical} critical · ${summary.overdue} review${summary.overdue === 1 ? '' : 's'} overdue. Ordered by recovery priority — what comes back first.`,
+                    description: tx('bia.description', { total: summary.total, critical: summary.critical, overdue: summary.overdue }),
                     actions: canWrite ? (
                         <Button variant="primary" icon={<Plus />} onClick={() => { setPrefillNode(undefined); setShowNew(true); }}>
-                            BIA
+                            {tx('bia.addBia')}
                         </Button>
                     ) : undefined,
                 }}
@@ -191,16 +193,12 @@ function BusinessContinuityInner({ initialRows, tenantSlug, canWrite }: Props) {
                     columns,
                     getRowId: (r) => r.id,
                     onRowClick: (row) => router.push(`/t/${tenantSlug}/audits/business-continuity/${row.original.id}`),
-                    resourceName: (plural) => (plural ? 'analyses' : 'analysis'),
+                    resourceName: (plural) => (plural ? tx('bia.resourceAnalyses') : tx('bia.resourceAnalysis')),
                     emptyState: (
                         <EmptyState
                             icon={LifeRing}
-                            title={hasActive ? 'No matching analyses' : 'No business impact analyses yet'}
-                            description={
-                                hasActive
-                                    ? 'Try clearing a filter.'
-                                    : 'Analyse a critical process — set its RTO/RPO/MTPD and criticality — to satisfy NIS2 Art.21(2)(c) business continuity.'
-                            }
+                            title={hasActive ? tx('bia.emptyMatchTitle') : tx('bia.emptyTitle')}
+                            description={hasActive ? tx('bia.emptyMatchDesc') : tx('bia.emptyDesc')}
                         />
                     ),
                 }}
