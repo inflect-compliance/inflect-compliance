@@ -10,6 +10,7 @@ import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { formatDateTime } from '@/lib/format-date';
+import { useTranslations } from 'next-intl';
 
 interface Health {
     connections: Array<{ id: string; name: string; lastTestedAt: string | null; lastTestStatus: string | null }>;
@@ -21,6 +22,7 @@ interface Health {
 export default function SharePointHealthPage() {
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
+    const t = useTranslations('admin');
     const [data, setData] = useState<Health | null>(null);
 
     useEffect(() => {
@@ -43,12 +45,12 @@ export default function SharePointHealthPage() {
             <BackAffordance />
             <PageBreadcrumbs
                 items={[
-                    { label: 'Admin', href: tenantHref('/admin') },
-                    { label: 'Integrations', href: tenantHref('/admin/integrations') },
-                    { label: 'SharePoint health' },
+                    { label: t('crumb.admin'), href: tenantHref('/admin') },
+                    { label: t('crumb.integrations'), href: tenantHref('/admin/integrations') },
+                    { label: t('crumb.sharepointHealth') },
                 ]}
             />
-            <Heading level={1}>SharePoint sync health</Heading>
+            <Heading level={1}>{t('sharepoint.healthTitle')}</Heading>
 
             {/* Connection strip */}
             <div className="grid grid-cols-1 gap-default sm:grid-cols-2 lg:grid-cols-3">
@@ -57,11 +59,11 @@ export default function SharePointHealthPage() {
                         <div className="flex items-center gap-default">
                             <span className="font-medium text-content-default">{c.name}</span>
                             <StatusBadge variant={c.lastTestStatus === 'error' ? 'error' : 'success'}>
-                                {c.lastTestStatus === 'error' ? 'Error' : 'OK'}
+                                {c.lastTestStatus === 'error' ? t('sharepoint.statusError') : t('sharepoint.ok')}
                             </StatusBadge>
                         </div>
                         <p className="text-xs text-content-muted">
-                            Last tested: {c.lastTestedAt ? formatDateTime(c.lastTestedAt) : 'never'}
+                            {t('sharepoint.lastTested', { date: c.lastTestedAt ? formatDateTime(c.lastTestedAt) : t('sharepoint.never') })}
                         </p>
                     </Card>
                 ))}
@@ -69,17 +71,17 @@ export default function SharePointHealthPage() {
 
             {/* Coverage + policy links */}
             <div className="grid grid-cols-2 gap-default sm:grid-cols-4">
-                <Card className="p-4"><KPIStat value={cov?.synced ?? 0} label="Evidence synced" /></Card>
-                <Card className="p-4"><KPIStat value={cov?.stale ?? 0} label="Stale" /></Card>
-                <Card className="p-4"><KPIStat value={cov?.failed ?? 0} label="Failed" /></Card>
-                <Card className="p-4"><KPIStat value={data?.policyLinks ?? 0} label="Policy links" /></Card>
+                <Card className="p-4"><KPIStat value={cov?.synced ?? 0} label={t('sharepoint.evidenceSynced')} /></Card>
+                <Card className="p-4"><KPIStat value={cov?.stale ?? 0} label={t('sharepoint.stale')} /></Card>
+                <Card className="p-4"><KPIStat value={cov?.failed ?? 0} label={t('sharepoint.failedKpi')} /></Card>
+                <Card className="p-4"><KPIStat value={data?.policyLinks ?? 0} label={t('sharepoint.policyLinks')} /></Card>
             </div>
 
             {/* Recent activity */}
             <Card className="space-y-default p-6">
-                <Heading level={2}>Recent sync activity</Heading>
+                <Heading level={2}>{t('sharepoint.recentActivity')}</Heading>
                 {(data?.executions ?? []).length === 0 ? (
-                    <p className="text-sm text-content-muted">No SharePoint activity yet.</p>
+                    <p className="text-sm text-content-muted">{t('sharepoint.activityEmpty')}</p>
                 ) : (
                     <ul className="divide-y divide-border-subtle">
                         {(data?.executions ?? []).map((e) => (

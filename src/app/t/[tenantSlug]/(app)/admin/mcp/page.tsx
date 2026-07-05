@@ -1,5 +1,6 @@
 import { SquareCheck, Workflow, BadgeCheck } from '@/components/ui/icons/nucleo';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { PageHeader } from '@/components/layout/PageHeader';
 
 export const dynamic = 'force-dynamic';
@@ -22,31 +23,29 @@ export default async function McpAdminPage({
 }) {
     const { tenantSlug } = await params;
     const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
+    const t = await getTranslations('admin');
 
     const cards = [
         {
             href: tenantHref('/agent-proposals'),
             id: 'mcp-agent-proposals-card',
             icon: SquareCheck,
-            title: 'Agent Proposals',
-            description:
-                'Review the propose-not-commit queue. Approve or reject the writes external agents submit via the MCP propose tools — nothing is created until a human approves.',
+            title: t('mcp.proposalsTitle'),
+            description: t('mcp.proposalsDesc'),
         },
         {
             href: tenantHref('/agent-runs'),
             id: 'mcp-agent-runs-card',
             icon: Workflow,
-            title: 'Agent Runs',
-            description:
-                'Observe the orchestrator. Start a workflow, watch its step timeline and cost, resume a paused run after acting on its proposals, or abort a runaway run.',
+            title: t('mcp.runsTitle'),
+            description: t('mcp.runsDesc'),
         },
         {
             href: tenantHref('/admin/mcp/agent-receipts'),
             id: 'mcp-agent-receipts-card',
             icon: BadgeCheck,
-            title: 'Agent Receipts',
-            description:
-                'Externally-verifiable, mediator-signed (pipelock) evidence of agent tool actions. Each verified Ed25519 receipt links to the hash-chained audit trail; export any receipt for independent verification.',
+            title: t('mcp.receiptsTitle'),
+            description: t('mcp.receiptsDesc'),
         },
     ];
 
@@ -55,12 +54,12 @@ export default async function McpAdminPage({
             <PageHeader
                 back={{ smart: true }}
                 breadcrumbs={[
-                    { label: 'Dashboard', href: tenantHref('/dashboard') },
-                    { label: 'Admin', href: tenantHref('/admin') },
-                    { label: 'MCP' },
+                    { label: t('crumb.dashboard'), href: tenantHref('/dashboard') },
+                    { label: t('crumb.admin'), href: tenantHref('/admin') },
+                    { label: t('crumb.mcp') },
                 ]}
-                title="MCP"
-                description="Agent (Model Context Protocol) human-in-the-loop tools — the approval queue and the orchestrator."
+                title={t('mcp.title')}
+                description={t('mcp.description')}
             />
 
             <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
