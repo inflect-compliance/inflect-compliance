@@ -64,6 +64,22 @@ function stripComments(src: string): string {
     return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 }
 
+/**
+ * Strip TypeScript generic type annotations + casts — `: Promise<{…}>`
+ * and `as Promise<Row[]>` — before scanning. These never hold
+ * user-facing UI text, but their closing `>` followed later by a JSX
+ * `<` makes the `JSX_TEXT` regex match the *code* in between (a
+ * server component's `params: Promise<…>` signature, or an
+ * `as unknown as Promise<Row[]>` cast sitting just above the
+ * `return (<Client …>`). Removing the annotation removes the false
+ * positive; because the stripped span is type-only, no real UI string
+ * can be lost. Without this, text-free `page.tsx`/`loading.tsx` server
+ * shims false-positive as "un-migrated".
+ */
+function stripTypeAnnotations(src: string): string {
+    return src.replace(/(:|(?:\bas\b))\s*[A-Za-z_][\w.]*\s*<[\s\S]*?>/g, '$1 _');
+}
+
 const USES_INTL = /\b(useTranslations|getTranslations)\b/;
 
 // A JSX text node holding a real (>=3-char lowercase) word, with no
@@ -79,7 +95,7 @@ const UI_PROP =
 
 /** Heuristic: does this source render hardcoded, user-facing text? */
 export function hasHardcodedUiText(raw: string): boolean {
-    const src = stripComments(raw);
+    const src = stripTypeAnnotations(stripComments(raw));
     return JSX_TEXT.test(src) || UI_PROP.test(src);
 }
 
@@ -102,16 +118,13 @@ function rel(abs: string): string {
 // Files that hardcode user-facing text and do NOT use next-intl.
 // This list ONLY shrinks. When you localise a file, remove it here
 // in the same PR (the no-stale test enforces this).
-const UNMIGRATED_BASELINE: ReadonlySet<string> = new Set([
-    "src/app/t/[tenantSlug]/(app)/clauses/loading.tsx",
-    "src/app/t/[tenantSlug]/(app)/controls/page.tsx",
-    "src/app/t/[tenantSlug]/(app)/dashboard/page.tsx",
-    "src/app/t/[tenantSlug]/(app)/error.tsx",
-    "src/app/t/[tenantSlug]/(app)/policies/new/page.tsx",
-    "src/app/t/[tenantSlug]/(app)/security-testing/page.tsx",
-    "src/app/t/[tenantSlug]/(app)/tasks/page.tsx",
-    "src/app/t/[tenantSlug]/(app)/vendors/page.tsx",
-]);
+// EMPTY — the surface-by-surface i18n migration is complete. Every
+// text-bearing `.tsx` under the tenant app tree now routes user-facing
+// strings through next-intl. This set stays empty: any new file that
+// renders hardcoded UI text without next-intl fails the forward test
+// below. (The former server-shim entries were retired once
+// `stripTypeAnnotations` removed the TS-generic false positive.)
+const UNMIGRATED_BASELINE: ReadonlySet<string> = new Set<string>([]);
 
 // ─── The ratchet ────────────────────────────────────────────────
 
@@ -190,5 +203,16 @@ describe('i18n adoption ratchet — detector self-test', () => {
 
     it('does NOT flag non-UI attributes (className / href / id)', () => {
         expect(hasHardcodedUiText('<div className="flex items-center" id="asset-row" />')).toBe(false);
+    });
+
+    it('does NOT flag TS generic annotations / casts adjacent to JSX', () => {
+        // A server page's async-params signature whose `Promise<{…}>`
+        // closing `>` precedes the `return (<Client>` — the code
+        // between must not read as a JSX text node.
+        const page =
+            'export default async function P({ params }: { params: Promise<{ tenantSlug: string }> }) {\n' +
+            '  const rows = (await load()) as unknown as Promise<Row[]>;\n' +
+            '  return (<Client rows={rows} />);\n}';
+        expect(hasHardcodedUiText(page)).toBe(false);
     });
 });

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { ErrorState } from '@/components/ui/error-state';
 import { Card } from '@/components/ui/card';
 
@@ -28,6 +29,8 @@ export default function AppSectionError({
     error: Error & { digest?: string };
     reset: () => void;
 }) {
+    const t = useTranslations('common');
+
     useEffect(() => {
         console.error('[AppSectionError]', error);
     }, [error]);
@@ -36,21 +39,20 @@ export default function AppSectionError({
         <div className="space-y-section animate-fadeIn">
             <Card className="max-w-xl mx-auto mt-12">
                 <ErrorState
-                    title="Something went wrong"
+                    title={t('error.title')}
                     description={
                         <>
-                            This page encountered an error. You can try again or
-                            navigate to another section using the sidebar.
+                            {t('error.body')}
                             {error.digest && (
                                 <span className="block mt-2 text-xs font-mono text-content-subtle">
-                                    Error ID: {error.digest}
+                                    {t('error.errorId', { id: error.digest })}
                                 </span>
                             )}
                         </>
                     }
                     onRetry={() => reset()}
                     secondaryAction={{
-                        label: 'Go to Dashboard',
+                        label: t('error.goToDashboard'),
                         onClick: () => {
                             window.location.href = '/dashboard';
                         },

@@ -23,7 +23,13 @@
         "actions": "Действия",
         "details": "Детайли",
         "theme": "Тема",
-        "language": "Език"
+        "language": "Език",
+        "error": {
+            "title": "Нещо се обърка",
+            "body": "Тази страница срещна грешка. Можете да опитате отново или да навигирате към друг раздел чрез страничната лента.",
+            "errorId": "ИД на грешка: {id}",
+            "goToDashboard": "Към таблото"
+        }
     },
     "login": {
         "title": "Inflect Compliance",
@@ -92,7 +98,7 @@
         "newAudit": "Нов одит",
         "newPolicy": "Нова политика",
         "exportReports": "Експорт на отчети",
-        "recentActivity": "Последна активност",
+        "recentActivity": "Скорошна активност",
         "noRecentActivity": "Няма скорошна активност",
         "hero": {
             "eyebrow": "Състояние на съответствието",
@@ -112,7 +118,8 @@
         "notStarted": "Не е започната",
         "inProgress": "В процес",
         "ready": "Готова",
-        "needsReview": "Нужен преглед"
+        "needsReview": "Нужен преглед",
+        "loadingAria": "Зареждане на клаузите"
     },
     "assets": {
         "title": "Инвентар на активите",

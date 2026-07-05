@@ -17,6 +17,7 @@ import { cachedSsrPayload } from '@/lib/cache/ssr-cache';
 import DashboardClient from './DashboardClient';
 import RecentActivityCard from './RecentActivityCard';
 import { Card } from '@/components/ui/card';
+import { getTranslations } from 'next-intl/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,6 +60,7 @@ export default async function DashboardPage({
     params: Promise<{ tenantSlug: string }>;
 }) {
     const { tenantSlug } = await params;
+    const t = await getTranslations('dashboard');
     const ctx = await getTenantCtx({ tenantSlug });
 
     // PR3 perf: fetch all three payloads in ONE parallel batch. Trends were
@@ -106,8 +108,8 @@ export default async function DashboardPage({
             >
                 <RecentActivityCard
                     tenantSlug={tenantSlug}
-                    label="Recent Activity"
-                    noActivityLabel="No recent activity"
+                    label={t('recentActivity')}
+                    noActivityLabel={t('noRecentActivity')}
                 />
             </Suspense>
         </DashboardClient>
