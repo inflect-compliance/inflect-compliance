@@ -13,6 +13,7 @@
  * field shown here), so the panel renders instantly with no fetch.
  */
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { AssetCriticalityBadge } from './_form/AssetCriticalityFields';
@@ -46,6 +47,7 @@ export function AssetDetailPanel({
     asset: AssetPanelRow;
     tenantHref: (path: string) => string;
 }) {
+    const t = useTranslations('assets');
     const statusVariant: StatusBadgeVariant =
         asset.status === 'RETIRED' ? 'neutral' : 'success';
     const subtitle = [asset.key, asset.type?.replace(/_/g, ' ')]
@@ -65,19 +67,19 @@ export function AssetDetailPanel({
                 />
             </div>
             <div className="mt-2">
-                <Row label="Status">
+                <Row label={t('detail.status')}>
                     <StatusBadge variant={statusVariant} size="sm">
                         {asset.status || 'ACTIVE'}
                     </StatusBadge>
                 </Row>
-                <Row label="Type">
+                <Row label={t('detail.type')}>
                     {asset.type ? asset.type.replace(/_/g, ' ') : '—'}
                 </Row>
-                <Row label="Owner">{asset.owner || '—'}</Row>
-                <Row label="Classification">{asset.classification || '—'}</Row>
-                <Row label="Confidentiality">{asset.confidentiality ?? '—'}</Row>
-                <Row label="Integrity">{asset.integrity ?? '—'}</Row>
-                <Row label="Availability">{asset.availability ?? '—'}</Row>
+                <Row label={t('detail.owner')}>{asset.owner || '—'}</Row>
+                <Row label={t('detail.classification')}>{asset.classification || '—'}</Row>
+                <Row label={t('detail.confidentiality')}>{asset.confidentiality ?? '—'}</Row>
+                <Row label={t('detail.integrity')}>{asset.integrity ?? '—'}</Row>
+                <Row label={t('detail.availability')}>{asset.availability ?? '—'}</Row>
             </div>
             <div className="mt-auto flex justify-end pt-4">
                 <Link
@@ -85,7 +87,7 @@ export function AssetDetailPanel({
                     id="asset-panel-full-view"
                     className={buttonVariants({ variant: 'primary', size: 'sm' })}
                 >
-                    Full view →
+                    {t('detail.fullView')}
                 </Link>
             </div>
         </div>

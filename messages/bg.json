@@ -93,7 +93,13 @@
         "newPolicy": "Нова политика",
         "exportReports": "Експорт на отчети",
         "recentActivity": "Последна активност",
-        "noRecentActivity": "Няма скорошна активност"
+        "noRecentActivity": "Няма скорошна активност",
+        "hero": {
+            "eyebrow": "Състояние на съответствието",
+            "regenerate": "Регенерирай",
+            "regenerating": "Регенериране…",
+            "maturitySuffix": "/ 100 зрялост"
+        }
     },
     "clauses": {
         "title": "Проследяване на клаузи по ISO 27001:2022",
@@ -212,7 +218,51 @@
             "saving": "Запазване…",
             "save": "Запази"
         },
-        "cancel": "Отказ"
+        "cancel": "Отказ",
+        "loadingAria": "Зареждане на активи",
+        "detail": {
+            "status": "Статус",
+            "type": "Тип",
+            "owner": "Отговорник",
+            "classification": "Класификация",
+            "confidentiality": "Поверителност",
+            "integrity": "Цялост",
+            "availability": "Наличност",
+            "fullView": "Пълен изглед →",
+            "assigned": "Възложено",
+            "statusPlaceholder": "Статус",
+            "statusActive": "Активен",
+            "statusRetired": "Изведен",
+            "changeStatusFailed": "Неуспешна промяна на статуса ({status})",
+            "changeStatusFailedGeneric": "Неуспешна промяна на статуса",
+            "crumbDashboard": "Табло",
+            "crumbAssets": "Активи",
+            "crumbFallback": "Актив",
+            "notFound": "Активът не е намерен.",
+            "attachedEvidence": "Прикачени доказателства",
+            "inheritedFromControls": "Наследени от контроли",
+            "activityTitle": "Дневник на активността на актива",
+            "activityDesc": "Специализиран поток на активността за този актив е в пътната карта. Дневникът за одит на ниво организация е достъпен от Администрация → Одит дневник.",
+            "editAsset": "Редактиране на актив",
+            "assignedTo": "Възложено на",
+            "location": "Местоположение",
+            "externalRef": "Външна референция",
+            "copyExternalRef": "Копирай външната референция {ref}",
+            "externalRefCopied": "Външната референция е копирана",
+            "dataResidency": "Местоположение на данните",
+            "criticalityHeading": "Критичност на актива",
+            "created": "Създадено",
+            "updated": "Обновено",
+            "tabs": {
+                "overview": "Преглед",
+                "tasks": "Задачи",
+                "evidence": "Доказателства",
+                "mappings": "Съответствия",
+                "traceability": "Проследимост",
+                "activity": "Активност",
+                "tests": "Тестове"
+            }
+        }
     },
     "risks": {
         "title": "Регистър на рисковете",
@@ -1965,7 +2015,56 @@
         "high": "Висока",
         "critical": "Критична",
         "verificationNotes": "Бележки за верификация",
-        "selectFinding": "Изберете констатация за преглед"
+        "selectFinding": "Изберете констатация за преглед",
+        "colVis": {
+            "title": "Заглавие",
+            "severity": "Сериозност",
+            "type": "Тип",
+            "owner": "Отговорник",
+            "status": "Статус"
+        },
+        "list": {
+            "crumbDashboard": "Табло",
+            "emptyDesc": "Констатациите обхващат несъответствия, наблюдения и възможности — какво е разкрил одитът и какво изисква проследяване."
+        },
+        "create": {
+            "title": "Нова констатация",
+            "desc": "Запишете одитна констатация.",
+            "headerDesc": "Опишете несъответствие, наблюдение или възможност — с неговия отговорник, контроли и засегнати рискове.",
+            "sectionDetails": "Детайли на констатацията",
+            "labelTitle": "Заглавие",
+            "placeholderTitle": "напр. Прегледите на достъпа не се извършват тримесечно",
+            "labelType": "Тип",
+            "labelSeverity": "Сериозност",
+            "labelAssignee": "Изпълнител",
+            "placeholderUnassigned": "Невъзложено",
+            "labelDueDate": "Краен срок",
+            "placeholderSelectDate": "Изберете дата",
+            "ariaDueDate": "Краен срок",
+            "labelDescription": "Описание",
+            "placeholderDescription": "Какво е наблюдавано?",
+            "sectionControlsRisks": "Контроли и рискове",
+            "labelLinkedControl": "Свързан контрол",
+            "descLinkedControl": "Контролът, срещу който е повдигната тази констатация.",
+            "placeholderNone": "— Няма",
+            "searchControls": "Търсене на контроли…",
+            "emptyControls": "Няма съвпадащи контроли",
+            "labelCompensatingControl": "Компенсиращ контрол",
+            "descCompensatingControl": "Контрол, който смекчава констатацията.",
+            "labelImplicatedRisks": "Засегнати рискове ({count} избрани)",
+            "searchRisks": "Търсене на рискове…",
+            "loadingRisks": "Зареждане на рискове…",
+            "sectionAnalysis": "Анализ",
+            "labelAnalysis": "Анализ / коментари",
+            "descAnalysis": "Свободен текст — криптиран при съхранение.",
+            "placeholderAnalysis": "Бележки от разследването, контекст, идеи за отстраняване…",
+            "cancel": "Отказ",
+            "creating": "Създаване…",
+            "submit": "Създай констатация",
+            "createFailed": "Неуспешно създаване на констатация ({status})",
+            "createFailedGeneric": "Неуспешно създаване на констатация",
+            "risksToLinkEmpty": "Няма рискове за свързване."
+        }
     },
     "mapping": {
         "title": "Рамково съпоставяне",

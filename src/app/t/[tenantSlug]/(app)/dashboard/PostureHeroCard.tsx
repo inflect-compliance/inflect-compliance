@@ -15,6 +15,7 @@
  * receives a non-null summary and defends against partial cache data.
  */
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/cn';
 import { cardVariants } from '@/components/ui/card';
 import { AnimatedNumber } from '@/components/ui/animated-number';
@@ -55,6 +56,7 @@ export function PostureHeroCard({
     onRegenerate,
     regenerating = false,
 }: PostureHeroCardProps) {
+    const t = useTranslations('dashboard');
     // Defend against partial/stale cache data — fall back to a neutral band,
     // an empty advice list, and a numeric-guarded score so a malformed row can
     // never crash the masthead.
@@ -90,7 +92,7 @@ export function PostureHeroCard({
                         disabled={regenerating}
                         data-testid="dashboard-hero-regenerate"
                     >
-                        {regenerating ? 'Regenerating…' : 'Regenerate'}
+                        {regenerating ? t('hero.regenerating') : t('hero.regenerate')}
                     </Button>
                 </div>
             )}
@@ -102,7 +104,7 @@ export function PostureHeroCard({
                     className="text-xs text-content-muted uppercase tracking-wide font-medium"
                     data-hero-metric-eyebrow
                 >
-                    Compliance posture
+                    {t('hero.eyebrow')}
                 </p>
                 <div className="flex items-baseline gap-default flex-wrap">
                     <p
@@ -122,7 +124,7 @@ export function PostureHeroCard({
                                     format={{ kind: 'decimal', fractionDigits: 0 }}
                                 />
                             </span>
-                            <span className="ml-1">/ 100 maturity</span>
+                            <span className="ml-1">{t('hero.maturitySuffix')}</span>
                         </p>
                     )}
                 </div>

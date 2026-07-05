@@ -147,7 +147,12 @@ describe('asset detail page source', () => {
         expect(src).not.toMatch(/Suggest Risks/);
     });
     it('titles the criticality block "Asset Criticality" and shows only the score (no C/I/A breakdown)', () => {
-        expect(src).toMatch(/Asset Criticality/);
+        // Heading migrated to next-intl; assert the key + its en value.
+        expect(src).toMatch(/t\('detail\.criticalityHeading'\)/);
+        const enAssets = JSON.parse(
+            fs.readFileSync(path.join(__dirname, '..', '..', 'messages/en.json'), 'utf8'),
+        ).assets;
+        expect(enAssets.detail.criticalityHeading).toBe('Asset Criticality');
         expect(src).not.toMatch(/Risk Assessment/);
         expect(src).toMatch(/AssetCriticalityBadge/);
         expect(src).not.toMatch(/label="Confidentiality"/);

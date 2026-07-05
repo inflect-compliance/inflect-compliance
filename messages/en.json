@@ -93,7 +93,13 @@
         "newPolicy": "New Policy",
         "exportReports": "Export Reports",
         "recentActivity": "Recent Activity",
-        "noRecentActivity": "No recent activity"
+        "noRecentActivity": "No recent activity",
+        "hero": {
+            "eyebrow": "Compliance posture",
+            "regenerate": "Regenerate",
+            "regenerating": "Regenerating…",
+            "maturitySuffix": "/ 100 maturity"
+        }
     },
     "clauses": {
         "title": "ISO 27001:2022 Clause Tracker",
@@ -212,7 +218,51 @@
             "saving": "Saving…",
             "save": "Save"
         },
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "loadingAria": "Loading assets",
+        "detail": {
+            "status": "Status",
+            "type": "Type",
+            "owner": "Owner",
+            "classification": "Classification",
+            "confidentiality": "Confidentiality",
+            "integrity": "Integrity",
+            "availability": "Availability",
+            "fullView": "Full view →",
+            "assigned": "Assigned",
+            "statusPlaceholder": "Status",
+            "statusActive": "Active",
+            "statusRetired": "Retired",
+            "changeStatusFailed": "Failed to change status ({status})",
+            "changeStatusFailedGeneric": "Failed to change status",
+            "crumbDashboard": "Dashboard",
+            "crumbAssets": "Assets",
+            "crumbFallback": "Asset",
+            "notFound": "Asset not found.",
+            "attachedEvidence": "Attached evidence",
+            "inheritedFromControls": "Inherited from controls",
+            "activityTitle": "Asset activity log",
+            "activityDesc": "A dedicated activity feed for this asset is on the roadmap. Tenant-wide audit log is available from Admin → Audit Log.",
+            "editAsset": "Edit asset",
+            "assignedTo": "Assigned to",
+            "location": "Location",
+            "externalRef": "External Ref",
+            "copyExternalRef": "Copy external reference {ref}",
+            "externalRefCopied": "External reference copied",
+            "dataResidency": "Data Residency",
+            "criticalityHeading": "Asset Criticality",
+            "created": "Created",
+            "updated": "Updated",
+            "tabs": {
+                "overview": "Overview",
+                "tasks": "Tasks",
+                "evidence": "Evidence",
+                "mappings": "Mappings",
+                "traceability": "Traceability",
+                "activity": "Activity",
+                "tests": "Tests"
+            }
+        }
     },
     "risks": {
         "title": "Risk Register",
@@ -1965,7 +2015,56 @@
         "high": "High",
         "critical": "Critical",
         "verificationNotes": "Verification Notes",
-        "selectFinding": "Select a finding to view details"
+        "selectFinding": "Select a finding to view details",
+        "colVis": {
+            "title": "Title",
+            "severity": "Severity",
+            "type": "Type",
+            "owner": "Owner",
+            "status": "Status"
+        },
+        "list": {
+            "crumbDashboard": "Dashboard",
+            "emptyDesc": "Findings capture nonconformities, observations, and opportunities — what an audit surfaced and what needs follow-up."
+        },
+        "create": {
+            "title": "New finding",
+            "desc": "Record an audit finding.",
+            "headerDesc": "Capture a nonconformity, observation, or opportunity — with its owner, controls, and implicated risks.",
+            "sectionDetails": "Finding details",
+            "labelTitle": "Title",
+            "placeholderTitle": "e.g. Access reviews not performed quarterly",
+            "labelType": "Type",
+            "labelSeverity": "Severity",
+            "labelAssignee": "Assignee",
+            "placeholderUnassigned": "Unassigned",
+            "labelDueDate": "Due date",
+            "placeholderSelectDate": "Select date",
+            "ariaDueDate": "Due date",
+            "labelDescription": "Description",
+            "placeholderDescription": "What was observed?",
+            "sectionControlsRisks": "Controls & risks",
+            "labelLinkedControl": "Linked control",
+            "descLinkedControl": "The control this finding is raised against.",
+            "placeholderNone": "— None",
+            "searchControls": "Search controls…",
+            "emptyControls": "No controls match",
+            "labelCompensatingControl": "Compensating control",
+            "descCompensatingControl": "A control that mitigates the finding.",
+            "labelImplicatedRisks": "Implicated risks ({count} selected)",
+            "searchRisks": "Search risks…",
+            "loadingRisks": "Loading risks…",
+            "sectionAnalysis": "Analysis",
+            "labelAnalysis": "Analysis / comments",
+            "descAnalysis": "Free-text notes — encrypted at rest.",
+            "placeholderAnalysis": "Investigation notes, context, remediation thoughts…",
+            "cancel": "Cancel",
+            "creating": "Creating…",
+            "submit": "Create finding",
+            "createFailed": "Failed to create finding ({status})",
+            "createFailedGeneric": "Failed to create finding",
+            "risksToLinkEmpty": "No risks to link."
+        }
     },
     "mapping": {
         "title": "Framework Mapping",
