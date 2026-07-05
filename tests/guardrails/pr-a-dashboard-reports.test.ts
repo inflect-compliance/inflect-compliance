@@ -63,6 +63,11 @@ describe('PR-A — dashboard balance + reports card', () => {
         const src = read(
             'src/app/t/[tenantSlug]/(app)/dashboard/DashboardClient.tsx',
         );
+        // The Evidence Status heading migrated to next-intl; resolve the
+        // key against the catalog so the intent (heading text) still holds.
+        const en = JSON.parse(read('messages/en.json')) as {
+            dashboard: Record<string, string>;
+        };
 
         it('passes the coverage trend to the Control Coverage card', () => {
             // Anchor on the `<ProgressCard id="control-coverage"` so
@@ -80,8 +85,9 @@ describe('PR-A — dashboard balance + reports card', () => {
             expect(src).toMatch(/<Card id="evidence-status"/);
             // Heading + non-wrapping StatusBreakdown live inside it.
             expect(src).toMatch(
-                /<Card id="evidence-status"[\s\S]{0,2000}<Heading[\s\S]{0,400}Evidence Status[\s\S]{0,2000}<StatusBreakdown/,
+                /<Card id="evidence-status"[\s\S]{0,2000}<Heading[\s\S]{0,400}\{t\('evidenceStatus'\)\}[\s\S]{0,2000}<StatusBreakdown/,
             );
+            expect(en.dashboard.evidenceStatus).toBe('Evidence Status');
         });
 
         it('Evidence Status surfaces a percent-current readout', () => {
