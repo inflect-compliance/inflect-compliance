@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -36,6 +37,7 @@ interface Props {
 }
 
 export function TemplateControlSuggestModal({ policyTitle, result, onConfirm, onSkip }: Props) {
+    const t = useTranslations('policies');
     // Pre-check from_toolkit suggestions; leave curated unchecked — the
     // tenant opts into our judgment explicitly.
     const [checked, setChecked] = useState<Record<string, boolean>>(() => {
@@ -67,15 +69,14 @@ export function TemplateControlSuggestModal({ policyTitle, result, onConfirm, on
 
     return (
         <Modal showModal setShowModal={(o) => (o ? null : onSkip())}>
-            <Modal.Header title={`Link "${policyTitle}" to suggested controls?`} />
+            <Modal.Header title={t('templates.suggestTitle', { title: policyTitle })} />
             <Modal.Body>
                 <div className="space-y-default">
                     <p className="text-sm text-content-muted">
-                        This template maps to {result.totalSuggested} control
-                        {result.totalSuggested === 1 ? '' : 's'} you already have installed.
-                        These are <strong>suggestions</strong> — review before relying on
-                        them for an audit. Linking a policy to a control records that the
-                        policy contributes to satisfying it.
+                        {t.rich('templates.suggestBody', {
+                            count: result.totalSuggested,
+                            strong: (c) => <strong>{c}</strong>,
+                        })}
                     </p>
 
                     {result.frameworks.map((fw) => (
@@ -89,7 +90,7 @@ export function TemplateControlSuggestModal({ policyTitle, result, onConfirm, on
                                     >
                                         <Checkbox
                                             id={`suggest-${s.controlId}`}
-                                            aria-label={`Link control ${s.controlName}`}
+                                            aria-label={t('templates.linkControlAria', { name: s.controlName })}
                                             checked={!!checked[s.controlId]}
                                             onCheckedChange={() => toggle(s.controlId)}
                                             className="mt-0.5"
@@ -100,11 +101,11 @@ export function TemplateControlSuggestModal({ policyTitle, result, onConfirm, on
                                                     {s.controlCode ? `${s.controlCode} — ` : ''}{s.controlName}
                                                 </span>
                                                 <StatusBadge variant={s.provenance === 'from_toolkit' ? 'info' : 'neutral'}>
-                                                    {s.provenance === 'from_toolkit' ? 'suggested (toolkit)' : 'suggested (curated)'}
+                                                    {s.provenance === 'from_toolkit' ? t('templates.suggestToolkit') : t('templates.suggestCurated')}
                                                 </StatusBadge>
                                             </div>
                                             <p className="text-xs text-content-subtle mt-0.5">
-                                                Satisfies {s.requirements.map((r) => r.code).join(', ')}
+                                                {t('templates.satisfies', { codes: s.requirements.map((r) => r.code).join(', ') })}
                                             </p>
                                         </div>
                                     </li>
@@ -114,18 +115,17 @@ export function TemplateControlSuggestModal({ policyTitle, result, onConfirm, on
                     ))}
 
                     <p className="text-xs text-content-subtle italic">
-                        Curated mappings are our judgment, not an authoritative compliance
-                        claim — they start unchecked so you opt in explicitly.
+                        {t('templates.curatedNote')}
                     </p>
                 </div>
             </Modal.Body>
             <Modal.Footer>
                 <Modal.Actions>
                     <Button variant="ghost" onClick={onSkip} disabled={submitting} id="suggest-skip">
-                        Skip
+                        {t('templates.skip')}
                     </Button>
                     <Button variant="primary" onClick={handleConfirm} disabled={submitting} id="suggest-confirm">
-                        {submitting ? 'Linking…' : `Link ${selectedIds.length} control${selectedIds.length === 1 ? '' : 's'}`}
+                        {submitting ? t('templates.linking') : t('templates.linkNControls', { count: selectedIds.length })}
                     </Button>
                 </Modal.Actions>
             </Modal.Footer>

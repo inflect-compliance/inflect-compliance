@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { Combobox } from '@/components/ui/combobox';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ interface EvidenceOption { value: string; label: string }
  * the PATCH /policies/[id]/evidence-items/[itemId] endpoint.
  */
 export function PolicyEvidenceChecklist({ policyId, items, canWrite, onChanged }: Props) {
+    const t = useTranslations('policies');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const [options, setOptions] = useState<EvidenceOption[]>([]);
@@ -62,9 +64,9 @@ export function PolicyEvidenceChecklist({ policyId, items, canWrite, onChanged }
     return (
         <Card>
             <div className="flex items-center justify-between mb-default">
-                <Heading level={3} className="text-sm">Evidence to Retain</Heading>
+                <Heading level={3} className="text-sm">{t('evidence.title')}</Heading>
                 <StatusBadge variant={linkedCount === items.length ? 'success' : 'neutral'}>
-                    {linkedCount}/{items.length} linked
+                    {t('evidence.linkedCount', { linked: linkedCount, total: items.length })}
                 </StatusBadge>
             </div>
             <ul className="space-y-tight" id="policy-evidence-checklist">
@@ -96,7 +98,7 @@ export function PolicyEvidenceChecklist({ policyId, items, canWrite, onChanged }
                                     onClick={() => patch(item.id, null)}
                                     id={`unlink-evidence-${item.id}`}
                                 >
-                                    Unlink
+                                    {t('evidence.unlink')}
                                 </Button>
                             ) : (
                                 <div className="w-56 shrink-0">
@@ -105,7 +107,7 @@ export function PolicyEvidenceChecklist({ policyId, items, canWrite, onChanged }
                                         selected={null}
                                         setSelected={(opt) => opt && patch(item.id, opt.value)}
                                         options={options}
-                                        placeholder="Link evidence…"
+                                        placeholder={t('evidence.linkPlaceholder')}
                                         matchTriggerWidth
                                         buttonProps={{ disabled: busy === item.id }}
                                     />
@@ -116,7 +118,7 @@ export function PolicyEvidenceChecklist({ policyId, items, canWrite, onChanged }
                 ))}
             </ul>
             <p className="mt-default text-xs text-content-subtle italic">
-                Suggested from the policy template — link each item to the evidence that proves the policy operates.
+                {t('evidence.note')}
             </p>
         </Card>
     );

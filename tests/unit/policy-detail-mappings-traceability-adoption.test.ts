@@ -22,11 +22,17 @@ const POLICY_DETAIL = path.resolve(
     '../../src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx',
 );
 const source = readFileSync(POLICY_DETAIL, 'utf8');
+// Tab labels migrated to next-intl; resolve the keys against the catalog.
+const EN_POLICIES = JSON.parse(
+    readFileSync(path.resolve(__dirname, '../../messages/en.json'), 'utf8'),
+).policies as { detail: Record<string, string> };
 
 describe('Policy detail — Mappings + Traceability tabs', () => {
     it('declares both tabs in the tab bar', () => {
-        expect(source).toMatch(/key:\s*'mappings'[\s\S]{0,40}label:\s*'Mappings'/);
-        expect(source).toMatch(/key:\s*'traceability'[\s\S]{0,40}label:\s*'Traceability'/);
+        expect(source).toMatch(/key:\s*'mappings'[\s\S]{0,60}label:\s*t\('detail\.tabMappings'\)/);
+        expect(source).toMatch(/key:\s*'traceability'[\s\S]{0,60}label:\s*t\('detail\.tabTraceability'\)/);
+        expect(EN_POLICIES.detail.tabMappings).toBe('Mappings');
+        expect(EN_POLICIES.detail.tabTraceability).toBe('Traceability');
     });
 
     it('widens the active-tab union to include mappings + traceability', () => {

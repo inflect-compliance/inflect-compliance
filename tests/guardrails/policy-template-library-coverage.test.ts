@@ -84,7 +84,12 @@ describe('ciso-toolkit policy library — seed + sync + UI', () => {
     it('the templates picker renders the ciso-toolkit source credit', () => {
         const page = read('src/app/t/[tenantSlug]/(app)/policies/templates/page.tsx');
         expect(page).toMatch(/source === 'ciso-toolkit'/);
-        expect(page).toContain('Adapted from');
+        // The credit copy moved into the catalog (next-intl); assert the key + its value.
+        expect(page).toMatch(/templates\.adaptedFrom/);
+        const en = JSON.parse(read('messages/en.json')) as {
+            policies: { templates: Record<string, string> };
+        };
+        expect(en.policies.templates.adaptedFrom).toContain('Adapted from');
         expect(page).toContain('github.com/D4d0/ciso-toolkit');
     });
 

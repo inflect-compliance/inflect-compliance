@@ -6,6 +6,7 @@
 
 import { formatDate } from '@/lib/format-date';
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
@@ -39,11 +40,26 @@ import { InheritedMappingsPanel } from '@/components/InheritedMappingsPanel';
 import { PolicySharePointSection } from './PolicySharePointSection';
 import { PolicyEvidenceChecklist } from './PolicyEvidenceChecklist';
 
+// Lazy-load loading states rendered via next-intl (module-scope dynamic()
+// loading fns can't call the hook directly, so they route through a component).
+function TraceabilityLoading() {
+    const t = useTranslations('policies');
+    return <div className="text-center text-content-subtle animate-pulse py-8">{t('detail.loadingTraceability')}</div>;
+}
+function EditorLoading() {
+    const t = useTranslations('policies');
+    return (
+        <Card elevation="inset" density="compact" className="text-center text-sm text-content-muted">
+            {t('detail.loadingEditor')}
+        </Card>
+    );
+}
+
 // Read-only traceability panel (linked controls + inherited risks/assets).
 // Lazy — only the Traceability tab needs it.
 const PolicyTraceabilityPanel = dynamic(() => import('@/components/PolicyTraceabilityPanel'), {
     ssr: false,
-    loading: () => <div className="text-center text-content-subtle animate-pulse py-8">Loading traceability…</div>,
+    loading: () => <TraceabilityLoading />,
 });
 
 // Lazy-load Tiptap. The editor + ProseMirror chunks land at
@@ -54,11 +70,7 @@ const RichTextEditor = dynamic(
     () => import('@/components/ui/RichTextEditor').then((m) => m.RichTextEditor),
     {
         ssr: false,
-        loading: () => (
-            <Card elevation="inset" density="compact" className="text-center text-sm text-content-muted">
-                Loading editor…
-            </Card>
-        ),
+        loading: () => <EditorLoading />,
     },
 );
 
@@ -76,6 +88,7 @@ const EVENT_ICONS: Record<string, string> = {
 type ContentMode = 'MARKDOWN' | 'EXTERNAL_LINK' | 'FILE';
 
 export default function PolicyDetailPage() {
+    const t = useTranslations('policies');
     const params = useParams();
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
@@ -119,7 +132,7 @@ export default function PolicyDetailPage() {
         setLoading(true);
         try {
             const res = await fetch(apiUrl(`/policies/${policyId}`));
-            if (!res.ok) throw new Error('Policy not found');
+            if (!res.ok) throw new Error(t('detail.notFound'));
             const data = await res.json();
             setPolicy(data);
             setReviewDays(data.reviewFrequencyDays?.toString() || '');
@@ -129,7 +142,7 @@ export default function PolicyDetailPage() {
         } finally {
             setLoading(false);
         }
-    }, [apiUrl, policyId]);
+    }, [apiUrl, policyId, t]);
 
     const fetchActivity = useCallback(async () => {
         setActivitiesLoading(true);
@@ -204,7 +217,7 @@ export default function PolicyDetailPage() {
                     method: 'POST',
                     body: formData,
                 });
-                if (!uploadRes.ok) throw new Error('File upload failed');
+                if (!uploadRes.ok) throw new Error(t('detail.errFileUpload'));
                 body.contentText = `File: ${selectedFile.name}`;
                 body.changeSummary = changeSummary || `Uploaded file: ${selectedFile.name}`;
             }
@@ -216,13 +229,13 @@ export default function PolicyDetailPage() {
             });
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
-                throw new Error(data.error || 'Failed to create version');
+                throw new Error(data.error || t('detail.errCreateVersion'));
             }
             setEditorContent(''); setExternalUrl(''); setChangeSummary(''); setEditorContentType('MARKDOWN');
             setSelectedFile(null); setTab('versions');
             await fetchPolicy();
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Unknown error');
+            setError(err instanceof Error ? err.message : t('detail.errUnknown'));
         } finally {
             setSaving(false);
         }
@@ -250,7 +263,7 @@ export default function PolicyDetailPage() {
         setActionLoading('review');
         try {
             const res = await fetch(apiUrl(`/policies/${policyId}/review`), { method: 'POST' });
-            if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed'); }
+            if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || t('detail.errFailed')); }
             const updated = await res.json().catch(() => null);
             await fetchPolicy();
             // "Mark reviewed" stamps the periodic review date — it does NOT
@@ -258,9 +271,9 @@ export default function PolicyDetailPage() {
             // subtle) success visible and reinforces what it did.
             const next = updated?.nextReviewAt;
             toast.success(
-                next ? `Marked reviewed — next review ${formatDate(next)}` : 'Marked reviewed',
+                next ? t('detail.markedReviewedNext', { date: formatDate(next) }) : t('detail.markedReviewed'),
             );
-        } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Unknown error'); } finally { setActionLoading(''); }
+        } catch (err: unknown) { setError(err instanceof Error ? err.message : t('detail.errUnknown')); } finally { setActionLoading(''); }
     };
 
     const requestApproval = async (versionId: string) => {
@@ -270,9 +283,9 @@ export default function PolicyDetailPage() {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ versionId }),
             });
-            if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed'); }
+            if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || t('detail.errFailed')); }
             await fetchPolicy();
-        } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Unknown error'); } finally { setActionLoading(''); }
+        } catch (err: unknown) { setError(err instanceof Error ? err.message : t('detail.errUnknown')); } finally { setActionLoading(''); }
     };
 
     const decideApproval = async (approvalId: string, decision: 'APPROVED' | 'REJECTED') => {
@@ -282,9 +295,9 @@ export default function PolicyDetailPage() {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ decision }),
             });
-            if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed'); }
+            if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || t('detail.errFailed')); }
             await fetchPolicy();
-        } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Unknown error'); } finally { setActionLoading(''); }
+        } catch (err: unknown) { setError(err instanceof Error ? err.message : t('detail.errUnknown')); } finally { setActionLoading(''); }
     };
 
     const publishVersion = async (versionId: string) => {
@@ -294,9 +307,9 @@ export default function PolicyDetailPage() {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ versionId }),
             });
-            if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed'); }
+            if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || t('detail.errFailed')); }
             await fetchPolicy();
-        } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Unknown error'); } finally { setActionLoading(''); }
+        } catch (err: unknown) { setError(err instanceof Error ? err.message : t('detail.errUnknown')); } finally { setActionLoading(''); }
     };
 
     const archivePolicy = async () => {
@@ -305,9 +318,9 @@ export default function PolicyDetailPage() {
             const res = await fetch(apiUrl(`/policies/${policyId}/archive`), {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
             });
-            if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed'); }
+            if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || t('detail.errFailed')); }
             await fetchPolicy();
-        } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Unknown error'); } finally { setActionLoading(''); }
+        } catch (err: unknown) { setError(err instanceof Error ? err.message : t('detail.errUnknown')); } finally { setActionLoading(''); }
     };
 
     // ── Helpers ──
@@ -336,7 +349,7 @@ export default function PolicyDetailPage() {
                 : renderPolicyMarkdown(v.contentText);
         const safe = sanitizeRichTextHtml(rawHtml);
         if (!safe.trim()) {
-            return <span className="text-content-subtle italic">No content</span>;
+            return <span className="text-content-subtle italic">{t('detail.contentEmpty')}</span>;
         }
         const enriched = enrichPolicyHtml(safe);
         return (
@@ -357,12 +370,12 @@ export default function PolicyDetailPage() {
         // eslint-disable-next-line react-hooks/purity
         const diff = Date.now() - d.getTime();
         const mins = Math.floor(diff / 60000);
-        if (mins < 1) return 'just now';
-        if (mins < 60) return `${mins}m ago`;
+        if (mins < 1) return t('detail.relJustNow');
+        if (mins < 60) return t('detail.relMinAgo', { mins });
         const hrs = Math.floor(mins / 60);
-        if (hrs < 24) return `${hrs}h ago`;
+        if (hrs < 24) return t('detail.relHrAgo', { hrs });
         const days = Math.floor(hrs / 24);
-        return days === 1 ? 'yesterday' : `${days}d ago`;
+        return days === 1 ? t('detail.relYesterday') : t('detail.relDaysAgo', { days });
     };
 
     const isOverdue = policy?.nextReviewAt && new Date(policy.nextReviewAt) < new Date() && policy.status !== 'ARCHIVED';
@@ -370,9 +383,9 @@ export default function PolicyDetailPage() {
     // ── Render ──
 
     const breadcrumbs = [
-        { label: 'Dashboard', href: tenantHref('/dashboard') },
-        { label: 'Policies', href: tenantHref('/policies') },
-        { label: policy?.title ?? 'Policy' },
+        { label: t('list.dashboard'), href: tenantHref('/dashboard') },
+        { label: t('detail.crumbPolicies'), href: tenantHref('/policies') },
+        { label: policy?.title ?? t('detail.crumbFallback') },
     ];
     if (loading) {
         return (
@@ -390,7 +403,7 @@ export default function PolicyDetailPage() {
     }
     if (!policy) {
         return (
-            <EntityDetailLayout empty={{ message: 'Policy not found.' }} title="" breadcrumbs={breadcrumbs}>
+            <EntityDetailLayout empty={{ message: t('detail.notFoundEmpty') }} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
@@ -403,12 +416,12 @@ export default function PolicyDetailPage() {
 
     type PolicyTab = 'current' | 'versions' | 'mappings' | 'traceability' | 'editor' | 'activity';
     const tabs: ReadonlyArray<{ key: PolicyTab; label: string }> = [
-        { key: 'current', label: 'Current' },
-        { key: 'versions', label: 'Versions' },
-        { key: 'mappings', label: 'Mappings' },
-        { key: 'traceability', label: 'Traceability' },
-        ...(canWrite ? ([{ key: 'editor' as const, label: 'Editor' }]) : []),
-        { key: 'activity', label: 'Activity' },
+        { key: 'current', label: t('detail.tabCurrent') },
+        { key: 'versions', label: t('detail.tabVersions') },
+        { key: 'mappings', label: t('detail.tabMappings') },
+        { key: 'traceability', label: t('detail.tabTraceability') },
+        ...(canWrite ? ([{ key: 'editor' as const, label: t('detail.tabEditor') }]) : []),
+        { key: 'activity', label: t('detail.tabActivity') },
     ];
 
     // Epic 45.3 — surface the active pending approval (if any) above
@@ -449,7 +462,7 @@ export default function PolicyDetailPage() {
                         {
                             kind: 'status',
                             id: 'policy-status',
-                            label: 'Status',
+                            label: t('detail.metaStatus'),
                             value: policy.status,
                             variant:
                                 POLICY_STATUS_VARIANT[policy.status] ??
@@ -458,7 +471,7 @@ export default function PolicyDetailPage() {
                         ...(policy.owner
                             ? [
                                   {
-                                      label: 'Owner',
+                                      label: t('detail.metaOwner'),
                                       value: policy.owner.name,
                                   } as const,
                               ]
@@ -466,7 +479,7 @@ export default function PolicyDetailPage() {
                         ...(policy.nextReviewAt
                             ? [
                                   {
-                                      label: 'Next Review',
+                                      label: t('detail.metaNextReview'),
                                       value: formatDate(
                                           policy.nextReviewAt,
                                       ),
@@ -492,7 +505,7 @@ export default function PolicyDetailPage() {
                         data-testid="export-policy-pdf-btn"
                         className={buttonVariants({ variant: 'secondary', size: 'sm' })}
                     >
-                        Export PDF
+                        {t('detail.exportPdf')}
                     </a>
                     {canWrite && policy.status !== 'ARCHIVED' && (
                         <button onClick={() => {
@@ -503,11 +516,11 @@ export default function PolicyDetailPage() {
                                     ? 'HTML'
                                     : 'MARKDOWN',
                             );
-                        }} className={buttonVariants({ variant: 'primary' })} id="new-version-btn"><Plus className="-ml-0.5 -mr-2.5" />Version</button>
+                        }} className={buttonVariants({ variant: 'primary' })} id="new-version-btn"><Plus className="-ml-0.5 -mr-2.5" />{t('detail.version')}</button>
                     )}
                     {canAdmin && policy.status !== 'ARCHIVED' && (
                         <Button variant="ghost" size="sm" className="text-content-muted hover:text-content-error" onClick={archivePolicy} disabled={actionLoading === 'archive'} id="archive-btn">
-                            {actionLoading === 'archive' ? '...' : 'Archive'}
+                            {actionLoading === 'archive' ? '...' : t('detail.archive')}
                         </Button>
                     )}
                 </>
@@ -544,22 +557,22 @@ export default function PolicyDetailPage() {
                             {policy.owner && <span>{policy.owner.name}</span>}
                             {policy.nextReviewAt && (
                                 <span className={isOverdue ? 'text-content-error' : ''}>
-                                    Review: {formatDate(policy.nextReviewAt)}
+                                    {t('detail.review', { date: formatDate(policy.nextReviewAt) })}
                                 </span>
                             )}
-                            {policy.reviewFrequencyDays && <span>Every {policy.reviewFrequencyDays}d</span>}
-                            {policy.lastReviewedAt && <span>Last reviewed {formatDate(policy.lastReviewedAt)}</span>}
-                            {isOverdue && <span className="text-content-error font-medium">Review overdue</span>}
-                            <span>{versions.length} version{versions.length !== 1 ? 's' : ''}</span>
+                            {policy.reviewFrequencyDays && <span>{t('detail.everyDays', { days: policy.reviewFrequencyDays })}</span>}
+                            {policy.lastReviewedAt && <span>{t('detail.lastReviewed', { date: formatDate(policy.lastReviewedAt) })}</span>}
+                            {isOverdue && <span className="text-content-error font-medium">{t('detail.reviewOverdue')}</span>}
+                            <span>{t('detail.versionsCount', { count: versions.length })}</span>
                         </div>
                         {/* Review controls */}
                         {canWrite && !editingReview && (
                             <div className="flex items-center gap-default mt-2">
                                 <button onClick={() => setEditingReview(true)} className="text-xs text-[var(--brand-default)] hover:text-[var(--brand-muted)]">
-                                    Edit review schedule
+                                    {t('detail.editReviewSchedule')}
                                 </button>
                                 {policy.status !== 'ARCHIVED' && (
-                                    <Tooltip content="Records a periodic review of this policy and updates the next-review date. This does not change the publication status — to publish, use Request Approval → Publish in the Versions tab.">
+                                    <Tooltip content={t('detail.markReviewedTooltip')}>
                                         <Button
                                             variant="secondary"
                                             size="xs"
@@ -567,7 +580,7 @@ export default function PolicyDetailPage() {
                                             disabled={actionLoading === 'review'}
                                             id="mark-reviewed-btn"
                                         >
-                                            {actionLoading === 'review' ? '…' : 'Mark reviewed'}
+                                            {actionLoading === 'review' ? '…' : t('detail.markReviewed')}
                                         </Button>
                                     </Tooltip>
                                 )}
@@ -580,7 +593,7 @@ export default function PolicyDetailPage() {
                                         className="block text-center text-xs text-content-subtle mb-1"
                                         htmlFor="policy-review-frequency-input"
                                     >
-                                        Frequency (days)
+                                        {t('detail.freqDaysLabel')}
                                     </label>
                                     {/* Epic 60 — NumberStepper gives us +/- buttons,
                                         ArrowUp/Down keyboard, bounded clamping, and
@@ -593,7 +606,7 @@ export default function PolicyDetailPage() {
                                         id="policy-review-frequency-input"
                                         className="w-32"
                                         size="sm"
-                                        ariaLabel="Policy review frequency in days"
+                                        ariaLabel={t('detail.freqAria')}
                                         value={
                                             reviewDays === ""
                                                 ? 30
@@ -609,7 +622,7 @@ export default function PolicyDetailPage() {
                                         className="block text-xs text-content-subtle mb-1"
                                         htmlFor="policy-next-review-input"
                                     >
-                                        Next review
+                                        {t('detail.nextReviewLabel')}
                                     </label>
                                     {/*
                                       Epic 58 — replaces the previous
@@ -621,7 +634,7 @@ export default function PolicyDetailPage() {
                                     <DatePicker
                                         id="policy-next-review-input"
                                         className="w-44 text-sm"
-                                        placeholder="Pick date"
+                                        placeholder={t('detail.pickDate')}
                                         clearable
                                         align="start"
                                         value={parseYMD(nextReview)}
@@ -631,12 +644,12 @@ export default function PolicyDetailPage() {
                                         disabledDays={{
                                             before: startOfUtcDay(new Date()),
                                         }}
-                                        aria-label="Next review date"
+                                        aria-label={t('detail.nextReviewAria')}
                                     />
                                 </div>
-                                <Button variant="secondary" size="xs" onClick={() => setEditingReview(false)}>Cancel</Button>
+                                <Button variant="secondary" size="xs" onClick={() => setEditingReview(false)}>{t('detail.cancel')}</Button>
                                 <Button variant="primary" size="xs" onClick={saveReview} disabled={savingReview}>
-                                    {savingReview ? '…' : 'Save'}
+                                    {savingReview ? '…' : t('detail.save')}
                                 </Button>
                             </div>
                         )}
@@ -658,16 +671,16 @@ export default function PolicyDetailPage() {
             {tab === 'current' && canWrite && (policy.status === 'DRAFT' || policy.status === 'APPROVED') && (
                 <InlineNotice
                     variant={policy.status === 'APPROVED' ? 'success' : 'info'}
-                    title={policy.status === 'APPROVED' ? 'Approved — ready to publish' : 'Draft — not yet published'}
+                    title={policy.status === 'APPROVED' ? t('detail.guideApprovedTitle') : t('detail.guideDraftTitle')}
                 >
                     <div className="flex items-center justify-between gap-default flex-wrap">
                         <span>
                             {policy.status === 'APPROVED'
-                                ? 'Open the Versions tab and click Publish to make this the live policy.'
-                                : 'Edit the content in the Editor tab, then open the Versions tab and click Request Approval to start the publication workflow (review → approval → publish).'}
+                                ? t('detail.guideApprovedBody')
+                                : t('detail.guideDraftBody')}
                         </span>
                         <Button variant="secondary" size="sm" onClick={() => setTab('versions')} id="goto-versions-btn">
-                            Go to Versions
+                            {t('detail.gotoVersions')}
                         </Button>
                     </div>
                 </InlineNotice>
@@ -678,16 +691,16 @@ export default function PolicyDetailPage() {
                         <>
                             <div className="flex items-center justify-between mb-4">
                                 <div className="text-sm text-content-muted">
-                                    Version {currentVersion.versionNumber} · {currentVersion.createdBy?.name} · {formatDate(currentVersion.createdAt)}
-                                    {currentVersion.contentType === 'EXTERNAL_LINK' && <StatusBadge variant="info" className="ml-2">External</StatusBadge>}
+                                    {t('detail.versionMeta', { n: currentVersion.versionNumber, name: currentVersion.createdBy?.name ?? '', date: formatDate(currentVersion.createdAt) })}
+                                    {currentVersion.contentType === 'EXTERNAL_LINK' && <StatusBadge variant="info" className="ml-2">{t('detail.externalBadge')}</StatusBadge>}
                                 </div>
                             </div>
                             {renderVersionContent(currentVersion)}
                         </>
                     ) : (
                         <div className="text-center text-content-subtle py-8">
-                            <p>No version published yet.</p>
-                            {canWrite && <p className="text-sm mt-1">Create a version in the Editor tab.</p>}
+                            <p>{t('detail.versionEmpty')}</p>
+                            {canWrite && <p className="text-sm mt-1">{t('detail.createVersionHint')}</p>}
                         </div>
                     )}
                 </div>
@@ -723,7 +736,7 @@ export default function PolicyDetailPage() {
                         />
                     )}
                     {versions.length === 0 ? (
-                        <Card className="text-center text-content-subtle">No versions yet.</Card>
+                        <Card className="text-center text-content-subtle">{t('detail.versionsEmpty')}</Card>
                     ) : versions.map((v: PolicyVersionDTO) => {
                         const vApprovals = (v.approvals || []).filter((a) => a.status === 'PENDING' || a.status === 'APPROVED' || a.status === 'REJECTED');
                         const hasPending = vApprovals.some((a) => a.status === 'PENDING');
@@ -742,11 +755,11 @@ export default function PolicyDetailPage() {
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-compact">
                                         <span className="text-sm font-semibold text-[var(--brand-default)]">v{v.versionNumber}</span>
-                                        {isPublishedVersion && <StatusBadge variant="success">Published</StatusBadge>}
+                                        {isPublishedVersion && <StatusBadge variant="success">{t('detail.published')}</StatusBadge>}
                                         {isCurrentVersion && !isPublishedVersion && (
-                                            <span className="text-xs font-medium text-content-subtle">Current</span>
+                                            <span className="text-xs font-medium text-content-subtle">{t('detail.current')}</span>
                                         )}
-                                        {v.contentType === 'EXTERNAL_LINK' && <StatusBadge variant="info">External Link</StatusBadge>}
+                                        {v.contentType === 'EXTERNAL_LINK' && <StatusBadge variant="info">{t('detail.externalLink')}</StatusBadge>}
                                         <span className="text-xs text-content-subtle">
                                             {v.createdBy?.name} · {formatDate(v.createdAt)}
                                         </span>
@@ -754,39 +767,39 @@ export default function PolicyDetailPage() {
                                     <div className="flex gap-tight">
                                         {canWrite && !hasPending && !hasApproved && !isPublishedVersion && (
                                             <Button variant="secondary" size="sm" onClick={() => requestApproval(v.id)} disabled={!!actionLoading} id={`request-approval-${v.versionNumber}`}>
-                                                {actionLoading === 'approve-' + v.id ? '...' : 'Request Approval'}
+                                                {actionLoading === 'approve-' + v.id ? '...' : t('detail.requestApproval')}
                                             </Button>
                                         )}
                                         {canAdmin && hasApproved && !isPublishedVersion && (
                                             <Button variant="primary" size="sm" onClick={() => publishVersion(v.id)} disabled={!!actionLoading} id={`publish-version-${v.versionNumber}`}>
-                                                {actionLoading === 'publish-' + v.id ? '...' : 'Publish'}
+                                                {actionLoading === 'publish-' + v.id ? '...' : t('detail.publish')}
                                             </Button>
                                         )}
                                     </div>
                                 </div>
                                 {v.changeSummary && <p className="text-sm text-content-muted italic">{v.changeSummary}</p>}
                                 <details className="group">
-                                    <summary className="text-xs text-[var(--brand-default)] cursor-pointer hover:text-[var(--brand-muted)]">Show content</summary>
+                                    <summary className="text-xs text-[var(--brand-default)] cursor-pointer hover:text-[var(--brand-muted)]">{t('detail.showContent')}</summary>
                                     <div className="mt-2 border-t border-border-default pt-2">{renderVersionContent(v)}</div>
                                 </details>
                                 {vApprovals.length > 0 && (
                                     <div className="border-t border-border-default/50 pt-2 space-y-1">
-                                        <p className="text-xs font-semibold text-content-subtle">Approvals</p>
+                                        <p className="text-xs font-semibold text-content-subtle">{t('detail.approvalsLabel')}</p>
                                         {vApprovals.map((a) => (
                                             <div key={a.id} className="flex items-center justify-between text-xs">
                                                 <div className="flex items-center gap-tight">
                                                     <StatusBadge variant={APPROVAL_BADGE[a.status]}>{a.status}</StatusBadge>
                                                     <span className="text-content-muted">
-                                                        by {a.requestedBy?.name || 'Unknown'}
+                                                        {t('detail.approvalBy', { name: a.requestedBy?.name || t('detail.unknown') })}
                                                         {a.decidedAt && ` · ${formatDate(a.decidedAt)}`}
                                                     </span>
                                                 </div>
                                                 {canAdmin && a.status === 'PENDING' && (
                                                     <div className="flex gap-1">
                                                         <Button variant="primary" size="xs" onClick={() => decideApproval(a.id, 'APPROVED')} disabled={!!actionLoading} id={`approve-${a.id}`}>
-                                                            {actionLoading === 'decide-' + a.id ? '...' : 'Approve'}
+                                                            {actionLoading === 'decide-' + a.id ? '...' : t('detail.approve')}
                                                         </Button>
-                                                        <Button variant="destructive" size="xs" onClick={() => decideApproval(a.id, 'REJECTED')} disabled={!!actionLoading}>Reject</Button>
+                                                        <Button variant="destructive" size="xs" onClick={() => decideApproval(a.id, 'REJECTED')} disabled={!!actionLoading}>{t('detail.reject')}</Button>
                                                     </div>
                                                 )}
                                             </div>
@@ -803,15 +816,15 @@ export default function PolicyDetailPage() {
             {tab === 'editor' && canWrite && (
                 <div className={cn(cardVariants(), 'space-y-default')}>
                     <div className="flex items-center justify-between">
-                        <Heading level={3}>Create New Version</Heading>
+                        <Heading level={3}>{t('detail.createNewVersion')}</Heading>
                     </div>
 
                     {/* Content type selector */}
                     <div className="flex gap-tight">
                         {([
-                            { key: 'MARKDOWN' as const, label: 'Markdown', icon: '' },
-                            { key: 'EXTERNAL_LINK' as const, label: 'External Link', icon: '' },
-                            { key: 'FILE' as const, label: 'File Upload', icon: '' },
+                            { key: 'MARKDOWN' as const, label: t('detail.modeMarkdown'), icon: '' },
+                            { key: 'EXTERNAL_LINK' as const, label: t('detail.externalLink'), icon: '' },
+                            { key: 'FILE' as const, label: t('detail.modeFileUpload'), icon: '' },
                         ]).map(opt => (
                             <button key={opt.key} onClick={() => setContentMode(opt.key)}
                                 className={`px-3 py-1.5 text-xs rounded-lg border transition ${contentMode === opt.key
@@ -827,7 +840,7 @@ export default function PolicyDetailPage() {
                             id="version-editor"
                             value={editorContent}
                             contentType={editorContentType}
-                            placeholder="# Policy Content&#10;&#10;Write your policy here..."
+                            placeholder={t('detail.editorPlaceholder')}
                             onChange={(value, contentType) => {
                                 setEditorContent(value);
                                 setEditorContentType(contentType);
@@ -838,18 +851,18 @@ export default function PolicyDetailPage() {
                     {/* External link input */}
                     {contentMode === 'EXTERNAL_LINK' && (
                         <div>
-                            <label className="input-label">External Document URL</label>
+                            <label className="input-label">{t('detail.externalUrlLabel')}</label>
                             <input type="url" className="input w-full" value={externalUrl}
                                 onChange={e => setExternalUrl(e.target.value)}
                                 placeholder="https://docs.google.com/..." id="external-url-input" />
-                            <p className="text-xs text-content-subtle mt-1">Link to an external policy document (Google Docs, Confluence, etc.)</p>
+                            <p className="text-xs text-content-subtle mt-1">{t('detail.externalUrlHint')}</p>
                         </div>
                     )}
 
                     {/* File upload */}
                     {contentMode === 'FILE' && (
                         <div>
-                            <label className="input-label">Upload File</label>
+                            <label className="input-label">{t('detail.uploadFile')}</label>
                             <input type="file" className="input w-full" id="file-upload-input"
                                 onChange={e => setSelectedFile(e.target.files?.[0] || null)}
                                 accept=".pdf,.doc,.docx,.txt,.md" />
@@ -860,13 +873,13 @@ export default function PolicyDetailPage() {
                     )}
 
                     <div>
-                        <label className="input-label">Change Summary (optional)</label>
+                        <label className="input-label">{t('detail.changeSummaryLabel')}</label>
                         <input className="input w-full" value={changeSummary} onChange={e => setChangeSummary(e.target.value)}
-                            placeholder="What changed in this version?" id="change-summary-input" />
+                            placeholder={t('detail.changeSummaryPlaceholder')} id="change-summary-input" />
                     </div>
 
                     <Button variant="primary" icon={saving ? undefined : <Plus className="-ml-0.5 -mr-2.5" />} onClick={createVersion} disabled={saving} id="save-version-btn">
-                        {saving ? 'Saving...' : 'Version'}
+                        {saving ? t('detail.saving') : t('detail.version')}
                     </Button>
                 </div>
             )}
@@ -887,11 +900,11 @@ export default function PolicyDetailPage() {
             )}
             {tab === 'activity' && (
                 <div className={cardVariants()} id="activity-feed">
-                    <Heading level={3} className="mb-4">Activity Timeline</Heading>
+                    <Heading level={3} className="mb-4">{t('detail.activityTimeline')}</Heading>
                     {activitiesLoading ? (
-                        <div className="text-center text-content-subtle animate-pulse py-8">Loading activity…</div>
+                        <div className="text-center text-content-subtle animate-pulse py-8">{t('detail.loadingActivity')}</div>
                     ) : activities.length === 0 ? (
-                        <div className="text-center text-content-subtle py-8">No activity recorded yet.</div>
+                        <div className="text-center text-content-subtle py-8">{t('detail.activityEmpty')}</div>
                     ) : (
                         <div className="space-y-compact">
                             {activities.map((evt: AuditLogEntry) => (
@@ -905,7 +918,7 @@ export default function PolicyDetailPage() {
                                             <span className="text-xs text-content-subtle">{relativeTime(evt.createdAt)}</span>
                                         </div>
                                         <p className="text-xs text-content-muted mt-0.5 truncate">
-                                            {evt.user?.name || 'System'}{evt.details ? ` — ${evt.details.split('\n')[0]}` : ''}
+                                            {evt.user?.name || t('detail.systemActor')}{evt.details ? ` — ${evt.details.split('\n')[0]}` : ''}
                                         </p>
                                     </div>
                                 </div>
