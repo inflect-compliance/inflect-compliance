@@ -61,8 +61,12 @@ describe('icon-only action discipline', () => {
             const src = read(file);
             expect(src).toMatch(/import \{ IconAction \} from '@\/components\/ui\/icon-action'/);
             if (i18nKey) {
+                // Fully escape every regex metacharacter (backslash first) —
+                // i18nKey is a trusted dotted literal, but a complete escaper
+                // keeps the pattern honest and satisfies the SAST scanner.
+                const escapedKey = i18nKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 expect(src).toMatch(
-                    new RegExp(`<IconAction[\\s\\S]*?label=\\{t\\('${i18nKey.replace(/\./g, '\\.')}'\\)\\}`),
+                    new RegExp(`<IconAction[\\s\\S]*?label=\\{t\\('${escapedKey}'\\)\\}`),
                 );
                 const en = JSON.parse(read('messages/en.json')) as { controls: Record<string, unknown> };
                 const resolved = i18nKey
