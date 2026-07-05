@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import {
     Skeleton,
     SkeletonHeading,
@@ -9,9 +10,10 @@ import { Card } from '@/components/ui/card';
 /**
  * Frameworks loading skeleton — title + card grid.
  */
-export default function FrameworksLoading() {
+export default async function FrameworksLoading() {
+    const t = await getTranslations('frameworks');
     return (
-        <div className="space-y-section animate-fadeIn" aria-busy="true" aria-label="Loading frameworks">
+        <div className="space-y-section animate-fadeIn" aria-busy="true" aria-label={t('loadingAria')}>
             <div className="flex items-center justify-between">
                 <SkeletonHeading />
                 <SkeletonButton />

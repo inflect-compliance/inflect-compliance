@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Heading } from '@/components/ui/typography';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { KPIStat } from '@/components/ui/metric';
@@ -33,6 +34,7 @@ interface RequirementsDiff {
 }
 
 export default function DiffPage() {
+    const t = useTranslations('frameworks');
     const params = useParams();
     const searchParams = useSearchParams();
     const tenantSlug = params.tenantSlug as string;
@@ -53,26 +55,26 @@ export default function DiffPage() {
                     if (diffRes.ok) {
                         setDiff(await diffRes.json());
                     } else {
-                        setError('Failed to compute diff. Ensure both frameworks exist.');
+                        setError(t('diff.computeFailed'));
                     }
                 }
-            } catch { setError('Failed to load data'); }
+            } catch { setError(t('diff.loadDataFailed')); }
             setLoading(false);
         })();
-    }, [apiUrl, frameworkKey, fromKey]);
+    }, [apiUrl, frameworkKey, fromKey, t]);
 
-    if (loading) return <div className="p-8 animate-pulse text-content-muted">Loading diff…</div>;
+    if (loading) return <div className="p-8 animate-pulse text-content-muted">{t('diff.loading')}</div>;
 
     return (
         <div className="space-y-section animate-fadeIn">
             <BackAffordance />
             <div>
                 <Heading level={1} className="mt-2" id="diff-heading">
-                    Requirements Diff
+                    {t('diff.heading')}
                 </Heading>
                 {diff && (
                     <p className="text-sm text-content-muted mt-1">
-                        Comparing <span className="text-[var(--brand-default)]">{diff.from.name} v{diff.from.version}</span>
+                        {t('diff.comparing')} <span className="text-[var(--brand-default)]">{diff.from.name} v{diff.from.version}</span>
                         {' → '}
                         <span className="text-[var(--brand-default)]">{diff.to.name} v{diff.to.version}</span>
                     </p>
@@ -81,8 +83,8 @@ export default function DiffPage() {
 
             {!fromKey && (
                 <div className={cn(cardVariants({ density: 'none' }), 'text-center py-8 text-content-muted')}>
-                    <p>Specify a <code className="text-[var(--brand-default)]">?from=FRAMEWORK_KEY</code> query parameter to compare.</p>
-                    <p className="text-xs mt-2 text-content-subtle">This page compares the &quot;from&quot; framework to this framework to show added/removed/changed requirements.</p>
+                    <p>{t.rich('diff.specifyFrom', { code: (c) => <code className="text-[var(--brand-default)]">{c}</code> })}</p>
+                    <p className="text-xs mt-2 text-content-subtle">{t('diff.specifyHint')}</p>
                 </div>
             )}
 
@@ -93,18 +95,18 @@ export default function DiffPage() {
                     {/* Summary cards — Polish PR-2: KPIStat primitive. */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-default" id="diff-summary">
                         <div className={cardVariants({ density: 'none' })}>
-                            <KPIStat value={diff.summary.added} label="Added" tone="success" />
+                            <KPIStat value={diff.summary.added} label={t('diff.added')} tone="success" />
                         </div>
                         <div className={cardVariants({ density: 'none' })}>
-                            <KPIStat value={diff.summary.removed} label="Removed" tone="critical" />
+                            <KPIStat value={diff.summary.removed} label={t('diff.removed')} tone="critical" />
                         </div>
                         <div className={cardVariants({ density: 'none' })}>
-                            <KPIStat value={diff.summary.changed} label="Changed" tone="attention" />
+                            <KPIStat value={diff.summary.changed} label={t('diff.changed')} tone="attention" />
                         </div>
                         <div className={cardVariants({ density: 'none' })}>
                             <KPIStat
                                 value={diff.summary.unmappedNewRequirements}
-                                label="New Unmapped"
+                                label={t('diff.newUnmapped')}
                                 tone={diff.summary.unmappedNewRequirements > 0 ? 'critical' : 'success'}
                             />
                         </div>
@@ -120,7 +122,7 @@ export default function DiffPage() {
                                     }`}
                                 id={`diff-tab-${tab}`}
                             >
-                                {tab.charAt(0).toUpperCase() + tab.slice(1)} ({diff[tab].length})
+                                {t(`diff.${tab}`)} ({diff[tab].length})
                             </button>
                         ))}
                     </div>
@@ -150,7 +152,7 @@ export default function DiffPage() {
                                 <div className="flex items-center gap-compact mb-2">
                                     <span className="text-content-warning text-lg font-bold">~</span>
                                     <code className="text-xs text-[var(--brand-default)] font-mono">{r.code}</code>
-                                    <span className="text-xs text-content-subtle">Changed: {r.changes.join(', ')}</span>
+                                    <span className="text-xs text-content-subtle">{t('diff.changedList', { changes: r.changes.join(', ') })}</span>
                                 </div>
                                 <div className="ml-8 space-y-1">
                                     {r.changes.includes('title') && (
@@ -162,10 +164,10 @@ export default function DiffPage() {
                                     )}
                                     {r.changes.includes('section') && (
                                         <div className="text-xs">
-                                            <span className="text-content-subtle">Section: </span>
-                                            <span className="text-content-error">{r.from.section || '(none)'}</span>
+                                            <span className="text-content-subtle">{t('diff.section')} </span>
+                                            <span className="text-content-error">{r.from.section || t('diff.none')}</span>
                                             <span className="text-content-subtle mx-2">→</span>
-                                            <span className="text-content-success">{r.to.section || '(none)'}</span>
+                                            <span className="text-content-success">{r.to.section || t('diff.none')}</span>
                                         </div>
                                     )}
                                 </div>
@@ -174,7 +176,7 @@ export default function DiffPage() {
 
                         {diff[activeTab].length === 0 && (
                             <div className={cn(cardVariants({ density: 'none' }), 'text-center py-6 text-content-subtle')}>
-                                No {activeTab} requirements.
+                                {t(`diff.empty${activeTab.charAt(0).toUpperCase()}${activeTab.slice(1)}`)}
                             </div>
                         )}
                     </div>

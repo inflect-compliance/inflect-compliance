@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { RequirePermission } from '@/components/require-permission';
 import { ProgressBar } from '@/components/ui/progress-bar';
@@ -70,6 +71,7 @@ interface FrameworkPackSummary {
 }
 
 export default function FrameworkDetailPage() {
+    const t = useTranslations('frameworks');
     const params = useParams();
     const tenantSlug = params.tenantSlug as string;
     const frameworkKey = params.frameworkKey as string;
@@ -121,19 +123,19 @@ export default function FrameworkDetailPage() {
                 ]);
                 if (fwRes.ok) setFramework(await fwRes.json());
                 if (treeRes.ok) setTree((await treeRes.json()) as FrameworkTreePayload);
-                else if (treeRes.status === 404) setError('Framework not found');
+                else if (treeRes.status === 404) setError(t('detail.notFound'));
                 if (packRes.ok) setPacks(await packRes.json());
                 if (covRes.ok) setCoverage(await covRes.json());
             } catch {
-                setError('Failed to load framework');
+                setError(t('detail.loadFailed'));
             }
             setLoading(false);
         })();
-    }, [apiUrl, frameworkKey]);
+    }, [apiUrl, frameworkKey, t]);
 
     const breadcrumbs = [
-        { label: 'Dashboard', href: tenantHref('/dashboard') },
-        { label: 'Frameworks', href: tenantHref('/frameworks') },
+        { label: t('crumb.dashboard'), href: tenantHref('/dashboard') },
+        { label: t('crumb.frameworks'), href: tenantHref('/frameworks') },
         { label: framework?.name ?? frameworkKey },
     ];
     if (loading) {
@@ -145,20 +147,20 @@ export default function FrameworkDetailPage() {
     }
     if (error || !framework) {
         return (
-            <EntityDetailLayout error={error ?? 'Framework not found'} title="" breadcrumbs={breadcrumbs}>
+            <EntityDetailLayout error={error ?? t('detail.notFound')} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
     }
 
     const tabs: { key: Tab; label: string; count?: number }[] = [
-        { key: 'requirements', label: 'Requirements', count: tree?.totals.requirements },
-        { key: 'packs', label: 'Packs', count: packs.length },
-        { key: 'coverage', label: 'Coverage' },
+        { key: 'requirements', label: t('detail.reqTab'), count: tree?.totals.requirements },
+        { key: 'packs', label: t('detail.packsTab'), count: packs.length },
+        { key: 'coverage', label: t('detail.coverageTab') },
         // Epic 46.4 — builder MVP. Permission-gated below by
         // wrapping the panel in <RequirePermission>; the tab itself
         // stays visible so non-admins see it exists.
-        { key: 'builder', label: 'Builder' },
+        { key: 'builder', label: t('detail.builderTab') },
     ];
 
     async function handleReorderSave(body: { sections: { sectionId: string; requirementIds: string[] }[] }) {
@@ -169,7 +171,7 @@ export default function FrameworkDetailPage() {
         });
         if (!res.ok) {
             const j = (await res.json().catch(() => ({}))) as { error?: string };
-            throw new Error(j.error ?? `Reorder failed (${res.status})`);
+            throw new Error(j.error ?? t('detail.reorderFailed', { status: res.status }));
         }
         // Refetch the tree so the explorer reflects the new order.
         const fresh = await fetch(apiUrl(`/frameworks/${frameworkKey}/tree`));
@@ -190,7 +192,7 @@ export default function FrameworkDetailPage() {
                             ? [
                                   {
                                       kind: 'status' as const,
-                                      label: 'Version',
+                                      label: t('detail.version'),
                                       value: `v${framework.version}`,
                                       variant: 'info' as const,
                                   },
@@ -199,7 +201,7 @@ export default function FrameworkDetailPage() {
                         ...(framework.kind
                             ? [
                                   {
-                                      label: 'Kind',
+                                      label: t('detail.kind'),
                                       value: framework.kind.replace('_', ' '),
                                   } as const,
                               ]
@@ -210,11 +212,11 @@ export default function FrameworkDetailPage() {
             actions={
                 <>
                     <Link href={tenantHref(`/frameworks/${frameworkKey}/templates`)} className={buttonVariants({ variant: 'secondary' })} id="browse-templates-cta">
-                        Browse Templates
+                        {t('detail.browseTemplates')}
                     </Link>
                     <RequirePermission resource="frameworks" action="install">
                         <Link href={tenantHref(`/frameworks/${frameworkKey}/install`)} className={buttonVariants({ variant: 'primary' })} id="install-pack-cta">
-                            Install Pack
+                            {t('detail.installPack')}
                         </Link>
                     </RequirePermission>
                 </>
@@ -232,7 +234,7 @@ export default function FrameworkDetailPage() {
                         <FrameworkExplorer tree={tree} coverage={coverage ?? null} />
                     ) : (
                         <div className={cn(cardVariants({ density: 'none' }), 'text-center py-10 text-content-subtle')}>
-                            Loading tree…
+                            {t('detail.loadingTree')}
                         </div>
                     )}
                 </div>
@@ -248,7 +250,7 @@ export default function FrameworkDetailPage() {
                                     <Heading level={2}>{p.name}</Heading>
                                     {p.description && <p className="text-sm text-content-muted mt-1">{p.description}</p>}
                                     <div className="flex items-center gap-compact mt-2 text-xs text-content-subtle">
-                                        <span>{p._count?.templateLinks || 0} templates</span>
+                                        <span>{t('detail.templatesCount', { count: p._count?.templateLinks || 0 })}</span>
                                         {p.version && <span>v{p.version}</span>}
                                     </div>
                                 </div>
@@ -258,14 +260,14 @@ export default function FrameworkDetailPage() {
                                         className={buttonVariants({ variant: 'primary' })}
                                         id={`install-pack-${p.key}`}
                                     >
-                                        Install Pack
+                                        {t('detail.installPack')}
                                     </Link>
                                 </RequirePermission>
                             </div>
                         </div>
                     ))}
                     {packs.length === 0 && (
-                        <div className={cn(cardVariants({ density: 'none' }), 'text-center py-8 text-content-subtle')}>No packs available for this framework.</div>
+                        <div className={cn(cardVariants({ density: 'none' }), 'text-center py-8 text-content-subtle')}>{t('detail.packsEmpty')}</div>
                     )}
                 </div>
             )}
@@ -276,15 +278,15 @@ export default function FrameworkDetailPage() {
                     {/* Summary cards — Polish PR-2: KPIStat primitive. */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-default">
                         <div className={cardVariants({ density: 'none' })}>
-                            <KPIStat value={coverage.total} label="Total Requirements" />
+                            <KPIStat value={coverage.total} label={t('detail.totalRequirements')} />
                         </div>
                         <div className={cardVariants({ density: 'none' })}>
-                            <KPIStat value={coverage.mapped} label="Mapped" tone="success" />
+                            <KPIStat value={coverage.mapped} label={t('detail.mapped')} tone="success" />
                         </div>
                         <div className={cardVariants({ density: 'none' })}>
                             <KPIStat
                                 value={coverage.unmapped}
-                                label="Unmapped"
+                                label={t('detail.unmapped')}
                                 tone={coverage.unmapped > 0 ? 'attention' : 'success'}
                             />
                         </div>
@@ -293,7 +295,7 @@ export default function FrameworkDetailPage() {
                     {/* Coverage donut */}
                     <div className={cardVariants({ density: 'none' })}>
                         <div className="flex items-center justify-between mb-4">
-                            <Heading level={2}>Overall Coverage</Heading>
+                            <Heading level={2}>{t('detail.overallCoverage')}</Heading>
                             <span className={`text-xl font-semibold tabular-nums ${coverage.coveragePercent === 100 ? 'text-content-success' : 'text-[var(--brand-default)]'}`}>
                                 {coverage.coveragePercent}%
                             </span>
@@ -309,7 +311,7 @@ export default function FrameworkDetailPage() {
                     {/* Section breakdown */}
                     {coverage.bySection?.length > 0 && (
                         <div className={cardVariants({ density: 'none' })}>
-                            <Heading level={3} className="mb-3">Coverage by Section</Heading>
+                            <Heading level={3} className="mb-3">{t('detail.coverageBySection')}</Heading>
                             <div className="space-y-compact">
                                 {coverage.bySection.map((s) => (
                                     <div key={s.section}>
@@ -339,7 +341,7 @@ export default function FrameworkDetailPage() {
                     {coverage.unmappedRequirements?.length > 0 && (
                         <div className={cardVariants({ density: 'none' })}>
                             <Heading level={3} className="text-content-warning mb-3">
-                                Unmapped Requirements ({coverage.unmappedRequirements.length})
+                                {t('detail.unmappedRequirements', { count: coverage.unmappedRequirements.length })}
                             </Heading>
                             <div className="space-y-1 max-h-64 overflow-y-auto">
                                 {coverage.unmappedRequirements.map((r, i: number) => (
@@ -365,7 +367,7 @@ export default function FrameworkDetailPage() {
                             action="install"
                             fallback={
                                 <div className={cn(cardVariants({ density: 'none' }), 'text-center py-10 text-content-subtle')}>
-                                    Reordering is restricted to OWNER / ADMIN roles.
+                                    {t('detail.reorderRestricted')}
                                 </div>
                             }
                         >
@@ -373,7 +375,7 @@ export default function FrameworkDetailPage() {
                         </RequirePermission>
                     ) : (
                         <div className={cn(cardVariants({ density: 'none' }), 'text-center py-10 text-content-subtle')}>
-                            Loading tree…
+                            {t('detail.loadingTree')}
                         </div>
                     )}
                 </div>

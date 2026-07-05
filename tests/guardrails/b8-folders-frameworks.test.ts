@@ -160,8 +160,12 @@ describe('B8 — folders + framework lifecycle', () => {
         });
 
         it('explainer modal documents the today-vs-future split', () => {
-            expect(src).toMatch(/Custom frameworks/);
-            expect(src).toMatch(/Coming soon/);
+            // Copy migrated to next-intl — resolve the keys against en.json.
+            const list = JSON.parse(read('messages/en.json')).frameworks.list;
+            expect(src).toMatch(/t\('list\.customTitle'\)/);
+            expect(src).toMatch(/t\.rich\('list\.customComingSoon'/);
+            expect(list.customTitle).toMatch(/Custom frameworks/);
+            expect(list.customComingSoon).toMatch(/Coming soon/);
         });
     });
 });
