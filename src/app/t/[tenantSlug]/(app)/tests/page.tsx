@@ -6,6 +6,7 @@
 
 import { formatDate } from '@/lib/format-date';
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { DataTable, createColumns, useColumnsDropdown, sortRowsByDisplay, type SortAccessors } from '@/components/ui/table';
 import { ListPageShell } from '@/components/layout/ListPageShell';
@@ -93,6 +94,7 @@ export default function TestsRollupPage() {
 }
 
 function TestsRollupContent() {
+    const t = useTranslations('controlTests');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const { tenantSlug } = useTenantContext();
@@ -139,7 +141,7 @@ function TestsRollupContent() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
             });
-            if (!res.ok) throw new Error('Bulk action failed');
+            if (!res.ok) throw new Error(t('list.bulkFailed'));
             await fetchData();
             setSelected(new Set());
         } finally {
@@ -150,7 +152,7 @@ function TestsRollupContent() {
         () => [
             {
                 value: 'status',
-                label: 'Set status',
+                label: t('bulk.setStatus'),
                 canApply: (v) => v !== '',
                 renderInput: ({ value, setValue }) => (
                     <Combobox
@@ -159,7 +161,7 @@ function TestsRollupContent() {
                         selected={TEST_PLAN_STATUS_OPTIONS.find((o) => o.value === value) ?? null}
                         setSelected={(opt) => setValue(opt?.value ?? '')}
                         options={TEST_PLAN_STATUS_OPTIONS}
-                        placeholder="Select status..."
+                        placeholder={t('bulk.selectStatus')}
                         matchTriggerWidth
                         buttonProps={{ className: 'text-sm' }}
                     />
@@ -167,7 +169,7 @@ function TestsRollupContent() {
             },
             {
                 value: 'assign',
-                label: 'Assign owner',
+                label: t('bulk.assignOwner'),
                 renderInput: ({ value, setValue, setLabel }) => (
                     <UserCombobox
                         tenantSlug={tenantSlug}
@@ -178,15 +180,15 @@ function TestsRollupContent() {
                         }}
                         forceDropdown
                         matchTriggerWidth
-                        placeholder="Owner (blank = unassign)"
+                        placeholder={t('bulk.ownerPlaceholder')}
                         className="w-full sm:w-44"
                         id="bulk-value-input"
                     />
                 ),
             },
-            { value: 'delete', label: 'Delete', confirm: true },
+            { value: 'delete', label: t('bulk.delete'), confirm: true },
         ],
-        [tenantSlug],
+        [t, tenantSlug],
     );
 
     // ── Column-visibility gear (Epic 52/R10) ──
@@ -198,13 +200,13 @@ function TestsRollupContent() {
     } = useColumnsDropdown({
         storageKey: 'inflect:col-vis:tests',
         columns: [
-            { id: 'name', label: 'Name' },
-            { id: 'status', label: 'Status' },
-            { id: 'control', label: 'Control' },
-            { id: 'frequency', label: 'Frequency' },
-            { id: 'nextDue', label: 'Next Due' },
-            { id: 'lastResult', label: 'Last Result' },
-            { id: 'runs', label: 'Runs' },
+            { id: 'name', label: t('colHeaders.name') },
+            { id: 'status', label: t('colHeaders.status') },
+            { id: 'control', label: t('colHeaders.control') },
+            { id: 'frequency', label: t('colHeaders.frequency') },
+            { id: 'nextDue', label: t('colHeaders.nextDue') },
+            { id: 'lastResult', label: t('colHeaders.lastResult') },
+            { id: 'runs', label: t('colHeaders.runs') },
         ],
     });
 
@@ -341,7 +343,7 @@ function TestsRollupContent() {
         () =>
             orderColumns(createColumns<TestPlanSummary>([
                 {
-                    id: 'name', header: 'Name', accessorKey: 'name',
+                    id: 'name', header: t('colHeaders.name'), accessorKey: 'name',
                     cell: ({ row }) => (
                         <Link
                             href={tenantHref(`/controls/${row.original.control.id}/tests/${row.original.id}`)}
@@ -352,7 +354,7 @@ function TestsRollupContent() {
                     ),
                 },
                 {
-                    id: 'status', header: 'Status', accessorKey: 'status',
+                    id: 'status', header: t('colHeaders.status'), accessorKey: 'status',
                     cell: ({ row }) => (
                         <StatusBadge variant={PLAN_STATUS_BADGE[row.original.status] ?? 'neutral'} size="sm">
                             {row.original.status}
@@ -360,16 +362,16 @@ function TestsRollupContent() {
                     ),
                 },
                 {
-                    id: 'control', header: 'Control', accessorFn: (p) => p.control?.code || p.control?.name || '—',
+                    id: 'control', header: t('colHeaders.control'), accessorFn: (p) => p.control?.code || p.control?.name || '—',
                     cell: ({ row }) => (
                         <Link href={tenantHref(`/controls/${row.original.control.id}`)} className="text-content-muted hover:text-content-emphasis text-xs transition">
                             {row.original.control?.code || row.original.control?.name || '—'}
                         </Link>
                     ),
                 },
-                { id: 'frequency', header: 'Frequency', accessorFn: (p) => FREQ_LABELS[p.frequency] || p.frequency },
+                { id: 'frequency', header: t('colHeaders.frequency'), accessorFn: (p) => FREQ_LABELS[p.frequency] || p.frequency },
                 {
-                    id: 'nextDue', header: 'Next Due', accessorKey: 'nextDueAt',
+                    id: 'nextDue', header: t('colHeaders.nextDue'), accessorKey: 'nextDueAt',
                     cell: ({ row }) => row.original.nextDueAt ? (
                         <span className={isOverdue(row.original.nextDueAt) ? 'text-content-error font-semibold' : 'text-content-muted'}>
                             {formatDate(row.original.nextDueAt)}
@@ -377,25 +379,25 @@ function TestsRollupContent() {
                     ) : <span className="text-content-subtle">—</span>,
                 },
                 {
-                    id: 'lastResult', header: 'Last Result',
+                    id: 'lastResult', header: t('colHeaders.lastResult'),
                     accessorFn: (p) => getLastResult(p) || '',
                     cell: ({ row }) => {
                         const result = getLastResult(row.original);
                         return result ? (
                             <StatusBadge variant={RESULT_BADGE[result] || 'neutral'} size="sm">{result}</StatusBadge>
-                        ) : <span className="text-content-subtle text-xs">No runs</span>;
+                        ) : <span className="text-content-subtle text-xs">{t('list.noRuns')}</span>;
                     },
                 },
                 {
-                    id: 'runs', header: 'Runs',
+                    id: 'runs', header: t('colHeaders.runs'),
                     accessorFn: (p) => p._count?.runs ?? 0,
                     cell: ({ getValue }) => <span className="text-content-subtle">{getValue() as number}</span>,
                 },
             ])),
-        [tenantHref, orderColumns],
+        [t, tenantHref, orderColumns],
     );
 
-    if (loading) return <div className="p-12 text-center text-content-subtle animate-pulse">Loading tests overview...</div>;
+    if (loading) return <div className="p-12 text-center text-content-subtle animate-pulse">{t('list.loading')}</div>;
 
     return (
         <ListPageShell className="animate-fadeIn gap-section">
@@ -404,13 +406,13 @@ function TestsRollupContent() {
                     <div>
                         <PageBreadcrumbs
                             items={[
-                                { label: 'Dashboard', href: tenantHref('/dashboard') },
-                                { label: 'Tests' },
+                                { label: t('crumb.dashboard'), href: tenantHref('/dashboard') },
+                                { label: t('crumb.tests') },
                             ]}
                             className="mb-1"
                         />
-                        <Heading level={1} id="tests-page-title" className="sr-only">Tests</Heading>
-                        <p className="text-sm text-content-muted mt-1">Test plans and recent results across all controls</p>
+                        <Heading level={1} id="tests-page-title" className="sr-only">{t('list.title')}</Heading>
+                        <p className="text-sm text-content-muted mt-1">{t('list.description')}</p>
                     </div>
                     {/* Nav icon buttons moved into the FilterToolbar's actions
                         slot (left of the column/filter gears), so the header
@@ -423,7 +425,7 @@ function TestsRollupContent() {
                 {/* KPI strip — clickable cards filter the table by status. */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
                     <KpiFilterCard
-                        label="Total plans"
+                        label={t('kpi.total')}
                         value={totalPlans}
                         sparkline={testTrends.total}
                         sparklineVariant={sparkColors.total}
@@ -432,7 +434,7 @@ function TestsRollupContent() {
                         selected={activeTestKpi === 'total'}
                     />
                     <KpiFilterCard
-                        label="Active"
+                        label={t('kpi.active')}
                         value={activePlans}
                         tone="success"
                         sparkline={testTrends.active}
@@ -442,7 +444,7 @@ function TestsRollupContent() {
                         selected={activeTestKpi === 'active'}
                     />
                     <KpiFilterCard
-                        label="Paused"
+                        label={t('kpi.paused')}
                         value={pausedPlans}
                         tone={pausedPlans > 0 ? 'attention' : 'default'}
                         sparkline={testTrends.paused}
@@ -452,7 +454,7 @@ function TestsRollupContent() {
                         selected={activeTestKpi === 'paused'}
                     />
                     <KpiFilterCard
-                        label="Archived"
+                        label={t('kpi.archived')}
                         value={archivedPlans}
                         sparkline={testTrends.archived}
                         sparklineVariant={sparkColors.archived}
@@ -468,21 +470,21 @@ function TestsRollupContent() {
                 <FilterToolbar
                     filters={visibleFilterDefs}
                     searchId="tests-search"
-                    searchPlaceholder="Search test plans…"
+                    searchPlaceholder={t('list.searchPlaceholder')}
                     actions={
                         <>
-                            <Tooltip content="Due queue">
-                                <Link href={tenantHref('/tests/due')} aria-label="Due queue" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="tests-due-btn">
+                            <Tooltip content={t('nav.dueQueue')}>
+                                <Link href={tenantHref('/tests/due')} aria-label={t('nav.dueQueue')} className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="tests-due-btn">
                                     <AppIcon name="clock" size={16} />
                                 </Link>
                             </Tooltip>
-                            <Tooltip content="Dashboard">
-                                <Link href={tenantHref('/tests/dashboard')} aria-label="Dashboard" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="tests-dashboard-btn">
+                            <Tooltip content={t('nav.dashboard')}>
+                                <Link href={tenantHref('/tests/dashboard')} aria-label={t('nav.dashboard')} className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="tests-dashboard-btn">
                                     <AppIcon name="dashboard" size={16} />
                                 </Link>
                             </Tooltip>
-                            <Tooltip content="Access reviews">
-                                <Link href={tenantHref('/access-reviews')} aria-label="Access reviews" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="tests-uar-btn">
+                            <Tooltip content={t('nav.accessReviews')}>
+                                <Link href={tenantHref('/access-reviews')} aria-label={t('nav.accessReviews')} className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="tests-uar-btn">
                                     <AppIcon name="userCheck" size={16} />
                                 </Link>
                             </Tooltip>
@@ -520,15 +522,15 @@ function TestsRollupContent() {
                             onApply={handleBulkApply}
                             applying={bulkApplying}
                             selectedCount={selected.size}
-                            entityLabel="test plans"
+                            entityLabel={t('list.entityPlural')}
                         />
                     )}
                     emptyState={
                         hasActive
-                            ? 'No test plans match your filters.'
-                            : 'No test plans found. Create test plans from the Control detail page.'
+                            ? t('list.emptyFiltered')
+                            : t('list.emptyNone')
                     }
-                    resourceName={(p) => p ? 'test plans' : 'test plan'}
+                    resourceName={(p) => p ? t('list.entityPlural') : t('list.entitySingular')}
                     data-testid="tests-rollup-table"
                     // Row hover band + brand left-band (and double-click →
                     // open the plan), matching every other list table.

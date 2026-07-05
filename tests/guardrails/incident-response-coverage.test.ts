@@ -199,6 +199,13 @@ describe('NIS2 incident-response — detail UI', () => {
 
     it('carries the not-legal-advice disclaimer', () => {
         const src = read(detail);
-        expect(src.toLowerCase()).toMatch(/not legal advice|legal\/dpo|dpo/);
+        // The disclaimer copy moved to the incidents catalog; the detail
+        // page references the key and the en value carries the wording.
+        expect(src).toMatch(/detail\.notLegal(Strong|Body)/);
+        const en = JSON.parse(read('messages/en.json')) as {
+            incidents: { detail: { notLegalStrong: string; notLegalBody: string } };
+        };
+        const copy = `${en.incidents.detail.notLegalStrong} ${en.incidents.detail.notLegalBody}`.toLowerCase();
+        expect(copy).toMatch(/not legal advice|legal\/dpo|dpo/);
     });
 });

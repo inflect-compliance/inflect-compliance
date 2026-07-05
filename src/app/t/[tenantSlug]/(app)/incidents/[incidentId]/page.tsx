@@ -2,6 +2,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { EntityDetailLayout, type EntityDetailTab } from '@/components/layout/EntityDetailLayout';
@@ -79,11 +80,6 @@ const DEADLINE_TONE: Record<string, StatusBadgeVariant> = {
     PENDING: 'neutral', DUE: 'warning', OVERDUE: 'error', SUBMITTED: 'success', NOT_REQUIRED: 'neutral',
 };
 // The three Article 23 notification kinds, in deadline order.
-const KIND_LABELS: Record<IncidentNotification['kind'], string> = {
-    EARLY_WARNING_24H: '24-hour early warning',
-    DETAILED_72H: '72-hour detailed report',
-    FINAL_1MONTH: '1-month final report',
-};
 const KIND_ORDER: IncidentNotification['kind'][] = [
     'EARLY_WARNING_24H',
     'DETAILED_72H',
@@ -103,6 +99,7 @@ function countdown(dueAt: string, now: number): string {
 }
 
 export default function IncidentDetailPage() {
+    const tx = useTranslations('incidents');
     const params = useParams<{ tenantSlug: string; incidentId: string }>();
     const tenantSlug = params.tenantSlug;
     const incidentId = params.incidentId;
@@ -134,11 +131,11 @@ export default function IncidentDetailPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
             });
-            if (!res.ok) throw new Error('Action failed');
+            if (!res.ok) throw new Error(tx('detail.actionFailed'));
             await query.mutate();
             return true;
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Action failed');
+            setError(e instanceof Error ? e.message : tx('detail.actionFailed'));
             return false;
         } finally {
             setBusy(false);
@@ -177,11 +174,11 @@ export default function IncidentDetailPage() {
 
     const tabs: EntityDetailTab<TabKey>[] = useMemo(
         () => [
-            { key: 'overview', label: 'Overview' },
-            { key: 'timeline', label: 'Timeline', count: incident?.timeline.length },
-            { key: 'controls', label: 'Controls', count: incident?.linkedControlIds.length },
+            { key: 'overview', label: tx('detail.tabs.overview') },
+            { key: 'timeline', label: tx('detail.tabs.timeline'), count: incident?.timeline.length },
+            { key: 'controls', label: tx('detail.tabs.controls'), count: incident?.linkedControlIds.length },
         ],
-        [incident?.timeline.length, incident?.linkedControlIds.length],
+        [tx, incident?.timeline.length, incident?.linkedControlIds.length],
     );
 
     if (!incident) {
@@ -189,12 +186,12 @@ export default function IncidentDetailPage() {
             <EntityDetailLayout<TabKey>
                 back={{ smart: true }}
                 breadcrumbs={[
-                    { label: 'Incidents', href: `/t/${tenantSlug}/incidents` },
-                    { label: 'Incident' },
+                    { label: tx('crumb.incidents'), href: `/t/${tenantSlug}/incidents` },
+                    { label: tx('detail.incident') },
                 ]}
-                title="Incident"
+                title={tx('detail.incident')}
                 loading={query.isLoading}
-                error={query.error ? 'Failed to load incident' : null}
+                error={query.error ? tx('detail.loadFailed') : null}
             >
                 <div />
             </EntityDetailLayout>
@@ -207,7 +204,7 @@ export default function IncidentDetailPage() {
         <EntityDetailLayout<TabKey>
             back={{ smart: true }}
             breadcrumbs={[
-                { label: 'Incidents', href: `/t/${tenantSlug}/incidents` },
+                { label: tx('crumb.incidents'), href: `/t/${tenantSlug}/incidents` },
                 { label: incident.reference },
             ]}
             title={`[${incident.reference}] ${incident.title}`}
@@ -216,13 +213,13 @@ export default function IncidentDetailPage() {
                     items={[
                         {
                             kind: 'status',
-                            label: 'Severity',
+                            label: tx('detail.meta.severity'),
                             value: SEVERITY_LABELS[incident.severity] ?? incident.severity,
                             variant: SEVERITY_TONE[incident.severity] ?? 'neutral',
                         },
                         {
                             kind: 'text',
-                            label: 'Type',
+                            label: tx('detail.meta.type'),
                             value:
                                 INCIDENT_TYPE_LABELS[
                                     incident.incidentType as keyof typeof INCIDENT_TYPE_LABELS
@@ -230,12 +227,12 @@ export default function IncidentDetailPage() {
                         },
                         {
                             kind: 'text',
-                            label: 'Phase',
+                            label: tx('detail.meta.phase'),
                             value: PHASE_LABELS[incident.phase] ?? incident.phase,
                         },
                         {
                             kind: 'text',
-                            label: 'Detected',
+                            label: tx('detail.meta.detected'),
                             value: formatDateTime(incident.detectedAt),
                         },
                     ] satisfies MetaItem[]}
@@ -258,16 +255,14 @@ export default function IncidentDetailPage() {
                     <IncidentBiaContext incidentId={incidentId} />
                     {/* Not-legal-advice disclaimer — prominent. */}
                     <Card elevation="inset" className="px-4 py-3 text-sm text-content-muted">
-                        <strong className="text-content-default">Not legal advice.</strong>{' '}
-                        The NIS2 Article 23 reportability threshold and the 24h / 72h / 1-month
-                        deadlines below are operational aids. Your DPO/legal team owns the actual
-                        reporting determination.
+                        <strong className="text-content-default">{tx('detail.notLegalStrong')}</strong>{' '}
+                        {tx('detail.notLegalBody')}
                     </Card>
 
                     {/* 7-phase response tracker (the seven-phase NIS2 flow + CLOSED). */}
                     <section className="space-y-default">
-                        <Heading level={2}>Response phase</Heading>
-                        <ol className="flex flex-wrap gap-tight" aria-label="7-phase incident response tracker">
+                        <Heading level={2}>{tx('detail.responsePhase')}</Heading>
+                        <ol className="flex flex-wrap gap-tight" aria-label={tx('detail.trackerAria')}>
                             {PHASE_ORDER.map((p, idx) => {
                                 const done = idx < currentPhaseIdx;
                                 const current = idx === currentPhaseIdx;
@@ -287,7 +282,7 @@ export default function IncidentDetailPage() {
                             onClick={() => post('/advance-phase', {})}
                             id="advance-phase-btn"
                         >
-                            Advance phase
+                            {tx('detail.advancePhase')}
                         </Button>
                     </section>
 
@@ -297,13 +292,15 @@ export default function IncidentDetailPage() {
                         if (!runbook) return null;
                         const done = new Set(incident.completedContainmentSteps);
                         return (
-                            <section className="space-y-default" aria-label="Incident containment runbook">
-                                <Heading level={2}>Containment runbook</Heading>
+                            <section className="space-y-default" aria-label={tx('detail.runbookAria')}>
+                                <Heading level={2}>{tx('detail.containmentRunbook')}</Heading>
                                 <p className="text-xs text-content-muted">
-                                    First-response containment steps for a {INCIDENT_TYPE_LABELS[
-                                        incident.incidentType as keyof typeof INCIDENT_TYPE_LABELS
-                                    ] ?? incident.incidentType} incident. Operational guidance, not legal
-                                    advice. Completing a step records it on the timeline.
+                                    {tx('detail.runbookDesc', {
+                                        type:
+                                            INCIDENT_TYPE_LABELS[
+                                                incident.incidentType as keyof typeof INCIDENT_TYPE_LABELS
+                                            ] ?? incident.incidentType,
+                                    })}
                                 </p>
                                 <ul className="space-y-tight">
                                     {runbook.steps.map((step) => {
@@ -342,13 +339,11 @@ export default function IncidentDetailPage() {
 
                     {/* Article 23 notification deadlines. */}
                     <section className="space-y-default">
-                        <Heading level={2}>Article 23 notification deadlines</Heading>
+                        <Heading level={2}>{tx('detail.deadlinesHeading')}</Heading>
                         {!incident.reportable ? (
                             <div className="rounded-lg border border-border-subtle p-4 space-y-default">
                                 <p className="text-sm text-content-muted">
-                                    This incident is not yet marked reportable. Marking it reportable is a
-                                    human determination (not automatic, not legal advice) that starts the
-                                    24h / 72h / 1-month clocks.
+                                    {tx('detail.notReportableText')}
                                 </p>
                                 <Button
                                     variant="secondary"
@@ -357,7 +352,7 @@ export default function IncidentDetailPage() {
                                     onClick={() => setReportableOpen(true)}
                                     id="mark-reportable-btn"
                                 >
-                                    Mark reportable
+                                    {tx('detail.markReportable')}
                                 </Button>
                             </div>
                         ) : (
@@ -372,10 +367,10 @@ export default function IncidentDetailPage() {
                                         >
                                             <div className="space-y-tight">
                                                 <div className="font-medium text-content-emphasis">
-                                                    {KIND_LABELS[kind]}
+                                                    {tx(`detail.kinds.${kind}`)}
                                                 </div>
                                                 <div className="text-xs text-content-muted">
-                                                    Due {formatDateTime(n.dueAt)}
+                                                    {tx('detail.due', { date: formatDateTime(n.dueAt) })}
                                                     {n.status !== 'SUBMITTED' && now != null && (
                                                         <span
                                                             className={
@@ -404,7 +399,7 @@ export default function IncidentDetailPage() {
                                                             setSubmissionRef('');
                                                         }}
                                                     >
-                                                        Submit
+                                                        {tx('detail.submit')}
                                                     </Button>
                                                 )}
                                             </div>
@@ -417,25 +412,25 @@ export default function IncidentDetailPage() {
 
                     {/* Jurisdiction / authority. */}
                     <section className="space-y-default">
-                        <Heading level={2}>Notification authority</Heading>
+                        <Heading level={2}>{tx('detail.authorityHeading')}</Heading>
                         <p className="text-sm text-content-muted">
-                            The competent CSIRT / authority you notify is jurisdiction-specific
-                            (e.g. CCB in Belgium, NCSC-NL in the Netherlands, BSI in Germany).
-                            Configure it under{' '}
-                            <Link
-                                href={`/t/${tenantSlug}/admin/settings`}
-                                className="text-content-link underline"
-                            >
-                                tenant security settings
-                            </Link>
-                            .
+                            {tx.rich('detail.authorityText', {
+                                settings: (c) => (
+                                    <Link
+                                        href={`/t/${tenantSlug}/admin/settings`}
+                                        className="text-content-link underline"
+                                    >
+                                        {c}
+                                    </Link>
+                                ),
+                            })}
                         </p>
                     </section>
 
                     {/* Forensic evidence collection checklist. */}
                     <section className="space-y-default" aria-label="Forensic evidence checklist">
                         <div className="flex items-center justify-between">
-                            <Heading level={2}>Forensic evidence</Heading>
+                            <Heading level={2}>{tx('detail.forensicHeading')}</Heading>
                             <Button
                                 variant="secondary"
                                 size="sm"
@@ -443,12 +438,11 @@ export default function IncidentDetailPage() {
                                 onClick={openEvidenceModal}
                                 id="link-evidence-btn"
                             >
-                                Link evidence
+                                {tx('detail.linkEvidence')}
                             </Button>
                         </div>
                         <p className="text-xs text-content-muted">
-                            Capture forensic evidence for each category and link the real Evidence
-                            records so the incident stays audit-ready.
+                            {tx('detail.forensicDesc')}
                         </p>
                         <ul className="space-y-tight">
                             {FORENSIC_EVIDENCE_CHECKLIST.map((cat) => {
@@ -467,7 +461,7 @@ export default function IncidentDetailPage() {
                                             <div className="text-xs text-content-muted">{cat.hint}</div>
                                         </div>
                                         <StatusBadge variant={links.length > 0 ? 'success' : 'neutral'}>
-                                            {links.length > 0 ? `${links.length} linked` : 'none'}
+                                            {links.length > 0 ? tx('detail.nLinked', { count: links.length }) : tx('detail.noneLinked')}
                                         </StatusBadge>
                                     </li>
                                 );
@@ -494,7 +488,7 @@ export default function IncidentDetailPage() {
                                                 post('/evidence', { evidenceId: l.evidenceId }, 'DELETE')
                                             }
                                         >
-                                            Unlink
+                                            {tx('detail.unlink')}
                                         </Button>
                                     </li>
                                 ))}
@@ -504,13 +498,13 @@ export default function IncidentDetailPage() {
                             href={`/t/${tenantSlug}/evidence`}
                             className="text-content-link underline text-xs"
                         >
-                            Open the evidence register →
+                            {tx('detail.openEvidenceRegister')}
                         </Link>
                     </section>
 
                     {/* Incident-response roles (informational RACI). */}
-                    <section className="space-y-default" aria-label="Incident response roles">
-                        <Heading level={2}>Incident response roles</Heading>
+                    <section className="space-y-default" aria-label={tx('detail.rolesHeading')}>
+                        <Heading level={2}>{tx('detail.rolesHeading')}</Heading>
                         <ul className="space-y-tight">
                             {INCIDENT_RESPONSE_RACI.map((r) => (
                                 <li key={r.role} className="flex flex-wrap items-baseline gap-tight text-sm">
@@ -531,9 +525,9 @@ export default function IncidentDetailPage() {
             {activeTab === 'timeline' && (
                 <div className="space-y-section">
                     <div className="flex items-center justify-between">
-                        <Heading level={2}>Incident timeline</Heading>
+                        <Heading level={2}>{tx('detail.timelineHeading')}</Heading>
                         <Button variant="secondary" size="sm" onClick={() => setTimelineOpen(true)} disabled={busy}>
-                            Add entry
+                            {tx('detail.addEntry')}
                         </Button>
                     </div>
                     <ol className="space-y-default">
@@ -554,11 +548,10 @@ export default function IncidentDetailPage() {
 
             {activeTab === 'controls' && (
                 <div className="space-y-section">
-                    <Heading level={2}>Linked Art.21(2) controls</Heading>
+                    <Heading level={2}>{tx('detail.linkedControls')}</Heading>
                     {incident.linkedControlIds.length === 0 ? (
                         <p className="text-sm text-content-muted">
-                            No controls linked yet. Link the Art.21(2) controls this incident implicates
-                            from the control detail page or via the API.
+                            {tx('detail.controlsEmpty')}
                         </p>
                     ) : (
                         <ul className="space-y-tight">
@@ -579,31 +572,31 @@ export default function IncidentDetailPage() {
 
             {/* ─── Submit-notification modal ─── */}
             {submitKind && (
-                <Modal showModal setShowModal={(v) => { if (!v) setSubmitKind(null); }} size="lg" title="File notification">
-                    <Modal.Header title={`File ${KIND_LABELS[submitKind]}`} description="Record the report you filed with the competent authority." />
+                <Modal showModal setShowModal={(v) => { if (!v) setSubmitKind(null); }} size="lg" title={tx('detail.fileNotification')}>
+                    <Modal.Header title={tx('detail.fileKind', { kind: tx(`detail.kinds.${submitKind}`) })} description={tx('detail.fileDesc')} />
                     <Modal.Body>
                         <div className="space-y-default">
-                            <FormField label="Report text" required>
+                            <FormField label={tx('detail.reportText')} required>
                                 <Textarea
                                     rows={5}
                                     value={reportText}
                                     onChange={(e) => setReportText(e.target.value)}
-                                    placeholder="The report submitted to the authority"
+                                    placeholder={tx('detail.reportTextPlaceholder')}
                                 />
                             </FormField>
-                            <FormField label="Authority case reference" hint="The reference the authority returned, if any.">
+                            <FormField label={tx('detail.caseRef')} hint={tx('detail.caseRefHint')}>
                                 <Input
                                     type="text"
                                     value={submissionRef}
                                     onChange={(e) => setSubmissionRef(e.target.value)}
-                                    placeholder="e.g. CCB-2026-0042"
+                                    placeholder={tx('detail.caseRefPlaceholder')}
                                 />
                             </FormField>
                         </div>
                     </Modal.Body>
                     <Modal.Actions>
                         <Button variant="secondary" size="sm" onClick={() => setSubmitKind(null)} disabled={busy}>
-                            Cancel
+                            {tx('detail.cancel')}
                         </Button>
                         <Button
                             variant="primary"
@@ -618,7 +611,7 @@ export default function IncidentDetailPage() {
                                 if (ok) setSubmitKind(null);
                             }}
                         >
-                            Submit report
+                            {tx('detail.submitReport')}
                         </Button>
                     </Modal.Actions>
                 </Modal>
@@ -626,21 +619,21 @@ export default function IncidentDetailPage() {
 
             {/* ─── Add timeline entry modal ─── */}
             {timelineOpen && (
-                <Modal showModal setShowModal={(v) => { if (!v) setTimelineOpen(false); }} size="md" title="Add timeline entry">
-                    <Modal.Header title="Add timeline entry" description="Record an action or observation on this incident." />
+                <Modal showModal setShowModal={(v) => { if (!v) setTimelineOpen(false); }} size="md" title={tx('detail.addTimelineEntry')}>
+                    <Modal.Header title={tx('detail.addTimelineEntry')} description={tx('detail.addTimelineDesc')} />
                     <Modal.Body>
-                        <FormField label="Entry" required>
+                        <FormField label={tx('detail.entry')} required>
                             <Textarea
                                 rows={4}
                                 value={timelineEntry}
                                 onChange={(e) => setTimelineEntry(e.target.value)}
-                                placeholder="What happened"
+                                placeholder={tx('detail.entryPlaceholder')}
                             />
                         </FormField>
                     </Modal.Body>
                     <Modal.Actions>
                         <Button variant="secondary" size="sm" onClick={() => setTimelineOpen(false)} disabled={busy}>
-                            Cancel
+                            {tx('detail.cancel')}
                         </Button>
                         <Button
                             variant="primary"
@@ -654,7 +647,7 @@ export default function IncidentDetailPage() {
                                 }
                             }}
                         >
-                            Add entry
+                            {tx('detail.addEntry')}
                         </Button>
                     </Modal.Actions>
                 </Modal>
@@ -662,23 +655,19 @@ export default function IncidentDetailPage() {
 
             {/* ─── Mark-reportable confirm modal ─── */}
             {reportableOpen && (
-                <Modal showModal setShowModal={(v) => { if (!v) setReportableOpen(false); }} size="md" title="Mark reportable">
+                <Modal showModal setShowModal={(v) => { if (!v) setReportableOpen(false); }} size="md" title={tx('detail.markReportable')}>
                     <Modal.Header
-                        title="Mark this incident reportable?"
-                        description="This is a human determination — not automatic and not legal advice."
+                        title={tx('detail.markReportableTitle')}
+                        description={tx('detail.markReportableDesc')}
                     />
                     <Modal.Body>
                         <p className="text-sm text-content-muted">
-                            Marking this incident reportable under NIS2 Article 23 starts the
-                            24-hour early-warning, 72-hour detailed-report, and 1-month final-report
-                            deadline clocks (derived from the detection time). Confirm only if your
-                            DPO/legal has determined the incident meets the significant-impact
-                            threshold.
+                            {tx('detail.markReportableBody')}
                         </p>
                     </Modal.Body>
                     <Modal.Actions>
                         <Button variant="secondary" size="sm" onClick={() => setReportableOpen(false)} disabled={busy}>
-                            Cancel
+                            {tx('detail.cancel')}
                         </Button>
                         <Button
                             variant="primary"
@@ -689,7 +678,7 @@ export default function IncidentDetailPage() {
                                 if (ok) setReportableOpen(false);
                             }}
                         >
-                            Mark reportable
+                            {tx('detail.markReportable')}
                         </Button>
                     </Modal.Actions>
                 </Modal>
@@ -697,34 +686,34 @@ export default function IncidentDetailPage() {
 
             {/* ─── Link forensic evidence modal ─── */}
             {evidenceOpen && (
-                <Modal showModal setShowModal={(v) => { if (!v) setEvidenceOpen(false); }} size="md" title="Link evidence">
+                <Modal showModal setShowModal={(v) => { if (!v) setEvidenceOpen(false); }} size="md" title={tx('detail.linkEvidence')}>
                     <Modal.Header
-                        title="Link forensic evidence"
-                        description="Attach an existing tenant Evidence record to this incident."
+                        title={tx('detail.linkForensicEvidence')}
+                        description={tx('detail.linkForensicDesc')}
                     />
                     <Modal.Body>
                         <div className="space-y-default">
-                            <FormField label="Evidence record" required>
+                            <FormField label={tx('detail.evidenceRecord')} required>
                                 <Combobox
                                     options={evidenceOptions}
                                     selected={evidenceOptions.find((o) => o.value === selectedEvidenceId) ?? null}
                                     setSelected={(opt) => setSelectedEvidenceId(opt?.value ?? '')}
-                                    placeholder="Select evidence…"
+                                    placeholder={tx('detail.selectEvidence')}
                                 />
                             </FormField>
-                            <FormField label="Forensic category" hint="Which checklist category this evidence satisfies.">
+                            <FormField label={tx('detail.forensicCategory')} hint={tx('detail.forensicCategoryHint')}>
                                 <Combobox
                                     options={forensicCategoryOptions}
                                     selected={forensicCategoryOptions.find((o) => o.value === selectedForensicCategory) ?? null}
                                     setSelected={(opt) => setSelectedForensicCategory(opt?.value ?? '')}
-                                    placeholder="Select category…"
+                                    placeholder={tx('detail.selectCategory')}
                                 />
                             </FormField>
                         </div>
                     </Modal.Body>
                     <Modal.Actions>
                         <Button variant="secondary" size="sm" onClick={() => setEvidenceOpen(false)} disabled={busy}>
-                            Cancel
+                            {tx('detail.cancel')}
                         </Button>
                         <Button
                             variant="primary"
@@ -738,7 +727,7 @@ export default function IncidentDetailPage() {
                                 if (ok) setEvidenceOpen(false);
                             }}
                         >
-                            Link evidence
+                            {tx('detail.linkEvidence')}
                         </Button>
                     </Modal.Actions>
                 </Modal>

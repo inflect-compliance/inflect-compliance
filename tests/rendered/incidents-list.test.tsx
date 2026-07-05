@@ -9,6 +9,28 @@ import * as React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SWRConfig } from 'swr';
 
+// next-intl is ESM (jest cannot parse it); mock resolving real en.json values.
+jest.mock('next-intl', () => {
+    const en = require('../../messages/en.json') as Record<string, Record<string, unknown>>;
+    const resolve = (ns: string, key: string): unknown =>
+        key.split('.').reduce<unknown>((o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), en[ns]);
+    const make = (ns: string) => {
+        const t = (key: string, params?: Record<string, unknown>) => {
+            let v = resolve(ns, key);
+            if (typeof v !== 'string') return key;
+            if (params) for (const [p, val] of Object.entries(params)) v = (v as string).replace(new RegExp('\\{' + p + '\\}', 'g'), String(val));
+            return v;
+        };
+        t.rich = (key: string) => {
+            const v = resolve(ns, key);
+            return typeof v === 'string' ? v.replace(/<(\w+)>(.*?)<\/\1>/g, (_m: string, _tag: string, inner: string) => inner) : key;
+        };
+        return t;
+    };
+    return { useTranslations: (ns: string) => make(ns), useLocale: () => 'en' };
+});
+
+
 jest.mock('next/navigation', () => ({
     useParams: () => ({ tenantSlug: 'acme' }),
     useRouter: () => ({ push: jest.fn(), replace: jest.fn(), refresh: jest.fn() }),
