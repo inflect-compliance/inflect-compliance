@@ -57,6 +57,7 @@ import {
     type Dispatch,
     type SetStateAction,
 } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import {
@@ -120,6 +121,7 @@ export function UploadEvidenceModal({
     apiUrl,
     controls,
 }: UploadEvidenceModalProps) {
+    const tx = useTranslations('evidence');
     const close = useCallback(() => setOpen(false), [setOpen]);
     const { mutate: swrMutate } = useSWRConfig();
     const dropzoneRef = useRef<FileDropzoneHandle>(null);
@@ -169,14 +171,14 @@ export function UploadEvidenceModal({
                     }),
                 });
                 if (!res.ok) {
-                    setError('SharePoint import failed.');
+                    setError(tx('upload.spImportFailed'));
                     return;
                 }
                 const prefix = apiUrl(CACHE_KEYS.evidence.list());
                 await swrMutate((key) => typeof key === 'string' && key.startsWith(prefix));
                 setOpen(false);
             } catch {
-                setError('SharePoint import failed — network error.');
+                setError(tx('upload.spImportFailedNet'));
             }
         },
         [apiUrl, spConnId, controlId, swrMutate, setOpen],
@@ -367,7 +369,7 @@ export function UploadEvidenceModal({
                           })()
                         : err instanceof Error
                           ? err.message
-                          : 'Upload failed';
+                          : tx('upload.uploadFailed');
                 setError(msg);
                 throw err;
             }
@@ -411,7 +413,7 @@ export function UploadEvidenceModal({
         const entries = dropzoneRef.current?.getEntries() ?? [];
         const queued = entries.filter((x) => x.status === 'queued');
         if (queued.length === 0) {
-            setError('A file is required to upload evidence.');
+            setError(tx('upload.fileRequired'));
             return;
         }
         setError('');
@@ -454,13 +456,13 @@ export function UploadEvidenceModal({
             showModal={open}
             setShowModal={setOpen}
             size="lg"
-            title="Upload evidence"
-            description="Drag and drop one or more files — PDF, Office, CSV, image, JSON, or ZIP. Each file becomes its own evidence record."
+            title={tx('upload.title')}
+            description={tx('upload.descriptionModal')}
             preventDefaultClose={uploadingAll}
         >
             <Modal.Header
-                title="Upload evidence"
-                description="Drag and drop one or more files (or click to browse). Files share the metadata you set below."
+                title={tx('upload.title')}
+                description={tx('upload.descriptionHeader')}
             />
             <Modal.Form id="upload-form" onSubmit={handleSubmit}>
                 <Modal.Body>
@@ -482,7 +484,7 @@ export function UploadEvidenceModal({
                                 className="mb-1 block text-sm text-content-default"
                                 htmlFor="file-input"
                             >
-                                Files <RequiredMarker />
+                                {tx('upload.filesLabel')} <RequiredMarker />
                             </label>
                             <FileDropzone
                                 ref={dropzoneRef}
@@ -495,11 +497,11 @@ export function UploadEvidenceModal({
                                 onPick={onPick}
                                 onUpload={handleDropzoneUpload}
                                 onAllSettled={onAllSettled}
-                                hint={`PDF, Office, CSV, image, JSON, or ZIP — up to ${MAX_FILE_SIZE_MB} MB per file`}
+                                hint={tx('upload.dropHint', { mb: MAX_FILE_SIZE_MB })}
                             />
                             {spConnId && (
                                 <div className="mt-default flex items-center gap-default">
-                                    <span className="text-xs text-content-muted">or</span>
+                                    <span className="text-xs text-content-muted">{tx('upload.or')}</span>
                                     <Button
                                         type="button"
                                         variant="secondary"
@@ -507,7 +509,7 @@ export function UploadEvidenceModal({
                                         onClick={() => setSpPickerOpen(true)}
                                         disabled={uploadingAll}
                                     >
-                                        Import from SharePoint
+                                        {tx('upload.importSharePoint')}
                                     </Button>
                                 </div>
                             )}
@@ -520,7 +522,7 @@ export function UploadEvidenceModal({
                                     className="mb-1 block text-sm text-content-default"
                                     htmlFor="upload-title-input"
                                 >
-                                    Title
+                                    {tx('upload.titleLabel')}
                                 </label>
                                 <input
                                     id="upload-title-input"
@@ -528,8 +530,8 @@ export function UploadEvidenceModal({
                                     className="input w-full"
                                     placeholder={
                                         queuedCount > 1
-                                            ? 'Each file uses its own filename'
-                                            : 'Defaults to filename'
+                                            ? tx('upload.titlePlaceholderMulti')
+                                            : tx('upload.titlePlaceholderSingle')
                                     }
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
@@ -538,8 +540,7 @@ export function UploadEvidenceModal({
                                 />
                                 {queuedCount > 1 && (
                                     <p className="mt-1 text-xs text-content-muted">
-                                        Per-file titles default to the filename
-                                        when uploading multiple files.
+                                        {tx('upload.titleMultiHint')}
                                     </p>
                                 )}
                             </div>
@@ -555,18 +556,18 @@ export function UploadEvidenceModal({
                                         className="text-sm text-content-default"
                                         htmlFor="retention-date-input"
                                     >
-                                        Retain until
+                                        {tx('upload.retainLabel')}
                                     </label>
                                     <InfoTooltip
-                                        aria-label="About retention dates"
+                                        aria-label={tx('upload.retainTooltipAria')}
                                         iconClassName="h-3.5 w-3.5"
-                                        content="After this date the evidence is archived out of the active set. It stays in the audit log — admins can still recover it."
+                                        content={tx('upload.retainTooltip')}
                                     />
                                 </div>
                                 <DatePicker
                                     id="retention-date-input"
                                     className="w-full"
-                                    placeholder="Select date"
+                                    placeholder={tx('upload.retainPlaceholder')}
                                     clearable
                                     align="start"
                                     value={parseYMD(retentionUntil)}
@@ -576,22 +577,21 @@ export function UploadEvidenceModal({
                                     disabledDays={{
                                         before: startOfUtcDay(new Date()),
                                     }}
-                                    aria-label="Retain until"
+                                    aria-label={tx('upload.retainAria')}
                                 />
                                 <p className="mt-1 text-xs text-content-muted">
-                                    Optional — applies to every file in the
-                                    batch.
+                                    {tx('upload.retainHint')}
                                 </p>
                             </div>
                         </div>
 
                         {/* Control link — Epic 55: searchable Combobox */}
                         <FormField
-                            label="Link to control"
+                            label={tx('upload.linkControlLabel')}
                             description={
                                 controls.length === 0
-                                    ? 'No controls available to link yet.'
-                                    : `Search across ${controls.length} control${controls.length === 1 ? '' : 's'} by annex id, code, or name.`
+                                    ? tx('upload.controlsUnavailable')
+                                    : tx('upload.searchControlsDesc', { count: controls.length })
                             }
                         >
                             <Combobox<false, ControlOption>
@@ -606,9 +606,9 @@ export function UploadEvidenceModal({
                                 setSelected={(option) =>
                                     setControlId(option?.value ?? '')
                                 }
-                                placeholder="— No control link"
-                                searchPlaceholder="Search controls…"
-                                emptyState="No controls match"
+                                placeholder={tx('upload.noControlLink')}
+                                searchPlaceholder={tx('upload.searchControls')}
+                                emptyState={tx('upload.noControlsMatch')}
                                 matchTriggerWidth
                                 forceDropdown
                                 buttonProps={{ className: 'w-full' }}
@@ -620,15 +620,15 @@ export function UploadEvidenceModal({
                             file in the batch; datalist seeds it
                             from existing evidence folders. */}
                         <FormField
-                            label="Folder"
-                            description="Optional — group this upload with related evidence."
+                            label={tx('upload.folderLabel')}
+                            description={tx('upload.folderDesc')}
                         >
                             <input
                                 id="upload-evidence-folder-input"
                                 data-testid="upload-evidence-folder-input"
                                 type="text"
                                 className="input w-full"
-                                placeholder="e.g. SOC2/2026"
+                                placeholder={tx('upload.folderPlaceholder')}
                                 list="evidence-folder-suggestions"
                                 value={folder}
                                 onChange={(e) => setFolder(e.target.value)}
@@ -645,7 +645,7 @@ export function UploadEvidenceModal({
                         id="upload-evidence-cancel-btn"
                         onClick={cancel}
                     >
-                        {uploadingAll ? 'Stop' : 'Cancel'}
+                        {uploadingAll ? tx('upload.stop') : tx('upload.cancel')}
                     </Button>
                     <Button
                         type="submit"
@@ -655,10 +655,10 @@ export function UploadEvidenceModal({
                         disabled={submitDisabled}
                     >
                         {uploadingAll
-                            ? 'Uploading…'
+                            ? tx('upload.uploading')
                             : queuedCount > 1
-                              ? `Upload ${queuedCount} files`
-                              : 'Upload'}
+                              ? tx('upload.uploadMulti', { count: queuedCount })
+                              : tx('upload.upload')}
                     </Button>
                 </Modal.Actions>
             </Modal.Form>

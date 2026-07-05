@@ -26,6 +26,7 @@ import {
     type Dispatch,
     type SetStateAction,
 } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
@@ -56,6 +57,7 @@ export function NewEvidenceTextModal({
     apiUrl,
     controls,
 }: NewEvidenceTextModalProps) {
+    const tx = useTranslations('evidence');
     const close = useCallback(() => setOpen(false), [setOpen]);
     // Epic 69 — bridge cache invalidation. EvidenceClient now reads
     // from `useTenantSWR(CACHE_KEYS.evidence.list())`, so the React
@@ -136,9 +138,9 @@ export function NewEvidenceTextModal({
             if (!res.ok) {
                 const err = await res
                     .json()
-                    .catch(() => ({ error: 'Failed to create evidence' }));
+                    .catch(() => ({ error: tx('text.createFailed') }));
                 throw new Error(
-                    err.error || err.message || 'Failed to create evidence',
+                    err.error || err.message || tx('text.createFailed'),
                 );
             }
             const data = await res.json();
@@ -160,7 +162,7 @@ export function NewEvidenceTextModal({
         } catch (err) {
             telemetry.trackError(err);
             setError(
-                err instanceof Error ? err.message : 'Failed to create evidence',
+                err instanceof Error ? err.message : tx('text.createFailed'),
             );
         } finally {
             setSubmitting(false);
@@ -172,13 +174,13 @@ export function NewEvidenceTextModal({
             showModal={open}
             setShowModal={setOpen}
             size="lg"
-            title="Add evidence"
-            description="Record a link, narrative, or attestation against a control."
+            title={tx('text.title')}
+            description={tx('text.description')}
             preventDefaultClose={submitting}
         >
             <Modal.Header
-                title="Add evidence"
-                description="Record a link, narrative, or attestation against a control."
+                title={tx('text.title')}
+                description={tx('text.description')}
             />
             <Modal.Form id="text-evidence-form" onSubmit={handleSubmit}>
                 <Modal.Body>
@@ -203,7 +205,7 @@ export function NewEvidenceTextModal({
                                     className="mb-1 block text-sm text-content-default"
                                     htmlFor="text-evidence-title-input"
                                 >
-                                    Title <RequiredMarker />
+                                    {tx('text.titleLabel')} <RequiredMarker />
                                 </label>
                                 <input
                                     id="text-evidence-title-input"
@@ -218,7 +220,7 @@ export function NewEvidenceTextModal({
                                     autoComplete="off"
                                 />
                             </div>
-                            <FormField label="Link to control">
+                            <FormField label={tx('text.linkControlLabel')}>
                                 <Combobox<false, ControlOption>
                                     id="text-evidence-control-select"
                                     name="controlId"
@@ -231,9 +233,9 @@ export function NewEvidenceTextModal({
                                     setSelected={(option) =>
                                         update('controlId', option?.value ?? '')
                                     }
-                                    placeholder="— No control link"
-                                    searchPlaceholder="Search controls…"
-                                    emptyState="No controls match"
+                                    placeholder={tx('text.noControlLink')}
+                                    searchPlaceholder={tx('text.searchControls')}
+                                    emptyState={tx('text.noControlsMatch')}
                                     matchTriggerWidth
                                     forceDropdown
                                     buttonProps={{ className: 'w-full' }}
@@ -245,7 +247,7 @@ export function NewEvidenceTextModal({
                                     className="mb-1 block text-sm text-content-default"
                                     htmlFor="text-evidence-owner-input"
                                 >
-                                    Owner
+                                    {tx('text.ownerLabel')}
                                 </label>
                                 <input
                                     id="text-evidence-owner-input"
@@ -263,7 +265,7 @@ export function NewEvidenceTextModal({
                                     className="mb-1 block text-sm text-content-default"
                                     htmlFor="text-evidence-category-input"
                                 >
-                                    Category
+                                    {tx('text.categoryLabel')}
                                 </label>
                                 <input
                                     id="text-evidence-category-input"
@@ -287,14 +289,14 @@ export function NewEvidenceTextModal({
                                 className="mb-1 block text-sm text-content-default"
                                 htmlFor="text-evidence-folder-input"
                             >
-                                Folder <span className="text-content-subtle font-normal">(optional)</span>
+                                {tx('text.folderLabel')} <span className="text-content-subtle font-normal">{tx('text.folderOptional')}</span>
                             </label>
                             <input
                                 id="text-evidence-folder-input"
                                 data-testid="text-evidence-folder-input"
                                 type="text"
                                 className="input w-full"
-                                placeholder="e.g. SOC2/2026 or Quarterly access reviews"
+                                placeholder={tx('text.folderPlaceholder')}
                                 list="evidence-folder-suggestions"
                                 value={form.folder}
                                 onChange={(e) =>
@@ -308,7 +310,7 @@ export function NewEvidenceTextModal({
                                 className="mb-1 block text-sm text-content-default"
                                 htmlFor="text-evidence-content-input"
                             >
-                                Content
+                                {tx('text.contentLabel')}
                             </label>
                             <textarea
                                 id="text-evidence-content-input"
@@ -318,7 +320,7 @@ export function NewEvidenceTextModal({
                                 onChange={(e) =>
                                     update('content', e.target.value)
                                 }
-                                placeholder="Paste a link or narrative…"
+                                placeholder={tx('text.contentPlaceholder')}
                             />
                         </div>
                     </fieldset>
@@ -334,7 +336,7 @@ export function NewEvidenceTextModal({
                         }}
                         disabled={submitting}
                     >
-                        Cancel
+                        {tx('text.cancel')}
                     </Button>
                     <Button
                         type="submit"
@@ -343,7 +345,7 @@ export function NewEvidenceTextModal({
                         id="create-text-evidence-btn"
                         disabled={!canSubmit}
                     >
-                        {submitting ? 'Creating…' : 'Add evidence'}
+                        {submitting ? tx('text.creating') : tx('text.submit')}
                     </Button>
                 </Modal.Actions>
             </Modal.Form>
