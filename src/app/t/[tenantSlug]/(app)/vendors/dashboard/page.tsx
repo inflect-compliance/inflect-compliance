@@ -5,6 +5,7 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { buttonVariants } from '@/components/ui/button-variants';
@@ -76,6 +77,7 @@ interface VendorMetrics {
 export default function VendorDashboardPage() {
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
+    const tx = useTranslations('vendors');
 
     const [metrics, setMetrics] = useState<VendorMetrics | null>(null);
     const [loading, setLoading] = useState(true);
@@ -90,17 +92,17 @@ export default function VendorDashboardPage() {
     useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
 
     if (loading) return <SkeletonDashboard />;
-    if (!metrics) return <div className="text-content-error py-8 text-center">Failed to load metrics</div>;
+    if (!metrics) return <div className="text-content-error py-8 text-center">{tx('dashboard.loadFailed')}</div>;
 
     return (
         <DashboardLayout
             header={{
                 back: { smart: true },
-                title: 'Vendor Dashboard',
-                description: `${metrics.totalVendors} total vendors`,
+                title: tx('dashboard.title'),
+                description: tx('dashboard.totalVendors', { count: metrics.totalVendors }),
                 actions: (
-                    <Tooltip content="Vendor register">
-                        <Link href={tenantHref('/vendors')} aria-label="Vendor register" className={buttonVariants({ variant: 'secondary', size: 'icon' })}>
+                    <Tooltip content={tx('dashboard.registerTooltip')}>
+                        <Link href={tenantHref('/vendors')} aria-label={tx('dashboard.registerTooltip')} className={buttonVariants({ variant: 'secondary', size: 'icon' })}>
                             <AppIcon name="overview" size={16} />
                         </Link>
                     </Tooltip>
@@ -110,24 +112,24 @@ export default function VendorDashboardPage() {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-default">
-                <MetricCard label="Total Vendors" value={metrics.totalVendors} />
-                <MetricCard label="Overdue Reviews" value={metrics.overdueReview} tone={metrics.overdueReview > 0 ? 'critical' : 'success'}
+                <MetricCard label={tx('dashboard.kpiTotal')} value={metrics.totalVendors} />
+                <MetricCard label={tx('dashboard.kpiOverdueReviews')} value={metrics.overdueReview} tone={metrics.overdueReview > 0 ? 'critical' : 'success'}
                     href={tenantHref('/vendors?reviewDue=overdue')} />
-                <MetricCard label="Upcoming Reviews" value={metrics.upcomingReview} tone="attention" />
-                <MetricCard label="Overdue Renewals" value={metrics.overdueRenewal} tone={metrics.overdueRenewal > 0 ? 'critical' : 'success'} />
-                <MetricCard label="Upcoming Renewals" value={metrics.upcomingRenewal} tone="attention" />
-                <MetricCard label="High Risk (No Assessment)" value={metrics.highRiskNoAssessment} tone={metrics.highRiskNoAssessment > 0 ? 'critical' : 'success'} />
+                <MetricCard label={tx('dashboard.kpiUpcomingReviews')} value={metrics.upcomingReview} tone="attention" />
+                <MetricCard label={tx('dashboard.kpiOverdueRenewals')} value={metrics.overdueRenewal} tone={metrics.overdueRenewal > 0 ? 'critical' : 'success'} />
+                <MetricCard label={tx('dashboard.kpiUpcomingRenewals')} value={metrics.upcomingRenewal} tone="attention" />
+                <MetricCard label={tx('dashboard.kpiHighRisk')} value={metrics.highRiskNoAssessment} tone={metrics.highRiskNoAssessment > 0 ? 'critical' : 'success'} />
             </div>
 
             {/* Continuous assurance — posture signals from the monitoring sweep */}
             <div className={cn(cardVariants(), 'space-y-default')}>
-                <Heading level={3}>Continuous assurance</Heading>
+                <Heading level={3}>{tx('dashboard.continuousAssurance')}</Heading>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-default">
-                    <MetricCard label="Expired Attestations" value={metrics.expiredAttestations}
+                    <MetricCard label={tx('dashboard.kpiExpiredAttestations')} value={metrics.expiredAttestations}
                         tone={metrics.expiredAttestations > 0 ? 'critical' : 'success'} />
-                    <MetricCard label="Recent Breach Activity" value={metrics.recentBreachActivity}
+                    <MetricCard label={tx('dashboard.kpiRecentBreach')} value={metrics.recentBreachActivity}
                         tone={metrics.recentBreachActivity > 0 ? 'critical' : 'success'} />
-                    <MetricCard label="Overdue Reassessment" value={metrics.overdueReassessment}
+                    <MetricCard label={tx('dashboard.kpiOverdueReassessment')} value={metrics.overdueReassessment}
                         tone={metrics.overdueReassessment > 0 ? 'critical' : 'success'}
                         href={tenantHref('/vendors?reviewDue=overdue')} />
                 </div>
@@ -136,7 +138,7 @@ export default function VendorDashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-section">
                 {/* By Criticality */}
                 <div className={cn(cardVariants(), 'flex flex-col space-y-compact')}>
-                    <Heading level={3}>By Criticality</Heading>
+                    <Heading level={3}>{tx('dashboard.byCriticality')}</Heading>
                     <div className="flex flex-1 flex-col justify-center">
                         <BreakdownBar data={metrics.byCriticality} colors={CRIT_COLORS} />
                     </div>
@@ -144,7 +146,7 @@ export default function VendorDashboardPage() {
 
                 {/* By Status */}
                 <div className={cn(cardVariants(), 'flex flex-col space-y-compact')}>
-                    <Heading level={3}>By Status</Heading>
+                    <Heading level={3}>{tx('dashboard.byStatus')}</Heading>
                     <div className="flex flex-1 flex-col justify-center">
                         <BreakdownBar data={metrics.byStatus} colors={STATUS_COLORS} />
                     </div>
@@ -152,11 +154,11 @@ export default function VendorDashboardPage() {
 
                 {/* By Risk Rating */}
                 <div className={cn(cardVariants(), 'flex flex-col space-y-compact')}>
-                    <Heading level={3}>By Risk Rating</Heading>
+                    <Heading level={3}>{tx('dashboard.byRiskRating')}</Heading>
                     <div className="flex flex-1 flex-col justify-center">
                         {Object.keys(metrics.byRiskRating).length > 0
                             ? <BreakdownBar data={metrics.byRiskRating} colors={CRIT_COLORS} />
-                            : <InlineEmptyState title="No assessments completed yet" />}
+                            : <InlineEmptyState title={tx('dashboard.riskRatingEmpty')} />}
                     </div>
                 </div>
             </div>
@@ -166,9 +168,9 @@ export default function VendorDashboardPage() {
                 <div className={cn(cardVariants(), 'border border-orange-500/30')}>
                     <div className="flex items-center gap-tight">
                         <span className="text-orange-400 text-lg font-semibold">!</span>
-                        <span className="font-semibold">{metrics.expiringDocuments} document(s) expiring within 30 days</span>
+                        <span className="font-semibold">{tx('dashboard.expiringDocs', { count: metrics.expiringDocuments })}</span>
                     </div>
-                    <p className="text-sm text-content-muted mt-1">Review vendor documents tab to check validity dates.</p>
+                    <p className="text-sm text-content-muted mt-1">{tx('dashboard.expiringDocsHint')}</p>
                 </div>
             )}
         </DashboardLayout>
