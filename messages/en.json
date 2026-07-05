@@ -23,7 +23,13 @@
         "actions": "Actions",
         "details": "Details",
         "theme": "Theme",
-        "language": "Language"
+        "language": "Language",
+        "error": {
+            "title": "Something went wrong",
+            "body": "This page encountered an error. You can try again or navigate to another section using the sidebar.",
+            "errorId": "Error ID: {id}",
+            "goToDashboard": "Go to Dashboard"
+        }
     },
     "login": {
         "title": "Inflect Compliance",
@@ -112,7 +118,8 @@
         "notStarted": "Not Started",
         "inProgress": "In Progress",
         "ready": "Ready",
-        "needsReview": "Needs Review"
+        "needsReview": "Needs Review",
+        "loadingAria": "Loading clauses"
     },
     "assets": {
         "title": "Asset Inventory",
