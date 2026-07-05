@@ -65,6 +65,24 @@ import * as path from 'path';
 
 const ROOT = path.resolve(__dirname, '../..');
 
+// Catalog for confirmLabels migrated to next-intl. A `confirmLabel={t('key')}`
+// is resolved against en.json using the file's `useTranslations('<ns>')`
+// namespace, so the canonical-verb check runs on the rendered English.
+const EN_MESSAGES = JSON.parse(
+    fs.readFileSync(path.join(ROOT, 'messages/en.json'), 'utf-8'),
+) as Record<string, unknown>;
+function resolveI18nLabel(fileSrc: string, key: string): string | null {
+    const ns = fileSrc.match(/useTranslations\(\s*['"](\w+)['"]\s*\)/)?.[1];
+    if (!ns) return null;
+    const v = key
+        .split('.')
+        .reduce<unknown>(
+            (o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined),
+            EN_MESSAGES[ns],
+        );
+    return typeof v === 'string' ? v : null;
+}
+
 const CANONICAL_VERBS = [
     'Delete',
     'Remove',
@@ -104,7 +122,8 @@ describe('Destructive-action vocabulary (Roadmap-4 PR-9)', () => {
                 }
                 if (!/\.tsx$/.test(e.name)) continue;
                 const rel = path.relative(ROOT, full);
-                const lines = fs.readFileSync(full, 'utf-8').split('\n');
+                const fileSrc = fs.readFileSync(full, 'utf-8');
+                const lines = fileSrc.split('\n');
                 lines.forEach((line, i) => {
                     // Hunt the danger-tone marker. When we find
                     // one, scan a 12-line window after it for the
@@ -125,6 +144,19 @@ describe('Destructive-action vocabulary (Roadmap-4 PR-9)', () => {
                             labelLine = m[1];
                             labelLineIdx = j;
                             break;
+                        }
+                        // confirmLabel={t('key')} / {tx('key')} — resolve the
+                        // migrated key against the en catalog.
+                        const mi = lines[j].match(
+                            /confirmLabel\s*=\s*\{\s*t\w*\(\s*['"]([\w.]+)['"]\s*\)\s*\}/,
+                        );
+                        if (mi) {
+                            const resolved = resolveI18nLabel(fileSrc, mi[1]);
+                            if (resolved !== null) {
+                                labelLine = resolved;
+                                labelLineIdx = j;
+                                break;
+                            }
                         }
                     }
                     if (labelLine === null) {
