@@ -110,8 +110,17 @@ The first authenticated runs surfaced six header findings (FAIL-NEW: 0
   initial WARN after confirming the only offending responses are the
   **bodyless redirects** `GET /` and `GET /dashboard` (30x, no body → no
   Content-Type is correct). Risk 0 (informational); `X-Content-Type-Options:
-  nosniff` is set globally regardless. With this, the nightly baseline is
-  **WARN-NEW: 0 / FAIL-NEW: 0** — a clean, stable allowlist.
+  nosniff` is set globally regardless.
+- **10099 Source Code Disclosure - SQL → ACCEPTED (IGNORE), false positive.**
+  The passive rule matched the plain-English session-management microcopy
+  *"Revoke any device to sign it out on its next request."*
+  (`admin/members` page) — a bundled i18n string, **not** SQL source code.
+  It fired identically on `/`, `/login`, and the 404s served for
+  `robots.txt`/`sitemap.xml` because it is the same shared JS chunk ZAP
+  reads on every response, which is the tell of a regex false-match rather
+  than a per-endpoint leak. No SQL, no source disclosure. With this, the
+  nightly baseline is **WARN-NEW: 0 / FAIL-NEW: 0** — a clean, stable
+  allowlist.
 
 The takeaway: the app's CSP is already strong; the remaining findings
 are accepted trade-offs documented in `.zap/rules.tsv`, not changes to
