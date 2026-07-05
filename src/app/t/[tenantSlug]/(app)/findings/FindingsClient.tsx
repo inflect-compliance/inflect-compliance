@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTenantMutation } from '@/lib/hooks/use-tenant-mutation';
 import { CACHE_KEYS } from '@/lib/swr-keys';
@@ -72,6 +73,7 @@ interface FindingsClientProps {
  * Data is pre-fetched server-side and passed via props.
  */
 export function FindingsClient({ initialFindings, tenantSlug, translations: t }: FindingsClientProps) {
+    const tx = useTranslations('findings');
     const [showForm, setShowForm] = useState(false);
 
     const apiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
@@ -142,13 +144,13 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
     // R10-PR11 — column-visibility gear.
     const findingColumnList = useMemo(
         () => [
-            { id: 'title', label: 'Title' },
-            { id: 'severity', label: 'Severity' },
-            { id: 'type', label: 'Type' },
-            { id: 'owner', label: 'Owner' },
-            { id: 'status', label: 'Status' },
+            { id: 'title', label: tx('colVis.title') },
+            { id: 'severity', label: tx('colVis.severity') },
+            { id: 'type', label: tx('colVis.type') },
+            { id: 'owner', label: tx('colVis.owner') },
+            { id: 'status', label: tx('colVis.status') },
         ],
-        [],
+        [tx],
     );
     const {
         columnVisibility,
@@ -225,7 +227,7 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
             <ListPageShell.Header>
                 <PageHeader
                     breadcrumbs={[
-                        { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
+                        { label: tx('list.crumbDashboard'), href: `/t/${tenantSlug}/dashboard` },
                         { label: t.title },
                     ]}
                     title={t.title}
@@ -260,7 +262,7 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
                             size="sm"
                             variant="no-records"
                             title={t.noFindings}
-                            description="Findings capture nonconformities, observations, and opportunities — what an audit surfaced and what needs follow-up."
+                            description={tx('list.emptyDesc')}
                         />
                     }
                     resourceName={(p) => p ? 'findings' : 'finding'}

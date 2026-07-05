@@ -3,6 +3,7 @@
 import { formatDate } from '@/lib/format-date';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
@@ -61,6 +62,7 @@ export default function AssetDetailPage() {
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const { permissions, tenantSlug } = useTenantContext();
+    const t = useTranslations('assets');
     const assetId = params.id as string;
 
     const assetQuery = useTenantSWR<AssetDetail>(`/assets/${assetId}`);
@@ -78,7 +80,7 @@ export default function AssetDetailPage() {
     const assigneeName = asset?.ownerUserId
         ? (members?.find((m) => m.id === asset.ownerUserId)?.name ??
            members?.find((m) => m.id === asset.ownerUserId)?.email ??
-           'Assigned')
+           t('detail.assigned'))
         : null;
 
     // B6 +1 — canonical 7-tab strip on every detail page. Same shape
@@ -96,13 +98,13 @@ export default function AssetDetailPage() {
         | 'tests';
     const [activeTab, setActiveTab] = useState<Tab>('overview');
     const tabs: ReadonlyArray<{ key: Tab; label: string }> = [
-        { key: 'overview', label: 'Overview' },
-        { key: 'tasks', label: 'Tasks' },
-        { key: 'evidence', label: 'Evidence' },
-        { key: 'mappings', label: 'Mappings' },
-        { key: 'traceability', label: 'Traceability' },
-        { key: 'activity', label: 'Activity' },
-        { key: 'tests', label: 'Tests' },
+        { key: 'overview', label: t('detail.tabs.overview') },
+        { key: 'tasks', label: t('detail.tabs.tasks') },
+        { key: 'evidence', label: t('detail.tabs.evidence') },
+        { key: 'mappings', label: t('detail.tabs.mappings') },
+        { key: 'traceability', label: t('detail.tabs.traceability') },
+        { key: 'activity', label: t('detail.tabs.activity') },
+        { key: 'tests', label: t('detail.tabs.tests') },
     ];
     // Modal-form P2 — the inline-edit panel is replaced by an
     // EditAssetModal launched from the detail header. The page URL
@@ -145,8 +147,8 @@ export default function AssetDetailPage() {
     // Item 29 — brand-color status action on the asset detail header.
     // AssetStatus is a two-state lifecycle (ACTIVE / RETIRED).
     const ASSET_STATUS_OPTIONS: ComboboxOption[] = [
-        { value: 'ACTIVE', label: 'Active' },
-        { value: 'RETIRED', label: 'Retired' },
+        { value: 'ACTIVE', label: t('detail.statusActive') },
+        { value: 'RETIRED', label: t('detail.statusRetired') },
     ];
     const [changingStatus, setChangingStatus] = useState(false);
     const changeStatus = async (status: string) => {
@@ -160,11 +162,11 @@ export default function AssetDetailPage() {
             });
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
-                throw new Error(data.message || `Failed to change status (${res.status})`);
+                throw new Error(data.message || t('detail.changeStatusFailed', { status: res.status }));
             }
             await assetQuery.mutate();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to change status');
+            setError(err instanceof Error ? err.message : t('detail.changeStatusFailedGeneric'));
         } finally {
             setChangingStatus(false);
         }
@@ -173,9 +175,9 @@ export default function AssetDetailPage() {
     const critColor = (c: string): StatusBadgeVariant => c === 'HIGH' ? 'error' : c === 'MEDIUM' ? 'warning' : 'success';
 
     const breadcrumbs = [
-        { label: 'Dashboard', href: tenantHref('/dashboard') },
-        { label: 'Assets', href: tenantHref('/assets') },
-        { label: asset?.name ?? 'Asset' },
+        { label: t('detail.crumbDashboard'), href: tenantHref('/dashboard') },
+        { label: t('detail.crumbAssets'), href: tenantHref('/assets') },
+        { label: asset?.name ?? t('detail.crumbFallback') },
     ];
     if (loading) {
         return (
@@ -193,7 +195,7 @@ export default function AssetDetailPage() {
     }
     if (!asset) {
         return (
-            <EntityDetailLayout empty={{ message: 'Asset not found.' }} title="" breadcrumbs={breadcrumbs}>
+            <EntityDetailLayout empty={{ message: t('detail.notFound') }} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
@@ -216,7 +218,7 @@ export default function AssetDetailPage() {
                         setSelected={(opt) => { if (opt) changeStatus(opt.value); }}
                         options={ASSET_STATUS_OPTIONS}
                         disabled={changingStatus}
-                        placeholder="Status"
+                        placeholder={t('detail.statusPlaceholder')}
                         // Item 29 — brand-color the status action (matches the
                         // primary "+ …" create buttons), consistent with risk /
                         // task / control detail headers.
@@ -241,14 +243,14 @@ export default function AssetDetailPage() {
                 <MetaStrip
                     items={[
                         {
-                            label: 'Type',
+                            label: t('detail.type'),
                             value: asset.type?.replace(/_/g, ' '),
                         },
                         ...(asset.criticality
                             ? [
                                   {
                                       kind: 'status' as const,
-                                      label: 'Criticality',
+                                      label: t('colHeaders.criticality'),
                                       value: asset.criticality,
                                       variant: critColor(asset.criticality),
                                   },
@@ -256,7 +258,7 @@ export default function AssetDetailPage() {
                             : []),
                         {
                             kind: 'status' as const,
-                            label: 'Status',
+                            label: t('detail.status'),
                             value: asset.status || 'ACTIVE',
                             variant:
                                 asset.status === 'RETIRED'
@@ -304,7 +306,7 @@ export default function AssetDetailPage() {
             {activeTab === 'evidence' && (
                 <div className="space-y-section">
                     <div className="space-y-default">
-                        <Heading level={3}>Attached evidence</Heading>
+                        <Heading level={3}>{t('detail.attachedEvidence')}</Heading>
                         <AttachedEvidencePanel
                             tenantSlug={tenantSlug}
                             entityId={assetId}
@@ -316,7 +318,7 @@ export default function AssetDetailPage() {
                         />
                     </div>
                     <div className="space-y-default">
-                        <Heading level={3}>Inherited from controls</Heading>
+                        <Heading level={3}>{t('detail.inheritedFromControls')}</Heading>
                         <InheritedEvidencePanel
                             endpoint={apiUrl(`/assets/${assetId}/evidence`)}
                             tenantHref={tenantHref}
@@ -336,8 +338,8 @@ export default function AssetDetailPage() {
                 <EmptyState
                     size="sm"
                     variant="no-records"
-                    title="Asset activity log"
-                    description="A dedicated activity feed for this asset is on the roadmap. Tenant-wide audit log is available from Admin → Audit Log."
+                    title={t('detail.activityTitle')}
+                    description={t('detail.activityDesc')}
                 />
             )}
             {activeTab === 'tests' && (
@@ -357,13 +359,13 @@ export default function AssetDetailPage() {
                     <div className="flex justify-end -mt-1 -mb-2">
                         {/* B2 — icon-only edit affordance; opens the Edit
                             Asset modal, mirroring the control overview. */}
-                        <Tooltip content="Edit asset">
+                        <Tooltip content={t('detail.editAsset')}>
                             <Button
                                 variant="secondary"
                                 size="icon"
                                 onClick={() => setEditing(true)}
                                 id="edit-asset-btn"
-                                aria-label="Edit asset"
+                                aria-label={t('detail.editAsset')}
                             >
                                 <Pen2 className="size-4" />
                             </Button>
@@ -371,18 +373,18 @@ export default function AssetDetailPage() {
                     </div>
                 )}
                 <>
-                        {asset.classification && <div><Eyebrow>Classification</Eyebrow><p className="text-sm">{asset.classification}</p></div>}
+                        {asset.classification && <div><Eyebrow>{t('detail.classification')}</Eyebrow><p className="text-sm">{asset.classification}</p></div>}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
-                            <div><Eyebrow>Assigned to</Eyebrow><p className="text-sm">{assigneeName || '—'}</p></div>
-                            <div><Eyebrow>Owner</Eyebrow><p className="text-sm">{asset.owner || '—'}</p></div>
-                            <div><Eyebrow>Location</Eyebrow><p className="text-sm">{asset.location || '—'}</p></div>
+                            <div><Eyebrow>{t('detail.assignedTo')}</Eyebrow><p className="text-sm">{assigneeName || '—'}</p></div>
+                            <div><Eyebrow>{t('detail.owner')}</Eyebrow><p className="text-sm">{asset.owner || '—'}</p></div>
+                            <div><Eyebrow>{t('detail.location')}</Eyebrow><p className="text-sm">{asset.location || '—'}</p></div>
                             <div>
-                                <Eyebrow>External Ref</Eyebrow>
+                                <Eyebrow>{t('detail.externalRef')}</Eyebrow>
                                 {asset.externalRef ? (
                                     <CopyText
                                         value={asset.externalRef}
-                                        label={`Copy external reference ${asset.externalRef}`}
-                                        successMessage="External reference copied"
+                                        label={t('detail.copyExternalRef', { ref: asset.externalRef })}
+                                        successMessage={t('detail.externalRefCopied')}
                                         className="text-sm text-content-default"
                                     >
                                         {asset.externalRef}
@@ -391,17 +393,17 @@ export default function AssetDetailPage() {
                                     <p className="text-sm">—</p>
                                 )}
                             </div>
-                            <div><Eyebrow>Data Residency</Eyebrow><p className="text-sm">{asset.dataResidency || '—'}</p></div>
+                            <div><Eyebrow>{t('detail.dataResidency')}</Eyebrow><p className="text-sm">{asset.dataResidency || '—'}</p></div>
                         </div>
-                        <Heading level={3}>Asset Criticality</Heading>
+                        <Heading level={3}>{t('detail.criticalityHeading')}</Heading>
                         <AssetCriticalityBadge
                             confidentiality={asset.confidentiality ?? 3}
                             integrity={asset.integrity ?? 3}
                             availability={asset.availability ?? 3}
                         />
                         <div className="grid grid-cols-2 gap-default border-t border-border-default/50 pt-4">
-                            <div><Eyebrow>Created</Eyebrow><p className="text-sm text-content-muted">{formatDate(asset.createdAt)}</p></div>
-                            <div><Eyebrow>Updated</Eyebrow><p className="text-sm text-content-muted">{formatDate(asset.updatedAt)}</p></div>
+                            <div><Eyebrow>{t('detail.created')}</Eyebrow><p className="text-sm text-content-muted">{formatDate(asset.createdAt)}</p></div>
+                            <div><Eyebrow>{t('detail.updated')}</Eyebrow><p className="text-sm text-content-muted">{formatDate(asset.updatedAt)}</p></div>
                         </div>
                     </>
             </div>
