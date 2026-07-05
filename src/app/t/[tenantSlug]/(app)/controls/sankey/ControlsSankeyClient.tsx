@@ -15,6 +15,7 @@
  * surface, not a long-running workspace.
  */
 
+import { useTranslations } from 'next-intl';
 import { SankeyChart } from '@/components/ui/SankeyChart';
 import type { TraceabilityGraph } from '@/lib/traceability-graph/types';
 import { Heading } from '@/components/ui/typography';
@@ -26,6 +27,7 @@ export interface ControlsSankeyClientProps {
 export function ControlsSankeyClient({
     initialGraph,
 }: ControlsSankeyClientProps) {
+    const t = useTranslations('controls');
     // R14-PR7 — standalone search input retired (the user's
     // directive: per-page searchbars die; users search via the
     // global command palette or page filters). For sankey
@@ -41,10 +43,10 @@ export function ControlsSankeyClient({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-compact">
                 <div>
                     <Heading level={1} id="controls-sankey-heading">
-                        Controls flow
+                        {t('sankey.title')}
                     </Heading>
                     <p className="text-sm text-content-muted mt-1">
-                        How assets expose risks and how controls mitigate them, at a glance.
+                        {t('sankey.subtitle')}
                     </p>
                 </div>
             </div>

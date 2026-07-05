@@ -6,6 +6,7 @@
 
 import { formatDate } from '@/lib/format-date';
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
@@ -86,6 +87,7 @@ export default function TestPlanDetailPage() {
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const { permissions } = useTenantContext();
+    const t = useTranslations('controls');
     const planId = params?.planId as string;
 
     const [plan, setPlan] = useState<TestPlanDetail | null>(null);
@@ -107,7 +109,7 @@ export default function TestPlanDetailPage() {
         setLoading(true);
         try {
             const res = await fetch(apiUrl(`/tests/plans/${planId}`));
-            if (!res.ok) throw new Error('Plan not found');
+            if (!res.ok) throw new Error(t('testPlan.planNotFound'));
             const data = await res.json();
             setPlan(data);
             setEditName(data.name);
@@ -116,7 +118,7 @@ export default function TestPlanDetailPage() {
             setEditMethod(data.method);
             setEditStatus(data.status);
         } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : 'Unknown error');
+            setError(e instanceof Error ? e.message : t('testPlan.unknownError'));
         } finally {
             setLoading(false);
         }
@@ -161,9 +163,9 @@ export default function TestPlanDetailPage() {
         }
     };
 
-    if (loading) return <div className="p-12 text-center text-content-subtle animate-pulse">Loading test plan...</div>;
+    if (loading) return <div className="p-12 text-center text-content-subtle animate-pulse">{t('testPlan.loading')}</div>;
     if (error) return <div className="p-12 text-center text-content-error">{error}</div>;
-    if (!plan) return <div className="p-12 text-center text-content-subtle">Plan not found.</div>;
+    if (!plan) return <div className="p-12 text-center text-content-subtle">{t('testPlan.planNotFoundBody')}</div>;
 
     return (
         <div className="space-y-section animate-fadeIn">
@@ -184,7 +186,7 @@ export default function TestPlanDetailPage() {
                             <>
                                 <span className="text-xs text-content-subtle">•</span>
                                 <span className={`text-xs ${new Date(plan.nextDueAt) < new Date() ? 'text-content-error font-semibold' : 'text-content-muted'}`}>
-                                    Due: {formatDate(plan.nextDueAt)}
+                                    {t('testPlan.due', { date: formatDate(plan.nextDueAt) })}
                                 </span>
                             </>
                         )}
@@ -193,11 +195,11 @@ export default function TestPlanDetailPage() {
                 {permissions.canWrite && (
                     <div className="flex gap-tight">
                         <Button variant="secondary" size="sm" onClick={() => setEditing(!editing)} id="edit-test-plan-btn">
-                            {editing ? 'Cancel' : 'Edit'}
+                            {editing ? t('testPlan.cancel') : t('testPlan.edit')}
                         </Button>
                         {plan.status === 'ACTIVE' && (
                             <Button variant="primary" size="sm" onClick={createRun} disabled={creatingRun} id="create-test-run-btn">
-                                {creatingRun ? '...' : 'Run Test Now'}
+                                {creatingRun ? '...' : t('testPlan.runTestNow')}
                             </Button>
                         )}
                     </div>
@@ -208,29 +210,29 @@ export default function TestPlanDetailPage() {
             {editing && permissions.canWrite && (
                 <div className={cn(cardVariants({ density: 'compact' }), 'space-y-compact animate-fadeIn')}>
                     <div>
-                        <label className="text-xs text-content-muted block mb-1">Name</label>
+                        <label className="text-xs text-content-muted block mb-1">{t('testPlan.name')}</label>
                         <input className="input w-full" value={editName} onChange={e => setEditName(e.target.value)} id="edit-plan-name" />
                     </div>
                     <div>
-                        <label className="text-xs text-content-muted block mb-1">Description</label>
+                        <label className="text-xs text-content-muted block mb-1">{t('testPlan.description')}</label>
                         <textarea className="input w-full h-20" value={editDesc} onChange={e => setEditDesc(e.target.value)} />
                     </div>
                     <div className="grid grid-cols-3 gap-compact">
                         <div>
-                            <label className="text-xs text-content-muted block mb-1">Frequency</label>
+                            <label className="text-xs text-content-muted block mb-1">{t('testPlan.frequency')}</label>
                             <Combobox hideSearch selected={FREQ_CB_OPTIONS.find(o => o.value === editFreq) ?? null} setSelected={(opt) => setEditFreq(opt?.value ?? editFreq)} options={FREQ_CB_OPTIONS} matchTriggerWidth />
                         </div>
                         <div>
-                            <label className="text-xs text-content-muted block mb-1">Method</label>
+                            <label className="text-xs text-content-muted block mb-1">{t('testPlan.method')}</label>
                             <Combobox hideSearch selected={METHOD_OPTIONS.find(o => o.value === editMethod) ?? null} setSelected={(opt) => setEditMethod(opt?.value ?? editMethod)} options={METHOD_OPTIONS} matchTriggerWidth />
                         </div>
                         <div>
-                            <label className="text-xs text-content-muted block mb-1">Status</label>
+                            <label className="text-xs text-content-muted block mb-1">{t('testPlan.status')}</label>
                             <Combobox hideSearch id="edit-plan-status" selected={PLAN_STATUS_OPTIONS.find(o => o.value === editStatus) ?? null} setSelected={(opt) => setEditStatus(opt?.value ?? editStatus)} options={PLAN_STATUS_OPTIONS} matchTriggerWidth />
                         </div>
                     </div>
                     <Button variant="primary" size="sm" onClick={savePlan} disabled={saving} id="save-plan-changes-btn">
-                        {saving ? 'Saving...' : 'Save Changes'}
+                        {saving ? t('testPlan.saving') : t('testPlan.saveChanges')}
                     </Button>
                 </div>
             )}
@@ -249,31 +251,31 @@ export default function TestPlanDetailPage() {
             {/* Info Cards — Polish PR-2: KPIStat primitive. */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
                 <div className={cardVariants({ density: 'compact' })}>
-                    <KPIStat value={plan._count?.runs ?? 0} label="Total Runs" />
+                    <KPIStat value={plan._count?.runs ?? 0} label={t('testPlan.totalRuns')} />
                 </div>
                 <div className={cardVariants({ density: 'compact' })}>
                     <KPIStat
                         value={plan.runs?.filter(r => r.result === 'PASS').length ?? 0}
-                        label="Passed"
+                        label={t('testPlan.passed')}
                         tone="success"
                     />
                 </div>
                 <div className={cardVariants({ density: 'compact' })}>
                     <KPIStat
                         value={plan.runs?.filter(r => r.result === 'FAIL').length ?? 0}
-                        label="Failed"
+                        label={t('testPlan.failed')}
                         tone="critical"
                     />
                 </div>
                 <div className={cardVariants({ density: 'compact' })}>
-                    <KPIStat value={plan._count?.steps ?? 0} label="Steps" />
+                    <KPIStat value={plan._count?.steps ?? 0} label={t('testPlan.steps')} />
                 </div>
             </div>
 
             {/* Description */}
             {plan.description && (
                 <div className={cardVariants({ density: 'compact' })}>
-                    <Heading level={3} className="mb-2">Description</Heading>
+                    <Heading level={3} className="mb-2">{t('testPlan.description')}</Heading>
                     <p className="text-sm text-content-muted whitespace-pre-wrap">{plan.description}</p>
                 </div>
             )}
@@ -281,7 +283,7 @@ export default function TestPlanDetailPage() {
             {/* Steps */}
             {plan.steps.length > 0 && (
                 <div className={cardVariants({ density: 'compact' })}>
-                    <CardHeader title="Test Procedure" className="mb-3" />
+                    <CardHeader title={t('testPlan.testProcedure')} className="mb-3" />
                     <ol className="space-y-tight">
                         {plan.steps.map((step, i) => (
                             <li key={step.id} className="flex gap-compact text-sm">
@@ -291,7 +293,7 @@ export default function TestPlanDetailPage() {
                                 <div>
                                     <p className="text-content-default">{step.instruction}</p>
                                     {step.expectedOutput && (
-                                        <p className="text-xs text-content-subtle mt-0.5">Expected: {step.expectedOutput}</p>
+                                        <p className="text-xs text-content-subtle mt-0.5">{t('testPlan.expected', { output: step.expectedOutput })}</p>
                                     )}
                                 </div>
                             </li>
@@ -303,16 +305,16 @@ export default function TestPlanDetailPage() {
             {/* Runs History */}
             <div className={cardVariants({ density: 'compact' })}>
                 <div className="flex items-center justify-between mb-3">
-                    <Heading level={3}>Test Run History</Heading>
+                    <Heading level={3}>{t('testPlan.runHistory')}</Heading>
                     {permissions.canWrite && plan.status === 'ACTIVE' && (
                         <Button variant="primary" icon={<Plus className="-ml-0.5 -mr-2.5" />} onClick={createRun} disabled={creatingRun}>
-                            {creatingRun ? 'Creating…' : 'New run'}
+                            {creatingRun ? t('testPlan.creating') : t('testPlan.newRun')}
                         </Button>
                     )}
                 </div>
 
                 {plan.runs.length === 0 ? (
-                    <p className="text-sm text-content-subtle">No test runs yet.</p>
+                    <p className="text-sm text-content-subtle">{t('testPlan.runsEmpty')}</p>
                 ) : (
                     <div className="divide-y divide-border-default/50">
                         {plan.runs.map(run => (
@@ -332,7 +334,7 @@ export default function TestPlanDetailPage() {
                                         </StatusBadge>
                                     )}
                                     <span className="text-xs text-content-muted">
-                                        {run.executedAt ? formatDate(run.executedAt) : 'Not executed'}
+                                        {run.executedAt ? formatDate(run.executedAt) : t('testPlan.notExecuted')}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-tight">
@@ -342,7 +344,7 @@ export default function TestPlanDetailPage() {
                                         </span>
                                     )}
                                     {run._count?.evidence ? (
-                                        <span className="text-xs text-content-subtle">{run._count.evidence} evidence</span>
+                                        <span className="text-xs text-content-subtle">{t('testPlan.evidenceCount', { count: run._count.evidence })}</span>
                                     ) : null}
                                     <span className="text-xs text-content-subtle opacity-0 group-hover:opacity-100">→</span>
                                 </div>
@@ -354,8 +356,8 @@ export default function TestPlanDetailPage() {
 
             {/* Meta */}
             <div className="text-xs text-content-subtle">
-                Created {formatDate(plan.createdAt)} by {plan.createdBy?.name || plan.createdBy?.email || 'Unknown'}
-                {plan.owner && <> • Owner: {plan.owner.name || plan.owner.email}</>}
+                {t('testPlan.createdBy', { date: formatDate(plan.createdAt), name: plan.createdBy?.name || plan.createdBy?.email || t('testPlan.unknown') })}
+                {plan.owner && <> • {t('testPlan.owner', { name: plan.owner.name || plan.owner.email })}</>}
             </div>
         </div>
     );
