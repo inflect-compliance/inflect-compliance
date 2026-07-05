@@ -21,6 +21,7 @@
 import { formatDate } from '@/lib/format-date';
 import { Card, cardVariants } from '@/components/ui/card';
 import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import {
     Users, UserPlus, ChevronDown, Shield, XCircle,
@@ -151,6 +152,7 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'error' | 'neutral'
 };
 
 export default function MembersAdminPage() {
+    const t = useTranslations('admin');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
 
@@ -213,11 +215,11 @@ export default function MembersAdminPage() {
                 );
             }
         } catch {
-            setError('Failed to load members');
+            setError(t('members.failedLoadMembers'));
         } finally {
             setLoading(false);
         }
-    }, [apiUrl]);
+    }, [apiUrl, t]);
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { fetchMembers(); }, [fetchMembers]);
@@ -237,17 +239,17 @@ export default function MembersAdminPage() {
             });
 
             if (!res.ok) {
-                const err = await res.json().catch(() => ({ error: 'Invite failed' }));
-                setError(apiErrorMessage(err, 'Invite failed'));
+                const err = await res.json().catch(() => ({ error: t('members.inviteFailed') }));
+                setError(apiErrorMessage(err, t('members.inviteFailed')));
                 return;
             }
 
             const data = await res.json();
             const typeMsg = data.type === 'invited'
-                ? `Invitation sent to ${inviteEmail}`
+                ? t('members.invitationSent', { email: inviteEmail })
                 : data.type === 'reactivated'
-                    ? `Reactivated ${inviteEmail}`
-                    : `Added ${inviteEmail} as ${inviteRole}`;
+                    ? t('members.reactivated', { email: inviteEmail })
+                    : t('members.addedAs', { email: inviteEmail, role: inviteRole });
             setSuccess(typeMsg);
             setInviteEmail('');
             setInviteRole('READER');
@@ -288,12 +290,12 @@ export default function MembersAdminPage() {
             });
 
             if (!res.ok) {
-                const err = await res.json().catch(() => ({ error: 'Role change failed' }));
-                setError(apiErrorMessage(err, 'Role change failed'));
+                const err = await res.json().catch(() => ({ error: t('members.roleChangeFailed') }));
+                setError(apiErrorMessage(err, t('members.roleChangeFailed')));
                 return;
             }
 
-            setSuccess('Role updated successfully');
+            setSuccess(t('members.roleUpdated'));
             setEditingRoleId(null);
             await fetchMembers();
         } catch (err) {
@@ -304,7 +306,7 @@ export default function MembersAdminPage() {
     }
 
     async function handleDeactivate(membershipId: string, email: string) {
-        if (!confirm(`Deactivate ${email}? They will lose access to this tenant.`)) return;
+        if (!confirm(t('members.deactivateConfirm', { email }))) return;
         setError(null);
         setSuccess(null);
         setOpenMenuId(null);
@@ -316,12 +318,12 @@ export default function MembersAdminPage() {
             });
 
             if (!res.ok) {
-                const err = await res.json().catch(() => ({ error: 'Deactivation failed' }));
-                setError(apiErrorMessage(err, 'Deactivation failed'));
+                const err = await res.json().catch(() => ({ error: t('members.deactivationFailed') }));
+                setError(apiErrorMessage(err, t('members.deactivationFailed')));
                 return;
             }
 
-            setSuccess(`${email} has been deactivated`);
+            setSuccess(t('members.deactivatedToast', { email }));
             await fetchMembers();
         } catch (err) {
             setError((err as Error).message);
@@ -340,14 +342,14 @@ export default function MembersAdminPage() {
                 const data = await res.json() as { sessions: MemberSession[] };
                 setMemberSessions(data.sessions);
             } else {
-                setError('Failed to load sessions');
+                setError(t('members.failedLoadSessions'));
             }
         } catch {
-            setError('Failed to load sessions');
+            setError(t('members.failedLoadSessions'));
         } finally {
             setSessionsLoading(false);
         }
-    }, [apiUrl]);
+    }, [apiUrl, t]);
 
     const closeSessionsModal = useCallback(() => {
         setSessionsModalUser(null);
@@ -356,7 +358,7 @@ export default function MembersAdminPage() {
 
     const handleRevokeSession = useCallback(async (sessionId: string) => {
         if (!sessionsModalUser) return;
-        if (!confirm('Revoke this session? The user will be signed out from this device on their next request.')) return;
+        if (!confirm(t('members.revokeSessionConfirm'))) return;
         setRevokingSessionId(sessionId);
         try {
             const res = await fetch(apiUrl('/admin/sessions'), {
@@ -366,18 +368,18 @@ export default function MembersAdminPage() {
             });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
-                setError(apiErrorMessage(err, 'Revocation failed'));
+                setError(apiErrorMessage(err, t('members.revocationFailed')));
                 return;
             }
             setMemberSessions((sessions) => sessions.filter((s) => s.sessionId !== sessionId));
-            setSuccess('Session revoked');
+            setSuccess(t('members.sessionRevoked'));
             void fetchMembers();
         } catch (err) {
             setError((err as Error).message);
         } finally {
             setRevokingSessionId(null);
         }
-    }, [apiUrl, fetchMembers, sessionsModalUser]);
+    }, [apiUrl, fetchMembers, sessionsModalUser, t]);
 
     // ─── Filter (R14-PR7 — search retired; full list shown) ───
     const filteredMembers = members;
@@ -387,7 +389,7 @@ export default function MembersAdminPage() {
         () => createColumns<Member>([
             {
                 id: 'member',
-                header: 'Member',
+                header: t('members.colMember'),
                 accessorFn: (m) => m.user.name ?? m.user.email,
                 cell: ({ row }) => {
                     const m = row.original;
@@ -405,7 +407,7 @@ export default function MembersAdminPage() {
             },
             {
                 id: 'email',
-                header: 'Email',
+                header: t('members.colEmail'),
                 accessorFn: (m) => m.user.email,
                 cell: ({ row }) => (
                     <span className="text-content-muted">{row.original.user.email}</span>
@@ -413,7 +415,7 @@ export default function MembersAdminPage() {
             },
             {
                 id: 'role',
-                header: 'Role',
+                header: t('members.colRole'),
                 accessorKey: 'role',
                 cell: ({ row }) => {
                     const m = row.original;
@@ -438,7 +440,7 @@ export default function MembersAdminPage() {
                                         loading={changingRole}
                                         id={`role-save-${m.id}`}
                                     >
-                                        Save
+                                        {t('members.save')}
                                     </Button>
                                     <Button
                                         variant="secondary"
@@ -454,7 +456,7 @@ export default function MembersAdminPage() {
                                         selected={customRoles.map(cr => ({ value: cr.id, label: cr.name })).find(o => o.value === (pendingCustomRoleId ?? '')) ?? null}
                                         setSelected={(opt) => setPendingCustomRoleId(opt?.value || null)}
                                         options={customRoles.map(cr => ({ value: cr.id, label: cr.name }))}
-                                        placeholder="No custom role (use base role)"
+                                        placeholder={t('members.customRolePlaceholder')}
                                         matchTriggerWidth
                                         buttonProps={{ className: 'text-xs py-1 px-2 w-full sm:w-48' }}
                                     />
@@ -465,7 +467,7 @@ export default function MembersAdminPage() {
                     return (
                         <div className="flex items-center gap-1 flex-wrap">
                             <Tooltip
-                                content="Click to change role"
+                                content={t('members.clickToChangeRole')}
                                 disabled={m.status !== 'ACTIVE'}
                             >
                                 <button
@@ -490,7 +492,7 @@ export default function MembersAdminPage() {
                             </Tooltip>
                             {m.customRole && (
                                 <Tooltip
-                                    title="Custom role"
+                                    title={t('members.customRoleTitle')}
                                     content={m.customRole.name}
                                 >
                                     <span className="inline-flex items-center rounded-md px-2 py-1 text-[10px] font-medium bg-info text-content-info border border-border-info cursor-help">
@@ -504,7 +506,7 @@ export default function MembersAdminPage() {
             },
             {
                 id: 'status',
-                header: 'Status',
+                header: t('members.colStatus'),
                 accessorKey: 'status',
                 cell: ({ row }) => (
                     <StatusBadge variant={STATUS_VARIANT[row.original.status] || 'neutral'} icon={null} size="sm">
@@ -514,7 +516,7 @@ export default function MembersAdminPage() {
             },
             {
                 id: 'sessions',
-                header: 'Sessions',
+                header: t('members.colSessions'),
                 accessorFn: (m) => m.activeSessionCount ?? 0,
                 cell: ({ row }) => {
                     const m = row.original;
@@ -533,7 +535,7 @@ export default function MembersAdminPage() {
                                     : 'bg-bg-muted text-content-subtle border-border-subtle hover:bg-bg-muted',
                             )}
                             id={`sessions-count-${m.id}`}
-                            aria-label={`View ${count} active sessions for ${m.user.email}`}
+                            aria-label={t('members.viewSessionsAria', { count, email: m.user.email })}
                         >
                             <Monitor className="w-3.5 h-3.5" />
                             {count}
@@ -543,7 +545,7 @@ export default function MembersAdminPage() {
             },
             {
                 id: 'joined',
-                header: 'Joined',
+                header: t('members.colJoined'),
                 accessorKey: 'createdAt',
                 cell: ({ row }) => (
                     <span className="text-content-subtle">{formatDate(row.original.createdAt)}</span>
@@ -576,7 +578,7 @@ export default function MembersAdminPage() {
                                         id={`action-change-role-${m.id}`}
                                     >
                                         <Shield className="w-3.5 h-3.5" />
-                                        Change Role
+                                        {t('members.changeRole')}
                                     </button>
                                     <button
                                         onClick={() => {
@@ -587,7 +589,7 @@ export default function MembersAdminPage() {
                                         id={`action-view-sessions-${m.id}`}
                                     >
                                         <Monitor className="w-3.5 h-3.5" />
-                                        View Sessions
+                                        {t('members.viewSessions')}
                                     </button>
                                     <button
                                         onClick={() => handleDeactivate(m.id, m.user.email)}
@@ -595,7 +597,7 @@ export default function MembersAdminPage() {
                                         id={`action-deactivate-${m.id}`}
                                     >
                                         <UserMinus className="w-3.5 h-3.5" />
-                                        Deactivate
+                                        {t('members.deactivate')}
                                     </button>
                                 </div>
                             )}
@@ -608,7 +610,7 @@ export default function MembersAdminPage() {
         // changes — otherwise the inline edit row's combobox would
         // render with a stale selection.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [editingRoleId, pendingRole, pendingCustomRoleId, changingRole, customRoles, openMenuId],
+        [editingRoleId, pendingRole, pendingCustomRoleId, changingRole, customRoles, openMenuId, t],
     );
 
     // ─── Invites DataTable columns ───
@@ -616,7 +618,7 @@ export default function MembersAdminPage() {
         () => createColumns<Invite>([
             {
                 id: 'email',
-                header: 'Email',
+                header: t('members.colEmail'),
                 accessorKey: 'email',
                 cell: ({ row }) => (
                     <span className="text-sm text-content-emphasis">{row.original.email}</span>
@@ -624,7 +626,7 @@ export default function MembersAdminPage() {
             },
             {
                 id: 'role',
-                header: 'Role',
+                header: t('members.colRole'),
                 accessorKey: 'role',
                 cell: ({ row }) => (
                     <StatusBadge variant={ROLE_VARIANT[row.original.role] || 'neutral'} icon={null}>
@@ -634,7 +636,7 @@ export default function MembersAdminPage() {
             },
             {
                 id: 'invitedBy',
-                header: 'Invited By',
+                header: t('members.colInvitedBy'),
                 accessorFn: (i) => i.invitedBy?.name ?? '—',
                 cell: ({ row }) => (
                     <span className="text-content-muted">{row.original.invitedBy?.name || '—'}</span>
@@ -642,14 +644,14 @@ export default function MembersAdminPage() {
             },
             {
                 id: 'expires',
-                header: 'Expires',
+                header: t('members.colExpires'),
                 accessorKey: 'expiresAt',
                 cell: ({ row }) => (
                     <span className="text-content-subtle">{formatDate(row.original.expiresAt)}</span>
                 ),
             },
         ]),
-        [],
+        [t],
     );
 
     // ─── Loading state ───
@@ -659,15 +661,15 @@ export default function MembersAdminPage() {
                 <BackAffordance />
                 <PageBreadcrumbs
                     items={[
-                        { label: 'Dashboard', href: tenantHref('/dashboard') },
-                        { label: 'Admin', href: tenantHref('/admin') },
-                        { label: 'Members & Roles' },
+                        { label: t('crumb.dashboard'), href: tenantHref('/dashboard') },
+                        { label: t('crumb.admin'), href: tenantHref('/admin') },
+                        { label: t('members.crumbSelf') },
                     ]}
                     className="mb-1"
                 />
                 <Heading level={2} className="flex items-center gap-tight">
                     <Users className="w-6 h-6 text-[var(--brand-default)]" />
-                    Loading Members &amp; Roles…
+                    {t('members.loadingTitle')}
                 </Heading>
                 <Card className="space-y-default">
                     <div className="h-4 bg-bg-subtle rounded w-1/3 animate-pulse" />
@@ -685,11 +687,11 @@ export default function MembersAdminPage() {
                 <div>
                     <Heading level={1} className="flex items-center gap-tight">
                         <Users className="w-6 h-6 text-[var(--brand-default)]" />
-                        Members &amp; Roles
+                        {t('members.title')}
                     </Heading>
                     <p className="text-sm text-content-muted mt-1">
-                        {members.filter(m => m.status === 'ACTIVE').length} active members
-                        {invites.length > 0 && ` · ${invites.length} pending invites`}
+                        {t('members.activeMembers', { count: members.filter(m => m.status === 'ACTIVE').length })}
+                        {invites.length > 0 && ` · ${t('members.pendingInvites', { count: invites.length })}`}
                     </p>
                 </div>
                 <Button
@@ -698,7 +700,7 @@ export default function MembersAdminPage() {
                     icon={<UserPlus className="w-3.5 h-3.5" />}
                     id="invite-member-btn"
                 >
-                    Invite Member
+                    {t('members.inviteMember')}
                 </Button>
             </div>
 
@@ -725,25 +727,25 @@ export default function MembersAdminPage() {
             {/* Invite Form */}
             {showInvite && (
                 <div className={cn(cardVariants(), 'border border-[var(--brand-default)]/30')} id="invite-form">
-                    <Heading level={3} className="mb-4">Invite a New Member</Heading>
+                    <Heading level={3} className="mb-4">{t('members.inviteFormTitle')}</Heading>
                     <div className="flex gap-compact items-end flex-wrap">
                         <div className="flex-1 min-w-[200px]">
                             <label className="text-xs text-content-muted uppercase tracking-wider mb-1 block">
-                                Email Address
+                                {t('members.emailLabel')}
                             </label>
                             <input
                                 id="invite-email-input"
                                 type="email"
                                 value={inviteEmail}
                                 onChange={(e) => setInviteEmail(e.target.value)}
-                                placeholder="colleague@company.com"
+                                placeholder={t('members.emailPlaceholder')}
                                 className="input w-full"
                                 autoFocus
                             />
                         </div>
                         <div className="w-full sm:w-40">
                             <label className="text-xs text-content-muted uppercase tracking-wider mb-1 block">
-                                Role
+                                {t('members.roleLabel')}
                             </label>
                             <Combobox
                                 hideSearch
@@ -762,13 +764,13 @@ export default function MembersAdminPage() {
                             icon={<Mail className="w-3.5 h-3.5" />}
                             id="send-invite-btn"
                         >
-                            Send Invite
+                            {t('members.sendInvite')}
                         </Button>
                         <Button
                             variant="secondary"
                             onClick={() => { setShowInvite(false); setInviteEmail(''); }}
                         >
-                            Cancel
+                            {t('members.cancel')}
                         </Button>
                     </div>
                 </div>
@@ -790,15 +792,15 @@ export default function MembersAdminPage() {
                 {filteredMembers.length === 0 ? (
                     <EmptyState
                         icon={Users}
-                        title="No members yet"
+                        title={t('members.noMembersTitle')}
                     />
                 ) : (
                     <DataTable
                         data={filteredMembers}
                         columns={memberColumns}
                         getRowId={(m) => m.id}
-                        emptyState="No members."
-                        resourceName={(p) => (p ? 'members' : 'member')}
+                        emptyState={t('members.emptyMembers')}
+                        resourceName={(p) => (p ? t('members.resourceMembers') : t('members.resourceMember'))}
                         data-testid="members-table"
                     />
                 )}
@@ -807,14 +809,14 @@ export default function MembersAdminPage() {
             {/* Pending Invites DataTable */}
             {invites.length > 0 && (
                 <div>
-                    <Heading level={2} className="mb-3">Pending Invitations</Heading>
+                    <Heading level={2} className="mb-3">{t('members.pendingInvitationsTitle')}</Heading>
                     <div id="invites-table-card">
                         <DataTable
                             data={invites}
                             columns={inviteColumns}
                             getRowId={(i) => i.id}
-                            emptyState="No pending invitations."
-                            resourceName={(p) => (p ? 'invites' : 'invite')}
+                            emptyState={t('members.emptyInvites')}
+                            resourceName={(p) => (p ? t('members.resourceInvites') : t('members.resourceInvite'))}
                             data-testid="invites-table"
                         />
                     </div>
@@ -837,21 +839,21 @@ export default function MembersAdminPage() {
                 }}
                 size="lg"
                 title={sessionsModalUser
-                    ? `Sessions for ${sessionsModalUser.user.name || sessionsModalUser.user.email}`
-                    : 'Sessions'}
-                description="Live sessions for this member. Revoke any device to sign it out on its next request."
+                    ? t('members.sessionsFor', { name: sessionsModalUser.user.name || sessionsModalUser.user.email })
+                    : t('members.sessionsTitle')}
+                description={t('members.sessionsDesc')}
             >
                 <Modal.Header
                     title={sessionsModalUser
-                        ? `Sessions for ${sessionsModalUser.user.name || sessionsModalUser.user.email}`
-                        : 'Sessions'}
+                        ? t('members.sessionsFor', { name: sessionsModalUser.user.name || sessionsModalUser.user.email })
+                        : t('members.sessionsTitle')}
                     description={memberSessions.length === 0 && !sessionsLoading
-                        ? 'No active sessions.'
-                        : `${memberSessions.length} active ${memberSessions.length === 1 ? 'session' : 'sessions'}.`}
+                        ? t('members.sessionsHeaderEmpty')
+                        : t('members.activeSessionsCount', { count: memberSessions.length })}
                 />
                 <Modal.Body>
                     {sessionsLoading ? (
-                        <ul className="space-y-tight" aria-busy="true" aria-label="Loading sessions">
+                        <ul className="space-y-tight" aria-busy="true" aria-label={t('members.loadingSessionsAria')}>
                             {Array.from({ length: 3 }).map((_, i) => (
                                 <li
                                     key={i}
@@ -868,8 +870,8 @@ export default function MembersAdminPage() {
                     ) : memberSessions.length === 0 ? (
                         <EmptyState
                             icon={Monitor}
-                            title="No active sessions"
-                            description="This user is not currently signed in on any device."
+                            title={t('members.noActiveSessionsTitle')}
+                            description={t('members.sessionsEmptyBody')}
                         />
                     ) : (
                         <ul className="space-y-tight" id="sessions-list">
@@ -881,10 +883,10 @@ export default function MembersAdminPage() {
                                 >
                                     <div className="min-w-0 flex-1">
                                         <p className="text-sm font-medium text-content-emphasis truncate">
-                                            {s.userAgent || 'Unknown device'}
+                                            {s.userAgent || t('members.unknownDevice')}
                                         </p>
                                         <p className="text-xs text-content-muted mt-0.5">
-                                            IP {s.ipAddress || '—'} · last active {formatDate(s.lastActiveAt)}
+                                            {t('members.sessionMeta', { ip: s.ipAddress || '—', date: formatDate(s.lastActiveAt) })}
                                         </p>
                                         <p className="text-[10px] text-content-subtle mt-0.5 font-mono break-all">
                                             {s.sessionId}
@@ -897,7 +899,7 @@ export default function MembersAdminPage() {
                                         disabled={revokingSessionId === s.sessionId}
                                         id={`revoke-session-${s.sessionId}`}
                                     >
-                                        {revokingSessionId === s.sessionId ? 'Revoking…' : 'Revoke'}
+                                        {revokingSessionId === s.sessionId ? t('members.revoking') : t('members.revoke')}
                                     </Button>
                                 </li>
                             ))}
