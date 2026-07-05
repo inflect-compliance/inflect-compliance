@@ -11,6 +11,24 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import * as React from "react";
 import { SWRConfig } from 'swr';
 
+// next-intl is ESM (jest can't parse its export); mock it to resolve real
+// en.json values so the panel renders the original English.
+jest.mock("next-intl", () => {
+    const en = require("../../messages/en.json");
+    return {
+        useTranslations: (ns: string) => (key: string, params?: Record<string, unknown>) => {
+            let v = key
+                .split(".")
+                .reduce((o: unknown, k) =>
+                    o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined, en[ns]);
+            if (typeof v !== "string") return key;
+            if (params) for (const [p, val] of Object.entries(params)) v = (v as string).replace(new RegExp(`\\{${p}\\}`, "g"), String(val));
+            return v;
+        },
+        useLocale: () => "en",
+    };
+});
+
 jest.mock("@/lib/tenant-context-provider", () => ({
     useTenantHref: () => (p: string) => `/t/acme${p}`,
 }));

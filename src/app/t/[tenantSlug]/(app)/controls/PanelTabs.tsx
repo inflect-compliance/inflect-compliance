@@ -9,6 +9,7 @@
  * `border-b` brand-underline active style so it reads consistently with the
  * detail-page tab bar.
  */
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 
 export function PanelTabs<T extends string>({
@@ -20,8 +21,9 @@ export function PanelTabs<T extends string>({
     active: T;
     onSelect: (id: T) => void;
 }) {
+    const t = useTranslations("controls");
     return (
-        <div role="tablist" aria-label="Panel sections" className="flex gap-tight border-b border-border-subtle">
+        <div role="tablist" aria-label={t("detail.tabs.ariaLabel")} className="flex gap-tight border-b border-border-subtle">
             {tabs.map((t) => (
                 <button
                     key={t.id}

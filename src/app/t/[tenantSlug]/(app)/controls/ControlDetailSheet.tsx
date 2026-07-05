@@ -31,6 +31,7 @@
  */
 
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useSWRConfig } from 'swr';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
@@ -125,6 +126,7 @@ export function ControlDetailSheet({
     tenantHref,
     canWrite,
 }: ControlDetailSheetProps) {
+    const tx = useTranslations('controls');
     const open = controlId !== null;
     const { mutate: swrMutate } = useSWRConfig();
     const nameInputRef = useRef<HTMLInputElement>(null);
@@ -191,7 +193,7 @@ export function ControlDetailSheet({
             });
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
-                throw new Error(extractMutationError(data, 'Update failed'));
+                throw new Error(extractMutationError(data, tx('detail.errors.updateFailed')));
             }
             // Owner lives on a dedicated endpoint — only fire when it changed.
             const originalOwner = control?.ownerUserId || '';
@@ -203,7 +205,7 @@ export function ControlDetailSheet({
                 });
                 if (!ownerRes.ok) {
                     const data = await ownerRes.json().catch(() => ({}));
-                    throw new Error(extractMutationError(data, 'Owner update failed'));
+                    throw new Error(extractMutationError(data, tx('detail.errors.ownerUpdateFailed')));
                 }
             }
             // Revalidate this Sheet's detail cache, the full detail page's
@@ -221,7 +223,7 @@ export function ControlDetailSheet({
             swrMutate(apiUrl(CACHE_KEYS.controls.pageData(controlId)));
             setControlId(null);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Update failed');
+            setError(err instanceof Error ? err.message : tx('detail.errors.updateFailed'));
         } finally {
             setSaving(false);
         }
@@ -241,7 +243,7 @@ export function ControlDetailSheet({
         if (next) return;
         if (dirty && !saving) {
             const ok = typeof window !== 'undefined'
-                ? window.confirm('Discard unsaved changes?')
+                ? window.confirm(tx('detail.sheet.discardConfirm'))
                 : true;
             if (!ok) return;
         }
@@ -253,44 +255,44 @@ export function ControlDetailSheet({
         if (!control) return [] as { label: string; value: string; badge?: StatusBadgeVariant }[];
         const rows: { label: string; value: string; badge?: StatusBadgeVariant }[] = [];
         if (control.code || control.annexId) {
-            rows.push({ label: 'Code', value: control.annexId || control.code || '—' });
+            rows.push({ label: tx('detail.sheet.code'), value: control.annexId || control.code || '—' });
         }
         rows.push({
-            label: 'Status',
+            label: tx('status'),
             value: control.status.replace(/_/g, ' '),
             badge: STATUS_BADGE[control.status] || 'neutral',
         });
         rows.push({
-            label: 'Applicability',
-            value: control.applicability === 'NOT_APPLICABLE' ? 'N/A' : 'Yes',
+            label: tx('detail.sheet.applicability'),
+            value: control.applicability === 'NOT_APPLICABLE' ? tx('detail.sheet.na') : tx('detail.sheet.yes'),
             badge: control.applicability === 'NOT_APPLICABLE' ? 'warning' : 'success',
         });
         if (control.owner?.name) {
-            rows.push({ label: 'Owner', value: control.owner.name });
+            rows.push({ label: tx('detail.fields.owner'), value: control.owner.name });
         }
         return rows;
-    }, [control]);
+    }, [control, tx]);
 
     return (
         <Sheet
             open={open}
             onOpenChange={handleOpenChange}
             size="md"
-            title={control?.name ?? 'Control detail'}
+            title={control?.name ?? tx('detail.sheet.controlDetail')}
             description={control?.annexId ?? control?.code ?? undefined}
         >
             {detailQuery.isLoading || !control ? (
                 <>
-                    <Sheet.Header title="Loading…" />
+                    <Sheet.Header title={tx('detail.sheet.loadingTitle')} />
                     <Sheet.Body>
                         <div className="flex h-40 items-center justify-center text-sm text-content-muted">
-                            Loading control…
+                            {tx('detail.sheet.loadingControl')}
                         </div>
                     </Sheet.Body>
                 </>
             ) : detailQuery.error ? (
                 <>
-                    <Sheet.Header title="Control" />
+                    <Sheet.Header title={tx('detail.sheet.controlTitle')} />
                     <Sheet.Body>
                         <div
                             className="rounded-lg border border-border-error bg-bg-error px-3 py-2 text-sm text-content-error"
@@ -299,7 +301,7 @@ export function ControlDetailSheet({
                         >
                             {detailQuery.error instanceof Error
                                 ? detailQuery.error.message
-                                : 'Failed to load control.'}
+                                : tx('detail.sheet.loadFailed')}
                         </div>
                     </Sheet.Body>
                 </>
@@ -354,7 +356,7 @@ export function ControlDetailSheet({
                                         className="mb-1 block text-sm text-content-default"
                                         htmlFor="sheet-name-input"
                                     >
-                                        Name <RequiredMarker />
+                                        {tx('detail.fields.name')} <RequiredMarker />
                                     </label>
                                     <input
                                         id="sheet-name-input"
@@ -374,7 +376,7 @@ export function ControlDetailSheet({
                                             className="mb-1 block text-sm text-content-default"
                                             htmlFor="sheet-category-input"
                                         >
-                                            Category
+                                            {tx('detail.fields.category')}
                                         </label>
                                         <Combobox
                                             id="sheet-category-input"
@@ -383,7 +385,7 @@ export function ControlDetailSheet({
                                             selected={CATEGORY_OPTIONS.find(o => o.value === form.category) ?? null}
                                             setSelected={(o) => update('category', o?.value ?? '')}
                                             placeholder="—"
-                                            searchPlaceholder="Search categories…"
+                                            searchPlaceholder={tx('detail.fields.searchCategories')}
                                             disabled={!canWrite}
                                             matchTriggerWidth
                                             forceDropdown
@@ -396,7 +398,7 @@ export function ControlDetailSheet({
                                             className="mb-1 block text-sm text-content-default"
                                             htmlFor="sheet-frequency-input"
                                         >
-                                            Frequency
+                                            {tx('detail.fields.frequency')}
                                         </label>
                                         <Combobox
                                             id="sheet-frequency-input"
@@ -415,8 +417,8 @@ export function ControlDetailSheet({
                                     </div>
                                 </div>
                                 <FormField
-                                    label="Owner"
-                                    description="Search members to assign, or clear to unassign."
+                                    label={tx('detail.fields.owner')}
+                                    description={tx('detail.fields.ownerHint')}
                                 >
                                     <UserCombobox
                                         id="sheet-owner-input"
@@ -430,7 +432,7 @@ export function ControlDetailSheet({
                                         placeholder={
                                             control.owner?.name ||
                                             control.owner?.email ||
-                                            'Unassigned'
+                                            tx('detail.fields.unassigned')
                                         }
                                     />
                                 </FormField>
@@ -443,7 +445,7 @@ export function ControlDetailSheet({
                                 data-testid="control-sheet-open-full"
                                 onClick={() => setControlId(null)}
                             >
-                                Open full detail →
+                                {tx('detail.sheet.openFull')}
                             </Link>
                             <div className="flex items-center gap-tight">
                                 <Sheet.Close asChild>
@@ -452,7 +454,7 @@ export function ControlDetailSheet({
                                         variant="secondary"
                                         size="sm"
                                         data-testid="control-sheet-cancel"
-                                        text="Cancel"
+                                        text={tx('detail.sheet.cancel')}
                                     />
                                 </Sheet.Close>
                                 <Button
@@ -461,7 +463,7 @@ export function ControlDetailSheet({
                                     size="sm"
                                     data-testid="control-sheet-save"
                                     disabled={!canSave}
-                                    text={saving ? 'Saving…' : 'Save changes'}
+                                    text={saving ? tx('detail.autosave.saving') : tx('detail.sheet.saveChanges')}
                                 />
                             </div>
                         </Sheet.Actions>

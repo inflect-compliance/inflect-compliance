@@ -20,6 +20,7 @@
  * Mounts only when the control row is expanded, so the fetch is lazy.
  */
 import { useEffect, useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 
 export interface ControlTask {
@@ -71,6 +72,7 @@ export function ControlTaskRows({
     /** Whole-row click → task quick-view in the side panel. */
     onTaskClick?: (task: ControlTask) => void;
 }) {
+    const tx = useTranslations("controls");
     const [tasks, setTasks] = useState<ControlTask[] | null>(null);
     const [error, setError] = useState(false);
 
@@ -107,9 +109,9 @@ export function ControlTaskRows({
         </tr>
     );
 
-    if (error) return messageRow("Couldn't load tasks.", "text-content-error");
-    if (tasks === null) return messageRow("Loading tasks…", "text-content-subtle animate-pulse");
-    if (tasks.length === 0) return messageRow("No tasks for this control.", "text-content-subtle");
+    if (error) return messageRow(tx("detail.taskRows.error"), "text-content-error");
+    if (tasks === null) return messageRow(tx("detail.taskRows.loading"), "text-content-subtle animate-pulse");
+    if (tasks.length === 0) return messageRow(tx("detail.taskRows.empty"), "text-content-subtle");
 
     const cellFor = (columnId: string, t: ControlTask): ReactNode => {
         switch (columnId) {

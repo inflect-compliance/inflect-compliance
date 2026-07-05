@@ -3,6 +3,24 @@
  * must read as narrative ONLY: no `Context: {json}` suffix, no raw change-dump,
  * no bare identifier tokens. Locks the cases observed in the live feed.
  */
+// next-intl is ESM (jest can't parse its export); mock it so the component
+// module imports cleanly. humanizeDetail itself uses no translations.
+jest.mock("next-intl", () => {
+    const en = require("../../messages/en.json");
+    return {
+        useTranslations: (ns: string) => (key: string, params?: Record<string, unknown>) => {
+            let v = key
+                .split(".")
+                .reduce((o: unknown, k) =>
+                    o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined, en[ns]);
+            if (typeof v !== "string") return key;
+            if (params) for (const [p, val] of Object.entries(params)) v = (v as string).replace(new RegExp(`\\{${p}\\}`, "g"), String(val));
+            return v;
+        },
+        useLocale: () => "en",
+    };
+});
+
 import { humanizeDetail } from "@/app/t/[tenantSlug]/(app)/controls/PanelActivityFeed";
 
 describe("humanizeDetail", () => {
