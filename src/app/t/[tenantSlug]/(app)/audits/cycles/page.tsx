@@ -1,5 +1,6 @@
 'use client';
 import { formatDate } from '@/lib/format-date';
+import { useTranslations } from 'next-intl';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -63,6 +64,7 @@ const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
 };
 
 export default function AuditCyclesPage() {
+    const tx = useTranslations('audits');
     const params = useParams();
     const router = useRouter();
     const tenantSlug = params.tenantSlug as string;
@@ -124,17 +126,17 @@ export default function AuditCyclesPage() {
                 <div>
                     <PageBreadcrumbs
                         items={[
-                            { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
-                            { label: 'Audits', href: `/t/${tenantSlug}/audits` },
-                            { label: 'Cycles' },
+                            { label: tx('crumb.dashboard'), href: `/t/${tenantSlug}/dashboard` },
+                            { label: tx('crumb.audits'), href: `/t/${tenantSlug}/audits` },
+                            { label: tx('crumb.cycles') },
                         ]}
                         className="mb-1"
                     />
-                    <Heading level={1}>Audit Readiness</Heading>
-                    <p className="text-content-muted text-sm">{cycles.length} audit cycle{cycles.length !== 1 ? 's' : ''}</p>
+                    <Heading level={1}>{tx('cycles.title')}</Heading>
+                    <p className="text-content-muted text-sm">{tx('cycles.cycleCount', { count: cycles.length })}</p>
                 </div>
                 <Button variant="primary" icon={showForm ? undefined : <Plus className="-ml-0.5 -mr-2.5" />} onClick={() => setShowForm(!showForm)} id="create-cycle-btn">
-                    {showForm ? 'Cancel' : 'Cycle'}
+                    {showForm ? tx('cycles.cancel') : tx('cycles.cycle')}
                 </Button>
             </div>
 
@@ -142,9 +144,9 @@ export default function AuditCyclesPage() {
                 <form onSubmit={create} className={cn(cardVariants(), 'animate-fadeIn')} id="cycle-form">
                     <FieldGroup columns={2} gap="md">
                         <FormField
-                            label="Framework"
+                            label={tx('cycles.frameworkLabel')}
                             required
-                            hint="The compliance framework this audit cycle tracks (ISO 27001, SOC 2, NIS2…). Controls and evidence are filtered by this on the cycle dashboard."
+                            hint={tx('cycles.frameworkHint')}
                         >
                             <Combobox<false, { version: string }>
                                 id="fw-select"
@@ -162,14 +164,14 @@ export default function AuditCyclesPage() {
                                         frameworkKey: option.value,
                                     }));
                                 }}
-                                placeholder="Select framework…"
-                                searchPlaceholder="Search frameworks…"
+                                placeholder={tx('cycles.selectFramework')}
+                                searchPlaceholder={tx('cycles.searchFrameworks')}
                                 matchTriggerWidth
                                 buttonProps={{ className: 'w-full' }}
                                 caret
                             />
                         </FormField>
-                        <FormField label="Cycle name" required>
+                        <FormField label={tx('cycles.cycleName')} required>
                             <Input
                                 id="cycle-name-input"
                                 required
@@ -177,7 +179,7 @@ export default function AuditCyclesPage() {
                                 onChange={(e) =>
                                     setForm((f) => ({ ...f, name: e.target.value }))
                                 }
-                                placeholder="e.g. ISO27001 Recertification 2025"
+                                placeholder={tx('cycles.cycleNamePlaceholder')}
                             />
                         </FormField>
                     </FieldGroup>
@@ -190,14 +192,14 @@ export default function AuditCyclesPage() {
                     */}
                     <div className="mt-4">
                         <FormField
-                            label="Audit period"
-                            hint="The reporting window the cycle evidences. Pick a preset for the usual quarterly / annual audits, or choose a custom range on the calendar. Optional — you can set this later."
+                            label={tx('cycles.auditPeriod')}
+                            hint={tx('cycles.auditPeriodHint')}
                         >
                             <DateRangePicker
                                 id="cycle-period-range"
                                 className="w-full"
                                 align="start"
-                                placeholder="Select audit period"
+                                placeholder={tx('cycles.selectAuditPeriod')}
                                 value={period}
                                 onChange={setPeriod}
                                 presets={AUDIT_PERIOD_PRESETS}
@@ -206,8 +208,8 @@ export default function AuditCyclesPage() {
                         </FormField>
                     </div>
                     <div className="mt-4 flex gap-tight">
-                        <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>Cancel</Button>
-                        <Button type="submit" variant="primary" icon={<Plus className="-ml-0.5 -mr-2.5" />} id="submit-cycle-btn">Cycle</Button>
+                        <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>{tx('cycles.cancel')}</Button>
+                        <Button type="submit" variant="primary" icon={<Plus className="-ml-0.5 -mr-2.5" />} id="submit-cycle-btn">{tx('cycles.cycle')}</Button>
                     </div>
                 </form>
             )}
@@ -216,10 +218,10 @@ export default function AuditCyclesPage() {
                 <div className={cardVariants({ density: 'none' })}>
                     <EmptyState
                         icon={ClipboardCheck}
-                        title="No audit cycles yet"
-                        description="Create your first audit cycle for ISO 27001 or NIS2."
+                        title={tx('cycles.emptyTitle')}
+                        description={tx('cycles.emptyDesc')}
                         primaryAction={{
-                            label: 'Add Audit Cycle',
+                            label: tx('cycles.addCycle'),
                             onClick: () => setShowForm(true),
                         }}
                     />
@@ -240,7 +242,7 @@ export default function AuditCyclesPage() {
                                 <Heading level={3} className="group-hover:text-content-emphasis transition">{c.name}</Heading>
                                 <p className="text-xs text-content-muted mt-1">{meta.label} · v{c.frameworkVersion}</p>
                                 <div className="flex items-center gap-tight mt-3 text-xs text-content-subtle">
-                                    <span>{c.packs?.length || 0} pack{(c.packs?.length || 0) !== 1 ? 's' : ''}</span>
+                                    <span>{tx('cycles.packCount', { count: c.packs?.length || 0 })}</span>
                                     <span>·</span>
                                     <span>{formatDate(c.createdAt)}</span>
                                 </div>

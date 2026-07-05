@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import {
     SkeletonPageHeader,
     SkeletonDataTable,
@@ -7,9 +8,10 @@ import {
 /**
  * Audits loading skeleton — header + cycles/packs list.
  */
-export default function AuditsLoading() {
+export default async function AuditsLoading() {
+    const t = await getTranslations('audits');
     return (
-        <div role="status" aria-live="polite" className="space-y-section animate-fadeIn" aria-busy="true" aria-label="Loading audits">
+        <div role="status" aria-live="polite" className="space-y-section animate-fadeIn" aria-busy="true" aria-label={t('loadingAria')}>
             <SkeletonPageHeader />
 
             {/* Cycles section */}

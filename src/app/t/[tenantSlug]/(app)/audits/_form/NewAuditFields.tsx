@@ -14,7 +14,8 @@
  * The `generateChecklist` toggle stays true by default — auditors
  * who want a blank audit can clear the checklist after creation.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Combobox } from '@/components/ui/combobox';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
@@ -39,8 +40,6 @@ interface FrameworkOption {
     label: string;
 }
 
-const NO_FRAMEWORK_OPTION: FrameworkOption = { value: '', label: 'No framework' };
-
 export function NewAuditFields({
     form,
     labels,
@@ -48,9 +47,16 @@ export function NewAuditFields({
     form: NewAuditFormReturn;
     labels: NewAuditFieldsLabels;
 }) {
+    const tx = useTranslations('audits');
     const apiUrl = useTenantApiUrl();
+    // The empty-value "No framework" option label is localised; memoised so it
+    // stays reference-stable for the lazy-load effect below.
+    const noFrameworkOption = useMemo<FrameworkOption>(
+        () => ({ value: '', label: tx('newModal.noFramework') }),
+        [tx],
+    );
     const [frameworks, setFrameworks] = useState<FrameworkOption[]>([
-        NO_FRAMEWORK_OPTION,
+        noFrameworkOption,
     ]);
 
     // B8 — lazy-load the framework catalog on mount. The list is
@@ -69,7 +75,7 @@ export function NewAuditFields({
                 if (cancelled) return;
                 // eslint-disable-next-line react-hooks/set-state-in-effect
                 setFrameworks([
-                    NO_FRAMEWORK_OPTION,
+                    noFrameworkOption,
                     ...rows.map((fw) => ({ value: fw.key, label: fw.name })),
                 ]);
             } catch {
@@ -94,7 +100,7 @@ export function NewAuditFields({
                         required
                     />
                 </FormField>
-                <FormField label={labels.framework ?? 'Framework'}>
+                <FormField label={labels.framework ?? tx('newModal.framework')}>
                     <Combobox
                         id="audit-framework-select"
                         data-testid="audit-framework-select"
@@ -102,12 +108,12 @@ export function NewAuditFields({
                         selected={
                             frameworks.find(
                                 (o) => o.value === form.fields.frameworkKey,
-                            ) ?? NO_FRAMEWORK_OPTION
+                            ) ?? noFrameworkOption
                         }
                         setSelected={(opt) =>
                             form.setField('frameworkKey', opt?.value ?? '')
                         }
-                        placeholder="No framework"
+                        placeholder={tx('newModal.noFramework')}
                         matchTriggerWidth
                     />
                 </FormField>
