@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -33,6 +34,7 @@ export function AgentProposalsClient({
     tenantSlug: string;
     initialProposals: ProposalRow[];
 }) {
+    const t = useTranslations('agents');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const [proposals, setProposals] = useState(initialProposals);
@@ -42,6 +44,7 @@ export function AgentProposalsClient({
     async function act(id: string, action: 'approve' | 'reject') {
         setBusy(id);
         setError(null);
+        const fallback = t(`proposals.${action}Failed`);
         try {
             const res = await fetch(apiUrl(`/agent-proposals/${id}/${action}`), {
                 method: 'POST',
@@ -50,11 +53,11 @@ export function AgentProposalsClient({
             });
             if (!res.ok) {
                 const body = await res.json().catch(() => null);
-                throw new Error(body?.error?.message ?? `Failed to ${action}`);
+                throw new Error(body?.error?.message ?? fallback);
             }
             setProposals((prev) => prev.filter((p) => p.id !== id));
         } catch (e) {
-            setError(e instanceof Error ? e.message : `Failed to ${action}`);
+            setError(e instanceof Error ? e.message : fallback);
         } finally {
             setBusy(null);
         }
@@ -65,13 +68,13 @@ export function AgentProposalsClient({
             <PageHeader
                 back={{ smart: true }}
                 breadcrumbs={[
-                    { label: 'Dashboard', href: tenantHref('/dashboard') },
-                    { label: 'Admin', href: tenantHref('/admin') },
-                    { label: 'MCP', href: tenantHref('/admin/mcp') },
-                    { label: 'Agent proposals' },
+                    { label: t('crumbDashboard'), href: tenantHref('/dashboard') },
+                    { label: t('crumbAdmin'), href: tenantHref('/admin') },
+                    { label: t('crumbMcp'), href: tenantHref('/admin/mcp') },
+                    { label: t('proposals.crumb') },
                 ]}
-                title="Agent proposals"
-                description="Pending proposals from an external agent (MCP). Approve to create the real record; reject to discard. An agent never creates a record directly."
+                title={t('proposals.title')}
+                description={t('proposals.description')}
             />
 
             {error && (
@@ -82,8 +85,8 @@ export function AgentProposalsClient({
 
             {proposals.length === 0 ? (
                 <EmptyState
-                    title="No pending proposals"
-                    description="When an agent proposes a risk, control, policy, or finding via the MCP server, it appears here for your review."
+                    title={t('proposals.emptyTitle')}
+                    description={t('proposals.emptyDesc')}
                 />
             ) : (
                 <ul className="space-y-default">
@@ -104,8 +107,10 @@ export function AgentProposalsClient({
                                     <div className="flex items-center gap-tight">
                                         <StatusBadge variant="info">{p.kind}</StatusBadge>
                                         <span className="text-xs text-content-subtle">
-                                            proposed {formatDateTime(p.createdAt)}
-                                            {p.proposedViaKeyId ? ` · key ${p.proposedViaKeyId.slice(0, 8)}` : ''}
+                                            {t('proposals.proposedAt', { date: formatDateTime(p.createdAt) })}
+                                            {p.proposedViaKeyId
+                                                ? t('proposals.keySuffix', { key: p.proposedViaKeyId.slice(0, 8) })
+                                                : ''}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-tight">
@@ -115,7 +120,7 @@ export function AgentProposalsClient({
                                             disabled={busy === p.id}
                                             onClick={() => act(p.id, 'reject')}
                                         >
-                                            Reject
+                                            {t('proposals.reject')}
                                         </Button>
                                         <Button
                                             variant="secondary"
@@ -123,14 +128,14 @@ export function AgentProposalsClient({
                                             disabled={busy === p.id}
                                             onClick={() => act(p.id, 'approve')}
                                         >
-                                            Approve
+                                            {t('proposals.approve')}
                                         </Button>
                                     </div>
                                 </div>
 
                                 {p.rationale && (
                                     <p className="text-sm text-content-muted">
-                                        <span className="font-medium text-content-default">Rationale: </span>
+                                        <span className="font-medium text-content-default">{t('proposals.rationale')}</span>
                                         {p.rationale}
                                     </p>
                                 )}

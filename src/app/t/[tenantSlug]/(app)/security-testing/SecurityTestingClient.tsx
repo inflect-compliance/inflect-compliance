@@ -12,6 +12,7 @@
  * triage surface) on ingest; per-row triage status edits are a follow-up.
  */
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { ShieldAlert } from '@/components/ui/icons/nucleo/shield-alert';
 import { EntityListPage } from '@/components/layout/EntityListPage';
 import { FilterProvider, useFilterContext, useFilters } from '@/components/ui/filter';
@@ -81,6 +82,7 @@ export function SecurityTestingClient(props: Props) {
 }
 
 function SecurityTestingInner({ initialFindings, runs, tenantSlug }: Props) {
+    const t = useTranslations('securityTesting');
     const { state, hasActive } = useFilters();
 
     const rows = useMemo(() => {
@@ -105,7 +107,7 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug }: Props) {
             createColumns<ScannerFindingRow>([
                 {
                     id: 'severity',
-                    header: 'Severity',
+                    header: t('colSeverity'),
                     accessorFn: (r) => r.severity,
                     cell: ({ row }) => (
                         <StatusBadge variant={SEVERITY_VARIANT[row.original.severity] ?? 'neutral'}>
@@ -115,7 +117,7 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug }: Props) {
                 },
                 {
                     id: 'title',
-                    header: 'Finding',
+                    header: t('colFinding'),
                     accessorFn: (r) => r.title,
                     cell: ({ row }) => (
                         <div className="min-w-0" data-testid={`scanner-finding-${row.original.id}`}>
@@ -126,7 +128,7 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug }: Props) {
                 },
                 {
                     id: 'source',
-                    header: 'Source',
+                    header: t('colSource'),
                     accessorFn: (r) => r.scannerRun?.source ?? '',
                     cell: ({ row }) => {
                         const src = row.original.scannerRun?.source;
@@ -141,7 +143,7 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug }: Props) {
                 },
                 {
                     id: 'location',
-                    header: 'Location',
+                    header: t('colLocation'),
                     accessorFn: (r) => r.location ?? '',
                     cell: ({ row }) =>
                         row.original.location ? (
@@ -152,7 +154,7 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug }: Props) {
                 },
                 {
                     id: 'frameworks',
-                    header: 'Maps to',
+                    header: t('colMapsTo'),
                     accessorFn: (r) => r.frameworks.owasp.join(',') + r.frameworks.ssdf.join(','),
                     enableSorting: false,
                     cell: ({ row }) => {
@@ -176,7 +178,7 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug }: Props) {
                 },
                 {
                     id: 'status',
-                    header: 'Status',
+                    header: t('colStatus'),
                     accessorFn: (r) => r.status,
                     cell: ({ row }) => (
                         <StatusBadge variant={STATUS_VARIANT[row.original.status] ?? 'neutral'}>
@@ -186,13 +188,13 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug }: Props) {
                     ),
                 },
             ]),
-        [],
+        [t],
     );
 
     const description =
         runs.length === 0
-            ? 'Scanner findings ingested from your CI via SARIF.'
-            : `${runs.length} recent run${runs.length === 1 ? '' : 's'} · ${openCritical} open critical finding${openCritical === 1 ? '' : 's'}.`;
+            ? t('descEmpty')
+            : t('descActive', { runs: runs.length, critical: openCritical });
 
     return (
         <EntityListPage<ScannerFindingRow>
@@ -204,7 +206,7 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug }: Props) {
                 title: (
                     <>
                         <ShieldAlert className="inline-block mr-2 h-5 w-5 align-text-bottom" />
-                        Security Testing
+                        {t('title')}
                     </>
                 ),
                 description,
@@ -214,15 +216,15 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug }: Props) {
                 data: rows,
                 columns,
                 getRowId: (r) => r.id,
-                resourceName: (plural) => (plural ? 'findings' : 'finding'),
+                resourceName: (plural) => (plural ? t('resourceFindings') : t('resourceFinding')),
                 emptyState: (
                     <EmptyState
                         icon={ShieldAlert}
-                        title={hasActive ? 'No matching findings' : 'No scanner findings yet'}
+                        title={hasActive ? t('emptyMatchTitle') : t('emptyTitle')}
                         description={
                             hasActive
-                                ? 'Try clearing a filter.'
-                                : `POST a SARIF report from your CI to /api/t/${tenantSlug}/security-testing/ingest. A passing scan attaches automated evidence to its mapped control; failing findings appear here and in the Findings register.`
+                                ? t('emptyMatchDesc')
+                                : t('emptyDesc', { slug: tenantSlug })
                         }
                     />
                 ),

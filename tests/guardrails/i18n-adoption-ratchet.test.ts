@@ -105,10 +105,6 @@ function rel(abs: string): string {
 const UNMIGRATED_BASELINE: ReadonlySet<string> = new Set([
     "src/app/t/[tenantSlug]/(app)/access-reviews/AccessReviewsClient.tsx",
     "src/app/t/[tenantSlug]/(app)/access-reviews/[reviewId]/AccessReviewDetailClient.tsx",
-    "src/app/t/[tenantSlug]/(app)/agent-proposals/AgentProposalsClient.tsx",
-    "src/app/t/[tenantSlug]/(app)/agent-proposals/page.tsx",
-    "src/app/t/[tenantSlug]/(app)/agent-runs/AgentRunsClient.tsx",
-    "src/app/t/[tenantSlug]/(app)/agent-runs/page.tsx",
     "src/app/t/[tenantSlug]/(app)/auth/mfa/page.tsx",
     "src/app/t/[tenantSlug]/(app)/calendar/CalendarClient.tsx",
     "src/app/t/[tenantSlug]/(app)/clauses/loading.tsx",
@@ -119,7 +115,6 @@ const UNMIGRATED_BASELINE: ReadonlySet<string> = new Set([
     "src/app/t/[tenantSlug]/(app)/error.tsx",
     "src/app/t/[tenantSlug]/(app)/framework-updates/FrameworkUpdatesClient.tsx",
     "src/app/t/[tenantSlug]/(app)/policies/new/page.tsx",
-    "src/app/t/[tenantSlug]/(app)/security-testing/SecurityTestingClient.tsx",
     "src/app/t/[tenantSlug]/(app)/security-testing/page.tsx",
     "src/app/t/[tenantSlug]/(app)/security/mfa/page.tsx",
     "src/app/t/[tenantSlug]/(app)/tasks/page.tsx",
