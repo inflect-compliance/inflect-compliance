@@ -236,6 +236,10 @@ describe('AISVS provenance in the framework picker', () => {
     it('renders the attribution, license, and canonical-text note', () => {
         expect(client).toMatch(/provenance\.provider/);
         expect(client).toMatch(/provenance\.license/);
-        expect(client).toMatch(/links to canonical requirement text/);
+        // The canonical-text note moved to next-intl — resolve against en.json.
+        expect(client).toMatch(/list\.referenceIndexNote/);
+        expect(JSON.parse(read('messages/en.json')).frameworks.list.referenceIndexNote).toMatch(
+            /links to canonical requirement text/,
+        );
     });
 });

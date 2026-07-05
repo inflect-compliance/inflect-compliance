@@ -68,6 +68,32 @@ jest.mock('@/components/ui/tooltip', () => ({
 // next/navigation isn't in scope under jsdom — stub the hooks the
 // FrameworksClient (and any transitively-imported primitives) might
 // reach for.
+// next-intl is ESM (jest can't parse its export); mock it to resolve real
+// en.json values so text assertions track the original English.
+jest.mock('next-intl', () => {
+    const en = require('../../messages/en.json');
+    const resolve = (ns: string, key: string) =>
+        key.split('.').reduce((o: unknown, k) =>
+            o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined, en[ns]);
+    return {
+        useTranslations: (ns: string) => {
+            const fn = (key: string, params?: Record<string, unknown>) => {
+                let v = resolve(ns, key);
+                if (typeof v !== 'string') return key;
+                if (params) for (const [p, val] of Object.entries(params)) v = (v as string).replace(new RegExp(`\\{${p}\\}`, 'g'), String(val));
+                return v;
+            };
+            // `.rich` — resolve the value and strip <tag>inner</tag> to its text.
+            fn.rich = (key: string) => {
+                const v = resolve(ns, key);
+                return typeof v === 'string' ? v.replace(/<(\w+)>(.*?)<\/\1>/g, '$2') : key;
+            };
+            return fn;
+        },
+        useLocale: () => 'en',
+    };
+});
+
 jest.mock('next/navigation', () => ({
     useRouter: () => ({
         push: jest.fn(),
