@@ -224,7 +224,12 @@ describe('B8 follow-up — evidence folders', () => {
         });
 
         it('EvidenceClient adds a Folder column to the table', () => {
-            expect(client).toMatch(/id:\s*['"]folder['"][\s\S]{0,200}header:\s*['"]Folder['"]/);
+            // Header migrated to next-intl; match the key + resolve its en value.
+            expect(client).toMatch(/id:\s*['"]folder['"][\s\S]{0,200}header:\s*tx\(['"]colHeaders\.folder['"]\)/);
+            const en = JSON.parse(read('messages/en.json')) as {
+                evidence: { colHeaders: Record<string, string> };
+            };
+            expect(en.evidence.colHeaders.folder).toBe('Folder');
         });
     });
 });
