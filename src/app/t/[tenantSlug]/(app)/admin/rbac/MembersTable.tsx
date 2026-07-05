@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { DataTable } from '@/components/ui/table';
 import type { ColumnDef } from '@tanstack/react-table';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
@@ -27,11 +28,12 @@ const ROLE_TONE: Record<string, StatusBadgeVariant> = {
 };
 
 export function MembersTable({ members }: MembersTableProps) {
+    const t = useTranslations('admin');
     const columns = useMemo<ColumnDef<MembersTableRow>[]>(
         () => [
             {
                 id: 'name',
-                header: 'Name',
+                header: t('rbac.colName'),
                 accessorKey: 'name',
                 cell: ({ getValue }) => (
                     <span className="text-sm font-medium text-content-emphasis">
@@ -41,7 +43,7 @@ export function MembersTable({ members }: MembersTableProps) {
             },
             {
                 id: 'email',
-                header: 'Email',
+                header: t('rbac.colEmail'),
                 accessorKey: 'email',
                 cell: ({ getValue }) => (
                     <span className="text-content-muted">
@@ -51,7 +53,7 @@ export function MembersTable({ members }: MembersTableProps) {
             },
             {
                 id: 'role',
-                header: 'Role',
+                header: t('rbac.colRole'),
                 accessorKey: 'role',
                 cell: ({ getValue }) => {
                     const role = getValue() as string;
@@ -64,7 +66,7 @@ export function MembersTable({ members }: MembersTableProps) {
             },
             {
                 id: 'joined',
-                header: 'Joined',
+                header: t('rbac.colJoined'),
                 accessorKey: 'createdAtIso',
                 cell: ({ getValue }) => (
                     <span className="text-content-subtle whitespace-nowrap">
@@ -73,7 +75,7 @@ export function MembersTable({ members }: MembersTableProps) {
                 ),
             },
         ],
-        [],
+        [t],
     );
 
     return (
@@ -81,8 +83,8 @@ export function MembersTable({ members }: MembersTableProps) {
             data={members}
             columns={columns}
             getRowId={(m) => m.id}
-            emptyState="No members yet."
-            resourceName={(p) => (p ? 'members' : 'member')}
+            emptyState={t('rbac.emptyMembers')}
+            resourceName={(p) => (p ? t('rbac.membersPlural') : t('rbac.memberSingular'))}
             data-testid="rbac-members-table"
         />
     );
