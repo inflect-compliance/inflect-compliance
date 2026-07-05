@@ -21,6 +21,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiErrorMessage } from '@/lib/api-error';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
     useTenantApiUrl,
     useTenantHref,
@@ -99,6 +100,7 @@ export function VendorTemplateBuilderClient({
     const tenantHref = useTenantHref();
     const router = useRouter();
     const { permissions } = useTenantContext();
+    const t = useTranslations('admin');
 
     const [tree, setTree] = useState<TemplateTree | null>(null);
     const [sections, setSections] = useState<Section[]>([]);
@@ -114,19 +116,19 @@ export function VendorTemplateBuilderClient({
                 apiUrl(`/vendor-assessment-templates/${templateId}`),
             );
             if (!res.ok) {
-                setError(`Failed to load template (${res.status})`);
+                setError(t('templateBuilder.loadError', { status: res.status }));
                 return;
             }
-            const t = (await res.json()) as TemplateTree;
-            setTree(t);
+            const treeData = (await res.json()) as TemplateTree;
+            setTree(treeData);
             // Build section[] with embedded questions for the
             // editor's local model.
-            const grouped: Section[] = t.sections.map((s) => ({
+            const grouped: Section[] = treeData.sections.map((s) => ({
                 id: s.id,
                 sortOrder: s.sortOrder,
                 title: s.title,
                 description: s.description,
-                questions: t.questions
+                questions: treeData.questions
                     .filter((q) => q.sectionId === s.id)
                     .sort((a, b) => a.sortOrder - b.sortOrder)
                     .map((q) => ({
@@ -144,7 +146,7 @@ export function VendorTemplateBuilderClient({
         } finally {
             setLoading(false);
         }
-    }, [apiUrl, templateId]);
+    }, [apiUrl, templateId, t]);
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -247,7 +249,7 @@ export function VendorTemplateBuilderClient({
             );
             if (!res.ok) {
                 const b = await res.json().catch(() => ({}));
-                setError(apiErrorMessage(b, `Save failed (${res.status})`));
+                setError(apiErrorMessage(b, t('templateBuilder.saveError', { status: res.status })));
                 return;
             }
             setDirty(false);
@@ -268,7 +270,7 @@ export function VendorTemplateBuilderClient({
             },
         );
         if (res.ok) await refresh();
-        else setError(`Add section failed (${res.status})`);
+        else setError(t('templateBuilder.addSectionError', { status: res.status }));
     }
 
     async function addQuestionToSection(
@@ -297,7 +299,7 @@ export function VendorTemplateBuilderClient({
         if (res.ok) await refresh();
         else {
             const b = await res.json().catch(() => ({}));
-            setError(apiErrorMessage(b, `Add question failed (${res.status})`));
+            setError(apiErrorMessage(b, t('templateBuilder.addQuestionError', { status: res.status })));
         }
     }
 
@@ -315,7 +317,7 @@ export function VendorTemplateBuilderClient({
             const cloned = (await res.json()) as { id: string };
             router.push(tenantHref(`/admin/vendor-templates/${cloned.id}`));
         } else {
-            setError(`Clone failed (${res.status})`);
+            setError(t('templateBuilder.cloneError', { status: res.status }));
         }
     }
 
@@ -323,7 +325,7 @@ export function VendorTemplateBuilderClient({
     if (!tree)
         return (
             <div className="p-12 text-center text-content-error">
-                {error ?? 'Template not found.'}
+                {error ?? t('templateBuilder.notFound')}
             </div>
         );
 
@@ -338,9 +340,9 @@ export function VendorTemplateBuilderClient({
                 <div>
                     <PageBreadcrumbs
                         items={[
-                            { label: 'Dashboard', href: tenantHref('/dashboard') },
-                            { label: 'Admin', href: tenantHref('/admin') },
-                            { label: 'Vendor Templates', href: tenantHref('/admin/vendor-templates') },
+                            { label: t('crumb.dashboard'), href: tenantHref('/dashboard') },
+                            { label: t('crumb.admin'), href: tenantHref('/admin') },
+                            { label: t('crumb.vendorTemplates'), href: tenantHref('/admin/vendor-templates') },
                             { label: tree.name },
                         ]}
                         className="mb-1"
@@ -352,7 +354,7 @@ export function VendorTemplateBuilderClient({
                         <span>v{tree.version}</span>
                         <span>·</span>
                         <StatusBadge variant={tree.isPublished ? 'success' : 'warning'} size="sm">
-                            {tree.isPublished ? 'Published' : 'Draft'}
+                            {tree.isPublished ? t('templateBuilder.published') : t('templateBuilder.draft')}
                         </StatusBadge>
                     </div>
                 </div>
@@ -365,7 +367,7 @@ export function VendorTemplateBuilderClient({
                         loading={saving}
                         id="save-order-btn"
                     >
-                        {saving ? 'Saving…' : 'Save order'}
+                        {saving ? t('templateBuilder.saving') : t('templateBuilder.saveOrder')}
                     </Button>
                 )}
             </div>
@@ -377,12 +379,10 @@ export function VendorTemplateBuilderClient({
                     data-testid="published-banner"
                 >
                     <p className="text-sm text-content-emphasis">
-                        This template is published.
+                        {t('templateBuilder.publishedTitle')}
                     </p>
                     <p className="text-xs text-content-muted mt-1">
-                        Edits to a published template would invalidate any
-                        live assessments pinned to its version. Clone it to a
-                        new draft revision to continue editing.
+                        {t('templateBuilder.publishedDesc')}
                     </p>
                     {permissions.canWrite && (
                         <Button
@@ -392,7 +392,7 @@ export function VendorTemplateBuilderClient({
                             onClick={clonePublished}
                             id="clone-template-btn"
                         >
-                            Clone to new draft
+                            {t('templateBuilder.cloneToDraft')}
                         </Button>
                     )}
                 </div>
@@ -474,6 +474,7 @@ function SectionCard({
         weight: number,
     ) => Promise<void>;
 }) {
+    const t = useTranslations('admin');
     return (
         <div
             className={cardVariants({ density: 'compact' })}
@@ -488,7 +489,7 @@ function SectionCard({
                     {editable && (
                         <span
                             className="text-content-subtle cursor-grab"
-                            aria-label="Drag to reorder section"
+                            aria-label={t('templateBuilder.dragSection')}
                         >
                             ⋮⋮
                         </span>
@@ -532,7 +533,7 @@ function SectionCard({
                         </StatusBadge>
                         {q.required && (
                             <StatusBadge variant="warning" size="sm">
-                                required
+                                {t('templateBuilder.required')}
                             </StatusBadge>
                         )}
                         <span className="text-xs text-content-subtle">
@@ -546,7 +547,7 @@ function SectionCard({
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={() => onQuestionDrop(null)}
                     >
-                        No questions yet — drag here or add one below.
+                        {t('templateBuilder.questionsEmpty')}
                     </div>
                 )}
             </div>
@@ -560,6 +561,7 @@ function SectionCard({
 
 function AddSectionForm({ onSubmit }: { onSubmit: (title: string) => void }) {
     const [title, setTitle] = useState('');
+    const t = useTranslations('admin');
     return (
         <form
             className={cn(cardVariants({ density: 'compact' }), 'flex items-center gap-tight')}
@@ -574,10 +576,10 @@ function AddSectionForm({ onSubmit }: { onSubmit: (title: string) => void }) {
         >
             <input
                 className="input flex-1"
-                placeholder="New section title"
+                placeholder={t('templateBuilder.newSectionTitle')}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                aria-label="New section title"
+                aria-label={t('templateBuilder.newSectionTitle')}
             />
             <Button
                 variant="primary"
@@ -585,7 +587,7 @@ function AddSectionForm({ onSubmit }: { onSubmit: (title: string) => void }) {
                 type="submit"
                 disabled={!title.trim()}
             >
-                Section
+                {t('templateBuilder.addSectionBtn')}
             </Button>
         </form>
     );
@@ -606,6 +608,7 @@ function AddQuestionForm({
     const [required, setRequired] = useState(true);
     const [weight, setWeight] = useState(1);
     const [busy, setBusy] = useState(false);
+    const t = useTranslations('admin');
 
     return (
         <form
@@ -628,18 +631,18 @@ function AddQuestionForm({
         >
             <div className="md:col-span-5">
                 <label className="text-xs text-content-muted block mb-1">
-                    Prompt
+                    {t('templateBuilder.promptLabel')}
                 </label>
                 <input
                     className="input w-full"
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Do you encrypt data at rest?"
+                    placeholder={t('templateBuilder.promptPlaceholder')}
                 />
             </div>
             <div className="md:col-span-3">
                 <label className="text-xs text-content-muted block mb-1">
-                    Type
+                    {t('templateBuilder.typeLabel')}
                 </label>
                 <Combobox
                     hideSearch
@@ -656,7 +659,7 @@ function AddQuestionForm({
             </div>
             <div className="md:col-span-1">
                 <label className="text-xs text-content-muted block mb-1">
-                    Weight
+                    {t('templateBuilder.weightLabel')}
                 </label>
                 <input
                     className="input w-full"
@@ -678,7 +681,7 @@ function AddQuestionForm({
                         onChange={(e) => setRequired(e.target.checked)}
                         className="mr-1"
                     />
-                    Required
+                    {t('templateBuilder.requiredCheckbox')}
                 </label>
             </div>
             <div className="md:col-span-2">
@@ -690,7 +693,7 @@ function AddQuestionForm({
                     disabled={busy || !prompt.trim()}
                     loading={busy}
                 >
-                    {busy ? 'Adding…' : 'Question'}
+                    {busy ? t('templateBuilder.adding') : t('templateBuilder.addQuestionBtn')}
                 </Button>
             </div>
         </form>
