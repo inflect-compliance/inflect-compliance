@@ -189,7 +189,15 @@ describe('UploadEvidenceModal — control linker', () => {
     });
 
     it('surfaces the control count in the FormField description', () => {
-        expect(UPLOAD_SRC).toMatch(/controls\.length\s*===\s*0[\s\S]{0,160}Search across/);
+        // The control-count description migrated to next-intl; assert the
+        // key branch is wired and the en value still reads "Search across …".
+        expect(UPLOAD_SRC).toMatch(
+            /controls\.length\s*===\s*0[\s\S]{0,160}searchControlsDesc/,
+        );
+        const en = JSON.parse(read('messages/en.json')) as {
+            evidence: { upload: Record<string, string> };
+        };
+        expect(en.evidence.upload.searchControlsDesc).toMatch(/Search across/);
     });
 });
 
