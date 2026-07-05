@@ -22,6 +22,11 @@ const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 
 const page = read('src/app/t/[tenantSlug]/(app)/risks/board/page.tsx');
+// Board copy migrated to next-intl (riskManager.board.*); resolve the
+// empty-state text against the en catalog rather than the page source.
+const enBoard = (JSON.parse(read('messages/en.json')) as {
+    riskManager: { board: Record<string, string> };
+}).riskManager.board;
 
 describe('RQ3-10 — the board page reuses RQ3-9 + RQ3-8 endpoints', () => {
     test('consumes the orchestrator (no new server endpoint for the same data)', () => {
@@ -47,13 +52,14 @@ describe('RQ3-10 — five sections, no fewer', () => {
 
 describe('RQ3-10 — every section carries an honest-null empty state', () => {
     test.each([
-        ['Position', 'board-position-empty', /Not quantified yet/],
-        ['Appetite', 'board-appetite-empty', /Set a portfolio loss ceiling/],
-        ['Top contributors', 'board-top-risks-empty', /No quantified risks yet/],
-        ['Best-value', 'board-best-value-empty', /No control yet carries a price/],
-    ])('%s has a typed empty-state nudge', (_section, testid, copy) => {
+        ['Position', 'board-position-empty', 'positionEmpty', /Not quantified yet/],
+        ['Appetite', 'board-appetite-empty', 'appetiteEmpty', /Set a portfolio loss ceiling/],
+        ['Top contributors', 'board-top-risks-empty', 'topEmpty', /No quantified risks yet/],
+        ['Best-value', 'board-best-value-empty', 'bestValueEmpty', /No control yet carries a price/],
+    ])('%s has a typed empty-state nudge', (_section, testid, key, copy) => {
         expect(page).toMatch(new RegExp(`data-testid="${testid}"`));
-        expect(page).toMatch(copy);
+        // copy now lives in the catalog; the page renders the t() key.
+        expect(enBoard[key as string]).toMatch(copy as RegExp);
     });
 
     test('Position never fabricates a zero — the ALE figure is gated on a non-null headline', () => {

@@ -181,12 +181,12 @@ export default function RiskImportPage() {
                                     data={previewData}
                                     columns={previewCols}
                                     getRowId={(r) => String(r._idx)}
-                                    emptyState="No rows to preview"
-                                    resourceName={(p) => p ? 'rows' : 'row'}
+                                    emptyState={t('previewEmpty')}
+                                    resourceName={(p) => (p ? t('rowsWord') : t('rowWord'))}
                                     data-testid="risk-import-preview"
                                 />
                                 {rows.length > 20 && (
-                                    <p className="text-center text-xs text-content-subtle py-2">+{rows.length - 20} more…</p>
+                                    <p className="text-center text-xs text-content-subtle py-2">{t('moreRows', { count: rows.length - 20 })}</p>
                                 )}
                             </>
                         );
