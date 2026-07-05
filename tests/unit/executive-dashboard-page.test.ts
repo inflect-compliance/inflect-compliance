@@ -241,7 +241,13 @@ describe('Dashboard Empty State Handling', () => {
     test('trend section handles no/insufficient data gracefully', () => {
         const content = readAll();
         expect(content).toContain('daysAvailable < 2');
-        expect(content).toContain('Trend charts will appear here');
+        // The empty-state copy moved to next-intl; assert the key is wired
+        // and its en value still carries the expected sentence.
+        expect(content).toContain("t('trendsEmpty')");
+        const en = JSON.parse(
+            fs.readFileSync(path.join(__dirname, '..', '..', 'messages/en.json'), 'utf-8'),
+        ) as { dashboard: Record<string, string> };
+        expect(en.dashboard.trendsEmpty).toContain('Trend charts will appear here');
     });
 
     test('compliance alerts handles no-alerts state', () => {

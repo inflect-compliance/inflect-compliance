@@ -38,12 +38,21 @@ jest.mock('@/lib/tenant-context-provider', () => ({
     usePermissions: () => ({ reports: { export: true } }),
 }));
 
-jest.mock('next-intl', () => ({
-    // Test-only translator: returns the key + an interpolated count
-    // when present, so assertions can match real string output.
-    useTranslations: () => (key: string, opts?: Record<string, unknown>) =>
-        opts && 'count' in opts ? `${key}:${opts.count}` : key,
-}));
+jest.mock('next-intl', () => {
+    // Test-only translator: resolves real en.json values so text
+    // assertions match the rendered English.
+    const en = require('../../messages/en.json');
+    return {
+        useTranslations: (ns: string) => (key: string, opts?: Record<string, unknown>) => {
+            let v = key
+                .split('.')
+                .reduce((o: unknown, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), en[ns]);
+            if (typeof v !== 'string') return key;
+            if (opts) for (const [p, val] of Object.entries(opts)) v = (v as string).replace(new RegExp(`\\{${p}\\}`, 'g'), String(val));
+            return v;
+        },
+    };
+});
 
 // next/link calls into next/navigation. Stub the router so we can
 // also assert that `refresh()` is NEVER invoked by the component.

@@ -319,7 +319,7 @@ export default function DashboardClient({
                 <ChartFocusWrapper kpiKey="coverage">
                     <ProgressCard
                         id="control-coverage"
-                        label="Control Coverage"
+                        label={t("controlCoverage")}
                         value={exec.controlCoverage.implemented}
                         max={exec.controlCoverage.applicable || 1}
                         segments={[
@@ -379,7 +379,7 @@ export default function DashboardClient({
                     id="task-status"
                     donutId="task-status-donut"
                     kpiKey="tasks"
-                    title="Task Status"
+                    title={t("taskStatus")}
                     centerSub="Tasks"
                     segments={[
                         { label: 'Open', value: exec.taskSummary.open, color: '#3b82f6' },
@@ -392,7 +392,7 @@ export default function DashboardClient({
                     id="policy-status"
                     donutId="policy-status-donut"
                     kpiKey="policies"
-                    title="Policy Status"
+                    title={t("policyStatus")}
                     centerSub="Policies"
                     segments={[
                         { label: 'Draft', value: exec.policySummary.draft, color: '#94a3b8' },
@@ -646,7 +646,7 @@ function InteractiveKpiGrid({
             />
             <KpiCard
                 id="kpi-policies"
-                label="Policies"
+                label={t("policies")}
                 value={exec.policySummary.total}
                 icon={FileText}
                 gradient="from-sky-500 to-cyan-500"
@@ -684,6 +684,7 @@ function RiskDistributionSection({
 }: {
     exec: ExecutiveDashboardPayload;
 }) {
+    const t = useTranslations('dashboard');
     const { riskBySeverity, riskByStatus } = exec;
     const { selectedKpi } = useDashboardChartFilter();
     const isFocused = selectedKpi === 'risks';
@@ -704,7 +705,7 @@ function RiskDistributionSection({
             )}
         >
             <Heading level={3} className="mb-3">
-                Risk Distribution
+                {t('riskDistribution')}
             </Heading>
             <div className="grid grid-cols-2 gap-default items-center">
                 <DonutChart
@@ -748,7 +749,7 @@ function RiskDistributionSection({
                         </div>
                     ))}
                     <div className="border-t border-border-subtle pt-2 mt-2 flex items-center justify-between text-xs">
-                        <span className="text-content-muted">Open / Mitigating</span>
+                        <span className="text-content-muted">{t('openMitigating')}</span>
                         <span className="text-content-default font-medium tabular-nums">
                             {riskByStatus.open} / {riskByStatus.mitigating}
                         </span>
@@ -851,6 +852,7 @@ function EvidenceStatusSection({
     exec: ExecutiveDashboardPayload;
     trendBundle: KpiTrendBundle | undefined;
 }) {
+    const t = useTranslations('dashboard');
     const { evidenceExpiry } = exec;
     const total =
         evidenceExpiry.overdue +
@@ -868,7 +870,7 @@ function EvidenceStatusSection({
     return (
         <Card id="evidence-status">
             <div className="flex items-baseline justify-between mb-3 gap-tight">
-                <Heading level={3}>Evidence Status</Heading>
+                <Heading level={3}>{t('evidenceStatus')}</Heading>
                 <span
                     className="text-xs text-content-muted tabular-nums"
                     data-testid="evidence-status-current-percent"
@@ -899,7 +901,7 @@ function EvidenceStatusSection({
                     data-testid="evidence-status-trend"
                 >
                     <TrendCard
-                        label="Overdue (trend)"
+                        label={t("overdueTrend")}
                         value={
                             trendBundle.evidence[trendBundle.evidence.length - 1]
                                 .value
@@ -960,6 +962,7 @@ function ComplianceAlerts({ exec, t }: { exec: ExecutiveDashboardPayload; t: (ke
 // ─── Trend Section ─────────────────────────────────────────────────
 
 function TrendSection({ trends }: { trends: TrendPayload }) {
+    const t = useTranslations('dashboard');
     const coveragePoints = trends.dataPoints.map((d) => ({
         date: new Date(d.date),
         value: d.controlCoveragePercent,
@@ -980,7 +983,7 @@ function TrendSection({ trends }: { trends: TrendPayload }) {
         <Card id="trend-section">
             <div className="flex items-center justify-between mb-4">
                 <Heading level={3}>
-                    Compliance Trends
+                    {t('complianceTrends')}
                 </Heading>
                 <span className="text-xs text-content-subtle">
                     {trends.daysAvailable} day{trends.daysAvailable !== 1 ? 's' : ''} of data
@@ -994,7 +997,7 @@ function TrendSection({ trends }: { trends: TrendPayload }) {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-default">
                 <ChartFocusWrapper kpiKey="coverage">
                     <TrendCard
-                        label="Coverage"
+                        label={t("coverage")}
                         value={coveragePoints[coveragePoints.length - 1].value}
                         format="%"
                         points={coveragePoints}
@@ -1003,7 +1006,7 @@ function TrendSection({ trends }: { trends: TrendPayload }) {
                 </ChartFocusWrapper>
                 <ChartFocusWrapper kpiKey="risks">
                     <TrendCard
-                        label="Open Risks"
+                        label={t("openRisks")}
                         value={risksOpenPoints[risksOpenPoints.length - 1].value}
                         points={risksOpenPoints}
                         colorClassName="text-content-warning"
@@ -1011,7 +1014,7 @@ function TrendSection({ trends }: { trends: TrendPayload }) {
                 </ChartFocusWrapper>
                 <ChartFocusWrapper kpiKey="evidence">
                     <TrendCard
-                        label="Overdue Evidence"
+                        label={t("overdueEvidenceLabel")}
                         value={evidenceOverduePoints[evidenceOverduePoints.length - 1].value}
                         points={evidenceOverduePoints}
                         colorClassName="text-content-error"
@@ -1019,7 +1022,7 @@ function TrendSection({ trends }: { trends: TrendPayload }) {
                 </ChartFocusWrapper>
                 <ChartFocusWrapper kpiKey="findings" id="findings-trend">
                     <TrendCard
-                        label="Open Findings"
+                        label={t("openFindings")}
                         value={findingsPoints[findingsPoints.length - 1].value}
                         points={findingsPoints}
                         colorClassName="text-content-info"
@@ -1031,6 +1034,7 @@ function TrendSection({ trends }: { trends: TrendPayload }) {
 }
 
 function TrendEmptyState() {
+    const t = useTranslations('dashboard');
     return (
         <div
             className={cn(cardVariants({ density: 'none' }), 'flex flex-col items-center justify-center gap-y-4 py-12 px-6')}
@@ -1043,11 +1047,10 @@ function TrendEmptyState() {
                 />
             </div>
             <p className="text-center text-base font-medium text-content-emphasis">
-                Compliance Trends
+                {t('complianceTrends')}
             </p>
             <p className="max-w-sm text-balance text-center text-sm text-content-muted">
-                Trend charts will appear here after the daily compliance snapshot runs.
-                Snapshots are generated automatically at 05:00 UTC.
+                {t('trendsEmpty')}
             </p>
         </div>
     );
