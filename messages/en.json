@@ -2750,6 +2750,44 @@
             "suggestedEvidence": "Suggested Evidence Types",
             "emptyFilter": "No templates match your filters."
         },
-        "loadingAria": "Loading frameworks"
+        "loadingAria": "Loading frameworks",
+        "readiness": {
+            "loading": "Loading readiness…",
+            "loadFailed": "Failed to load readiness.",
+            "createFailed": "Failed to create findings.",
+            "created": "Created {created} findings and {tasks} tasks · reopened {reopened} · closed {closed}.",
+            "heading": "NIS2 readiness",
+            "disclaimer": "This is a self-assessment maturity aid, <strong>not a legal compliance determination</strong> of NIS2 conformance. It informs remediation; it does not certify anything or replace an auditor.",
+            "scoreLabel": "Readiness score",
+            "scoreDesc": "weighted maturity (0–100)",
+            "fineExposureLabel": "Gaps with fine exposure",
+            "fineExposureDesc": "regulatory fine risk",
+            "openGapsLabel": "Open gaps",
+            "answeredDesc": "{answered}/{total} answered",
+            "overTime": "Readiness over time",
+            "domainBreakdown": "Domain breakdown",
+            "focusHint": "Focus your control baseline on the lowest-scoring domains: {domains}.",
+            "prioritizedGaps": "Prioritized gaps",
+            "createFindings": "Create findings + tasks",
+            "colDomain": "Domain",
+            "colName": "Name",
+            "colScore": "Score",
+            "colAnswered": "Answered",
+            "colGap": "Gap",
+            "colCriticality": "Criticality",
+            "colAnswer": "Answer",
+            "colPriority": "Priority",
+            "colEffort": "Effort",
+            "colLegalBasis": "Legal basis",
+            "source": "source",
+            "confirmTitle": "Create findings + tasks from these gaps?",
+            "confirmDesc": "This will create up to {count} findings (HIGH/CRITICAL gaps) and a remediation task for each. Re-running reconciles: gaps you've since resolved are closed. This is reversible — you can close or delete the findings.",
+            "onlyNis2": "Self-assessment readiness is only available for the NIS2 framework."
+        },
+        "selfAssessment": {
+            "heading": "NIS2 self-assessment",
+            "resumeHint": "Pick up where you left off. Answers save automatically.",
+            "onlyNis2": "The gap self-assessment is only available for the NIS2 framework."
+        }
     }
 }

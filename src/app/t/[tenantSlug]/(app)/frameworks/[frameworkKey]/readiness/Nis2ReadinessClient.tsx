@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Loader2 } from 'lucide-react';
 
 import { DataTable, createColumns } from '@/components/ui/table';
@@ -56,6 +56,7 @@ function critVariant(c: string): 'error' | 'warning' | 'info' | 'neutral' {
 
 export function Nis2ReadinessClient({ tenantSlug }: { tenantSlug: string }) {
     const locale = useLocale();
+    const t = useTranslations('frameworks');
     const lang = locale === 'de' ? 'de' : 'en';
     const base = `/api/t/${tenantSlug}/onboarding/nis2-assessment`;
 
@@ -70,14 +71,14 @@ export function Nis2ReadinessClient({ tenantSlug }: { tenantSlug: string }) {
         setLoading(true);
         try {
             const res = await fetch(`${base}/readiness`);
-            if (!res.ok) throw new Error('Failed to load readiness.');
+            if (!res.ok) throw new Error(t('readiness.loadFailed'));
             setData(await res.json());
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to load readiness.');
+            setError(e instanceof Error ? e.message : t('readiness.loadFailed'));
         } finally {
             setLoading(false);
         }
-    }, [base]);
+    }, [base, t]);
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -97,36 +98,36 @@ export function Nis2ReadinessClient({ tenantSlug }: { tenantSlug: string }) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ minCriticality: 'HIGH', createTasks: true }),
             });
-            if (!res.ok) throw new Error('Failed to create findings.');
+            if (!res.ok) throw new Error(t('readiness.createFailed'));
             const r = await res.json();
-            setNotice(`Created ${r.created} findings and ${r.tasksCreated} tasks · reopened ${r.reopened} · closed ${r.closed}.`);
+            setNotice(t('readiness.created', { created: r.created, tasks: r.tasksCreated, reopened: r.reopened, closed: r.closed }));
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to create findings.');
+            setError(e instanceof Error ? e.message : t('readiness.createFailed'));
         } finally {
             setMaterializing(false);
         }
-    }, [base]);
+    }, [base, t]);
 
     const domainColumns = useMemo(
         () => createColumns<DomainScore>([
-            { accessorKey: 'code', header: 'Domain', cell: ({ row }) => <span className="font-medium">{row.original.code}</span> },
-            { accessorKey: 'name', header: 'Name', cell: ({ row }) => <span>{row.original.name?.[lang]}</span> },
-            { accessorKey: 'score', header: 'Score', cell: ({ row }) => <span className="tabular-nums">{row.original.score}</span> },
-            { id: 'answered', header: 'Answered', cell: ({ row }) => <span className="tabular-nums text-content-muted">{row.original.answered}/{row.original.total}</span> },
+            { accessorKey: 'code', header: t('readiness.colDomain'), cell: ({ row }) => <span className="font-medium">{row.original.code}</span> },
+            { accessorKey: 'name', header: t('readiness.colName'), cell: ({ row }) => <span>{row.original.name?.[lang]}</span> },
+            { accessorKey: 'score', header: t('readiness.colScore'), cell: ({ row }) => <span className="tabular-nums">{row.original.score}</span> },
+            { id: 'answered', header: t('readiness.colAnswered'), cell: ({ row }) => <span className="tabular-nums text-content-muted">{row.original.answered}/{row.original.total}</span> },
         ]),
-        [lang],
+        [lang, t],
     );
 
     const gapColumns = useMemo(
         () => createColumns<Gap>([
-            { accessorKey: 'plainText', header: 'Gap', cell: ({ row }) => <span>{row.original.plainText?.[lang]}</span> },
-            { accessorKey: 'criticality', header: 'Criticality', cell: ({ row }) => <StatusBadge variant={critVariant(row.original.criticality)} size="sm">{row.original.criticality}</StatusBadge> },
-            { accessorKey: 'answer', header: 'Answer', cell: ({ row }) => <span className="text-content-muted">{row.original.answer}</span> },
-            { accessorKey: 'priority', header: 'Priority', cell: ({ row }) => <StatusBadge variant={row.original.priorityTier === 'URGENT' ? 'error' : row.original.priorityTier === 'HIGH' ? 'warning' : 'neutral'} size="sm">{row.original.priorityTier}</StatusBadge> },
-            { accessorKey: 'timeToFix', header: 'Effort', cell: ({ row }) => <span className="text-content-muted">{row.original.timeToFix}</span> },
-            { accessorKey: 'legalBasis', header: 'Legal basis', cell: ({ row }) => <span className="text-xs text-content-muted">{row.original.legalBasis}</span> },
+            { accessorKey: 'plainText', header: t('readiness.colGap'), cell: ({ row }) => <span>{row.original.plainText?.[lang]}</span> },
+            { accessorKey: 'criticality', header: t('readiness.colCriticality'), cell: ({ row }) => <StatusBadge variant={critVariant(row.original.criticality)} size="sm">{row.original.criticality}</StatusBadge> },
+            { accessorKey: 'answer', header: t('readiness.colAnswer'), cell: ({ row }) => <span className="text-content-muted">{row.original.answer}</span> },
+            { accessorKey: 'priority', header: t('readiness.colPriority'), cell: ({ row }) => <StatusBadge variant={row.original.priorityTier === 'URGENT' ? 'error' : row.original.priorityTier === 'HIGH' ? 'warning' : 'neutral'} size="sm">{row.original.priorityTier}</StatusBadge> },
+            { accessorKey: 'timeToFix', header: t('readiness.colEffort'), cell: ({ row }) => <span className="text-content-muted">{row.original.timeToFix}</span> },
+            { accessorKey: 'legalBasis', header: t('readiness.colLegalBasis'), cell: ({ row }) => <span className="text-xs text-content-muted">{row.original.legalBasis}</span> },
         ]),
-        [lang],
+        [lang, t],
     );
 
     const trend = useMemo(
@@ -135,7 +136,7 @@ export function Nis2ReadinessClient({ tenantSlug }: { tenantSlug: string }) {
     );
 
     if (loading) {
-        return <div className="flex items-center gap-tight p-6 text-content-muted text-sm"><Loader2 className="w-4 h-4 animate-spin" /> Loading readiness…</div>;
+        return <div className="flex items-center gap-tight p-6 text-content-muted text-sm"><Loader2 className="w-4 h-4 animate-spin" /> {t('readiness.loading')}</div>;
     }
     if (error && !data) return <p className="p-6 text-sm text-content-error">{error}</p>;
     if (!data) return null;
@@ -146,14 +147,12 @@ export function Nis2ReadinessClient({ tenantSlug }: { tenantSlug: string }) {
         <div className="space-y-section p-4" data-testid="nis2-readiness">
             <div className="space-y-tight">
                 <BackAffordance />
-                <Heading level={1}>NIS2 readiness</Heading>
+                <Heading level={1}>{t('readiness.heading')}</Heading>
             </div>
 
             {/* Disclaimer — NOT a legal compliance determination. */}
             <InlineNotice variant="info">
-                This is a self-assessment maturity aid, <strong>not a legal compliance
-                determination</strong> of NIS2 conformance. It informs remediation; it
-                does not certify anything or replace an auditor.
+                {t.rich('readiness.disclaimer', { strong: (c) => <strong>{c}</strong> })}
             </InlineNotice>
 
             {notice && <InlineNotice variant="success">{notice}</InlineNotice>}
@@ -161,15 +160,15 @@ export function Nis2ReadinessClient({ tenantSlug }: { tenantSlug: string }) {
 
             {/* Headline KPIs */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-default">
-                <KPIStat value={`${data.readiness.score.overall}`} label="Readiness score" description="weighted maturity (0–100)" />
-                <KPIStat value={`${data.readiness.fineExposureGaps}`} label="Gaps with fine exposure" tone={data.readiness.fineExposureGaps > 0 ? 'critical' : 'default'} description="regulatory fine risk" />
-                <KPIStat value={`${data.readiness.gaps.length}`} label="Open gaps" description={`${data.readiness.answeredTotal}/${data.readiness.questionTotal} answered`} />
+                <KPIStat value={`${data.readiness.score.overall}`} label={t('readiness.scoreLabel')} description={t('readiness.scoreDesc')} />
+                <KPIStat value={`${data.readiness.fineExposureGaps}`} label={t('readiness.fineExposureLabel')} tone={data.readiness.fineExposureGaps > 0 ? 'critical' : 'default'} description={t('readiness.fineExposureDesc')} />
+                <KPIStat value={`${data.readiness.gaps.length}`} label={t('readiness.openGapsLabel')} description={t('readiness.answeredDesc', { answered: data.readiness.answeredTotal, total: data.readiness.questionTotal })} />
             </div>
 
             {/* Readiness over time (reuses the chart platform) */}
             {trend.length >= 2 && (
                 <div className="space-y-tight">
-                    <Heading level={3}>Readiness over time</Heading>
+                    <Heading level={3}>{t('readiness.overTime')}</Heading>
                     <div className="h-48">
                         <TimeSeriesChart
                             data={trend}
@@ -186,11 +185,10 @@ export function Nis2ReadinessClient({ tenantSlug }: { tenantSlug: string }) {
 
             {/* Domain breakdown (lowest first) + focus areas */}
             <div className="space-y-tight">
-                <Heading level={3}>Domain breakdown</Heading>
+                <Heading level={3}>{t('readiness.domainBreakdown')}</Heading>
                 {data.focusAreas.length > 0 && (
                     <p className="text-sm text-content-muted">
-                        Focus your control baseline on the lowest-scoring domains:{' '}
-                        {data.focusAreas.map((f) => f.code).join(', ')}.
+                        {t('readiness.focusHint', { domains: data.focusAreas.map((f) => f.code).join(', ') })}
                     </p>
                 )}
                 <DataTable data={sortedDomains} columns={domainColumns} getRowId={(r) => String(r.domainId)} />
@@ -199,10 +197,10 @@ export function Nis2ReadinessClient({ tenantSlug }: { tenantSlug: string }) {
             {/* Prioritized gap list */}
             <div className="space-y-tight">
                 <div className="flex items-center justify-between gap-compact flex-wrap">
-                    <Heading level={3}>Prioritized gaps</Heading>
+                    <Heading level={3}>{t('readiness.prioritizedGaps')}</Heading>
                     <Button variant="primary" onClick={() => setConfirmOpen(true)} disabled={materializing || eligibleCount === 0}>
                         {materializing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                        Create findings + tasks
+                        {t('readiness.createFindings')}
                     </Button>
                 </div>
                 <DataTable data={data.readiness.gaps} columns={gapColumns} getRowId={(r) => r.questionId} />
@@ -211,7 +209,7 @@ export function Nis2ReadinessClient({ tenantSlug }: { tenantSlug: string }) {
             {/* CC BY 4.0 attribution */}
             <p className="text-xs text-content-subtle">
                 {NIS2_ATTRIBUTION}{' '}
-                <a href={NIS2_SOURCE_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-content-muted">source</a>
+                <a href={NIS2_SOURCE_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-content-muted">{t('readiness.source')}</a>
             </p>
 
             <ConfirmDialog
@@ -221,9 +219,9 @@ export function Nis2ReadinessClient({ tenantSlug }: { tenantSlug: string }) {
                         if (!open(confirmOpen)) setConfirmOpen(false);
                     } else setConfirmOpen(open);
                 }}
-                title="Create findings + tasks from these gaps?"
-                description={`This will create up to ${eligibleCount} findings (HIGH/CRITICAL gaps) and a remediation task for each. Re-running reconciles: gaps you've since resolved are closed. This is reversible — you can close or delete the findings.`}
-                confirmLabel="Create findings + tasks"
+                title={t('readiness.confirmTitle')}
+                description={t('readiness.confirmDesc', { count: eligibleCount })}
+                confirmLabel={t('readiness.createFindings')}
                 onConfirm={async () => {
                     setConfirmOpen(false);
                     await handleMaterialize();

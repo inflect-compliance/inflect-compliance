@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 import { Nis2SelfAssessmentStep } from '@/components/onboarding/Nis2SelfAssessmentStep';
 import { Heading } from '@/components/ui/typography';
@@ -15,6 +16,7 @@ export function Nis2SelfAssessmentResume({
     frameworkKey: string;
 }) {
     const router = useRouter();
+    const t = useTranslations('frameworks');
     const tenantHref = useTenantHref();
     const back = () => router.push(tenantHref(`/frameworks/${frameworkKey}`));
 
@@ -22,9 +24,9 @@ export function Nis2SelfAssessmentResume({
         <div className="space-y-section p-4">
             <div className="space-y-tight">
                 <BackAffordance />
-                <Heading level={1}>NIS2 self-assessment</Heading>
+                <Heading level={1}>{t('selfAssessment.heading')}</Heading>
                 <p className="text-content-muted text-sm">
-                    Pick up where you left off. Answers save automatically.
+                    {t('selfAssessment.resumeHint')}
                 </p>
             </div>
             <Nis2SelfAssessmentStep tenantSlug={tenantSlug} onCompleted={back} />

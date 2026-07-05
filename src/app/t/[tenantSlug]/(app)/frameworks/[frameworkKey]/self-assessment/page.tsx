@@ -1,3 +1,5 @@
+import { getTranslations } from 'next-intl/server';
+
 import { getTenantCtx } from '@/app-layer/context';
 import { Nis2SelfAssessmentResume } from './Nis2SelfAssessmentResume';
 
@@ -19,10 +21,11 @@ export default async function FrameworkSelfAssessmentPage({
     await getTenantCtx({ tenantSlug });
 
     if (frameworkKey.toUpperCase() !== 'NIS2') {
+        const t = await getTranslations('frameworks');
         return (
             <div className="p-6">
                 <p className="text-content-muted text-sm">
-                    The gap self-assessment is only available for the NIS2 framework.
+                    {t('selfAssessment.onlyNis2')}
                 </p>
             </div>
         );
