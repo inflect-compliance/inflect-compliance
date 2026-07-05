@@ -18,6 +18,7 @@
  * a sibling of the established controls drill-down.
  */
 import { useMemo, type Dispatch, type SetStateAction } from 'react';
+import { useTranslations } from 'next-intl';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { Sheet } from '@/components/ui/sheet';
@@ -95,6 +96,7 @@ export function EvidenceDetailSheet({
     onEdit,
     onReview,
 }: EvidenceDetailSheetProps) {
+    const t = useTranslations('evidence');
     const tenantHref = useTenantHref();
 
     const detailQuery = useTenantSWR<EvidenceDetailPayload>(
@@ -106,18 +108,18 @@ export function EvidenceDetailSheet({
     const metaRows = useMemo(() => {
         if (!evidence) return [];
         const rows: Array<{ label: string; value: React.ReactNode }> = [];
-        rows.push({ label: 'Type', value: evidence.type });
-        if (evidence.owner) rows.push({ label: 'Owner', value: evidence.owner });
+        rows.push({ label: t('detail.metaType'), value: evidence.type });
+        if (evidence.owner) rows.push({ label: t('detail.metaOwner'), value: evidence.owner });
         if (evidence.control) {
             rows.push({
-                label: 'Control',
+                label: t('detail.metaControl'),
                 value: `${evidence.control.code ?? ''}${evidence.control.code ? ' — ' : ''}${evidence.control.name}`,
             });
         }
         if (evidence.task) {
             // Back-reference — which task this evidence was uploaded from.
             rows.push({
-                label: 'Uploaded from task',
+                label: t('detail.fromTask'),
                 value: (
                     <Link
                         href={tenantHref(`/tasks/${evidence.task.id}`)}
@@ -131,7 +133,7 @@ export function EvidenceDetailSheet({
         }
         if (evidence.risk) {
             rows.push({
-                label: 'Uploaded from risk',
+                label: t('detail.fromRisk'),
                 value: (
                     <Link
                         href={tenantHref(`/risks/${evidence.risk.id}`)}
@@ -145,7 +147,7 @@ export function EvidenceDetailSheet({
         }
         if (evidence.asset) {
             rows.push({
-                label: 'Uploaded from asset',
+                label: t('detail.fromAsset'),
                 value: (
                     <Link
                         href={tenantHref(`/assets/${evidence.asset.id}`)}
@@ -159,17 +161,17 @@ export function EvidenceDetailSheet({
         }
         if (evidence.nextReviewDate) {
             rows.push({
-                label: 'Next review',
+                label: t('detail.nextReview'),
                 value: formatDate(new Date(evidence.nextReviewDate)),
             });
         }
         rows.push({
-            label: 'Updated',
+            label: t('detail.updated'),
             value: formatDate(new Date(evidence.updatedAt)),
         });
         if (evidence.sharePoint?.sourceUrl) {
             rows.push({
-                label: 'Source',
+                label: t('detail.source'),
                 value: (
                     <a
                         href={evidence.sharePoint.sourceUrl}
@@ -177,33 +179,33 @@ export function EvidenceDetailSheet({
                         rel="noopener noreferrer"
                         className="text-content-link"
                     >
-                        View in SharePoint ↗
+                        {t('detail.viewInSharePoint')}
                     </a>
                 ),
             });
         }
         return rows;
-    }, [evidence, tenantHref]);
+    }, [evidence, tenantHref, t]);
 
     return (
         <Sheet
             open={open}
             onOpenChange={setOpen}
             size="md"
-            title={evidence?.title ?? 'Evidence detail'}
+            title={evidence?.title ?? t('detail.sheetTitle')}
         >
             {detailQuery.isLoading || !evidence ? (
                 <>
-                    <Sheet.Header title="Loading…" />
+                    <Sheet.Header title={t('detail.loadingTitle')} />
                     <Sheet.Body>
                         <div className="flex h-40 items-center justify-center text-sm text-content-muted">
-                            Loading evidence…
+                            {t('detail.loadingBody')}
                         </div>
                     </Sheet.Body>
                 </>
             ) : detailQuery.error ? (
                 <>
-                    <Sheet.Header title="Evidence" />
+                    <Sheet.Header title={t('detail.errorTitle')} />
                     <Sheet.Body>
                         <div
                             className="rounded-lg border border-border-error bg-bg-error px-3 py-2 text-sm text-content-error"
@@ -212,7 +214,7 @@ export function EvidenceDetailSheet({
                         >
                             {detailQuery.error instanceof Error
                                 ? detailQuery.error.message
-                                : 'Failed to load evidence.'}
+                                : t('detail.loadFailed')}
                         </div>
                     </Sheet.Body>
                 </>
@@ -257,7 +259,7 @@ export function EvidenceDetailSheet({
                             {evidence.description && (
                                 <div className="space-y-tight">
                                     <p className="text-xs font-medium uppercase tracking-widest text-content-subtle">
-                                        Description
+                                        {t('detail.descriptionLabel')}
                                     </p>
                                     <p className="text-sm text-content-default whitespace-pre-wrap">
                                         {evidence.description}
@@ -295,7 +297,7 @@ export function EvidenceDetailSheet({
                                         })
                                     }
                                     id="evidence-sheet-edit-btn"
-                                    aria-label="Edit evidence"
+                                    aria-label={t('detail.editAria')}
                                 >
                                     <Pen2 className="size-4" />
                                 </Button>
@@ -326,7 +328,7 @@ export function EvidenceDetailSheet({
                                     onClick={() => onReview(evidence.id, 'SUBMITTED')}
                                     id="evidence-sheet-submit-btn"
                                 >
-                                    Submit for review
+                                    {t('detail.submitForReview')}
                                 </Button>
                             )}
                             {canWrite && evidence.status === 'REJECTED' && (
@@ -336,7 +338,7 @@ export function EvidenceDetailSheet({
                                     onClick={() => onReview(evidence.id, 'SUBMITTED')}
                                     id="evidence-sheet-resubmit-btn"
                                 >
-                                    Re-submit
+                                    {t('detail.resubmit')}
                                 </Button>
                             )}
                             {canWrite && evidence.status === 'NEEDS_REVIEW' && (
@@ -346,7 +348,7 @@ export function EvidenceDetailSheet({
                                     onClick={() => onReview(evidence.id, 'SUBMITTED')}
                                     id="evidence-sheet-recertify-btn"
                                 >
-                                    Re-submit for review
+                                    {t('detail.recertify')}
                                 </Button>
                             )}
                             {canAdmin && evidence.status === 'SUBMITTED' && (
@@ -357,7 +359,7 @@ export function EvidenceDetailSheet({
                                         onClick={() => onReview(evidence.id, 'REJECTED')}
                                         id="evidence-sheet-reject-btn"
                                     >
-                                        Reject
+                                        {t('detail.reject')}
                                     </Button>
                                     <Button
                                         variant="primary"
@@ -365,7 +367,7 @@ export function EvidenceDetailSheet({
                                         onClick={() => onReview(evidence.id, 'APPROVED')}
                                         id="evidence-sheet-approve-btn"
                                     >
-                                        Approve
+                                        {t('detail.approve')}
                                     </Button>
                                 </>
                             )}

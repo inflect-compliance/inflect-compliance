@@ -1,4 +1,5 @@
 'use client';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useSWRConfig } from 'swr';
 import { useTenantSWR, usePrefetchTenant } from '@/lib/hooks/use-tenant-swr';
@@ -87,18 +88,20 @@ const ICON_ACTION_CLASS =
 type RetentionFilter = 'active' | 'expiring' | 'archived';
 
 
-function getRetentionStatus(ev: EvidenceRow, now: Date | null): { label: string; badge: StatusBadgeVariant; icon: string } {
-    if (ev.isArchived) return { label: 'Archived', badge: 'neutral', icon: '' };
-    if (ev.expiredAt) return { label: 'Expired', badge: 'error', icon: '' };
+type Tx = (key: string, values?: Record<string, string | number>) => string;
+
+function getRetentionStatus(ev: EvidenceRow, now: Date | null, tx: Tx): { label: string; badge: StatusBadgeVariant; icon: string } {
+    if (ev.isArchived) return { label: tx('list.retentionArchived'), badge: 'neutral', icon: '' };
+    if (ev.expiredAt) return { label: tx('list.retentionExpired'), badge: 'error', icon: '' };
     if (ev.retentionUntil) {
-        if (!now) return { label: 'Active', badge: 'success', icon: '' };
+        if (!now) return { label: tx('list.retentionActive'), badge: 'success', icon: '' };
         const until = new Date(ev.retentionUntil);
         const daysLeft = Math.ceil((until.getTime() - now.getTime()) / 86_400_000);
-        if (daysLeft <= 0) return { label: 'Expired', badge: 'error', icon: '' };
-        if (daysLeft <= 30) return { label: `Expiring (${daysLeft}d)`, badge: 'warning', icon: '' };
-        return { label: 'Active', badge: 'success', icon: '' };
+        if (daysLeft <= 0) return { label: tx('list.retentionExpired'), badge: 'error', icon: '' };
+        if (daysLeft <= 30) return { label: tx('list.retentionExpiring', { days: daysLeft }), badge: 'warning', icon: '' };
+        return { label: tx('list.retentionActive'), badge: 'success', icon: '' };
     }
-    return { label: 'No policy', badge: 'neutral', icon: '—' };
+    return { label: tx('list.retentionNoPolicy'), badge: 'neutral', icon: '—' };
 }
 
 // listEvidence → EvidenceRepository.list (evidenceListSelect). Cell/accessor/
@@ -164,6 +167,10 @@ export function EvidenceClient(props: EvidenceClientProps) {
 }
 
 function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permissions, translations: t }: EvidenceClientProps) {
+    // `tx` — next-intl for the strings not threaded via the server
+    // `translations` prop (retention labels, bulk actions, KPI labels,
+    // empty states, tooltips, toasts, …). The prop `t` stays intact.
+    const tx = useTranslations('evidence');
     // Stabilise across renders so dependent useCallbacks don't get a
     // fresh identity every cycle (was a real exhaustive-deps warning).
     const apiUrl = useCallback(
@@ -248,7 +255,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
             });
-            if (!res.ok) throw new Error('Bulk action failed');
+            if (!res.ok) throw new Error(tx('list.bulkFailed'));
             await evidenceQuery.mutate();
             setSelected(new Set());
         } finally {
@@ -259,16 +266,16 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         () => [
             {
                 value: 'approve',
-                label: 'Approve',
+                label: tx('list.bulkApprove'),
                 confirm: {
                     tone: 'info',
-                    confirmLabel: 'Approve',
-                    description: 'Selected evidence will be marked Approved. This bypasses the review step.',
+                    confirmLabel: tx('list.bulkApproveConfirm'),
+                    description: tx('list.bulkApproveDesc'),
                 },
             },
             {
                 value: 'assign',
-                label: 'Assign owner',
+                label: tx('list.bulkAssign'),
                 renderInput: ({ value, setValue, setLabel }) => (
                     <UserCombobox
                         tenantSlug={tenantSlug}
@@ -279,15 +286,15 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         }}
                         forceDropdown
                         matchTriggerWidth
-                        placeholder="Owner (blank = unassign)"
+                        placeholder={tx('list.bulkAssignPlaceholder')}
                         className="w-full sm:w-44"
                         id="bulk-value-input"
                     />
                 ),
             },
-            { value: 'delete', label: 'Delete', confirm: true },
+            { value: 'delete', label: tx('list.bulkDelete'), confirm: true },
         ],
-        [tenantSlug],
+        [tenantSlug, tx],
     );
 
     // Stabilise the array identity across renders so dependent hooks
@@ -392,7 +399,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action, comment }),
             });
-            if (!res.ok) throw new Error('Review action failed');
+            if (!res.ok) throw new Error(tx('list.reviewFailed'));
             return res.json().catch(() => null);
         },
         optimisticUpdate: (current, { id, action }) => {
@@ -440,13 +447,15 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 const err = await res.json().catch(() => null);
                 throw new Error(
                     err?.error?.message ||
-                        `Failed to ${verb} evidence (${res.status})`,
+                        (isArchived
+                            ? tx('list.archiveFailedStatus', { status: res.status })
+                            : tx('list.unarchiveFailedStatus', { status: res.status })),
                 );
             }
             await invalidateEvidence();
         } catch (e) {
             await invalidateEvidence(); // roll back to server truth
-            alert(e instanceof Error ? e.message : `Failed to ${verb} evidence`);
+            alert(e instanceof Error ? e.message : (isArchived ? tx('list.archiveFailedNet') : tx('list.unarchiveFailedNet')));
         }
     };
 
@@ -454,7 +463,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     const unarchiveEvidence = (id: string) => setArchived(id, false);
 
     const statusLabel = (status: string) => {
-        const map: Record<string, string> = { DRAFT: t.draft, SUBMITTED: t.submitted, APPROVED: t.approved, REJECTED: t.rejected, PENDING_UPLOAD: 'Uploading...' };
+        const map: Record<string, string> = { DRAFT: t.draft, SUBMITTED: t.submitted, APPROVED: t.approved, REJECTED: t.rejected, PENDING_UPLOAD: tx('list.uploading') };
         return map[status] || status;
     };
 
@@ -578,12 +587,12 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 ).label,
             control: (ev) =>
                 ev.control ? `${ev.control.annexId || ''} ${ev.control.name}` : '—',
-            retention: (ev) => getRetentionStatus(ev, hydratedNow).label,
+            retention: (ev) => getRetentionStatus(ev, hydratedNow, tx).label,
             status: (ev) => statusLabel(ev.status),
             owner: (ev) => ev.owner || '—',
         }),
         // statusLabel closes over `t`; getRetentionStatus is pure of `hydratedNow`.
-        [t, hydratedNow],
+        [t, hydratedNow, tx],
     );
     const sortedEvidence = useMemo(
         () => sortRowsByDisplay(displayEvidence, sortAccessors, sortBy, sortOrder),
@@ -633,21 +642,21 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     // (ListPageShell.Body + DataTable fillBody) shows all rows.
     const evidenceColumnList = useMemo(
         () => [
-            { id: 'title', label: 'Title' },
-            { id: 'type', label: 'Type' },
-            { id: 'control', label: 'Control' },
+            { id: 'title', label: tx('colVis.title') },
+            { id: 'type', label: tx('colVis.type') },
+            { id: 'control', label: tx('colVis.control') },
             // B8 follow-up — Folder column. Hidden by default
             // (`defaultHidden: true` would be ideal but the dropdown
             // primitive doesn't carry that yet) — the user reveals
             // it via the gear once they start using folders.
-            { id: 'folder', label: 'Folder' },
-            { id: 'retention', label: 'Retention' },
-            { id: 'freshness', label: 'Freshness' },
-            { id: 'status', label: 'Status' },
-            { id: 'owner', label: 'Owner' },
-            { id: 'actions', label: 'Actions', alwaysVisible: true },
+            { id: 'folder', label: tx('colVis.folder') },
+            { id: 'retention', label: tx('colVis.retention') },
+            { id: 'freshness', label: tx('colVis.freshness') },
+            { id: 'status', label: tx('colVis.status') },
+            { id: 'owner', label: tx('colVis.owner') },
+            { id: 'actions', label: tx('colVis.actions'), alwaysVisible: true },
         ],
-        [],
+        [tx],
     );
     const {
         columnVisibility,
@@ -763,7 +772,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         },
         {
             id: 'folder',
-            header: 'Folder',
+            header: tx('colHeaders.folder'),
             // B8 follow-up \u2014 the Folder column matches the
             // VendorDocsTable shape: empty/null = em-dash, otherwise
             // a muted tag. Hidden by default if a tenant has zero
@@ -781,11 +790,11 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         },
         {
             id: 'retention',
-            header: 'Retention',
+            header: tx('colHeaders.retention'),
 
             cell: ({ row }) => {
                 const ev = row.original;
-                const rs = getRetentionStatus(ev, hydratedNow);
+                const rs = getRetentionStatus(ev, hydratedNow, tx);
                 // Retention is now edited from the evidence Edit modal
                 // (Edit icon → "Retention date"); the column is display-
                 // only. Status badge + the resolved date.
@@ -808,7 +817,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         },
         {
             id: 'freshness',
-            header: 'Freshness',
+            header: tx('colHeaders.freshness'),
 
             cell: ({ row }) => {
                 const ev = row.original;
@@ -857,10 +866,10 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 const ev = row.original;
                 if (!permissions.canWrite || ev.id?.startsWith('temp:')) return null;
                 return (
-                    <Tooltip content="Edit evidence">
+                    <Tooltip content={tx('list.editEvidence')}>
                         <button
                             type="button"
-                            aria-label="Edit evidence"
+                            aria-label={tx('list.editEvidence')}
                             className={ICON_ACTION_CLASS}
                             id={`edit-evidence-${ev.id}`}
                             onClick={(e) => {
@@ -894,10 +903,10 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 if (!permissions.canWrite || ev.id?.startsWith('temp:')) return null;
                 const archived = !!ev.isArchived;
                 return (
-                    <Tooltip content={archived ? 'Unarchive evidence' : 'Archive evidence'}>
+                    <Tooltip content={archived ? tx('list.unarchiveEvidence') : tx('list.archiveEvidence')}>
                         <button
                             type="button"
-                            aria-label={archived ? 'Unarchive evidence' : 'Archive evidence'}
+                            aria-label={archived ? tx('list.unarchiveEvidence') : tx('list.archiveEvidence')}
                             className={ICON_ACTION_CLASS}
                             id={`${archived ? 'unarchive' : 'archive'}-${ev.id}`}
                             onClick={(e) => {
@@ -923,11 +932,11 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 const ev = row.original;
                 if (ev.type !== 'FILE' || !ev.fileRecordId || ev.id?.startsWith('temp:')) return null;
                 return (
-                    <Tooltip content="Download file">
+                    <Tooltip content={tx('list.downloadFile')}>
                         <a
                             href={apiUrl(`/evidence/files/${ev.fileRecordId}/download`)}
                             download
-                            aria-label="Download file"
+                            aria-label={tx('list.downloadFile')}
                             className={ICON_ACTION_CLASS}
                             id={`download-${ev.id}`}
                             onClick={(e) => e.stopPropagation()}
@@ -951,7 +960,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             cell: ({ row }) => {
                 const ev = row.original;
                 const isPending = ev.id?.startsWith('temp:');
-                if (isPending) return <span className="text-xs text-content-subtle">Uploading...</span>;
+                if (isPending) return <span className="text-xs text-content-subtle">{tx('list.uploading')}</span>;
                 if (!permissions.canWrite) return null;
                 const submitBtn = (
                     <Tooltip content={t.submitForReview}>
@@ -999,7 +1008,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             meta: { disableTruncate: true },
         },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    ]), [t, permissions, apiUrl]);
+    ]), [t, permissions, apiUrl, tx]);
 
     // Item 3 — collapse the four right-most columns (edit / archive /
     // download / actions) under ONE spanning "Actions" header. orderColumns
@@ -1021,9 +1030,9 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         if (actionCols.length === 0) return ordered;
         return [
             ...rest,
-            { id: 'actionsGroup', header: t.actions, columns: actionCols },
+            { id: 'actionsGroup', header: tx('colHeaders.actions'), columns: actionCols },
         ];
-    }, [orderColumns, evidenceColumns, t.actions]);
+    }, [orderColumns, evidenceColumns, tx]);
 
     return (
         <ListPageShell className="animate-fadeIn gap-section">
@@ -1032,7 +1041,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                     <div>
                         <PageBreadcrumbs
                             items={[
-                                { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
+                                { label: tx('list.crumbDashboard'), href: `/t/${tenantSlug}/dashboard` },
                                 { label: t.title },
                             ]}
                             className="mb-1"
@@ -1114,7 +1123,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                     affordances compose naturally. */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
                     <KpiFilterCard
-                        label="Total evidence"
+                        label={tx('list.kpiTotal')}
                         value={totalEvidence}
                         sparkline={evidenceTrends.total}
                         sparklineVariant={sparkColors.total}
@@ -1123,7 +1132,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         selected={activeEvidenceKpi === 'total'}
                     />
                     <KpiFilterCard
-                        label="Draft"
+                        label={tx('list.kpiDraft')}
                         value={draftEvidence}
                         tone="attention"
                         sparkline={evidenceTrends.draft}
@@ -1133,7 +1142,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         selected={activeEvidenceKpi === 'draft'}
                     />
                     <KpiFilterCard
-                        label="Submitted"
+                        label={tx('list.kpiSubmitted')}
                         value={submittedEvidence}
                         tone="default"
                         sparkline={evidenceTrends.submitted}
@@ -1143,7 +1152,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         selected={activeEvidenceKpi === 'submitted'}
                     />
                     <KpiFilterCard
-                        label="Approved"
+                        label={tx('list.kpiApproved')}
                         value={approvedEvidence}
                         tone="success"
                         sparkline={evidenceTrends.approved}
@@ -1192,10 +1201,10 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         <>
                             <ToggleGroup
                                 size="sm"
-                                ariaLabel="Evidence view"
+                                ariaLabel={tx('list.viewAria')}
                                 options={[
-                                    { value: 'list', label: 'List', id: 'evidence-view-list' },
-                                    { value: 'gallery', label: 'Gallery', id: 'evidence-view-gallery' },
+                                    { value: 'list', label: tx('list.viewList'), id: 'evidence-view-list' },
+                                    { value: 'gallery', label: tx('list.viewGallery'), id: 'evidence-view-gallery' },
                                 ]}
                                 selected={viewMode}
                                 selectAction={(v) => setFilter('view', v === 'list' ? '' : v)}
@@ -1213,9 +1222,8 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
 
                 {/* Archived warning */}
                 {retentionFilter === 'archived' && archivedEvidence.length > 0 && (
-                    <InlineNotice variant="warning" title="Archived evidence">
-                        Archived evidence should not be used in active audit packs or compliance assessments.
-                        Unarchive if you need to reuse this evidence.
+                    <InlineNotice variant="warning" title={tx('list.archivedNoticeTitle')}>
+                        {tx('list.archivedNoticeBody')}
                     </InlineNotice>
                 )}
             </ListPageShell.Filters>
@@ -1233,14 +1241,14 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                                     variant="no-results"
                                     title={
                                         retentionFilter === 'archived'
-                                            ? 'No archived evidence'
+                                            ? tx('list.emptyArchivedTitle')
                                             : retentionFilter === 'expiring'
-                                                ? 'No evidence expiring soon'
-                                                : 'No evidence matches your filters'
+                                                ? tx('list.emptyExpiringTitle')
+                                                : tx('list.emptyFilterTitle')
                                     }
-                                    description="Try widening your search or clearing one of the active filters."
+                                    description={tx('list.emptyFilterDesc')}
                                     secondaryAction={{
-                                        label: 'Clear filters',
+                                        label: tx('list.clearFilters'),
                                         onClick: () => filterCtx.clearAll(),
                                     }}
                                 />
@@ -1249,7 +1257,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                                     size="sm"
                                     variant="no-records"
                                     title={t.noEvidence}
-                                    description="Upload screenshots, exports, and attestations that prove your controls work in practice."
+                                    description={tx('list.emptyRecordsDesc')}
                                 />
                             )
                         }
@@ -1260,7 +1268,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         }
                         statusBadgeVariant={(s) => STATUS_BADGE[s] ?? 'neutral'}
                         retentionStatus={(ev) => {
-                            const rs = getRetentionStatus(ev, hydratedNow);
+                            const rs = getRetentionStatus(ev, hydratedNow, tx);
                             return { label: rs.label, badge: rs.badge };
                         }}
                         data-testid="evidence-gallery"
@@ -1318,7 +1326,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                                 onApply={handleBulkApply}
                                 applying={bulkApplying}
                                 selectedCount={selected.size}
-                                entityLabel="evidence"
+                                entityLabel={tx('list.entityLabel')}
                             />
                         )}
                         emptyState={
@@ -1328,14 +1336,14 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                                     variant="no-results"
                                     title={
                                         retentionFilter === 'archived'
-                                            ? 'No archived evidence'
+                                            ? tx('list.emptyArchivedTitle')
                                             : retentionFilter === 'expiring'
-                                                ? 'No evidence expiring soon'
-                                                : 'No evidence matches your filters'
+                                                ? tx('list.emptyExpiringTitle')
+                                                : tx('list.emptyFilterTitle')
                                     }
-                                    description="Try widening your search or clearing one of the active filters."
+                                    description={tx('list.emptyFilterDesc')}
                                     secondaryAction={{
-                                        label: 'Clear filters',
+                                        label: tx('list.clearFilters'),
                                         onClick: () => filterCtx.clearAll(),
                                     }}
                                 />
@@ -1344,11 +1352,11 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                                     size="sm"
                                     variant="no-records"
                                     title={t.noEvidence}
-                                    description="Upload screenshots, exports, and attestations that prove your controls work in practice."
+                                    description={tx('list.emptyRecordsDesc')}
                                 />
                             )
                         }
-                        resourceName={(p) => p ? 'evidence items' : 'evidence item'}
+                        resourceName={(p) => p ? tx('list.resourceMany') : tx('list.resourceOne')}
                         columnVisibility={columnVisibility}
                         onColumnVisibilityChange={setColumnVisibility}
                         data-testid="evidence-table"
@@ -1371,11 +1379,12 @@ function EvidenceFilterToolbar({
     actions?: React.ReactNode;
     leading?: React.ReactNode;
 }) {
+    const tx = useTranslations('evidence');
     return (
         <FilterToolbar
             filters={filters}
             searchId="evidence-search"
-            searchPlaceholder="Search evidence…"
+            searchPlaceholder={tx('list.searchPlaceholder')}
             leading={leading}
             actions={actions}
         />
