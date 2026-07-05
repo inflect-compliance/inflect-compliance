@@ -105,12 +105,6 @@ function rel(abs: string): string {
 const UNMIGRATED_BASELINE: ReadonlySet<string> = new Set([
     "src/app/t/[tenantSlug]/(app)/access-reviews/AccessReviewsClient.tsx",
     "src/app/t/[tenantSlug]/(app)/access-reviews/[reviewId]/AccessReviewDetailClient.tsx",
-    "src/app/t/[tenantSlug]/(app)/admin/api-keys/page.tsx",
-    "src/app/t/[tenantSlug]/(app)/admin/audit-log/AuditLogClient.tsx",
-    "src/app/t/[tenantSlug]/(app)/admin/billing/BillingEventLog.tsx",
-    "src/app/t/[tenantSlug]/(app)/admin/billing/page.tsx",
-    "src/app/t/[tenantSlug]/(app)/admin/layout.tsx",
-    "src/app/t/[tenantSlug]/(app)/admin/notifications/page.tsx",
     "src/app/t/[tenantSlug]/(app)/admin/risk-appetite/page.tsx",
     "src/app/t/[tenantSlug]/(app)/admin/risk-matrix/RiskMatrixAdminClient.tsx",
     "src/app/t/[tenantSlug]/(app)/admin/trust-center/TrustCenterAdminClient.tsx",
