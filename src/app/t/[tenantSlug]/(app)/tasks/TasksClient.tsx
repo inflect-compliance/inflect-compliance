@@ -8,6 +8,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { NewTaskModal } from './NewTaskModal';
 import { AsidePanel } from '@/components/ui/aside-panel';
@@ -124,6 +125,7 @@ function TasksPageInner({
     tenantSlug,
     appPermissions,
 }: TasksClientProps) {
+    const t = useTranslations('tasks');
     const apiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
     const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
     const { mutate: swrMutate } = useSWRConfig();
@@ -471,7 +473,7 @@ function TasksPageInner({
         () => [
             {
                 value: 'assign',
-                label: 'Assign',
+                label: t('bulk.assign'),
                 renderInput: ({ value, setValue, setLabel }) => (
                     <UserCombobox
                         tenantSlug={tenantSlug}
@@ -482,7 +484,7 @@ function TasksPageInner({
                         }}
                         forceDropdown
                         matchTriggerWidth
-                        placeholder="Assignee (blank = unassign)"
+                        placeholder={t('bulk.assignPlaceholder')}
                         className="w-full sm:w-44"
                         id="bulk-value-input"
                     />
@@ -490,7 +492,7 @@ function TasksPageInner({
             },
             {
                 value: 'status',
-                label: 'Change Status',
+                label: t('bulk.changeStatus'),
                 canApply: (v) => v !== '',
                 renderInput: ({ value, setValue }) => (
                     <Combobox
@@ -502,7 +504,7 @@ function TasksPageInner({
                         }
                         setSelected={(opt) => setValue(opt?.value ?? '')}
                         options={BULK_STATUS_CB_OPTIONS}
-                        placeholder="Select status..."
+                        placeholder={t('bulk.selectStatus')}
                         matchTriggerWidth
                         buttonProps={{ className: 'text-sm' }}
                     />
@@ -510,38 +512,38 @@ function TasksPageInner({
             },
             {
                 value: 'due',
-                label: 'Set Due Date',
+                label: t('bulk.setDueDate'),
                 renderInput: ({ value, setValue }) => (
                     <DatePicker
                         id="bulk-value-input"
                         className="w-full sm:w-40 text-sm"
-                        placeholder="Due date"
+                        placeholder={t('bulk.duePlaceholder')}
                         clearable
                         align="start"
                         value={parseYMD(value)}
                         onChange={(next) => setValue(toYMD(next) ?? '')}
                         disabledDays={{ before: startOfUtcDay(new Date()) }}
-                        aria-label="Bulk due date"
+                        aria-label={t('bulk.dueAria')}
                     />
                 ),
             },
-            { value: 'delete', label: 'Delete', confirm: true },
+            { value: 'delete', label: t('bulk.delete'), confirm: true },
         ],
-        [tenantSlug],
+        [tenantSlug, t],
     );
 
     // R10-PR7 — column-visibility gear.
     const taskColumnList = useMemo(
         () => [
-            { id: 'title', label: 'Title' },
-            { id: 'type', label: 'Type' },
-            { id: 'severity', label: 'Severity' },
-            { id: 'status', label: 'Status' },
-            { id: 'assignee', label: 'Assignee' },
-            { id: 'dueAt', label: 'Due' },
-            { id: 'updatedAt', label: 'Updated', defaultVisible: false },
+            { id: 'title', label: t('colVis.title') },
+            { id: 'type', label: t('colVis.type') },
+            { id: 'severity', label: t('colVis.severity') },
+            { id: 'status', label: t('colVis.status') },
+            { id: 'assignee', label: t('colVis.assignee') },
+            { id: 'dueAt', label: t('colVis.dueAt') },
+            { id: 'updatedAt', label: t('colVis.updated'), defaultVisible: false },
         ],
-        [],
+        [t],
     );
     const {
         columnVisibility,
@@ -565,8 +567,8 @@ function TasksPageInner({
         cols.push(
             {
                 id: 'title',
-                header: 'Title',
-                accessorFn: (t) => t.title,
+                header: t('colHeaders.title'),
+                accessorFn: (task) => task.title,
                 // R13-PR1 — title cell uses the canonical
                 // <TableTitleCell> primitive. The key prefix, Overdue
                 // badge, and SLA tooltip that used to live inline here
@@ -595,12 +597,12 @@ function TasksPageInner({
             },
             {
                 accessorKey: 'type',
-                header: 'Type',
+                header: t('colHeaders.type'),
                 cell: ({ getValue }) => <span className="text-xs text-content-muted">{TYPE_LABELS[getValue<string>()] || getValue<string>()}</span>,
             },
             {
                 accessorKey: 'severity',
-                header: 'Severity',
+                header: t('colHeaders.severity'),
                 cell: ({ row }) => (
                     <StatusBadge variant={SEVERITY_BADGE[row.original.severity] || 'neutral'} size="sm">
                         {row.original.severity}
@@ -609,7 +611,7 @@ function TasksPageInner({
             },
             {
                 accessorKey: 'status',
-                header: 'Status',
+                header: t('colHeaders.status'),
                 cell: ({ row }) => (
                     <StatusBadge variant={STATUS_BADGE[row.original.status] || 'neutral'} size="sm">
                         {STATUS_LABELS[row.original.status] || row.original.status}
@@ -618,13 +620,13 @@ function TasksPageInner({
             },
             {
                 id: 'assignee',
-                header: 'Assignee',
-                accessorFn: (t) => t.assignee?.name || '—',
+                header: t('colHeaders.assignee'),
+                accessorFn: (task) => task.assignee?.name || '—',
                 cell: ({ getValue }) => <span className="text-xs text-content-muted">{getValue<string>()}</span>,
             },
             {
                 id: 'dueAt',
-                header: 'Due Date',
+                header: t('colHeaders.dueAt'),
                 cell: ({ row }) => (
                     <TimestampTooltip
                         date={row.original.dueAt}
@@ -634,7 +636,7 @@ function TasksPageInner({
             },
             {
                 id: 'updatedAt',
-                header: 'Updated',
+                header: t('colHeaders.updated'),
                 cell: ({ row }) => (
                     <TimestampTooltip
                         date={row.original.updatedAt}
@@ -656,7 +658,7 @@ function TasksPageInner({
                 cell: ({ row }) => (
                     <button
                         type="button"
-                        aria-label="Edit task"
+                        aria-label={t('list.editAria')}
                         className="inline-flex h-7 w-7 items-center justify-center rounded-md text-content-muted transition-colors hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         data-testid={`task-quick-edit-${row.original.id}`}
                         onClick={(e) => {
@@ -672,7 +674,7 @@ function TasksPageInner({
 
         return cols;
 
-    }, [appPermissions.tasks.edit, selected, tasks.length, tenantHref, hydratedNow]);
+    }, [appPermissions.tasks.edit, selected, tasks.length, tenantHref, hydratedNow, t]);
 
     // Quick-view side panel. Keyed by task id so switching to another task
     // forces a fresh mount → openOnMount re-fires and TaskEditPanel re-seeds
@@ -682,7 +684,7 @@ function TasksPageInner({
     const taskQuickViewAside = selectedTask ? (
         <AsidePanel
             key={`qv-task-${selectedTask.id}`}
-            title="Task"
+            title={t('list.quickViewTitle')}
             surfaceKey="tasks-quickview"
             // A wide dedicated PANEL for the tabbed editor — not the narrow
             // browse/assist rail width.
@@ -716,14 +718,14 @@ function TasksPageInner({
                 <div>
                     <PageBreadcrumbs
                         items={[
-                            { label: 'Dashboard', href: tenantHref('/dashboard') },
-                            { label: 'Tasks' },
+                            { label: t('crumb.dashboard'), href: tenantHref('/dashboard') },
+                            { label: t('crumb.tasks') },
                         ]}
                         className="mb-1"
                     />
-                    <Heading level={1} className="sr-only">Tasks</Heading>
+                    <Heading level={1} className="sr-only">{t('list.srTitle')}</Heading>
                     <p className="text-sm text-content-muted mt-1">
-                        Compliance work prioritised, assigned, and tracked to closure.
+                        {t('list.description')}
                     </p>
                 </div>
             </ListPageShell.Header>
@@ -732,7 +734,7 @@ function TasksPageInner({
                 {/* R23-PR-E — KPI strip. */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
                     <KpiFilterCard
-                        label="Total tasks"
+                        label={t('kpi.total')}
                         value={totalTasks}
                         sparkline={taskTrends.total}
                         sparklineVariant={sparkColors.total}
@@ -741,7 +743,7 @@ function TasksPageInner({
                         selected={activeTaskKpi === 'total'}
                     />
                     <KpiFilterCard
-                        label="Open"
+                        label={t('kpi.open')}
                         value={openTasks}
                         tone="attention"
                         sparkline={taskTrends.open}
@@ -751,7 +753,7 @@ function TasksPageInner({
                         selected={activeTaskKpi === 'open'}
                     />
                     <KpiFilterCard
-                        label="Overdue"
+                        label={t('kpi.overdue')}
                         value={overdueTasks}
                         tone={overdueTasks > 0 ? 'critical' : 'default'}
                         sparkline={taskTrends.overdue}
@@ -761,7 +763,7 @@ function TasksPageInner({
                         selected={activeTaskKpi === 'overdue'}
                     />
                     <KpiFilterCard
-                        label="Due this week"
+                        label={t('kpi.dueWeek')}
                         value={dueWeekTasks}
                         tone="attention"
                         sparkline={taskTrends.dueWeek}
@@ -774,7 +776,7 @@ function TasksPageInner({
                 <FilterToolbar
                     filters={visibleFilterDefs}
                     searchId="tasks-search"
-                    searchPlaceholder="Search tasks…"
+                    searchPlaceholder={t('list.searchPlaceholder')}
                     leading={appPermissions.tasks.create ? (
                         <Button
                             variant="primary"
@@ -782,13 +784,13 @@ function TasksPageInner({
                             onClick={() => setIsCreateOpen(true)}
                             id="new-task-btn"
                         >
-                            Task
+                            {t('list.addBtn')}
                         </Button>
                     ) : undefined}
                     actions={
                         <>
-                            <Tooltip content="Dashboard">
-                                <Link href={tenantHref('/tasks/dashboard')} aria-label="Dashboard" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="dashboard-btn"><AppIcon name="dashboard" size={16} /></Link>
+                            <Tooltip content={t('list.dashboardTooltip')}>
+                                <Link href={tenantHref('/tasks/dashboard')} aria-label={t('list.dashboardAria')} className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="dashboard-btn"><AppIcon name="dashboard" size={16} /></Link>
                             </Tooltip>
                             {columnsDropdown}
                             {filtersDropdown}
@@ -834,7 +836,7 @@ function TasksPageInner({
                             onApply={handleBulkApply}
                             applying={bulkMutation.isMutating}
                             selectedCount={selected.size}
-                            entityLabel="tasks"
+                            entityLabel={t('list.entityLabel')}
                         />
                     )}
                     onRowClick={(row) => router.push(tenantHref(`/tasks/${row.original.id}`))}
@@ -844,10 +846,10 @@ function TasksPageInner({
                             <EmptyState
                                 size="sm"
                                 variant="no-results"
-                                title="No tasks match your filters"
-                                description="Try widening your search or clearing one of the active filters."
+                                title={t('list.filterEmptyTitle')}
+                                description={t('list.filterEmptyDesc')}
                                 secondaryAction={{
-                                    label: 'Clear filters',
+                                    label: t('list.clearFilters'),
                                     onClick: () => filterCtx.clearAll(),
                                 }}
                             />
@@ -855,12 +857,12 @@ function TasksPageInner({
                             <EmptyState
                                 size="sm"
                                 variant="no-records"
-                                title="No tasks yet"
-                                description="Tasks track remediation work — anything that turns a finding or open risk into a closed loop."
+                                title={t('list.emptyTitle')}
+                                description={t('list.emptyDesc')}
                             />
                         )
                     }
-                    resourceName={(p) => p ? 'tasks' : 'task'}
+                    resourceName={(p) => p ? t('list.entityLabel') : t('list.quickViewTitle')}
                     data-testid="tasks-table"
                     className="hover:bg-bg-muted"
                 />

@@ -2978,5 +2978,100 @@
             "resumeHint": "Продължете откъдето сте спрели. Отговорите се запазват автоматично.",
             "onlyNis2": "Самооценката на пропуските е налична само за рамката NIS2."
         }
+    },
+    "tasks": {
+        "crumb": {
+            "dashboard": "Табло",
+            "tasks": "Задачи"
+        },
+        "loadingAria": "Зареждане на задачите",
+        "list": {
+            "srTitle": "Задачи",
+            "description": "Работата по съответствие — приоритизирана, възложена и проследена до приключване.",
+            "searchPlaceholder": "Търсене на задачи…",
+            "addBtn": "Задача",
+            "dashboardTooltip": "Табло",
+            "dashboardAria": "Табло",
+            "quickViewTitle": "Задача",
+            "editAria": "Редактиране на задача",
+            "entityLabel": "задачи",
+            "clearFilters": "Изчисти филтрите",
+            "emptyTitle": "Все още няма задачи",
+            "emptyDesc": "Задачите проследяват коригиращата работа — всичко, което превръща констатация или отворен риск в затворен цикъл.",
+            "filterEmptyTitle": "Няма задачи, отговарящи на филтрите",
+            "filterEmptyDesc": "Опитайте да разширите търсенето или да изчистите някой от активните филтри."
+        },
+        "kpi": {
+            "total": "Общо задачи",
+            "open": "Отворени",
+            "overdue": "Просрочени",
+            "dueWeek": "С краен срок тази седмица"
+        },
+        "colHeaders": {
+            "title": "Заглавие",
+            "type": "Тип",
+            "severity": "Сериозност",
+            "status": "Статус",
+            "assignee": "Изпълнител",
+            "dueAt": "Краен срок",
+            "updated": "Обновена"
+        },
+        "colVis": {
+            "title": "Заглавие",
+            "type": "Тип",
+            "severity": "Сериозност",
+            "status": "Статус",
+            "assignee": "Изпълнител",
+            "dueAt": "Срок",
+            "updated": "Обновена"
+        },
+        "bulk": {
+            "assign": "Възлагане",
+            "assignPlaceholder": "Изпълнител (празно = премахни възлагането)",
+            "changeStatus": "Промяна на статуса",
+            "selectStatus": "Изберете статус...",
+            "setDueDate": "Задай краен срок",
+            "duePlaceholder": "Краен срок",
+            "dueAria": "Групов краен срок",
+            "delete": "Изтрий"
+        },
+        "new": {
+            "modalTitle": "Нова задача",
+            "modalDesc": "Създайте нова задача за проследяване.",
+            "discardConfirm": "Да се отхвърли ли задачата? Всички въведени данни ще бъдат загубени.",
+            "cancel": "Отказ",
+            "creating": "Създаване…",
+            "create": "Създай задача",
+            "title": "Заглавие",
+            "titlePlaceholder": "Кратко описание на задачата",
+            "description": "Описание",
+            "descriptionPlaceholder": "Подробно описание (по желание)",
+            "type": "Тип",
+            "typePlaceholder": "Изберете тип…",
+            "severity": "Сериозност",
+            "severityPlaceholder": "Изберете сериозност…",
+            "priority": "Приоритет",
+            "priorityPlaceholder": "Изберете приоритет…",
+            "dueDate": "Краен срок",
+            "duePlaceholder": "Изберете дата",
+            "dueAria": "Краен срок",
+            "assignee": "Изпълнител",
+            "assigneePlaceholder": "Невъзложена",
+            "control": "Контрол (по желание)",
+            "controlPlaceholder": "Свържете контрол…",
+            "auditDetails": "Детайли за одита",
+            "findingSource": "Източник на констатацията",
+            "findingSourcePlaceholder": "— Изберете източник —",
+            "controlGapType": "Тип пропуск в контрола",
+            "controlGapTypePlaceholder": "— Изберете тип —",
+            "links": "Връзки",
+            "entityType": "Тип обект",
+            "entityTypePlaceholder": "Изберете обект…",
+            "entity": "Обект",
+            "entityPlaceholder": "Изберете обект",
+            "add": "Добави",
+            "removeTooltip": "Премахни свързания елемент",
+            "removeAria": "Премахни връзката"
+        }
     }
 }

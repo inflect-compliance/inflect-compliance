@@ -52,6 +52,7 @@ const FLOWS: HardenedFlow[] = [
         hookExport: 'useNewTaskForm',
         modalPath: 'tasks/NewTaskModal.tsx',
         confirmCopy: /Discard task\?/,
+        i18nConfirmKey: 'new.discardConfirm',
     },
     {
         label: 'vendors',

@@ -7,6 +7,7 @@
  * Both the legacy `/tasks/new` page and the future `<NewTaskModal>`
  * (P2) compose this component unchanged.
  */
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { FormField } from '@/components/ui/form-field';
@@ -75,29 +76,30 @@ export function NewTaskFields({
     form: NewTaskFormReturn;
     tenantSlug: string;
 }) {
+    const t = useTranslations('tasks');
     return (
         <>
-            <FormField label="Title" required>
+            <FormField label={t('new.title')} required>
                 <Input
                     id="task-title-input"
                     type="text"
-                    placeholder="Brief summary of the task"
+                    placeholder={t('new.titlePlaceholder')}
                     value={form.fields.title}
                     onChange={(e) => form.setField('title', e.target.value)}
                     required
                 />
             </FormField>
-            <FormField label="Description">
+            <FormField label={t('new.description')}>
                 <Textarea
                     id="task-description-input"
                     rows={3}
-                    placeholder="Detailed description (optional)"
+                    placeholder={t('new.descriptionPlaceholder')}
                     value={form.fields.description}
                     onChange={(e) => form.setField('description', e.target.value)}
                 />
             </FormField>
             <div className="grid grid-cols-3 gap-default">
-                <FormField label="Type" required>
+                <FormField label={t('new.type')} required>
                     <Combobox
                         id="task-type-select"
                         name="type"
@@ -113,14 +115,14 @@ export function NewTaskFields({
                                 (o?.value ?? 'TASK') as typeof form.fields.type,
                             )
                         }
-                        placeholder="Select type…"
+                        placeholder={t('new.typePlaceholder')}
                         hideSearch
                         matchTriggerWidth
                         buttonProps={{ className: 'w-full' }}
                         caret
                     />
                 </FormField>
-                <FormField label="Severity">
+                <FormField label={t('new.severity')}>
                     <Combobox
                         id="task-severity-select"
                         name="severity"
@@ -136,14 +138,14 @@ export function NewTaskFields({
                                 (o?.value ?? 'MEDIUM') as NewTaskFormFields['severity'],
                             )
                         }
-                        placeholder="Select severity…"
+                        placeholder={t('new.severityPlaceholder')}
                         hideSearch
                         matchTriggerWidth
                         buttonProps={{ className: 'w-full' }}
                         caret
                     />
                 </FormField>
-                <FormField label="Priority">
+                <FormField label={t('new.priority')}>
                     <Combobox
                         id="task-priority-select"
                         name="priority"
@@ -159,7 +161,7 @@ export function NewTaskFields({
                                 (o?.value ?? 'P2') as NewTaskFormFields['priority'],
                             )
                         }
-                        placeholder="Select priority…"
+                        placeholder={t('new.priorityPlaceholder')}
                         hideSearch
                         matchTriggerWidth
                         buttonProps={{ className: 'w-full' }}
@@ -168,11 +170,11 @@ export function NewTaskFields({
                 </FormField>
             </div>
             <div className="grid grid-cols-2 gap-default">
-                <FormField label="Due Date">
+                <FormField label={t('new.dueDate')}>
                     <DatePicker
                         id="task-due-input"
                         className="w-full"
-                        placeholder="Select date"
+                        placeholder={t('new.duePlaceholder')}
                         clearable
                         align="start"
                         value={parseYMD(form.fields.dueAt)}
@@ -182,10 +184,10 @@ export function NewTaskFields({
                         disabledDays={{
                             before: startOfUtcDay(new Date()),
                         }}
-                        aria-label="Due date"
+                        aria-label={t('new.dueAria')}
                     />
                 </FormField>
-                <FormField label="Assignee">
+                <FormField label={t('new.assignee')}>
                     <UserCombobox
                         id="task-assignee-input"
                         name="assigneeUserId"
@@ -194,20 +196,20 @@ export function NewTaskFields({
                         onChange={(userId) =>
                             form.setField('assigneeUserId', userId ?? '')
                         }
-                        placeholder="Unassigned"
+                        placeholder={t('new.assigneePlaceholder')}
                         forceDropdown={false}
                     />
                 </FormField>
             </div>
 
-            <FormField label="Control (optional)">
+            <FormField label={t('new.control')}>
                 <EntityPicker
                     id="task-control-input"
                     tenantSlug={tenantSlug}
                     entityType="CONTROL"
                     value={form.fields.controlId ?? ''}
                     onChange={(id) => form.setField('controlId', id)}
-                    placeholder="Link a control…"
+                    placeholder={t('new.controlPlaceholder')}
                     testId="task-control-picker"
                 />
             </FormField>
@@ -215,9 +217,9 @@ export function NewTaskFields({
             {(form.fields.type === 'AUDIT_FINDING' ||
                 form.fields.type === 'CONTROL_GAP') && (
                 <div className="border-t border-border-default pt-4 space-y-default">
-                    <Heading level={3}>Audit Details</Heading>
+                    <Heading level={3}>{t('new.auditDetails')}</Heading>
                     <div className="grid grid-cols-2 gap-default">
-                        <FormField label="Finding Source">
+                        <FormField label={t('new.findingSource')}>
                             <Combobox
                                 id="finding-source-select"
                                 name="findingSource"
@@ -231,7 +233,7 @@ export function NewTaskFields({
                                 setSelected={(o) =>
                                     form.setField('findingSource', o?.value ?? '')
                                 }
-                                placeholder="— Select source —"
+                                placeholder={t('new.findingSourcePlaceholder')}
                                 hideSearch
                                 matchTriggerWidth
                                 buttonProps={{ className: 'w-full' }}
@@ -239,7 +241,7 @@ export function NewTaskFields({
                             />
                         </FormField>
                         {form.fields.type === 'CONTROL_GAP' && (
-                            <FormField label="Control Gap Type">
+                            <FormField label={t('new.controlGapType')}>
                                 <Combobox
                                     id="gap-type-select"
                                     name="controlGapType"
@@ -257,7 +259,7 @@ export function NewTaskFields({
                                             o?.value ?? '',
                                         )
                                     }
-                                    placeholder="— Select type —"
+                                    placeholder={t('new.controlGapTypePlaceholder')}
                                     hideSearch
                                     matchTriggerWidth
                                     buttonProps={{ className: 'w-full' }}
@@ -271,7 +273,7 @@ export function NewTaskFields({
 
             {/* Links section */}
             <div className="border-t border-border-default pt-4 space-y-compact">
-                <Heading level={3}>Links</Heading>
+                <Heading level={3}>{t('new.links')}</Heading>
                 {form.validationMessage && (
                     <FormError
                         id="link-validation-hint"
@@ -281,7 +283,7 @@ export function NewTaskFields({
                     </FormError>
                 )}
                 <div className="flex gap-tight items-end">
-                    <FormField label="Entity Type" className="flex-1">
+                    <FormField label={t('new.entityType')} className="flex-1">
                         <Combobox
                             id="link-entity-type"
                             name="linkEntityType"
@@ -294,14 +296,14 @@ export function NewTaskFields({
                             setSelected={(o) =>
                                 form.setLinkEntityType(o?.value ?? 'CONTROL')
                             }
-                            placeholder="Select entity…"
+                            placeholder={t('new.entityTypePlaceholder')}
                             hideSearch
                             matchTriggerWidth
                             buttonProps={{ className: 'w-full' }}
                             caret
                         />
                     </FormField>
-                    <FormField label="Entity" className="flex-1">
+                    <FormField label={t('new.entity')} className="flex-1">
                         {/* PR-D — entity picker replaces the legacy
                             "Paste ID" Input. Driven by the sibling
                             entity-type Combobox above; the picker
@@ -315,7 +317,7 @@ export function NewTaskFields({
                             onChange={form.setLinkEntityId}
                             id="link-entity-id"
                             testId="new-task-link-entity-picker"
-                            placeholder="Select entity"
+                            placeholder={t('new.entityPlaceholder')}
                         />
                     </FormField>
                     <Button
@@ -324,7 +326,7 @@ export function NewTaskFields({
                         onClick={form.addPendingLink}
                         id="add-link-btn"
                     >
-                        Add
+                        {t('new.add')}
                     </Button>
                 </div>
                 {form.pendingLinks.length > 0 && (
@@ -340,12 +342,12 @@ export function NewTaskFields({
                                 <span className="font-mono text-xs flex-1">
                                     {l.entityId}
                                 </span>
-                                <Tooltip content="Remove linked item">
+                                <Tooltip content={t('new.removeTooltip')}>
                                     <button
                                         type="button"
                                         className="text-content-error text-xs hover:text-content-error"
                                         onClick={() => form.removePendingLink(i)}
-                                        aria-label="Remove link"
+                                        aria-label={t('new.removeAria')}
                                     >
                                         ×
                                     </button>
