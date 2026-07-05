@@ -1,3 +1,5 @@
+import { getTranslations } from 'next-intl/server';
+
 import { getTenantCtx } from '@/app-layer/context';
 import { listAgentProposals } from '@/app-layer/usecases/agent-proposals';
 import { ForbiddenPage } from '@/components/ForbiddenPage';
@@ -21,10 +23,11 @@ export default async function AgentProposalsPage({
     // review the propose-not-commit queue. Server-side gate (before the data
     // load) so a non-admin never triggers the fetch.
     if (!ctx.appPermissions.admin.view) {
+        const t = await getTranslations('agents');
         return (
             <ForbiddenPage
-                title="MCP Access Required"
-                message="You do not have permission to review agent proposals. Contact your workspace administrator to request access."
+                title={t('mcpAccessRequired')}
+                message={t('proposals.accessMessage')}
             />
         );
     }

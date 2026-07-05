@@ -4130,5 +4130,61 @@
             "unknown": "Unknown",
             "evidenceEmpty": "No evidence linked yet."
         }
+    },
+    "agents": {
+        "crumbDashboard": "Dashboard",
+        "crumbAdmin": "Admin",
+        "crumbMcp": "MCP",
+        "mcpAccessRequired": "MCP Access Required",
+        "proposals": {
+            "accessMessage": "You do not have permission to review agent proposals. Contact your workspace administrator to request access.",
+            "crumb": "Agent proposals",
+            "title": "Agent proposals",
+            "description": "Pending proposals from an external agent (MCP). Approve to create the real record; reject to discard. An agent never creates a record directly.",
+            "approveFailed": "Failed to approve",
+            "rejectFailed": "Failed to reject",
+            "emptyTitle": "No pending proposals",
+            "emptyDesc": "When an agent proposes a risk, control, policy, or finding via the MCP server, it appears here for your review.",
+            "proposedAt": "proposed {date}",
+            "keySuffix": " · key {key}",
+            "reject": "Reject",
+            "approve": "Approve",
+            "rationale": "Rationale: "
+        },
+        "runs": {
+            "accessMessage": "You do not have permission to view agent runs. Contact your workspace administrator to request access.",
+            "crumb": "Agent runs",
+            "title": "Agent runs",
+            "description": "Multi-step agentic workflows. Every write a run makes is a proposal a human approves — the engine commits nothing directly.",
+            "startWorkflow": "Start a workflow",
+            "startFailed": "Failed to start",
+            "resumeFailed": "Failed to resume",
+            "abortFailed": "Failed to abort",
+            "emptyTitle": "No agent runs yet",
+            "emptyDesc": "Start a workflow above. Each run reads your compliance data, proposes changes for your approval, and produces a summary.",
+            "stepMeta": "{steps} steps · ~{tokens} tokens · {date}",
+            "resume": "Resume",
+            "abort": "Abort",
+            "awaitingApprovalPre": "Paused for review — approve its proposals in the ",
+            "proposalsLink": "agent proposals",
+            "awaitingApprovalPost": " queue, then Resume."
+        }
+    },
+    "securityTesting": {
+        "title": "Security Testing",
+        "colSeverity": "Severity",
+        "colFinding": "Finding",
+        "colSource": "Source",
+        "colLocation": "Location",
+        "colMapsTo": "Maps to",
+        "colStatus": "Status",
+        "descEmpty": "Scanner findings ingested from your CI via SARIF.",
+        "descActive": "{runs, plural, one {# recent run} other {# recent runs}} · {critical, plural, one {# open critical finding} other {# open critical findings}}.",
+        "emptyMatchTitle": "No matching findings",
+        "emptyTitle": "No scanner findings yet",
+        "emptyMatchDesc": "Try clearing a filter.",
+        "emptyDesc": "POST a SARIF report from your CI to /api/t/{slug}/security-testing/ingest. A passing scan attaches automated evidence to its mapped control; failing findings appear here and in the Findings register.",
+        "resourceFindings": "findings",
+        "resourceFinding": "finding"
     }
 }

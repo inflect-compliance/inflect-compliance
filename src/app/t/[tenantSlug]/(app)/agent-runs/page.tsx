@@ -1,3 +1,5 @@
+import { getTranslations } from 'next-intl/server';
+
 import { getTenantCtx } from '@/app-layer/context';
 import { listWorkflowRuns } from '@/app-layer/usecases/workflow-runs';
 import { listWorkflowDefinitions } from '@/lib/agentic/workflow-registry';
@@ -22,10 +24,11 @@ export default async function AgentRunsPage({
     // operate the orchestrator. Server-side gate (before the data load) so a
     // non-admin never triggers the fetch.
     if (!ctx.appPermissions.admin.view) {
+        const t = await getTranslations('agents');
         return (
             <ForbiddenPage
-                title="MCP Access Required"
-                message="You do not have permission to view agent runs. Contact your workspace administrator to request access."
+                title={t('mcpAccessRequired')}
+                message={t('runs.accessMessage')}
             />
         );
     }

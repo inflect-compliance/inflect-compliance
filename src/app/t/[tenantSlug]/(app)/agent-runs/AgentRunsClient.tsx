@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -50,6 +51,7 @@ export function AgentRunsClient({
     initialRuns: RunRow[];
     workflows: WorkflowOption[];
 }) {
+    const t = useTranslations('agents');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const [runs, setRuns] = useState(initialRuns);
@@ -70,10 +72,10 @@ export function AgentRunsClient({
                 headers: { 'content-type': 'application/json' },
                 body: JSON.stringify({ workflowKey }),
             });
-            if (!res.ok) throw new Error(((await res.json().catch(() => null)) as { error?: { message?: string } })?.error?.message ?? 'Failed to start');
+            if (!res.ok) throw new Error(((await res.json().catch(() => null)) as { error?: { message?: string } })?.error?.message ?? t('runs.startFailed'));
             await refresh();
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to start');
+            setError(e instanceof Error ? e.message : t('runs.startFailed'));
         } finally {
             setBusy(null);
         }
@@ -88,10 +90,10 @@ export function AgentRunsClient({
                 headers: { 'content-type': 'application/json' },
                 body: JSON.stringify({}),
             });
-            if (!res.ok) throw new Error(((await res.json().catch(() => null)) as { error?: { message?: string } })?.error?.message ?? `Failed to ${action}`);
+            if (!res.ok) throw new Error(((await res.json().catch(() => null)) as { error?: { message?: string } })?.error?.message ?? t(`runs.${action}Failed`));
             await refresh();
         } catch (e) {
-            setError(e instanceof Error ? e.message : `Failed to ${action}`);
+            setError(e instanceof Error ? e.message : t(`runs.${action}Failed`));
         } finally {
             setBusy(null);
         }
@@ -102,18 +104,18 @@ export function AgentRunsClient({
             <PageHeader
                 back={{ smart: true }}
                 breadcrumbs={[
-                    { label: 'Dashboard', href: tenantHref('/dashboard') },
-                    { label: 'Admin', href: tenantHref('/admin') },
-                    { label: 'MCP', href: tenantHref('/admin/mcp') },
-                    { label: 'Agent runs' },
+                    { label: t('crumbDashboard'), href: tenantHref('/dashboard') },
+                    { label: t('crumbAdmin'), href: tenantHref('/admin') },
+                    { label: t('crumbMcp'), href: tenantHref('/admin/mcp') },
+                    { label: t('runs.crumb') },
                 ]}
-                title="Agent runs"
-                description="Multi-step agentic workflows. Every write a run makes is a proposal a human approves — the engine commits nothing directly."
+                title={t('runs.title')}
+                description={t('runs.description')}
             />
 
             {workflows.length > 0 && (
                 <div className={cn(cardVariants({ density: 'comfortable' }), 'space-y-default')}>
-                    <p className="text-sm font-medium text-content-emphasis">Start a workflow</p>
+                    <p className="text-sm font-medium text-content-emphasis">{t('runs.startWorkflow')}</p>
                     <div className="flex flex-wrap gap-tight">
                         {workflows.map((w) => (
                             <Button
@@ -137,8 +139,8 @@ export function AgentRunsClient({
 
             {runs.length === 0 ? (
                 <EmptyState
-                    title="No agent runs yet"
-                    description="Start a workflow above. Each run reads your compliance data, proposes changes for your approval, and produces a summary."
+                    title={t('runs.emptyTitle')}
+                    description={t('runs.emptyDesc')}
                 />
             ) : (
                 <ul className="space-y-default">
@@ -149,26 +151,31 @@ export function AgentRunsClient({
                                     <StatusBadge variant={STATUS_VARIANT[r.status] ?? 'neutral'}>{r.status}</StatusBadge>
                                     <span className="text-sm font-medium text-content-emphasis">{r.workflowKey}</span>
                                     <span className="text-xs text-content-subtle">
-                                        {r.stepCount} steps · ~{r.costTokens} tokens · {formatDateTime(r.startedAt)}
+                                        {t('runs.stepMeta', {
+                                            steps: r.stepCount,
+                                            tokens: r.costTokens,
+                                            date: formatDateTime(r.startedAt),
+                                        })}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-tight">
                                     {r.status === 'AWAITING_APPROVAL' && (
                                         <Button variant="secondary" size="sm" disabled={busy === r.id} onClick={() => act(r.id, 'resume')}>
-                                            Resume
+                                            {t('runs.resume')}
                                         </Button>
                                     )}
                                     {['RUNNING', 'AWAITING_APPROVAL', 'PAUSED'].includes(r.status) && (
                                         <Button variant="ghost" size="sm" disabled={busy === r.id} onClick={() => act(r.id, 'abort')}>
-                                            Abort
+                                            {t('runs.abort')}
                                         </Button>
                                     )}
                                 </div>
                             </div>
                             {r.status === 'AWAITING_APPROVAL' && (
                                 <p className="text-xs text-content-muted">
-                                    Paused for review — approve its proposals in the{' '}
-                                    <a className="underline" href={tenantHref('/agent-proposals')}>agent proposals</a> queue, then Resume.
+                                    {t('runs.awaitingApprovalPre')}
+                                    <a className="underline" href={tenantHref('/agent-proposals')}>{t('runs.proposalsLink')}</a>
+                                    {t('runs.awaitingApprovalPost')}
                                 </p>
                             )}
                             {r.summary && <p className="text-sm text-content-default">{r.summary}</p>}
