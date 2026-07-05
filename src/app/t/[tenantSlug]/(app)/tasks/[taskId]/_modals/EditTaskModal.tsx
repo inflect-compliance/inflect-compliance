@@ -11,6 +11,7 @@
  */
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Modal } from '@/components/ui/modal';
@@ -72,6 +73,7 @@ export function EditTaskModal({
     onCancel,
     onSubmit,
 }: EditTaskModalProps) {
+    const t = useTranslations('tasks');
     return (
         <Modal
             showModal={open}
@@ -81,11 +83,11 @@ export function EditTaskModal({
                 else setOpen(next);
             }}
             size="lg"
-            title="Edit Task"
-            description="Update the task's details."
+            title={t('edit.title')}
+            description={t('edit.desc')}
             preventDefaultClose={saving}
         >
-            <Modal.Header title="Edit Task" description="Update the task's details." />
+            <Modal.Header title={t('edit.title')} description={t('edit.desc')} />
             <Modal.Form onSubmit={onSubmit} id="task-edit-dialog" data-testid="task-edit-dialog">
                 <Modal.Body>
                     {error && (
@@ -98,7 +100,7 @@ export function EditTaskModal({
                         </div>
                     )}
                     <fieldset className="space-y-default" disabled={saving}>
-                        <FormField label="Title" required>
+                        <FormField label={t('edit.fieldTitle')} required>
                             <input
                                 id="task-edit-title"
                                 type="text"
@@ -110,7 +112,7 @@ export function EditTaskModal({
                                 data-testid="task-edit-title-input"
                             />
                         </FormField>
-                        <FormField label="Description">
+                        <FormField label={t('edit.fieldDescription')}>
                             <textarea
                                 id="task-edit-description"
                                 className="input w-full"
@@ -121,7 +123,7 @@ export function EditTaskModal({
                             />
                         </FormField>
                         <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
-                            <FormField label="Type">
+                            <FormField label={t('edit.fieldType')}>
                                 <Combobox
                                     hideSearch
                                     forceDropdown
@@ -132,11 +134,11 @@ export function EditTaskModal({
                                     matchTriggerWidth
                                 />
                             </FormField>
-                            <FormField label="Due Date">
+                            <FormField label={t('edit.fieldDueDate')}>
                                 <DatePicker
                                     id="task-edit-due"
                                     className="w-full"
-                                    placeholder="Select date"
+                                    placeholder={t('edit.datePlaceholder')}
                                     clearable
                                     align="start"
                                     value={parseYMD(form.dueAt)}
@@ -148,12 +150,12 @@ export function EditTaskModal({
                                                 : '',
                                         }))
                                     }
-                                    aria-label="Due date"
+                                    aria-label={t('edit.dueAria')}
                                 />
                             </FormField>
                         </div>
                         <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
-                            <FormField label="Severity">
+                            <FormField label={t('edit.fieldSeverity')}>
                                 <Combobox
                                     hideSearch
                                     forceDropdown
@@ -164,7 +166,7 @@ export function EditTaskModal({
                                     matchTriggerWidth
                                 />
                             </FormField>
-                            <FormField label="Priority">
+                            <FormField label={t('edit.fieldPriority')}>
                                 <Combobox
                                     hideSearch
                                     forceDropdown
@@ -186,7 +188,7 @@ export function EditTaskModal({
                         disabled={saving}
                         data-testid="task-edit-cancel-button"
                     >
-                        Cancel
+                        {t('edit.cancel')}
                     </Button>
                     <Button
                         type="submit"
@@ -195,7 +197,7 @@ export function EditTaskModal({
                         disabled={saving || form.title.trim().length < 1}
                         data-testid="task-edit-save-button"
                     >
-                        {saving ? 'Saving...' : 'Save'}
+                        {saving ? t('edit.saving') : t('edit.save')}
                     </Button>
                 </Modal.Actions>
             </Modal.Form>

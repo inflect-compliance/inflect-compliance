@@ -1,6 +1,7 @@
 'use client';
 
 import { formatDate, formatDateTime } from '@/lib/format-date';
+import { useTranslations } from 'next-intl';
 import { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -117,6 +118,7 @@ interface TaskActivityRow {
 }
 
 export default function TaskDetailPage() {
+    const t = useTranslations('tasks');
     const params = useParams();
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
@@ -184,7 +186,7 @@ export default function TaskDetailPage() {
     const error = taskQuery.error
         ? (taskQuery.error instanceof Error
             ? taskQuery.error.message
-            : 'Task not found')
+            : t('detail.notFound'))
         : '';
 
     const linksQuery = useTenantSWR<TaskLinkRow[]>(
@@ -254,13 +256,13 @@ export default function TaskDetailPage() {
                 throw new Error(
                     (typeof data?.error === 'string' && data.error) ||
                         data?.message ||
-                        'Failed to change status',
+                        t('detail.failedStatus'),
                 );
             }
             setPendingTerminalStatus(null);
         } catch (e) {
             setStatusError(
-                e instanceof Error ? e.message : 'Failed to change status',
+                e instanceof Error ? e.message : t('detail.failedStatus'),
             );
         } finally {
             setChangingStatus(false);
@@ -318,14 +320,14 @@ export default function TaskDetailPage() {
             { revalidate: false },
         );
         triggerUndoToast({
-            message: 'Link removed',
-            undoMessage: 'Undo',
+            message: t('detail.linkRemoved'),
+            undoMessage: t('detail.undo'),
             action: async () => {
                 const res = await fetch(
                     apiUrl(`/tasks/${taskId}/links/${linkId}`),
                     { method: 'DELETE' },
                 );
-                if (!res.ok) throw new Error('Remove link failed');
+                if (!res.ok) throw new Error(t('detail.removeLinkFailed'));
             },
             undoAction: () => {
                 void linksQuery.mutate(previous, { revalidate: false });
@@ -367,13 +369,13 @@ export default function TaskDetailPage() {
                     body: formData,
                 });
                 if (!res.ok) {
-                    const err = await res.json().catch(() => ({ error: 'Upload failed' }));
-                    throw new Error(err.error || err.message || 'Upload failed');
+                    const err = await res.json().catch(() => ({ error: t('detail.uploadFailed') }));
+                    throw new Error(err.error || err.message || t('detail.uploadFailed'));
                 }
                 resetEvidenceForm();
                 await Promise.all([evidenceQuery.mutate(), taskQuery.mutate()]);
             } catch (err: unknown) {
-                setEvidenceError(err instanceof Error ? err.message : 'Upload failed');
+                setEvidenceError(err instanceof Error ? err.message : t('detail.uploadFailed'));
             } finally {
                 setSavingEvidence(false);
             }
@@ -381,7 +383,7 @@ export default function TaskDetailPage() {
         }
 
         if (!evidenceUrl.trim()) {
-            setEvidenceError('Choose a file to upload, or enter an evidence URL.');
+            setEvidenceError(t('detail.chooseFileOrUrl'));
             return;
         }
         setSavingEvidence(true);
@@ -393,12 +395,12 @@ export default function TaskDetailPage() {
             });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
-                throw new Error(err.error || err.message || 'Failed to link evidence');
+                throw new Error(err.error || err.message || t('detail.linkEvidenceFailed'));
             }
             resetEvidenceForm();
             await Promise.all([evidenceQuery.mutate(), taskQuery.mutate()]);
         } catch (err: unknown) {
-            setEvidenceError(err instanceof Error ? err.message : 'Failed to link evidence');
+            setEvidenceError(err instanceof Error ? err.message : t('detail.linkEvidenceFailed'));
         } finally {
             setSavingEvidence(false);
         }
@@ -416,14 +418,14 @@ export default function TaskDetailPage() {
             { revalidate: false },
         );
         triggerUndoToast({
-            message: 'Evidence removed',
-            undoMessage: 'Undo',
+            message: t('detail.evidenceRemoved'),
+            undoMessage: t('detail.undo'),
             action: async () => {
                 const res = await fetch(
                     apiUrl(`/tasks/${taskId}/evidence/${evidenceId}`),
                     { method: 'DELETE' },
                 );
-                if (!res.ok) throw new Error('Remove evidence failed');
+                if (!res.ok) throw new Error(t('detail.removeEvidenceFailed'));
                 await Promise.all([evidenceQuery.mutate(), taskQuery.mutate()]);
             },
             undoAction: () => {
@@ -473,13 +475,13 @@ export default function TaskDetailPage() {
                 throw new Error(
                     (typeof data?.error === 'string' && data.error) ||
                         data?.message ||
-                        'Failed to save task',
+                        t('detail.failedSave'),
                 );
             }
             setShowEditModal(false);
             await taskQuery.mutate();
         } catch (err) {
-            setEditError(err instanceof Error ? err.message : 'Failed to save task');
+            setEditError(err instanceof Error ? err.message : t('detail.failedSave'));
         } finally {
             setSavingEdit(false);
         }
@@ -502,9 +504,9 @@ export default function TaskDetailPage() {
     };
 
     const breadcrumbs = [
-        { label: 'Dashboard', href: tenantHref('/dashboard') },
-        { label: 'Tasks', href: tenantHref('/tasks') },
-        { label: task?.title ?? 'Task' },
+        { label: t('crumb.dashboard'), href: tenantHref('/dashboard') },
+        { label: t('crumb.tasks'), href: tenantHref('/tasks') },
+        { label: task?.title ?? t('detail.crumbTaskFallback') },
     ];
     if (loading) {
         return (
@@ -522,18 +524,18 @@ export default function TaskDetailPage() {
     }
     if (!task) {
         return (
-            <EntityDetailLayout empty={{ message: 'Task not found.' }} title="" breadcrumbs={breadcrumbs}>
+            <EntityDetailLayout empty={{ message: t('detail.notFoundEmpty') }} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
     }
 
     const tabs: { key: Tab; label: string; count?: number }[] = [
-        { key: 'overview', label: 'Overview' },
-        { key: 'evidence', label: 'Evidence', count: evidenceQuery.data?.evidence?.length ?? task._count?.evidence },
-        { key: 'links', label: 'Links', count: task._count?.links ?? links.length },
-        { key: 'comments', label: 'Comments', count: task._count?.comments ?? comments.length },
-        { key: 'activity', label: 'Activity' },
+        { key: 'overview', label: t('detail.tabOverview') },
+        { key: 'evidence', label: t('detail.tabEvidence'), count: evidenceQuery.data?.evidence?.length ?? task._count?.evidence },
+        { key: 'links', label: t('detail.tabLinks'), count: task._count?.links ?? links.length },
+        { key: 'comments', label: t('detail.tabComments'), count: task._count?.comments ?? comments.length },
+        { key: 'activity', label: t('detail.tabActivity') },
     ];
 
     const isOverdue = task.dueAt && new Date(task.dueAt) < new Date() && !(TERMINAL_WORK_ITEM_STATUSES as readonly string[]).includes(task.status);
@@ -552,12 +554,12 @@ export default function TaskDetailPage() {
                         ...(task.key
                             ? [
                                   {
-                                      label: 'Key',
+                                      label: t('detail.keyLabel'),
                                       value: (
                                           <CopyText
                                               value={task.key}
-                                              label={`Copy task key ${task.key}`}
-                                              successMessage="Task key copied"
+                                              label={t('detail.copyKeyAria', { key: task.key })}
+                                              successMessage={t('detail.keyCopied')}
                                               className="text-xs text-content-subtle"
                                           >
                                               {task.key}
@@ -569,7 +571,7 @@ export default function TaskDetailPage() {
                         {
                             kind: 'status' as const,
                             id: 'task-status',
-                            label: 'Status',
+                            label: t('detail.status'),
                             value:
                                 STATUS_LABELS[task.status] ?? task.status,
                             variant:
@@ -579,22 +581,22 @@ export default function TaskDetailPage() {
                         {
                             kind: 'status' as const,
                             id: 'task-severity',
-                            label: 'Severity',
+                            label: t('detail.severity'),
                             value: task.severity,
                             variant:
                                 TASK_SEVERITY_VARIANT[task.severity] ??
                                 'neutral',
                         },
                         {
-                            label: 'Type',
+                            label: t('detail.type'),
                             value: TYPE_LABELS[task.type] ?? task.type,
                         },
                         ...(isOverdue
                             ? [
                                   {
                                       kind: 'status' as const,
-                                      label: 'SLA',
-                                      value: 'Overdue',
+                                      label: t('detail.sla'),
+                                      value: t('detail.overdue'),
                                       variant: 'error' as const,
                                   },
                               ]
@@ -611,7 +613,7 @@ export default function TaskDetailPage() {
                         setSelected={(opt) => { if (opt) requestStatusChange(opt.value); }}
                         options={TASK_STATUS_CB_OPTIONS}
                         disabled={changingStatus}
-                        placeholder="Status"
+                        placeholder={t('detail.statusPlaceholder')}
                         // Item 29 — brand-color the status action (matches the
                         // primary "+ …" create buttons).
                         buttonProps={{ variant: 'primary', className: 'text-sm' }}
@@ -626,9 +628,9 @@ export default function TaskDetailPage() {
             {permissions.canWrite && (
                 <div className={cardVariants({ density: 'compact' })}>
                     <div className="flex items-center gap-compact">
-                        <span className="text-sm text-content-muted">Assignee:</span>
+                        <span className="text-sm text-content-muted">{t('detail.assigneeLabel')}</span>
                         <span className="text-sm text-content-emphasis font-medium" id="task-assignee">
-                            {task.assignee?.name || task.assigneeUserId || 'Unassigned'}
+                            {task.assignee?.name || task.assigneeUserId || t('detail.unassigned')}
                         </span>
                         <div className="w-64">
                             <UserCombobox
@@ -639,12 +641,12 @@ export default function TaskDetailPage() {
                                 onChange={(userId) =>
                                     setAssigneeDraft(userId ?? null)
                                 }
-                                placeholder="Unassigned"
+                                placeholder={t('detail.unassigned')}
                                 forceDropdown={false}
                             />
                         </div>
                         <Button variant="secondary" onClick={handleAssign} disabled={assigning} id="assign-task-btn">
-                            {assigning ? 'Saving...' : 'Assign'}
+                            {assigning ? t('detail.saving') : t('detail.assign')}
                         </Button>
                     </div>
                 </div>
@@ -663,8 +665,8 @@ export default function TaskDetailPage() {
                                 onClick={openEditModal}
                                 data-testid="task-edit-button"
                                 id="task-edit-button"
-                                aria-label="Edit task"
-                                title="Edit task"
+                                aria-label={t('detail.editAria')}
+                                title={t('detail.editAria')}
                             >
                                 <Pen2 className="size-4" />
                             </Button>
@@ -672,40 +674,40 @@ export default function TaskDetailPage() {
                     )}
                     <div className="grid grid-cols-2 gap-section">
                         <div className="col-span-2">
-                            <span className="text-xs text-content-subtle uppercase">Description</span>
-                            <p className="text-sm text-content-default mt-1 whitespace-pre-wrap">{task.description || 'No description.'}</p>
+                            <span className="text-xs text-content-subtle uppercase">{t('detail.description')}</span>
+                            <p className="text-sm text-content-default mt-1 whitespace-pre-wrap">{task.description || t('detail.descriptionEmpty')}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">Type</span>
+                            <span className="text-xs text-content-subtle uppercase">{t('detail.type')}</span>
                             <p className="text-sm text-content-default mt-1">{TYPE_LABELS[task.type] || task.type}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">Priority</span>
+                            <span className="text-xs text-content-subtle uppercase">{t('detail.priority')}</span>
                             <p className="text-sm text-content-default mt-1">{PRIORITY_LABELS[task.priority] || task.priority}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">Assignee</span>
+                            <span className="text-xs text-content-subtle uppercase">{t('detail.assignee')}</span>
                             <p className="text-sm text-content-default mt-1">{task.assignee?.name || '—'}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">Reporter</span>
+                            <span className="text-xs text-content-subtle uppercase">{t('detail.reporter')}</span>
                             <p className="text-sm text-content-default mt-1">{task.createdBy?.name || '—'}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">Due Date</span>
+                            <span className="text-xs text-content-subtle uppercase">{t('detail.dueDate')}</span>
                             <p className="text-sm text-content-default mt-1">{task.dueAt ? formatDate(task.dueAt) : '—'}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">Created</span>
+                            <span className="text-xs text-content-subtle uppercase">{t('detail.created')}</span>
                             <p className="text-sm text-content-default mt-1">{formatDateTime(task.createdAt)}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">Created By</span>
+                            <span className="text-xs text-content-subtle uppercase">{t('detail.createdBy')}</span>
                             <p className="text-sm text-content-default mt-1">{task.createdBy?.name || '—'}</p>
                         </div>
                         {task.control && (
                             <div>
-                                <span className="text-xs text-content-subtle uppercase">Control</span>
+                                <span className="text-xs text-content-subtle uppercase">{t('detail.control')}</span>
                                 <p className="text-sm mt-1">
                                     <Link
                                         href={tenantHref(`/controls/${task.control.id}`)}
@@ -719,13 +721,13 @@ export default function TaskDetailPage() {
                         )}
                         {task.completedAt && (
                             <div>
-                                <span className="text-xs text-content-subtle uppercase">Completed At</span>
+                                <span className="text-xs text-content-subtle uppercase">{t('detail.completedAt')}</span>
                                 <p className="text-sm text-content-success mt-1">{formatDateTime(task.completedAt)}</p>
                             </div>
                         )}
                         {task.resolution && (
                             <div className="col-span-2">
-                                <span className="text-xs text-content-subtle uppercase">Resolution</span>
+                                <span className="text-xs text-content-subtle uppercase">{t('detail.resolution')}</span>
                                 <p className="text-sm text-content-default mt-1 whitespace-pre-wrap">{task.resolution}</p>
                             </div>
                         )}
@@ -734,17 +736,17 @@ export default function TaskDetailPage() {
                     {/* Audit / Finding Fields from metadataJson */}
                     {(task.type === 'AUDIT_FINDING' || task.type === 'CONTROL_GAP') && (metadata.findingSource || metadata.controlGapType) && (
                         <div className="border-t border-border-default pt-4 mt-4">
-                            <Heading level={3} className="mb-3">Audit Details</Heading>
+                            <Heading level={3} className="mb-3">{t('detail.auditDetails')}</Heading>
                             <div className="grid grid-cols-2 gap-default">
                                 {metadata.findingSource && (
                                     <div>
-                                        <span className="text-xs text-content-subtle uppercase">Finding Source</span>
+                                        <span className="text-xs text-content-subtle uppercase">{t('detail.findingSource')}</span>
                                         <p className="text-sm text-content-default mt-1">{FINDING_SOURCE_LABELS[metadata.findingSource] || metadata.findingSource}</p>
                                     </div>
                                 )}
                                 {metadata.controlGapType && (
                                     <div>
-                                        <span className="text-xs text-content-subtle uppercase">Control Gap Type</span>
+                                        <span className="text-xs text-content-subtle uppercase">{t('detail.controlGapType')}</span>
                                         <p className="text-sm text-content-default mt-1">{GAP_TYPE_LABELS[metadata.controlGapType] || metadata.controlGapType}</p>
                                     </div>
                                 )}
@@ -792,8 +794,8 @@ export default function TaskDetailPage() {
                     />
                     {evidenceQuery.error ? (
                         <InlineEmptyState
-                            title="Couldn't load evidence"
-                            description="Something went wrong fetching this task's evidence. Reload the page to try again."
+                            title={t('detail.evidenceLoadErrorTitle')}
+                            description={t('detail.evidenceLoadErrorDesc')}
                         />
                     ) : (
                         <EvidenceSubTable
@@ -813,8 +815,8 @@ export default function TaskDetailPage() {
                 <div className="space-y-default">
                     {permissions.canWrite && (
                         <div className="flex justify-end">
-                            <Button variant="primary" onClick={() => setShowLinkForm(!showLinkForm)} id="add-link-btn">
-                                + Link
+                            <Button variant="primary" icon={<Plus className="-ml-0.5 -mr-2.5" />} onClick={() => setShowLinkForm(!showLinkForm)} id="add-link-btn">
+                                {t('detail.addLink')}
                             </Button>
                         </div>
                     )}
@@ -837,12 +839,12 @@ export default function TaskDetailPage() {
                                     onChange={setLinkEntityId}
                                     id="link-entity-id"
                                     testId="task-link-entity-picker"
-                                    placeholder="Select entity"
+                                    placeholder={t('detail.selectEntity')}
                                 />
                                 <Combobox hideSearch id="link-relation" selected={RELATION_CB_OPTIONS.find(o => o.value === linkRelation) ?? null} setSelected={(opt) => setLinkRelation(opt?.value ?? linkRelation)} options={RELATION_CB_OPTIONS} matchTriggerWidth />
                             </div>
                             <Button type="submit" variant="primary" icon={savingLink ? undefined : <Plus className="-ml-0.5 -mr-2.5" />} disabled={savingLink} id="submit-link-btn">
-                                {savingLink ? 'Linking...' : 'Link'}
+                                {savingLink ? t('detail.linking') : t('detail.link')}
                             </Button>
                         </form>
                     )}
@@ -863,14 +865,14 @@ export default function TaskDetailPage() {
                             <textarea
                                 className="input w-full"
                                 rows={3}
-                                placeholder="Add a comment..."
+                                placeholder={t('detail.commentPlaceholder')}
                                 value={commentBody}
                                 onChange={e => setCommentBody(e.target.value)}
                                 required
                                 id="comment-body"
                             />
                             <Button type="submit" variant="primary" icon={savingComment ? undefined : <Plus className="-ml-0.5 -mr-2.5" />} disabled={savingComment} id="submit-comment-btn">
-                                {savingComment ? 'Posting...' : 'Comment'}
+                                {savingComment ? t('detail.posting') : t('detail.comment')}
                             </Button>
                         </form>
                     )}
@@ -886,15 +888,15 @@ export default function TaskDetailPage() {
                             </div>
                         ) : comments.length === 0 ? (
                             <InlineEmptyState
-                                title="No comments yet"
-                                description="Use the comment box above to leave context, observations, or questions."
+                                title={t('detail.commentsEmptyTitle')}
+                                description={t('detail.commentsEmptyDesc')}
                             />
                         ) : (
                             <div className="divide-y divide-border-default/50">
                                 {comments.map((c) => (
                                     <div key={c.id} className="px-5 py-3">
                                         <div className="flex items-center gap-tight mb-1">
-                                            <span className="text-sm font-medium text-content-emphasis">{c.createdBy?.name || 'Unknown'}</span>
+                                            <span className="text-sm font-medium text-content-emphasis">{c.createdBy?.name || t('detail.unknown')}</span>
                                             <span className="text-xs text-content-subtle">{formatDateTime(c.createdAt)}</span>
                                         </div>
                                         <p className="text-sm text-content-default whitespace-pre-wrap">{c.body}</p>
@@ -923,8 +925,8 @@ export default function TaskDetailPage() {
                         </div>
                     ) : activity.length === 0 ? (
                         <InlineEmptyState
-                            title="No activity yet"
-                            description="Status changes, assignments, and link updates show up here once anything moves."
+                            title={t('detail.activityEmptyTitle')}
+                            description={t('detail.activityEmptyDesc')}
                         />
                     ) : (
                         <div className="divide-y divide-border-default/50">
@@ -933,7 +935,7 @@ export default function TaskDetailPage() {
                                     <div className="w-2 h-2 rounded-full bg-[var(--brand-default)] mt-2 shrink-0" />
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-tight mb-0.5">
-                                            <span className="text-sm font-medium text-content-emphasis">{evt.user?.name || 'System'}</span>
+                                            <span className="text-sm font-medium text-content-emphasis">{evt.user?.name || t('detail.system')}</span>
                                             <StatusBadge variant="neutral">{evt.action?.replace(/_/g, ' ')}</StatusBadge>
                                         </div>
                                         <p className="text-xs text-content-muted truncate">{evt.details?.split('\n')[0]}</p>
@@ -958,13 +960,13 @@ export default function TaskDetailPage() {
                     }
                 }}
                 size="sm"
-                title={`${STATUS_LABELS[pendingTerminalStatus ?? ''] ?? 'Close'} task`}
-                description="Add a short resolution note for the audit trail."
+                title={t('detail.terminalTitle', { status: STATUS_LABELS[pendingTerminalStatus ?? ''] ?? t('detail.close') })}
+                description={t('detail.terminalDesc')}
                 preventDefaultClose={changingStatus}
             >
                 <Modal.Header
-                    title={`${STATUS_LABELS[pendingTerminalStatus ?? ''] ?? 'Close'} task`}
-                    description="A resolution note is recorded on the audit trail."
+                    title={t('detail.terminalTitle', { status: STATUS_LABELS[pendingTerminalStatus ?? ''] ?? t('detail.close') })}
+                    description={t('detail.terminalHeaderDesc')}
                 />
                 <Modal.Body>
                     {statusError && (
@@ -976,12 +978,12 @@ export default function TaskDetailPage() {
                             {statusError}
                         </div>
                     )}
-                    <FormField label="Resolution" required>
+                    <FormField label={t('detail.resolution')} required>
                         <textarea
                             id="task-resolution-input"
                             className="input w-full"
                             rows={3}
-                            placeholder="What was done / why it's being closed"
+                            placeholder={t('detail.resolutionPlaceholder')}
                             value={resolutionDraft}
                             onChange={(e) => setResolutionDraft(e.target.value)}
                             disabled={changingStatus}
@@ -996,7 +998,7 @@ export default function TaskDetailPage() {
                         disabled={changingStatus}
                         id="task-status-cancel-btn"
                     >
-                        Cancel
+                        {t('detail.cancel')}
                     </Button>
                     <Button
                         variant="primary"
@@ -1012,8 +1014,8 @@ export default function TaskDetailPage() {
                         }
                     >
                         {changingStatus
-                            ? 'Saving…'
-                            : `${STATUS_LABELS[pendingTerminalStatus ?? ''] ?? 'Close'} task`}
+                            ? t('detail.savingEllipsis')
+                            : t('detail.terminalTitle', { status: STATUS_LABELS[pendingTerminalStatus ?? ''] ?? t('detail.close') })}
                     </Button>
                 </Modal.Actions>
             </Modal>
@@ -1057,19 +1059,20 @@ function TaskLinksTable({
     canWrite: boolean;
     onRemove: (id: string) => void;
 }) {
+    const t = useTranslations('tasks');
     const columns = useMemo(
         () =>
             createColumns<TaskLinkRow>([
                 {
                     id: 'entityType',
-                    header: 'Type',
+                    header: t('detail.linkTypeHeader'),
                     cell: ({ row }) => (
                         <StatusBadge variant="info">{row.original.entityType}</StatusBadge>
                     ),
                 },
                 {
                     id: 'entityId',
-                    header: 'Entity ID',
+                    header: t('detail.linkEntityIdHeader'),
                     cell: ({ row }) => (
                         <span className="text-sm text-content-default font-mono">
                             {row.original.entityId}
@@ -1078,7 +1081,7 @@ function TaskLinksTable({
                 },
                 {
                     id: 'relation',
-                    header: 'Relation',
+                    header: t('detail.linkRelationHeader'),
                     cell: ({ row }) => (
                         <span className="text-xs text-content-muted">
                             {row.original.relation?.replace(/_/g, ' ') || '—'}
@@ -1087,7 +1090,7 @@ function TaskLinksTable({
                 },
                 {
                     id: 'createdAt',
-                    header: 'Created',
+                    header: t('detail.linkCreatedHeader'),
                     cell: ({ row }) => (
                         <span className="text-xs text-content-muted">
                             {formatDate(row.original.createdAt)}
@@ -1098,20 +1101,20 @@ function TaskLinksTable({
                     ? [
                           {
                               id: 'actions',
-                              header: 'Actions',
+                              header: t('detail.linkActionsHeader'),
                               cell: ({ row }) => (
                                   <button
                                       className="text-content-error text-xs hover:text-content-error"
                                       onClick={() => onRemove(row.original.id)}
                                   >
-                                      × Remove
+                                      {t('detail.removeLink')}
                                   </button>
                               ),
                           } as Parameters<typeof createColumns<TaskLinkRow>>[0][number],
                       ]
                     : []),
             ]),
-        [canWrite, onRemove],
+        [canWrite, onRemove, t],
     );
     return (
         <DataTable
@@ -1121,11 +1124,11 @@ function TaskLinksTable({
             loading={loading}
             emptyState={
                 <InlineEmptyState
-                    title="No links yet"
-                    description="Cross-link this task to related tasks, controls, evidence, or risks via + Link."
+                    title={t('detail.linksEmptyTitle')}
+                    description={t('detail.linksEmptyDesc')}
                 />
             }
-            resourceName={(p) => (p ? 'links' : 'link')}
+            resourceName={(p) => (p ? t('detail.linksResourcePlural') : t('detail.linksResourceSingular'))}
             data-testid="task-links-table"
         />
     );
