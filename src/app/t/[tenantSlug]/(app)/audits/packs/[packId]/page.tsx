@@ -1,6 +1,7 @@
 'use client';
 import { formatDateTime } from '@/lib/format-date';
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { RequirePermission } from '@/components/require-permission';
@@ -48,6 +49,7 @@ export default function PackDetailPage() {
     const tenantSlug = params.tenantSlug as string;
     const packId = params.packId as string;
     const apiUrl = useCallback((path: string) => `/api/t/${tenantSlug}${path}`, [tenantSlug]);
+    const tx = useTranslations('audits');
 
     const [pack, setPack] = useState<PackDetail | null>(null);
     const [loading, setLoading] = useState(true);
@@ -75,7 +77,7 @@ export default function PackDetailPage() {
             if (res.ok) loadPack();
             else {
                 const err = await res.json();
-                alert(err.message || 'Failed to freeze');
+                alert(err.message || tx('packs.failedFreeze'));
             }
         } finally { setFreezing(false); }
     };
@@ -110,17 +112,17 @@ export default function PackDetailPage() {
         celebrate(
             scopedMilestone('audit-pack-complete', packId, {
                 descriptionOverride: packName
-                    ? `${packName} — frozen and shareable with your auditor.`
+                    ? tx('packs.celebrateDesc', { name: packName })
                     : undefined,
             }),
         );
     }, [packComplete, packId, packName, celebrate]);
 
     const breadcrumbs = [
-        { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
-        { label: 'Audits', href: `/t/${tenantSlug}/audits` },
-        { label: 'Cycles', href: `/t/${tenantSlug}/audits/cycles` },
-        { label: pack?.name ?? 'Pack' },
+        { label: tx('crumb.dashboard'), href: `/t/${tenantSlug}/dashboard` },
+        { label: tx('crumb.audits'), href: `/t/${tenantSlug}/audits` },
+        { label: tx('crumb.cycles'), href: `/t/${tenantSlug}/audits/cycles` },
+        { label: pack?.name ?? tx('packs.crumbFallback') },
     ];
     if (loading) {
         return (
@@ -131,7 +133,7 @@ export default function PackDetailPage() {
     }
     if (!pack) {
         return (
-            <EntityDetailLayout empty={{ message: 'Pack not found.' }} title="" breadcrumbs={breadcrumbs}>
+            <EntityDetailLayout empty={{ message: tx('packs.notFound') }} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
@@ -160,27 +162,27 @@ export default function PackDetailPage() {
                         ...(pack.cycle?.frameworkKey
                             ? [
                                   {
-                                      label: 'Framework',
+                                      label: tx('packs.framework'),
                                       value: pack.cycle.frameworkKey,
                                   } as const,
                               ]
                             : []),
                         {
-                            label: 'Items',
+                            label: tx('packs.items'),
                             value: pack._count?.items || 0,
                         },
                         {
                             kind: 'status',
                             id: 'pack-status',
-                            label: 'Status',
+                            label: tx('packs.status'),
                             value: pack.status,
                             variant: isDraft ? 'neutral' : 'info',
                         },
                         ...(pack.frozenAt
                             ? [
                                   {
-                                      label: 'Frozen',
-                                      value: `${formatDateTime(pack.frozenAt)} · ${pack.frozenBy?.name || pack.frozenBy?.email || 'Admin'}`,
+                                      label: tx('packs.frozen'),
+                                      value: `${formatDateTime(pack.frozenAt)} · ${pack.frozenBy?.name || pack.frozenBy?.email || tx('packs.adminFallback')}`,
                                   } as const,
                               ]
                             : []),
@@ -191,13 +193,13 @@ export default function PackDetailPage() {
                 <>
                     {isDraft && (
                         <RequirePermission resource="audits" action="freeze">
-                            <IconAction variant="primary" onClick={freeze} loading={freezing} id="freeze-pack-btn" icon={<AppIcon name="lock" size={16} />} label="Freeze pack" />
+                            <IconAction variant="primary" onClick={freeze} loading={freezing} id="freeze-pack-btn" icon={<AppIcon name="lock" size={16} />} label={tx('packs.freezePack')} />
                         </RequirePermission>
                     )}
                     {isFrozen && (
                         <RequirePermission resource="audits" action="share">
                             <UpgradeGate feature="AUDIT_PACK_SHARING">
-                                <IconAction variant="primary" onClick={share} loading={sharing} id="share-pack-btn" icon={<AppIcon name="share" size={16} />} label="Generate share link" />
+                                <IconAction variant="primary" onClick={share} loading={sharing} id="share-pack-btn" icon={<AppIcon name="share" size={16} />} label={tx('packs.generateShareLink')} />
                             </UpgradeGate>
                         </RequirePermission>
                     )}
@@ -220,7 +222,7 @@ export default function PackDetailPage() {
                                 loading={cloning}
                                 id="clone-pack-btn"
                                 icon={<AppIcon name="refresh" size={16} />}
-                                label="Clone for retest"
+                                label={tx('packs.cloneForRetest')}
                             />
                         </RequirePermission>
                     )}
@@ -237,13 +239,13 @@ export default function PackDetailPage() {
                 <div className={cn(cardVariants({ density: 'compact' }), 'border border-border-success bg-bg-success animate-fadeIn')} id="share-link-card">
                     <div className="flex items-center justify-between gap-compact">
                         <div className="min-w-0">
-                            <p className="text-sm font-medium text-content-success">Share Link Generated</p>
+                            <p className="text-sm font-medium text-content-success">{tx('packs.shareLinkGenerated')}</p>
                             <p className="text-xs text-content-muted mt-1 break-all" id="share-link-url">{shareLink}</p>
                         </div>
                         <CopyButton
                             value={shareLink}
-                            label="Copy share link"
-                            successMessage="Share link copied"
+                            label={tx('packs.copyShareLink')}
+                            successMessage={tx('packs.shareLinkCopied')}
                             size="sm"
                         />
                     </div>
@@ -255,8 +257,8 @@ export default function PackDetailPage() {
                 <div className={cardVariants({ density: 'none' })}>
                     <EmptyState
                         icon={Package}
-                        title="No items in this pack yet"
-                        description="Add evidence, controls, or risks to this audit pack from the source pages."
+                        title={tx('packs.itemsEmptyTitle')}
+                        description={tx('packs.itemsEmptyDesc')}
                     />
                 </div>
             ) : (
@@ -283,12 +285,12 @@ export default function PackDetailPage() {
                                             {status && <StatusBadge variant="neutral">{status}</StatusBadge>}
                                             {snap.taskCompletion && (
                                                 <span className="text-xs text-content-subtle">
-                                                    Tasks: {snap.taskCompletion.done}/{snap.taskCompletion.total}
+                                                    {tx('packs.tasks', { done: snap.taskCompletion.done, total: snap.taskCompletion.total })}
                                                 </span>
                                             )}
                                             {snap.evidenceCount !== undefined && (
                                                 <span className="text-xs text-content-subtle">
-                                                    Evidence: {snap.evidenceCount}
+                                                    {tx('packs.evidence', { count: snap.evidenceCount })}
                                                 </span>
                                             )}
                                         </div>
@@ -303,15 +305,15 @@ export default function PackDetailPage() {
             {/* Export area (placeholder) */}
             {isFrozen && (
                 <div className={cardVariants()}>
-                    <Heading level={3} className="mb-2 inline-flex items-center gap-tight"><AppIcon name="export" size={16} /> Exports</Heading>
+                    <Heading level={3} className="mb-2 inline-flex items-center gap-tight"><AppIcon name="export" size={16} /> {tx('packs.exports')}</Heading>
                     <div className="flex gap-tight">
-                        <Tooltip content="Export JSON">
+                        <Tooltip content={tx('packs.exportJson')}>
                             <a href={apiUrl(`/audits/packs/${packId}?action=export&format=json`)}
-                                target="_blank" rel="noopener" aria-label="Export JSON" className={buttonVariants({ variant: 'secondary', size: 'icon' })}><AppIcon name="fileJson" size={16} /></a>
+                                target="_blank" rel="noopener" aria-label={tx('packs.exportJson')} className={buttonVariants({ variant: 'secondary', size: 'icon' })}><AppIcon name="fileJson" size={16} /></a>
                         </Tooltip>
-                        <Tooltip content="Export CSV">
+                        <Tooltip content={tx('packs.exportCsv')}>
                             <a href={apiUrl(`/audits/packs/${packId}?action=export&format=csv`)}
-                                target="_blank" rel="noopener" aria-label="Export CSV" className={buttonVariants({ variant: 'secondary', size: 'icon' })}><AppIcon name="fileSpreadsheet" size={16} /></a>
+                                target="_blank" rel="noopener" aria-label={tx('packs.exportCsv')} className={buttonVariants({ variant: 'secondary', size: 'icon' })}><AppIcon name="fileSpreadsheet" size={16} /></a>
                         </Tooltip>
                     </div>
                 </div>

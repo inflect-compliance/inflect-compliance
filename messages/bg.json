@@ -1371,7 +1371,57 @@
             "exportControlGapsCsv": "Пропуски в контролите (CSV)",
             "scoreAria": "Оценка за готовност на {label}"
         },
-        "loadingAria": "Зареждане на одити"
+        "loadingAria": "Зареждане на одити",
+        "packs": {
+            "notFound": "Пакетът не е намерен.",
+            "crumbFallback": "Пакет",
+            "framework": "Рамка",
+            "items": "Елементи",
+            "status": "Статус",
+            "frozen": "Замразен",
+            "adminFallback": "Администратор",
+            "freezePack": "Замрази пакета",
+            "generateShareLink": "Генерирай връзка за споделяне",
+            "cloneForRetest": "Клонирай за повторен тест",
+            "failedFreeze": "Замразяването е неуспешно",
+            "celebrateDesc": "{name} — замразен и готов за споделяне с одитора ви.",
+            "shareLinkGenerated": "Връзката за споделяне е генерирана",
+            "copyShareLink": "Копирай връзката за споделяне",
+            "shareLinkCopied": "Връзката за споделяне е копирана",
+            "itemsEmptyTitle": "Все още няма елементи в този пакет",
+            "itemsEmptyDesc": "Добавете доказателства, контроли или рискове към този одитен пакет от съответните страници.",
+            "tasks": "Задачи: {done}/{total}",
+            "evidence": "Доказателства: {count}",
+            "exports": "Експорти",
+            "exportJson": "Експорт в JSON",
+            "exportCsv": "Експорт в CSV"
+        },
+        "auditor": {
+            "portalCrumb": "Портал за одитори",
+            "portalTitle": "Портал за одитори",
+            "portalSubtitle": "Преглед на възложените одитни пакети",
+            "assignedPacksEmptyTitle": "Няма възложени пакети",
+            "assignedPacksEmptyDesc": "Все още не са ви възложени одитни пакети.",
+            "items": "{count} елемента",
+            "frozenPrefix": "Замразен: {date}",
+            "selectPack": "Изберете пакет за преглед"
+        },
+        "readinessOverview": {
+            "title": "Готовност за одит",
+            "subtitle": "Оценки за готовност по рамки за всички одитни цикли",
+            "viewCycles": "Виж циклите →",
+            "cyclesEmptyTitle": "Все още няма одитни цикли",
+            "cyclesEmptyDesc": "Създайте одитен цикъл, за да видите оценките за готовност.",
+            "auditCycleBtn": "Одитен цикъл"
+        },
+        "sharepoint": {
+            "exporting": "Експортиране…",
+            "exportBtn": "Експорт в SharePoint",
+            "exportFailed": "Експортът е неуспешен.",
+            "exportFailedNetwork": "Експортът е неуспешен — мрежова грешка.",
+            "exported": "Експортирано.",
+            "viewInSharePoint": "Виж в SharePoint ↗"
+        }
     },
     "findings": {
         "title": "Регистър на констатации",
