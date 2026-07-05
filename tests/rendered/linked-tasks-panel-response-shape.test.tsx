@@ -43,6 +43,24 @@ jest.mock('@/lib/tenant-context-provider', () => ({
     useTenantHref: () => (path: string) => `/t/acme${path}`,
 }));
 
+// next-intl is ESM (jest can't parse it); mock it to resolve real en.json
+// values so LinkedTasksPanel's NewTaskModal child renders the English copy.
+jest.mock('next-intl', () => {
+    const en = require('../../messages/en.json');
+    return {
+        useTranslations: (ns: string) => (key: string, params?: Record<string, unknown>) => {
+            let v = key
+                .split('.')
+                .reduce((o: unknown, k) =>
+                    o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined, en[ns]);
+            if (typeof v !== 'string') return key;
+            if (params) for (const [p, val] of Object.entries(params)) v = (v as string).replace(new RegExp(`\\{${p}\\}`, 'g'), String(val));
+            return v;
+        },
+        useLocale: () => 'en',
+    };
+});
+
 import LinkedTasksPanel from '@/components/LinkedTasksPanel';
 
 const tenantHref = (p: string) => `/t/acme${p}`;

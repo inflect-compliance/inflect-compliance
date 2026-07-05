@@ -13,6 +13,7 @@
  */
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
@@ -50,6 +51,7 @@ export function NewTaskModal({
     onCreated,
     initialPendingLinks,
 }: NewTaskModalProps) {
+    const t = useTranslations('tasks');
     const tenantHref = useTenantHref();
     const { tenantSlug } = useTenantContext();
     const router = useRouter();
@@ -76,16 +78,14 @@ export function NewTaskModal({
                 if (form.submitting) return;
                 if (
                     form.isDirty &&
-                    !window.confirm(
-                        'Discard task? Any details you entered will be lost.',
-                    )
+                    !window.confirm(t('new.discardConfirm'))
                 ) {
                     return;
                 }
             }
             setOpen(next);
         },
-        [form.submitting, form.isDirty, setOpen],
+        [form.submitting, form.isDirty, setOpen, t],
     );
     const close = () => guardedSetOpen(false);
 
@@ -99,13 +99,13 @@ export function NewTaskModal({
             showModal={open}
             setShowModal={guardedSetOpen}
             size="lg"
-            title="New task"
-            description="Create a new task to track."
+            title={t('new.modalTitle')}
+            description={t('new.modalDesc')}
             preventDefaultClose={form.submitting}
         >
             <Modal.Header
-                title="New task"
-                description="Create a new task to track."
+                title={t('new.modalTitle')}
+                description={t('new.modalDesc')}
             />
             <Modal.Form id="new-task-form" onSubmit={handleSubmit}>
                 <Modal.Body>
@@ -133,7 +133,7 @@ export function NewTaskModal({
                         disabled={form.submitting}
                         id="new-task-cancel-btn"
                     >
-                        Cancel
+                        {t('new.cancel')}
                     </Button>
                     <Button
                         type="submit"
@@ -142,7 +142,7 @@ export function NewTaskModal({
                         disabled={!form.canSubmit}
                         id="create-task-btn"
                     >
-                        {form.submitting ? 'Creating…' : 'Create Task'}
+                        {form.submitting ? t('new.creating') : t('new.create')}
                     </Button>
                 </Modal.Actions>
             </Modal.Form>

@@ -2978,5 +2978,100 @@
             "resumeHint": "Pick up where you left off. Answers save automatically.",
             "onlyNis2": "The gap self-assessment is only available for the NIS2 framework."
         }
+    },
+    "tasks": {
+        "crumb": {
+            "dashboard": "Dashboard",
+            "tasks": "Tasks"
+        },
+        "loadingAria": "Loading tasks",
+        "list": {
+            "srTitle": "Tasks",
+            "description": "Compliance work prioritised, assigned, and tracked to closure.",
+            "searchPlaceholder": "Search tasks…",
+            "addBtn": "Task",
+            "dashboardTooltip": "Dashboard",
+            "dashboardAria": "Dashboard",
+            "quickViewTitle": "Task",
+            "editAria": "Edit task",
+            "entityLabel": "tasks",
+            "clearFilters": "Clear filters",
+            "emptyTitle": "No tasks yet",
+            "emptyDesc": "Tasks track remediation work — anything that turns a finding or open risk into a closed loop.",
+            "filterEmptyTitle": "No tasks match your filters",
+            "filterEmptyDesc": "Try widening your search or clearing one of the active filters."
+        },
+        "kpi": {
+            "total": "Total tasks",
+            "open": "Open",
+            "overdue": "Overdue",
+            "dueWeek": "Due this week"
+        },
+        "colHeaders": {
+            "title": "Title",
+            "type": "Type",
+            "severity": "Severity",
+            "status": "Status",
+            "assignee": "Assignee",
+            "dueAt": "Due Date",
+            "updated": "Updated"
+        },
+        "colVis": {
+            "title": "Title",
+            "type": "Type",
+            "severity": "Severity",
+            "status": "Status",
+            "assignee": "Assignee",
+            "dueAt": "Due",
+            "updated": "Updated"
+        },
+        "bulk": {
+            "assign": "Assign",
+            "assignPlaceholder": "Assignee (blank = unassign)",
+            "changeStatus": "Change Status",
+            "selectStatus": "Select status...",
+            "setDueDate": "Set Due Date",
+            "duePlaceholder": "Due date",
+            "dueAria": "Bulk due date",
+            "delete": "Delete"
+        },
+        "new": {
+            "modalTitle": "New task",
+            "modalDesc": "Create a new task to track.",
+            "discardConfirm": "Discard task? Any details you entered will be lost.",
+            "cancel": "Cancel",
+            "creating": "Creating…",
+            "create": "Create Task",
+            "title": "Title",
+            "titlePlaceholder": "Brief summary of the task",
+            "description": "Description",
+            "descriptionPlaceholder": "Detailed description (optional)",
+            "type": "Type",
+            "typePlaceholder": "Select type…",
+            "severity": "Severity",
+            "severityPlaceholder": "Select severity…",
+            "priority": "Priority",
+            "priorityPlaceholder": "Select priority…",
+            "dueDate": "Due Date",
+            "duePlaceholder": "Select date",
+            "dueAria": "Due date",
+            "assignee": "Assignee",
+            "assigneePlaceholder": "Unassigned",
+            "control": "Control (optional)",
+            "controlPlaceholder": "Link a control…",
+            "auditDetails": "Audit Details",
+            "findingSource": "Finding Source",
+            "findingSourcePlaceholder": "— Select source —",
+            "controlGapType": "Control Gap Type",
+            "controlGapTypePlaceholder": "— Select type —",
+            "links": "Links",
+            "entityType": "Entity Type",
+            "entityTypePlaceholder": "Select entity…",
+            "entity": "Entity",
+            "entityPlaceholder": "Select entity",
+            "add": "Add",
+            "removeTooltip": "Remove linked item",
+            "removeAria": "Remove link"
+        }
     }
 }
