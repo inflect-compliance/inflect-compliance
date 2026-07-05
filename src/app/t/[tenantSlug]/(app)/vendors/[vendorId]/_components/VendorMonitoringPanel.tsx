@@ -10,6 +10,7 @@
  * latest questionnaire.
  */
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
@@ -75,6 +76,7 @@ export function VendorMonitoringPanel({
     canWrite: boolean;
     onChange?: () => void;
 }) {
+    const t = useTranslations('vendors');
     const apiUrl = useCallback((p: string) => `/api/t/${tenantSlug}${p}`, [tenantSlug]);
     const [posture, setPosture] = useState<Posture | null>(null);
     const [loading, setLoading] = useState(true);
@@ -85,15 +87,15 @@ export function VendorMonitoringPanel({
         setLoading(true);
         try {
             const res = await fetch(apiUrl(`/vendors/${vendorId}/monitor`));
-            if (!res.ok) throw new Error('Failed to load monitoring');
+            if (!res.ok) throw new Error(t('monitoring.loadFailed'));
             setPosture(await res.json());
             setError(null);
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to load monitoring');
+            setError(e instanceof Error ? e.message : t('monitoring.loadFailed'));
         } finally {
             setLoading(false);
         }
-    }, [apiUrl, vendorId]);
+    }, [apiUrl, vendorId, t]);
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { void load(); }, [load]);
@@ -102,18 +104,18 @@ export function VendorMonitoringPanel({
         setRunning(true);
         try {
             const res = await fetch(apiUrl(`/vendors/${vendorId}/monitor/run`), { method: 'POST' });
-            if (!res.ok) throw new Error('Monitor run failed');
+            if (!res.ok) throw new Error(t('monitoring.runFailed'));
             await load();
             onChange?.();
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Monitor run failed');
+            setError(e instanceof Error ? e.message : t('monitoring.runFailed'));
         } finally {
             setRunning(false);
         }
     };
 
     if (loading) {
-        return <div className={cn(cardVariants(), 'text-sm text-content-muted')}>Loading monitoring…</div>;
+        return <div className={cn(cardVariants(), 'text-sm text-content-muted')}>{t('monitoring.loading')}</div>;
     }
     if (error) {
         return <div className={cn(cardVariants(), 'text-sm text-content-danger')}>{error}</div>;
@@ -127,48 +129,48 @@ export function VendorMonitoringPanel({
             {/* Monitor state card */}
             <div className={cn(cardVariants(), 'space-y-default')}>
                 <div className="flex items-center justify-between">
-                    <Heading level={3}>Posture monitor</Heading>
+                    <Heading level={3}>{t('monitoring.title')}</Heading>
                     {canWrite && (
                         <Button variant="secondary" onClick={runNow} disabled={running} id="run-vendor-monitor-btn">
-                            {running ? 'Running…' : 'Run monitor now'}
+                            {running ? t('monitoring.running') : t('monitoring.runNow')}
                         </Button>
                     )}
                 </div>
                 <div className="grid grid-cols-2 gap-default text-sm md:grid-cols-4">
                     <div>
-                        <div className="text-content-muted">Status</div>
-                        <StatusBadge variant={m?.enabled ? 'success' : 'neutral'}>{m?.enabled ? 'Enabled' : 'Off'}</StatusBadge>
+                        <div className="text-content-muted">{t('monitoring.status')}</div>
+                        <StatusBadge variant={m?.enabled ? 'success' : 'neutral'}>{m?.enabled ? t('monitoring.enabled') : t('monitoring.off')}</StatusBadge>
                     </div>
                     <div>
-                        <div className="text-content-muted">TLS grade</div>
+                        <div className="text-content-muted">{t('monitoring.tlsGrade')}</div>
                         <StatusBadge variant={GRADE_VARIANT(m?.tlsGrade ?? null)}>{m?.tlsGrade ?? '—'}</StatusBadge>
                     </div>
                     <div>
-                        <div className="text-content-muted">Breach last seen</div>
+                        <div className="text-content-muted">{t('monitoring.breachLastSeen')}</div>
                         <div className={cn('mt-1', m?.breachLastSeenAt && 'text-content-danger')}>
                             {m?.breachLastSeenAt ? formatDateTime(m.breachLastSeenAt) : '—'}
                         </div>
                     </div>
                     <div>
-                        <div className="text-content-muted">Attestation expires</div>
+                        <div className="text-content-muted">{t('monitoring.attestationExpires')}</div>
                         <div className={cn('mt-1', isExpired(m?.attestationExpiresAt ?? null) && 'text-content-danger')}>
                             {m?.attestationExpiresAt ? formatDateTime(m.attestationExpiresAt) : '—'}
-                            {isExpired(m?.attestationExpiresAt ?? null) && ' (expired)'}
+                            {isExpired(m?.attestationExpiresAt ?? null) && ` (${t('monitoring.expired')})`}
                         </div>
                     </div>
                 </div>
                 <div className="text-xs text-content-muted">
-                    {m?.lastRunAt ? `Last run ${formatDateTime(m.lastRunAt)}` : 'Never run'}
-                    {' · '}Monitors: {[m?.checkAttestation && 'attestation', m?.checkBreach && 'breach', m?.checkTls && 'TLS'].filter(Boolean).join(', ') || 'none'}
-                    {m?.materializeFindings ? ' · auto-findings on' : ''}
+                    {m?.lastRunAt ? t('monitoring.lastRun', { date: formatDateTime(m.lastRunAt) }) : t('monitoring.neverRun')}
+                    {' · '}{t('monitoring.monitorsLabel')}: {[m?.checkAttestation && t('monitoring.monAttestation'), m?.checkBreach && t('monitoring.monBreach'), m?.checkTls && t('monitoring.monTls')].filter(Boolean).join(', ') || t('monitoring.monNone')}
+                    {m?.materializeFindings ? ` · ${t('monitoring.autoFindings')}` : ''}
                 </div>
             </div>
 
             {/* Posture timeline */}
             <div className={cn(cardVariants(), 'space-y-default')}>
-                <Heading level={3}>Posture timeline</Heading>
+                <Heading level={3}>{t('monitoring.timelineTitle')}</Heading>
                 {events.length === 0 ? (
-                    <InlineEmptyState title="No posture events yet. Run the monitor to check breaches, attestation expiry, and TLS grade." />
+                    <InlineEmptyState title={t('monitoring.timelineEmpty')} />
                 ) : (
                     <ol className="space-y-tight">
                         {events.map((e) => (

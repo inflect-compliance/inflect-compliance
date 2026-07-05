@@ -6,6 +6,7 @@
 
 import { formatDate } from '@/lib/format-date';
 import { useEffect, useMemo, useState, useCallback, use } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
@@ -54,6 +55,8 @@ const DOC_TYPE_CB_OPTIONS: ComboboxOption[] = DOC_TYPES.map(t => ({ value: t, la
 // B4 — Document filter options. Prepended "All types" sentinel so
 // clearing the type filter is a single click.
 const DOC_TYPE_FILTER_OPTIONS: ComboboxOption[] = [
+    // "All types" sentinel — module-level label map, deferred (task #21).
+    // The visible filter placeholder is localised via tx('detail.allTypes').
     { value: '', label: 'All types' },
     ...DOC_TYPE_CB_OPTIONS,
 ];
@@ -144,6 +147,7 @@ interface VendorBundleRow {
 
 export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: string; vendorId: string }> }) {
     const params = use(props.params);
+    const tx = useTranslations('vendors');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const { permissions } = useTenantContext();
@@ -297,14 +301,14 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
         const previous = docs;
         setDocs(prev => prev.filter(d => d.id !== docId));
         triggerUndoToast({
-            message: 'Document removed',
-            undoMessage: 'Undo',
+            message: tx('detail.docRemovedToast'),
+            undoMessage: tx('detail.undo'),
             action: async () => {
                 const res = await fetch(
                     apiUrl(`/vendors/${params.vendorId}/documents/${docId}`),
                     { method: 'DELETE' },
                 );
-                if (!res.ok) throw new Error('Remove document failed');
+                if (!res.ok) throw new Error(tx('detail.removeDocFailed'));
             },
             undoAction: () => setDocs(previous),
             onError: () => setDocs(previous),
@@ -335,7 +339,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
             );
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
-                setSendError(err?.error?.message || err?.message || 'Failed to send assessment.');
+                setSendError(err?.error?.message || err?.message || tx('detail.sendFailed'));
                 return;
             }
             const result = (await res.json()) as {
@@ -345,10 +349,10 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
             const link = `${window.location.origin}/vendor-assessment/${result.assessmentId}?t=${result.externalAccessToken}`;
             setSendLink(link);
             setShowSendModal(false);
-            toast.success('Assessment sent to vendor');
+            toast.success(tx('detail.sentToast'));
             fetchAssessments();
         } catch {
-            setSendError('Failed to send assessment.');
+            setSendError(tx('detail.sendFailed'));
         } finally {
             setSending(false);
         }
@@ -362,9 +366,9 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     };
 
     const breadcrumbs = [
-        { label: 'Dashboard', href: tenantHref('/dashboard') },
-        { label: 'Vendors', href: tenantHref('/vendors') },
-        { label: vendor?.name ?? 'Vendor' },
+        { label: tx('breadcrumbDashboard'), href: tenantHref('/dashboard') },
+        { label: tx('detail.crumbVendors'), href: tenantHref('/vendors') },
+        { label: vendor?.name ?? tx('detail.crumbFallback') },
     ];
     if (loading) {
         return (
@@ -375,7 +379,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     }
     if (!vendor) {
         return (
-            <EntityDetailLayout empty={{ message: 'Vendor not found.' }} title="" breadcrumbs={breadcrumbs}>
+            <EntityDetailLayout empty={{ message: tx('detail.notFound') }} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
@@ -383,13 +387,13 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
 
     const fmtDate = (d: string | null) => d ? formatDate(d) : '—';
     const tabs: { key: Tab; label: string; count?: number }[] = [
-        { key: 'overview', label: 'Overview' },
-        { key: 'documents', label: 'Documents', count: vendor._count?.documents || 0 },
-        { key: 'assessments', label: 'Assessments', count: vendor._count?.assessments || 0 },
-        { key: 'monitoring', label: 'Monitoring' },
-        { key: 'links', label: 'Links' },
-        { key: 'bundles', label: 'Bundles' },
-        { key: 'subprocessors', label: 'Subprocessors' },
+        { key: 'overview', label: tx('detail.tabs.overview') },
+        { key: 'documents', label: tx('detail.tabs.documents'), count: vendor._count?.documents || 0 },
+        { key: 'assessments', label: tx('detail.tabs.assessments'), count: vendor._count?.assessments || 0 },
+        { key: 'monitoring', label: tx('detail.tabs.monitoring') },
+        { key: 'links', label: tx('detail.tabs.links') },
+        { key: 'bundles', label: tx('detail.tabs.bundles') },
+        { key: 'subprocessors', label: tx('detail.tabs.subprocessors') },
     ];
 
     return (
@@ -404,7 +408,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                     items={[
                         {
                             kind: 'status',
-                            label: 'Status',
+                            label: tx('detail.status'),
                             value: vendor.status,
                             variant:
                                 VENDOR_STATUS_VARIANT[vendor.status] ??
@@ -412,7 +416,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         },
                         {
                             kind: 'status',
-                            label: 'Criticality',
+                            label: tx('detail.criticality'),
                             value: vendor.criticality,
                             variant:
                                 VENDOR_CRITICALITY_VARIANT[
@@ -422,7 +426,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         ...(vendor.contractEnd
                             ? [
                                   {
-                                      label: 'Contract End',
+                                      label: tx('detail.contractEnd'),
                                       value: formatDate(vendor.contractEnd),
                                   } as const,
                               ]
@@ -434,18 +438,18 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                 <>
                     {canWrite && (vendor.domain || vendor.websiteUrl) && (
                         <Button variant="secondary" onClick={handleEnrich} disabled={enriching} id="enrich-vendor-btn">
-                            {enriching ? 'Enriching…' : 'Auto-fill'}
+                            {enriching ? tx('detail.enriching') : tx('detail.autofill')}
                         </Button>
                     )}
                     {canWrite && !editing && (
                         // B2 — icon-only edit affordance.
-                        <Tooltip content="Edit vendor">
+                        <Tooltip content={tx('detail.editVendor')}>
                             <Button
                                 variant="secondary"
                                 size="icon"
                                 onClick={() => setEditing(true)}
                                 id="edit-vendor-btn"
-                                aria-label="Edit vendor"
+                                aria-label={tx('detail.editVendor')}
                             >
                                 <Pen2 className="size-4" />
                             </Button>
@@ -461,29 +465,29 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
             {tab === 'overview' && !editing && (
                 <div className={cn(cardVariants(), 'space-y-default')}>
                     <div className="grid grid-cols-2 gap-default text-sm">
-                        <div><span className="text-content-muted">Legal Name:</span> <span className="ml-2">{vendor.legalName || '—'}</span></div>
-                        <div><span className="text-content-muted">Domain:</span> <span className="ml-2">{vendor.domain || '—'}</span></div>
-                        <div><span className="text-content-muted">Website:</span> <span className="ml-2">{normaliseHref(vendor.websiteUrl) ? <a href={normaliseHref(vendor.websiteUrl)!} target="_blank" rel="noopener noreferrer" className="text-content-info underline">{vendor.websiteUrl}</a> : '—'}</span></div>
-                        <div><span className="text-content-muted">Country:</span> <span className="ml-2">{vendor.country || '—'}</span></div>
-                        <div><span className="text-content-muted">Owner:</span> <span className="ml-2">{vendor.owner?.name || '—'}</span></div>
-                        <div><span className="text-content-muted">Data Access:</span> <span className="ml-2">{vendor.dataAccess || '—'}</span></div>
-                        <div><span className="text-content-muted">Sub-processor:</span> <span className="ml-2">{vendor.isSubprocessor ? 'Yes' : 'No'}</span></div>
-                        <div><span className="text-content-muted">Inherent Risk:</span> <span className="ml-2">{vendor.inherentRisk ? <StatusBadge variant={CRIT_BADGE[vendor.inherentRisk]}>{vendor.inherentRisk}</StatusBadge> : '—'}</span></div>
-                        <div><span className="text-content-muted">Next Review:</span> <span className="ml-2">{fmtDate(vendor.nextReviewAt)}</span></div>
-                        <div><span className="text-content-muted">Contract Renewal:</span> <span className="ml-2">{fmtDate(vendor.contractRenewalAt)}</span></div>
+                        <div><span className="text-content-muted">{tx('detail.legalName')}:</span> <span className="ml-2">{vendor.legalName || '—'}</span></div>
+                        <div><span className="text-content-muted">{tx('detail.domain')}:</span> <span className="ml-2">{vendor.domain || '—'}</span></div>
+                        <div><span className="text-content-muted">{tx('detail.website')}:</span> <span className="ml-2">{normaliseHref(vendor.websiteUrl) ? <a href={normaliseHref(vendor.websiteUrl)!} target="_blank" rel="noopener noreferrer" className="text-content-info underline">{vendor.websiteUrl}</a> : '—'}</span></div>
+                        <div><span className="text-content-muted">{tx('detail.country')}:</span> <span className="ml-2">{vendor.country || '—'}</span></div>
+                        <div><span className="text-content-muted">{tx('detail.owner')}:</span> <span className="ml-2">{vendor.owner?.name || '—'}</span></div>
+                        <div><span className="text-content-muted">{tx('detail.dataAccess')}:</span> <span className="ml-2">{vendor.dataAccess || '—'}</span></div>
+                        <div><span className="text-content-muted">{tx('detail.subprocessor')}:</span> <span className="ml-2">{vendor.isSubprocessor ? tx('detail.yes') : tx('detail.no')}</span></div>
+                        <div><span className="text-content-muted">{tx('detail.inherentRisk')}:</span> <span className="ml-2">{vendor.inherentRisk ? <StatusBadge variant={CRIT_BADGE[vendor.inherentRisk]}>{vendor.inherentRisk}</StatusBadge> : '—'}</span></div>
+                        <div><span className="text-content-muted">{tx('detail.nextReview')}:</span> <span className="ml-2">{fmtDate(vendor.nextReviewAt)}</span></div>
+                        <div><span className="text-content-muted">{tx('detail.contractRenewal')}:</span> <span className="ml-2">{fmtDate(vendor.contractRenewalAt)}</span></div>
                     </div>
                     {/* Enrichment Fields */}
                     {(vendor.privacyPolicyUrl || vendor.securityPageUrl || vendor.certificationsJson) && (
                         <div className="border-t border-border-default pt-3 mt-3 space-y-tight">
-                            <Heading level={3}>Enrichment Data</Heading>
+                            <Heading level={3}>{tx('detail.enrichmentData')}</Heading>
                             <div className="grid grid-cols-2 gap-compact text-sm">
-                                {normaliseHref(vendor.privacyPolicyUrl) && <div><span className="text-content-muted">Privacy Policy:</span> <a href={normaliseHref(vendor.privacyPolicyUrl)!} target="_blank" rel="noopener noreferrer" className="text-content-info underline ml-1" id="enrichment-privacy">View ↗</a></div>}
-                                {normaliseHref(vendor.securityPageUrl) && <div><span className="text-content-muted">Security Page:</span> <a href={normaliseHref(vendor.securityPageUrl)!} target="_blank" rel="noopener noreferrer" className="text-content-info underline ml-1" id="enrichment-security">View ↗</a></div>}
+                                {normaliseHref(vendor.privacyPolicyUrl) && <div><span className="text-content-muted">{tx('detail.privacyPolicy')}:</span> <a href={normaliseHref(vendor.privacyPolicyUrl)!} target="_blank" rel="noopener noreferrer" className="text-content-info underline ml-1" id="enrichment-privacy">{tx('detail.viewLink')}</a></div>}
+                                {normaliseHref(vendor.securityPageUrl) && <div><span className="text-content-muted">{tx('detail.securityPage')}:</span> <a href={normaliseHref(vendor.securityPageUrl)!} target="_blank" rel="noopener noreferrer" className="text-content-info underline ml-1" id="enrichment-security">{tx('detail.viewLink')}</a></div>}
                                 {vendor.certificationsJson && Array.isArray(vendor.certificationsJson) && (
-                                    <div className="col-span-2"><span className="text-content-muted">Certifications:</span> {(vendor.certificationsJson as string[]).map((c: string) => <StatusBadge variant="info" className="ml-1" key={c}>{c}</StatusBadge>)}</div>
+                                    <div className="col-span-2"><span className="text-content-muted">{tx('detail.certifications')}:</span> {(vendor.certificationsJson as string[]).map((c: string) => <StatusBadge variant="info" className="ml-1" key={c}>{c}</StatusBadge>)}</div>
                                 )}
                             </div>
-                            {vendor.enrichmentLastRunAt && <p className="text-xs text-content-subtle">Last enriched: {fmtDate(vendor.enrichmentLastRunAt)} ({vendor.enrichmentStatus})</p>}
+                            {vendor.enrichmentLastRunAt && <p className="text-xs text-content-subtle">{tx('detail.lastEnriched', { date: fmtDate(vendor.enrichmentLastRunAt), status: vendor.enrichmentStatus ?? '' })}</p>}
                         </div>
                     )}
                     {vendor.description && <div className="text-sm text-content-default border-t border-border-default pt-3 mt-3">{vendor.description}</div>}
@@ -495,29 +499,29 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                 <div className={cn(cardVariants(), 'space-y-default')}>
                     <div className="grid grid-cols-2 gap-default">
                         <div>
-                            <label className="block text-sm text-content-muted mb-1">Name</label>
+                            <label className="block text-sm text-content-muted mb-1">{tx('detail.name')}</label>
                             <input className="input w-full" value={editForm.name} onChange={e => setEditForm((p) => ({ ...p, name: e.target.value }))} />
                         </div>
                         <div>
-                            <label className="block text-sm text-content-muted mb-1">Legal Name</label>
+                            <label className="block text-sm text-content-muted mb-1">{tx('detail.legalName')}</label>
                             <input className="input w-full" value={editForm.legalName} onChange={e => setEditForm((p) => ({ ...p, legalName: e.target.value }))} />
                         </div>
                         <div>
-                            <label className="block text-sm text-content-muted mb-1">Status</label>
+                            <label className="block text-sm text-content-muted mb-1">{tx('detail.status')}</label>
                             <Combobox hideSearch selected={VENDOR_STATUS_OPTIONS.find(o => o.value === editForm.status) ?? null} setSelected={(opt) => setEditForm((p) => ({ ...p, status: opt?.value ?? p.status }))} options={VENDOR_STATUS_OPTIONS} matchTriggerWidth />
                         </div>
                         <div>
-                            <label className="block text-sm text-content-muted mb-1">Criticality</label>
+                            <label className="block text-sm text-content-muted mb-1">{tx('detail.criticality')}</label>
                             <Combobox hideSearch selected={VENDOR_CRIT_OPTIONS.find(o => o.value === editForm.criticality) ?? null} setSelected={(opt) => setEditForm((p) => ({ ...p, criticality: opt?.value ?? p.criticality }))} options={VENDOR_CRIT_OPTIONS} matchTriggerWidth />
                         </div>
                     </div>
                     <div>
-                        <label className="block text-sm text-content-muted mb-1">Description</label>
+                        <label className="block text-sm text-content-muted mb-1">{tx('detail.description')}</label>
                         <textarea className="input w-full h-20" value={editForm.description} onChange={e => setEditForm((p) => ({ ...p, description: e.target.value }))} />
                     </div>
                     <div className="flex gap-compact">
-                        <Button variant="primary" onClick={saveEdit} id="save-vendor-btn">Save</Button>
-                        <Button variant="secondary" onClick={() => setEditing(false)}>Cancel</Button>
+                        <Button variant="primary" onClick={saveEdit} id="save-vendor-btn">{tx('detail.save')}</Button>
+                        <Button variant="secondary" onClick={() => setEditing(false)}>{tx('detail.cancel')}</Button>
                     </div>
                 </div>
             )}
@@ -539,11 +543,11 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                             <input
                                 type="search"
                                 className="input w-64 max-w-full"
-                                placeholder="Search documents…"
+                                placeholder={tx('detail.searchDocs')}
                                 value={docSearch}
                                 onChange={(e) => setDocSearch(e.target.value)}
                                 id="doc-search-input"
-                                aria-label="Search documents"
+                                aria-label={tx('detail.searchDocsAria')}
                             />
                             <Combobox
                                 hideSearch
@@ -551,7 +555,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                 selected={DOC_TYPE_FILTER_OPTIONS.find((o) => o.value === docTypeFilter) ?? null}
                                 setSelected={(opt) => setDocTypeFilter(opt?.value ?? '')}
                                 options={DOC_TYPE_FILTER_OPTIONS}
-                                placeholder="All types"
+                                placeholder={tx('detail.allTypes')}
                             />
                             {/* B8 — Folder filter. Options are derived
                                 from the loaded docs (each unique
@@ -569,8 +573,8 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                 }
                                 if (folderSet.size === 0 && !hasUnfoldered) return null;
                                 const folderOptions = [
-                                    { value: '', label: 'All folders' },
-                                    ...(hasUnfoldered ? [{ value: '__none__', label: 'No folder' }] : []),
+                                    { value: '', label: tx('detail.allFolders') },
+                                    ...(hasUnfoldered ? [{ value: '__none__', label: tx('detail.folderNone') }] : []),
                                     ...Array.from(folderSet).sort().map((f) => ({ value: f, label: f })),
                                 ];
                                 return (
@@ -581,7 +585,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                         selected={folderOptions.find((o) => o.value === docFolderFilter) ?? folderOptions[0]}
                                         setSelected={(opt) => setDocFolderFilter(opt?.value ?? '')}
                                         options={folderOptions}
-                                        placeholder="All folders"
+                                        placeholder={tx('detail.allFolders')}
                                     />
                                 );
                             })()}
@@ -593,7 +597,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                 onClick={() => setShowDocForm(!showDocForm)}
                                 id="add-doc-btn"
                             >
-                                {showDocForm ? 'Cancel' : 'Add document'}
+                                {showDocForm ? tx('detail.cancel') : tx('detail.addDocument')}
                             </Button>
                         )}
                     </div>
@@ -601,30 +605,30 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         <form onSubmit={addDoc} className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}>
                             <div className="grid grid-cols-2 gap-compact">
                                 <div>
-                                    <label className="block text-sm text-content-muted mb-1">Type</label>
+                                    <label className="block text-sm text-content-muted mb-1">{tx('detail.type')}</label>
                                     <Combobox hideSearch id="doc-type-select" selected={DOC_TYPE_CB_OPTIONS.find(o => o.value === docForm.type) ?? null} setSelected={(opt) => setDocForm(p => ({ ...p, type: opt?.value ?? p.type }))} options={DOC_TYPE_CB_OPTIONS} matchTriggerWidth />
                                 </div>
                                 <div>
-                                    <label className="block text-sm text-content-muted mb-1">Title</label>
+                                    <label className="block text-sm text-content-muted mb-1">{tx('detail.title')}</label>
                                     <input className="input w-full" value={docForm.title} onChange={e => setDocForm(p => ({ ...p, title: e.target.value }))} id="doc-title-input" />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm text-content-muted mb-1">External URL</label>
+                                <label className="block text-sm text-content-muted mb-1">{tx('detail.externalUrl')}</label>
                                 <input className="input w-full" type="url" value={docForm.externalUrl} onChange={e => setDocForm(p => ({ ...p, externalUrl: e.target.value }))} placeholder="https://..." id="doc-url-input" />
                             </div>
                             <div>
-                                <label className="block text-sm text-content-muted mb-1">Notes</label>
+                                <label className="block text-sm text-content-muted mb-1">{tx('detail.notes')}</label>
                                 <input className="input w-full" value={docForm.notes} onChange={e => setDocForm(p => ({ ...p, notes: e.target.value }))} id="doc-notes-input" />
                             </div>
                             <div>
                                 <label className="block text-sm text-content-muted mb-1" htmlFor="doc-folder-input">
-                                    Folder <span className="text-content-subtle font-normal">(optional)</span>
+                                    {tx('detail.folder')} <span className="text-content-subtle font-normal">{tx('detail.optional')}</span>
                                 </label>
                                 <input
                                     className="input w-full"
                                     id="doc-folder-input"
-                                    placeholder="e.g. Contracts / 2026"
+                                    placeholder={tx('detail.folderPlaceholder')}
                                     list="doc-folder-suggestions"
                                     value={docForm.folder}
                                     onChange={(e) => setDocForm((p) => ({ ...p, folder: e.target.value }))}
@@ -648,7 +652,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                         ))}
                                 </datalist>
                             </div>
-                            <Button type="submit" variant="primary" icon={<Plus className="-ml-0.5 -mr-2.5" />} id="submit-doc-btn">Add document</Button>
+                            <Button type="submit" variant="primary" icon={<Plus className="-ml-0.5 -mr-2.5" />} id="submit-doc-btn">{tx('detail.addDocument')}</Button>
                         </form>
                     )}
                     {/* B4 — apply the search + type filters in-memory.
@@ -702,7 +706,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                 }}
                                 id="send-assessment-btn"
                             >
-                                Send assessment
+                                {tx('detail.sendAssessment')}
                             </Button>
                         </div>
                     )}
@@ -712,18 +716,18 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                     {sendLink && (
                         <div className={cn(cardVariants({ density: 'compact' }), 'space-y-tight')} id="send-assessment-link">
                             <div className="flex items-center justify-between gap-compact">
-                                <Heading level={3}>Assessment link</Heading>
+                                <Heading level={3}>{tx('detail.assessmentLink')}</Heading>
                                 <button
                                     className="text-content-muted text-xs hover:underline"
                                     onClick={() => setSendLink(null)}
                                 >
-                                    Dismiss
+                                    {tx('detail.dismiss')}
                                 </button>
                             </div>
                             <p className="text-xs text-content-muted">
-                                The invitation was emailed to the respondent. Share this link manually if needed — it grants access to the questionnaire.
+                                {tx('detail.linkShareHint')}
                             </p>
-                            <CopyText value={sendLink} label="Copy assessment link" truncate className="text-xs">
+                            <CopyText value={sendLink} label={tx('detail.copyLink')} truncate className="text-xs">
                                 {sendLink}
                             </CopyText>
                         </div>
@@ -737,23 +741,23 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                     <Modal
                         showModal={showSendModal}
                         setShowModal={setShowSendModal}
-                        title="Send assessment"
-                        description="Email a published questionnaire to this vendor's respondent."
+                        title={tx('detail.sendAssessment')}
+                        description={tx('detail.sendModalDesc')}
                     >
                         <Modal.Header
-                            title="Send assessment"
-                            description="Email a published questionnaire to this vendor's respondent."
+                            title={tx('detail.sendAssessment')}
+                            description={tx('detail.sendModalDesc')}
                         />
                         <Modal.Body>
                             <div className="space-y-default">
-                                <FormField label="Template">
+                                <FormField label={tx('detail.template')}>
                                     <Combobox
                                         id="send-template-select"
                                         selected={
                                             sendTemplates
                                                 .map((t) => ({
                                                     value: t.id,
-                                                    label: `${t.name} (${t._count?.questions || 0} Q)${t.isGlobal ? ' · Global' : ''}`,
+                                                    label: tx('detail.templateOption', { name: t.name, count: t._count?.questions || 0 }) + (t.isGlobal ? tx('detail.globalSuffix') : ''),
                                                 }))
                                                 .find((o) => o.value === sendForm.templateVersionId) ?? null
                                         }
@@ -762,17 +766,17 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                         }
                                         options={sendTemplates.map((t) => ({
                                             value: t.id,
-                                            label: `${t.name} (${t._count?.questions || 0} Q)${t.isGlobal ? ' · Global' : ''}`,
+                                            label: tx('detail.templateOption', { name: t.name, count: t._count?.questions || 0 }) + (t.isGlobal ? tx('detail.globalSuffix') : ''),
                                         }))}
                                         placeholder={
                                             sendTemplates.length === 0
-                                                ? 'No published templates'
-                                                : 'Select template…'
+                                                ? tx('detail.templatesNonePublished')
+                                                : tx('detail.selectTemplate')
                                         }
                                         matchTriggerWidth
                                     />
                                 </FormField>
-                                <FormField label="Respondent email" required>
+                                <FormField label={tx('detail.respondentEmail')} required>
                                     <Input
                                         id="send-respondent-email"
                                         type="email"
@@ -780,20 +784,20 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                         onChange={(e) =>
                                             setSendForm((p) => ({ ...p, respondentEmail: e.target.value }))
                                         }
-                                        placeholder="security@vendor.com"
+                                        placeholder={tx('detail.respondentEmailPlaceholder')}
                                     />
                                 </FormField>
-                                <FormField label="Respondent name">
+                                <FormField label={tx('detail.respondentName')}>
                                     <Input
                                         id="send-respondent-name"
                                         value={sendForm.respondentName}
                                         onChange={(e) =>
                                             setSendForm((p) => ({ ...p, respondentName: e.target.value }))
                                         }
-                                        placeholder="Optional"
+                                        placeholder={tx('detail.optionalPlaceholder')}
                                     />
                                 </FormField>
-                                <FormField label="Expires in (days)">
+                                <FormField label={tx('detail.expiresInDays')}>
                                     <NumberStepper
                                         id="send-expires-days"
                                         value={sendForm.expiresInDays}
@@ -815,7 +819,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                     variant="secondary"
                                     onClick={() => setShowSendModal(false)}
                                 >
-                                    Cancel
+                                    {tx('detail.cancel')}
                                 </Button>
                                 <Button
                                     variant="primary"
@@ -827,7 +831,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                     }
                                     id="confirm-send-assessment"
                                 >
-                                    {sending ? 'Sending…' : 'Send assessment'}
+                                    {sending ? tx('detail.sending') : tx('detail.sendAssessment')}
                                 </Button>
                             </Modal.Actions>
                         </Modal.Footer>
@@ -851,18 +855,18 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                     {canWrite && (
                         <div className="flex justify-end">
                             <Button variant="primary" onClick={() => setShowLinkForm(!showLinkForm)} id="add-link-btn">
-                                {showLinkForm ? 'Cancel' : 'Link Entity'}
+                                {showLinkForm ? tx('detail.cancel') : tx('detail.linkEntity')}
                             </Button>
                         </div>
                     )}
                     {showLinkForm && canWrite && (
                         <div className={cn(cardVariants({ density: 'compact' }), 'flex items-end gap-compact')}>
                             <div>
-                                <label className="block text-sm text-content-muted mb-1">Type</label>
+                                <label className="block text-sm text-content-muted mb-1">{tx('detail.type')}</label>
                                 <Combobox hideSearch id="link-type" selected={VENDOR_LINK_TYPE_OPTIONS.find(o => o.value === linkForm.entityType) ?? null} setSelected={(opt) => setLinkForm(p => ({ ...p, entityType: opt?.value ?? p.entityType }))} options={VENDOR_LINK_TYPE_OPTIONS} matchTriggerWidth />
                             </div>
                             <div>
-                                <label className="block text-sm text-content-muted mb-1">Entity</label>
+                                <label className="block text-sm text-content-muted mb-1">{tx('detail.entity')}</label>
                                 {/* PR-D — entity picker replaces the
                                     legacy "Paste ID" input. The
                                     `Type` Combobox above drives the
@@ -877,12 +881,12 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                     onChange={(id) => setLinkForm((p) => ({ ...p, entityId: id }))}
                                     id="link-entity-id"
                                     testId="vendor-link-entity-picker"
-                                    placeholder="Select entity"
+                                    placeholder={tx('detail.selectEntity')}
                                     className="w-48"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm text-content-muted mb-1">Relation</label>
+                                <label className="block text-sm text-content-muted mb-1">{tx('detail.relation')}</label>
                                 <Combobox hideSearch id="link-relation" selected={VENDOR_LINK_RELATION_OPTIONS.find(o => o.value === linkForm.relation) ?? null} setSelected={(opt) => setLinkForm(p => ({ ...p, relation: opt?.value ?? p.relation }))} options={VENDOR_LINK_RELATION_OPTIONS} matchTriggerWidth />
                             </div>
                             <Button variant="primary" id="submit-link-btn" onClick={async () => {
@@ -891,7 +895,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                     body: JSON.stringify(linkForm),
                                 });
                                 setShowLinkForm(false); setLinkForm({ entityType: 'ASSET', entityId: '', relation: 'RELATED' }); fetchLinks();
-                            }}>Add</Button>
+                            }}>{tx('detail.add')}</Button>
                         </div>
                     )}
                     {['ASSET', 'RISK', 'ISSUE', 'CONTROL'].map(type => {
@@ -899,13 +903,13 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         if (typeLinks.length === 0) return null;
                         return (
                             <div key={type} className={cn(cardVariants({ density: 'compact' }), 'space-y-tight')}>
-                                <Heading level={3}>{type}s ({typeLinks.length})</Heading>
+                                <Heading level={3}>{tx('detail.linkGroup', { type, count: typeLinks.length })}</Heading>
                                 {typeLinks.map((l) => (
                                     <div key={l.id} className="flex items-center justify-between text-sm border-b border-border-subtle py-1">
                                         <span><code className="text-xs text-content-info">{l.entityId}</code> <StatusBadge variant="neutral" className="ml-1">{l.relation}</StatusBadge></span>
                                         {canWrite && <button className="text-content-error text-xs" onClick={async () => {
                                             await fetch(apiUrl(`/vendors/${params.vendorId}/links/${l.id}`), { method: 'DELETE' }); fetchLinks();
-                                        }}>Remove</button>}
+                                        }}>{tx('detail.remove')}</button>}
                                     </div>
                                 ))}
                             </div>
@@ -913,8 +917,8 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                     })}
                     {links.length === 0 && (
                         <InlineEmptyState
-                            title="No linked entities"
-                            description="Link this vendor to controls, risks, or evidence to surface them here."
+                            title={tx('detail.linksEmptyTitle')}
+                            description={tx('detail.linksEmptyDesc')}
                         />
                     )}
                 </div>
@@ -925,7 +929,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                 <div className="space-y-default">
                     {canWrite && (
                         <div className="flex items-center gap-tight justify-end">
-                            <input className="input w-48" placeholder="Bundle name…" value={bundleName}
+                            <input className="input w-48" placeholder={tx('detail.bundleNamePlaceholder')} value={bundleName}
                                 onChange={e => setBundleName(e.target.value)} id="bundle-name-input" />
                             <Button variant="primary" disabled={!bundleName} id="create-bundle-btn" onClick={async () => {
                                 await fetch(apiUrl(`/vendors/${params.vendorId}/bundles`), {
@@ -933,7 +937,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                     body: JSON.stringify({ name: bundleName }),
                                 });
                                 setBundleName(''); fetchBundles();
-                            }}>Create Bundle</Button>
+                            }}>{tx('detail.createBundle')}</Button>
                         </div>
                     )}
                     {bundles.map((b) => (
@@ -941,24 +945,24 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                             <div className="flex items-center justify-between">
                                 <div>
                                     <span className="font-medium">{b.name}</span>
-                                    <span className="ml-2 text-xs text-content-muted">{b._count?.items || 0} items</span>
-                                    {b.frozenAt && <StatusBadge variant="success" className="ml-2">Frozen</StatusBadge>}
+                                    <span className="ml-2 text-xs text-content-muted">{tx('detail.bundleItems', { count: b._count?.items || 0 })}</span>
+                                    {b.frozenAt && <StatusBadge variant="success" className="ml-2">{tx('detail.frozen')}</StatusBadge>}
                                 </div>
                                 {canWrite && !b.frozenAt && (
                                     <Button variant="secondary" size="xs" id={`freeze-bundle-${b.id}`} onClick={async () => {
-                                        if (!confirm('Freeze this bundle? Items become immutable.')) return;
+                                        if (!confirm(tx('detail.freezeConfirm'))) return;
                                         await fetch(apiUrl(`/vendors/${params.vendorId}/bundles/${b.id}?action=freeze`), { method: 'POST' });
                                         fetchBundles();
-                                    }}>Freeze</Button>
+                                    }}>{tx('detail.freeze')}</Button>
                                 )}
                             </div>
-                            <div className="text-xs text-content-muted">Created by {b.createdBy?.name || '—'} on {formatDate(b.createdAt)}</div>
+                            <div className="text-xs text-content-muted">{tx('detail.bundleCreatedBy', { name: b.createdBy?.name || '—', date: formatDate(b.createdAt) })}</div>
                         </div>
                     ))}
                     {bundles.length === 0 && (
                         <InlineEmptyState
-                            title="No evidence bundles"
-                            description="Generate evidence bundles to share assessment artefacts with this vendor."
+                            title={tx('detail.bundlesEmptyTitle')}
+                            description={tx('detail.bundlesEmptyDesc')}
                         />
                     )}
                 </div>
@@ -970,7 +974,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                     {canWrite && (
                         <div className={cn(cardVariants({ density: 'compact' }), 'flex items-end gap-compact')}>
                             <div>
-                                <label className="block text-sm text-content-muted mb-1">Subprocessor</label>
+                                <label className="block text-sm text-content-muted mb-1">{tx('detail.subprocessorLabel')}</label>
                                 {/* PR-D — vendor picker replaces the
                                     legacy "Paste vendor ID" input.
                                     Fetches the tenant's vendor list
@@ -985,14 +989,14 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                     }
                                     id="sub-vendor-id"
                                     testId="vendor-subprocessor-picker"
-                                    placeholder="Select vendor"
+                                    placeholder={tx('detail.selectVendor')}
                                     className="w-48"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm text-content-muted mb-1">Purpose</label>
+                                <label className="block text-sm text-content-muted mb-1">{tx('detail.purpose')}</label>
                                 <input className="input w-48" value={subForm.purpose}
-                                    onChange={e => setSubForm(p => ({ ...p, purpose: e.target.value }))} id="sub-purpose" placeholder="e.g. Data hosting" />
+                                    onChange={e => setSubForm(p => ({ ...p, purpose: e.target.value }))} id="sub-purpose" placeholder={tx('detail.purposePlaceholder')} />
                             </div>
                             <Button variant="primary" disabled={!subForm.subprocessorVendorId} id="add-subprocessor-btn" onClick={async () => {
                                 await fetch(apiUrl(`/vendors/${params.vendorId}/subprocessors`), {
@@ -1000,7 +1004,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                     body: JSON.stringify(subForm),
                                 });
                                 setSubForm({ subprocessorVendorId: '', purpose: '' }); fetchSubs();
-                            }}>Add</Button>
+                            }}>{tx('detail.add')}</Button>
                         </div>
                     )}
                     <VendorSubprocessorsTable
@@ -1046,12 +1050,13 @@ function VendorDocsTable({
     canWrite: boolean;
     onRemove: (id: string) => void;
 }) {
+    const tx = useTranslations('vendors');
     const columns = useMemo(
         () =>
             createColumns<VendorDocRow>([
                 {
                     id: 'type',
-                    header: 'Type',
+                    header: tx('detail.type'),
                     cell: ({ row }) => (
                         <StatusBadge variant="info">
                             {DOC_TYPE_LABELS[row.original.type] || row.original.type}
@@ -1060,14 +1065,14 @@ function VendorDocsTable({
                 },
                 {
                     id: 'title',
-                    header: 'Title',
+                    header: tx('detail.title'),
                     cell: ({ row }) => (
                         <span>{row.original.title || '—'}</span>
                     ),
                 },
                 {
                     id: 'folder',
-                    header: 'Folder',
+                    header: tx('detail.folder'),
                     cell: ({ row }) =>
                         row.original.folder ? (
                             <span className="text-xs text-content-muted">{row.original.folder}</span>
@@ -1077,13 +1082,13 @@ function VendorDocsTable({
                 },
                 {
                     id: 'validTo',
-                    header: 'Valid To',
+                    header: tx('detail.validTo'),
                     cell: ({ row }) =>
                         row.original.validTo ? formatDate(row.original.validTo) : '—',
                 },
                 {
                     id: 'uploadedBy',
-                    header: 'Uploaded By',
+                    header: tx('detail.uploadedBy'),
                     cell: ({ row }) => (
                         <span className="text-content-muted">
                             {row.original.uploadedBy?.name || '—'}
@@ -1092,7 +1097,7 @@ function VendorDocsTable({
                 },
                 {
                     id: 'link',
-                    header: 'Link',
+                    header: tx('detail.linkCol'),
                     cell: ({ row }) => {
                         const href = normaliseHref(row.original.externalUrl);
                         return href ? (
@@ -1102,7 +1107,7 @@ function VendorDocsTable({
                                 rel="noopener noreferrer"
                                 className="text-content-info underline text-xs"
                             >
-                                Open ↗
+                                {tx('detail.openLink')}
                             </a>
                         ) : (
                             <span>—</span>
@@ -1119,22 +1124,22 @@ function VendorDocsTable({
                                       className="text-content-error text-xs hover:underline"
                                       onClick={() => onRemove(row.original.id)}
                                   >
-                                      Remove
+                                      {tx('detail.remove')}
                                   </button>
                               ),
                           } as Parameters<typeof createColumns<VendorDocRow>>[0][number],
                       ]
                     : []),
             ]),
-        [canWrite, onRemove],
+        [canWrite, onRemove, tx],
     );
     return (
         <DataTable
             data={docs}
             columns={columns}
             getRowId={(d) => d.id}
-            emptyState="No documents"
-            resourceName={(p) => (p ? 'documents' : 'document')}
+            emptyState={tx('detail.docsEmpty')}
+            resourceName={(p) => (p ? tx('detail.docResourcePlural') : tx('detail.docResource'))}
             data-testid="vendor-docs-table"
         />
     );
@@ -1155,17 +1160,18 @@ interface VendorAssessmentRow {
     template: { name: string } | null;
 }
 function VendorAssessmentsTable({ assessments, vendorId, tenantHref }: { assessments: VendorAssessmentRow[]; vendorId: string; tenantHref: (path: string) => string }) {
+    const tx = useTranslations('vendors');
     const columns = useMemo(
         () =>
             createColumns<VendorAssessmentRow>([
                 {
                     id: 'template',
-                    header: 'Template',
+                    header: tx('detail.template'),
                     cell: ({ row }) => row.original.template?.name || '—',
                 },
                 {
                     id: 'status',
-                    header: 'Status',
+                    header: tx('detail.status'),
                     cell: ({ row }) => (
                         <StatusBadge variant={ASSESSMENT_STATUS_BADGE[row.original.status]}>
                             {row.original.status}
@@ -1174,13 +1180,13 @@ function VendorAssessmentsTable({ assessments, vendorId, tenantHref }: { assessm
                 },
                 {
                     id: 'score',
-                    header: 'Score',
+                    header: tx('detail.score'),
                     cell: ({ row }) =>
                         row.original.score != null ? row.original.score.toFixed(1) : '—',
                 },
                 {
                     id: 'risk',
-                    header: 'Risk Rating',
+                    header: tx('detail.riskRating'),
                     cell: ({ row }) =>
                         row.original.riskRating ? (
                             <StatusBadge variant={CRIT_BADGE[row.original.riskRating]}>
@@ -1192,7 +1198,7 @@ function VendorAssessmentsTable({ assessments, vendorId, tenantHref }: { assessm
                 },
                 {
                     id: 'started',
-                    header: 'Started',
+                    header: tx('detail.started'),
                     cell: ({ row }) => (
                         <span className="text-content-muted">
                             {formatDate(row.original.startedAt)}
@@ -1201,19 +1207,19 @@ function VendorAssessmentsTable({ assessments, vendorId, tenantHref }: { assessm
                 },
                 {
                     id: 'action',
-                    header: 'Action',
+                    header: tx('detail.action'),
                     cell: ({ row }) => (
                         <Link
                             href={tenantHref(`/vendors/${vendorId}/assessment/${row.original.id}`)}
                             className="text-content-info hover:underline text-xs"
                             id={`open-assessment-${row.original.id}`}
                         >
-                            Open →
+                            {tx('detail.openArrow')}
                         </Link>
                     ),
                 },
             ]),
-        [vendorId, tenantHref],
+        [vendorId, tenantHref, tx],
     );
     return (
         <DataTable
@@ -1223,8 +1229,8 @@ function VendorAssessmentsTable({ assessments, vendorId, tenantHref }: { assessm
             selectionEnabled={false}
             emptyState={
                 <InlineEmptyState
-                    title="No assessments"
-                    description="Start a new questionnaire to assess this vendor."
+                    title={tx('detail.assessEmptyTitle')}
+                    description={tx('detail.assessEmptyDesc')}
                 />
             }
         />
@@ -1249,12 +1255,13 @@ interface VendorSubprocessorRow {
 }
 // Actions column produced via the gated-spread idiom.
 function VendorSubprocessorsTable({ subs, canWrite, onRemove }: { subs: VendorSubprocessorRow[]; canWrite: boolean; onRemove: (relationId: string) => void | Promise<void> }) {
+    const tx = useTranslations('vendors');
     const columns = useMemo(
         () =>
             createColumns<VendorSubprocessorRow>([
                 {
                     id: 'name',
-                    header: 'Subprocessor',
+                    header: tx('detail.subprocessorLabel'),
                     cell: ({ row }) => (
                         <span className="font-medium">
                             {row.original.subprocessor?.name || row.original.subprocessorVendorId}
@@ -1263,7 +1270,7 @@ function VendorSubprocessorsTable({ subs, canWrite, onRemove }: { subs: VendorSu
                 },
                 {
                     id: 'country',
-                    header: 'Country',
+                    header: tx('detail.country'),
                     cell: ({ row }) => (
                         <span className="text-content-muted">
                             {row.original.subprocessor?.country || row.original.country || '—'}
@@ -1272,7 +1279,7 @@ function VendorSubprocessorsTable({ subs, canWrite, onRemove }: { subs: VendorSu
                 },
                 {
                     id: 'crit',
-                    header: 'Criticality',
+                    header: tx('detail.criticality'),
                     cell: ({ row }) => (
                         <StatusBadge
                             variant={
@@ -1285,7 +1292,7 @@ function VendorSubprocessorsTable({ subs, canWrite, onRemove }: { subs: VendorSu
                 },
                 {
                     id: 'risk',
-                    header: 'Risk',
+                    header: tx('detail.risk'),
                     cell: ({ row }) =>
                         row.original.subprocessor?.inherentRisk ? (
                             <StatusBadge variant={CRIT_BADGE[row.original.subprocessor.inherentRisk]}>
@@ -1297,7 +1304,7 @@ function VendorSubprocessorsTable({ subs, canWrite, onRemove }: { subs: VendorSu
                 },
                 {
                     id: 'purpose',
-                    header: 'Purpose',
+                    header: tx('detail.purpose'),
                     cell: ({ row }) => (
                         <span className="text-content-muted text-xs">
                             {row.original.purpose || '—'}
@@ -1314,14 +1321,14 @@ function VendorSubprocessorsTable({ subs, canWrite, onRemove }: { subs: VendorSu
                                       className="text-content-error text-xs"
                                       onClick={() => onRemove(row.original.id)}
                                   >
-                                      Remove
+                                      {tx('detail.remove')}
                                   </button>
                               ),
                           },
                       ]
                     : []),
             ]),
-        [canWrite, onRemove],
+        [canWrite, onRemove, tx],
     );
     return (
         <DataTable
@@ -1331,8 +1338,8 @@ function VendorSubprocessorsTable({ subs, canWrite, onRemove }: { subs: VendorSu
             selectionEnabled={false}
             emptyState={
                 <InlineEmptyState
-                    title="No subprocessors"
-                    description="Add a subprocessor to track downstream data-processing relationships."
+                    title={tx('detail.subsEmptyTitle')}
+                    description={tx('detail.subsEmptyDesc')}
                 />
             }
         />
