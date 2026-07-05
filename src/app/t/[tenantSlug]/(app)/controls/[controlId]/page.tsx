@@ -9,6 +9,7 @@ import { SkeletonCard, SkeletonDetailPage } from '@/components/ui/skeleton';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { EditControlModal } from './_modals/EditControlModal';
@@ -122,6 +123,7 @@ const EVENT_LABELS: Record<string, string> = {
 };
 
 export default function ControlDetailPage() {
+    const tx = useTranslations('controls');
     const params = useParams();
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
@@ -164,7 +166,7 @@ export default function ControlDetailPage() {
     const loading = pageDataQuery.isLoading;
     const error =
         pageDataQuery.error
-            ? pageDataQuery.error.message || 'Control not found'
+            ? pageDataQuery.error.message || tx('detailPage.errors.controlNotFound')
             : '';
     // Stable revalidation handle that mirrors the prior `refetch()`
     // contract — `mutate(undefined)` re-runs the fetcher for this
@@ -312,7 +314,7 @@ export default function ControlDetailPage() {
                 const err = await res
                     .json()
                     .catch(() => ({ error: 'Update failed' }));
-                throw new Error(extractMutationError(err, 'Update failed'));
+                throw new Error(extractMutationError(err, tx('detailPage.errors.updateFailed')));
             }
             // If owner changed, call the separate owner endpoint
             const originalOwner = control?.ownerUserId || '';
@@ -332,7 +334,7 @@ export default function ControlDetailPage() {
                         .json()
                         .catch(() => ({ error: 'Owner update failed' }));
                     throw new Error(
-                        extractMutationError(ownerErr, 'Owner update failed'),
+                        extractMutationError(ownerErr, tx('detailPage.errors.ownerUpdateFailed')),
                     );
                 }
             }
@@ -361,7 +363,7 @@ export default function ControlDetailPage() {
     const handleEditSave = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editForm.name || editForm.name.trim().length < 3) {
-            setEditError('Title must be at least 3 characters.');
+            setEditError(tx('detailPage.errors.titleMinLength'));
             return;
         }
         setSavingEdit(true);
@@ -372,7 +374,7 @@ export default function ControlDetailPage() {
             setEditSuccess(true);
             setTimeout(() => setEditSuccess(false), 3000);
         } catch (err) {
-            setEditError(err instanceof Error ? err.message : 'Update failed');
+            setEditError(err instanceof Error ? err.message : tx('detailPage.errors.updateFailed'));
         } finally {
             setSavingEdit(false);
         }
@@ -445,7 +447,7 @@ export default function ControlDetailPage() {
                     .json()
                     .catch(() => ({ error: 'Status update failed' }));
                 throw new Error(
-                    extractMutationError(err, 'Status update failed'),
+                    extractMutationError(err, tx('detailPage.errors.statusUpdateFailed')),
                 );
             }
             return res.json().catch(() => null);
@@ -521,12 +523,12 @@ export default function ControlDetailPage() {
                 const res = await fetch(apiUrl('/evidence/uploads'), { method: 'POST', body: formData });
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({ error: 'Upload failed' }));
-                    throw new Error(err.error || err.message || 'Upload failed');
+                    throw new Error(err.error || err.message || tx('detailPage.errors.uploadFailed'));
                 }
                 resetEvidenceForm();
                 await Promise.all([evidenceSWR.mutate(), refetch()]);
             } catch (err: unknown) {
-                setFileUploadError(err instanceof Error ? err.message : 'Upload failed');
+                setFileUploadError(err instanceof Error ? err.message : tx('detailPage.errors.uploadFailed'));
             } finally {
                 setFileUploading(false);
             }
@@ -534,7 +536,7 @@ export default function ControlDetailPage() {
         }
 
         if (!evidenceUrl.trim()) {
-            setFileUploadError('Choose a file to upload, or enter an evidence URL.');
+            setFileUploadError(tx('detailPage.errors.chooseFile'));
             return;
         }
         setSavingEvidence(true);
@@ -543,11 +545,11 @@ export default function ControlDetailPage() {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ kind: 'LINK', url: evidenceUrl, note: evidenceNote || undefined }),
             });
-            if (!res.ok) throw new Error('Failed to link evidence');
+            if (!res.ok) throw new Error(tx('detailPage.errors.linkEvidenceFailed'));
             resetEvidenceForm();
             await Promise.all([evidenceSWR.mutate(), refetch()]);
         } catch (err: unknown) {
-            setFileUploadError(err instanceof Error ? err.message : 'Failed to link evidence');
+            setFileUploadError(err instanceof Error ? err.message : tx('detailPage.errors.linkEvidenceFailed'));
         } finally {
             setSavingEvidence(false);
         }
@@ -588,7 +590,7 @@ export default function ControlDetailPage() {
                     apiUrl(`/controls/${controlId}/evidence/${linkId}`),
                     { method: 'DELETE' },
                 );
-                if (!res.ok) throw new Error('Unlink failed');
+                if (!res.ok) throw new Error(tx('detailPage.errors.unlinkFailed'));
                 // Confirm the tab list + refresh the header badge.
                 await Promise.all([evidenceSWR.mutate(), refetch()]);
             },
@@ -628,7 +630,7 @@ export default function ControlDetailPage() {
     }
     if (!control) {
         return (
-            <EntityDetailLayout empty={{ message: 'Control not found.' }} title="">
+            <EntityDetailLayout empty={{ message: tx('detailPage.notFound') }} title="">
                 {null}
             </EntityDetailLayout>
         );
@@ -642,19 +644,19 @@ export default function ControlDetailPage() {
     const totalTasks = control._count?.controlTasks ?? 0;
     const doneTasks = control.doneControlTasks ?? 0;
     const tabs: { key: Tab; label: string; count?: number }[] = [
-        { key: 'overview', label: 'Overview' },
-        { key: 'tasks', label: 'Tasks', count: totalTasks },
+        { key: 'overview', label: tx('detailPage.tabOverview') },
+        { key: 'tasks', label: tx('detailPage.tabTasks'), count: totalTasks },
         {
             key: 'evidence',
-            label: 'Evidence',
+            label: tx('detailPage.tabEvidence'),
             count:
                 (control._count?.evidenceLinks ?? 0) +
                 (control._count?.evidence ?? 0),
         },
-        { key: 'mappings', label: 'Mappings', count: control._count?.frameworkMappings ?? 0 },
-        { key: 'traceability', label: 'Traceability' },
-        { key: 'activity', label: 'Activity' },
-        { key: 'tests', label: 'Tests' },
+        { key: 'mappings', label: tx('detailPage.tabMappings'), count: control._count?.frameworkMappings ?? 0 },
+        { key: 'traceability', label: tx('detailPage.tabTraceability') },
+        { key: 'activity', label: tx('detailPage.tabActivity') },
+        { key: 'tests', label: tx('detailPage.tabTests') },
     ];
 
     // ── Header meta strip (Polish PR-1) ──
@@ -671,12 +673,12 @@ export default function ControlDetailPage() {
                 ...(control.code
                     ? [
                           {
-                              label: 'Code',
+                              label: tx('detailPage.metaCode'),
                               value: (
                                   <CopyText
                                       value={control.code}
-                                      label={`Copy control code ${control.code}`}
-                                      successMessage="Control code copied"
+                                      label={tx('detailPage.copyCodeAria', { code: control.code })}
+                                      successMessage={tx('detailPage.codeCopied')}
                                       className="text-xs text-content-subtle"
                                   >
                                       {control.code}
@@ -688,7 +690,7 @@ export default function ControlDetailPage() {
                 {
                     kind: 'status' as const,
                     id: 'control-status',
-                    label: 'Status',
+                    label: tx('status'),
                     value: STATUS_LABELS[control.status] ?? control.status,
                     variant:
                         CONTROL_STATUS_VARIANT[control.status] ?? 'neutral',
@@ -696,11 +698,11 @@ export default function ControlDetailPage() {
                 {
                     kind: 'status' as const,
                     id: 'control-applicability',
-                    label: 'Applicability',
+                    label: tx('detailPage.metaApplicability'),
                     value:
                         control.applicability === 'NOT_APPLICABLE'
-                            ? 'Not Applicable'
-                            : 'Applicable',
+                            ? tx('notApplicable')
+                            : tx('applicable'),
                     variant:
                         control.applicability === 'NOT_APPLICABLE'
                             ? 'warning'
@@ -717,31 +719,31 @@ export default function ControlDetailPage() {
         <>
             {syncStatus === 'CONFLICT' && (
                 <Tooltip
-                    title="Sync conflict"
-                    content={syncError ?? 'Local and remote state diverged — resolve before editing.'}
+                    title={tx('detailPage.syncConflictTitle')}
+                    content={syncError ?? tx('detailPage.syncConflictContent')}
                 >
                     <StatusBadge variant="error" className="flex items-center gap-1 cursor-help" id="sync-conflict-badge">
                         <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-                        Sync Conflict
+                        {tx('detailPage.syncConflictBadge')}
                     </StatusBadge>
                 </Tooltip>
             )}
             {syncStatus === 'FAILED' && (
                 <Tooltip
-                    title="Last sync failed"
-                    content={syncError ?? 'The integration could not reach the source system.'}
+                    title={tx('detailPage.syncFailedTitle')}
+                    content={syncError ?? tx('detailPage.syncFailedContent')}
                 >
                     <StatusBadge variant="error" className="flex items-center gap-1 cursor-help" id="sync-failed-badge">
                         <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
-                        Sync Failed
+                        {tx('detailPage.syncFailedBadge')}
                     </StatusBadge>
                 </Tooltip>
             )}
             {syncStatus === 'SYNCED' && (
-                <Tooltip content={syncLastAt ? `Last synced: ${formatDateTime(syncLastAt)}` : 'Synced'}>
+                <Tooltip content={syncLastAt ? tx('detailPage.lastSynced', { time: formatDateTime(syncLastAt) }) : tx('detailPage.synced')}>
                     <StatusBadge variant="success" className="flex items-center gap-1 cursor-help" id="sync-ok-badge">
                         <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                        Synced
+                        {tx('detailPage.synced')}
                     </StatusBadge>
                 </Tooltip>
             )}
@@ -763,7 +765,7 @@ export default function ControlDetailPage() {
                 id="control-where-used-btn"
                 data-testid="control-where-used-btn"
             >
-                Where used
+                {tx('detailPage.whereUsed')}
             </Button>
             {permissions.canWrite && (
                 <>
@@ -774,7 +776,7 @@ export default function ControlDetailPage() {
                         setSelected={(opt) => { if (opt) changeStatus(opt.value); }}
                         options={STATUS_CB_OPTIONS}
                         disabled={changingStatus}
-                        placeholder="Status"
+                        placeholder={tx('status')}
                         // Item 29 — brand-color the status action (matches the
                         // primary "+ …" create buttons).
                         buttonProps={{ variant: 'primary', className: 'text-sm' }}
@@ -792,8 +794,8 @@ export default function ControlDetailPage() {
             id="control-detail-page"
             back={{ smart: true }}
             breadcrumbs={[
-                { label: 'Dashboard', href: tenantHref('/dashboard') },
-                { label: 'Controls', href: tenantHref('/controls') },
+                { label: tx('detailPage.breadcrumbDashboard'), href: tenantHref('/dashboard') },
+                { label: tx('detailPage.breadcrumbControls'), href: tenantHref('/controls') },
                 { label: control.name },
             ]}
             title={<span id="control-title">{control.name}</span>}
@@ -804,7 +806,7 @@ export default function ControlDetailPage() {
             onTabChange={(next) => setTab(next as Tab)}
             rail={
                 <AsidePanel
-                    title="AI Suggestions"
+                    title={tx('detailPage.aiSuggestions')}
                     surfaceKey="controls-detail-ai"
                     defaultCollapsed
                     icon={<Sparkle3 className="h-4 w-4" />}
@@ -823,22 +825,22 @@ export default function ControlDetailPage() {
             {/* Applicability modal */}
             {showApplicability && permissions.canWrite && (
                 <div className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}>
-                    <Heading level={3}>Set Applicability</Heading>
+                    <Heading level={3}>{tx('setApplicability')}</Heading>
                     <div className="flex gap-default">
                         <label className="flex items-center gap-tight text-sm text-content-default">
                             <input type="radio" value="APPLICABLE" checked={appChoice === 'APPLICABLE'} onChange={() => setAppChoice('APPLICABLE')} />
-                            Applicable
+                            {tx('applicable')}
                         </label>
                         <label className="flex items-center gap-tight text-sm text-content-default">
                             <input type="radio" value="NOT_APPLICABLE" checked={appChoice === 'NOT_APPLICABLE'} onChange={() => setAppChoice('NOT_APPLICABLE')} />
-                            Not Applicable
+                            {tx('notApplicable')}
                         </label>
                     </div>
                     {appChoice === 'NOT_APPLICABLE' && (
-                        <textarea className="input w-full" rows={2} placeholder="Justification required..." value={appJustification} onChange={e => setAppJustification(e.target.value)} id="applicability-justification" />
+                        <textarea className="input w-full" rows={2} placeholder={tx('detailPage.justificationRequiredPlaceholder')} value={appJustification} onChange={e => setAppJustification(e.target.value)} id="applicability-justification" />
                     )}
                     <Button variant="primary" onClick={saveApplicability} disabled={savingApp || (appChoice === 'NOT_APPLICABLE' && !appJustification.trim())} id="save-applicability-btn">
-                        {savingApp ? 'Saving...' : 'Save'}
+                        {savingApp ? tx('detailPage.saving') : tx('detailPage.save')}
                     </Button>
                 </div>
             )}
@@ -861,8 +863,8 @@ export default function ControlDetailPage() {
                                 onClick={openEditModal}
                                 data-testid="control-edit-button"
                                 id="control-edit-button"
-                                aria-label="Edit control"
-                                title="Edit control"
+                                aria-label={tx('detailPage.editControl')}
+                                title={tx('detailPage.editControl')}
                             >
                                 {/* B2 — icon-only edit affordance,
                                     canonical unified pattern. */}
@@ -872,45 +874,45 @@ export default function ControlDetailPage() {
                     )}
                     <div className="grid grid-cols-2 gap-section">
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">Objective</span>
-                            <p className="text-sm text-content-default mt-1 whitespace-pre-line">{control.objective || 'No objective.'}</p>
+                            <span className="text-xs text-content-subtle uppercase">{tx('detailPage.eyebrowObjective')}</span>
+                            <p className="text-sm text-content-default mt-1 whitespace-pre-line">{control.objective || tx('detailPage.objectiveEmpty')}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">Success Criteria</span>
+                            <span className="text-xs text-content-subtle uppercase">{tx('detailPage.eyebrowSuccessCriteria')}</span>
                             <p className="text-sm text-content-default mt-1 whitespace-pre-line">{control.successCriteria || '—'}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">Category</span>
+                            <span className="text-xs text-content-subtle uppercase">{tx('editModal.categoryLabel')}</span>
                             <p className="text-sm text-content-default mt-1">{control.category || '—'}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">Frequency</span>
+                            <span className="text-xs text-content-subtle uppercase">{tx('detailPage.eyebrowFrequency')}</span>
                             <p className="text-sm text-content-default mt-1">{control.frequency ? FREQ_LABELS[control.frequency] || control.frequency : '—'}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">Automation Type</span>
+                            <span className="text-xs text-content-subtle uppercase">{tx('detailPage.eyebrowAutomationType')}</span>
                             <p className="text-sm text-content-default mt-1">{control.automationType ? AUTOMATION_TYPE_LABELS[control.automationType] || control.automationType : '—'}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">Mitigation Type</span>
+                            <span className="text-xs text-content-subtle uppercase">{tx('detailPage.eyebrowMitigationType')}</span>
                             <p className="text-sm text-content-default mt-1">{control.mitigationType ? MITIGATION_TYPE_LABELS[control.mitigationType] || control.mitigationType : '—'}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">Owner</span>
+                            <span className="text-xs text-content-subtle uppercase">{tx('detailPage.eyebrowOwner')}</span>
                             <p className="text-sm text-content-default mt-1">{control.owner?.name || '—'}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">Tasks Progress</span>
-                            <p className="text-sm text-content-default mt-1">{doneTasks}/{totalTasks} completed</p>
+                            <span className="text-xs text-content-subtle uppercase">{tx('detailPage.eyebrowTasksProgress')}</span>
+                            <p className="text-sm text-content-default mt-1">{tx('detailPage.tasksProgressValue', { done: doneTasks, total: totalTasks })}</p>
                         </div>
                         {control.applicability === 'NOT_APPLICABLE' && control.applicabilityJustification && (
                             <div className="col-span-2">
-                                <span className="text-xs text-content-subtle uppercase">N/A Justification</span>
+                                <span className="text-xs text-content-subtle uppercase">{tx('detailPage.eyebrowNaJustification')}</span>
                                 <p className="text-sm text-content-warning mt-1">{control.applicabilityJustification}</p>
                             </div>
                         )}
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">Contributors</span>
+                            <span className="text-xs text-content-subtle uppercase">{tx('detailPage.eyebrowContributors')}</span>
                             <div className="text-sm text-content-default mt-1">
                                 {(control.contributors?.length ?? 0) > 0 ? control.contributors?.map((c: ContributorDTO) => (
                                     <StatusBadge variant="neutral" className="mr-1" key={c.user.id}>{c.user.name ?? '—'}</StatusBadge>
@@ -918,11 +920,11 @@ export default function ControlDetailPage() {
                             </div>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">Last Tested</span>
+                            <span className="text-xs text-content-subtle uppercase">{tx('detailPage.eyebrowLastTested')}</span>
                             <p className="text-sm text-content-default mt-1">{control.lastTested ? formatDate(control.lastTested) : '—'}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">Next Due</span>
+                            <span className="text-xs text-content-subtle uppercase">{tx('detailPage.eyebrowNextDue')}</span>
                             <p className="text-sm text-content-default mt-1">{control.nextDueAt ? formatDate(control.nextDueAt) : '—'}</p>
                         </div>
                     </div>
@@ -957,7 +959,7 @@ export default function ControlDetailPage() {
             {/* Success toast */}
             {editSuccess && (
                 <div className="fixed bottom-6 right-6 z-50 bg-bg-success-emphasis text-content-emphasis px-4 py-2 rounded-lg shadow-lg animate-fadeIn text-sm" id="edit-success-toast">
-                    Control updated
+                    {tx('detailPage.controlUpdated')}
                 </div>
             )}
 
@@ -1012,8 +1014,8 @@ export default function ControlDetailPage() {
                     <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                         {evidenceSWR.error ? (
                             <InlineEmptyState
-                                title="Couldn't load evidence"
-                                description="Something went wrong fetching this control's evidence. Reload the page to try again."
+                                title={tx('detailPage.couldntLoadEvidence')}
+                                description={tx('detailPage.couldntLoadEvidenceDesc')}
                             />
                         ) : (
                             <EvidenceSubTable
@@ -1049,11 +1051,11 @@ export default function ControlDetailPage() {
             {tab === 'activity' && (
                 <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                     {activityLoading ? (
-                        <div className="p-8 text-center text-content-subtle animate-pulse">Loading activity…</div>
+                        <div className="p-8 text-center text-content-subtle animate-pulse">{tx('detailPage.loadingActivity')}</div>
                     ) : activity.length === 0 ? (
                         <InlineEmptyState
-                            title="No activity recorded"
-                            description="Status changes, link updates, and edits show up here once anything moves."
+                            title={tx('detailPage.noActivity')}
+                            description={tx('detailPage.activityEmptyDesc')}
                         />
                     ) : (
                         <div className="divide-y divide-border-default/50" id="activity-feed">
@@ -1065,7 +1067,7 @@ export default function ControlDetailPage() {
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm text-content-default">{ev.details}</p>
                                         <p className="text-xs text-content-subtle mt-0.5">
-                                            {ev.user?.name || 'System'} · {formatDateTime(ev.createdAt)}
+                                            {ev.user?.name || tx('detailPage.systemActor')} · {formatDateTime(ev.createdAt)}
                                         </p>
                                     </div>
                                 </div>
@@ -1079,7 +1081,7 @@ export default function ControlDetailPage() {
                 <div className="space-y-default">
                     {control.testingMethodology && (
                         <div className={cardVariants({ density: 'compact' })}>
-                            <span className="text-xs text-content-subtle uppercase">Testing Methodology</span>
+                            <span className="text-xs text-content-subtle uppercase">{tx('detailPage.eyebrowTestingMethodology')}</span>
                             <p className="text-sm text-content-default mt-1 whitespace-pre-line">{control.testingMethodology}</p>
                         </div>
                     )}

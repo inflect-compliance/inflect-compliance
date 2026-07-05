@@ -32,6 +32,11 @@ const updateSchema = read('src/lib/schemas/index.ts');
 const card = read('src/app/t/[tenantSlug]/(app)/controls/[controlId]/_components/ControlRoiCard.tsx');
 const leaderboard = read('src/app/t/[tenantSlug]/(app)/controls/_components/BestValueControls.tsx');
 const editModal = read('src/app/t/[tenantSlug]/(app)/controls/[controlId]/_modals/EditControlModal.tsx');
+// The ROI card's user-facing copy moved to next-intl; resolve moved
+// literals against the en catalog.
+const enControls = JSON.parse(read('messages/en.json')).controls as {
+    roi: Record<string, string>;
+};
 
 describe('RQ3-8 — the model holds its honest-null contract', () => {
     test('every non-ok branch carries a typed reason — never a fabricated number', () => {
@@ -130,7 +135,10 @@ describe('RQ3-8 — the UI honours honest-null', () => {
         expect(card).toMatch(/data-testid="control-roi-gap"/);
         // The "ROI is null on purpose" line is part of the contract —
         // it tells the buyer the absence is honest, not a bug.
-        expect(card).toMatch(/ROI is null on purpose/);
+        // (migrated to next-intl — the card renders the key, the copy
+        // lives in the catalog.)
+        expect(card).toMatch(/roi\.gapSubline/);
+        expect(enControls.roi.gapSubline).toMatch(/ROI is null on purpose/);
     });
 
     test('the leaderboard renders an empty-state, never a zero-row list', () => {

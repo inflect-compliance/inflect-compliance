@@ -20,6 +20,43 @@ jest.mock('@/lib/hooks/use-tenant-swr', () => ({
     useTenantSWR: (path: string) => useSWRMock(path),
 }));
 
+// next-intl is ESM (jest can't parse its export). Mock it against the
+// real en catalog, with `.rich` support for the ROI headline's <b>/<m> tags.
+jest.mock('next-intl', () => {
+    const en = require('../../messages/en.json');
+    const React = require('react');
+    const resolve = (ns: string, key: string): string | undefined => {
+        const out = key.split('.').reduce<unknown>((o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), en[ns]);
+        return typeof out === 'string' ? out : undefined;
+    };
+    const subst = (str: string, params?: Record<string, unknown>) =>
+        !params ? str : str.replace(/\{(\w+)\}/g, (_, p) => (p in params && typeof params[p] !== 'function' ? String(params[p]) : `{${p}}`));
+    const makeT = (ns: string) => {
+        const t = (key: string, params?: Record<string, unknown>) => {
+            const v = resolve(ns, key);
+            return v !== undefined ? subst(v, params) : key;
+        };
+        (t as unknown as { rich: unknown }).rich = (key: string, params?: Record<string, unknown>) => {
+            const raw = resolve(ns, key);
+            if (raw === undefined) return key;
+            const v = subst(raw, params);
+            const parts: unknown[] = [];
+            const re = /<(\w+)>(.*?)<\/\1>/g;
+            let last = 0, m: RegExpExecArray | null, i = 0;
+            while ((m = re.exec(v))) {
+                if (m.index > last) parts.push(v.slice(last, m.index));
+                const fn = params && (params[m[1]] as ((c: string) => React.ReactElement) | undefined);
+                parts.push(fn ? React.cloneElement(fn(m[2]), { key: i++ }) : m[2]);
+                last = re.lastIndex;
+            }
+            if (last < v.length) parts.push(v.slice(last));
+            return parts;
+        };
+        return t;
+    };
+    return { useTranslations: (ns: string) => makeT(ns), useLocale: () => 'en' };
+});
+
 import { ControlRoiCard } from '@/app/t/[tenantSlug]/(app)/controls/[controlId]/_components/ControlRoiCard';
 
 function mockSwrData(data: unknown) {
