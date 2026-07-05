@@ -16,6 +16,11 @@ const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
 const USECASE = 'src/app-layer/usecases/nis2-readiness.ts';
 const VIEW = 'src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/readiness/Nis2ReadinessClient.tsx';
+// The view's user-facing copy moved to next-intl; resolve the moved literals
+// against the en catalog so the intent still holds.
+const EN_READINESS = (JSON.parse(read('messages/en.json')) as {
+    frameworks: { readiness: Record<string, string> };
+}).frameworks.readiness;
 
 describe('NIS2 readiness — scoring model', () => {
     it('weights by criticality and excludes NA (known input)', () => {
@@ -80,7 +85,9 @@ describe('NIS2 readiness — results view', () => {
     });
 
     it('renders the "self-assessment, not legal certification" disclaimer', () => {
-        expect(src).toMatch(/not a legal compliance determination/i);
+        // disclaimer copy migrated to next-intl (t.rich); assert the key + en value
+        expect(src).toMatch(/t\.rich\('readiness\.disclaimer'/);
+        expect(EN_READINESS.disclaimer).toMatch(/not a legal compliance determination/i);
     });
 
     it('renders the CC BY 4.0 attribution', () => {
@@ -90,6 +97,7 @@ describe('NIS2 readiness — results view', () => {
 
     it('the materialize action is explicit (confirm dialog), not automatic', () => {
         expect(src).toContain('ConfirmDialog');
-        expect(src).toMatch(/Create findings/);
+        expect(src).toMatch(/t\('readiness\.createFindings'\)/);
+        expect(EN_READINESS.createFindings).toMatch(/Create findings/);
     });
 });

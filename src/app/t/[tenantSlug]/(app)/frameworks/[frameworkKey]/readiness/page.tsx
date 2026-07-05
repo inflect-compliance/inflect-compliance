@@ -1,3 +1,5 @@
+import { getTranslations } from 'next-intl/server';
+
 import { getTenantCtx } from '@/app-layer/context';
 import { Nis2ReadinessClient } from './Nis2ReadinessClient';
 
@@ -17,10 +19,11 @@ export default async function FrameworkReadinessPage({
     await getTenantCtx({ tenantSlug });
 
     if (frameworkKey.toUpperCase() !== 'NIS2') {
+        const t = await getTranslations('frameworks');
         return (
             <div className="p-6">
                 <p className="text-content-muted text-sm">
-                    Self-assessment readiness is only available for the NIS2 framework.
+                    {t('readiness.onlyNis2')}
                 </p>
             </div>
         );
