@@ -1,6 +1,7 @@
 'use client';
 import { formatDateTime } from '@/lib/format-date';
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -35,6 +36,7 @@ interface AuditLogClientProps {
  * dedicated page so admin landing reads as a pure pill-nav surface.
  */
 export function AuditLogClient({ auditLog, translations: t }: AuditLogClientProps) {
+    const tx = useTranslations('admin');
     const logColumns = useMemo(() => createColumns<AuditLogRow>([
         {
             id: 'time',
@@ -73,7 +75,7 @@ export function AuditLogClient({ auditLog, translations: t }: AuditLogClientProp
                 columns={logColumns}
                 getRowId={(e) => e.id}
                 emptyState={t.noEntries}
-                resourceName={(p) => (p ? 'log entries' : 'log entry')}
+                resourceName={(p) => (p ? tx('auditLogEntries') : tx('auditLogEntry'))}
                 data-testid="audit-log-table"
             />
         </ListPageShell.Body>

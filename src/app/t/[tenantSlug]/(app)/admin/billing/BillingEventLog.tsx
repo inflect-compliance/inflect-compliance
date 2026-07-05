@@ -1,6 +1,7 @@
 'use client';
 import { formatDateTime } from '@/lib/format-date';
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { Activity, CreditCard, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { DataTable, createColumns } from '@/components/ui/table';
 
@@ -26,10 +27,11 @@ interface BillingEvent {
 }
 
 export function BillingEventLog({ events }: { events: BillingEvent[] }) {
+    const t = useTranslations('admin');
     const columns = useMemo(() => createColumns<BillingEvent>([
         {
             id: 'event',
-            header: 'Event',
+            header: t('billingLog.event'),
             accessorKey: 'type',
             cell: ({ row }) => {
                 const config = EVENT_CONFIG[row.original.type] || {
@@ -48,7 +50,7 @@ export function BillingEventLog({ events }: { events: BillingEvent[] }) {
         },
         {
             id: 'time',
-            header: 'Time',
+            header: t('billingLog.time'),
             accessorKey: 'createdAt',
             cell: ({ getValue }) => (
                 <span className="text-content-muted whitespace-nowrap">
@@ -58,7 +60,7 @@ export function BillingEventLog({ events }: { events: BillingEvent[] }) {
         },
         {
             id: 'stripeId',
-            header: 'Stripe ID',
+            header: t('billingLog.stripeId'),
             accessorKey: 'stripeEventId',
             cell: ({ getValue }) => (
                 <span className="text-content-subtle font-mono">
@@ -66,15 +68,15 @@ export function BillingEventLog({ events }: { events: BillingEvent[] }) {
                 </span>
             ),
         },
-    ]), []);
+    ]), [t]);
 
     return (
         <DataTable
             data={events}
             columns={columns}
             getRowId={(e) => e.id}
-            emptyState="No billing events yet."
-            resourceName={(p) => p ? 'events' : 'event'}
+            emptyState={t('billingLog.empty')}
+            resourceName={(p) => p ? t('billingLog.resourcePlural') : t('billingLog.resourceSingular')}
             data-testid="billing-event-log"
         />
     );
