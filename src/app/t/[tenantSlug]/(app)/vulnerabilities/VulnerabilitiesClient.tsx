@@ -9,6 +9,7 @@
  * EntityListPage + FilterToolbar + DataTable primitives.
  */
 import { useCallback, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { ShieldAlert } from '@/components/ui/icons/nucleo/shield-alert';
 import { ArrowUpRight } from '@/components/ui/icons/nucleo/arrow-up-right';
@@ -67,6 +68,7 @@ export function VulnerabilitiesClient({ initialRows, tenantSlug, canWrite }: Pro
 }
 
 function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
+    const t = useTranslations('vulnerabilities');
     const router = useRouter();
     const toast = useToast();
     const { state, hasActive } = useFilters();
@@ -90,21 +92,21 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
             try {
                 const res = await fetch(apiUrl(`/vulnerabilities/${row.id}/convert-to-${target}`), { method: 'POST' });
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                toast.success(target === 'risk' ? 'Risk created from vulnerability' : 'Finding created from vulnerability');
+                toast.success(target === 'risk' ? t('riskCreated') : t('findingCreated'));
                 router.refresh();
             } catch {
-                toast.error(`Could not convert to ${target}`);
+                toast.error(t('convertFailed', { target }));
             } finally {
                 setPendingId(null);
             }
         },
-        [apiUrl, router, toast],
+        [apiUrl, router, toast, t],
     );
 
     const columns = useMemo(() => createColumns<VulnRow>([
         {
             id: 'cve',
-            header: 'CVE',
+            header: t('colCve'),
             accessorFn: (r) => r.cve.id,
             cell: ({ row }) => {
                 const cve = row.original.cve;
@@ -125,7 +127,7 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
         },
         {
             id: 'asset',
-            header: 'Asset',
+            header: t('colAsset'),
             accessorFn: (r) => r.asset.name,
             cell: ({ row }) => (
                 <span className="text-content-default">
@@ -136,7 +138,7 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
         },
         {
             id: 'severity',
-            header: 'Severity',
+            header: t('colSeverity'),
             accessorFn: (r) => r.cve.cvssSeverity ?? '',
             cell: ({ row }) => {
                 const sev = (row.original.cve.cvssSeverity ?? '').toUpperCase();
@@ -146,7 +148,7 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
         },
         {
             id: 'cvss',
-            header: 'CVSS',
+            header: t('colCvss'),
             accessorFn: (r) => r.cve.cvssScore ?? -1,
             cell: ({ row }) => (
                 <span className="tabular-nums text-content-muted">
@@ -156,13 +158,13 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
         },
         {
             id: 'matchedVia',
-            header: 'Matched',
+            header: t('colMatched'),
             accessorFn: (r) => r.matchedVia,
             cell: ({ row }) => <span className="text-content-muted">{row.original.matchedVia}</span>,
         },
         {
             id: 'status',
-            header: 'Status',
+            header: t('colStatus'),
             accessorFn: (r) => r.status,
             cell: ({ row }) => (
                 <StatusBadge variant={STATUS_VARIANT[row.original.status] ?? 'neutral'}>
@@ -182,7 +184,7 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
                             disabled={pendingId === row.original.id}
                             onClick={() => convert(row.original, 'risk')}
                         >
-                            To Risk
+                            {t('toRisk')}
                         </Button>
                         <Button
                             variant="secondary"
@@ -190,46 +192,42 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
                             disabled={pendingId === row.original.id}
                             onClick={() => convert(row.original, 'finding')}
                         >
-                            To Finding
+                            {t('toFinding')}
                         </Button>
                     </div>
                 ),
             }]
             : []),
-    ]), [canWrite, convert, pendingId]);
+    ]), [canWrite, convert, pendingId, t]);
 
     return (
         <EntityListPage<VulnRow>
             header={{
                 back: { smart: true },
                 breadcrumbs: [
-                    { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
-                    { label: 'Risk Register', href: `/t/${tenantSlug}/risks` },
-                    { label: 'Vulnerabilities' },
+                    { label: t('crumbDashboard'), href: `/t/${tenantSlug}/dashboard` },
+                    { label: t('crumbRisk'), href: `/t/${tenantSlug}/risks` },
+                    { label: t('crumbTitle') },
                 ],
                 title: (
                     <>
                         <ShieldAlert className="inline-block mr-2 h-5 w-5 align-text-bottom" />
-                        Vulnerabilities
+                        {t('title')}
                     </>
                 ),
-                description: 'CVEs matched to your assets — convert critical ones into risks or findings.',
+                description: t('description'),
             }}
             filters={{ defs: buildVulnFilters() }}
             table={{
                 data: rows,
                 columns,
                 getRowId: (r) => r.id,
-                resourceName: (plural) => (plural ? 'vulnerabilities' : 'vulnerability'),
+                resourceName: (plural) => (plural ? t('resourcePlural') : t('resourceSingular')),
                 emptyState: (
                     <EmptyState
                         icon={ShieldAlert}
-                        title={hasActive ? 'No matching vulnerabilities' : 'No vulnerabilities yet'}
-                        description={
-                            hasActive
-                                ? 'Try clearing a filter.'
-                                : 'CVEs appear here once the NVD sync matches a published CVE to an asset with CPE/product data, or when you link one manually.'
-                        }
+                        title={hasActive ? t('emptyFilteredTitle') : t('emptyTitle')}
+                        description={hasActive ? t('emptyFilteredDesc') : t('emptyDesc')}
                     />
                 ),
             }}

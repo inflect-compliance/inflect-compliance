@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -44,6 +45,7 @@ export function FrameworkUpdatesClient({
     tenantSlug: string;
     initialDeltas: DeltaRow[];
 }) {
+    const t = useTranslations('frameworkUpdates');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const [deltas, setDeltas] = useState(initialDeltas);
@@ -61,10 +63,10 @@ export function FrameworkUpdatesClient({
                 headers: { 'content-type': 'application/json' },
                 body: JSON.stringify(body),
             });
-            if (!res.ok) throw new Error(((await res.json().catch(() => null)) as { error?: { message?: string } })?.error?.message ?? `Failed to ${action}`);
+            if (!res.ok) throw new Error(((await res.json().catch(() => null)) as { error?: { message?: string } })?.error?.message ?? t('actionFailed', { action }));
             onOk(await res.json().catch(() => null));
         } catch (e) {
-            setError(e instanceof Error ? e.message : `Failed to ${action}`);
+            setError(e instanceof Error ? e.message : t('actionFailed', { action }));
         } finally {
             setBusy(null);
         }
@@ -76,15 +78,15 @@ export function FrameworkUpdatesClient({
     const materialize = (id: string) =>
         act(id, 'materialize-findings', {}, (json) => {
             const created = (json as { created?: number })?.created ?? 0;
-            setNote(`Materialised ${created} finding(s) for the new gaps.`);
+            setNote(t('materialised', { count: created }));
         });
 
     return (
         <div className="space-y-section animate-fadeIn">
             <PageHeader
-                breadcrumbs={[{ label: 'Dashboard', href: tenantHref('/dashboard') }, { label: 'Framework updates' }]}
-                title="Framework updates"
-                description="When a framework version lands, here's exactly what changed and what it means for you — new gaps and controls to re-review."
+                breadcrumbs={[{ label: t('crumbDashboard'), href: tenantHref('/dashboard') }, { label: t('crumbTitle') }]}
+                title={t('title')}
+                description={t('description')}
             />
 
             {error && <div className={cn(cardVariants({ density: 'compact' }), 'text-sm text-content-danger')}>{error}</div>}
@@ -92,8 +94,8 @@ export function FrameworkUpdatesClient({
 
             {deltas.length === 0 ? (
                 <EmptyState
-                    title="No framework updates"
-                    description="When a framework you have installed publishes a new version, its personalised delta-gap appears here."
+                    title={t('emptyTitle')}
+                    description={t('emptyDescription')}
                 />
             ) : (
                 <ul className="space-y-default">
@@ -110,36 +112,36 @@ export function FrameworkUpdatesClient({
                                 {d.status === 'NEW' && (
                                     <div className="flex items-center gap-tight">
                                         <Button variant="ghost" size="sm" disabled={busy === d.id} onClick={() => review(d.id, 'DISMISSED')}>
-                                            Dismiss
+                                            {t('dismiss')}
                                         </Button>
                                         {d.newGapCount > 0 && (
                                             <Button variant="ghost" size="sm" disabled={busy === d.id} onClick={() => materialize(d.id)}>
-                                                Create findings
+                                                {t('createFindings')}
                                             </Button>
                                         )}
                                         <Button variant="secondary" size="sm" disabled={busy === d.id} onClick={() => review(d.id, 'REVIEWED')}>
-                                            Mark reviewed
+                                            {t('markReviewed')}
                                         </Button>
                                     </div>
                                 )}
                             </div>
 
                             <p className="text-sm text-content-default">
-                                <span className="font-medium">Your impact:</span> {d.newGapCount} new gap(s)
-                                {d.flaggedControlCount > 0 ? `, ${d.flaggedControlCount} control(s) flagged for re-review.` : '.'}
+                                <span className="font-medium">{t('impactLabel')}</span> {t('newGaps', { count: d.newGapCount })}
+                                {d.flaggedControlCount > 0 ? t('flaggedTail', { count: d.flaggedControlCount }) : '.'}
                             </p>
 
                             <div className="grid grid-cols-1 gap-tight text-xs text-content-muted sm:grid-cols-3">
                                 <div>
-                                    <span className="font-medium text-content-default">Added ({d.addedCodes.length}): </span>
+                                    <span className="font-medium text-content-default">{t('added', { count: d.addedCodes.length })}</span>
                                     {d.addedCodes.join(', ') || '—'}
                                 </div>
                                 <div>
-                                    <span className="font-medium text-content-default">Changed ({d.changedCodes.length}): </span>
+                                    <span className="font-medium text-content-default">{t('changed', { count: d.changedCodes.length })}</span>
                                     {d.changedCodes.join(', ') || '—'}
                                 </div>
                                 <div>
-                                    <span className="font-medium text-content-default">Removed ({d.removedCodes.length}): </span>
+                                    <span className="font-medium text-content-default">{t('removed', { count: d.removedCodes.length })}</span>
                                     {d.removedCodes.join(', ') || '—'}
                                 </div>
                             </div>
