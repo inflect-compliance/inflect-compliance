@@ -7,6 +7,7 @@
  * unsaved-changes guard + `Modal.Form` pinned-footer shell.
  */
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
+import { useTranslations } from 'next-intl';
 import { useSWRConfig } from 'swr';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
@@ -42,6 +43,7 @@ export function NewAuditModal({
     labels,
 }: NewAuditModalProps) {
     const { mutate: swrMutate } = useSWRConfig();
+    const tx = useTranslations('audits');
 
     const form = useNewAuditForm({
         onSuccess: (audit) => {
@@ -61,9 +63,7 @@ export function NewAuditModal({
                 if (form.submitting) return;
                 if (
                     form.isDirty &&
-                    !window.confirm(
-                        'Discard audit? Any details you entered will be lost.',
-                    )
+                    !window.confirm(tx('newModal.discardConfirm'))
                 ) {
                     return;
                 }
@@ -90,7 +90,7 @@ export function NewAuditModal({
         >
             <Modal.Header
                 title={labels.newAudit}
-                description="Plan a new internal audit. The default checklist is generated automatically; you can edit it after creation."
+                description={tx('newModal.description')}
             />
             <Modal.Form id="new-audit-form" onSubmit={handleSubmit}>
                 <Modal.Body>
@@ -127,7 +127,7 @@ export function NewAuditModal({
                         disabled={!form.canSubmit}
                         id="create-audit-btn"
                     >
-                        {form.submitting ? 'Creating…' : labels.createAudit}
+                        {form.submitting ? tx('newModal.creating') : labels.createAudit}
                     </Button>
                 </Modal.Actions>
             </Modal.Form>

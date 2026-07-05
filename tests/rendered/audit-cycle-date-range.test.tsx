@@ -41,9 +41,20 @@ jest.mock('next/navigation', () => ({
 // next-intl isn't wired in a bare render; the audit-cycles page
 // doesn't depend on it directly, but transitively-imported shared
 // components (if any pull it in) need a stub.
-jest.mock('next-intl', () => ({
-    useTranslations: () => (key: string) => key,
-}));
+jest.mock('next-intl', () => {
+    const en = require('../../messages/en.json');
+    return {
+        useTranslations: (ns: string) => (key: string, params?: Record<string, unknown>) => {
+            let v = key
+                .split('.')
+                .reduce((o: unknown, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), en[ns]);
+            if (typeof v !== 'string') return key;
+            if (params) for (const [p, val] of Object.entries(params)) v = (v as string).replace(new RegExp(`\\{${p}\\}`, 'g'), String(val));
+            return v;
+        },
+        useLocale: () => 'en',
+    };
+});
 
 // Next-auth used transitively by the palette / client boundaries in
 // some rendered trees — stub defensively.

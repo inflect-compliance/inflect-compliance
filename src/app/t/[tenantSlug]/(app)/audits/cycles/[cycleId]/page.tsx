@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
@@ -48,6 +49,7 @@ interface DefaultPackPreview {
 }
 
 export default function CycleDetailPage() {
+    const tx = useTranslations('audits');
     const params = useParams();
     const router = useRouter();
     const tenantSlug = params.tenantSlug as string;
@@ -101,10 +103,10 @@ export default function CycleDetailPage() {
     };
 
     const breadcrumbs = [
-        { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
-        { label: 'Audits', href: `/t/${tenantSlug}/audits` },
-        { label: 'Cycles', href: `/t/${tenantSlug}/audits/cycles` },
-        { label: cycle?.name ?? 'Cycle' },
+        { label: tx('crumb.dashboard'), href: `/t/${tenantSlug}/dashboard` },
+        { label: tx('crumb.audits'), href: `/t/${tenantSlug}/audits` },
+        { label: tx('crumb.cycles'), href: `/t/${tenantSlug}/audits/cycles` },
+        { label: cycle?.name ?? tx('cycleDetail.cycleFallback') },
     ];
     if (loading) {
         return (
@@ -115,7 +117,7 @@ export default function CycleDetailPage() {
     }
     if (!cycle) {
         return (
-            <EntityDetailLayout empty={{ message: 'Audit cycle not found.' }} title="" breadcrumbs={breadcrumbs}>
+            <EntityDetailLayout empty={{ message: tx('cycleDetail.notFound') }} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
@@ -138,9 +140,9 @@ export default function CycleDetailPage() {
             meta={
                 <MetaStrip
                     items={[
-                        { label: 'Framework', value: fw.label },
-                        { label: 'Version', value: `v${cycle.frameworkVersion}` },
-                        { label: 'Status', value: cycle.status },
+                        { label: tx('cycleDetail.framework'), value: fw.label },
+                        { label: tx('cycleDetail.version'), value: `v${cycle.frameworkVersion}` },
+                        { label: tx('cycleDetail.status'), value: cycle.status },
                     ]}
                 />
             }
@@ -148,40 +150,40 @@ export default function CycleDetailPage() {
             {/* Default Pack Preview */}
             <div className={cn(cardVariants(), 'space-y-default')}>
                 <div className="flex items-center justify-between">
-                    <Heading level={2}>Default Pack Preview</Heading>
+                    <Heading level={2}>{tx('cycleDetail.defaultPackPreview')}</Heading>
                     <Button variant="primary" onClick={createDefaultPack} disabled={creating} id="create-default-pack-btn" icon={<AppIcon name="package" size={16} />}>
-                        {creating ? 'Creating...' : 'Pack'}
+                        {creating ? tx('cycleDetail.creating') : tx('cycleDetail.pack')}
                     </Button>
                 </div>
 
                 {preview ? (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-default" id="preview-counts">
                         <div className="p-4 rounded-lg bg-bg-default border border-border-default">
-                            <KPIStat id="preview-controls" value={preview.selection?.controls?.count || 0} label="Controls" />
+                            <KPIStat id="preview-controls" value={preview.selection?.controls?.count || 0} label={tx('cycleDetail.controls')} />
                         </div>
                         <div className="p-4 rounded-lg bg-bg-default border border-border-default">
-                            <KPIStat id="preview-policies" value={preview.selection?.policies?.count || 0} label="Policies" />
+                            <KPIStat id="preview-policies" value={preview.selection?.policies?.count || 0} label={tx('cycleDetail.policies')} />
                         </div>
                         <div className="p-4 rounded-lg bg-bg-default border border-border-default">
-                            <KPIStat id="preview-evidence" value={preview.selection?.evidence?.count || 0} label="Evidence" tone="success" />
+                            <KPIStat id="preview-evidence" value={preview.selection?.evidence?.count || 0} label={tx('cycleDetail.evidence')} tone="success" />
                         </div>
                         <div className="p-4 rounded-lg bg-bg-default border border-border-default">
-                            <KPIStat id="preview-issues" value={preview.selection?.issues?.count || 0} label="Issues" tone="attention" />
+                            <KPIStat id="preview-issues" value={preview.selection?.issues?.count || 0} label={tx('cycleDetail.issues')} tone="attention" />
                         </div>
                     </div>
                 ) : (
-                    <p className="text-content-muted text-sm">Could not load default pack preview.</p>
+                    <p className="text-content-muted text-sm">{tx('cycleDetail.previewError')}</p>
                 )}
 
                 <p className="text-xs text-content-subtle">
-                    Total: {preview?.totalItems || 0} items will be included in the default pack.
+                    {tx('cycleDetail.totalItems', { count: preview?.totalItems || 0 })}
                 </p>
             </div>
 
             {/* Existing Packs */}
             {cycle.packs?.length > 0 && (
                 <div className="space-y-compact">
-                    <Heading level={2}>Packs</Heading>
+                    <Heading level={2}>{tx('cycleDetail.packs')}</Heading>
                     {cycle.packs.map((p) => (
                         <Link key={p.id} href={`/t/${tenantSlug}/audits/packs/${p.id}`}
                             className={cn(cardVariants({ density: 'compact' }), 'flex items-center justify-between hover:bg-bg-muted/50 transition block')} id={`pack-link-${p.id}`}>

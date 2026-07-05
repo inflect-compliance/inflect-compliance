@@ -86,7 +86,12 @@ describe('NIS2 gap — Audits-page conditional home', () => {
         expect(linkIdx).toBeGreaterThan(condIdx);
         // No Plus glyph on this navigational entry.
         const block = client.slice(condIdx, condIdx + 400);
-        expect(block).toMatch(/NIS2 Gap Assessment/);
+        // Label migrated to next-intl — assert the key + its en value.
+        expect(block).toMatch(/tx\('nav\.nis2Gap'\)/);
+        const en = JSON.parse(read('messages/en.json')) as {
+            audits: { nav: Record<string, string> };
+        };
+        expect(en.audits.nav.nis2Gap).toBe('NIS2 Gap Assessment');
         expect(block).not.toMatch(/<Plus/);
     });
 

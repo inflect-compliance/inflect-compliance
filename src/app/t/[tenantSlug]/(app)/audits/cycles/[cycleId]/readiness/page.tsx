@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { buttonVariants } from '@/components/ui/button-variants';
@@ -39,6 +40,7 @@ const SEV_BADGE: Record<string, StatusBadgeVariant> = {
 };
 
 export default function CycleReadinessPage() {
+    const tx = useTranslations('audits');
     const params = useParams();
     const tenantSlug = params.tenantSlug as string;
     const cycleId = params.cycleId as string;
@@ -56,11 +58,11 @@ export default function CycleReadinessPage() {
     }, [apiUrl, cycleId]);
 
     const breadcrumbs = [
-        { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
-        { label: 'Audits', href: `/t/${tenantSlug}/audits` },
-        { label: 'Readiness', href: `/t/${tenantSlug}/audits/readiness` },
-        { label: cycle?.name || 'Cycle', href: `/t/${tenantSlug}/audits/cycles/${cycleId}` },
-        { label: 'Readiness Report' },
+        { label: tx('crumb.dashboard'), href: `/t/${tenantSlug}/dashboard` },
+        { label: tx('crumb.audits'), href: `/t/${tenantSlug}/audits` },
+        { label: tx('crumb.readiness'), href: `/t/${tenantSlug}/audits/readiness` },
+        { label: cycle?.name || tx('readiness.cycleFallback'), href: `/t/${tenantSlug}/audits/cycles/${cycleId}` },
+        { label: tx('readiness.readinessReportCrumb') },
     ];
 
     if (loading) {
@@ -81,7 +83,7 @@ export default function CycleReadinessPage() {
                 title=""
                 back={{ smart: true }}
                 breadcrumbs={breadcrumbs}
-                error="Could not compute readiness."
+                error={tx('readiness.couldNotCompute')}
             >
                 {null}
             </EntityDetailLayout>
@@ -92,7 +94,7 @@ export default function CycleReadinessPage() {
 
     return (
         <EntityDetailLayout
-            title={`${cycle?.name || 'Cycle'} — Readiness`}
+            title={tx('readiness.titleSuffix', { name: cycle?.name || tx('readiness.cycleFallback') })}
             back={{ smart: true }}
             breadcrumbs={breadcrumbs}
         >
@@ -101,32 +103,32 @@ export default function CycleReadinessPage() {
                 <div className="flex items-start gap-page">
                     <div className="flex-shrink-0 text-center">
                         <ScoreRing score={result.score} />
-                        <p className="text-xs text-content-muted mt-2">{result.frameworkKey} Readiness</p>
+                        <p className="text-xs text-content-muted mt-2">{tx('readiness.frameworkReadiness', { framework: result.frameworkKey })}</p>
                     </div>
                     <div className="flex-1 space-y-compact" id="readiness-breakdown">
                         {bd.coverage && (
-                            <BreakdownBar label="Requirement Coverage" score={bd.coverage.score}
-                                detail={`${bd.coverage.mapped}/${bd.coverage.total} requirements mapped`} weight={bd.coverage.weight} />
+                            <BreakdownBar label={tx('readiness.reqCoverage')} score={bd.coverage.score}
+                                detail={tx('readiness.reqMappedDetail', { mapped: bd.coverage.mapped, total: bd.coverage.total })} weight={bd.coverage.weight} />
                         )}
                         {bd.implementation && (
-                            <BreakdownBar label="Controls Implemented" score={bd.implementation.score}
-                                detail={`${bd.implementation.implemented}/${bd.implementation.total} controls IMPLEMENTED`} weight={bd.implementation.weight} />
+                            <BreakdownBar label={tx('readiness.controlsImplemented')} score={bd.implementation.score}
+                                detail={tx('readiness.controlsImplDetail', { implemented: bd.implementation.implemented, total: bd.implementation.total })} weight={bd.implementation.weight} />
                         )}
                         {bd.evidence && (
-                            <BreakdownBar label="Evidence Completeness" score={bd.evidence.score}
-                                detail={`${bd.evidence.withEvidence}/${bd.evidence.total} controls with evidence`} weight={bd.evidence.weight} />
+                            <BreakdownBar label={tx('readiness.evidenceCompleteness')} score={bd.evidence.score}
+                                detail={tx('readiness.evidenceDetail', { withEvidence: bd.evidence.withEvidence, total: bd.evidence.total })} weight={bd.evidence.weight} />
                         )}
                         {bd.policies && (
-                            <BreakdownBar label="Key Policies" score={bd.policies.score}
-                                detail={`${bd.policies.found?.length || 0}/${bd.policies.expected?.length || 0} key policies found`} weight={bd.policies.weight} />
+                            <BreakdownBar label={tx('readiness.keyPolicies')} score={bd.policies.score}
+                                detail={tx('readiness.policiesDetail', { found: bd.policies.found?.length || 0, expected: bd.policies.expected?.length || 0 })} weight={bd.policies.weight} />
                         )}
                         {bd.tasks && (
-                            <BreakdownBar label="Task Completion" score={bd.tasks.score}
-                                detail={`${bd.tasks.overdue} overdue task(s)`} weight={bd.tasks.weight} />
+                            <BreakdownBar label={tx('readiness.taskCompletion')} score={bd.tasks.score}
+                                detail={tx('readiness.tasksDetail', { overdue: bd.tasks.overdue })} weight={bd.tasks.weight} />
                         )}
                         {bd.issues && (
-                            <BreakdownBar label="Open Issues" score={bd.issues.score}
-                                detail={`${bd.issues.open} open issue(s)`} weight={bd.issues.weight} />
+                            <BreakdownBar label={tx('readiness.openIssues')} score={bd.issues.score}
+                                detail={tx('readiness.issuesDetail', { open: bd.issues.open })} weight={bd.issues.weight} />
                         )}
                     </div>
                 </div>
@@ -135,7 +137,7 @@ export default function CycleReadinessPage() {
             {/* Recommendations */}
             {result.recommendations?.length > 0 && (
                 <div className={cardVariants()} id="recommendations">
-                    <Heading level={3} className="mb-3 inline-flex items-center gap-tight"><AppIcon name="info" size={16} /> Recommended Next Actions</Heading>
+                    <Heading level={3} className="mb-3 inline-flex items-center gap-tight"><AppIcon name="info" size={16} /> {tx('readiness.recommendedActions')}</Heading>
                     <div className="space-y-tight">
                         {result.recommendations.map((r: string, i: number) => (
                             <div key={i} className="flex items-start gap-tight text-sm">
@@ -150,7 +152,7 @@ export default function CycleReadinessPage() {
             {/* Gaps */}
             {result.gaps?.length > 0 && (
                 <div className="space-y-compact" id="gaps-section">
-                    <Heading level={3}>Top Gaps ({result.gaps.length})</Heading>
+                    <Heading level={3}>{tx('readiness.topGaps', { count: result.gaps.length })}</Heading>
                     <div className={cn(cardVariants({ density: 'none' }), 'divide-y divide-border-default/50')}>
                         {result.gaps.map((g, i: number) => (
                             <div key={i} className="p-3 flex items-center justify-between text-sm">
@@ -170,14 +172,14 @@ export default function CycleReadinessPage() {
 
             {/* Exports */}
             <div className={cardVariants()} id="exports-section">
-                <Heading level={3} className="mb-3 inline-flex items-center gap-tight"><AppIcon name="export" size={16} /> Exports</Heading>
+                <Heading level={3} className="mb-3 inline-flex items-center gap-tight"><AppIcon name="export" size={16} /> {tx('readiness.exports')}</Heading>
                 <div className="flex flex-wrap gap-tight">
                     <a href={apiUrl(`/audits/cycles/${cycleId}/readiness?action=export-json`)}
-                        target="_blank" rel="noopener" className={buttonVariants({ variant: 'secondary', size: 'sm' })}>Readiness Report (JSON)</a>
+                        target="_blank" rel="noopener" className={buttonVariants({ variant: 'secondary', size: 'sm' })}>{tx('readiness.exportJson')}</a>
                     <a href={apiUrl(`/audits/cycles/${cycleId}/readiness?action=export-unmapped-csv`)}
-                        target="_blank" rel="noopener" className={buttonVariants({ variant: 'secondary', size: 'sm' })}>Unmapped Requirements (CSV)</a>
+                        target="_blank" rel="noopener" className={buttonVariants({ variant: 'secondary', size: 'sm' })}>{tx('readiness.exportUnmappedCsv')}</a>
                     <a href={apiUrl(`/audits/cycles/${cycleId}/readiness?action=export-control-gaps-csv`)}
-                        target="_blank" rel="noopener" className={buttonVariants({ variant: 'secondary', size: 'sm' })}>Control Gaps (CSV)</a>
+                        target="_blank" rel="noopener" className={buttonVariants({ variant: 'secondary', size: 'sm' })}>{tx('readiness.exportControlGapsCsv')}</a>
                 </div>
             </div>
         </EntityDetailLayout>
@@ -188,6 +190,7 @@ function BreakdownBar({ label, score, detail, weight }: { label: string; score: 
     // Epic 59 ProgressBar primitive. Variant picks the token-backed
     // colour by score band — light-mode compatible (replaces the
     // earlier hardcoded emerald/amber/red Tailwind classes).
+    const tx = useTranslations('audits');
     const variant = score >= 80 ? 'success' : score >= 50 ? 'warning' : 'error';
     return (
         <div>
@@ -199,7 +202,7 @@ function BreakdownBar({ label, score, detail, weight }: { label: string; score: 
                 value={score}
                 size="sm"
                 variant={variant}
-                aria-label={`${label} readiness score`}
+                aria-label={tx('readiness.scoreAria', { label })}
             />
             <p className="text-xs text-content-subtle mt-0.5">{detail}</p>
         </div>

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
@@ -89,6 +90,9 @@ interface AuditDetail {
  * Data is pre-fetched server-side and passed via props.
  */
 export function AuditsClient({ initialAudits, tenantSlug, hasNis2, translations: t }: AuditsClientProps) {
+    // `tx` covers strings not threaded through the server `translations` prop
+    // (nav links, list counters) — mirrors the assets/risks island pattern.
+    const tx = useTranslations('audits');
     const [selected, setSelected] = useState<AuditDetail | null>(null);
 
     // Modal-form follow-up — create-audit modal mounted off the list,
@@ -171,7 +175,7 @@ export function AuditsClient({ initialAudits, tenantSlug, hasNis2, translations:
                 // right-aligned there instead of landing left under justify-between.
                 actionsClassName="ml-auto"
                 breadcrumbs={[
-                    { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
+                    { label: tx('crumb.dashboard'), href: `/t/${tenantSlug}/dashboard` },
                     { label: t.title },
                 ]}
                 title={t.title}
@@ -183,7 +187,7 @@ export function AuditsClient({ initialAudits, tenantSlug, hasNis2, translations:
                             className={cn(buttonVariants({ variant: 'secondary' }))}
                             id="audits-frameworks-link"
                         >
-                            Frameworks
+                            {tx('nav.frameworks')}
                         </Link>
                         {/* Scans (security-testing / scanner ingestion) moved off
                             the primary nav onto the Audit surface — scan findings
@@ -194,7 +198,7 @@ export function AuditsClient({ initialAudits, tenantSlug, hasNis2, translations:
                             className={cn(buttonVariants({ variant: 'secondary' }))}
                             id="audits-scans-link"
                         >
-                            Scans
+                            {tx('nav.scans')}
                         </Link>
                         {/* Findings moved off the Tests page header onto
                             the Audit surface — findings are raised and
@@ -214,7 +218,7 @@ export function AuditsClient({ initialAudits, tenantSlug, hasNis2, translations:
                             className={cn(buttonVariants({ variant: 'secondary' }))}
                             id="audits-incidents-link"
                         >
-                            Incidents
+                            {tx('nav.incidents')}
                         </Link>
                         {/* NIS2 Gap Assessment lifecycle — shown ONLY when NIS2
                             is an installed framework (absent, not disabled,
@@ -226,7 +230,7 @@ export function AuditsClient({ initialAudits, tenantSlug, hasNis2, translations:
                                 className={cn(buttonVariants({ variant: 'secondary' }))}
                                 id="audits-nis2-gap-link"
                             >
-                                NIS2 Gap Assessment
+                                {tx('nav.nis2Gap')}
                             </Link>
                         )}
                         {/* Business Continuity (BIA) sits beside Incidents — NIS2/DORA
@@ -237,7 +241,7 @@ export function AuditsClient({ initialAudits, tenantSlug, hasNis2, translations:
                             className={cn(buttonVariants({ variant: 'secondary' }))}
                             id="audits-business-continuity-link"
                         >
-                            Business Continuity
+                            {tx('nav.businessContinuity')}
                         </Link>
                         <Button variant="primary" icon={<Plus className="-ml-0.5 -mr-2.5" />} onClick={() => setIsCreateOpen(true)} id="new-audit-btn">{t.newAudit}</Button>
                     </div>
@@ -256,7 +260,7 @@ export function AuditsClient({ initialAudits, tenantSlug, hasNis2, translations:
                                 <span className="font-medium text-sm">{a.title}</span>
                                 <StatusBadge variant={STATUS_BADGE[a.status]}>{statusLabel(a.status)}</StatusBadge>
                             </div>
-                            <p className="text-xs text-content-subtle mt-1">{a._count?.checklist || 0} items · {a._count?.findings || 0} {t.findingsTab.toLowerCase()}</p>
+                            <p className="text-xs text-content-subtle mt-1">{tx('list.itemsCount', { count: a._count?.checklist || 0 })} · {a._count?.findings || 0} {t.findingsTab.toLowerCase()}</p>
                         </button>
                     ))}
                 </div>
@@ -285,7 +289,7 @@ export function AuditsClient({ initialAudits, tenantSlug, hasNis2, translations:
                                                 setSelected={(opt) => opt && updateChecklist(item.id, opt.value)}
                                                 matchTriggerWidth
                                                 buttonProps={{ className: 'w-full sm:w-auto text-xs' }}
-                                                aria-label={`Result for ${item.prompt}`}
+                                                aria-label={tx('list.resultFor', { prompt: item.prompt })}
                                                 caret
                                             />
                                             <div className="flex-1">
