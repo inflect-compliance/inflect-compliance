@@ -7,6 +7,7 @@
 import { formatDate } from '@/lib/format-date';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { CloudCog, Trash2, Copy, Check, AlertTriangle, Clock, ExternalLink } from 'lucide-react';
 import { useToast } from '@/components/ui/hooks/use-toast';
@@ -37,6 +38,7 @@ interface ScimState {
 }
 
 export default function ScimAdminPage() {
+    const t = useTranslations('admin');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const [state, setState] = useState<ScimState | null>(null);
@@ -56,16 +58,16 @@ export default function ScimAdminPage() {
             if (res.ok) {
                 setState(await res.json());
             } else if (res.status === 401 || res.status === 403) {
-                setError('You do not have permission to view SCIM tokens.');
+                setError(t('scim.errNoPermission'));
             } else {
-                setError(`Failed to load SCIM state (${res.status}).`);
+                setError(t('scim.errLoadStatus', { status: res.status }));
             }
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to load SCIM state.');
+            setError(e instanceof Error ? e.message : t('scim.errLoad'));
         } finally {
             setLoading(false);
         }
-    }, [apiUrl]);
+    }, [apiUrl, t]);
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { fetchTokens(); }, [fetchTokens]);
@@ -79,14 +81,14 @@ export default function ScimAdminPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ label: newLabel || 'SCIM Token' }),
             });
-            if (!res.ok) throw new Error('Failed to generate token');
+            if (!res.ok) throw new Error(t('scim.errGenerate'));
             const data = await res.json();
             setNewTokenPlaintext(data.plaintext);
             setShowForm(false);
             setNewLabel('');
             fetchTokens();
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed');
+            setError(e instanceof Error ? e.message : t('scim.errGeneric'));
         } finally {
             setGenerating(false);
         }
@@ -109,9 +111,9 @@ export default function ScimAdminPage() {
         if (!newTokenPlaintext) return;
         const ok = await copy(newTokenPlaintext);
         if (ok) {
-            toast.success('SCIM token copied — paste it into your IdP now.');
+            toast.success(t('scim.copyToastOk'));
         } else {
-            toast.error('Copy failed — select the token and copy manually.');
+            toast.error(t('scim.copyToastFail'));
         }
     };
 
@@ -126,18 +128,18 @@ export default function ScimAdminPage() {
                 <div>
                     <PageBreadcrumbs
                         items={[
-                            { label: 'Dashboard', href: tenantHref('/dashboard') },
-                            { label: 'Admin', href: tenantHref('/admin') },
-                            { label: 'SCIM Provisioning' },
+                            { label: t('crumb.dashboard'), href: tenantHref('/dashboard') },
+                            { label: t('crumb.admin'), href: tenantHref('/admin') },
+                            { label: t('scim.crumbSelf') },
                         ]}
                         className="mb-1"
                     />
                     <Heading level={1} className="flex items-center gap-tight">
                         <CloudCog className="w-6 h-6 text-[var(--brand-default)]" />
-                        SCIM Provisioning
+                        {t('scim.title')}
                     </Heading>
                     <p className="text-sm text-content-muted mt-1">
-                        Automate user provisioning from your identity provider (Okta, Azure AD, OneLogin).
+                        {t('scim.subtitle')}
                     </p>
                 </div>
                 <div className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -145,32 +147,32 @@ export default function ScimAdminPage() {
                         ? 'bg-bg-success text-content-success border border-border-success'
                         : 'bg-bg-elevated/50 text-content-muted border border-border-emphasis'
                 }`}>
-                    {activeTokens.length > 0 ? 'Enabled' : 'Not Configured'}
+                    {activeTokens.length > 0 ? t('scim.enabled') : t('scim.notConfigured')}
                 </div>
             </div>
 
             {/* Endpoint Info — render the slot eagerly so #scim-endpoint-url
                 is queryable before the GET /admin/scim fetch resolves. */}
             <div className={cardVariants({ density: 'compact' })}>
-                <Heading level={3} className="mb-2">SCIM Endpoint</Heading>
+                <Heading level={3} className="mb-2">{t('scim.endpointHeading')}</Heading>
                 <div className="flex items-center gap-tight bg-bg-default/50 rounded px-3 py-2">
                     <code
                         className="text-xs text-[var(--brand-muted)] flex-1 select-all min-h-[1.25rem] inline-block"
                         id="scim-endpoint-url"
                     >
-                        {state?.scimEndpoint ?? (loading ? 'Loading endpoint…' : '—')}
+                        {state?.scimEndpoint ?? (loading ? t('scim.loadingEndpoint') : '—')}
                     </code>
                     <CopyButton
                         value={state?.scimEndpoint ?? ''}
-                        label="Copy SCIM endpoint"
-                        successMessage="SCIM endpoint copied"
+                        label={t('scim.copyEndpoint')}
+                        successMessage={t('scim.copyEndpointOk')}
                         size="sm"
                         disabled={!state?.scimEndpoint}
                     />
                     <ExternalLink className="w-3.5 h-3.5 text-content-subtle" />
                 </div>
                 <p className="text-xs text-content-subtle mt-1">
-                    Use this base URL when configuring SCIM in your identity provider.
+                    {t('scim.endpointHint')}
                 </p>
             </div>
 
@@ -180,11 +182,11 @@ export default function ScimAdminPage() {
                     variant="warning"
                     icon={AlertTriangle}
                     id="new-token-alert"
-                    title="Copy your SCIM token now"
+                    title={t('scim.newTokenTitle')}
                     className="flex-col items-stretch p-4"
                 >
                     <p className="text-xs text-content-warning">
-                        This token will not be shown again. Store it securely in your identity provider.
+                        {t('scim.newTokenBody')}
                     </p>
                     <div className="flex items-center gap-tight mt-3 bg-bg-page/60 rounded px-3 py-2">
                         <code className="text-xs text-content-emphasis flex-1 break-all select-all" id="scim-token-value">
@@ -192,7 +194,7 @@ export default function ScimAdminPage() {
                         </code>
                         <Button variant="secondary" size="sm" onClick={copyToken} className="shrink-0" id="copy-token-btn">
                             {copied ? <Check className="w-3.5 h-3.5 text-content-success" /> : <Copy className="w-3.5 h-3.5" />}
-                            {copied ? 'Copied' : 'Copy'}
+                            {copied ? t('scim.copied') : t('scim.copy')}
                         </Button>
                     </div>
                     <Button
@@ -201,7 +203,7 @@ export default function ScimAdminPage() {
                         onClick={() => setNewTokenPlaintext(null)}
                         className="mt-3 w-full"
                     >
-                        I&apos;ve copied the token — dismiss
+                        {t('scim.dismissCopied')}
                     </Button>
                 </InlineNotice>
             )}
@@ -209,7 +211,7 @@ export default function ScimAdminPage() {
             {/* Token List */}
             <div className={cardVariants({ density: 'none' })}>
                 <div className="flex items-center justify-between p-4 border-b border-border-default/50">
-                    <Heading level={3}>SCIM Tokens</Heading>
+                    <Heading level={3}>{t('scim.tokensHeading')}</Heading>
                     <Button
                         variant="primary"
                         icon={<Plus className="-ml-0.5 -mr-2.5" />}
@@ -217,7 +219,7 @@ export default function ScimAdminPage() {
                         id="generate-token-btn"
                         disabled={generating}
                     >
-                        Token
+                        {t('scim.tokenBtn')}
                     </Button>
                 </div>
 
@@ -229,16 +231,16 @@ export default function ScimAdminPage() {
                                 type="text"
                                 value={newLabel}
                                 onChange={e => setNewLabel(e.target.value)}
-                                placeholder="Token label (e.g. Okta SCIM)"
+                                placeholder={t('scim.tokenLabelPlaceholder')}
                                 className="input flex-1"
                                 id="token-label-input"
                                 autoFocus
                             />
                             <Button variant="primary" size="sm" onClick={generateToken} disabled={generating} loading={generating}>
-                                {generating ? 'Generating…' : 'Create'}
+                                {generating ? t('scim.generating') : t('scim.create')}
                             </Button>
                             <Button variant="secondary" size="sm" onClick={() => setShowForm(false)}>
-                                Cancel
+                                {t('scim.cancel')}
                             </Button>
                         </div>
                     </div>
@@ -251,13 +253,13 @@ export default function ScimAdminPage() {
                 )}
 
                 {loading ? (
-                    <div className="p-8 text-center text-content-subtle text-sm"><span className="animate-pulse">Fetching tokens</span></div>
+                    <div className="p-8 text-center text-content-subtle text-sm"><span className="animate-pulse">{t('scim.fetching')}</span></div>
                 ) : activeTokens.length === 0 && !showForm ? (
                     <div className="p-8 text-center">
                         <CloudCog className="w-8 h-8 text-content-subtle mx-auto mb-2" />
-                        <p className="text-sm text-content-muted">No active SCIM tokens</p>
+                        <p className="text-sm text-content-muted">{t('scim.noActive')}</p>
                         <p className="text-xs text-content-subtle mt-1">
-                            Generate a token to enable automated provisioning from your identity provider.
+                            {t('scim.emptyTokensHint')}
                         </p>
                     </div>
                 ) : (
@@ -267,16 +269,16 @@ export default function ScimAdminPage() {
                                 <div>
                                     <div className="flex items-center gap-tight">
                                         <span className="text-sm font-medium text-content-emphasis">{token.label}</span>
-                                        <StatusBadge variant="success" size="sm">Active</StatusBadge>
+                                        <StatusBadge variant="success" size="sm">{t('scim.active')}</StatusBadge>
                                     </div>
                                     <div className="flex items-center gap-compact mt-1">
                                         <span className="text-xs text-content-subtle">
-                                            Created {formatDate(token.createdAt)}
+                                            {t('scim.created', { date: formatDate(token.createdAt) })}
                                         </span>
                                         {token.lastUsedAt && (
                                             <span className="text-xs text-content-muted flex items-center gap-1">
                                                 <Clock className="w-3.5 h-3.5" />
-                                                Last used {formatDate(token.lastUsedAt)}
+                                                {t('scim.lastUsed', { date: formatDate(token.lastUsedAt) })}
                                             </span>
                                         )}
                                     </div>
@@ -287,7 +289,7 @@ export default function ScimAdminPage() {
                                     onClick={() => revokeToken(token.id)}
                                 >
                                     <Trash2 className="w-3.5 h-3.5" />
-                                    Revoke
+                                    {t('scim.revoke')}
                                 </Button>
                             </div>
                         ))}
@@ -299,16 +301,16 @@ export default function ScimAdminPage() {
             {revokedTokens.length > 0 && (
                 <details className={cardVariants({ density: 'none' })}>
                     <summary className="p-4 cursor-pointer text-sm text-content-muted hover:text-content-default">
-                        {revokedTokens.length} revoked token{revokedTokens.length !== 1 ? 's' : ''}
+                        {t('scim.revokedCount', { count: revokedTokens.length })}
                     </summary>
                     <div className="divide-y divide-border-default/50 border-t border-border-default/50">
                         {revokedTokens.map(token => (
                             <div key={token.id} className="flex items-center justify-between p-4 opacity-50">
                                 <div>
                                     <span className="text-sm text-content-muted">{token.label}</span>
-                                    <StatusBadge variant="error" size="sm" className="ml-2">Revoked</StatusBadge>
+                                    <StatusBadge variant="error" size="sm" className="ml-2">{t('scim.revoked')}</StatusBadge>
                                     <div className="text-xs text-content-subtle mt-1">
-                                        Revoked {formatDate(token.revokedAt!)}
+                                        {t('scim.revokedOn', { date: formatDate(token.revokedAt!) })}
                                     </div>
                                 </div>
                             </div>
@@ -319,19 +321,20 @@ export default function ScimAdminPage() {
 
             {/* Setup guide */}
             <Card>
-                <Heading level={3} className="mb-3">Setup Guide</Heading>
+                <Heading level={3} className="mb-3">{t('scim.setupHeading')}</Heading>
                 <ol className="space-y-tight text-xs text-content-muted list-decimal list-inside">
-                    <li>Generate a SCIM token above and copy it securely.</li>
-                    <li>In your IdP (Okta, Azure AD, etc.), configure a SCIM 2.0 provisioning connector.</li>
-                    <li>Set the <strong>SCIM connector base URL</strong> to the endpoint shown above.</li>
-                    <li>Set <strong>Authentication</strong> to &quot;HTTP Header&quot; with the bearer token.</li>
-                    <li>Enable provisioning actions: <em>Create Users</em>, <em>Update User Attributes</em>, <em>Deactivate Users</em>.</li>
-                    <li>Test the connection from your IdP&apos;s SCIM provisioning settings.</li>
+                    <li>{t('scim.setup1')}</li>
+                    <li>{t('scim.setup2')}</li>
+                    <li>{t.rich('scim.setup3', { b: (c) => <strong>{c}</strong> })}</li>
+                    <li>{t.rich('scim.setup4', { b: (c) => <strong>{c}</strong> })}</li>
+                    <li>{t.rich('scim.setupActions', { i: (c) => <em>{c}</em> })}</li>
+                    <li>{t('scim.setup5')}</li>
                 </ol>
                 <div className="mt-4 p-3 bg-bg-default/50 rounded text-xs text-content-subtle">
-                    <strong className="text-content-muted">Role mapping:</strong> SCIM-provisioned users are assigned the <strong>Reader</strong> role by default.
-                    Editors and Auditors can be mapped via your IdP&apos;s group/role assignment.
-                    Admin role cannot be assigned via SCIM — it must be set manually.
+                    {t.rich('scim.roleMapBody', {
+                        b: (c) => <strong className="text-content-muted">{c}</strong>,
+                        s: (c) => <strong>{c}</strong>,
+                    })}
                 </div>
             </Card>
             <ConfirmDialog
@@ -345,9 +348,9 @@ export default function ScimAdminPage() {
                     }
                 }}
                 tone="danger"
-                title="Revoke SCIM token?"
-                description="Any IdP using this token will lose access immediately. This cannot be undone."
-                confirmLabel="Revoke token"
+                title={t('scim.revokeTitle')}
+                description={t('scim.revokeDesc')}
+                confirmLabel={t('scim.revokeConfirm')}
                 onConfirm={async () => {
                     if (tokenIdToRevoke) await performRevoke(tokenIdToRevoke);
                 }}

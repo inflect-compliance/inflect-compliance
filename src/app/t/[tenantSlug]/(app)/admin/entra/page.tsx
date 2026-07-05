@@ -4,6 +4,7 @@
  * sibling admin/sso page). Migrate to useTenantSWR with that page. */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/card';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ const EMPTY: EntraConfig = {
 };
 
 export default function EntraProviderWizard() {
+    const t = useTranslations('admin');
     const apiUrl = useTenantApiUrl();
     const [config, setConfig] = useState<EntraConfig>(EMPTY);
     const [configured, setConfigured] = useState(false);
@@ -71,34 +73,34 @@ export default function EntraProviderWizard() {
                 }),
             });
             if (!res.ok) {
-                setError('Save failed — check the directory + client IDs are valid GUIDs.');
+                setError(t('entra.saveFailedGuids'));
                 return;
             }
             setConfigured(true);
             setSaved(true);
         } catch {
-            setError('Save failed — network error.');
+            setError(t('entra.saveFailedNetwork'));
         } finally {
             setSaving(false);
         }
-    }, [apiUrl, config]);
+    }, [apiUrl, config, t]);
 
     return (
         <div className="space-y-section">
             <BackAffordance />
-            <PageBreadcrumbs items={[{ label: 'Admin' }, { label: 'Entra ID' }]} />
+            <PageBreadcrumbs items={[{ label: t('crumb.admin') }, { label: t('entra.crumbSelf') }]} />
             <div className="flex items-center gap-default">
-                <Heading level={1}>Microsoft Entra ID</Heading>
+                <Heading level={1}>{t('entra.title')}</Heading>
                 {configured && (
                     <span className="inline-flex items-center gap-tight text-sm text-content-muted">
-                        Configured
+                        {t('entra.configured')}
                     </span>
                 )}
             </div>
 
             {/* Step 1 + 2 — setup instructions the tenant admin performs in Entra */}
             <Card className="space-y-default p-6">
-                <Heading level={3}>1 · App registration &amp; token configuration</Heading>
+                <Heading level={3}>{t('entra.step1Title')}</Heading>
                 <ol className="list-decimal space-y-tight pl-5 text-sm text-content-muted">
                     <li>
                         Create an App Registration in the Entra portal; set the redirect URI to{' '}
@@ -117,17 +119,17 @@ export default function EntraProviderWizard() {
                     target="_blank"
                     rel="noopener noreferrer"
                 >
-                    Open Entra portal ↗
+                    {t('entra.openPortal')}
                 </a>
             </Card>
 
             {/* Step 3 — provider config form */}
             <Card className="space-y-default p-6">
-                <Heading level={3}>2 · Provider configuration</Heading>
+                <Heading level={3}>{t('entra.step2Title')}</Heading>
                 {error && <InlineNotice variant="error">{error}</InlineNotice>}
-                {saved && <InlineNotice variant="success">Saved.</InlineNotice>}
+                {saved && <InlineNotice variant="success">{t('entra.saved')}</InlineNotice>}
 
-                <FormField label="Directory (tenant) ID">
+                <FormField label={t('entra.directoryId')}>
                     <Input
                         id="aadTenantId"
                         placeholder="00000000-0000-0000-0000-000000000000"
@@ -135,7 +137,7 @@ export default function EntraProviderWizard() {
                         onChange={(e) => setConfig((c) => ({ ...c, aadTenantId: e.target.value }))}
                     />
                 </FormField>
-                <FormField label="Application (client) ID">
+                <FormField label={t('entra.appClientId')}>
                     <Input
                         id="clientId"
                         placeholder="00000000-0000-0000-0000-000000000000"
@@ -143,7 +145,7 @@ export default function EntraProviderWizard() {
                         onChange={(e) => setConfig((c) => ({ ...c, clientId: e.target.value }))}
                     />
                 </FormField>
-                <FormField label="Allowed sign-in domains (comma-separated, optional)">
+                <FormField label={t('entra.allowedDomains')}>
                     <Input
                         id="domains"
                         placeholder="contoso.com, fabrikam.com"
@@ -160,22 +162,22 @@ export default function EntraProviderWizard() {
                     Roles aren't supported yet (the resolver reads the `groups`
                     claim only); the schema keeps the value for back-compat. */}
                 <FormField
-                    label="Enforce group gate"
-                    hint="When on, a user who matches none of your group → role mappings is denied access. Only takes effect once you've added at least one mapping below."
+                    label={t('entra.enforceGate')}
+                    hint={t('entra.enforceGateHint')}
                 >
                     <ToggleGroup
                         selected={config.enforceGroupGate ? 'on' : 'off'}
                         selectAction={(v) => setConfig((c) => ({ ...c, enforceGroupGate: v === 'on' }))}
                         options={[
-                            { value: 'off', label: 'Off' },
-                            { value: 'on', label: 'On' },
+                            { value: 'off', label: t('entra.off') },
+                            { value: 'on', label: t('entra.on') },
                         ]}
                     />
                 </FormField>
 
                 <div className="flex justify-end pt-default">
                     <Button variant="primary" onClick={save} disabled={saving}>
-                        {saving ? 'Saving…' : 'Save'}
+                        {saving ? t('entra.saving') : t('entra.save')}
                     </Button>
                 </div>
             </Card>
