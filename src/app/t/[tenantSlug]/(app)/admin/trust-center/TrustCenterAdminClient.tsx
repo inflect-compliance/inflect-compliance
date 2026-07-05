@@ -10,6 +10,7 @@
  */
 import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Plus } from '@/components/ui/icons/nucleo/plus';
 import { Trash } from '@/components/ui/icons/nucleo/trash';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,7 @@ interface Props {
 }
 
 export function TrustCenterAdminClient({ tenantSlug, initial, canPublish }: Props) {
+    const t = useTranslations('admin');
     const router = useRouter();
     const toast = useToast();
 
@@ -77,14 +79,14 @@ export function TrustCenterAdminClient({ tenantSlug, initial, canPublish }: Prop
             if (!res.ok) throw new Error(String(res.status));
             const row = await res.json();
             if (row?.slug) setSlug(row.slug);
-            toast.success('Trust Center saved');
+            toast.success(t('trustCenter.toastSaved'));
             router.refresh();
         } catch {
-            toast.error('Could not save Trust Center');
+            toast.error(t('trustCenter.toastSaveFailed'));
         } finally {
             setSaving(false);
         }
-    }, [apiUrl, displayName, tagline, postureSummary, securityContact, indexable, frameworks, documents, router, toast]);
+    }, [apiUrl, displayName, tagline, postureSummary, securityContact, indexable, frameworks, documents, router, toast, t]);
 
     const setPublished = useCallback(async (next: boolean) => {
         try {
@@ -95,12 +97,12 @@ export function TrustCenterAdminClient({ tenantSlug, initial, canPublish }: Prop
             });
             if (!res.ok) throw new Error(String(res.status));
             setEnabled(next);
-            toast.success(next ? 'Trust Center is now PUBLIC' : 'Trust Center unpublished');
+            toast.success(next ? t('trustCenter.toastPublic') : t('trustCenter.toastUnpublished'));
             router.refresh();
         } catch {
-            toast.error('Could not change publish state');
+            toast.error(t('trustCenter.toastPublishFailed'));
         }
-    }, [apiUrl, router, toast]);
+    }, [apiUrl, router, toast, t]);
 
     const publicPath = `/trust/${slug}`;
 
@@ -113,97 +115,97 @@ export function TrustCenterAdminClient({ tenantSlug, initial, canPublish }: Prop
     return (
         <div className="space-y-section">
             <div className="space-y-default">
-                <BackAffordance override={{ href: `/t/${tenantSlug}/admin`, label: 'Admin' }} />
+                <BackAffordance override={{ href: `/t/${tenantSlug}/admin`, label: t('crumb.admin') }} />
                 <PageBreadcrumbs
                     items={[
-                        { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
-                        { label: 'Admin', href: `/t/${tenantSlug}/admin` },
-                        { label: 'Trust Center' },
+                        { label: t('crumb.dashboard'), href: `/t/${tenantSlug}/dashboard` },
+                        { label: t('crumb.admin'), href: `/t/${tenantSlug}/admin` },
+                        { label: t('trustCenter.title') },
                     ]}
                 />
                 <div className="flex items-center justify-between gap-default">
-                    <Heading level={1}>Trust Center</Heading>
+                    <Heading level={1}>{t('trustCenter.title')}</Heading>
                     <StatusBadge variant={enabled ? 'success' : 'neutral'}>
-                        {enabled ? 'Public' : 'Not published'}
+                        {enabled ? t('trustCenter.statusPublic') : t('trustCenter.statusNotPublished')}
                     </StatusBadge>
                 </div>
                 <p className="text-content-muted">
-                    Compose a public, curated compliance page. It is OFF until an OWNER publishes it.
-                    Public URL: <span className="font-mono text-content-default">{publicPath}</span>
+                    {t('trustCenter.intro')}{' '}
+                    {t('trustCenter.publicUrlLabel')} <span className="font-mono text-content-default">{publicPath}</span>
                 </p>
             </div>
 
             <div className="grid gap-section lg:grid-cols-2">
                 {/* ── Compose ── */}
                 <section className="space-y-default">
-                    <Heading level={2}>Content</Heading>
-                    <FormField label="Display name" required>
+                    <Heading level={2}>{t('trustCenter.content')}</Heading>
+                    <FormField label={t('trustCenter.displayName')} required>
                         <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Acme Inc." />
                     </FormField>
-                    <FormField label="Tagline">
-                        <Input value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="Security & compliance at Acme" />
+                    <FormField label={t('trustCenter.tagline')}>
+                        <Input value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder={t('trustCenter.taglinePlaceholder')} />
                     </FormField>
-                    <FormField label="Security posture summary" description="Prose you write — never a live count.">
+                    <FormField label={t('trustCenter.postureSummary')} description={t('trustCenter.postureSummaryDesc')}>
                         <Textarea value={postureSummary} onChange={(e) => setPostureSummary(e.target.value)} rows={5} />
                     </FormField>
-                    <FormField label="Security contact">
+                    <FormField label={t('trustCenter.securityContact')}>
                         <Input value={securityContact} onChange={(e) => setSecurityContact(e.target.value)} placeholder="security@acme.com" />
                     </FormField>
 
-                    <FormField label="Frameworks to show" description="You set the status label — it is not derived from coverage.">
+                    <FormField label={t('trustCenter.frameworksToShow')} description={t('trustCenter.frameworksDesc')}>
                         <div className="space-y-tight">
                             {frameworks.map((f, i) => (
                                 <div key={i} className="flex gap-tight">
                                     <Input value={f.key} onChange={(e) => setFrameworks((p) => p.map((x, j) => j === i ? { ...x, key: e.target.value } : x))} placeholder="SOC 2" />
-                                    <Input value={f.statusLabel} onChange={(e) => setFrameworks((p) => p.map((x, j) => j === i ? { ...x, statusLabel: e.target.value } : x))} placeholder="Type II — current" />
-                                    <Button variant="ghost" size="icon" aria-label="Remove framework" onClick={() => setFrameworks((p) => p.filter((_, j) => j !== i))}><Trash className="h-4 w-4" /></Button>
+                                    <Input value={f.statusLabel} onChange={(e) => setFrameworks((p) => p.map((x, j) => j === i ? { ...x, statusLabel: e.target.value } : x))} placeholder={t('trustCenter.fwStatusPlaceholder')} />
+                                    <Button variant="ghost" size="icon" aria-label={t('trustCenter.removeFramework')} onClick={() => setFrameworks((p) => p.filter((_, j) => j !== i))}><Trash className="h-4 w-4" /></Button>
                                 </div>
                             ))}
-                            <Button variant="secondary" size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => setFrameworks((p) => [...p, { key: '', statusLabel: '' }])}>Framework</Button>
+                            <Button variant="secondary" size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => setFrameworks((p) => [...p, { key: '', statusLabel: '' }])}>{t('trustCenter.framework')}</Button>
                         </div>
                     </FormField>
 
-                    <FormField label="Published documents" description="Links to already-public artifacts only — never internal evidence.">
+                    <FormField label={t('trustCenter.publishedDocuments')} description={t('trustCenter.publishedDocumentsDesc')}>
                         <div className="space-y-tight">
                             {documents.map((d, i) => (
                                 <div key={i} className="flex gap-tight">
-                                    <Input value={d.label} onChange={(e) => setDocuments((p) => p.map((x, j) => j === i ? { ...x, label: e.target.value } : x))} placeholder="Security whitepaper" />
+                                    <Input value={d.label} onChange={(e) => setDocuments((p) => p.map((x, j) => j === i ? { ...x, label: e.target.value } : x))} placeholder={t('trustCenter.docLabelPlaceholder')} />
                                     <Input value={d.url} onChange={(e) => setDocuments((p) => p.map((x, j) => j === i ? { ...x, url: e.target.value } : x))} placeholder="https://…" />
-                                    <Button variant="ghost" size="icon" aria-label="Remove document" onClick={() => setDocuments((p) => p.filter((_, j) => j !== i))}><Trash className="h-4 w-4" /></Button>
+                                    <Button variant="ghost" size="icon" aria-label={t('trustCenter.removeDocument')} onClick={() => setDocuments((p) => p.filter((_, j) => j !== i))}><Trash className="h-4 w-4" /></Button>
                                 </div>
                             ))}
-                            <Button variant="secondary" size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => setDocuments((p) => [...p, { label: '', url: '' }])}>Document</Button>
+                            <Button variant="secondary" size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => setDocuments((p) => [...p, { label: '', url: '' }])}>{t('trustCenter.document')}</Button>
                         </div>
                     </FormField>
 
-                    <FormField label="Search engine indexing">
+                    <FormField label={t('trustCenter.searchIndexing')}>
                         <label className="flex items-center gap-tight text-content-default">
                             <input type="checkbox" checked={indexable} onChange={(e) => setIndexable(e.target.checked)} />
-                            Allow search engines to index this page
+                            {t('trustCenter.allowIndexing')}
                         </label>
                     </FormField>
 
                     <div className="flex items-center gap-default pt-default">
-                        <Button variant="primary" onClick={save} disabled={saving} loading={saving}>Save</Button>
+                        <Button variant="primary" onClick={save} disabled={saving} loading={saving}>{t('trustCenter.save')}</Button>
                         {canPublish && !enabled && (
-                            <Button variant="secondary" onClick={() => setConfirmOpen(true)}>Publish…</Button>
+                            <Button variant="secondary" onClick={() => setConfirmOpen(true)}>{t('trustCenter.publish')}</Button>
                         )}
                         {canPublish && enabled && (
-                            <Button variant="secondary" onClick={() => setPublished(false)}>Unpublish</Button>
+                            <Button variant="secondary" onClick={() => setPublished(false)}>{t('trustCenter.unpublish')}</Button>
                         )}
                         {!canPublish && (
-                            <span className="text-sm text-content-muted">Publishing requires the OWNER role.</span>
+                            <span className="text-sm text-content-muted">{t('trustCenter.publishRequiresOwner')}</span>
                         )}
                     </div>
                 </section>
 
                 {/* ── Live preview (exactly what the public sees) ── */}
                 <section className="space-y-default">
-                    <Heading level={2}>Public preview</Heading>
+                    <Heading level={2}>{t('trustCenter.publicPreview')}</Heading>
                     <div className="rounded-lg border border-border-default bg-bg-default p-6 space-y-default">
                         {/* Preview mirrors the external public surface — a styled
                             div, not an in-app document heading (heading-discipline). */}
-                        <div className="text-xl font-semibold text-content-default">{preview.displayName || 'Display name'}</div>
+                        <div className="text-xl font-semibold text-content-default">{preview.displayName || t('trustCenter.displayNameFallback')}</div>
                         {preview.tagline && <p className="text-content-muted">{preview.tagline}</p>}
                         {preview.frameworks.length > 0 && (
                             <div className="flex flex-wrap gap-tight">
@@ -223,7 +225,7 @@ export function TrustCenterAdminClient({ tenantSlug, initial, canPublish }: Prop
                                 ))}
                             </ul>
                         )}
-                        {preview.securityContact && <p className="text-sm text-content-muted">Security contact: {preview.securityContact}</p>}
+                        {preview.securityContact && <p className="text-sm text-content-muted">{t('trustCenter.securityContactPreview', { contact: preview.securityContact })}</p>}
                     </div>
                 </section>
             </div>
@@ -234,9 +236,9 @@ export function TrustCenterAdminClient({ tenantSlug, initial, canPublish }: Prop
             <ConfirmDialog
                 showModal={confirmOpen}
                 setShowModal={setConfirmOpen}
-                title="Publish this page to the public internet?"
-                description={`This page will be publicly accessible at ${publicPath} with no login required. Confirm the content above contains only information safe to publish.`}
-                confirmLabel="Publish Trust Center"
+                title={t('trustCenter.confirmTitle')}
+                description={t('trustCenter.confirmDesc', { path: publicPath })}
+                confirmLabel={t('trustCenter.confirmLabel')}
                 onConfirm={async () => {
                     setConfirmOpen(false);
                     await setPublished(true);

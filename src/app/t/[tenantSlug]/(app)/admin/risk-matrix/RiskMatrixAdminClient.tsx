@@ -28,6 +28,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useToast } from '@/components/ui/hooks/use-toast';
 
 import { Button } from '@/components/ui/button';
@@ -95,6 +96,7 @@ export function RiskMatrixAdminClient({
     );
     const [saving, setSaving] = useState(false);
     const [serverError, setServerError] = useState<string | null>(null);
+    const t = useTranslations('admin');
     const toast = useToast();
 
     // Synthetic preview cells — every (L, I) carries one risk so the
@@ -183,7 +185,7 @@ export function RiskMatrixAdminClient({
             const max = p.likelihoodLevels * p.impactLevels;
             const start = (last?.maxScore ?? 0) + 1;
             if (start > max) {
-                toast.error('No score range left for another band.');
+                toast.error(t('riskMatrix.toastNoRange'));
                 return p;
             }
             return {
@@ -191,7 +193,7 @@ export function RiskMatrixAdminClient({
                 bands: [
                     ...p.bands,
                     {
-                        name: `Band ${p.bands.length + 1}`,
+                        name: t('riskMatrix.bandNameDefault', { n: p.bands.length + 1 }),
                         minScore: start,
                         maxScore: max,
                         color: '#6b7280',
@@ -213,7 +215,7 @@ export function RiskMatrixAdminClient({
 
     const save = useCallback(async () => {
         if (validationIssues.length > 0) {
-            toast.error('Fix validation issues before saving.');
+            toast.error(t('riskMatrix.toastFixValidation'));
             return;
         }
         setSaving(true);
@@ -238,19 +240,19 @@ export function RiskMatrixAdminClient({
                 const body = (await res
                     .json()
                     .catch(() => ({}))) as { error?: string };
-                throw new Error(body.error || `Save failed (${res.status})`);
+                throw new Error(body.error || t('riskMatrix.saveFailedStatus', { status: res.status }));
             }
             const next = (await res.json()) as RiskMatrixConfigShape;
             setConfig(cloneConfig(next));
-            toast.success('Risk matrix configuration saved.');
+            toast.success(t('riskMatrix.toastSaved'));
         } catch (err) {
-            const msg = err instanceof Error ? err.message : 'Save failed';
+            const msg = err instanceof Error ? err.message : t('riskMatrix.saveFailedGeneric');
             setServerError(msg);
             toast.error(msg);
         } finally {
             setSaving(false);
         }
-    }, [tenantSlug, config, validationIssues.length]);
+    }, [tenantSlug, config, validationIssues.length, t, toast]);
 
     // Re-sync if the prop ever changes (server-driven refresh).
     useEffect(() => {
@@ -271,19 +273,17 @@ export function RiskMatrixAdminClient({
                 <div>
                     <PageBreadcrumbs
                         items={[
-                            { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
-                            { label: 'Admin', href: `/t/${tenantSlug}/admin` },
-                            { label: 'Risk Matrix' },
+                            { label: t('crumb.dashboard'), href: `/t/${tenantSlug}/dashboard` },
+                            { label: t('crumb.admin'), href: `/t/${tenantSlug}/admin` },
+                            { label: t('riskMatrix.crumb') },
                         ]}
                         className="mb-1"
                     />
                     <Heading level={1}>
-                        Risk matrix configuration
+                        {t('riskMatrix.title')}
                     </Heading>
                     <p className="mt-1 text-sm text-content-muted">
-                        Tenant-scoped likelihood × impact dimensions, axis
-                        labels, and severity bands. Changes apply to every
-                        risk page in this tenant on save.
+                        {t('riskMatrix.description')}
                     </p>
                 </div>
                 <div className="flex gap-tight">
@@ -295,7 +295,7 @@ export function RiskMatrixAdminClient({
                         onClick={restoreDefaults}
                         disabled={saving}
                     >
-                        Restore defaults
+                        {t('riskMatrix.restoreDefaults')}
                     </Button>
                     <Button
                         variant="primary"
@@ -306,7 +306,7 @@ export function RiskMatrixAdminClient({
                         disabled={saving || validationIssues.length > 0}
                         loading={saving}
                     >
-                        {saving ? 'Saving…' : 'Save changes'}
+                        {saving ? t('riskMatrix.saving') : t('riskMatrix.saveChanges')}
                     </Button>
                 </div>
             </header>
@@ -336,16 +336,16 @@ export function RiskMatrixAdminClient({
                     {/* Dimensions */}
                     <Card className="space-y-default">
                         <Heading level={3}>
-                            Dimensions
+                            {t('riskMatrix.dimensions')}
                         </Heading>
                         <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
                             <label className="block">
                                 <span className="mb-1 block text-xs text-content-muted">
-                                    Likelihood levels
+                                    {t('riskMatrix.likelihoodLevels')}
                                 </span>
                                 <NumberStepper
                                     id="rm-likelihood-levels"
-                                    ariaLabel="Likelihood levels"
+                                    ariaLabel={t('riskMatrix.likelihoodLevels')}
                                     value={config.likelihoodLevels}
                                     min={2}
                                     max={10}
@@ -354,11 +354,11 @@ export function RiskMatrixAdminClient({
                             </label>
                             <label className="block">
                                 <span className="mb-1 block text-xs text-content-muted">
-                                    Impact levels
+                                    {t('riskMatrix.impactLevels')}
                                 </span>
                                 <NumberStepper
                                     id="rm-impact-levels"
-                                    ariaLabel="Impact levels"
+                                    ariaLabel={t('riskMatrix.impactLevels')}
                                     value={config.impactLevels}
                                     min={2}
                                     max={10}
@@ -367,19 +367,19 @@ export function RiskMatrixAdminClient({
                             </label>
                         </div>
                         <p className="text-xs text-content-subtle">
-                            Total cells: {totalCells}.
+                            {t('riskMatrix.totalCells', { count: totalCells })}
                         </p>
                     </Card>
 
                     {/* Axis titles */}
                     <Card className="space-y-default">
                         <Heading level={3}>
-                            Axis titles
+                            {t('riskMatrix.axisTitles')}
                         </Heading>
                         <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
                             <label className="block">
                                 <span className="mb-1 block text-xs text-content-muted">
-                                    Likelihood axis title
+                                    {t('riskMatrix.likelihoodAxisTitle')}
                                 </span>
                                 <input
                                     id="rm-axis-likelihood"
@@ -397,7 +397,7 @@ export function RiskMatrixAdminClient({
                             </label>
                             <label className="block">
                                 <span className="mb-1 block text-xs text-content-muted">
-                                    Impact axis title
+                                    {t('riskMatrix.impactAxisTitle')}
                                 </span>
                                 <input
                                     id="rm-axis-impact"
@@ -419,12 +419,12 @@ export function RiskMatrixAdminClient({
                     {/* Per-level labels */}
                     <Card className="space-y-default">
                         <Heading level={3}>
-                            Per-level labels
+                            {t('riskMatrix.perLevelLabels')}
                         </Heading>
                         <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
                             <div>
                                 <p className="mb-2 text-xs text-content-muted">
-                                    Likelihood
+                                    {t('riskMatrix.likelihood')}
                                 </p>
                                 <div className="space-y-tight">
                                     {config.levelLabels.likelihood.map(
@@ -449,7 +449,7 @@ export function RiskMatrixAdminClient({
                             </div>
                             <div>
                                 <p className="mb-2 text-xs text-content-muted">
-                                    Impact
+                                    {t('riskMatrix.impact')}
                                 </p>
                                 <div className="space-y-tight">
                                     {config.levelLabels.impact.map(
@@ -479,7 +479,7 @@ export function RiskMatrixAdminClient({
                     <Card className="space-y-compact">
                         <div className="flex items-center justify-between">
                             <Heading level={3}>
-                                Severity bands
+                                {t('riskMatrix.severityBands')}
                             </Heading>
                             <Button
                                 variant="primary"
@@ -488,12 +488,11 @@ export function RiskMatrixAdminClient({
                                 id="rm-add-band-btn"
                                 onClick={addBand}
                             >
-                                Band
+                                {t('riskMatrix.band')}
                             </Button>
                         </div>
                         <p className="text-xs text-content-subtle">
-                            Bands must cover scores 1..{totalCells} without
-                            gaps or overlaps.
+                            {t('riskMatrix.bandsCoverHint', { count: totalCells })}
                         </p>
                         <ul className="space-y-tight">
                             {config.bands.map((band, idx) => (
@@ -511,7 +510,7 @@ export function RiskMatrixAdminClient({
                                                 name: e.target.value,
                                             })
                                         }
-                                        aria-label={`Band ${idx + 1} name`}
+                                        aria-label={t('riskMatrix.bandNameAria', { n: idx + 1 })}
                                         data-testid={`rm-band-name-${idx}`}
                                     />
                                     <input
@@ -525,7 +524,7 @@ export function RiskMatrixAdminClient({
                                                 minScore: Number(e.target.value),
                                             })
                                         }
-                                        aria-label={`Band ${idx + 1} min score`}
+                                        aria-label={t('riskMatrix.bandMinAria', { n: idx + 1 })}
                                         data-testid={`rm-band-min-${idx}`}
                                     />
                                     <input
@@ -539,7 +538,7 @@ export function RiskMatrixAdminClient({
                                                 maxScore: Number(e.target.value),
                                             })
                                         }
-                                        aria-label={`Band ${idx + 1} max score`}
+                                        aria-label={t('riskMatrix.bandMaxAria', { n: idx + 1 })}
                                         data-testid={`rm-band-max-${idx}`}
                                     />
                                     <input
@@ -557,7 +556,7 @@ export function RiskMatrixAdminClient({
                                                 color: e.target.value,
                                             })
                                         }
-                                        aria-label={`Band ${idx + 1} colour`}
+                                        aria-label={t('riskMatrix.bandColorAria', { n: idx + 1 })}
                                         data-testid={`rm-band-color-${idx}`}
                                     />
                                     <Button
@@ -566,11 +565,11 @@ export function RiskMatrixAdminClient({
                                         type="button"
                                         className="col-span-2"
                                         onClick={() => removeBand(idx)}
-                                        aria-label={`Remove band ${idx + 1}`}
+                                        aria-label={t('riskMatrix.removeBandAria', { n: idx + 1 })}
                                         data-testid={`rm-band-remove-${idx}`}
                                         disabled={config.bands.length <= 1}
                                     >
-                                        Remove
+                                        {t('riskMatrix.remove')}
                                     </Button>
                                 </li>
                             ))}
@@ -581,16 +580,15 @@ export function RiskMatrixAdminClient({
                 {/* ── Live preview ───────────────────────────────── */}
                 <aside className="space-y-tight">
                     <Heading level={3}>
-                        Preview
+                        {t('riskMatrix.preview')}
                     </Heading>
                     <p className="text-xs text-content-muted">
-                        Synthetic 1-risk-per-cell payload — colour bands +
-                        axis labels reflect the current draft.
+                        {t('riskMatrix.previewHint')}
                     </p>
                     <RiskMatrix
                         config={config}
                         cells={previewCells}
-                        title="Preview"
+                        title={t('riskMatrix.preview')}
                         showSwapToggle={false}
                         data-testid="risk-matrix-admin-preview"
                     />

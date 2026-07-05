@@ -76,7 +76,12 @@ describe('RQ3-3 — appetite checks honour the tested percentile', () => {
 
     test('the admin page exposes the board-level percentile choice', () => {
         expect(adminPage).toMatch(/appetite-tested-percentile/);
-        expect(adminPage).toMatch(/Ceiling tested at/);
+        // "Ceiling tested at:" migrated to next-intl; assert the key + en value
+        expect(adminPage).toMatch(/riskAppetite\.ceilingTestedAt/);
+        const en = JSON.parse(read('messages/en.json')) as {
+            admin: { riskAppetite: Record<string, string> };
+        };
+        expect(en.admin.riskAppetite.ceilingTestedAt).toMatch(/Ceiling tested at/);
     });
 });
 
