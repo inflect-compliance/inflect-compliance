@@ -42,12 +42,16 @@ describe('icon-only action discipline', () => {
     // distinctive enough that its presence proves the icon-only button is
     // wired — and a revert to a text `<Button>Freeze Pack</Button>` would
     // drop the `label=`/`aria-label=` and fail here.
-    const ICON_ACTION_SITES: Array<{ file: string; label: string; i18nKey?: string }> = [
-        { file: `${APP}/audits/packs/[packId]/page.tsx`, label: 'Freeze pack' },
-        { file: `${APP}/audits/packs/[packId]/page.tsx`, label: 'Generate share link' },
-        { file: `${APP}/audits/packs/[packId]/page.tsx`, label: 'Clone for retest' },
+    // `i18nKey` is set where the label was migrated to next-intl — the
+    // IconAction renders `t('<key>')`/`tx('<key>')` and the English value
+    // resolves through the `ns` catalog namespace (default 'controls').
+    const ICON_ACTION_SITES: Array<{ file: string; label: string; i18nKey?: string; ns?: string }> = [
+        // labels migrated to next-intl — resolve through the audits catalog.
+        { file: `${APP}/audits/packs/[packId]/page.tsx`, label: 'Freeze pack', i18nKey: 'packs.freezePack', ns: 'audits' },
+        { file: `${APP}/audits/packs/[packId]/page.tsx`, label: 'Generate share link', i18nKey: 'packs.generateShareLink', ns: 'audits' },
+        { file: `${APP}/audits/packs/[packId]/page.tsx`, label: 'Clone for retest', i18nKey: 'packs.cloneForRetest', ns: 'audits' },
         // label migrated to next-intl — resolves through the controls catalog.
-        { file: `${APP}/controls/dashboard/page.tsx`, label: 'Consistency check', i18nKey: 'dashboard.consistencyCheck' },
+        { file: `${APP}/controls/dashboard/page.tsx`, label: 'Consistency check', i18nKey: 'dashboard.consistencyCheck', ns: 'controls' },
         { file: `${APP}/tests/due/page.tsx`, label: 'Run due planning' },
         // UI-18: the evidence "Upload file" + "Import ZIP" icon buttons were
         // removed — the +Evidence button opens the upload modal directly.
@@ -56,7 +60,7 @@ describe('icon-only action discipline', () => {
         // it's no longer an app-layer site.
     ];
 
-    for (const { file, label, i18nKey } of ICON_ACTION_SITES) {
+    for (const { file, label, i18nKey, ns } of ICON_ACTION_SITES) {
         it(`IconAction site stays icon-only: "${label}"`, () => {
             const src = read(file);
             expect(src).toMatch(/import \{ IconAction \} from '@\/components\/ui\/icon-action'/);
@@ -65,13 +69,14 @@ describe('icon-only action discipline', () => {
                 // i18nKey is a trusted dotted literal, but a complete escaper
                 // keeps the pattern honest and satisfies the SAST scanner.
                 const escapedKey = i18nKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                // `t\w*` matches either the `t` or `tx` hook alias.
                 expect(src).toMatch(
-                    new RegExp(`<IconAction[\\s\\S]*?label=\\{t\\('${escapedKey}'\\)\\}`),
+                    new RegExp(`<IconAction[\\s\\S]*?label=\\{t\\w*\\('${escapedKey}'\\)\\}`),
                 );
-                const en = JSON.parse(read('messages/en.json')) as { controls: Record<string, unknown> };
+                const en = JSON.parse(read('messages/en.json')) as Record<string, Record<string, unknown>>;
                 const resolved = i18nKey
                     .split('.')
-                    .reduce<unknown>((o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), en.controls);
+                    .reduce<unknown>((o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), en[ns ?? 'controls']);
                 expect(resolved).toBe(label);
             } else {
                 expect(src).toMatch(
@@ -86,22 +91,27 @@ describe('icon-only action discipline', () => {
     // `i18nKey` is set where the label was migrated to next-intl — the
     // aria-label + Tooltip render `tx('<key>')` and the English resolves
     // through the risks catalog.
-    const LINK_SITES: Array<{ file: string; ariaLabel: string; i18nKey?: string }> = [
-        { file: `${APP}/risks/RisksClient.tsx`, ariaLabel: 'Import risks', i18nKey: 'importRisks' },
-        { file: `${APP}/audits/packs/[packId]/page.tsx`, ariaLabel: 'Export JSON' },
-        { file: `${APP}/audits/packs/[packId]/page.tsx`, ariaLabel: 'Export CSV' },
+    const LINK_SITES: Array<{ file: string; ariaLabel: string; i18nKey?: string; ns?: string }> = [
+        { file: `${APP}/risks/RisksClient.tsx`, ariaLabel: 'Import risks', i18nKey: 'importRisks', ns: 'risks' },
+        { file: `${APP}/audits/packs/[packId]/page.tsx`, ariaLabel: 'Export JSON', i18nKey: 'packs.exportJson', ns: 'audits' },
+        { file: `${APP}/audits/packs/[packId]/page.tsx`, ariaLabel: 'Export CSV', i18nKey: 'packs.exportCsv', ns: 'audits' },
     ];
 
-    for (const { file, ariaLabel, i18nKey } of LINK_SITES) {
+    for (const { file, ariaLabel, i18nKey, ns } of LINK_SITES) {
         it(`icon-only link stays icon-only: "${ariaLabel}"`, () => {
             const src = read(file);
             if (i18nKey) {
+                // Full metachar escape (backslash first) keeps CodeQL happy.
+                const escapedKey = i18nKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 expect(src).toMatch(
-                    new RegExp(`aria-label=\\{tx\\('${i18nKey}'\\)\\}[\\s\\S]*?size: 'icon'`),
+                    new RegExp(`aria-label=\\{tx\\('${escapedKey}'\\)\\}[\\s\\S]*?size: 'icon'`),
                 );
-                expect(src).toMatch(new RegExp(`<Tooltip content=\\{tx\\('${i18nKey}'\\)\\}>`));
-                const en = JSON.parse(read('messages/en.json')) as { risks: Record<string, string> };
-                expect(en.risks[i18nKey]).toBe(ariaLabel);
+                expect(src).toMatch(new RegExp(`<Tooltip content=\\{tx\\('${escapedKey}'\\)\\}>`));
+                const en = JSON.parse(read('messages/en.json')) as Record<string, Record<string, unknown>>;
+                const resolved = i18nKey
+                    .split('.')
+                    .reduce<unknown>((o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), en[ns ?? 'risks']);
+                expect(resolved).toBe(ariaLabel);
             } else {
                 expect(src).toMatch(
                     new RegExp(`aria-label="${ariaLabel}"[\\s\\S]*?size: 'icon'`),

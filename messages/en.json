@@ -1371,7 +1371,57 @@
             "exportControlGapsCsv": "Control Gaps (CSV)",
             "scoreAria": "{label} readiness score"
         },
-        "loadingAria": "Loading audits"
+        "loadingAria": "Loading audits",
+        "packs": {
+            "notFound": "Pack not found.",
+            "crumbFallback": "Pack",
+            "framework": "Framework",
+            "items": "Items",
+            "status": "Status",
+            "frozen": "Frozen",
+            "adminFallback": "Admin",
+            "freezePack": "Freeze pack",
+            "generateShareLink": "Generate share link",
+            "cloneForRetest": "Clone for retest",
+            "failedFreeze": "Failed to freeze",
+            "celebrateDesc": "{name} — frozen and shareable with your auditor.",
+            "shareLinkGenerated": "Share Link Generated",
+            "copyShareLink": "Copy share link",
+            "shareLinkCopied": "Share link copied",
+            "itemsEmptyTitle": "No items in this pack yet",
+            "itemsEmptyDesc": "Add evidence, controls, or risks to this audit pack from the source pages.",
+            "tasks": "Tasks: {done}/{total}",
+            "evidence": "Evidence: {count}",
+            "exports": "Exports",
+            "exportJson": "Export JSON",
+            "exportCsv": "Export CSV"
+        },
+        "auditor": {
+            "portalCrumb": "Auditor Portal",
+            "portalTitle": "Auditor Portal",
+            "portalSubtitle": "Review assigned audit packs",
+            "assignedPacksEmptyTitle": "No assigned packs",
+            "assignedPacksEmptyDesc": "You have not been assigned any audit packs yet.",
+            "items": "{count} items",
+            "frozenPrefix": "Frozen: {date}",
+            "selectPack": "Select a pack to review"
+        },
+        "readinessOverview": {
+            "title": "Audit Readiness",
+            "subtitle": "Framework readiness scores across all audit cycles",
+            "viewCycles": "View Cycles →",
+            "cyclesEmptyTitle": "No audit cycles yet",
+            "cyclesEmptyDesc": "Create an audit cycle to see readiness scores.",
+            "auditCycleBtn": "Audit Cycle"
+        },
+        "sharepoint": {
+            "exporting": "Exporting…",
+            "exportBtn": "Export to SharePoint",
+            "exportFailed": "Export failed.",
+            "exportFailedNetwork": "Export failed — network error.",
+            "exported": "Exported.",
+            "viewInSharePoint": "View in SharePoint ↗"
+        }
     },
     "findings": {
         "title": "Findings Register",

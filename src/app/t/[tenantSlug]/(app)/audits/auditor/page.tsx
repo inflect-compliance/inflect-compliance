@@ -2,6 +2,7 @@
 import { formatDate } from '@/lib/format-date';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -44,6 +45,7 @@ export default function AuditorPortalPage() {
     const params = useParams();
     const tenantSlug = params.tenantSlug as string;
     const apiUrl = useCallback((path: string) => `/api/t/${tenantSlug}${path}`, [tenantSlug]);
+    const tx = useTranslations('audits');
 
     const [packs, setPacks] = useState<AuditorPackListRow[]>([]);
     const [loading, setLoading] = useState(true);
@@ -73,21 +75,21 @@ export default function AuditorPortalPage() {
             <div>
                 <PageBreadcrumbs
                     items={[
-                        { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
-                        { label: 'Audits', href: `/t/${tenantSlug}/audits` },
-                        { label: 'Auditor Portal' },
+                        { label: tx('crumb.dashboard'), href: `/t/${tenantSlug}/dashboard` },
+                        { label: tx('crumb.audits'), href: `/t/${tenantSlug}/audits` },
+                        { label: tx('auditor.portalCrumb') },
                     ]}
                     className="mb-1"
                 />
-                <Heading level={1} id="auditor-heading">Auditor Portal</Heading>
-                <p className="text-content-muted text-sm">Review assigned audit packs</p>
+                <Heading level={1} id="auditor-heading">{tx('auditor.portalTitle')}</Heading>
+                <p className="text-content-muted text-sm">{tx('auditor.portalSubtitle')}</p>
             </div>
 
             {packs.length === 0 ? (
                 <div className={cn(cardVariants({ density: 'spacious' }), 'text-center')}>
                     <div className="mb-4"><AppIcon name="lock" size={48} className="text-content-muted" /></div>
-                    <Heading level={2} className="mb-2">No assigned packs</Heading>
-                    <p className="text-content-muted text-sm">You have not been assigned any audit packs yet.</p>
+                    <Heading level={2} className="mb-2">{tx('auditor.assignedPacksEmptyTitle')}</Heading>
+                    <p className="text-content-muted text-sm">{tx('auditor.assignedPacksEmptyDesc')}</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-default">
@@ -104,7 +106,7 @@ export default function AuditorPortalPage() {
                                             <p className="text-xs text-content-subtle">{meta.label} · {p.status}</p>
                                         </div>
                                     </div>
-                                    <p className="text-xs text-content-subtle mt-1">{p.items?.length || 0} items</p>
+                                    <p className="text-xs text-content-subtle mt-1">{tx('auditor.items', { count: p.items?.length || 0 })}</p>
                                 </button>
                             );
                         })}
@@ -116,8 +118,8 @@ export default function AuditorPortalPage() {
                                     <div>
                                         <Heading level={2} id="auditor-pack-name">{selectedPack.name}</Heading>
                                         <p className="text-sm text-content-muted">
-                                            {selectedPack.status} · {selectedPack._count?.items || 0} items
-                                            {selectedPack.frozenAt && ` · Frozen: ${formatDate(selectedPack.frozenAt)}`}
+                                            {selectedPack.status} · {tx('auditor.items', { count: selectedPack._count?.items || 0 })}
+                                            {selectedPack.frozenAt && ` · ${tx('auditor.frozenPrefix', { date: formatDate(selectedPack.frozenAt) })}`}
                                         </p>
                                     </div>
                                     <StatusBadge variant={selectedPack.status === 'FROZEN' ? 'info' : 'neutral'}>
@@ -153,7 +155,7 @@ export default function AuditorPortalPage() {
                             </div>
                         ) : (
                             <div className={cn(cardVariants({ density: 'spacious' }), 'text-center text-content-subtle')}>
-                                Select a pack to review
+                                {tx('auditor.selectPack')}
                             </div>
                         )}
                     </div>
