@@ -4,6 +4,7 @@ import { BadgeCheck, TriangleWarning } from '@/components/ui/icons/nucleo';
 import { getTenantCtx } from '@/app-layer/context';
 import { listReceipts } from '@/app-layer/usecases/agent-action-receipt';
 import { formatDateTime } from '@/lib/format-date';
+import { getTranslations } from 'next-intl/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,25 +28,25 @@ export default async function AgentReceiptsPage({
 
     const ctx = await getTenantCtx({ tenantSlug });
     const receipts = await listReceipts(ctx, { limit: 100 });
+    const t = await getTranslations('admin');
 
     return (
         <div className="space-y-section animate-fadeIn">
             <PageHeader
                 back={{ smart: true }}
                 breadcrumbs={[
-                    { label: 'Dashboard', href: tenantHref('/dashboard') },
-                    { label: 'Admin', href: tenantHref('/admin') },
-                    { label: 'MCP', href: tenantHref('/admin/mcp') },
-                    { label: 'Agent Receipts' },
+                    { label: t('crumb.dashboard'), href: tenantHref('/dashboard') },
+                    { label: t('crumb.admin'), href: tenantHref('/admin') },
+                    { label: t('crumb.mcp'), href: tenantHref('/admin/mcp') },
+                    { label: t('crumb.agentReceipts') },
                 ]}
-                title="Agent Receipts"
-                description="Externally-verifiable, mediator-signed evidence of agent tool actions (pipelock). Verified receipts link to the hash-chained audit trail."
+                title={t('mcp.receiptsTitle')}
+                description={t('mcp.receiptsPageDesc')}
             />
 
             {receipts.length === 0 ? (
                 <p className="text-sm text-content-muted">
-                    No agent-action receipts yet. Once the pipelock mediator is in front of the MCP surface, each
-                    mediated tool decision posts a signed receipt here.
+                    {t('mcp.receiptsEmpty')}
                 </p>
             ) : (
                 <ul className="space-y-default">
@@ -62,8 +63,8 @@ export default async function AgentReceiptsPage({
                                     </StatusBadge>
                                 </span>
                                 <span className="text-sm text-content-muted">
-                                    {r.activePolicy ? `Policy: ${r.activePolicy} · ` : ''}
-                                    {r.agentId ? `Agent: ${r.agentId} · ` : ''}
+                                    {r.activePolicy ? t('mcp.policyLabel', { policy: r.activePolicy }) : ''}
+                                    {r.agentId ? t('mcp.agentLabel', { agent: r.agentId }) : ''}
                                     {formatDateTime(r.occurredAt)}
                                 </span>
                             </div>
@@ -72,24 +73,24 @@ export default async function AgentReceiptsPage({
                                     <StatusBadge
                                         variant="success"
                                         icon={BadgeCheck}
-                                        tooltip="Ed25519 signature verified; linked to the hash-chained audit trail."
+                                        tooltip={t('mcp.signatureVerifiedTooltip')}
                                     >
-                                        Signature verified
+                                        {t('mcp.signatureVerified')}
                                     </StatusBadge>
                                 ) : (
                                     <StatusBadge
                                         variant="warning"
                                         icon={TriangleWarning}
-                                        tooltip="Signature invalid or absent — retained + flagged, not linked to the audit trail."
+                                        tooltip={t('mcp.unverifiedTooltip')}
                                     >
-                                        Unverified
+                                        {t('mcp.unverified')}
                                     </StatusBadge>
                                 )}
                                 <a
                                     href={`/api/t/${tenantSlug}/agent-receipts/${r.id}/export`}
                                     className="text-sm text-content-info hover:underline"
                                 >
-                                    Export
+                                    {t('mcp.export')}
                                 </a>
                             </div>
                         </li>
