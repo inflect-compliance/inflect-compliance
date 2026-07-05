@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,7 @@ function mappedFrameworksLabel(keys: string[]): string {
 }
 
 export default function TemplatesPage() {
+    const tx = useTranslations('policies');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const router = useRouter();
@@ -114,10 +116,10 @@ export default function TemplatesPage() {
             <BackAffordance />
             <div className="flex items-center justify-between">
                 <div>
-                    <Heading level={1}>Policy Templates</Heading>
-                    <p className="text-content-muted text-sm">{templates.length} templates available</p>
+                    <Heading level={1}>{tx('templates.pageTitle')}</Heading>
+                    <p className="text-content-muted text-sm">{tx('templates.countAvailable', { count: templates.length })}</p>
                 </div>
-                <Link href={tenantHref('/policies')} className={buttonVariants({ variant: 'secondary' })}>← Back to Policies</Link>
+                <Link href={tenantHref('/policies')} className={buttonVariants({ variant: 'secondary' })}>← {tx('templates.backToPolicies')}</Link>
             </div>
 
             {/* Filters */}
@@ -128,7 +130,7 @@ export default function TemplatesPage() {
                     selected={categories.map(c => ({ value: c, label: c })).find(o => o.value === categoryFilter) ?? null}
                     setSelected={(opt) => setCategoryFilter(opt?.value ?? '')}
                     options={categories.map(c => ({ value: c, label: c }))}
-                    placeholder="All Categories"
+                    placeholder={tx('templates.allCategories')}
                     matchTriggerWidth
                     buttonProps={{ className: 'w-48' }}
                 />
@@ -136,22 +138,22 @@ export default function TemplatesPage() {
 
             {/* Grid */}
             {loading ? (
-                <div className="p-12 text-center text-content-subtle animate-pulse">Loading templates…</div>
+                <div className="p-12 text-center text-content-subtle animate-pulse">{tx('templates.loadingTemplates')}</div>
             ) : filtered.length === 0 ? (
                 <div className={cardVariants({ density: 'none' })}>
                     {templates.length === 0 ? (
                         <EmptyState
                             icon={FileText}
                             variant="no-records"
-                            title="No templates yet"
-                            description="Policy templates will appear here once your tenant or admin loads them."
+                            title={tx('templates.emptyTitle')}
+                            description={tx('templates.emptyDesc')}
                         />
                     ) : (
                         <EmptyState
                             icon={SearchX}
                             variant="no-results"
-                            title="No templates match your filters"
-                            description="Try clearing the category filter or broadening your search."
+                            title={tx('templates.emptyFilterTitle')}
+                            description={tx('templates.emptyFilterDesc')}
                         />
                     )}
                 </div>
@@ -165,7 +167,7 @@ export default function TemplatesPage() {
                                     {tpl.category && <StatusBadge variant="neutral">{tpl.category}</StatusBadge>}
                                     {tpl.language && <span className="text-xs text-content-subtle">{tpl.language.toUpperCase()}</span>}
                                     {tpl.mappedFrameworks && tpl.mappedFrameworks.length > 0 && (
-                                        <StatusBadge variant="info">Maps to {mappedFrameworksLabel(tpl.mappedFrameworks)}</StatusBadge>
+                                        <StatusBadge variant="info">{tx('templates.mapsTo', { frameworks: mappedFrameworksLabel(tpl.mappedFrameworks) })}</StatusBadge>
                                     )}
                                 </div>
                                 {tpl.tags && (
@@ -182,16 +184,18 @@ export default function TemplatesPage() {
                                 </p>
                                 {tpl.source === 'ciso-toolkit' && (
                                     <p className="mt-2 text-[10px] text-content-subtle italic" data-testid="template-source-credit">
-                                        Adapted from{' '}
-                                        <a
-                                            href="https://github.com/D4d0/ciso-toolkit"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="underline hover:text-content-muted"
-                                        >
-                                            ciso-toolkit
-                                        </a>{' '}
-                                        (MIT)
+                                        {tx.rich('templates.adaptedFrom', {
+                                            link: (c) => (
+                                                <a
+                                                    href="https://github.com/D4d0/ciso-toolkit"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="underline hover:text-content-muted"
+                                                >
+                                                    {c}
+                                                </a>
+                                            ),
+                                        })}
                                     </p>
                                 )}
                             </div>
@@ -204,7 +208,7 @@ export default function TemplatesPage() {
                                     disabled={!!creating}
                                     id={`use-template-${tpl.id}`}
                                 >
-                                    {creating === tpl.id ? 'Creating...' : 'Use Template'}
+                                    {creating === tpl.id ? tx('templates.creating') : tx('templates.useTemplate')}
                                 </Button>
                             )}
                         </Card>

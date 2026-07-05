@@ -147,7 +147,12 @@ describe('policy review workflow — detail page', () => {
         // The publish badge + the Request Approval / Publish gating all
         // hang off isPublishedVersion, never a bare currentVersionId check.
         expect(page).not.toMatch(/isCurrentPublished/);
-        expect(page).toMatch(/isPublishedVersion && <StatusBadge variant="success">Published/);
+        // "Published" badge label moved to next-intl; assert the key + its en value.
+        expect(page).toMatch(/isPublishedVersion && <StatusBadge variant="success">\{t\('detail\.published'\)\}/);
+        const en = JSON.parse(read('messages/en.json')) as {
+            policies: { detail: Record<string, string> };
+        };
+        expect(en.policies.detail.published).toBe('Published');
     });
 
     it('surfaces the next publication step from the Current tab', () => {
@@ -158,7 +163,12 @@ describe('policy review workflow — detail page', () => {
     });
 
     it('clarifies that "Mark reviewed" does not change publication status', () => {
-        expect(page).toMatch(/does not change the publication status/);
+        // Tooltip copy moved into the catalog (next-intl); assert the key + its value.
+        expect(page).toMatch(/markReviewedTooltip/);
+        const en = JSON.parse(read('messages/en.json')) as {
+            policies: { detail: Record<string, string> };
+        };
+        expect(en.policies.detail.markReviewedTooltip).toMatch(/does not change the publication status/);
         // Success feedback so the (otherwise subtle) action is visible.
         expect(page).toMatch(/toast\.success\(/);
     });
