@@ -12,7 +12,8 @@
  * `/policies?create=1`; the list page (PoliciesClient) reads the flag
  * on mount and opens this modal.
  */
-import { useCallback, type Dispatch, type SetStateAction } from 'react';
+import { useCallback, useMemo, type Dispatch, type SetStateAction } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useTenantHref } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
@@ -21,15 +22,6 @@ import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { FormField } from '@/components/ui/form-field';
 import { useNewPolicyForm } from './_form/useNewPolicyForm';
 import { NewPolicyFields } from './_form/NewPolicyFields';
-
-// The "Start with" selector at the top of the modal. "New" keeps the blank
-// policy form below; "From template" navigates to the templates page (which
-// is the richer template-picker surface), making a separate toolbar button
-// unnecessary.
-const CREATE_MODE_OPTIONS: ComboboxOption[] = [
-    { value: 'new', label: 'New' },
-    { value: 'from-template', label: 'From template' },
-];
 
 export interface NewPolicyModalProps {
     open: boolean;
@@ -45,6 +37,17 @@ export function NewPolicyModal({
 }: NewPolicyModalProps) {
     const tenantHref = useTenantHref();
     const router = useRouter();
+    const t = useTranslations('policies');
+
+    // The "Start with" selector at the top of the modal. "New" keeps the blank
+    // policy form below; "From template" navigates to the templates page.
+    const createModeOptions = useMemo<ComboboxOption[]>(
+        () => [
+            { value: 'new', label: t('new.modeNew') },
+            { value: 'from-template', label: t('new.modeFromTemplate') },
+        ],
+        [t],
+    );
 
     const form = useNewPolicyForm({
         isTemplateMode,
@@ -66,16 +69,14 @@ export function NewPolicyModal({
                 if (form.submitting) return;
                 if (
                     form.isDirty &&
-                    !window.confirm(
-                        'Discard policy? Any details you entered will be lost.',
-                    )
+                    !window.confirm(t('new.discard'))
                 ) {
                     return;
                 }
             }
             setOpen(next);
         },
-        [form.submitting, form.isDirty, setOpen],
+        [form.submitting, form.isDirty, setOpen, t],
     );
     const close = () => guardedSetOpen(false);
 
@@ -89,31 +90,27 @@ export function NewPolicyModal({
             showModal={open}
             setShowModal={guardedSetOpen}
             size="lg"
-            title={isTemplateMode ? 'New policy from template' : 'New policy'}
+            title={isTemplateMode ? t('new.titleTemplate') : t('new.titleBlank')}
             description={
-                isTemplateMode
-                    ? 'Select a template to start with pre-written content.'
-                    : 'Create a blank policy and add content later.'
+                isTemplateMode ? t('new.descTemplate') : t('new.descBlank')
             }
             preventDefaultClose={form.submitting}
         >
             <Modal.Header
-                title={isTemplateMode ? 'New policy from template' : 'New policy'}
+                title={isTemplateMode ? t('new.titleTemplate') : t('new.titleBlank')}
                 description={
-                    isTemplateMode
-                        ? 'Select a template to start with pre-written content.'
-                        : 'Create a blank policy and add content later.'
+                    isTemplateMode ? t('new.descTemplate') : t('new.descBlank')
                 }
             />
             <Modal.Form id="new-policy-form" onSubmit={handleSubmit}>
                 <Modal.Body>
                     <div className="mb-default">
-                        <FormField label="Start with">
+                        <FormField label={t('new.startWith')}>
                             <Combobox
                                 id="new-policy-mode"
                                 name="newPolicyMode"
-                                options={CREATE_MODE_OPTIONS}
-                                selected={CREATE_MODE_OPTIONS[0]}
+                                options={createModeOptions}
+                                selected={createModeOptions[0]}
                                 setSelected={(o) => {
                                     if (o?.value === 'from-template') {
                                         // Jump to the templates page — the
@@ -124,7 +121,7 @@ export function NewPolicyModal({
                                         );
                                     }
                                 }}
-                                placeholder="New"
+                                placeholder={t('new.modePlaceholder')}
                                 hideSearch
                                 matchTriggerWidth
                                 forceDropdown
@@ -157,7 +154,7 @@ export function NewPolicyModal({
                         disabled={form.submitting}
                         id="new-policy-cancel-btn"
                     >
-                        Cancel
+                        {t('new.cancel')}
                     </Button>
                     <Button
                         type="submit"
@@ -166,7 +163,7 @@ export function NewPolicyModal({
                         disabled={!form.canSubmit}
                         id="create-policy-btn"
                     >
-                        {form.submitting ? 'Creating…' : 'Create Policy'}
+                        {form.submitting ? t('new.creating') : t('createPolicy')}
                     </Button>
                 </Modal.Actions>
             </Modal.Form>

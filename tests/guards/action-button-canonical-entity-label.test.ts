@@ -136,14 +136,26 @@ describe('Action-button canonical entity label', () => {
                 // the page's `useTranslations('<entity>')` namespace. The bare-
                 // noun invariant is preserved through the catalog: resolve the
                 // key against en.json and assert the value is the entity noun.
-                const i18nMatch = textContent.match(/^\{t\('([^']+)'\)\}$/);
+                // Accept any hook alias (`t`, `tx`, …) and dotted nested keys —
+                // the button namespace is the entity folder; resolve the key
+                // path against en.json and assert it is the bare entity noun.
+                const i18nMatch = textContent.match(/^\{t\w*\('([^']+)'\)\}$/);
                 if (i18nMatch) {
                     const enMessages = require('../../messages/en.json') as Record<
                         string,
-                        Record<string, string>
+                        Record<string, unknown>
                     >;
                     const ns = file.match(/\(app\)\/([^/]+)\//)?.[1] ?? '';
-                    expect(enMessages[ns]?.[i18nMatch[1]]).toBe(label);
+                    const resolved = i18nMatch[1]
+                        .split('.')
+                        .reduce<unknown>(
+                            (o, k) =>
+                                o && typeof o === 'object'
+                                    ? (o as Record<string, unknown>)[k]
+                                    : undefined,
+                            enMessages[ns],
+                        );
+                    expect(resolved).toBe(label);
                 } else {
                     expect(textContent).toBe(label);
                 }

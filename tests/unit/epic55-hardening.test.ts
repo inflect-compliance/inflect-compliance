@@ -127,9 +127,13 @@ describe('policies/new — category', () => {
         expect(POLICIES_NEW_SRC).toMatch(
             /<Combobox[\s\S]{0,500}id=["']policy-category-select["']/,
         );
+        // searchPlaceholder migrated to next-intl; assert the key + en value.
         expect(POLICIES_NEW_SRC).toMatch(
-            /searchPlaceholder=["']Search categories/,
+            /searchPlaceholder=\{t\('new\.categorySearch'\)\}/,
         );
+        const enCat = JSON.parse(read('messages/en.json')).policies.new
+            .categorySearch as string;
+        expect(enCat).toMatch(/^Search categories/);
     });
 });
 
