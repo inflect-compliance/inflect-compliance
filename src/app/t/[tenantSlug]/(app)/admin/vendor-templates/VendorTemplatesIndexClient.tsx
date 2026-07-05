@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
     useTenantApiUrl,
     useTenantHref,
@@ -45,6 +46,7 @@ export function VendorTemplatesIndexClient() {
     const tenantHref = useTenantHref();
     const router = useRouter();
     const { permissions } = useTenantContext();
+    const t = useTranslations('admin');
 
     const [items, setItems] = useState<TemplateRow[] | null>(null);
     const [loading, setLoading] = useState(true);
@@ -71,7 +73,7 @@ export function VendorTemplatesIndexClient() {
 
     async function handleCreate() {
         if (!newName.trim() || !newKey.trim()) {
-            setCreateError('Key and name are required.');
+            setCreateError(t('vendorTemplates.keyNameRequired'));
             return;
         }
         setCreating(true);
@@ -84,7 +86,7 @@ export function VendorTemplatesIndexClient() {
             });
             if (!res.ok) {
                 const body = await res.json().catch(() => ({}));
-                setCreateError(body.error ?? `HTTP ${res.status}`);
+                setCreateError(body.error ?? t('vendorTemplates.httpError', { status: res.status }));
                 return;
             }
             const created = (await res.json()) as { id: string };
@@ -100,26 +102,24 @@ export function VendorTemplatesIndexClient() {
             <header>
                 <PageBreadcrumbs
                     items={[
-                        { label: 'Dashboard', href: tenantHref('/dashboard') },
-                        { label: 'Admin', href: tenantHref('/admin') },
-                        { label: 'Vendor Templates' },
+                        { label: t('crumb.dashboard'), href: tenantHref('/dashboard') },
+                        { label: t('crumb.admin'), href: tenantHref('/admin') },
+                        { label: t('crumb.vendorTemplates') },
                     ]}
                     className="mb-1"
                 />
                 <Heading level={1} id="vendor-templates-title">
-                    Vendor questionnaire templates
+                    {t('vendorTemplates.title')}
                 </Heading>
                 <p className="text-sm text-content-muted mt-1">
-                    Author and publish reusable assessment templates. Edits
-                    on a published template require cloning to a new draft
-                    revision.
+                    {t('vendorTemplates.description')}
                 </p>
             </header>
 
             {permissions.canWrite && (
                 <div className={cardVariants({ density: 'compact' })}>
                     <Heading level={3} className="mb-3">
-                        Create a new template
+                        {t('vendorTemplates.createHeading')}
                     </Heading>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-compact items-end">
                         <div>
@@ -127,14 +127,14 @@ export function VendorTemplatesIndexClient() {
                                 className="text-xs text-content-muted block mb-1"
                                 htmlFor="new-template-key"
                             >
-                                Key
+                                {t('vendorTemplates.keyLabel')}
                             </label>
                             <input
                                 id="new-template-key"
                                 className="input w-full"
                                 value={newKey}
                                 onChange={(e) => setNewKey(e.target.value)}
-                                placeholder="soc2-vendor"
+                                placeholder={t('vendorTemplates.keyPlaceholder')}
                             />
                         </div>
                         <div>
@@ -142,14 +142,14 @@ export function VendorTemplatesIndexClient() {
                                 className="text-xs text-content-muted block mb-1"
                                 htmlFor="new-template-name"
                             >
-                                Name
+                                {t('vendorTemplates.nameLabel')}
                             </label>
                             <input
                                 id="new-template-name"
                                 className="input w-full"
                                 value={newName}
                                 onChange={(e) => setNewName(e.target.value)}
-                                placeholder="SOC 2 vendor questionnaire"
+                                placeholder={t('vendorTemplates.namePlaceholder')}
                             />
                         </div>
                         <div>
@@ -161,7 +161,7 @@ export function VendorTemplatesIndexClient() {
                                 loading={creating}
                                 id="create-template-btn"
                             >
-                                {creating ? 'Creating…' : 'Create draft'}
+                                {creating ? t('vendorTemplates.creating') : t('vendorTemplates.createDraft')}
                             </Button>
                         </div>
                     </div>
@@ -179,43 +179,43 @@ export function VendorTemplatesIndexClient() {
 
             <div className={cardVariants({ density: 'compact' })}>
                 <Heading level={3} className="mb-3">
-                    All templates ({items?.length ?? 0})
+                    {t('vendorTemplates.allTemplates', { count: items?.length ?? 0 })}
                 </Heading>
                 {loading ? (
                     <SkeletonCard lines={3} />
                 ) : items === null || items.length === 0 ? (
                     <EmptyState
                         variant="no-records"
-                        title="No templates yet"
-                        description="Use the form above to create your first vendor questionnaire template."
+                        title={t('vendorTemplates.emptyTitle')}
+                        description={t('vendorTemplates.emptyDesc')}
                     />
                 ) : (
                     <div className="divide-y divide-border-default/40">
-                        {items.map((t) => (
+                        {items.map((row) => (
                             <Link
-                                key={t.id}
+                                key={row.id}
                                 href={tenantHref(
-                                    `/admin/vendor-templates/${t.id}`,
+                                    `/admin/vendor-templates/${row.id}`,
                                 )}
                                 className="flex items-center justify-between py-3 hover:bg-bg-muted/50 px-2 rounded transition"
-                                data-testid={`template-row-${t.id}`}
+                                data-testid={`template-row-${row.id}`}
                             >
                                 <div>
                                     <div className="text-sm text-content-emphasis font-medium">
-                                        {t.name}
+                                        {row.name}
                                     </div>
                                     <div className="text-xs text-content-subtle">
-                                        {t.key} · v{t.version} ·{' '}
-                                        {t._count.sections} section(s) ·{' '}
-                                        {t._count.questions} question(s)
+                                        {row.key} · v{row.version} ·{' '}
+                                        {t('vendorTemplates.sectionsCount', { count: row._count.sections })} ·{' '}
+                                        {t('vendorTemplates.questionsCount', { count: row._count.questions })}
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-compact">
-                                    <StatusBadge variant={t.isPublished ? 'success' : 'warning'} size="sm">
-                                        {t.isPublished ? 'Published' : 'Draft'}
+                                    <StatusBadge variant={row.isPublished ? 'success' : 'warning'} size="sm">
+                                        {row.isPublished ? t('vendorTemplates.published') : t('vendorTemplates.draft')}
                                     </StatusBadge>
                                     <span className="text-xs text-content-subtle">
-                                        Updated {formatDate(t.updatedAt)}
+                                        {t('vendorTemplates.updated', { date: formatDate(row.updatedAt) })}
                                     </span>
                                 </div>
                             </Link>

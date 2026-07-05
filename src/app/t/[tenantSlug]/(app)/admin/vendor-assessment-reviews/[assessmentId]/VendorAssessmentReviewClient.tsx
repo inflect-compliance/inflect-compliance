@@ -20,6 +20,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiErrorMessage } from '@/lib/api-error';
+import { useTranslations } from 'next-intl';
 import {
     useTenantApiUrl,
     useTenantContext,
@@ -117,6 +118,7 @@ export function VendorAssessmentReviewClient({
 }) {
     const apiUrl = useTenantApiUrl();
     const { permissions } = useTenantContext();
+    const t = useTranslations('admin');
 
     const [view, setView] = useState<ReviewView | null>(null);
     const [loading, setLoading] = useState(true);
@@ -137,7 +139,7 @@ export function VendorAssessmentReviewClient({
                 apiUrl(`/vendor-assessment-reviews/${assessmentId}`),
             );
             if (!res.ok) {
-                setError(`Failed to load (${res.status})`);
+                setError(t('assessmentReview.loadError', { status: res.status }));
                 return;
             }
             const data = (await res.json()) as ReviewView;
@@ -159,7 +161,7 @@ export function VendorAssessmentReviewClient({
         } finally {
             setLoading(false);
         }
-    }, [apiUrl, assessmentId]);
+    }, [apiUrl, assessmentId, t]);
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -236,7 +238,7 @@ export function VendorAssessmentReviewClient({
             );
             if (!res.ok) {
                 const b = await res.json().catch(() => ({}));
-                setError(apiErrorMessage(b, `Save failed (${res.status})`));
+                setError(apiErrorMessage(b, t('assessmentReview.saveError', { status: res.status })));
                 return;
             }
             await refresh();
@@ -259,7 +261,7 @@ export function VendorAssessmentReviewClient({
             );
             if (!res.ok) {
                 const b = await res.json().catch(() => ({}));
-                setError(apiErrorMessage(b, `Close failed (${res.status})`));
+                setError(apiErrorMessage(b, t('assessmentReview.closeError', { status: res.status })));
                 return;
             }
             await refresh();
@@ -272,7 +274,7 @@ export function VendorAssessmentReviewClient({
     if (!view)
         return (
             <div className="p-12 text-center text-content-error">
-                {error ?? 'Assessment not found'}
+                {error ?? t('assessmentReview.notFound')}
             </div>
         );
 
@@ -303,7 +305,7 @@ export function VendorAssessmentReviewClient({
                                 <>
                                     <span>·</span>
                                     <span>
-                                        Submitted {formatDate(view.submittedAt)}
+                                        {t('assessmentReview.submitted', { date: formatDate(view.submittedAt) })}
                                     </span>
                                 </>
                             )}
@@ -331,11 +333,10 @@ export function VendorAssessmentReviewClient({
                     data-testid="not-yet-submitted-state"
                 >
                     <p className="text-sm text-content-emphasis">
-                        Awaiting external respondent.
+                        {t('assessmentReview.awaitingTitle')}
                     </p>
                     <p className="text-xs text-content-muted mt-1">
-                        The vendor hasn&apos;t submitted yet. Review controls
-                        unlock once the assessment moves to SUBMITTED.
+                        {t('assessmentReview.awaitingDesc')}
                     </p>
                 </div>
             )}
@@ -349,21 +350,21 @@ export function VendorAssessmentReviewClient({
                     data-testid="scoring-panel"
                 >
                     <Stat
-                        label="Mode"
+                        label={t('assessmentReview.mode')}
                         value={view.scoring.mode.replace(/_/g, ' ')}
                     />
-                    <Stat label="Score" value={fmtNum(view.scoring.score)} />
+                    <Stat label={t('assessmentReview.score')} value={fmtNum(view.scoring.score)} />
                     <Stat
-                        label="Auto sum"
+                        label={t('assessmentReview.autoSum')}
                         value={fmtNum(view.scoring.autoSum)}
                     />
                     <Stat
-                        label="Effective sum"
+                        label={t('assessmentReview.effectiveSum')}
                         value={fmtNum(view.scoring.effectiveSum)}
                     />
                     {view.scoring.verdict ? (
                         <Stat
-                            label="Verdict"
+                            label={t('assessmentReview.verdict')}
                             value={view.scoring.verdict}
                             tone={
                                 view.scoring.verdict === 'PASS'
@@ -373,7 +374,7 @@ export function VendorAssessmentReviewClient({
                         />
                     ) : (
                         <Stat
-                            label="Suggested rating"
+                            label={t('assessmentReview.suggestedRating')}
                             value={view.scoring.suggestedRating ?? '—'}
                         />
                     )}
@@ -416,7 +417,7 @@ export function VendorAssessmentReviewClient({
                                                 </StatusBadge>{' '}
                                                 {q.required && (
                                                     <StatusBadge variant="warning" size="sm">
-                                                        required
+                                                        {t('assessmentReview.required')}
                                                     </StatusBadge>
                                                 )}{' '}
                                                 <span>w={q.weight}</span>
@@ -427,7 +428,7 @@ export function VendorAssessmentReviewClient({
                                             data-testid={`review-answer-${q.id}`}
                                         >
                                             <p className="text-xs text-content-muted mb-1">
-                                                Submitted answer
+                                                {t('assessmentReview.submittedAnswer')}
                                             </p>
                                             <RenderAnswer
                                                 answerJson={a?.answerJson}
@@ -435,7 +436,7 @@ export function VendorAssessmentReviewClient({
                                         </div>
                                         <div className="md:col-span-2">
                                             <p className="text-xs text-content-muted">
-                                                Auto
+                                                {t('assessmentReview.auto')}
                                             </p>
                                             <p className="text-sm text-content-emphasis">
                                                 {fmtNum(
@@ -447,7 +448,7 @@ export function VendorAssessmentReviewClient({
                                                     className="input w-full mt-1"
                                                     type="text"
                                                     inputMode="decimal"
-                                                    placeholder="Override"
+                                                    placeholder={t('assessmentReview.overridePlaceholder')}
                                                     value={
                                                         ov.points === null
                                                             ? ''
@@ -478,15 +479,14 @@ export function VendorAssessmentReviewClient({
                                             ) : (
                                                 ov.points !== null && (
                                                     <p className="text-xs text-content-warning mt-1">
-                                                        Override:{' '}
-                                                        {fmtNum(ov.points)}
+                                                        {t('assessmentReview.overrideLabel', { points: fmtNum(ov.points) })}
                                                     </p>
                                                 )
                                             )}
                                         </div>
                                         <div className="md:col-span-2">
                                             <p className="text-xs text-content-muted">
-                                                Notes
+                                                {t('assessmentReview.notes')}
                                             </p>
                                             {editable ? (
                                                 <textarea
@@ -530,7 +530,7 @@ export function VendorAssessmentReviewClient({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-compact">
                         <div>
                             <label className="text-xs text-content-muted block mb-1">
-                                Final risk rating
+                                {t('assessmentReview.finalRating')}
                             </label>
                             {editable ? (
                                 <Combobox
@@ -547,8 +547,8 @@ export function VendorAssessmentReviewClient({
                                     matchTriggerWidth
                                     placeholder={
                                         view.scoring.suggestedRating
-                                            ? `Suggested: ${view.scoring.suggestedRating}`
-                                            : 'Choose rating'
+                                            ? t('assessmentReview.suggestedPlaceholder', { rating: view.scoring.suggestedRating })
+                                            : t('assessmentReview.chooseRating')
                                     }
                                 />
                             ) : (
@@ -562,7 +562,7 @@ export function VendorAssessmentReviewClient({
                         </div>
                         <div>
                             <label className="text-xs text-content-muted block mb-1">
-                                Reviewer notes (assessment-level)
+                                {t('assessmentReview.reviewerNotes')}
                             </label>
                             {editable ? (
                                 <textarea
@@ -591,7 +591,7 @@ export function VendorAssessmentReviewClient({
                                 loading={saving}
                                 id="save-review-btn"
                             >
-                                {saving ? 'Saving…' : 'Save review'}
+                                {saving ? t('assessmentReview.saving') : t('assessmentReview.saveReview')}
                             </Button>
                         )}
                         {closable && (
@@ -603,7 +603,7 @@ export function VendorAssessmentReviewClient({
                                 loading={saving}
                                 id="close-assessment-btn"
                             >
-                                {saving ? 'Closing…' : 'Close assessment'}
+                                {saving ? t('assessmentReview.closing') : t('assessmentReview.closeAssessment')}
                             </Button>
                         )}
                     </div>
@@ -615,8 +615,10 @@ export function VendorAssessmentReviewClient({
                     className={cn(cardVariants({ density: 'compact' }), 'text-sm text-content-muted')}
                     data-testid="closed-banner"
                 >
-                    Closed{view.closedAt ? ` ${formatDate(view.closedAt)}` : ''}.
-                    Final rating:{' '}
+                    {view.closedAt
+                        ? t('assessmentReview.closedOn', { date: formatDate(view.closedAt) })
+                        : t('assessmentReview.closedNoDate')}
+                    . {t('assessmentReview.finalRatingColon')}{' '}
                     <strong className="text-content-emphasis">
                         {view.riskRating ?? '—'}
                     </strong>
@@ -656,8 +658,9 @@ function Stat({
 }
 
 function RenderAnswer({ answerJson }: { answerJson: unknown }) {
+    const t = useTranslations('admin');
     if (answerJson === null || answerJson === undefined) {
-        return <span className="text-content-subtle italic">no answer</span>;
+        return <span className="text-content-subtle italic">{t('assessmentReview.noAnswer')}</span>;
     }
     if (
         typeof answerJson === 'object' &&
@@ -671,11 +674,12 @@ function RenderAnswer({ answerJson }: { answerJson: unknown }) {
 }
 
 function RenderValue({ v }: { v: unknown }) {
+    const t = useTranslations('admin');
     if (Array.isArray(v)) {
         return <span>{v.join(', ')}</span>;
     }
     if (v === null || v === undefined) {
-        return <span className="text-content-subtle italic">no answer</span>;
+        return <span className="text-content-subtle italic">{t('assessmentReview.noAnswer')}</span>;
     }
     return <span>{String(v)}</span>;
 }
