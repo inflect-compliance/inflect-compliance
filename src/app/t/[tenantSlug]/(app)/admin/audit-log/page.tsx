@@ -48,7 +48,7 @@ export default async function AuditLogPage({
                 <PageHeader
                     back={{ smart: true }}
                     breadcrumbs={[
-                        { label: 'Dashboard', href: tenantHref('/dashboard') },
+                        { label: t('crumb.dashboard'), href: tenantHref('/dashboard') },
                         { label: t('title'), href: tenantHref('/admin') },
                         { label: t('auditLog') },
                     ]}

@@ -32,7 +32,7 @@ export default async function AdminPage({
         <div className="space-y-section animate-fadeIn">
             <PageHeader
                 breadcrumbs={[
-                    { label: 'Dashboard', href: tenantHref('/dashboard') },
+                    { label: t('crumb.dashboard'), href: tenantHref('/dashboard') },
                     { label: t('title') },
                 ]}
                 title={t('title')}
@@ -42,7 +42,7 @@ export default async function AdminPage({
                         id="admin-theme-section"
                     >
                         <Palette className="w-4 h-4 text-content-muted" />
-                        <span className="text-sm text-content-muted">Theme</span>
+                        <span className="text-sm text-content-muted">{t('nav.theme')}</span>
                         <ThemeToggle id="admin-theme-toggle" />
                     </div>
                 }
@@ -56,7 +56,7 @@ export default async function AdminPage({
                     id="members-pill-btn"
                 >
                     <Users className="w-3.5 h-3.5" />
-                    Members &amp; Roles
+                    {t('nav.members')}
                 </Link>
                 <Link
                     href={tenantHref('/admin/rbac')}
@@ -64,7 +64,7 @@ export default async function AdminPage({
                     id="rbac-pill-btn"
                 >
                     <Shield className="w-3.5 h-3.5" />
-                    Roles &amp; Access
+                    {t('nav.rbac')}
                 </Link>
                 <Link
                     href={tenantHref('/admin/roles')}
@@ -72,7 +72,7 @@ export default async function AdminPage({
                     id="custom-roles-pill-btn"
                 >
                     <ShieldPlus className="w-3.5 h-3.5" />
-                    Custom Roles
+                    {t('nav.roles')}
                 </Link>
                 <Link
                     href={tenantHref('/admin/api-keys')}
@@ -80,7 +80,7 @@ export default async function AdminPage({
                     id="api-keys-pill-btn"
                 >
                     <KeyRound className="w-3.5 h-3.5" />
-                    API Keys
+                    {t('nav.apiKeys')}
                 </Link>
                 <Link
                     href={tenantHref('/admin/billing')}
@@ -88,7 +88,7 @@ export default async function AdminPage({
                     id="billing-pill-btn"
                 >
                     <CreditCard className="w-3.5 h-3.5" />
-                    Billing
+                    {t('nav.billing')}
                 </Link>
                 <Link
                     href={tenantHref('/admin/sso')}
@@ -96,7 +96,7 @@ export default async function AdminPage({
                     id="sso-pill-btn"
                 >
                     <KeyRound className="w-3.5 h-3.5" />
-                    SSO &amp; Identity
+                    {t('nav.sso')}
                 </Link>
                 <Link
                     href={tenantHref('/admin/scim')}
@@ -104,7 +104,7 @@ export default async function AdminPage({
                     id="scim-pill-btn"
                 >
                     <CloudCog className="w-3.5 h-3.5" />
-                    SCIM Provisioning
+                    {t('nav.scim')}
                 </Link>
                 <Link
                     href={tenantHref('/admin/entra')}
@@ -112,7 +112,7 @@ export default async function AdminPage({
                     id="entra-pill-btn"
                 >
                     <UserCog className="w-3.5 h-3.5" />
-                    Entra Access Mapping
+                    {t('nav.entra')}
                 </Link>
                 <Link
                     href={tenantHref('/admin/integrations')}
@@ -120,7 +120,7 @@ export default async function AdminPage({
                     id="integrations-pill-btn"
                 >
                     <Plug className="w-3.5 h-3.5" />
-                    Integrations
+                    {t('nav.integrations')}
                 </Link>
                 <Link
                     href={tenantHref('/admin/security')}
@@ -128,7 +128,7 @@ export default async function AdminPage({
                     id="security-pill-btn"
                 >
                     <ShieldCheck className="w-3.5 h-3.5" />
-                    Security &amp; MFA
+                    {t('nav.security')}
                 </Link>
                 <Link
                     href={tenantHref('/admin/trust-center')}
@@ -136,7 +136,7 @@ export default async function AdminPage({
                     id="trust-center-pill-btn"
                 >
                     <Globe className="w-3.5 h-3.5" />
-                    Trust Center
+                    {t('nav.trustCenter')}
                 </Link>
                 <Link
                     href={tenantHref('/admin/risk-matrix')}
@@ -144,7 +144,7 @@ export default async function AdminPage({
                     id="risk-matrix-pill-btn"
                 >
                     <Grid3x3 className="w-3.5 h-3.5" />
-                    Risk Matrix
+                    {t('nav.riskMatrix')}
                 </Link>
                 <Link
                     href={tenantHref('/admin/risk-appetite')}
@@ -152,7 +152,7 @@ export default async function AdminPage({
                     id="risk-appetite-pill-btn"
                 >
                     <Gauge className="w-3.5 h-3.5" />
-                    Risk Appetite
+                    {t('nav.riskAppetite')}
                 </Link>
                 <Link
                     href={tenantHref('/admin/notifications')}
@@ -160,7 +160,7 @@ export default async function AdminPage({
                     id="notifications-pill-btn"
                 >
                     <Bell className="w-3.5 h-3.5" />
-                    Notifications
+                    {t('nav.notifications')}
                 </Link>
                 <Link
                     href={tenantHref('/admin/audit-log')}

@@ -43,7 +43,7 @@ export default function MappingPage() {
             <div>
                 <PageBreadcrumbs
                     items={[
-                        { label: 'Dashboard', href: tenantHref('/dashboard') },
+                        { label: t('crumbDashboard'), href: tenantHref('/dashboard') },
                         { label: t('title') },
                     ]}
                     className="mb-1"

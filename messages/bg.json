@@ -2092,7 +2092,8 @@
         "loading": "Зареждане на рамки...",
         "soc2": "SOC 2",
         "nis2": "NIS2",
-        "controls": "{implemented}/{total} контроли"
+        "controls": "{implemented}/{total} контроли",
+        "crumbDashboard": "Табло"
     },
     "reports": {
         "title": "Отчети и експорт",
@@ -2199,7 +2200,9 @@
         "title": "Известия",
         "loading": "Зареждане на известия...",
         "markRead": "Маркирай като прочетено",
-        "noNotifications": "Няма известия"
+        "noNotifications": "Няма известия",
+        "crumbDashboard": "Табло",
+        "description": "Скорошна активност във вашата програма за съответствие"
     },
     "admin": {
         "title": "Администрация",
@@ -2997,6 +3000,23 @@
             "closedNoDate": "Затворено",
             "finalRatingColon": "Крайна оценка:",
             "noAnswer": "няма отговор"
+        },
+        "nav": {
+            "members": "Членове и роли",
+            "rbac": "Роли и достъп",
+            "roles": "Персонализирани роли",
+            "apiKeys": "API ключове",
+            "billing": "Плащане",
+            "sso": "SSO и идентичност",
+            "scim": "SCIM осигуряване",
+            "entra": "Съпоставяне на достъп в Entra",
+            "integrations": "Интеграции",
+            "security": "Сигурност и MFA",
+            "trustCenter": "Център за доверие",
+            "riskMatrix": "Матрица на риска",
+            "riskAppetite": "Апетит за риск",
+            "notifications": "Известия",
+            "theme": "Тема"
         }
     },
     "riskManager": {

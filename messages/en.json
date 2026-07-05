@@ -2092,7 +2092,8 @@
         "loading": "Loading framework mappings...",
         "soc2": "SOC 2",
         "nis2": "NIS2",
-        "controls": "{implemented}/{total} controls"
+        "controls": "{implemented}/{total} controls",
+        "crumbDashboard": "Dashboard"
     },
     "reports": {
         "title": "Reports & Exports",
@@ -2199,7 +2200,9 @@
         "title": "Notifications",
         "loading": "Loading notifications...",
         "markRead": "Mark read",
-        "noNotifications": "No notifications"
+        "noNotifications": "No notifications",
+        "crumbDashboard": "Dashboard",
+        "description": "Recent activity across your compliance program"
     },
     "admin": {
         "title": "Administration",
@@ -2997,6 +3000,23 @@
             "closedNoDate": "Closed",
             "finalRatingColon": "Final rating:",
             "noAnswer": "no answer"
+        },
+        "nav": {
+            "members": "Members & Roles",
+            "rbac": "Roles & Access",
+            "roles": "Custom Roles",
+            "apiKeys": "API Keys",
+            "billing": "Billing",
+            "sso": "SSO & Identity",
+            "scim": "SCIM Provisioning",
+            "entra": "Entra Access Mapping",
+            "integrations": "Integrations",
+            "security": "Security & MFA",
+            "trustCenter": "Trust Center",
+            "riskMatrix": "Risk Matrix",
+            "riskAppetite": "Risk Appetite",
+            "notifications": "Notifications",
+            "theme": "Theme"
         }
     },
     "riskManager": {
