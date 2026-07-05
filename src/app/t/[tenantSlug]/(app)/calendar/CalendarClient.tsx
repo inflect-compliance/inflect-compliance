@@ -16,6 +16,7 @@
 
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight, Calendar as CalIcon } from 'lucide-react';
 import Link from 'next/link';
 import { cardVariants } from '@/components/ui/card';
@@ -89,6 +90,7 @@ export function CalendarClient({
     initial,
     initialRange,
 }: CalendarClientProps) {
+    const t = useTranslations('calendar');
     const [view, setView] = React.useState<View>('month');
     const [monthCursor, setMonthCursor] = React.useState<Date>(
         () => startOfUtcMonth(new Date()),
@@ -169,18 +171,17 @@ export function CalendarClient({
                 <div className="min-w-0">
                     <PageBreadcrumbs
                         items={[
-                            { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
-                            { label: 'Calendar' },
+                            { label: t('crumbDashboard'), href: `/t/${tenantSlug}/dashboard` },
+                            { label: t('crumbCalendar') },
                         ]}
                         className="mb-1"
                     />
                     <Heading level={1} className="sr-only flex items-center gap-tight">
                         <CalIcon className="size-6 text-content-muted" aria-hidden="true" />
-                        Compliance Calendar
+                        {t('title')}
                     </Heading>
                     <p className="text-sm text-content-muted mt-1">
-                        Track every compliance deadline — evidence reviews, policy renewals,
-                        vendor renewals, audit cycles, control tests — in one place.
+                        {t('description')}
                     </p>
                 </div>
                 <div className="flex items-center gap-tight flex-wrap">
@@ -188,12 +189,12 @@ export function CalendarClient({
                         selected={view}
                         selectAction={(v) => setView(v as View)}
                         options={[
-                            { value: 'month', label: 'Month' },
-                            { value: 'heatmap', label: 'Heatmap' },
-                            { value: 'gantt', label: 'Timeline' },
+                            { value: 'month', label: t('viewMonth') },
+                            { value: 'heatmap', label: t('viewHeatmap') },
+                            { value: 'gantt', label: t('viewTimeline') },
                         ]}
                         size="sm"
-                        ariaLabel="Calendar view"
+                        ariaLabel={t('viewAria')}
                     />
                 </div>
             </header>
@@ -208,7 +209,7 @@ export function CalendarClient({
                         type="button"
                         variant="ghost"
                         onClick={handlePrev}
-                        aria-label="Previous month"
+                        aria-label={t('prevMonth')}
                     >
                         <ChevronLeft className="size-4" />
                     </Button>
@@ -223,7 +224,7 @@ export function CalendarClient({
                         type="button"
                         variant="ghost"
                         onClick={handleNext}
-                        aria-label="Next month"
+                        aria-label={t('nextMonth')}
                     >
                         <ChevronRight className="size-4" />
                     </Button>
@@ -233,7 +234,7 @@ export function CalendarClient({
             {/* Loading + error states */}
             {calQuery.error && (
                 <div className="rounded-lg border border-border-error bg-bg-error px-4 py-3 text-sm text-content-error">
-                    Failed to load calendar events. Try refreshing.
+                    {t('loadError')}
                 </div>
             )}
 
@@ -270,7 +271,7 @@ export function CalendarClient({
                             from={range.from}
                             to={range.to}
                             events={ganttEvents}
-                            emptyMessage="No duration-based events in this range. Create an audit cycle to see it here."
+                            emptyMessage={t('ganttEmpty')}
                         />
                     )}
                 </div>
@@ -287,7 +288,7 @@ export function CalendarClient({
                             </Heading>
                             {selectedEvents.length === 0 ? (
                                 <p className="text-xs text-content-muted">
-                                    No events on this day.
+                                    {t('eventsEmptyDay')}
                                 </p>
                             ) : (
                                 <ul className="space-y-tight">
@@ -319,7 +320,7 @@ export function CalendarClient({
                         </>
                     ) : (
                         <p className="text-xs text-content-muted">
-                            Click a day to see events on that date.
+                            {t('clickDay')}
                         </p>
                     )}
                 </aside>

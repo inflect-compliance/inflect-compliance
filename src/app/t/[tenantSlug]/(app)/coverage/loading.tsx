@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cardVariants } from '@/components/ui/card-variants';
 import { cn } from '@/lib/cn';
@@ -5,9 +6,10 @@ import { cn } from '@/lib/cn';
 /**
  * Coverage dashboard loading skeleton.
  */
-export default function CoverageLoading() {
+export default async function CoverageLoading() {
+    const t = await getTranslations('coverage');
     return (
-        <div className="space-y-section animate-fadeIn" aria-busy="true" aria-label="Loading coverage dashboard">
+        <div className="space-y-section animate-fadeIn" aria-busy="true" aria-label={t('loadingAria')}>
             {/* Header */}
             <div className="space-y-tight">
                 <Skeleton className="h-7 w-64" />
