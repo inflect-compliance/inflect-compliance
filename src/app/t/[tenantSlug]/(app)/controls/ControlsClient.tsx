@@ -102,10 +102,6 @@ const CONTROL_STATUS_VALUES = [
     'NOT_APPLICABLE',
 ] as const;
 
-const FREQ_LABELS: Record<string, string> = {
-    AD_HOC: 'Ad Hoc', DAILY: 'Daily', WEEKLY: 'Weekly',
-    MONTHLY: 'Monthly', QUARTERLY: 'Quarterly', ANNUALLY: 'Annually',
-};
 
 // ─── Types ───
 
@@ -200,6 +196,17 @@ function ControlsPageInner({
     const router = useRouter();
     const prefetchData = usePrefetchTenant();
     const t = useTranslations('controls');
+    const FREQ_LABELS = useMemo<Record<string, string>>(
+        () => ({
+            AD_HOC: t('freq.adHoc'),
+            DAILY: t('freq.daily'),
+            WEEKLY: t('freq.weekly'),
+            MONTHLY: t('freq.monthly'),
+            QUARTERLY: t('freq.quarterly'),
+            ANNUALLY: t('freq.annually'),
+        }),
+        [t],
+    );
     const tGroup = useTranslations('common.filterGroups');
     // Scoped-translator adapter: next-intl types the key as a narrow union; the
     // filter-defs factory takes a plain (key, values?) resolver.

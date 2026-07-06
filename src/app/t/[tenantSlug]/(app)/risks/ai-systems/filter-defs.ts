@@ -2,6 +2,10 @@
  * Filter configuration for the EU AI Act AI-System Registry. A static
  * risk-tier enum filter, applied client-side to the SSR rows — mirrors the
  * sibling Business Continuity / Vulnerabilities pages.
+ *
+ * i18n: labels resolve at render via `buildAiSystemFilterDefs(t, tGroup)`
+ * (`t = useTranslations('risks')`, `tGroup =
+ * useTranslations('common.filterGroups')`). Enum VALUES + KEYS unchanged.
  */
 import { createTypedFilterDefs, optionsFromEnum } from '@/components/ui/filter/filter-definitions';
 // FilterDefInput.icon is typed `LucideIcon`; a new filter-defs file has no
@@ -9,29 +13,38 @@ import { createTypedFilterDefs, optionsFromEnum } from '@/components/ui/filter/f
 // tests/guards/no-lucide.test.ts (same precedent as every other *filter-defs.ts).
 import { ShieldAlert } from 'lucide-react';
 
-export const AI_RISK_TIER_LABELS = {
-    PROHIBITED: 'Prohibited',
-    HIGH: 'High',
-    LIMITED: 'Limited',
-    MINIMAL: 'Minimal',
-} as const;
+/** Surface-namespace resolver (`useTranslations('risks')`). */
+type T = (key: string, values?: Record<string, unknown>) => string;
+/** Shared filter-group resolver (`useTranslations('common.filterGroups')`). */
+type TGroup = (key: string) => string;
 
-const STATIC_DEFS = {
-    riskTier: {
-        label: 'Risk tier',
-        description: 'EU AI Act risk classification of the system.',
-        group: 'Attributes',
-        icon: ShieldAlert,
-        options: optionsFromEnum(AI_RISK_TIER_LABELS),
-        multiple: true,
-        resetBehavior: 'clearable',
-    },
-} as const;
+const AI_RISK_TIER_KEYS = ['PROHIBITED', 'HIGH', 'LIMITED', 'MINIMAL'] as const;
+
+function aiRiskTierLabels(t: T): Record<string, string> {
+    return Object.fromEntries(AI_RISK_TIER_KEYS.map((k) => [k, t(`aiSystems.filterEnums.riskTier.${k}`)]));
+}
+
+function aiSystemFilterDefsInput(t: T, tGroup: TGroup) {
+    return {
+        riskTier: {
+            label: t('aiSystems.filters.riskTier'),
+            description: t('aiSystems.filters.riskTierDesc'),
+            group: tGroup('attributes'),
+            icon: ShieldAlert,
+            options: optionsFromEnum(aiRiskTierLabels(t)),
+            multiple: true,
+            resetBehavior: 'clearable',
+        },
+    } as const;
+}
 
 export const AI_SYSTEM_FILTER_KEYS = ['riskTier'] as const;
 
-export const aiSystemFilterDefs = createTypedFilterDefs()(STATIC_DEFS);
+/** Build the localized AI-system filter defs. Memoize per render. */
+export function buildAiSystemFilterDefs(t: T, tGroup: TGroup) {
+    return createTypedFilterDefs()(aiSystemFilterDefsInput(t, tGroup));
+}
 
-export function buildAiSystemFilters() {
-    return aiSystemFilterDefs.filters;
+export function buildAiSystemFilters(t: T, tGroup: TGroup) {
+    return buildAiSystemFilterDefs(t, tGroup).filters;
 }

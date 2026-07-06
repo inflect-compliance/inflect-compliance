@@ -20,7 +20,7 @@ import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-bad
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/hooks';
-import { buildVulnFilters, VULN_FILTER_KEYS, VULN_STATUS_LABELS } from './filter-defs';
+import { buildVulnFilters, VULN_FILTER_KEYS, buildVulnStatusLabels } from './filter-defs';
 
 export interface VulnRow {
     id: string;
@@ -59,7 +59,17 @@ const STATUS_VARIANT: Record<string, StatusBadgeVariant> = {
 };
 
 export function VulnerabilitiesClient({ initialRows, tenantSlug, canWrite }: Props) {
-    const filterCtx = useFilterContext(buildVulnFilters(), [...VULN_FILTER_KEYS]);
+    const tx = useTranslations('vulnerabilities');
+    const tGroup = useTranslations('common.filterGroups');
+    const filters = useMemo(
+        () =>
+            buildVulnFilters(
+                (k, v) => tx(k as Parameters<typeof tx>[0], v as Parameters<typeof tx>[1]),
+                (k) => tGroup(k as Parameters<typeof tGroup>[0]),
+            ),
+        [tx, tGroup],
+    );
+    const filterCtx = useFilterContext(filters, [...VULN_FILTER_KEYS]);
     return (
         <FilterProvider value={filterCtx}>
             <VulnerabilitiesInner initialRows={initialRows} tenantSlug={tenantSlug} canWrite={canWrite} />
@@ -69,6 +79,14 @@ export function VulnerabilitiesClient({ initialRows, tenantSlug, canWrite }: Pro
 
 function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
     const t = useTranslations('vulnerabilities');
+    const tGroup = useTranslations('common.filterGroups');
+    const tAdapt = (k: string, v?: Record<string, unknown>) =>
+        t(k as Parameters<typeof t>[0], v as Parameters<typeof t>[1]);
+    const statusLabels = useMemo(() => buildVulnStatusLabels(tAdapt), [t]);
+    const filterDefs = useMemo(
+        () => buildVulnFilters(tAdapt, (k) => tGroup(k as Parameters<typeof tGroup>[0])),
+        [t, tGroup],
+    );
     const router = useRouter();
     const toast = useToast();
     const { state, hasActive } = useFilters();
@@ -168,7 +186,7 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
             accessorFn: (r) => r.status,
             cell: ({ row }) => (
                 <StatusBadge variant={STATUS_VARIANT[row.original.status] ?? 'neutral'}>
-                    {VULN_STATUS_LABELS[row.original.status as keyof typeof VULN_STATUS_LABELS] ?? row.original.status}
+                    {statusLabels[row.original.status] ?? row.original.status}
                 </StatusBadge>
             ),
         },
@@ -217,7 +235,7 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
                 ),
                 description: t('description'),
             }}
-            filters={{ defs: buildVulnFilters() }}
+            filters={{ defs: filterDefs }}
             table={{
                 data: rows,
                 columns,

@@ -341,6 +341,18 @@
                 "ACTIVE": "Активен",
                 "RETIRED": "Изведен от употреба"
             }
+        },
+        "assetTypes": {
+            "INFORMATION": "Информация",
+            "APPLICATION": "Приложение",
+            "SYSTEM": "Система",
+            "SERVICE": "Услуга",
+            "DATA_STORE": "Хранилище на данни",
+            "INFRASTRUCTURE": "Инфраструктура",
+            "VENDOR": "Доставчик",
+            "PROCESS": "Процес",
+            "PEOPLE_PROCESS": "Човешки процес",
+            "OTHER": "Друго"
         }
     },
     "risks": {
@@ -759,6 +771,18 @@
                 "errorFallback": "Генерирането на черновата е неуспешно",
                 "draftsQueuedSingular": "Черновата е на опашка за преглед в ",
                 "draftsQueuedPlural": "Черновите са на опашка за преглед в "
+            },
+            "filters": {
+                "riskTier": "Ниво на риск",
+                "riskTierDesc": "EU AI Act класификация на риска на системата."
+            },
+            "filterEnums": {
+                "riskTier": {
+                    "PROHIBITED": "Забранен",
+                    "HIGH": "Висок",
+                    "LIMITED": "Ограничен",
+                    "MINIMAL": "Минимален"
+                }
             }
         },
         "velocity": {
@@ -1370,6 +1394,14 @@
                 "APPLICABLE": "Приложим",
                 "NOT_APPLICABLE": "Неприложим"
             }
+        },
+        "freq": {
+            "adHoc": "Ад хок",
+            "daily": "Ежедневно",
+            "weekly": "Седмично",
+            "monthly": "Месечно",
+            "quarterly": "Тримесечно",
+            "annually": "Годишно"
         }
     },
     "evidence": {
@@ -2042,7 +2074,14 @@
             "cancel": "Отказ",
             "creating": "Създаване…",
             "create": "Създаване на BIA",
-            "createFailed": "Неуспешно създаване на BIA"
+            "createFailed": "Неуспешно създаване на BIA",
+            "filterCriticalityDesc": "Бизнес критичност на анализирания процес.",
+            "crit": {
+                "CRITICAL": "Критична",
+                "HIGH": "Висока",
+                "MEDIUM": "Средна",
+                "LOW": "Ниска"
+            }
         },
         "biaDetail": {
             "metaCriticality": "Критичност",
@@ -4475,6 +4514,40 @@
             "createdBy": "Създадено {date} от {name}",
             "unknown": "Неизвестен",
             "evidenceEmpty": "Все още няма свързани доказателства."
+        },
+        "filters": {
+            "status": "Статус",
+            "statusDesc": "Състояние на жизнения цикъл на тестовия план.",
+            "result": "Последен резултат",
+            "resultDesc": "Резултат от последното изпълнение.",
+            "frequency": "Честота",
+            "frequencyDesc": "Колко често е планиран тестът.",
+            "due": "Краен срок",
+            "dueDesc": "Просрочени тестови планове (следваща дата е в миналото)."
+        },
+        "filterEnums": {
+            "status": {
+                "ACTIVE": "Активен",
+                "PAUSED": "Паузиран",
+                "ARCHIVED": "Архивиран"
+            },
+            "result": {
+                "PASS": "Успех",
+                "FAIL": "Неуспех",
+                "INCONCLUSIVE": "Неубедителен",
+                "NONE": "Няма изпълнения"
+            },
+            "frequency": {
+                "AD_HOC": "Ад хок",
+                "DAILY": "Ежедневно",
+                "WEEKLY": "Седмично",
+                "MONTHLY": "Месечно",
+                "QUARTERLY": "Тримесечно",
+                "ANNUALLY": "Годишно"
+            },
+            "due": {
+                "overdue": "Просрочен"
+            }
         }
     },
     "agents": {
@@ -4531,7 +4604,39 @@
         "emptyMatchDesc": "Опитайте да изчистите филтър.",
         "emptyDesc": "Изпратете SARIF отчет от вашия CI към /api/t/{slug}/security-testing/ingest. Успешно сканиране прикачва автоматично доказателство към съответната контрола; неуспешните констатации се появяват тук и в регистъра на констатациите.",
         "resourceFindings": "констатации",
-        "resourceFinding": "констатация"
+        "resourceFinding": "констатация",
+        "filters": {
+            "source": "Източник",
+            "sourceDesc": "Скенерът, който е генерирал констатацията.",
+            "severity": "Сериозност",
+            "severityDesc": "Съпоставена сериозност на констатацията.",
+            "status": "Статус",
+            "statusDesc": "Статус на триажа на констатацията."
+        },
+        "filterEnums": {
+            "source": {
+                "SEMGREP": "Semgrep",
+                "TRIVY": "Trivy",
+                "ZAP": "ZAP",
+                "GITLEAKS": "gitleaks",
+                "CHECKOV": "Checkov",
+                "CODEQL": "CodeQL",
+                "OTHER": "Друго"
+            },
+            "severity": {
+                "CRITICAL": "Критична",
+                "HIGH": "Висока",
+                "MEDIUM": "Средна",
+                "LOW": "Ниска"
+            },
+            "status": {
+                "OPEN": "Отворена",
+                "TRIAGED": "Триажирана",
+                "FIXED": "Поправена",
+                "FALSE_POSITIVE": "Фалшиво положителна",
+                "ACCEPTED": "Приета"
+            }
+        }
     },
     "calendar": {
         "crumbDashboard": "Табло",
@@ -4693,7 +4798,28 @@
         "emptyFilteredTitle": "Няма съвпадащи уязвимости",
         "emptyTitle": "Все още няма уязвимости",
         "emptyFilteredDesc": "Опитайте да изчистите филтър.",
-        "emptyDesc": "CVE се появяват тук, след като синхронизацията с NVD съпостави публикуван CVE с актив с CPE/продуктови данни, или когато свържете такъв ръчно."
+        "emptyDesc": "CVE се появяват тук, след като синхронизацията с NVD съпостави публикуван CVE с актив с CPE/продуктови данни, или когато свържете такъв ръчно.",
+        "filters": {
+            "status": "Статус",
+            "statusDesc": "Статус на отстраняване на уязвимостта.",
+            "severity": "Сериозност",
+            "severityDesc": "Базова CVSS сериозност на съпоставения CVE."
+        },
+        "filterEnums": {
+            "status": {
+                "OPEN": "Отворена",
+                "MITIGATING": "Смекчаване",
+                "MITIGATED": "Смекчена",
+                "ACCEPTED": "Приета",
+                "FALSE_POSITIVE": "Фалшиво положителна"
+            },
+            "severity": {
+                "CRITICAL": "Критична",
+                "HIGH": "Висока",
+                "MEDIUM": "Средна",
+                "LOW": "Ниска"
+            }
+        }
     },
     "mfa": {
         "invalidCodeFormat": "Моля, въведете валиден 6-цифрен код",

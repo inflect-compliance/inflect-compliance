@@ -48,7 +48,17 @@ export const TIER_VARIANT: Record<string, StatusBadgeVariant> = {
 const ROLE_LABEL: Record<string, string> = { PROVIDER: 'Provider', DEPLOYER: 'Deployer' };
 
 export function AiSystemsClient(props: Props) {
-    const filterCtx = useFilterContext(buildAiSystemFilters(), [...AI_SYSTEM_FILTER_KEYS]);
+    const tx = useTranslations('risks');
+    const tGroup = useTranslations('common.filterGroups');
+    const filters = useMemo(
+        () =>
+            buildAiSystemFilters(
+                (k, v) => tx(k as Parameters<typeof tx>[0], v as Parameters<typeof tx>[1]),
+                (k) => tGroup(k as Parameters<typeof tGroup>[0]),
+            ),
+        [tx, tGroup],
+    );
+    const filterCtx = useFilterContext(filters, [...AI_SYSTEM_FILTER_KEYS]);
     return (
         <FilterProvider value={filterCtx}>
             <AiSystemsInner {...props} />
@@ -59,6 +69,15 @@ export function AiSystemsClient(props: Props) {
 function AiSystemsInner({ initialRows, tenantSlug, canWrite }: Props) {
     const router = useRouter();
     const tx = useTranslations('risks');
+    const tGroup = useTranslations('common.filterGroups');
+    const filterDefs = useMemo(
+        () =>
+            buildAiSystemFilters(
+                (k, v) => tx(k as Parameters<typeof tx>[0], v as Parameters<typeof tx>[1]),
+                (k) => tGroup(k as Parameters<typeof tGroup>[0]),
+            ),
+        [tx, tGroup],
+    );
     const { state, hasActive } = useFilters();
     const [showNew, setShowNew] = useState(false);
 
@@ -156,7 +175,7 @@ function AiSystemsInner({ initialRows, tenantSlug, canWrite }: Props) {
                         </Button>
                     ) : undefined,
                 }}
-                filters={{ defs: buildAiSystemFilters() }}
+                filters={{ defs: filterDefs }}
                 table={{
                     data: rows,
                     columns,

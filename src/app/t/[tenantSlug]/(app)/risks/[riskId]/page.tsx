@@ -7,7 +7,7 @@
 import { useTranslations } from 'next-intl';
 import { formatDate } from '@/lib/format-date';
 import { SkeletonCard, SkeletonDetailPage } from '@/components/ui/skeleton';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useTenantContext, useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
@@ -41,7 +41,7 @@ import { Pen2 } from '@/components/ui/icons/nucleo';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { useTenantMembers } from '@/components/ui/user-combobox';
-import { RISK_TREATMENT_OPTIONS } from '../_shared/risk-options';
+import { buildRiskTreatmentOptions } from '../_shared/risk-options';
 import { cn } from '@/lib/cn';
 import { cardVariants } from '@/components/ui/card';
 import { EditRiskModal, type EditRiskForm } from './_modals/EditRiskModal';
@@ -125,7 +125,6 @@ const CATEGORIES = [
     'Financial', 'Reputational', 'Physical', 'Human Resources',
 ];
 const CATEGORY_OPTIONS: ComboboxOption[] = CATEGORIES.map(c => ({ value: c, label: c }));
-const TREATMENT_OPTIONS = RISK_TREATMENT_OPTIONS;
 
 // Polish PR-1 — STATUS_VARIANT moved to shared domain mapping.
 // Imported from @/app-layer/domain/entity-status-mapping as
@@ -142,6 +141,10 @@ function isOverdue(nextReviewAt: string | null): boolean {
 export default function RiskDetailPage() {
     const { riskId } = useParams<{ riskId: string }>();
     const t = useTranslations('risks');
+    const TREATMENT_OPTIONS = useMemo(
+        () => buildRiskTreatmentOptions((k) => t(k as Parameters<typeof t>[0])),
+        [t],
+    );
     const tenant = useTenantContext();
     const apiUrl = useTenantApiUrl();
     const href = useTenantHref();

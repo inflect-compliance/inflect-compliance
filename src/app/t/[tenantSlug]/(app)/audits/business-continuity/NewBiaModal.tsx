@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,9 +11,8 @@ import { Combobox } from '@/components/ui/combobox';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { BIA_CRITICALITY_LABELS } from './filter-defs';
+import { buildBiaCriticalityLabels } from './filter-defs';
 
-const CRITICALITY_OPTIONS = Object.entries(BIA_CRITICALITY_LABELS).map(([value, label]) => ({ value, label }));
 
 const optionalHours = z.number().int().min(0).max(100_000).optional();
 
@@ -40,6 +39,13 @@ interface Props {
 
 export function NewBiaModal({ tenantSlug, processNodeId, onClose, onCreated }: Props) {
     const tx = useTranslations('audits');
+    const CRITICALITY_OPTIONS = useMemo(
+        () =>
+            Object.entries(
+                buildBiaCriticalityLabels((k, v) => tx(k as Parameters<typeof tx>[0], v as Parameters<typeof tx>[1])),
+            ).map(([value, label]) => ({ value, label })),
+        [tx],
+    );
     const [apiError, setApiError] = useState<string | null>(null);
     const {
         register,
