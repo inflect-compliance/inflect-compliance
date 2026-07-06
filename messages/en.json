@@ -1442,6 +1442,11 @@
             "CONTROL_EVIDENCE_UNLINKED": "Evidence Unlinked",
             "CONTROL_TEST_COMPLETED": "Test Completed",
             "CONTROL_INSTALLED_FROM_TEMPLATE": "Installed from Template"
+        },
+        "planStatus": {
+            "active": "Active",
+            "paused": "Paused",
+            "archived": "Archived"
         }
     },
     "evidence": {
@@ -4687,6 +4692,11 @@
             "monthly": "Monthly",
             "quarterly": "Quarterly",
             "annually": "Annually"
+        },
+        "evKind": {
+            "fileUpload": "Upload File",
+            "link": "URL / Link",
+            "evidence": "Existing Evidence Record"
         }
     },
     "agents": {

@@ -5,7 +5,7 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { formatDate } from '@/lib/format-date';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
 import { Paperclip } from 'lucide-react';
@@ -23,10 +23,10 @@ import { MetaStrip } from '@/components/ui/meta-strip';
 import { Card, cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 
-const EV_KIND_OPTIONS: ComboboxOption[] = [
-    { value: 'FILE_UPLOAD', label: 'Upload File' },
-    { value: 'LINK', label: 'URL / Link' },
-    { value: 'EVIDENCE', label: 'Existing Evidence Record' },
+const buildEvKindOptions = (t: (key: string) => string): ComboboxOption[] => [
+    { value: 'FILE_UPLOAD', label: t('evKind.fileUpload') },
+    { value: 'LINK', label: t('evKind.link') },
+    { value: 'EVIDENCE', label: t('evKind.evidence') },
 ];
 
 interface EvidenceLink {
@@ -63,6 +63,7 @@ const RESULT_BADGE: Record<string, StatusBadgeVariant> = {
 
 export default function TestRunPage() {
     const t = useTranslations('controlTests');
+    const EV_KIND_OPTIONS = useMemo(() => buildEvKindOptions(t), [t]);
     const params = useParams();
     const router = useRouter();
     const apiUrl = useTenantApiUrl();

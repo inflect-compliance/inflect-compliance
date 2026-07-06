@@ -152,8 +152,11 @@ describe('NewControlModal — category + frequency Comboboxes', () => {
     });
 
     it('CATEGORY_OPTIONS + FREQUENCY_OPTIONS are typed ComboboxOption[] (no stale string[] shape)', () => {
+        // FREQUENCY_OPTIONS is now built via an i18n factory returning
+        // ComboboxOption[] (labels resolve through next-intl); CATEGORY_OPTIONS
+        // stays a static value===label const.
         expect(CONTROL_MODAL_SRC).toMatch(
-            /FREQUENCY_OPTIONS:\s*ComboboxOption\[\]/,
+            /buildFrequencyOptions\s*=\s*\([^)]*\):\s*ComboboxOption\[\]/,
         );
         expect(CONTROL_MODAL_SRC).toMatch(
             /CATEGORY_OPTIONS:\s*ComboboxOption\[\]/,

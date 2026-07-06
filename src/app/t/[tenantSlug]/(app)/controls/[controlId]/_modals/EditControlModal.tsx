@@ -41,18 +41,19 @@ export interface EditControlForm {
     annualCost: string;
 }
 
-const AUTOMATION_TYPE_OPTIONS: ComboboxOption[] = [
-    { value: 'AUTOMATED', label: 'Automated' },
-    { value: 'MANUAL', label: 'Manual' },
-    { value: 'IT_DEPENDENT_MANUAL', label: 'IT-Dependent Manual' },
+type OptT = (key: string) => string;
+const buildAutomationTypeOptions = (t: OptT): ComboboxOption[] => [
+    { value: 'AUTOMATED', label: t('automationTypeLabels.AUTOMATED') },
+    { value: 'MANUAL', label: t('automationTypeLabels.MANUAL') },
+    { value: 'IT_DEPENDENT_MANUAL', label: t('automationTypeLabels.IT_DEPENDENT_MANUAL') },
 ];
 
-const MITIGATION_TYPE_OPTIONS: ComboboxOption[] = [
-    { value: 'PREVENTIVE', label: 'Preventive' },
-    { value: 'DETECTIVE', label: 'Detective' },
-    { value: 'DETERRENT', label: 'Deterrent' },
-    { value: 'CORRECTIVE', label: 'Corrective' },
-    { value: 'COMPENSATING', label: 'Compensating' },
+const buildMitigationTypeOptions = (t: OptT): ComboboxOption[] => [
+    { value: 'PREVENTIVE', label: t('mitigationTypeLabels.PREVENTIVE') },
+    { value: 'DETECTIVE', label: t('mitigationTypeLabels.DETECTIVE') },
+    { value: 'DETERRENT', label: t('mitigationTypeLabels.DETERRENT') },
+    { value: 'CORRECTIVE', label: t('mitigationTypeLabels.CORRECTIVE') },
+    { value: 'COMPENSATING', label: t('mitigationTypeLabels.COMPENSATING') },
 ];
 
 export interface EditControlModalProps {
@@ -84,6 +85,8 @@ export function EditControlModal({
     onSubmit,
 }: EditControlModalProps) {
     const tx = useTranslations('controls');
+    const AUTOMATION_TYPE_OPTIONS = buildAutomationTypeOptions(tx);
+    const MITIGATION_TYPE_OPTIONS = buildMitigationTypeOptions(tx);
     return (
         <Modal
             showModal={open}

@@ -1442,6 +1442,11 @@
             "CONTROL_EVIDENCE_UNLINKED": "Премахнато доказателство",
             "CONTROL_TEST_COMPLETED": "Завършен тест",
             "CONTROL_INSTALLED_FROM_TEMPLATE": "Инсталиран от шаблон"
+        },
+        "planStatus": {
+            "active": "Активен",
+            "paused": "Паузиран",
+            "archived": "Архивиран"
         }
     },
     "evidence": {
@@ -4687,6 +4692,11 @@
             "monthly": "Месечно",
             "quarterly": "Тримесечно",
             "annually": "Годишно"
+        },
+        "evKind": {
+            "fileUpload": "Качване на файл",
+            "link": "URL / Връзка",
+            "evidence": "Съществуващ запис за доказателство"
         }
     },
     "agents": {

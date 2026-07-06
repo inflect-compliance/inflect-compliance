@@ -87,13 +87,19 @@ describe('Audit-gap enum surfacing', () => {
         });
 
         it('test-plan detail PLAN_STATUS_OPTIONS exposes ARCHIVED', () => {
+            // PLAN_STATUS_OPTIONS is now built via an i18n factory; the
+            // ARCHIVED entry resolves its label through next-intl.
             const block = detail.slice(
-                detail.indexOf('PLAN_STATUS_OPTIONS'),
-                detail.indexOf('PLAN_STATUS_OPTIONS') + 400,
+                detail.indexOf('buildPlanStatusOptions'),
+                detail.indexOf('buildPlanStatusOptions') + 400,
             );
             expect(block).toMatch(
-                /\{\s*value:\s*['"]ARCHIVED['"]\s*,\s*label:\s*['"]Archived['"]/,
+                /\{\s*value:\s*['"]ARCHIVED['"]\s*,\s*label:\s*t\(['"]planStatus\.archived['"]\)/,
             );
+            const en = JSON.parse(read('messages/en.json')) as {
+                controls: { planStatus: Record<string, string> };
+            };
+            expect(en.controls.planStatus.archived).toBe('Archived');
         });
 
         it('test-plan detail badge variant lookup carries ARCHIVED', () => {
