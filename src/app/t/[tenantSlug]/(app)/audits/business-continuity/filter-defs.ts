@@ -2,6 +2,10 @@
  * Filter configuration for the Business Continuity (BIA) register (Epic 53).
  * A static criticality enum filter, applied client-side to the SSR rows —
  * mirrors the sibling Vulnerabilities / Security Testing pages.
+ *
+ * i18n: labels resolve at render via `buildBiaFilterDefs(t, tGroup)`
+ * (`t = useTranslations('audits')`, `tGroup =
+ * useTranslations('common.filterGroups')`). Enum VALUES + KEYS unchanged.
  */
 import { createTypedFilterDefs, optionsFromEnum } from '@/components/ui/filter/filter-definitions';
 // FilterDefInput.icon is typed `LucideIcon`; a new filter-defs file has no
@@ -9,29 +13,40 @@ import { createTypedFilterDefs, optionsFromEnum } from '@/components/ui/filter/f
 // tests/guards/no-lucide.test.ts (same precedent as every other *filter-defs.ts).
 import { ShieldAlert } from 'lucide-react';
 
-export const BIA_CRITICALITY_LABELS = {
-    CRITICAL: 'Critical',
-    HIGH: 'High',
-    MEDIUM: 'Medium',
-    LOW: 'Low',
-} as const;
+/** Surface-namespace resolver (`useTranslations('audits')`). */
+type T = (key: string, values?: Record<string, unknown>) => string;
+/** Shared filter-group resolver (`useTranslations('common.filterGroups')`). */
+type TGroup = (key: string) => string;
 
-const STATIC_DEFS = {
-    criticality: {
-        label: 'Criticality',
-        description: 'Business criticality of the analysed process.',
-        group: 'Attributes',
-        icon: ShieldAlert,
-        options: optionsFromEnum(BIA_CRITICALITY_LABELS),
-        multiple: true,
-        resetBehavior: 'clearable',
-    },
-} as const;
+const BIA_CRITICALITY_KEYS = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] as const;
+
+/** criticality → label. Source of truth for the filter dropdown + the
+ *  NewBiaModal criticality picker. `t = useTranslations('audits')`. */
+export function buildBiaCriticalityLabels(t: T): Record<string, string> {
+    return Object.fromEntries(BIA_CRITICALITY_KEYS.map((k) => [k, t(`bia.crit.${k}`)]));
+}
+
+function biaFilterDefsInput(t: T, tGroup: TGroup) {
+    return {
+        criticality: {
+            label: t('bia.colCriticality'),
+            description: t('bia.filterCriticalityDesc'),
+            group: tGroup('attributes'),
+            icon: ShieldAlert,
+            options: optionsFromEnum(buildBiaCriticalityLabels(t)),
+            multiple: true,
+            resetBehavior: 'clearable',
+        },
+    } as const;
+}
 
 export const BIA_FILTER_KEYS = ['criticality'] as const;
 
-export const biaFilterDefs = createTypedFilterDefs()(STATIC_DEFS);
+/** Build the localized BIA filter defs. Memoize per render. */
+export function buildBiaFilterDefs(t: T, tGroup: TGroup) {
+    return createTypedFilterDefs()(biaFilterDefsInput(t, tGroup));
+}
 
-export function buildBiaFilters() {
-    return biaFilterDefs.filters;
+export function buildBiaFilters(t: T, tGroup: TGroup) {
+    return buildBiaFilterDefs(t, tGroup).filters;
 }

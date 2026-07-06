@@ -4,6 +4,7 @@
  * Controlled field markup for the asset-create form. Same shape as
  * the legacy inline form on AssetsClient that this modal replaces.
  */
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { FormField } from '@/components/ui/form-field';
@@ -29,10 +30,8 @@ const ASSET_TYPES = [
     'PEOPLE_PROCESS',
     'OTHER',
 ];
-const ASSET_TYPE_OPTIONS: ComboboxOption[] = ASSET_TYPES.map((t) => ({
-    value: t,
-    label: t.replace(/_/g, ' '),
-}));
+export const buildAssetTypeOptions = (t: (key: string) => string): ComboboxOption[] =>
+    ASSET_TYPES.map((v) => ({ value: v, label: t(`assetTypes.${v}`) }));
 
 export interface NewAssetFieldsLabels {
     name: string;
@@ -59,6 +58,7 @@ export function NewAssetFields({
 }) {
     const t = useTranslations('assets');
     const tOpt = (k: string) => t(k as Parameters<typeof t>[0]);
+    const ASSET_TYPE_OPTIONS = useMemo(() => buildAssetTypeOptions(tOpt), [t]);
     const classificationOptions = buildAssetClassificationOptions(tOpt);
     const residencyOptions = buildAssetDataResidencyOptions(tOpt);
     const statusOptions = buildAssetStatusOptions(tOpt);

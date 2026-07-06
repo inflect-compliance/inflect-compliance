@@ -95,6 +95,7 @@ export default function TestsRollupPage() {
 
 function TestsRollupContent() {
     const t = useTranslations('controlTests');
+    const tGroup = useTranslations('common.filterGroups');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const { tenantSlug } = useTenantContext();
@@ -210,7 +211,14 @@ function TestsRollupContent() {
         ],
     });
 
-    const liveFilters = useMemo(() => buildTestFilters(), []);
+    const liveFilters = useMemo(
+        () =>
+            buildTestFilters(
+                (k, v) => t(k as Parameters<typeof t>[0], v as Parameters<typeof t>[1]),
+                (k) => tGroup(k as Parameters<typeof tGroup>[0]),
+            ),
+        [t, tGroup],
+    );
 
     const filterCards = useMemo(() => filtersToCards(liveFilters), [liveFilters]);
     const { visibleCards, dropdown: filtersDropdown } = useFilterCardVisibility({

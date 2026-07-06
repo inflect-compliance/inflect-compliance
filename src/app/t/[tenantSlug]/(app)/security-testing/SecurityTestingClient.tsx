@@ -22,8 +22,8 @@ import { EmptyState } from '@/components/ui/empty-state';
 import {
     buildScannerFilters,
     SCANNER_FILTER_KEYS,
-    SCANNER_SOURCE_LABELS,
-    SCANNER_STATUS_LABELS,
+    buildScannerSourceLabels,
+    buildScannerStatusLabels,
 } from './filter-defs';
 
 export interface ScannerFindingRow {
@@ -73,7 +73,17 @@ const STATUS_VARIANT: Record<string, StatusBadgeVariant> = {
 };
 
 export function SecurityTestingClient(props: Props) {
-    const filterCtx = useFilterContext(buildScannerFilters(), [...SCANNER_FILTER_KEYS]);
+    const tx = useTranslations('securityTesting');
+    const tGroup = useTranslations('common.filterGroups');
+    const filters = useMemo(
+        () =>
+            buildScannerFilters(
+                (k, v) => tx(k as Parameters<typeof tx>[0], v as Parameters<typeof tx>[1]),
+                (k) => tGroup(k as Parameters<typeof tGroup>[0]),
+            ),
+        [tx, tGroup],
+    );
+    const filterCtx = useFilterContext(filters, [...SCANNER_FILTER_KEYS]);
     return (
         <FilterProvider value={filterCtx}>
             <SecurityTestingInner {...props} />
@@ -83,6 +93,15 @@ export function SecurityTestingClient(props: Props) {
 
 function SecurityTestingInner({ initialFindings, runs, tenantSlug }: Props) {
     const t = useTranslations('securityTesting');
+    const tGroup = useTranslations('common.filterGroups');
+    const tAdapt = (k: string, v?: Record<string, unknown>) =>
+        t(k as Parameters<typeof t>[0], v as Parameters<typeof t>[1]);
+    const sourceLabels = useMemo(() => buildScannerSourceLabels(tAdapt), [t]);
+    const statusLabels = useMemo(() => buildScannerStatusLabels(tAdapt), [t]);
+    const filterDefs = useMemo(
+        () => buildScannerFilters(tAdapt, (k) => tGroup(k as Parameters<typeof tGroup>[0])),
+        [t, tGroup],
+    );
     const { state, hasActive } = useFilters();
 
     const rows = useMemo(() => {
@@ -135,7 +154,7 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug }: Props) {
                         if (!src) return <span className="text-content-muted">—</span>;
                         return (
                             <span className="text-content-muted">
-                                {SCANNER_SOURCE_LABELS[src as keyof typeof SCANNER_SOURCE_LABELS] ?? src}
+                                {sourceLabels[src] ?? src}
                                 <span className="text-content-subtle"> · {row.original.scannerRun?.scanType}</span>
                             </span>
                         );
@@ -182,8 +201,7 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug }: Props) {
                     accessorFn: (r) => r.status,
                     cell: ({ row }) => (
                         <StatusBadge variant={STATUS_VARIANT[row.original.status] ?? 'neutral'}>
-                            {SCANNER_STATUS_LABELS[row.original.status as keyof typeof SCANNER_STATUS_LABELS] ??
-                                row.original.status}
+                            {statusLabels[row.original.status] ?? row.original.status}
                         </StatusBadge>
                     ),
                 },
@@ -211,7 +229,7 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug }: Props) {
                 ),
                 description,
             }}
-            filters={{ defs: buildScannerFilters() }}
+            filters={{ defs: filterDefs }}
             table={{
                 data: rows,
                 columns,

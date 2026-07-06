@@ -57,7 +57,17 @@ function isReviewOverdue(reviewedAt: string | null): boolean {
 const hrs = (v: number | null) => (v != null ? `${v}h` : '—');
 
 export function BusinessContinuityClient(props: Props) {
-    const filterCtx = useFilterContext(buildBiaFilters(), [...BIA_FILTER_KEYS]);
+    const tx = useTranslations('audits');
+    const tGroup = useTranslations('common.filterGroups');
+    const filters = useMemo(
+        () =>
+            buildBiaFilters(
+                (k, v) => tx(k as Parameters<typeof tx>[0], v as Parameters<typeof tx>[1]),
+                (k) => tGroup(k as Parameters<typeof tGroup>[0]),
+            ),
+        [tx, tGroup],
+    );
+    const filterCtx = useFilterContext(filters, [...BIA_FILTER_KEYS]);
     return (
         <FilterProvider value={filterCtx}>
             <BusinessContinuityInner {...props} />
@@ -67,6 +77,15 @@ export function BusinessContinuityClient(props: Props) {
 
 function BusinessContinuityInner({ initialRows, tenantSlug, canWrite }: Props) {
     const tx = useTranslations('audits');
+    const tGroup = useTranslations('common.filterGroups');
+    const filterDefs = useMemo(
+        () =>
+            buildBiaFilters(
+                (k, v) => tx(k as Parameters<typeof tx>[0], v as Parameters<typeof tx>[1]),
+                (k) => tGroup(k as Parameters<typeof tGroup>[0]),
+            ),
+        [tx, tGroup],
+    );
     const router = useRouter();
     const searchParams = useSearchParams();
     const { state, hasActive } = useFilters();
@@ -187,7 +206,7 @@ function BusinessContinuityInner({ initialRows, tenantSlug, canWrite }: Props) {
                         </Button>
                     ) : undefined,
                 }}
-                filters={{ defs: buildBiaFilters() }}
+                filters={{ defs: filterDefs }}
                 table={{
                     data: rows,
                     columns,

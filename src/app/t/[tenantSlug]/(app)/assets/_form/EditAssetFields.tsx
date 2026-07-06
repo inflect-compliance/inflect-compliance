@@ -8,6 +8,7 @@
  * `<EditAssetModal>` renders it inside Modal.Body. State + submit
  * live in `useEditAssetForm`.
  */
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { UserCombobox } from '@/components/ui/user-combobox';
@@ -30,10 +31,6 @@ const TYPES = [
     'PEOPLE_PROCESS',
     'OTHER',
 ];
-const TYPE_OPTIONS: ComboboxOption[] = TYPES.map((t) => ({
-    value: t,
-    label: t.replace(/_/g, ' '),
-}));
 export function EditAssetFields({
     form,
     tenantSlug,
@@ -47,6 +44,10 @@ export function EditAssetFields({
         { value: 'RETIRED', label: t('statusOption.RETIRED') },
     ];
     const tOpt = (k: string) => t(k as Parameters<typeof t>[0]);
+    const TYPE_OPTIONS = useMemo(
+        () => TYPES.map((v) => ({ value: v, label: tOpt(`assetTypes.${v}`) })),
+        [t],
+    );
     const classificationOptions = buildAssetClassificationOptions(tOpt);
     const residencyOptions = buildAssetDataResidencyOptions(tOpt);
     return (

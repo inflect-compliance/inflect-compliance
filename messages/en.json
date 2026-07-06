@@ -341,6 +341,18 @@
                 "ACTIVE": "Active",
                 "RETIRED": "Retired"
             }
+        },
+        "assetTypes": {
+            "INFORMATION": "INFORMATION",
+            "APPLICATION": "APPLICATION",
+            "SYSTEM": "SYSTEM",
+            "SERVICE": "SERVICE",
+            "DATA_STORE": "DATA STORE",
+            "INFRASTRUCTURE": "INFRASTRUCTURE",
+            "VENDOR": "VENDOR",
+            "PROCESS": "PROCESS",
+            "PEOPLE_PROCESS": "PEOPLE PROCESS",
+            "OTHER": "OTHER"
         }
     },
     "risks": {
@@ -759,6 +771,18 @@
                 "errorFallback": "Failed to generate draft",
                 "draftsQueuedSingular": "Draft queued for review in the ",
                 "draftsQueuedPlural": "Drafts queued for review in the "
+            },
+            "filters": {
+                "riskTier": "Risk tier",
+                "riskTierDesc": "EU AI Act risk classification of the system."
+            },
+            "filterEnums": {
+                "riskTier": {
+                    "PROHIBITED": "Prohibited",
+                    "HIGH": "High",
+                    "LIMITED": "Limited",
+                    "MINIMAL": "Minimal"
+                }
             }
         },
         "velocity": {
@@ -1370,6 +1394,14 @@
                 "APPLICABLE": "Applicable",
                 "NOT_APPLICABLE": "Not Applicable"
             }
+        },
+        "freq": {
+            "adHoc": "Ad Hoc",
+            "daily": "Daily",
+            "weekly": "Weekly",
+            "monthly": "Monthly",
+            "quarterly": "Quarterly",
+            "annually": "Annually"
         }
     },
     "evidence": {
@@ -2042,7 +2074,14 @@
             "cancel": "Cancel",
             "creating": "Creating…",
             "create": "Create BIA",
-            "createFailed": "Failed to create BIA"
+            "createFailed": "Failed to create BIA",
+            "filterCriticalityDesc": "Business criticality of the analysed process.",
+            "crit": {
+                "CRITICAL": "Critical",
+                "HIGH": "High",
+                "MEDIUM": "Medium",
+                "LOW": "Low"
+            }
         },
         "biaDetail": {
             "metaCriticality": "Criticality",
@@ -4475,6 +4514,40 @@
             "createdBy": "Created {date} by {name}",
             "unknown": "Unknown",
             "evidenceEmpty": "No evidence linked yet."
+        },
+        "filters": {
+            "status": "Status",
+            "statusDesc": "Test plan lifecycle state.",
+            "result": "Last Result",
+            "resultDesc": "Outcome of the most recent run.",
+            "frequency": "Frequency",
+            "frequencyDesc": "How often the test is scheduled.",
+            "due": "Due",
+            "dueDesc": "Overdue test plans (next-due date in the past)."
+        },
+        "filterEnums": {
+            "status": {
+                "ACTIVE": "Active",
+                "PAUSED": "Paused",
+                "ARCHIVED": "Archived"
+            },
+            "result": {
+                "PASS": "Pass",
+                "FAIL": "Fail",
+                "INCONCLUSIVE": "Inconclusive",
+                "NONE": "No runs"
+            },
+            "frequency": {
+                "AD_HOC": "Ad Hoc",
+                "DAILY": "Daily",
+                "WEEKLY": "Weekly",
+                "MONTHLY": "Monthly",
+                "QUARTERLY": "Quarterly",
+                "ANNUALLY": "Annually"
+            },
+            "due": {
+                "overdue": "Overdue"
+            }
         }
     },
     "agents": {
@@ -4531,7 +4604,39 @@
         "emptyMatchDesc": "Try clearing a filter.",
         "emptyDesc": "POST a SARIF report from your CI to /api/t/{slug}/security-testing/ingest. A passing scan attaches automated evidence to its mapped control; failing findings appear here and in the Findings register.",
         "resourceFindings": "findings",
-        "resourceFinding": "finding"
+        "resourceFinding": "finding",
+        "filters": {
+            "source": "Source",
+            "sourceDesc": "The scanner that produced the finding.",
+            "severity": "Severity",
+            "severityDesc": "Mapped severity of the finding.",
+            "status": "Status",
+            "statusDesc": "Triage status of the finding."
+        },
+        "filterEnums": {
+            "source": {
+                "SEMGREP": "Semgrep",
+                "TRIVY": "Trivy",
+                "ZAP": "ZAP",
+                "GITLEAKS": "gitleaks",
+                "CHECKOV": "Checkov",
+                "CODEQL": "CodeQL",
+                "OTHER": "Other"
+            },
+            "severity": {
+                "CRITICAL": "Critical",
+                "HIGH": "High",
+                "MEDIUM": "Medium",
+                "LOW": "Low"
+            },
+            "status": {
+                "OPEN": "Open",
+                "TRIAGED": "Triaged",
+                "FIXED": "Fixed",
+                "FALSE_POSITIVE": "False positive",
+                "ACCEPTED": "Accepted"
+            }
+        }
     },
     "calendar": {
         "crumbDashboard": "Dashboard",
@@ -4693,7 +4798,28 @@
         "emptyFilteredTitle": "No matching vulnerabilities",
         "emptyTitle": "No vulnerabilities yet",
         "emptyFilteredDesc": "Try clearing a filter.",
-        "emptyDesc": "CVEs appear here once the NVD sync matches a published CVE to an asset with CPE/product data, or when you link one manually."
+        "emptyDesc": "CVEs appear here once the NVD sync matches a published CVE to an asset with CPE/product data, or when you link one manually.",
+        "filters": {
+            "status": "Status",
+            "statusDesc": "Remediation status of the vulnerability.",
+            "severity": "Severity",
+            "severityDesc": "CVSS base severity of the matched CVE."
+        },
+        "filterEnums": {
+            "status": {
+                "OPEN": "Open",
+                "MITIGATING": "Mitigating",
+                "MITIGATED": "Mitigated",
+                "ACCEPTED": "Accepted",
+                "FALSE_POSITIVE": "False positive"
+            },
+            "severity": {
+                "CRITICAL": "Critical",
+                "HIGH": "High",
+                "MEDIUM": "Medium",
+                "LOW": "Low"
+            }
+        }
     },
     "mfa": {
         "invalidCodeFormat": "Please enter a valid 6-digit code",

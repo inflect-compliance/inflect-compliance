@@ -57,7 +57,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { RiskEvaluationFields } from './_shared/RiskEvaluationFields';
-import { RISK_TREATMENT_OPTIONS } from './_shared/risk-options';
+import { buildRiskTreatmentOptions } from './_shared/risk-options';
 import { DatePicker } from '@/components/ui/date-picker/date-picker';
 import {
     parseYMD,
@@ -121,6 +121,10 @@ export function NewRiskModal({
     apiUrl,
 }: NewRiskModalProps) {
     const tx = useTranslations('risks');
+    const RISK_TREATMENT_OPTIONS = useMemo(
+        () => buildRiskTreatmentOptions((k) => tx(k as Parameters<typeof tx>[0])),
+        [tx],
+    );
     const close = useCallback(() => setOpen(false), [setOpen]);
     // Epic 69 — bridge cache invalidation. RisksClient now reads
     // from `useTenantSWR(CACHE_KEYS.risks.list())`, so the React
