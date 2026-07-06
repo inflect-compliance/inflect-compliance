@@ -159,7 +159,13 @@ describe('B8 follow-up — evidence folders', () => {
         );
 
         it('declares the folder filter def', () => {
-            expect(src).toMatch(/folder:\s*\{[\s\S]{0,400}label:\s*['"]Folder['"]/);
+            // Label migrated to next-intl; assert the folder def references
+            // the key and it resolves to "Folder" in the en catalog.
+            expect(src).toMatch(/folder:\s*\{[\s\S]{0,400}label:\s*t\('filters\.folder'\)/);
+            const en = JSON.parse(read('messages/en.json')) as {
+                evidence: { filters: Record<string, string> };
+            };
+            expect(en.evidence.filters.folder).toBe('Folder');
         });
 
         it('builds folder options at render time from loaded evidence', () => {

@@ -37,7 +37,8 @@
             "timeline": "Timeline",
             "status": "Status",
             "classification": "Classification",
-            "linked": "Linked"
+            "linked": "Linked",
+            "workflow": "Workflow"
         }
     },
     "login": {
@@ -1583,6 +1584,30 @@
             "uploading": "Uploading…",
             "startImport": "Start import",
             "bulkImportFailed": "Bulk import failed"
+        },
+        "filters": {
+            "type": "Type",
+            "typeDesc": "File / link / text evidence.",
+            "status": "Review status",
+            "statusDesc": "Position in the evidence review workflow.",
+            "controlId": "Linked control",
+            "controlIdDesc": "Only show evidence attached to this control.",
+            "folder": "Folder",
+            "folderDesc": "Organisational folder label.",
+            "noFolder": "No folder"
+        },
+        "filterEnums": {
+            "type": {
+                "file": "File",
+                "link": "Link",
+                "text": "Text"
+            },
+            "status": {
+                "draft": "Draft",
+                "submitted": "Submitted",
+                "approved": "Approved",
+                "rejected": "Rejected"
+            }
         }
     },
     "policies": {
@@ -1799,6 +1824,21 @@
             "skip": "Skip",
             "linking": "Linking…",
             "linkNControls": "Link {count, plural, one {# control} other {# controls}}"
+        },
+        "filters": {
+            "status": "Status",
+            "statusDesc": "Workflow stage of the policy.",
+            "category": "Category",
+            "categoryDesc": "Policy domain / taxonomy bucket."
+        },
+        "filterEnums": {
+            "status": {
+                "draft": "Draft",
+                "inReview": "In Review",
+                "approved": "Approved",
+                "published": "Published",
+                "archived": "Archived"
+            }
         }
     },
     "audits": {
@@ -3579,6 +3619,35 @@
             "proposed": "Proposed: {value}",
             "approve": "Approve",
             "reject": "Reject"
+        },
+        "filters": {
+            "status": "Status",
+            "statusDesc": "Vendor lifecycle stage.",
+            "criticality": "Criticality",
+            "criticalityDesc": "Business impact if the vendor is disrupted.",
+            "riskRating": "Risk rating",
+            "riskRatingDesc": "Assessed inherent risk for this vendor.",
+            "reviewDue": "Review due",
+            "reviewDueDesc": "Shortcut for vendors approaching or past their review."
+        },
+        "filterEnums": {
+            "status": {
+                "onboarding": "Onboarding",
+                "active": "Active",
+                "underReview": "Under Review",
+                "suspended": "Suspended",
+                "offboarded": "Offboarded"
+            },
+            "criticality": {
+                "low": "Low",
+                "medium": "Medium",
+                "high": "High",
+                "critical": "Critical"
+            },
+            "reviewDue": {
+                "overdue": "Review overdue",
+                "next30d": "Due in 30 days"
+            }
         }
     },
     "frameworks": {
@@ -4198,6 +4267,45 @@
             "forensicCategory": "Forensic category",
             "forensicCategoryHint": "Which checklist category this evidence satisfies.",
             "selectCategory": "Select category…"
+        },
+        "filters": {
+            "severity": "Severity",
+            "severityPlural": "Severities",
+            "severityDesc": "Impact level of the incident.",
+            "phase": "Phase",
+            "phasePlural": "Phases",
+            "phaseDesc": "Stage in the seven-phase response flow.",
+            "reportable": "Reportable",
+            "reportableDesc": "Whether NIS2 Article 23 notification is required."
+        },
+        "filterEnums": {
+            "severity": {
+                "low": "Low",
+                "medium": "Medium",
+                "high": "High",
+                "critical": "Critical"
+            },
+            "phase": {
+                "detection": "Detection",
+                "classification": "Classification",
+                "earlyWarning": "Early warning",
+                "containment": "Containment",
+                "investigation": "Investigation",
+                "detailedReport": "Detailed report",
+                "recovery": "Recovery",
+                "closed": "Closed"
+            },
+            "type": {
+                "ransomware": "Ransomware",
+                "dataBreach": "Data breach",
+                "ddos": "DDoS",
+                "unauthorizedAccess": "Unauthorized access",
+                "other": "Other"
+            },
+            "reportable": {
+                "yes": "Reportable",
+                "no": "Not reportable"
+            }
         }
     },
     "controlTests": {

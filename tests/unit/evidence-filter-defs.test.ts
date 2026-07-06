@@ -7,15 +7,33 @@ import {
     parseUrlToFilterState,
     type FilterState,
 } from '../../src/components/ui/filter/filter-state';
+import * as fs from 'fs';
+import * as path from 'path';
 import {
     buildEvidenceFilters,
+    buildEvidenceFilterDefs,
     controlOptionsFromControls,
     EVIDENCE_FILTER_KEYS,
-    EVIDENCE_STATUS_LABELS,
-    EVIDENCE_TYPE_LABELS,
-    evidenceFilterDefs,
+    evidenceStatusLabels,
+    evidenceTypeLabels,
 } from '../../src/app/t/[tenantSlug]/(app)/evidence/filter-defs';
 import { toApiSearchParams } from '../../src/lib/filters/url-sync';
+
+// en.json-backed resolvers (mirror the runtime `useTranslations` seams).
+const EN = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', '..', 'messages/en.json'), 'utf-8'),
+) as Record<string, Record<string, unknown>>;
+function makeT(ns: string) {
+    return (key: string) => {
+        const v = key
+            .split('.')
+            .reduce<unknown>((o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), EN[ns]);
+        return typeof v === 'string' ? v : `${ns}.${key}`;
+    };
+}
+const t = makeT('evidence');
+const tGroup = (k: string) => (EN.common as { filterGroups: Record<string, string> }).filterGroups[k] ?? k;
+const evidenceFilterDefs = buildEvidenceFilterDefs(t, tGroup);
 
 describe('Evidence filter config', () => {
     it('manages exactly the keys the API understands (+ status widening)', () => {
@@ -34,10 +52,10 @@ describe('Evidence filter config', () => {
         expect(type.multiple).toBe(true);
         expect(status.multiple).toBe(true);
         expect((type.options ?? []).map((o) => o.value).sort()).toEqual(
-            Object.keys(EVIDENCE_TYPE_LABELS).sort(),
+            Object.keys(evidenceTypeLabels(t)).sort(),
         );
         expect((status.options ?? []).map((o) => o.value).sort()).toEqual(
-            Object.keys(EVIDENCE_STATUS_LABELS).sort(),
+            Object.keys(evidenceStatusLabels(t)).sort(),
         );
     });
 
@@ -80,9 +98,7 @@ describe('controlOptionsFromControls', () => {
 
 describe('buildEvidenceFilters', () => {
     it('injects control options without mutating the static defs', () => {
-        const live = buildEvidenceFilters([
-            { id: 'c1', name: 'ISMS Scope', annexId: 'A.4.3' },
-        ]);
+        const live = buildEvidenceFilters([{ id: 'c1', name: 'ISMS Scope', annexId: 'A.4.3' }], [], t, tGroup);
         const control = live.find((f) => f.key === 'controlId');
         expect(control?.options).toHaveLength(1);
         // Static defs still null — a new array was constructed.

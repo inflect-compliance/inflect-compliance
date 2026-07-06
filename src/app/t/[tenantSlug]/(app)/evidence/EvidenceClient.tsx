@@ -171,6 +171,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     // `translations` prop (retention labels, bulk actions, KPI labels,
     // empty states, tooltips, toasts, …). The prop `t` stays intact.
     const tx = useTranslations('evidence');
+    const tGroup = useTranslations('common.filterGroups');
     // Stabilise across renders so dependent useCallbacks don't get a
     // fresh identity every cycle (was a real exhaustive-deps warning).
     const apiUrl = useCallback(
@@ -678,8 +679,10 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             buildEvidenceFilters(
                 controls as Parameters<typeof buildEvidenceFilters>[0],
                 evidence,
+                (k, v) => tx(k as Parameters<typeof tx>[0], v as Parameters<typeof tx>[1]),
+                (k) => tGroup(k as Parameters<typeof tGroup>[0]),
             ),
-        [controls, evidence],
+        [controls, evidence, tx, tGroup],
     );
     const filterCards = useMemo(
         () => filtersToCards(evidenceFilters),

@@ -15,42 +15,58 @@ import {
 import type { FilterOption } from '@/components/ui/filter/types';
 import { CircleDot, Tag } from 'lucide-react';
 
+/** Surface-namespace resolver (`useTranslations('policies')`). */
+type T = (key: string, values?: Record<string, unknown>) => string;
+/** Shared filter-group resolver (`useTranslations('common.filterGroups')`). */
+type TGroup = (key: string) => string;
+
 // Canonical labels for `PolicyStatus` — single source of truth for
 // the filter picker AND the row badge. Pre-Epic-45 the filter map
 // listed `RETIRED` but the schema enum is `ARCHIVED`; that drift
 // meant a "Retired" filter selection matched zero rows. Aligned to
 // the enum here so future column wiring stays canonical.
-export const POLICY_STATUS_LABELS = {
-    DRAFT: 'Draft',
-    IN_REVIEW: 'In Review',
-    APPROVED: 'Approved',
-    PUBLISHED: 'Published',
-    ARCHIVED: 'Archived',
-} as const;
+export function buildPolicyStatusLabels(t: T): Record<string, string> {
+    return {
+        DRAFT: t('filterEnums.status.draft'),
+        IN_REVIEW: t('filterEnums.status.inReview'),
+        APPROVED: t('filterEnums.status.approved'),
+        PUBLISHED: t('filterEnums.status.published'),
+        ARCHIVED: t('filterEnums.status.archived'),
+    };
+}
 
-const STATIC_DEFS = {
-    status: {
-        label: 'Status',
-        description: 'Workflow stage of the policy.',
-        group: 'Attributes',
-        icon: CircleDot,
-        options: optionsFromEnum(POLICY_STATUS_LABELS),
-        multiple: true,
-        resetBehavior: 'clearable',
-    },
-    category: {
-        label: 'Category',
-        description: 'Policy domain / taxonomy bucket.',
-        group: 'Attributes',
-        icon: Tag,
-        options: null, // derived from loaded rows
-        multiple: true,
-        resetBehavior: 'clearable',
-    },
-} satisfies Record<string, FilterDefInput>;
+function policyFilterDefsInput(t: T, tGroup: TGroup) {
+    return {
+        status: {
+            label: t('filters.status'),
+            description: t('filters.statusDesc'),
+            group: tGroup('attributes'),
+            icon: CircleDot,
+            options: optionsFromEnum(buildPolicyStatusLabels(t)),
+            multiple: true,
+            resetBehavior: 'clearable',
+        },
+        category: {
+            label: t('filters.category'),
+            description: t('filters.categoryDesc'),
+            group: tGroup('attributes'),
+            icon: Tag,
+            options: null, // derived from loaded rows
+            multiple: true,
+            resetBehavior: 'clearable',
+        },
+    } satisfies Record<string, FilterDefInput>;
+}
 
-export const policyFilterDefs = createTypedFilterDefs()(STATIC_DEFS);
-export const POLICY_FILTER_KEYS = policyFilterDefs.filterKeys;
+/** Build the localized policy filter defs. `t` = `useTranslations('policies')`,
+ *  `tGroup` = `useTranslations('common.filterGroups')`. Memoize per render. */
+export function buildPolicyFilterDefs(t: T, tGroup: TGroup) {
+    return createTypedFilterDefs()(policyFilterDefsInput(t, tGroup));
+}
+
+const IDENTITY: T = (k) => k;
+const IDENTITY_GROUP: TGroup = (k) => k;
+export const POLICY_FILTER_KEYS = buildPolicyFilterDefs(IDENTITY, IDENTITY_GROUP).filterKeys;
 
 interface PolicyLike {
     category?: string | null;
@@ -69,9 +85,13 @@ export function categoryOptionsFromPolicies(
         .map((value) => ({ value, label: value }));
 }
 
-export function buildPolicyFilters(policies: ReadonlyArray<PolicyLike>) {
+export function buildPolicyFilters(
+    policies: ReadonlyArray<PolicyLike>,
+    t: T = (k) => k,
+    tGroup: TGroup = (k) => k,
+) {
     const categoryOpts = categoryOptionsFromPolicies(policies);
-    return policyFilterDefs.filters.map((f) =>
+    return buildPolicyFilterDefs(t, tGroup).filters.map((f) =>
         f.key === 'category' ? { ...f, options: categoryOpts } : f,
     );
 }

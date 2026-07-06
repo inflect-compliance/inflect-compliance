@@ -298,7 +298,15 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
         ],
         [tenantSlug, t, vendorStatusOptions],
     );
-    const liveFilters = useMemo(() => buildVendorFilters(), []);
+    const tGroup = useTranslations('common.filterGroups');
+    const liveFilters = useMemo(
+        () =>
+            buildVendorFilters(
+                (k, v) => t(k as Parameters<typeof t>[0], v as Parameters<typeof t>[1]),
+                (k) => tGroup(k as Parameters<typeof tGroup>[0]),
+            ),
+        [t, tGroup],
+    );
     const filterCards = useMemo(() => filtersToCards(liveFilters), [liveFilters]);
     const { visibleCards, dropdown: filtersDropdown } = useFilterCardVisibility({
         storageKey: 'inflect:filter-vis:vendors',

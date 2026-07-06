@@ -39,7 +39,7 @@ import { toApiSearchParams } from '@/lib/filters/url-sync';
 import {
     buildPolicyFilters,
     POLICY_FILTER_KEYS,
-    POLICY_STATUS_LABELS,
+    buildPolicyStatusLabels,
 } from './filter-defs';
 import { useHydratedNow } from '@/lib/hooks/use-hydrated-now';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
@@ -116,6 +116,11 @@ function PoliciesPageInner({
     translations: t,
 }: PoliciesClientProps) {
     const tx = useTranslations('policies');
+    const tGroup = useTranslations('common.filterGroups');
+    const policyStatusLabels = useMemo(
+        () => buildPolicyStatusLabels((k, v) => tx(k as Parameters<typeof tx>[0], v as Parameters<typeof tx>[1])),
+        [tx],
+    );
     const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
     const router = useRouter();
     // Null on SSR + first client render so the "Overdue" badge doesn't
@@ -223,7 +228,7 @@ function PoliciesPageInner({
         () => ({
             title: (p) => p.title || '',
             status: (p) =>
-                (POLICY_STATUS_LABELS as Record<string, string>)[p.status] ??
+                policyStatusLabels[p.status] ??
                 p.status,
             category: (p) => p.category || '—',
             owner: (p) => ownerDisplayName(p.owner?.name, p.owner?.email) ?? '—',
@@ -232,7 +237,7 @@ function PoliciesPageInner({
             nextReviewAt: (p) => p.nextReviewAt || '',
             updatedAt: (p) => p.updatedAt,
         }),
-        [],
+        [policyStatusLabels],
     );
     const sortedPolicies = useMemo(
         () => sortRowsByDisplay(policies, sortAccessors, sortBy, sortOrder),
@@ -313,8 +318,8 @@ function PoliciesPageInner({
     }, [tenantSlug, permissions.canAdmin, tx]);
 
     const liveFilters = useMemo(
-        () => buildPolicyFilters(policies),
-        [policies],
+        () => buildPolicyFilters(policies, (k, v) => tx(k as Parameters<typeof tx>[0], v as Parameters<typeof tx>[1]), (k) => tGroup(k as Parameters<typeof tGroup>[0])),
+        [policies, tx, tGroup],
     );
 
     const filterCards = useMemo(() => filtersToCards(liveFilters), [liveFilters]);
@@ -442,7 +447,7 @@ function PoliciesPageInner({
                 const status = row.original.status as string;
                 const cls = STATUS_BADGE[status] ?? 'neutral';
                 const label =
-                    (POLICY_STATUS_LABELS as Record<string, string>)[status] ??
+                    policyStatusLabels[status] ??
                     status;
                 return (
                     <StatusBadge variant={cls} data-testid={`policy-status-${row.original.id}`}>
@@ -561,7 +566,7 @@ function PoliciesPageInner({
                 />
             ),
         },
-    ]), [tenantHref, hydratedNow, tx]);
+    ]), [tenantHref, hydratedNow, tx, policyStatusLabels]);
 
     return (
         <EntityListPage<PolicyRow>
