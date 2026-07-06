@@ -25,10 +25,10 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SkeletonDashboard } from '@/components/ui/skeleton';
 import { cardVariants } from '@/components/ui/card';
 
-const STATUS_LABELS: Record<string, string> = {
-    OPEN: 'Open', TRIAGED: 'Triaged', IN_PROGRESS: 'In Progress',
-    BLOCKED: 'Blocked', RESOLVED: 'Resolved', CLOSED: 'Closed', CANCELED: 'Canceled',
-};
+const buildStatusLabels = (t: (k: string) => string): Record<string, string> => ({
+    OPEN: t('statusLabels.OPEN'), TRIAGED: t('statusLabels.TRIAGED'), IN_PROGRESS: t('statusLabels.IN_PROGRESS'),
+    BLOCKED: t('statusLabels.BLOCKED'), RESOLVED: t('statusLabels.RESOLVED'), CLOSED: t('statusLabels.CLOSED'), CANCELED: t('statusLabels.CANCELED'),
+});
 // Epic 59 — map task status + severity onto semantic StatusBreakdown
 // variants. Drops the hand-tuned hex palette that the inline bars
 // were using, in exchange for tokens that re-theme correctly under
@@ -42,7 +42,7 @@ const STATUS_VARIANT: Record<string, StatusBreakdownVariant> = {
     CLOSED: 'neutral',
     CANCELED: 'neutral',
 };
-const SEVERITY_LABELS: Record<string, string> = { INFO: 'Info', LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High', CRITICAL: 'Critical' };
+const buildSeverityLabels = (t: (k: string) => string): Record<string, string> => ({ INFO: t('severityLabels.INFO'), LOW: t('severityLabels.LOW'), MEDIUM: t('severityLabels.MEDIUM'), HIGH: t('severityLabels.HIGH'), CRITICAL: t('severityLabels.CRITICAL') });
 const SEVERITY_VARIANT: Record<string, StatusBreakdownVariant> = {
     INFO: 'neutral',
     LOW: 'info',
@@ -55,10 +55,10 @@ const SEVERITY_VARIANT: Record<string, StatusBreakdownVariant> = {
 // only remaining dot indicators in this file also moved through
 // <StatusBreakdown>'s `showDot` prop, so the hex palette is no
 // longer referenced anywhere.
-const TYPE_LABELS: Record<string, string> = {
-    AUDIT_FINDING: 'Audit Finding', CONTROL_GAP: 'Control Gap',
-    INCIDENT: 'Incident', IMPROVEMENT: 'Improvement', TASK: 'Task',
-};
+const buildTypeLabels = (t: (k: string) => string): Record<string, string> => ({
+    AUDIT_FINDING: t('typeLabels.AUDIT_FINDING'), CONTROL_GAP: t('typeLabels.CONTROL_GAP'),
+    INCIDENT: t('typeLabels.INCIDENT'), IMPROVEMENT: t('typeLabels.IMPROVEMENT'), TASK: t('typeLabels.TASK'),
+});
 const TASK_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     OPEN: 'neutral', TRIAGED: 'info', IN_PROGRESS: 'info',
     BLOCKED: 'error', RESOLVED: 'success', CLOSED: 'neutral', CANCELED: 'neutral',
@@ -89,6 +89,9 @@ interface TaskRow {
 
 export default function TaskDashboardPage() {
     const t = useTranslations('tasks');
+    const STATUS_LABELS = buildStatusLabels(t);
+    const SEVERITY_LABELS = buildSeverityLabels(t);
+    const TYPE_LABELS = buildTypeLabels(t);
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const [metrics, setMetrics] = useState<Metrics | null>(null);

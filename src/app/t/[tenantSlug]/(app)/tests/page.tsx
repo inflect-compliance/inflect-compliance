@@ -55,10 +55,10 @@ interface TestPlanSummary {
     }>;
 }
 
-const FREQ_LABELS: Record<string, string> = {
-    AD_HOC: 'Ad Hoc', DAILY: 'Daily', WEEKLY: 'Weekly',
-    MONTHLY: 'Monthly', QUARTERLY: 'Quarterly', ANNUALLY: 'Annually',
-};
+const freqLabels = (t: (key: string) => string): Record<string, string> => ({
+    AD_HOC: t('freq.adHoc'), DAILY: t('freq.daily'), WEEKLY: t('freq.weekly'),
+    MONTHLY: t('freq.monthly'), QUARTERLY: t('freq.quarterly'), ANNUALLY: t('freq.annually'),
+});
 const RESULT_BADGE: Record<string, StatusBadgeVariant> = {
     PASS: 'success', FAIL: 'error', INCONCLUSIVE: 'warning',
 };
@@ -95,6 +95,7 @@ export default function TestsRollupPage() {
 
 function TestsRollupContent() {
     const t = useTranslations('controlTests');
+    const FREQ_LABELS = useMemo(() => freqLabels(t), [t]);
     const tGroup = useTranslations('common.filterGroups');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
@@ -275,7 +276,7 @@ function TestsRollupContent() {
             lastResult: (p) => getLastResult(p) || '',
             runs: (p) => p._count?.runs ?? 0,
         }),
-        [],
+        [FREQ_LABELS],
     );
     const sortedPlans = useMemo(
         () => sortRowsByDisplay(filteredPlans, sortAccessors, sortBy, sortOrder),
@@ -402,7 +403,7 @@ function TestsRollupContent() {
                     cell: ({ getValue }) => <span className="text-content-subtle">{getValue() as number}</span>,
                 },
             ])),
-        [t, tenantHref, orderColumns],
+        [t, tenantHref, orderColumns, FREQ_LABELS],
     );
 
     if (loading) return <div className="p-12 text-center text-content-subtle animate-pulse">{t('list.loading')}</div>;

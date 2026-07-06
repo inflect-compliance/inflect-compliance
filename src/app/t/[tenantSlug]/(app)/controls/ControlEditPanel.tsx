@@ -37,13 +37,13 @@ export interface PanelControl {
     owner?: { id?: string; name?: string | null; email?: string | null } | null;
 }
 
-const FREQUENCY_OPTIONS: ComboboxOption[] = [
-    { value: "AD_HOC", label: "Ad Hoc" },
-    { value: "DAILY", label: "Daily" },
-    { value: "WEEKLY", label: "Weekly" },
-    { value: "MONTHLY", label: "Monthly" },
-    { value: "QUARTERLY", label: "Quarterly" },
-    { value: "ANNUALLY", label: "Annually" },
+const buildFrequencyOptions = (tx: (key: string) => string): ComboboxOption[] => [
+    { value: "AD_HOC", label: tx("freq.adHoc") },
+    { value: "DAILY", label: tx("freq.daily") },
+    { value: "WEEKLY", label: tx("freq.weekly") },
+    { value: "MONTHLY", label: tx("freq.monthly") },
+    { value: "QUARTERLY", label: tx("freq.quarterly") },
+    { value: "ANNUALLY", label: tx("freq.annually") },
 ];
 
 const CATEGORY_OPTIONS: ComboboxOption[] = [
@@ -69,6 +69,7 @@ export function ControlEditPanel({
     onSaved: () => void;
 }) {
     const tx = useTranslations("controls");
+    const FREQUENCY_OPTIONS = buildFrequencyOptions(tx);
     const [tab, setTab] = useState<Tab>("details");
     const base = `/api/t/${tenantSlug}/controls/${control.id}`;
 
