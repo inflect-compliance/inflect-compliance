@@ -157,10 +157,12 @@ describe('tasks/new — findingSource / gapType / linkEntityType', () => {
     });
 
     it('option arrays are typed ComboboxOption[] (no leftover sentinel empty rows)', () => {
-        expect(TASKS_NEW_SRC).toMatch(/FINDING_OPTIONS:\s*ComboboxOption\[\]/);
-        expect(TASKS_NEW_SRC).toMatch(/GAP_TYPE_OPTIONS:\s*ComboboxOption\[\]/);
+        // Moved from static `X_OPTIONS: ComboboxOption[]` maps to
+        // `buildXOptions(t): ComboboxOption[]` next-intl factories.
+        expect(TASKS_NEW_SRC).toMatch(/buildFindingOptions\s*=\s*\([^)]*\):\s*ComboboxOption\[\]/);
+        expect(TASKS_NEW_SRC).toMatch(/buildGapTypeOptions\s*=\s*\([^)]*\):\s*ComboboxOption\[\]/);
         expect(TASKS_NEW_SRC).toMatch(
-            /LINK_ENTITY_OPTIONS:\s*ComboboxOption\[\]/,
+            /buildLinkEntityOptions\s*=\s*\([^)]*\):\s*ComboboxOption\[\]/,
         );
         // The old sentinel row `{ value: '', label: '— Select source —' }`
         // should be gone; Combobox owns the unset state via placeholder.

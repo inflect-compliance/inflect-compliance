@@ -56,18 +56,10 @@ interface RiskOption {
     title: string;
 }
 
-const SEVERITY_OPTIONS: ComboboxOption[] = [
-    { value: 'LOW', label: 'Low' },
-    { value: 'MEDIUM', label: 'Medium' },
-    { value: 'HIGH', label: 'High' },
-    { value: 'CRITICAL', label: 'Critical' },
-];
-
-const TYPE_OPTIONS: ComboboxOption[] = [
-    { value: 'NONCONFORMITY', label: 'Nonconformity' },
-    { value: 'OBSERVATION', label: 'Observation' },
-    { value: 'OPPORTUNITY', label: 'Opportunity' },
-];
+const buildSeverityOptions = (t: (key: string) => string): ComboboxOption[] =>
+    ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((v) => ({ value: v, label: t(`severityOptions.${v}`) }));
+const buildTypeOptions = (t: (key: string) => string): ComboboxOption[] =>
+    ['NONCONFORMITY', 'OBSERVATION', 'OPPORTUNITY'].map((v) => ({ value: v, label: t(`typeOptions.${v}`) }));
 
 const EMPTY_FORM = {
     title: '',
@@ -95,6 +87,8 @@ export function CreateFindingModal({
     apiUrl,
 }: CreateFindingModalProps) {
     const tx = useTranslations('findings');
+    const SEVERITY_OPTIONS = useMemo(() => buildSeverityOptions(tx), [tx]);
+    const TYPE_OPTIONS = useMemo(() => buildTypeOptions(tx), [tx]);
     const close = useCallback(() => setOpen(false), [setOpen]);
     const { mutate: swrMutate } = useSWRConfig();
     const titleRef = useRef<HTMLInputElement>(null);

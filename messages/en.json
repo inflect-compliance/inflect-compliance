@@ -2306,6 +2306,17 @@
             "createFailed": "Failed to create finding ({status})",
             "createFailedGeneric": "Failed to create finding",
             "risksToLinkEmpty": "No risks to link."
+        },
+        "severityOptions": {
+            "LOW": "Low",
+            "MEDIUM": "Medium",
+            "HIGH": "High",
+            "CRITICAL": "Critical"
+        },
+        "typeOptions": {
+            "NONCONFORMITY": "Nonconformity",
+            "OBSERVATION": "Observation",
+            "OPPORTUNITY": "Opportunity"
         }
     },
     "mapping": {
@@ -3763,6 +3774,18 @@
             "SECURITY_POLICY": "Security Policy",
             "PEN_TEST": "Pen Test Report",
             "OTHER": "Other"
+        },
+        "linkType": {
+            "ASSET": "Asset",
+            "RISK": "Risk",
+            "ISSUE": "Issue",
+            "CONTROL": "Control"
+        },
+        "linkRelation": {
+            "RELATED": "Related",
+            "USES": "Uses",
+            "MITIGATES": "Mitigates",
+            "STORES_DATA_FOR": "Stores Data"
         }
     },
     "frameworks": {
@@ -4224,6 +4247,13 @@
             "DESIGN": "Design",
             "OPERATING_EFFECTIVENESS": "Operating Effectiveness",
             "DOCUMENTATION": "Documentation"
+        },
+        "linkEntity": {
+            "CONTROL": "Control",
+            "FRAMEWORK_REQUIREMENT": "Framework Requirement",
+            "ASSET": "Asset",
+            "RISK": "Risk",
+            "EVIDENCE": "Evidence"
         }
     },
     "processes": {

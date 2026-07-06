@@ -2306,6 +2306,17 @@
             "createFailed": "Неуспешно създаване на констатация ({status})",
             "createFailedGeneric": "Неуспешно създаване на констатация",
             "risksToLinkEmpty": "Няма рискове за свързване."
+        },
+        "severityOptions": {
+            "LOW": "Ниска",
+            "MEDIUM": "Средна",
+            "HIGH": "Висока",
+            "CRITICAL": "Критична"
+        },
+        "typeOptions": {
+            "NONCONFORMITY": "Несъответствие",
+            "OBSERVATION": "Наблюдение",
+            "OPPORTUNITY": "Възможност"
         }
     },
     "mapping": {
@@ -3763,6 +3774,18 @@
             "SECURITY_POLICY": "Политика за сигурност",
             "PEN_TEST": "Доклад от тест за проникване",
             "OTHER": "Друго"
+        },
+        "linkType": {
+            "ASSET": "Актив",
+            "RISK": "Риск",
+            "ISSUE": "Проблем",
+            "CONTROL": "Контрола"
+        },
+        "linkRelation": {
+            "RELATED": "Свързан",
+            "USES": "Използва",
+            "MITIGATES": "Смекчава",
+            "STORES_DATA_FOR": "Съхранява данни"
         }
     },
     "frameworks": {
@@ -4224,6 +4247,13 @@
             "DESIGN": "Дизайн",
             "OPERATING_EFFECTIVENESS": "Оперативна ефективност",
             "DOCUMENTATION": "Документация"
+        },
+        "linkEntity": {
+            "CONTROL": "Контрола",
+            "FRAMEWORK_REQUIREMENT": "Изискване на рамка",
+            "ASSET": "Актив",
+            "RISK": "Риск",
+            "EVIDENCE": "Доказателство"
         }
     },
     "processes": {
