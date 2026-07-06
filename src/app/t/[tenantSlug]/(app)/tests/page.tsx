@@ -95,7 +95,7 @@ export default function TestsRollupPage() {
 
 function TestsRollupContent() {
     const t = useTranslations('controlTests');
-    const FREQ_LABELS = freqLabels(t);
+    const FREQ_LABELS = useMemo(() => freqLabels(t), [t]);
     const tGroup = useTranslations('common.filterGroups');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
@@ -276,7 +276,7 @@ function TestsRollupContent() {
             lastResult: (p) => getLastResult(p) || '',
             runs: (p) => p._count?.runs ?? 0,
         }),
-        [],
+        [FREQ_LABELS],
     );
     const sortedPlans = useMemo(
         () => sortRowsByDisplay(filteredPlans, sortAccessors, sortBy, sortOrder),
@@ -403,7 +403,7 @@ function TestsRollupContent() {
                     cell: ({ getValue }) => <span className="text-content-subtle">{getValue() as number}</span>,
                 },
             ])),
-        [t, tenantHref, orderColumns],
+        [t, tenantHref, orderColumns, FREQ_LABELS],
     );
 
     if (loading) return <div className="p-12 text-center text-content-subtle animate-pulse">{t('list.loading')}</div>;
