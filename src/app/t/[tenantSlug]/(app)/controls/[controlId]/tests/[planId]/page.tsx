@@ -5,7 +5,7 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { formatDate } from '@/lib/format-date';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -65,15 +65,15 @@ const RUN_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     PLANNED: 'neutral', RUNNING: 'info', COMPLETED: 'success',
 };
 const buildFreqCbOptions = (freqLabels: Record<string, string>): ComboboxOption[] => Object.entries(freqLabels).map(([v, l]) => ({ value: v, label: l }));
-const METHOD_OPTIONS: ComboboxOption[] = [{ value: 'MANUAL', label: 'Manual' }, { value: 'AUTOMATED', label: 'Automated' }];
+const buildMethodOptions = (t: (key: string) => string): ComboboxOption[] => [{ value: 'MANUAL', label: t('automationTypeLabels.MANUAL') }, { value: 'AUTOMATED', label: t('automationTypeLabels.AUTOMATED') }];
 // Audit Coherence S2 — ARCHIVED is the terminal "retired control
 // test" state. Plans in ARCHIVED stay visible for historical audit
 // but no new runs can be created. Distinct from soft-delete which
 // removes the row from default queries entirely.
-const PLAN_STATUS_OPTIONS: ComboboxOption[] = [
-    { value: 'ACTIVE', label: 'Active' },
-    { value: 'PAUSED', label: 'Paused' },
-    { value: 'ARCHIVED', label: 'Archived' },
+const buildPlanStatusOptions = (t: (key: string) => string): ComboboxOption[] => [
+    { value: 'ACTIVE', label: t('planStatus.active') },
+    { value: 'PAUSED', label: t('planStatus.paused') },
+    { value: 'ARCHIVED', label: t('planStatus.archived') },
 ];
 const PLAN_STATUS_BADGE_VARIANT: Record<string, StatusBadgeVariant> = {
     ACTIVE: 'success',
@@ -88,6 +88,8 @@ export default function TestPlanDetailPage() {
     const tenantHref = useTenantHref();
     const { permissions } = useTenantContext();
     const t = useTranslations('controls');
+    const METHOD_OPTIONS = useMemo(() => buildMethodOptions(t), [t]);
+    const PLAN_STATUS_OPTIONS = useMemo(() => buildPlanStatusOptions(t), [t]);
     const FREQ_LABELS = buildFreqLabels(t);
     const FREQ_CB_OPTIONS = buildFreqCbOptions(FREQ_LABELS);
     const planId = params?.planId as string;

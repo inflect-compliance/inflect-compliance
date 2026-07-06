@@ -79,13 +79,13 @@ const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     NOT_APPLICABLE: 'neutral',
 };
 
-const FREQUENCY_OPTIONS: ComboboxOption[] = [
-    { value: 'AD_HOC', label: 'Ad Hoc' },
-    { value: 'DAILY', label: 'Daily' },
-    { value: 'WEEKLY', label: 'Weekly' },
-    { value: 'MONTHLY', label: 'Monthly' },
-    { value: 'QUARTERLY', label: 'Quarterly' },
-    { value: 'ANNUALLY', label: 'Annually' },
+const buildFrequencyOptions = (t: (key: string) => string): ComboboxOption[] => [
+    { value: 'AD_HOC', label: t('freq.adHoc') },
+    { value: 'DAILY', label: t('freq.daily') },
+    { value: 'WEEKLY', label: t('freq.weekly') },
+    { value: 'MONTHLY', label: t('freq.monthly') },
+    { value: 'QUARTERLY', label: t('freq.quarterly') },
+    { value: 'ANNUALLY', label: t('freq.annually') },
 ];
 
 const CATEGORY_OPTIONS: ComboboxOption[] = [
@@ -127,6 +127,7 @@ export function ControlDetailSheet({
     canWrite,
 }: ControlDetailSheetProps) {
     const tx = useTranslations('controls');
+    const FREQUENCY_OPTIONS = useMemo(() => buildFrequencyOptions(tx), [tx]);
     const open = controlId !== null;
     const { mutate: swrMutate } = useSWRConfig();
     const nameInputRef = useRef<HTMLInputElement>(null);

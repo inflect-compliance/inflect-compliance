@@ -11,7 +11,7 @@
  * Renders inside the docked <AsidePanel> (no overlay → the table stays
  * visible). Seeds the form from a fresh GET /tasks/{id} on mount.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Heading } from "@/components/ui/typography";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
@@ -26,25 +26,26 @@ import { PanelActivityFeed } from "./PanelActivityFeed";
 import { EvidenceUploadSection } from "@/components/evidence/EvidenceUploadSection";
 import type { ControlTask } from "./ControlTaskRows";
 
-const SEVERITY_OPTIONS: ComboboxOption[] = [
-    { value: "INFO", label: "Info" },
-    { value: "LOW", label: "Low" },
-    { value: "MEDIUM", label: "Medium" },
-    { value: "HIGH", label: "High" },
-    { value: "CRITICAL", label: "Critical" },
+type OptT = (key: string) => string;
+const buildSeverityOptions = (t: OptT): ComboboxOption[] => [
+    { value: "INFO", label: t("severityLabels.INFO") },
+    { value: "LOW", label: t("severityLabels.LOW") },
+    { value: "MEDIUM", label: t("severityLabels.MEDIUM") },
+    { value: "HIGH", label: t("severityLabels.HIGH") },
+    { value: "CRITICAL", label: t("severityLabels.CRITICAL") },
 ];
-const PRIORITY_OPTIONS: ComboboxOption[] = [
-    { value: "P0", label: "P0 — Critical" },
-    { value: "P1", label: "P1 — High" },
-    { value: "P2", label: "P2 — Medium" },
-    { value: "P3", label: "P3 — Low" },
+const buildPriorityOptions = (t: OptT): ComboboxOption[] => [
+    { value: "P0", label: t("priorityLabels.P0") },
+    { value: "P1", label: t("priorityLabels.P1") },
+    { value: "P2", label: t("priorityLabels.P2") },
+    { value: "P3", label: t("priorityLabels.P3") },
 ];
-const TYPE_OPTIONS: ComboboxOption[] = [
-    { value: "TASK", label: "Task" },
-    { value: "AUDIT_FINDING", label: "Audit Finding" },
-    { value: "CONTROL_GAP", label: "Control Gap" },
-    { value: "INCIDENT", label: "Incident" },
-    { value: "IMPROVEMENT", label: "Improvement" },
+const buildTypeOptions = (t: OptT): ComboboxOption[] => [
+    { value: "TASK", label: t("typeLabels.TASK") },
+    { value: "AUDIT_FINDING", label: t("typeLabels.AUDIT_FINDING") },
+    { value: "CONTROL_GAP", label: t("typeLabels.CONTROL_GAP") },
+    { value: "INCIDENT", label: t("typeLabels.INCIDENT") },
+    { value: "IMPROVEMENT", label: t("typeLabels.IMPROVEMENT") },
 ];
 const TASK_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     OPEN: "warning", TRIAGED: "warning", IN_PROGRESS: "info", BLOCKED: "error",
@@ -81,6 +82,10 @@ export function TaskEditPanel({
     onSaved: () => void;
 }) {
     const tx = useTranslations("controls");
+    const tTask = useTranslations("tasks");
+    const SEVERITY_OPTIONS = useMemo(() => buildSeverityOptions(tTask), [tTask]);
+    const PRIORITY_OPTIONS = useMemo(() => buildPriorityOptions(tTask), [tTask]);
+    const TYPE_OPTIONS = useMemo(() => buildTypeOptions(tTask), [tTask]);
     const [tab, setTab] = useState<Tab>("details");
     const base = `/api/t/${tenantSlug}/tasks/${task.id}`;
 

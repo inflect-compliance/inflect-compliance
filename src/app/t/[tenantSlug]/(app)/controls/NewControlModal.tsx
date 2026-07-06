@@ -33,6 +33,7 @@ import { useRouter } from 'next/navigation';
 import {
     useCallback,
     useEffect,
+    useMemo,
     type Dispatch,
     type SetStateAction,
 } from 'react';
@@ -53,29 +54,30 @@ import { useFormTelemetry } from '@/lib/telemetry/form-telemetry';
 
 // ─── Options ─────────────────────────────────────────────────────────
 
-const FREQUENCY_OPTIONS: ComboboxOption[] = [
-    { value: 'AD_HOC', label: 'Ad Hoc' },
-    { value: 'DAILY', label: 'Daily' },
-    { value: 'WEEKLY', label: 'Weekly' },
-    { value: 'MONTHLY', label: 'Monthly' },
-    { value: 'QUARTERLY', label: 'Quarterly' },
-    { value: 'ANNUALLY', label: 'Annually' },
+type OptT = (key: string) => string;
+const buildFrequencyOptions = (t: OptT): ComboboxOption[] => [
+    { value: 'AD_HOC', label: t('freq.adHoc') },
+    { value: 'DAILY', label: t('freq.daily') },
+    { value: 'WEEKLY', label: t('freq.weekly') },
+    { value: 'MONTHLY', label: t('freq.monthly') },
+    { value: 'QUARTERLY', label: t('freq.quarterly') },
+    { value: 'ANNUALLY', label: t('freq.annually') },
 ];
 
 // Mirror of EditControlModal's classification options (the Prisma
 // enums are the source of truth — keep these two lists in sync).
-const AUTOMATION_TYPE_OPTIONS: ComboboxOption[] = [
-    { value: 'AUTOMATED', label: 'Automated' },
-    { value: 'MANUAL', label: 'Manual' },
-    { value: 'IT_DEPENDENT_MANUAL', label: 'IT-Dependent Manual' },
+const buildAutomationTypeOptions = (t: OptT): ComboboxOption[] => [
+    { value: 'AUTOMATED', label: t('automationTypeLabels.AUTOMATED') },
+    { value: 'MANUAL', label: t('automationTypeLabels.MANUAL') },
+    { value: 'IT_DEPENDENT_MANUAL', label: t('automationTypeLabels.IT_DEPENDENT_MANUAL') },
 ];
 
-const MITIGATION_TYPE_OPTIONS: ComboboxOption[] = [
-    { value: 'PREVENTIVE', label: 'Preventive' },
-    { value: 'DETECTIVE', label: 'Detective' },
-    { value: 'DETERRENT', label: 'Deterrent' },
-    { value: 'CORRECTIVE', label: 'Corrective' },
-    { value: 'COMPENSATING', label: 'Compensating' },
+const buildMitigationTypeOptions = (t: OptT): ComboboxOption[] => [
+    { value: 'PREVENTIVE', label: t('mitigationTypeLabels.PREVENTIVE') },
+    { value: 'DETECTIVE', label: t('mitigationTypeLabels.DETECTIVE') },
+    { value: 'DETERRENT', label: t('mitigationTypeLabels.DETERRENT') },
+    { value: 'CORRECTIVE', label: t('mitigationTypeLabels.CORRECTIVE') },
+    { value: 'COMPENSATING', label: t('mitigationTypeLabels.COMPENSATING') },
 ];
 
 const CATEGORY_OPTIONS: ComboboxOption[] = [
@@ -152,6 +154,9 @@ export interface NewControlModalProps {
 
 export function NewControlModal({ open, setOpen, tenantSlug }: NewControlModalProps) {
     const t = useTranslations('controls');
+    const FREQUENCY_OPTIONS = useMemo(() => buildFrequencyOptions(t), [t]);
+    const AUTOMATION_TYPE_OPTIONS = useMemo(() => buildAutomationTypeOptions(t), [t]);
+    const MITIGATION_TYPE_OPTIONS = useMemo(() => buildMitigationTypeOptions(t), [t]);
     const close = useCallback(() => setOpen(false), [setOpen]);
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
