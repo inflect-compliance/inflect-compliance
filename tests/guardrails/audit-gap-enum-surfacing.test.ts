@@ -40,14 +40,18 @@ describe('Audit-gap enum surfacing', () => {
             expect(block).toMatch(/\bMITIGATED\b/);
         });
 
-        it('filter-defs RISK_STATUS_LABELS exposes MITIGATED', () => {
-            // Block-scope the lookup so a removal anywhere else in
-            // the file doesn't accidentally satisfy the match. Use
-            // the `export const` anchor so we land on the actual
-            // table, not the doc-header mention.
-            const start = filterDefs.indexOf('export const RISK_STATUS_LABELS');
-            const block = filterDefs.slice(start, start + 800);
-            expect(block).toMatch(/MITIGATED:\s*['"]Mitigated['"]/);
+        it('filter-defs surfaces MITIGATED (label now via next-intl)', () => {
+            // The status labels moved to a next-intl factory
+            // (`riskStatusLabels(t)`); MITIGATED maps to the
+            // `risks.bulkStatus.mitigated` catalog key. Assert the
+            // enum→key wiring in source AND the en value.
+            const start = filterDefs.indexOf('function riskStatusLabels');
+            const block = filterDefs.slice(start, start + 400);
+            expect(block).toMatch(/MITIGATED:\s*t\(['"]bulkStatus\.mitigated['"]\)/);
+            const en = JSON.parse(read('messages/en.json')) as {
+                risks: { bulkStatus: Record<string, string> };
+            };
+            expect(en.risks.bulkStatus.mitigated).toBe('Mitigated');
         });
 
         it('risk detail STATUS_VALUES includes MITIGATED', () => {

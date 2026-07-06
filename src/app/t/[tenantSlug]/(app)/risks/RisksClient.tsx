@@ -1303,7 +1303,19 @@ function RisksFilterToolbar({
     // controls the parent's KPI grid) and threaded in here; this toolbar
     // shows the FULL filter defs.
     const tx = useTranslations('risks');
-    const filters: FilterType[] = useMemo(() => buildRiskFilters(risks), [risks]);
+    const tGroup = useTranslations('common.filterGroups');
+    // next-intl's scoped Translator types the key as a narrow union; the
+    // filter-defs factory takes a plain (key: string) resolver. Adapt with a
+    // thin arrow — the runtime accepts any dotted key in the namespace.
+    const filters: FilterType[] = useMemo(
+        () =>
+            buildRiskFilters(
+                risks,
+                (k, v) => tx(k as Parameters<typeof tx>[0], v as Parameters<typeof tx>[1]),
+                (k) => tGroup(k as Parameters<typeof tGroup>[0]),
+            ),
+        [risks, tx, tGroup],
+    );
     return (
         <FilterToolbar
             filters={filters}
