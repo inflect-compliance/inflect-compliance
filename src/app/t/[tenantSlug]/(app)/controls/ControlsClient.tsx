@@ -73,8 +73,8 @@ import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
 import {
     buildControlFilters,
+    buildControlStatusLabels,
     CONTROL_FILTER_KEYS,
-    CONTROL_STATUS_LABELS,
 } from './filter-defs';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 
@@ -89,29 +89,18 @@ const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     NEEDS_REVIEW: 'warning',
     NOT_APPLICABLE: 'neutral',
 };
-/**
- * Status labels are sourced from the shared filter-defs module so the badge
- * copy and the filter picker copy cannot drift. Keep the typed
- * `CONTROL_STATUS_LABELS` as the single source of truth.
- */
-const STATUS_LABELS: Record<string, string> = CONTROL_STATUS_LABELS;
-
-/**
- * Bulk-action status options (canonical BulkActionBar) — the seven
- * ControlStatus enum members, labelled via the shared `STATUS_LABELS`
- * source of truth.
- */
-const CONTROL_STATUS_OPTIONS = (
-    [
-        'NOT_STARTED',
-        'PLANNED',
-        'IN_PROGRESS',
-        'IMPLEMENTING',
-        'IMPLEMENTED',
-        'NEEDS_REVIEW',
-        'NOT_APPLICABLE',
-    ] as const
-).map((value) => ({ value, label: STATUS_LABELS[value] ?? value }));
+/** The seven ControlStatus enum members, in canonical display order. Labels
+ *  are resolved per-render from `buildControlStatusLabels(t)` inside the
+ *  component (badge copy + filter picker copy share one localized source). */
+const CONTROL_STATUS_VALUES = [
+    'NOT_STARTED',
+    'PLANNED',
+    'IN_PROGRESS',
+    'IMPLEMENTING',
+    'IMPLEMENTED',
+    'NEEDS_REVIEW',
+    'NOT_APPLICABLE',
+] as const;
 
 const FREQ_LABELS: Record<string, string> = {
     AD_HOC: 'Ad Hoc', DAILY: 'Daily', WEEKLY: 'Weekly',
@@ -211,6 +200,25 @@ function ControlsPageInner({
     const router = useRouter();
     const prefetchData = usePrefetchTenant();
     const t = useTranslations('controls');
+    const tGroup = useTranslations('common.filterGroups');
+    // Scoped-translator adapter: next-intl types the key as a narrow union; the
+    // filter-defs factory takes a plain (key, values?) resolver.
+    const tAdapter = useCallback(
+        (k: string, v?: Record<string, unknown>) =>
+            t(k as Parameters<typeof t>[0], v as Parameters<typeof t>[1]),
+        [t],
+    );
+    const tGroupAdapter = useCallback(
+        (k: string) => tGroup(k as Parameters<typeof tGroup>[0]),
+        [tGroup],
+    );
+    // Status labels: single localized source of truth for badges + the bulk
+    // status picker (mirrors the filter-picker copy).
+    const STATUS_LABELS = useMemo(() => buildControlStatusLabels(tAdapter), [tAdapter]);
+    const CONTROL_STATUS_OPTIONS = useMemo(
+        () => CONTROL_STATUS_VALUES.map((value) => ({ value, label: STATUS_LABELS[value] ?? value })),
+        [STATUS_LABELS],
+    );
 
     const filterCtx = useFilters();
     const { state, search, clearAll, hasActive } = filterCtx;
@@ -336,8 +344,8 @@ function ControlsPageInner({
 
     // ─── Filter defs with runtime-derived owner/category options ───
     const liveFilterDefs: FilterType[] = useMemo(
-        () => buildControlFilters(controls),
-        [controls],
+        () => buildControlFilters(controls, tAdapter, tGroupAdapter),
+        [controls, tAdapter, tGroupAdapter],
     );
 
     // R-filter-gear (#3, 2026-06-07): the "Edit filter cards" gear now

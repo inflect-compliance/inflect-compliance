@@ -269,9 +269,15 @@ function TasksPageInner({
         hasMore: hasMoreTasks,
         loadMore: loadMoreTasks,
     } = useThresholdLoadMore(sortedTasks);
+    const tGroup = useTranslations('common.filterGroups');
     const liveFilters = useMemo(
-        () => buildTaskFilters(tasks as unknown as Parameters<typeof buildTaskFilters>[0]),
-        [tasks],
+        () =>
+            buildTaskFilters(
+                tasks as unknown as Parameters<typeof buildTaskFilters>[0],
+                (k, v) => t(k as Parameters<typeof t>[0], v as Parameters<typeof t>[1]),
+                (k) => tGroup(k as Parameters<typeof tGroup>[0]),
+            ),
+        [tasks, t, tGroup],
     );
     const filterCards = useMemo(() => filtersToCards(liveFilters), [liveFilters]);
     const { visibleCards, dropdown: filtersDropdown } = useFilterCardVisibility({

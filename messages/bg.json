@@ -36,7 +36,8 @@
             "quantitative": "Количествени",
             "timeline": "Времева линия",
             "status": "Статус",
-            "classification": "Класификация"
+            "classification": "Класификация",
+            "linked": "Свързани"
         }
     },
     "login": {
@@ -289,6 +290,55 @@
                 "traceability": "Проследимост",
                 "activity": "Активност",
                 "tests": "Тестове"
+            }
+        },
+        "filters": {
+            "type": "Тип",
+            "typeDesc": "Категория на актива.",
+            "status": "Статус",
+            "statusDesc": "Жизнен цикъл на актива.",
+            "criticality": "Критичност",
+            "criticalityDesc": "Бизнес въздействие при компрометиране на актива."
+        },
+        "filterEnums": {
+            "type": {
+                "INFORMATION": "Информация",
+                "SYSTEM": "Система",
+                "SERVICE": "Услуга",
+                "DATA_STORE": "Хранилище на данни",
+                "VENDOR": "Доставчик",
+                "PEOPLE_PROCESS": "Хора / Процес",
+                "APPLICATION": "Приложение",
+                "INFRASTRUCTURE": "Инфраструктура",
+                "PROCESS": "Процес",
+                "OTHER": "Друго"
+            },
+            "status": {
+                "ACTIVE": "Активен",
+                "RETIRED": "Изведен от употреба"
+            },
+            "criticality": {
+                "LOW": "Ниска",
+                "MEDIUM": "Средна",
+                "HIGH": "Висока"
+            }
+        },
+        "formOptions": {
+            "classification": {
+                "Public": "Публична",
+                "Internal": "Вътрешна",
+                "Confidential": "Поверителна",
+                "Restricted": "Ограничена"
+            },
+            "residency": {
+                "EU": "ЕС",
+                "UK": "Обединено кралство",
+                "US": "САЩ",
+                "Other": "Друго"
+            },
+            "status": {
+                "ACTIVE": "Активен",
+                "RETIRED": "Изведен от употреба"
             }
         }
     },
@@ -1291,6 +1341,34 @@
             "createdBy": "Създаден на {date} от {name}",
             "unknown": "Неизвестен",
             "owner": "Отговорник: {name}"
+        },
+        "filters": {
+            "status": "Статус",
+            "statusPlural": "Статуси",
+            "statusDesc": "Етап от жизнения цикъл на контрола.",
+            "applicability": "Приложимост",
+            "applicabilityDesc": "Дали контролът е приложим в текущия обхват на SoA.",
+            "owner": "Отговорник",
+            "ownerPlural": "Отговорници",
+            "ownerDesc": "Потребител, отговорен за този контрол.",
+            "category": "Категория",
+            "categoryPlural": "Категории",
+            "categoryDesc": "Свободна групировка, зададена на контрола."
+        },
+        "filterEnums": {
+            "status": {
+                "NOT_STARTED": "Не е започнат",
+                "PLANNED": "Планиран",
+                "IN_PROGRESS": "В процес",
+                "IMPLEMENTING": "Внедряване",
+                "IMPLEMENTED": "Внедрен",
+                "NEEDS_REVIEW": "Изисква преглед",
+                "NOT_APPLICABLE": "Неприложим"
+            },
+            "applicability": {
+                "APPLICABLE": "Приложим",
+                "NOT_APPLICABLE": "Неприложим"
+            }
         }
     },
     "evidence": {
@@ -3880,6 +3958,48 @@
             "tasksCount": "{count} задачи",
             "overdueTasks": "Просрочени задачи",
             "due": "Падеж {date}"
+        },
+        "filters": {
+            "status": "Статус",
+            "statusDesc": "Жизнен цикъл на задачата.",
+            "type": "Тип",
+            "typeDesc": "Какъв вид задача / констатация представлява това.",
+            "severity": "Сериозност",
+            "severityDesc": "Сериозност на въздействието на задачата.",
+            "due": "Краен срок",
+            "dueDesc": "Пряк път за филтриране на просрочени / предстоящи.",
+            "assignee": "Изпълнител",
+            "assigneePlural": "Изпълнители",
+            "assigneeDesc": "Показвай само задачи, възложени на този човек.",
+            "linkedControl": "Свързан контрол",
+            "linkedControlDesc": "Показвай само задачи, прикачени към този контрол."
+        },
+        "filterEnums": {
+            "status": {
+                "OPEN": "Отворена",
+                "IN_PROGRESS": "В процес",
+                "IN_REVIEW": "На преглед",
+                "RESOLVED": "Разрешена",
+                "CLOSED": "Затворена",
+                "CANCELED": "Отменена"
+            },
+            "type": {
+                "TASK": "Задача",
+                "AUDIT_FINDING": "Одитна констатация",
+                "CONTROL_GAP": "Пропуск в контрола",
+                "INCIDENT": "Инцидент",
+                "IMPROVEMENT": "Подобрение"
+            },
+            "severity": {
+                "LOW": "Ниска",
+                "MEDIUM": "Средна",
+                "HIGH": "Висока",
+                "CRITICAL": "Критична"
+            },
+            "due": {
+                "overdue": "Просрочени",
+                "next7d": "С краен срок до 7 дни"
+            }
         }
     },
     "processes": {

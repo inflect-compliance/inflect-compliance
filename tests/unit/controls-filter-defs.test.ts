@@ -24,15 +24,37 @@ import {
     toCompactFilterState,
     type FilterState,
 } from '../../src/components/ui/filter/filter-state';
+import * as fs from 'fs';
+import * as path from 'path';
 import {
-    APPLICABILITY_LABELS,
+    buildControlFilterDefs,
     buildControlFilters,
     categoryOptionsFromControls,
-    controlFilterDefs,
     CONTROL_FILTER_KEYS,
-    CONTROL_STATUS_LABELS,
     ownerOptionsFromControls,
 } from '../../src/app/t/[tenantSlug]/(app)/controls/filter-defs';
+
+// The filter defs are a `buildControlFilterDefs(t, tGroup)` factory now; build
+// with an en.json-backed resolver so labels resolve to the real (byte-identical)
+// English and the enum VALUES are asserted against the catalog.
+const EN = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', '..', 'messages/en.json'), 'utf-8'),
+) as Record<string, unknown>;
+const resolve = (ns: string) => (key: string) => {
+    const v = key
+        .split('.')
+        .reduce<unknown>(
+            (o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined),
+            (EN as Record<string, unknown>)[ns],
+        );
+    return typeof v === 'string' ? v : key;
+};
+const tControls = resolve('controls');
+const tGroup = (k: string) => resolve('common')(`filterGroups.${k}`);
+const controlFilterDefs = buildControlFilterDefs(tControls, tGroup);
+// Enum VALUE sets (the URL/API contract — unchanged by i18n).
+const CONTROL_STATUS_VALUES = ['NOT_STARTED', 'PLANNED', 'IN_PROGRESS', 'IMPLEMENTING', 'IMPLEMENTED', 'NEEDS_REVIEW', 'NOT_APPLICABLE'];
+const APPLICABILITY_VALUES = ['APPLICABLE', 'NOT_APPLICABLE'];
 
 // ─── 1. Filter config shape ──────────────────────────────────────────
 
@@ -69,9 +91,9 @@ describe('Controls filter config', () => {
         expect(Array.isArray(app.options)).toBe(true);
         // Enum values round-trip via the documented CONTROL_STATUS_LABELS map.
         const statusValues = (status.options ?? []).map((o) => o.value).sort();
-        expect(statusValues).toEqual(Object.keys(CONTROL_STATUS_LABELS).sort());
+        expect(statusValues).toEqual([...CONTROL_STATUS_VALUES].sort());
         const appValues = (app.options ?? []).map((o) => o.value).sort();
-        expect(appValues).toEqual(Object.keys(APPLICABILITY_LABELS).sort());
+        expect(appValues).toEqual([...APPLICABILITY_VALUES].sort());
     });
 
     it('owner & category are async entity-ref / free-form filters (options: null)', () => {
@@ -155,9 +177,7 @@ describe('categoryOptionsFromControls', () => {
 
 describe('buildControlFilters — options injected at render time', () => {
     it('swaps in runtime options without mutating the static defs', () => {
-        const live = buildControlFilters([
-            { owner: { id: 'u1', name: 'Ada', email: 'ada@acme.com' }, category: 'Tech' },
-        ]);
+        const live = buildControlFilters([{ owner: { id: "u1", name: "Ada", email: "ada@acme.com" }, category: "Tech" }], tControls, tGroup);
         const owner = live.find((f) => f.key === 'ownerUserId');
         const category = live.find((f) => f.key === 'category');
         expect(owner?.options).toHaveLength(1);
@@ -168,15 +188,16 @@ describe('buildControlFilters — options injected at render time', () => {
     });
 
     it('leaves status/applicability options untouched', () => {
-        const live = buildControlFilters([]);
+        const live = buildControlFilters([], tControls, tGroup);
         const status = live.find((f) => f.key === 'status');
-        expect(status?.options).toBe(controlFilterDefs.getFilter('status').options);
+        // The factory builds fresh objects per call (no module-level singleton),
+        // so assert value-equality: the enum options are untouched by the
+        // owner/category runtime swap.
+        expect(status?.options).toEqual(controlFilterDefs.getFilter('status').options);
     });
 
     it('preserves all static metadata when injecting options (group, reset, icon)', () => {
-        const live = buildControlFilters([
-            { owner: { id: 'u1', name: 'Ada', email: 'ada@acme.com' }, category: 'Tech' },
-        ]);
+        const live = buildControlFilters([{ owner: { id: "u1", name: "Ada", email: "ada@acme.com" }, category: "Tech" }], tControls, tGroup);
         const owner = live.find((f) => f.key === 'ownerUserId');
         expect(owner?.group).toBe('People');
         expect(owner?.resetBehavior).toBe('clearable');
@@ -261,14 +282,14 @@ describe('Compat bridge — legacy CompactFilterBar ↔ FilterState', () => {
 
 describe('Controls filter — empty state', () => {
     it('buildControlFilters with zero controls still returns the full filter set', () => {
-        const live = buildControlFilters([]);
+        const live = buildControlFilters([], tControls, tGroup);
         expect(live.map((f) => f.key).sort()).toEqual(
             ['applicability', 'category', 'ownerUserId', 'status'].sort(),
         );
     });
 
     it('owner/category options are empty arrays when no data is loaded yet', () => {
-        const live = buildControlFilters([]);
+        const live = buildControlFilters([], tControls, tGroup);
         const owner = live.find((f) => f.key === 'ownerUserId');
         const category = live.find((f) => f.key === 'category');
         expect(owner?.options).toEqual([]);

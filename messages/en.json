@@ -36,7 +36,8 @@
             "quantitative": "Quantitative",
             "timeline": "Timeline",
             "status": "Status",
-            "classification": "Classification"
+            "classification": "Classification",
+            "linked": "Linked"
         }
     },
     "login": {
@@ -289,6 +290,55 @@
                 "traceability": "Traceability",
                 "activity": "Activity",
                 "tests": "Tests"
+            }
+        },
+        "filters": {
+            "type": "Type",
+            "typeDesc": "Asset category.",
+            "status": "Status",
+            "statusDesc": "Asset lifecycle state.",
+            "criticality": "Criticality",
+            "criticalityDesc": "Business impact if the asset is compromised."
+        },
+        "filterEnums": {
+            "type": {
+                "INFORMATION": "Information",
+                "SYSTEM": "System",
+                "SERVICE": "Service",
+                "DATA_STORE": "Data Store",
+                "VENDOR": "Vendor",
+                "PEOPLE_PROCESS": "People / Process",
+                "APPLICATION": "Application",
+                "INFRASTRUCTURE": "Infrastructure",
+                "PROCESS": "Process",
+                "OTHER": "Other"
+            },
+            "status": {
+                "ACTIVE": "Active",
+                "RETIRED": "Retired"
+            },
+            "criticality": {
+                "LOW": "Low",
+                "MEDIUM": "Medium",
+                "HIGH": "High"
+            }
+        },
+        "formOptions": {
+            "classification": {
+                "Public": "Public",
+                "Internal": "Internal",
+                "Confidential": "Confidential",
+                "Restricted": "Restricted"
+            },
+            "residency": {
+                "EU": "EU",
+                "UK": "UK",
+                "US": "US",
+                "Other": "Other"
+            },
+            "status": {
+                "ACTIVE": "Active",
+                "RETIRED": "Retired"
             }
         }
     },
@@ -1291,6 +1341,34 @@
             "createdBy": "Created {date} by {name}",
             "unknown": "Unknown",
             "owner": "Owner: {name}"
+        },
+        "filters": {
+            "status": "Status",
+            "statusPlural": "Statuses",
+            "statusDesc": "Lifecycle stage of the control.",
+            "applicability": "Applicability",
+            "applicabilityDesc": "Whether the control applies in the current SoA scope.",
+            "owner": "Owner",
+            "ownerPlural": "Owners",
+            "ownerDesc": "User accountable for this control.",
+            "category": "Category",
+            "categoryPlural": "Categories",
+            "categoryDesc": "Free-form grouping assigned to the control."
+        },
+        "filterEnums": {
+            "status": {
+                "NOT_STARTED": "Not Started",
+                "PLANNED": "Planned",
+                "IN_PROGRESS": "In Progress",
+                "IMPLEMENTING": "Implementing",
+                "IMPLEMENTED": "Implemented",
+                "NEEDS_REVIEW": "Needs Review",
+                "NOT_APPLICABLE": "Not Applicable"
+            },
+            "applicability": {
+                "APPLICABLE": "Applicable",
+                "NOT_APPLICABLE": "Not Applicable"
+            }
         }
     },
     "evidence": {
@@ -3880,6 +3958,48 @@
             "tasksCount": "{count} tasks",
             "overdueTasks": "Overdue Tasks",
             "due": "Due {date}"
+        },
+        "filters": {
+            "status": "Status",
+            "statusDesc": "Task lifecycle state.",
+            "type": "Type",
+            "typeDesc": "What kind of task / finding this represents.",
+            "severity": "Severity",
+            "severityDesc": "Impact severity of the task.",
+            "due": "Due",
+            "dueDesc": "Shortcut for overdue / due-soon filtering.",
+            "assignee": "Assignee",
+            "assigneePlural": "Assignees",
+            "assigneeDesc": "Only show tasks assigned to this person.",
+            "linkedControl": "Linked control",
+            "linkedControlDesc": "Only show tasks attached to this control."
+        },
+        "filterEnums": {
+            "status": {
+                "OPEN": "Open",
+                "IN_PROGRESS": "In Progress",
+                "IN_REVIEW": "In Review",
+                "RESOLVED": "Resolved",
+                "CLOSED": "Closed",
+                "CANCELED": "Canceled"
+            },
+            "type": {
+                "TASK": "Task",
+                "AUDIT_FINDING": "Audit Finding",
+                "CONTROL_GAP": "Control Gap",
+                "INCIDENT": "Incident",
+                "IMPROVEMENT": "Improvement"
+            },
+            "severity": {
+                "LOW": "Low",
+                "MEDIUM": "Medium",
+                "HIGH": "High",
+                "CRITICAL": "Critical"
+            },
+            "due": {
+                "overdue": "Overdue",
+                "next7d": "Due in 7 days"
+            }
         }
     },
     "processes": {

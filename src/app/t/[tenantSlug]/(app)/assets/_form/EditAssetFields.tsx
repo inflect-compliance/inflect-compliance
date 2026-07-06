@@ -13,8 +13,8 @@ import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { AssetCriticalityFields } from './AssetCriticalityFields';
 import {
-    ASSET_CLASSIFICATION_OPTIONS,
-    ASSET_DATA_RESIDENCY_OPTIONS,
+    buildAssetClassificationOptions,
+    buildAssetDataResidencyOptions,
 } from './asset-options';
 import type { EditAssetFormReturn } from './useEditAssetForm';
 
@@ -46,6 +46,9 @@ export function EditAssetFields({
         { value: 'ACTIVE', label: t('statusOption.ACTIVE') },
         { value: 'RETIRED', label: t('statusOption.RETIRED') },
     ];
+    const tOpt = (k: string) => t(k as Parameters<typeof t>[0]);
+    const classificationOptions = buildAssetClassificationOptions(tOpt);
+    const residencyOptions = buildAssetDataResidencyOptions(tOpt);
     return (
         <>
         <div className="grid grid-cols-2 gap-default">
@@ -111,14 +114,14 @@ export function EditAssetFields({
                 <Combobox
                     hideSearch
                     selected={
-                        ASSET_CLASSIFICATION_OPTIONS.find(
+                        classificationOptions.find(
                             (o) => o.value === form.fields.classification,
                         ) ?? null
                     }
                     setSelected={(opt) =>
                         form.setField('classification', opt?.value ?? '')
                     }
-                    options={ASSET_CLASSIFICATION_OPTIONS}
+                    options={classificationOptions}
                     placeholder={t('form.selectClassification')}
                     matchTriggerWidth
                     buttonProps={{ className: 'w-full' }}
@@ -138,14 +141,14 @@ export function EditAssetFields({
                 <Combobox
                     hideSearch
                     selected={
-                        ASSET_DATA_RESIDENCY_OPTIONS.find(
+                        residencyOptions.find(
                             (o) => o.value === form.fields.dataResidency,
                         ) ?? null
                     }
                     setSelected={(opt) =>
                         form.setField('dataResidency', opt?.value ?? '')
                     }
-                    options={ASSET_DATA_RESIDENCY_OPTIONS}
+                    options={residencyOptions}
                     placeholder={t('form.selectResidency')}
                     matchTriggerWidth
                     buttonProps={{ className: 'w-full' }}

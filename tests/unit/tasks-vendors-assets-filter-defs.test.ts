@@ -2,7 +2,16 @@
  * Epic 53 — sanity + URL round-trip for the Tasks, Vendors, and Assets
  * filter configs. These three pages ship static enum filters plus (for
  * Tasks) runtime-derived entity-ref options.
+ *
+ * i18n: Tasks + Assets filter defs are now `buildXFilterDefs(t, tGroup)`
+ * factories (labels resolve through next-intl at render). The tests build
+ * them with an en.json-backed resolver so the option VALUES (enum members —
+ * the URL/API contract) are asserted against the real catalog. Vendors is
+ * still the static-const shape (a follow-on batch).
  */
+
+import * as fs from 'fs';
+import * as path from 'path';
 
 import {
     filterStateToUrlParams,
@@ -11,13 +20,10 @@ import {
 } from '../../src/components/ui/filter/filter-state';
 import {
     assigneeOptionsFromTasks,
+    buildTaskFilterDefs,
     buildTaskFilters,
     controlOptionsFromTasks,
     TASK_FILTER_KEYS,
-    TASK_SEVERITY_LABELS,
-    TASK_STATUS_LABELS,
-    TASK_TYPE_LABELS,
-    taskFilterDefs,
 } from '../../src/app/t/[tenantSlug]/(app)/tasks/filter-defs';
 import {
     buildVendorFilters,
@@ -28,17 +34,42 @@ import {
     vendorFilterDefs,
 } from '../../src/app/t/[tenantSlug]/(app)/vendors/filter-defs';
 import {
-    ASSET_CRITICALITY_LABELS,
     ASSET_FILTER_KEYS,
-    ASSET_STATUS_LABELS,
-    ASSET_TYPE_LABELS,
-    assetFilterDefs,
+    buildAssetFilterDefs,
     buildAssetFilters,
 } from '../../src/app/t/[tenantSlug]/(app)/assets/filter-defs';
+
+// ─── en.json-backed resolvers (label-independent option VALUES) ───────
+
+const EN = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', '..', 'messages/en.json'), 'utf-8'),
+) as Record<string, unknown>;
+const resolver = (ns: string) => (key: string) => {
+    const v = key
+        .split('.')
+        .reduce<unknown>(
+            (o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined),
+            (EN as Record<string, unknown>)[ns],
+        );
+    return typeof v === 'string' ? v : key;
+};
+const tTasks = resolver('tasks');
+const tAssets = resolver('assets');
+const tGroup = (k: string) => resolver('common')(`filterGroups.${k}`);
+
+// Enum VALUE sets (the URL/API contract — unchanged by i18n).
+const TASK_STATUS = ['OPEN', 'IN_PROGRESS', 'IN_REVIEW', 'RESOLVED', 'CLOSED', 'CANCELED'];
+const TASK_TYPE = ['TASK', 'AUDIT_FINDING', 'CONTROL_GAP', 'INCIDENT', 'IMPROVEMENT'];
+const TASK_SEVERITY = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+const ASSET_TYPE = ['INFORMATION', 'SYSTEM', 'SERVICE', 'DATA_STORE', 'VENDOR', 'PEOPLE_PROCESS', 'APPLICATION', 'INFRASTRUCTURE', 'PROCESS', 'OTHER'];
+const ASSET_STATUS = ['ACTIVE', 'RETIRED'];
+const ASSET_CRITICALITY = ['LOW', 'MEDIUM', 'HIGH'];
 
 // ─── Tasks ───────────────────────────────────────────────────────────
 
 describe('Tasks filter config', () => {
+    const taskFilterDefs = buildTaskFilterDefs(tTasks, tGroup);
+
     it('manages the documented key set', () => {
         expect([...TASK_FILTER_KEYS].sort()).toEqual(
             ['assigneeUserId', 'controlId', 'due', 'severity', 'status', 'type'].sort(),
@@ -46,16 +77,14 @@ describe('Tasks filter config', () => {
     });
 
     it('status / type / severity are multi-select enums with full coverage', () => {
-        for (const [key, labels] of [
-            ['status', TASK_STATUS_LABELS],
-            ['type', TASK_TYPE_LABELS],
-            ['severity', TASK_SEVERITY_LABELS],
+        for (const [key, values] of [
+            ['status', TASK_STATUS],
+            ['type', TASK_TYPE],
+            ['severity', TASK_SEVERITY],
         ] as const) {
             const def = taskFilterDefs.getFilter(key);
             expect(def.multiple).toBe(true);
-            expect((def.options ?? []).map((o) => o.value).sort()).toEqual(
-                Object.keys(labels).sort(),
-            );
+            expect((def.options ?? []).map((o) => o.value).sort()).toEqual([...values].sort());
         }
     });
 
@@ -90,17 +119,22 @@ describe('Tasks filter config', () => {
     });
 
     it('buildTaskFilters swaps entity-ref options without mutating static defs', () => {
-        const live = buildTaskFilters([
-            {
-                assigneeUserId: 'u1',
-                assignee: { id: 'u1', name: 'Ada', email: 'a@a' },
-                controlId: 'c1',
-                control: { id: 'c1', name: 'Scope', annexId: 'A.4.3', code: null },
-            },
-        ]);
+        const live = buildTaskFilters(
+            [
+                {
+                    assigneeUserId: 'u1',
+                    assignee: { id: 'u1', name: 'Ada', email: 'a@a' },
+                    controlId: 'c1',
+                    control: { id: 'c1', name: 'Scope', annexId: 'A.4.3', code: null },
+                },
+            ],
+            tTasks,
+            tGroup,
+        );
         expect(live.find((f) => f.key === 'assigneeUserId')?.options).toHaveLength(1);
         expect(live.find((f) => f.key === 'controlId')?.options).toHaveLength(1);
-        expect(taskFilterDefs.getFilter('assigneeUserId').options).toBeNull();
+        // A fresh build keeps the entity-ref defs async (null options).
+        expect(buildTaskFilterDefs(tTasks, tGroup).getFilter('assigneeUserId').options).toBeNull();
     });
 });
 
@@ -140,6 +174,8 @@ describe('Vendors filter config', () => {
 // ─── Assets ──────────────────────────────────────────────────────────
 
 describe('Assets filter config', () => {
+    const assetFilterDefs = buildAssetFilterDefs(tAssets, tGroup);
+
     it('manages the documented key set', () => {
         expect([...ASSET_FILTER_KEYS].sort()).toEqual(
             ['criticality', 'status', 'type'].sort(),
@@ -147,19 +183,14 @@ describe('Assets filter config', () => {
     });
 
     it('type / status / criticality cover the documented enums', () => {
-        expect((assetFilterDefs.getFilter('type').options ?? []).map((o) => o.value).sort()).toEqual(
-            Object.keys(ASSET_TYPE_LABELS).sort(),
-        );
-        expect((assetFilterDefs.getFilter('status').options ?? []).map((o) => o.value).sort()).toEqual(
-            Object.keys(ASSET_STATUS_LABELS).sort(),
-        );
-        expect((assetFilterDefs.getFilter('criticality').options ?? []).map((o) => o.value).sort()).toEqual(
-            Object.keys(ASSET_CRITICALITY_LABELS).sort(),
-        );
+        expect((assetFilterDefs.getFilter('type').options ?? []).map((o) => o.value).sort()).toEqual([...ASSET_TYPE].sort());
+        expect((assetFilterDefs.getFilter('status').options ?? []).map((o) => o.value).sort()).toEqual([...ASSET_STATUS].sort());
+        expect((assetFilterDefs.getFilter('criticality').options ?? []).map((o) => o.value).sort()).toEqual([...ASSET_CRITICALITY].sort());
     });
 
-    it('buildAssetFilters returns the static set', () => {
-        expect(buildAssetFilters()).toBe(assetFilterDefs.filters);
+    it('buildAssetFilters returns the (localized) static set', () => {
+        const live = buildAssetFilters(tAssets, tGroup);
+        expect(live.map((f) => f.key).sort()).toEqual(['criticality', 'status', 'type'].sort());
     });
 });
 

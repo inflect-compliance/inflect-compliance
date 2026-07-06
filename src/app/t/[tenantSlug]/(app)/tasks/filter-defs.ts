@@ -6,6 +6,12 @@
  *
  * `due` is a pseudo-enum chip ("overdue" / "next7d") that the server
  * understands directly — no transform needed.
+ *
+ * i18n (filter-defs factory): display labels resolve through next-intl at
+ * render via `buildTaskFilters(tasks, t, tGroup)` — `t` scoped to `tasks`,
+ * `tGroup` to the shared `common.filterGroups`. The URL-sync KEYS stay static;
+ * option VALUES (enum members + due chips) are unchanged — only labels are
+ * localized.
  */
 
 import type { FilterDefInput } from '@/components/ui/filter/filter-definitions';
@@ -16,96 +22,122 @@ import {
 import type { FilterOption } from '@/components/ui/filter/types';
 import { AlertCircle, CircleDot, Clock, Flag, Layers, UserCircle2 } from 'lucide-react';
 
-export const TASK_STATUS_LABELS = {
-    OPEN: 'Open',
-    IN_PROGRESS: 'In Progress',
-    IN_REVIEW: 'In Review',
-    RESOLVED: 'Resolved',
-    CLOSED: 'Closed',
-    CANCELED: 'Canceled',
-} as const;
+/** Surface-namespace resolver (`useTranslations('tasks')`). */
+type T = (key: string, values?: Record<string, unknown>) => string;
+/** Shared filter-group resolver (`useTranslations('common.filterGroups')`). */
+type TGroup = (key: string) => string;
 
-export const TASK_TYPE_LABELS = {
-    TASK: 'Task',
-    AUDIT_FINDING: 'Audit Finding',
-    CONTROL_GAP: 'Control Gap',
-    INCIDENT: 'Incident',
-    IMPROVEMENT: 'Improvement',
-} as const;
+// ─── Labels (resolved at render) ─────────────────────────────────────
 
-export const TASK_SEVERITY_LABELS = {
-    LOW: 'Low',
-    MEDIUM: 'Medium',
-    HIGH: 'High',
-    CRITICAL: 'Critical',
-} as const;
+function taskStatusLabels(t: T): Record<string, string> {
+    return {
+        OPEN: t('filterEnums.status.OPEN'),
+        IN_PROGRESS: t('filterEnums.status.IN_PROGRESS'),
+        IN_REVIEW: t('filterEnums.status.IN_REVIEW'),
+        RESOLVED: t('filterEnums.status.RESOLVED'),
+        CLOSED: t('filterEnums.status.CLOSED'),
+        CANCELED: t('filterEnums.status.CANCELED'),
+    };
+}
 
-export const TASK_DUE_LABELS = {
-    overdue: 'Overdue',
-    next7d: 'Due in 7 days',
-} as const;
+function taskTypeLabels(t: T): Record<string, string> {
+    return {
+        TASK: t('filterEnums.type.TASK'),
+        AUDIT_FINDING: t('filterEnums.type.AUDIT_FINDING'),
+        CONTROL_GAP: t('filterEnums.type.CONTROL_GAP'),
+        INCIDENT: t('filterEnums.type.INCIDENT'),
+        IMPROVEMENT: t('filterEnums.type.IMPROVEMENT'),
+    };
+}
 
-const STATIC_DEFS = {
-    status: {
-        label: 'Status',
-        description: 'Task lifecycle state.',
-        group: 'Attributes',
-        icon: CircleDot,
-        options: optionsFromEnum(TASK_STATUS_LABELS),
-        multiple: true,
-        resetBehavior: 'clearable',
-    },
-    type: {
-        label: 'Type',
-        description: 'What kind of task / finding this represents.',
-        group: 'Attributes',
-        icon: Layers,
-        options: optionsFromEnum(TASK_TYPE_LABELS),
-        multiple: true,
-        resetBehavior: 'clearable',
-    },
-    severity: {
-        label: 'Severity',
-        description: 'Impact severity of the task.',
-        group: 'Quantitative',
-        icon: Flag,
-        options: optionsFromEnum(TASK_SEVERITY_LABELS),
-        multiple: true,
-        resetBehavior: 'clearable',
-    },
-    due: {
-        label: 'Due',
-        description: 'Shortcut for overdue / due-soon filtering.',
-        group: 'Timeline',
-        icon: Clock,
-        options: optionsFromEnum(TASK_DUE_LABELS),
-        // Single-select — the chip semantics are mutually exclusive.
-        resetBehavior: 'clearable',
-    },
-    assigneeUserId: {
-        label: 'Assignee',
-        labelPlural: 'Assignees',
-        description: 'Only show tasks assigned to this person.',
-        group: 'People',
-        icon: UserCircle2,
-        options: null, // derived at render time
-        multiple: true,
-        shouldFilter: true,
-        resetBehavior: 'clearable',
-    },
-    controlId: {
-        label: 'Linked control',
-        description: 'Only show tasks attached to this control.',
-        group: 'Linked',
-        icon: AlertCircle,
-        options: null, // derived at render time
-        shouldFilter: true,
-        resetBehavior: 'clearable',
-    },
-} satisfies Record<string, FilterDefInput>;
+function taskSeverityLabels(t: T): Record<string, string> {
+    return {
+        LOW: t('filterEnums.severity.LOW'),
+        MEDIUM: t('filterEnums.severity.MEDIUM'),
+        HIGH: t('filterEnums.severity.HIGH'),
+        CRITICAL: t('filterEnums.severity.CRITICAL'),
+    };
+}
 
-export const taskFilterDefs = createTypedFilterDefs()(STATIC_DEFS);
-export const TASK_FILTER_KEYS = taskFilterDefs.filterKeys;
+function taskDueLabels(t: T): Record<string, string> {
+    return {
+        overdue: t('filterEnums.due.overdue'),
+        next7d: t('filterEnums.due.next7d'),
+    };
+}
+
+function taskFilterDefsInput(t: T, tGroup: TGroup) {
+    return {
+        status: {
+            label: t('filters.status'),
+            description: t('filters.statusDesc'),
+            group: tGroup('attributes'),
+            icon: CircleDot,
+            options: optionsFromEnum(taskStatusLabels(t)),
+            multiple: true,
+            resetBehavior: 'clearable',
+        },
+        type: {
+            label: t('filters.type'),
+            description: t('filters.typeDesc'),
+            group: tGroup('attributes'),
+            icon: Layers,
+            options: optionsFromEnum(taskTypeLabels(t)),
+            multiple: true,
+            resetBehavior: 'clearable',
+        },
+        severity: {
+            label: t('filters.severity'),
+            description: t('filters.severityDesc'),
+            group: tGroup('quantitative'),
+            icon: Flag,
+            options: optionsFromEnum(taskSeverityLabels(t)),
+            multiple: true,
+            resetBehavior: 'clearable',
+        },
+        due: {
+            label: t('filters.due'),
+            description: t('filters.dueDesc'),
+            group: tGroup('timeline'),
+            icon: Clock,
+            options: optionsFromEnum(taskDueLabels(t)),
+            // Single-select — the chip semantics are mutually exclusive.
+            resetBehavior: 'clearable',
+        },
+        assigneeUserId: {
+            label: t('filters.assignee'),
+            labelPlural: t('filters.assigneePlural'),
+            description: t('filters.assigneeDesc'),
+            group: tGroup('people'),
+            icon: UserCircle2,
+            options: null, // derived at render time
+            multiple: true,
+            shouldFilter: true,
+            resetBehavior: 'clearable',
+        },
+        controlId: {
+            label: t('filters.linkedControl'),
+            description: t('filters.linkedControlDesc'),
+            group: tGroup('linked'),
+            icon: AlertCircle,
+            options: null, // derived at render time
+            shouldFilter: true,
+            resetBehavior: 'clearable',
+        },
+    } satisfies Record<string, FilterDefInput>;
+}
+
+/** Build the localized task filter defs. `t` = `useTranslations('tasks')`,
+ *  `tGroup` = `useTranslations('common.filterGroups')`. Memoize per render. */
+export function buildTaskFilterDefs(t: T, tGroup: TGroup) {
+    return createTypedFilterDefs()(taskFilterDefsInput(t, tGroup));
+}
+
+// The URL-sync KEYS are label-independent — derive them once with an identity
+// resolver so callers keep importing a stable `TASK_FILTER_KEYS` constant.
+const IDENTITY: T = (k) => k;
+const IDENTITY_GROUP: TGroup = (k) => k;
+export const TASK_FILTER_KEYS = buildTaskFilterDefs(IDENTITY, IDENTITY_GROUP).filterKeys;
 
 interface TaskAssigneeLike {
     assigneeUserId?: string | null;
@@ -153,10 +185,12 @@ export function controlOptionsFromTasks(
 
 export function buildTaskFilters(
     tasks: ReadonlyArray<TaskAssigneeLike & TaskControlLike>,
+    t: T,
+    tGroup: TGroup,
 ) {
     const assigneeOpts = assigneeOptionsFromTasks(tasks);
     const controlOpts = controlOptionsFromTasks(tasks);
-    return taskFilterDefs.filters.map((f) => {
+    return buildTaskFilterDefs(t, tGroup).filters.map((f) => {
         if (f.key === 'assigneeUserId') return { ...f, options: assigneeOpts };
         if (f.key === 'controlId') return { ...f, options: controlOpts };
         return f;
