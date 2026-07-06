@@ -57,14 +57,10 @@ const buildDocTypeFilterOptions = (tx: (k: string) => string, docTypeCbOptions: 
     { value: '', label: tx('detail.allTypes') },
     ...docTypeCbOptions,
 ];
-const VENDOR_LINK_TYPE_OPTIONS: ComboboxOption[] = [
-    { value: 'ASSET', label: 'Asset' }, { value: 'RISK', label: 'Risk' },
-    { value: 'ISSUE', label: 'Issue' }, { value: 'CONTROL', label: 'Control' },
-];
-const VENDOR_LINK_RELATION_OPTIONS: ComboboxOption[] = [
-    { value: 'RELATED', label: 'Related' }, { value: 'USES', label: 'Uses' },
-    { value: 'MITIGATES', label: 'Mitigates' }, { value: 'STORES_DATA_FOR', label: 'Stores Data' },
-];
+const buildVendorLinkTypeOptions = (t: (key: string) => string): ComboboxOption[] =>
+    ['ASSET', 'RISK', 'ISSUE', 'CONTROL'].map((v) => ({ value: v, label: t(`linkType.${v}`) }));
+const buildVendorLinkRelationOptions = (t: (key: string) => string): ComboboxOption[] =>
+    ['RELATED', 'USES', 'MITIGATES', 'STORES_DATA_FOR'].map((v) => ({ value: v, label: t(`linkRelation.${v}`) }));
 
 type Tab = 'overview' | 'documents' | 'assessments' | 'monitoring' | 'links' | 'bundles' | 'subprocessors';
 
@@ -147,6 +143,8 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     const tx = useTranslations('vendors');
     const DOC_TYPE_LABELS = buildDocTypeLabels(tx);
     const DOC_TYPE_CB_OPTIONS = buildDocTypeCbOptions(DOC_TYPE_LABELS);
+    const VENDOR_LINK_TYPE_OPTIONS = useMemo(() => buildVendorLinkTypeOptions(tx), [tx]);
+    const VENDOR_LINK_RELATION_OPTIONS = useMemo(() => buildVendorLinkRelationOptions(tx), [tx]);
     const DOC_TYPE_FILTER_OPTIONS = buildDocTypeFilterOptions(tx, DOC_TYPE_CB_OPTIONS);
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();

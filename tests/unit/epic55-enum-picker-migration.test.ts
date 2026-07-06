@@ -94,15 +94,18 @@ describe('tasks/new — type / severity / priority Combobox', () => {
         expect(hits.length).toBeGreaterThanOrEqual(3);
     });
 
-    it('preserves legacy TYPE_OPTIONS / SEVERITY_OPTIONS / PRIORITY_OPTIONS constants (typed as ComboboxOption[])', () => {
+    it('type/severity/priority pickers build ComboboxOption[] via next-intl factories', () => {
+        // The options moved from static `X_OPTIONS: ComboboxOption[]` maps to
+        // `buildXOptions(t): ComboboxOption[]` factories that resolve labels
+        // through next-intl. The typed ComboboxOption[] return shape is preserved.
         expect(TASK_NEW_SRC).toMatch(
-            /TYPE_OPTIONS:\s*ComboboxOption\[\]/,
+            /buildTypeOptions\s*=\s*\([^)]*\):\s*ComboboxOption\[\]/,
         );
         expect(TASK_NEW_SRC).toMatch(
-            /SEVERITY_OPTIONS:\s*ComboboxOption\[\]/,
+            /buildSeverityOptions\s*=\s*\([^)]*\):\s*ComboboxOption\[\]/,
         );
         expect(TASK_NEW_SRC).toMatch(
-            /PRIORITY_OPTIONS:\s*ComboboxOption\[\]/,
+            /buildPriorityOptions\s*=\s*\([^)]*\):\s*ComboboxOption\[\]/,
         );
     });
 });

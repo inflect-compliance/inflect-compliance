@@ -30,44 +30,22 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import type { NewTaskFormFields, NewTaskFormReturn } from './useNewTaskForm';
 
-const TYPE_OPTIONS: ComboboxOption[] = [
-    { value: 'TASK', label: 'Task' },
-    { value: 'AUDIT_FINDING', label: 'Audit Finding' },
-    { value: 'CONTROL_GAP', label: 'Control Gap' },
-    { value: 'INCIDENT', label: 'Incident' },
-    { value: 'IMPROVEMENT', label: 'Improvement' },
-];
-const SEVERITY_OPTIONS: ComboboxOption[] = [
-    { value: 'INFO', label: 'Info' },
-    { value: 'LOW', label: 'Low' },
-    { value: 'MEDIUM', label: 'Medium' },
-    { value: 'HIGH', label: 'High' },
-    { value: 'CRITICAL', label: 'Critical' },
-];
-const PRIORITY_OPTIONS: ComboboxOption[] = [
-    { value: 'P0', label: 'P0 — Critical' },
-    { value: 'P1', label: 'P1 — High' },
-    { value: 'P2', label: 'P2 — Medium' },
-    { value: 'P3', label: 'P3 — Low' },
-];
-const LINK_ENTITY_OPTIONS: ComboboxOption[] = [
-    { value: 'CONTROL', label: 'Control' },
-    { value: 'FRAMEWORK_REQUIREMENT', label: 'Framework Requirement' },
-    { value: 'ASSET', label: 'Asset' },
-    { value: 'RISK', label: 'Risk' },
-    { value: 'EVIDENCE', label: 'Evidence' },
-];
-const FINDING_OPTIONS: ComboboxOption[] = [
-    { value: 'INTERNAL', label: 'Internal' },
-    { value: 'EXTERNAL_AUDITOR', label: 'External Auditor' },
-    { value: 'PEN_TEST', label: 'Pen Test' },
-    { value: 'INCIDENT', label: 'Incident' },
-];
-const GAP_TYPE_OPTIONS: ComboboxOption[] = [
-    { value: 'DESIGN', label: 'Design' },
-    { value: 'OPERATING_EFFECTIVENESS', label: 'Operating Effectiveness' },
-    { value: 'DOCUMENTATION', label: 'Documentation' },
-];
+type Tr = (key: string) => string;
+const optsFrom = (t: Tr, prefix: string, values: readonly string[]): ComboboxOption[] =>
+    values.map((v) => ({ value: v, label: t(`${prefix}.${v}`) }));
+
+const buildTypeOptions = (t: Tr): ComboboxOption[] =>
+    optsFrom(t, 'typeLabels', ['TASK', 'AUDIT_FINDING', 'CONTROL_GAP', 'INCIDENT', 'IMPROVEMENT']);
+const buildSeverityOptions = (t: Tr): ComboboxOption[] =>
+    optsFrom(t, 'severityLabels', ['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL']);
+const buildPriorityOptions = (t: Tr): ComboboxOption[] =>
+    optsFrom(t, 'priorityLabels', ['P0', 'P1', 'P2', 'P3']);
+const buildLinkEntityOptions = (t: Tr): ComboboxOption[] =>
+    optsFrom(t, 'linkEntity', ['CONTROL', 'FRAMEWORK_REQUIREMENT', 'ASSET', 'RISK', 'EVIDENCE']);
+const buildFindingOptions = (t: Tr): ComboboxOption[] =>
+    optsFrom(t, 'findingSourceLabels', ['INTERNAL', 'EXTERNAL_AUDITOR', 'PEN_TEST', 'INCIDENT']);
+const buildGapTypeOptions = (t: Tr): ComboboxOption[] =>
+    optsFrom(t, 'gapTypeLabels', ['DESIGN', 'OPERATING_EFFECTIVENESS', 'DOCUMENTATION']);
 
 export function NewTaskFields({
     form,
@@ -77,6 +55,12 @@ export function NewTaskFields({
     tenantSlug: string;
 }) {
     const t = useTranslations('tasks');
+    const TYPE_OPTIONS = buildTypeOptions(t);
+    const SEVERITY_OPTIONS = buildSeverityOptions(t);
+    const PRIORITY_OPTIONS = buildPriorityOptions(t);
+    const LINK_ENTITY_OPTIONS = buildLinkEntityOptions(t);
+    const FINDING_OPTIONS = buildFindingOptions(t);
+    const GAP_TYPE_OPTIONS = buildGapTypeOptions(t);
     return (
         <>
             <FormField label={t('new.title')} required>
