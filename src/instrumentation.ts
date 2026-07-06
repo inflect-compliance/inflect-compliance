@@ -79,6 +79,14 @@ export async function register() {
         const { installShutdownHandlers } = await import('@/lib/observability/shutdown');
         await initTelemetry();
         initSentry();
+        // Populate the integration provider registry (GitHub, …) at
+        // startup. Without this side-effecting import the registry is
+        // empty in the running process, so the scheduled `automation-runner`
+        // resolves no provider for any control's automationKey (silently
+        // doing nothing) and the admin-integrations UI lists no providers
+        // and rejects every connection. Import once — module caching makes
+        // the registrations idempotent.
+        await import('@/app-layer/integrations/bootstrap');
         // Wire the automation bus to the BullMQ queue so domain
         // events emitted from usecases enqueue dispatch jobs.
         installAutomationBusDispatcher();

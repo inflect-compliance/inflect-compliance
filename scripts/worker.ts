@@ -118,7 +118,12 @@ log.info({ queueName: QUEUE_NAME, redisUrl: REDIS_URL.replace(/\/\/.*@/, '//***@
     const { prisma } = await import('../src/lib/prisma');
     installAutomationBusDispatcher();
     installRlsTripwire(prisma);
-    log.info('automation bus dispatcher + RLS tripwire installed');
+    // Populate the integration provider registry in the worker process. The
+    // scheduled `automation-runner` job resolves each control's automationKey
+    // through this registry; without the import it is empty and the runner
+    // silently no-ops on every due control.
+    await import('../src/app-layer/integrations/bootstrap');
+    log.info('automation bus dispatcher + RLS tripwire + integrations installed');
 })();
 
 const connection = createWorkerConnection();
