@@ -27,11 +27,10 @@ import {
 } from '../../src/app/t/[tenantSlug]/(app)/tasks/filter-defs';
 import {
     buildVendorFilters,
-    VENDOR_CRITICALITY_LABELS,
+    buildVendorFilterDefs,
+    vendorStatusLabels,
+    vendorCriticalityLabels,
     VENDOR_FILTER_KEYS,
-    VENDOR_REVIEW_DUE_LABELS,
-    VENDOR_STATUS_LABELS,
-    vendorFilterDefs,
 } from '../../src/app/t/[tenantSlug]/(app)/vendors/filter-defs';
 import {
     ASSET_FILTER_KEYS,
@@ -55,6 +54,7 @@ const resolver = (ns: string) => (key: string) => {
 };
 const tTasks = resolver('tasks');
 const tAssets = resolver('assets');
+const tVendors = resolver('vendors');
 const tGroup = (k: string) => resolver('common')(`filterGroups.${k}`);
 
 // Enum VALUE sets (the URL/API contract — unchanged by i18n).
@@ -141,6 +141,7 @@ describe('Tasks filter config', () => {
 // ─── Vendors ─────────────────────────────────────────────────────────
 
 describe('Vendors filter config', () => {
+    const vendorFilterDefs = buildVendorFilterDefs(tVendors, tGroup);
     it('manages the documented key set', () => {
         expect([...VENDOR_FILTER_KEYS].sort()).toEqual(
             ['criticality', 'reviewDue', 'riskRating', 'status'].sort(),
@@ -150,24 +151,24 @@ describe('Vendors filter config', () => {
     it('status / criticality / riskRating are multi-select enums', () => {
         expect(vendorFilterDefs.getFilter('status').multiple).toBe(true);
         expect((vendorFilterDefs.getFilter('status').options ?? []).map((o) => o.value).sort()).toEqual(
-            Object.keys(VENDOR_STATUS_LABELS).sort(),
+            Object.keys(vendorStatusLabels(tVendors)).sort(),
         );
         expect((vendorFilterDefs.getFilter('criticality').options ?? []).map((o) => o.value).sort()).toEqual(
-            Object.keys(VENDOR_CRITICALITY_LABELS).sort(),
+            Object.keys(vendorCriticalityLabels(tVendors)).sort(),
         );
         expect((vendorFilterDefs.getFilter('riskRating').options ?? []).map((o) => o.value).sort()).toEqual(
-            Object.keys(VENDOR_CRITICALITY_LABELS).sort(),
+            Object.keys(vendorCriticalityLabels(tVendors)).sort(),
         );
     });
 
     it('reviewDue carries chip-style values the server understands directly', () => {
         expect((vendorFilterDefs.getFilter('reviewDue').options ?? []).map((o) => o.value).sort()).toEqual(
-            Object.keys(VENDOR_REVIEW_DUE_LABELS).sort(),
+            ['overdue', 'next30d'].sort(),
         );
     });
 
     it('buildVendorFilters returns the static set (no runtime derivation)', () => {
-        expect(buildVendorFilters()).toBe(vendorFilterDefs.filters);
+        expect(buildVendorFilters(tVendors, tGroup).map((f) => f.key)).toEqual(vendorFilterDefs.filters.map((f) => f.key));
     });
 });
 

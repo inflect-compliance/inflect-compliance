@@ -25,7 +25,13 @@ import {
     INCIDENT_RESPONSE_RACI,
     FORENSIC_EVIDENCE_CHECKLIST,
 } from '@/data/incident-containment';
-import { SEVERITY_LABELS, PHASE_LABELS, INCIDENT_TYPE_LABELS } from '../filter-defs';
+import {
+    buildSeverityLabels,
+    buildPhaseLabels,
+    buildIncidentTypeLabels,
+    type IncidentSeverityKey,
+    type IncidentPhaseKey,
+} from '../filter-defs';
 
 // ─── Types (the GET /incidents/{id} payload) ───────────────────────
 interface IncidentNotification {
@@ -48,8 +54,8 @@ interface IncidentDetail {
     reference: string;
     title: string;
     description: string;
-    severity: keyof typeof SEVERITY_LABELS;
-    phase: keyof typeof PHASE_LABELS;
+    severity: IncidentSeverityKey;
+    phase: IncidentPhaseKey;
     incidentType: string;
     detectedAt: string;
     reportable: boolean;
@@ -100,6 +106,10 @@ function countdown(dueAt: string, now: number): string {
 
 export default function IncidentDetailPage() {
     const tx = useTranslations('incidents');
+    const tRef = (k: string, v?: Record<string, unknown>) => tx(k as Parameters<typeof tx>[0], v as Parameters<typeof tx>[1]);
+    const SEVERITY_LABELS = buildSeverityLabels(tRef);
+    const PHASE_LABELS = buildPhaseLabels(tRef);
+    const INCIDENT_TYPE_LABELS = buildIncidentTypeLabels(tRef);
     const params = useParams<{ tenantSlug: string; incidentId: string }>();
     const tenantSlug = params.tenantSlug;
     const incidentId = params.incidentId;

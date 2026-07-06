@@ -18,10 +18,12 @@ import {
 } from '@/components/ui/filter';
 import { formatDate } from '@/lib/format-date';
 import {
-    incidentFilterDefs,
+    buildIncidentFilterDefs,
+    buildSeverityLabels,
+    buildPhaseLabels,
     INCIDENT_FILTER_KEYS,
-    SEVERITY_LABELS,
-    PHASE_LABELS,
+    type IncidentSeverityKey,
+    type IncidentPhaseKey,
 } from './filter-defs';
 import { NewIncidentModal } from './NewIncidentModal';
 
@@ -35,8 +37,8 @@ export interface IncidentRow {
     id: string;
     reference: string;
     title: string;
-    severity: keyof typeof SEVERITY_LABELS;
-    phase: keyof typeof PHASE_LABELS;
+    severity: IncidentSeverityKey;
+    phase: IncidentPhaseKey;
     incidentType: string;
     detectedAt: string;
     reportable: boolean;
@@ -83,7 +85,17 @@ export function nextOpenDeadline(
 }
 
 export function IncidentsClient(props: IncidentsClientProps) {
-    const filterCtx = useFilterContext([...incidentFilterDefs.filters], [
+    const t = useTranslations('incidents');
+    const tGroup = useTranslations('common.filterGroups');
+    const defs = useMemo(
+        () =>
+            buildIncidentFilterDefs(
+                (k, v) => t(k as Parameters<typeof t>[0], v as Parameters<typeof t>[1]),
+                (k) => tGroup(k as Parameters<typeof tGroup>[0]),
+            ),
+        [t, tGroup],
+    );
+    const filterCtx = useFilterContext([...defs.filters], [
         ...INCIDENT_FILTER_KEYS,
     ]);
     return (
@@ -95,6 +107,23 @@ export function IncidentsClient(props: IncidentsClientProps) {
 
 function IncidentsPageInner({ initialIncidents, tenantSlug, canManage }: IncidentsClientProps) {
     const t = useTranslations('incidents');
+    const tGroup = useTranslations('common.filterGroups');
+    const severityLabels = useMemo(
+        () => buildSeverityLabels((k, v) => t(k as Parameters<typeof t>[0], v as Parameters<typeof t>[1])),
+        [t],
+    );
+    const phaseLabels = useMemo(
+        () => buildPhaseLabels((k, v) => t(k as Parameters<typeof t>[0], v as Parameters<typeof t>[1])),
+        [t],
+    );
+    const incidentDefs = useMemo(
+        () =>
+            buildIncidentFilterDefs(
+                (k, v) => t(k as Parameters<typeof t>[0], v as Parameters<typeof t>[1]),
+                (k) => tGroup(k as Parameters<typeof tGroup>[0]),
+            ),
+        [t, tGroup],
+    );
     const router = useRouter();
     const [isCreateOpen, setIsCreateOpen] = useState(false);
 
@@ -151,7 +180,7 @@ function IncidentsPageInner({ initialIncidents, tenantSlug, canManage }: Inciden
                         const s = String(getValue() ?? '');
                         return (
                             <StatusBadge variant={SEVERITY_TONE[s] ?? 'neutral'}>
-                                {SEVERITY_LABELS[s as keyof typeof SEVERITY_LABELS] ?? s}
+                                {severityLabels[s] ?? s}
                             </StatusBadge>
                         );
                     },
@@ -163,7 +192,7 @@ function IncidentsPageInner({ initialIncidents, tenantSlug, canManage }: Inciden
                         const p = String(getValue() ?? '');
                         return (
                             <StatusBadge variant="neutral">
-                                {PHASE_LABELS[p as keyof typeof PHASE_LABELS] ?? p}
+                                {phaseLabels[p] ?? p}
                             </StatusBadge>
                         );
                     },
@@ -196,7 +225,7 @@ function IncidentsPageInner({ initialIncidents, tenantSlug, canManage }: Inciden
                     ),
                 },
             ]),
-        [t],
+        [t, severityLabels, phaseLabels],
     );
 
     return (
@@ -234,7 +263,7 @@ function IncidentsPageInner({ initialIncidents, tenantSlug, canManage }: Inciden
                 </div>
             }
             filters={{
-                defs: [...incidentFilterDefs.filters],
+                defs: [...incidentDefs.filters],
                 searchId: 'incidents-search',
                 searchPlaceholder: t('searchPlaceholder'),
             }}

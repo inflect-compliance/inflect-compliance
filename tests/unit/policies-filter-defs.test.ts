@@ -7,13 +7,31 @@ import {
     parseUrlToFilterState,
     type FilterState,
 } from '../../src/components/ui/filter/filter-state';
+import * as fs from 'fs';
+import * as path from 'path';
 import {
     buildPolicyFilters,
+    buildPolicyFilterDefs,
+    buildPolicyStatusLabels,
     categoryOptionsFromPolicies,
     POLICY_FILTER_KEYS,
-    POLICY_STATUS_LABELS,
-    policyFilterDefs,
 } from '../../src/app/t/[tenantSlug]/(app)/policies/filter-defs';
+
+const EN = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', '..', 'messages/en.json'), 'utf-8'),
+) as Record<string, Record<string, unknown>>;
+function makeT(ns: string) {
+    return (key: string) => {
+        const v = key
+            .split('.')
+            .reduce<unknown>((o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), EN[ns]);
+        return typeof v === 'string' ? v : `${ns}.${key}`;
+    };
+}
+const t = makeT('policies');
+const tGroup = (k: string) => (EN.common as { filterGroups: Record<string, string> }).filterGroups[k] ?? k;
+const policyFilterDefs = buildPolicyFilterDefs(t, tGroup);
+const POLICY_STATUS_LABELS = buildPolicyStatusLabels(t);
 
 describe('Policies filter config', () => {
     it('manages the documented key set', () => {

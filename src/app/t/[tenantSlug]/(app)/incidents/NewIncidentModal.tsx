@@ -12,14 +12,7 @@ import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { DatePicker } from '@/components/ui/date-picker/date-picker';
-import { SEVERITY_LABELS, INCIDENT_TYPE_LABELS } from './filter-defs';
-
-const SEVERITY_OPTIONS: ComboboxOption[] = Object.entries(SEVERITY_LABELS).map(
-    ([value, label]) => ({ value, label }),
-);
-const TYPE_OPTIONS: ComboboxOption[] = Object.entries(INCIDENT_TYPE_LABELS).map(
-    ([value, label]) => ({ value, label }),
-);
+import { buildSeverityLabels, buildIncidentTypeLabels } from './filter-defs';
 
 const formSchema = z.object({
     title: z.string().min(1, 'Title is required'),
@@ -39,6 +32,9 @@ export interface NewIncidentModalProps {
 
 export function NewIncidentModal({ open, onClose, tenantSlug, onCreated }: NewIncidentModalProps) {
     const t = useTranslations('incidents');
+    const tRef = (k: string, v?: Record<string, unknown>) => t(k as Parameters<typeof t>[0], v as Parameters<typeof t>[1]);
+    const SEVERITY_OPTIONS: ComboboxOption[] = Object.entries(buildSeverityLabels(tRef)).map(([value, label]) => ({ value, label }));
+    const TYPE_OPTIONS: ComboboxOption[] = Object.entries(buildIncidentTypeLabels(tRef)).map(([value, label]) => ({ value, label }));
     const [apiError, setApiError] = useState<string | null>(null);
     const [detectedAt, setDetectedAt] = useState<Date | undefined>(new Date());
 

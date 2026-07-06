@@ -11,8 +11,21 @@
 
 import { render, screen } from '@testing-library/react';
 import * as React from 'react';
+import * as fs from 'fs';
+import * as path from 'path';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { POLICY_STATUS_LABELS } from '@/app/t/[tenantSlug]/(app)/policies/filter-defs';
+import { buildPolicyStatusLabels } from '@/app/t/[tenantSlug]/(app)/policies/filter-defs';
+
+// Resolve the migrated status labels against the en catalog.
+const EN = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', '..', 'messages/en.json'), 'utf-8'),
+) as Record<string, Record<string, unknown>>;
+const POLICY_STATUS_LABELS = buildPolicyStatusLabels((key: string) => {
+    const v = key
+        .split('.')
+        .reduce<unknown>((o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), EN.policies);
+    return typeof v === 'string' ? v : key;
+});
 
 function withTooltip(node: React.ReactNode) {
     return <TooltipProvider delayDuration={0}>{node}</TooltipProvider>;

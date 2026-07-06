@@ -13,68 +13,88 @@ import {
 } from '@/components/ui/filter/filter-definitions';
 import { CircleDot, Clock, Flag, ShieldCheck } from 'lucide-react';
 
-export const VENDOR_STATUS_LABELS = {
-    ONBOARDING: 'Onboarding',
-    ACTIVE: 'Active',
-    UNDER_REVIEW: 'Under Review',
-    SUSPENDED: 'Suspended',
-    OFFBOARDED: 'Offboarded',
-} as const;
+/** Surface-namespace resolver (`useTranslations('vendors')`). */
+type T = (key: string, values?: Record<string, unknown>) => string;
+/** Shared filter-group resolver (`useTranslations('common.filterGroups')`). */
+type TGroup = (key: string) => string;
 
-export const VENDOR_CRITICALITY_LABELS = {
-    LOW: 'Low',
-    MEDIUM: 'Medium',
-    HIGH: 'High',
-    CRITICAL: 'Critical',
-} as const;
+export function vendorStatusLabels(t: T): Record<string, string> {
+    return {
+        ONBOARDING: t('filterEnums.status.onboarding'),
+        ACTIVE: t('filterEnums.status.active'),
+        UNDER_REVIEW: t('filterEnums.status.underReview'),
+        SUSPENDED: t('filterEnums.status.suspended'),
+        OFFBOARDED: t('filterEnums.status.offboarded'),
+    };
+}
 
-export const VENDOR_REVIEW_DUE_LABELS = {
-    overdue: 'Review overdue',
-    next30d: 'Due in 30 days',
-} as const;
+export function vendorCriticalityLabels(t: T): Record<string, string> {
+    return {
+        LOW: t('filterEnums.criticality.low'),
+        MEDIUM: t('filterEnums.criticality.medium'),
+        HIGH: t('filterEnums.criticality.high'),
+        CRITICAL: t('filterEnums.criticality.critical'),
+    };
+}
 
-const STATIC_DEFS = {
-    status: {
-        label: 'Status',
-        description: 'Vendor lifecycle stage.',
-        group: 'Attributes',
-        icon: CircleDot,
-        options: optionsFromEnum(VENDOR_STATUS_LABELS),
-        multiple: true,
-        resetBehavior: 'clearable',
-    },
-    criticality: {
-        label: 'Criticality',
-        description: 'Business impact if the vendor is disrupted.',
-        group: 'Quantitative',
-        icon: Flag,
-        options: optionsFromEnum(VENDOR_CRITICALITY_LABELS),
-        multiple: true,
-        resetBehavior: 'clearable',
-    },
-    riskRating: {
-        label: 'Risk rating',
-        description: 'Assessed inherent risk for this vendor.',
-        group: 'Quantitative',
-        icon: ShieldCheck,
-        options: optionsFromEnum(VENDOR_CRITICALITY_LABELS),
-        multiple: true,
-        resetBehavior: 'clearable',
-    },
-    reviewDue: {
-        label: 'Review due',
-        description: 'Shortcut for vendors approaching or past their review.',
-        group: 'Timeline',
-        icon: Clock,
-        options: optionsFromEnum(VENDOR_REVIEW_DUE_LABELS),
-        resetBehavior: 'clearable',
-    },
-} satisfies Record<string, FilterDefInput>;
+function vendorReviewDueLabels(t: T): Record<string, string> {
+    return {
+        overdue: t('filterEnums.reviewDue.overdue'),
+        next30d: t('filterEnums.reviewDue.next30d'),
+    };
+}
 
-export const vendorFilterDefs = createTypedFilterDefs()(STATIC_DEFS);
-export const VENDOR_FILTER_KEYS = vendorFilterDefs.filterKeys;
+function vendorFilterDefsInput(t: T, tGroup: TGroup) {
+    return {
+        status: {
+            label: t('filters.status'),
+            description: t('filters.statusDesc'),
+            group: tGroup('attributes'),
+            icon: CircleDot,
+            options: optionsFromEnum(vendorStatusLabels(t)),
+            multiple: true,
+            resetBehavior: 'clearable',
+        },
+        criticality: {
+            label: t('filters.criticality'),
+            description: t('filters.criticalityDesc'),
+            group: tGroup('quantitative'),
+            icon: Flag,
+            options: optionsFromEnum(vendorCriticalityLabels(t)),
+            multiple: true,
+            resetBehavior: 'clearable',
+        },
+        riskRating: {
+            label: t('filters.riskRating'),
+            description: t('filters.riskRatingDesc'),
+            group: tGroup('quantitative'),
+            icon: ShieldCheck,
+            options: optionsFromEnum(vendorCriticalityLabels(t)),
+            multiple: true,
+            resetBehavior: 'clearable',
+        },
+        reviewDue: {
+            label: t('filters.reviewDue'),
+            description: t('filters.reviewDueDesc'),
+            group: tGroup('timeline'),
+            icon: Clock,
+            options: optionsFromEnum(vendorReviewDueLabels(t)),
+            resetBehavior: 'clearable',
+        },
+    } satisfies Record<string, FilterDefInput>;
+}
 
-export function buildVendorFilters() {
+/** Build the localized vendor filter defs. `t` = `useTranslations('vendors')`,
+ *  `tGroup` = `useTranslations('common.filterGroups')`. Memoize per render. */
+export function buildVendorFilterDefs(t: T, tGroup: TGroup) {
+    return createTypedFilterDefs()(vendorFilterDefsInput(t, tGroup));
+}
+
+const IDENTITY: T = (k) => k;
+const IDENTITY_GROUP: TGroup = (k) => k;
+export const VENDOR_FILTER_KEYS = buildVendorFilterDefs(IDENTITY, IDENTITY_GROUP).filterKeys;
+
+export function buildVendorFilters(t: T = (k) => k, tGroup: TGroup = (k) => k) {
     // Vendors have only static enum filters today — no runtime option derivation.
-    return vendorFilterDefs.filters;
+    return buildVendorFilterDefs(t, tGroup).filters;
 }

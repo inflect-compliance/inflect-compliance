@@ -37,7 +37,8 @@
             "timeline": "Времева линия",
             "status": "Статус",
             "classification": "Класификация",
-            "linked": "Свързани"
+            "linked": "Свързани",
+            "workflow": "Работен процес"
         }
     },
     "login": {
@@ -1583,6 +1584,30 @@
             "uploading": "Качване…",
             "startImport": "Стартиране на импортирането",
             "bulkImportFailed": "Груповото импортиране е неуспешно"
+        },
+        "filters": {
+            "type": "Тип",
+            "typeDesc": "Файл / връзка / текстово доказателство.",
+            "status": "Статус на преглед",
+            "statusDesc": "Позиция в работния процес за преглед на доказателства.",
+            "controlId": "Свързан контрол",
+            "controlIdDesc": "Показвай само доказателства, прикачени към този контрол.",
+            "folder": "Папка",
+            "folderDesc": "Етикет на организационна папка.",
+            "noFolder": "Без папка"
+        },
+        "filterEnums": {
+            "type": {
+                "file": "Файл",
+                "link": "Връзка",
+                "text": "Текст"
+            },
+            "status": {
+                "draft": "Чернова",
+                "submitted": "Изпратено",
+                "approved": "Одобрено",
+                "rejected": "Отхвърлено"
+            }
         }
     },
     "policies": {
@@ -1799,6 +1824,21 @@
             "skip": "Пропусни",
             "linking": "Свързване…",
             "linkNControls": "Свържи {count, plural, one {# контрол} other {# контрола}}"
+        },
+        "filters": {
+            "status": "Статус",
+            "statusDesc": "Работен етап на политиката.",
+            "category": "Категория",
+            "categoryDesc": "Домейн / таксономична група на политиката."
+        },
+        "filterEnums": {
+            "status": {
+                "draft": "Чернова",
+                "inReview": "В преглед",
+                "approved": "Одобрена",
+                "published": "Публикувана",
+                "archived": "Архивирана"
+            }
         }
     },
     "audits": {
@@ -3579,6 +3619,35 @@
             "proposed": "Предложено: {value}",
             "approve": "Одобри",
             "reject": "Отхвърли"
+        },
+        "filters": {
+            "status": "Статус",
+            "statusDesc": "Етап от жизнения цикъл на доставчика.",
+            "criticality": "Критичност",
+            "criticalityDesc": "Влияние върху бизнеса при прекъсване на доставчика.",
+            "riskRating": "Рейтинг на риска",
+            "riskRatingDesc": "Оценен присъщ риск за този доставчик.",
+            "reviewDue": "Предстоящ преглед",
+            "reviewDueDesc": "Пряк път за доставчици, наближаващи или просрочили прегледа си."
+        },
+        "filterEnums": {
+            "status": {
+                "onboarding": "Включване",
+                "active": "Активен",
+                "underReview": "В преглед",
+                "suspended": "Спрян",
+                "offboarded": "Изключен"
+            },
+            "criticality": {
+                "low": "Нисък",
+                "medium": "Среден",
+                "high": "Висок",
+                "critical": "Критичен"
+            },
+            "reviewDue": {
+                "overdue": "Просрочен преглед",
+                "next30d": "До 30 дни"
+            }
         }
     },
     "frameworks": {
@@ -4198,6 +4267,45 @@
             "forensicCategory": "Криминалистична категория",
             "forensicCategoryHint": "Коя категория от контролния списък удовлетворява това доказателство.",
             "selectCategory": "Изберете категория…"
+        },
+        "filters": {
+            "severity": "Сериозност",
+            "severityPlural": "Сериозности",
+            "severityDesc": "Ниво на въздействие на инцидента.",
+            "phase": "Фаза",
+            "phasePlural": "Фази",
+            "phaseDesc": "Етап от седемфазовия процес на реакция.",
+            "reportable": "Подлежи на докладване",
+            "reportableDesc": "Дали е необходимо уведомление по член 23 от NIS2."
+        },
+        "filterEnums": {
+            "severity": {
+                "low": "Нисък",
+                "medium": "Среден",
+                "high": "Висок",
+                "critical": "Критичен"
+            },
+            "phase": {
+                "detection": "Откриване",
+                "classification": "Класификация",
+                "earlyWarning": "Ранно предупреждение",
+                "containment": "Ограничаване",
+                "investigation": "Разследване",
+                "detailedReport": "Подробен доклад",
+                "recovery": "Възстановяване",
+                "closed": "Затворен"
+            },
+            "type": {
+                "ransomware": "Рансъмуер",
+                "dataBreach": "Пробив в данните",
+                "ddos": "DDoS",
+                "unauthorizedAccess": "Неоторизиран достъп",
+                "other": "Друго"
+            },
+            "reportable": {
+                "yes": "Подлежи на докладване",
+                "no": "Не подлежи на докладване"
+            }
         }
     },
     "controlTests": {

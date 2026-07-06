@@ -26,71 +26,92 @@ import {
 import type { FilterOption } from '@/components/ui/filter/types';
 import { FileText, CircleDot, Link2, FolderOpen } from 'lucide-react';
 
-// ─── Static labels ──────────────────────────────────────────────────
+/** Surface-namespace resolver (`useTranslations('evidence')`). */
+type T = (key: string, values?: Record<string, unknown>) => string;
+/** Shared filter-group resolver (`useTranslations('common.filterGroups')`). */
+type TGroup = (key: string) => string;
 
-export const EVIDENCE_TYPE_LABELS = {
-    FILE: 'File',
-    LINK: 'Link',
-    TEXT: 'Text',
-} as const;
+// ─── Labels (resolved at render) ─────────────────────────────────────
 
-export const EVIDENCE_STATUS_LABELS = {
-    DRAFT: 'Draft',
-    SUBMITTED: 'Submitted',
-    APPROVED: 'Approved',
-    REJECTED: 'Rejected',
-} as const;
+// EvidenceType enum → label. Values are the enum members (unchanged).
+export function evidenceTypeLabels(t: T): Record<string, string> {
+    return {
+        FILE: t('filterEnums.type.file'),
+        LINK: t('filterEnums.type.link'),
+        TEXT: t('filterEnums.type.text'),
+    };
+}
 
-// ─── Static filter definitions ──────────────────────────────────────
+// EvidenceStatus enum → label.
+export function evidenceStatusLabels(t: T): Record<string, string> {
+    return {
+        DRAFT: t('filterEnums.status.draft'),
+        SUBMITTED: t('filterEnums.status.submitted'),
+        APPROVED: t('filterEnums.status.approved'),
+        REJECTED: t('filterEnums.status.rejected'),
+    };
+}
 
-const STATIC_DEFS = {
-    type: {
-        label: 'Type',
-        description: 'File / link / text evidence.',
-        group: 'Attributes',
-        icon: FileText,
-        options: optionsFromEnum(EVIDENCE_TYPE_LABELS),
-        multiple: true,
-        resetBehavior: 'clearable',
-    },
-    status: {
-        label: 'Review status',
-        description: 'Position in the evidence review workflow.',
-        group: 'Workflow',
-        icon: CircleDot,
-        options: optionsFromEnum(EVIDENCE_STATUS_LABELS),
-        multiple: true,
-        resetBehavior: 'clearable',
-    },
-    controlId: {
-        label: 'Linked control',
-        description: 'Only show evidence attached to this control.',
-        group: 'Linked',
-        icon: Link2,
-        options: null, // filled at render time from the controls prop
-        shouldFilter: true,
-        resetBehavior: 'clearable',
-    },
-    // B8 follow-up — Folder filter. Options are derived at render
-    // time from the folders present in the currently-loaded
-    // evidence rows (plus a "No folder" pseudo-bucket when any
-    // unfoldered row exists). The `__none__` sentinel matches
-    // null/empty folders so legacy unfoldered evidence stays
-    // findable after rollout.
-    folder: {
-        label: 'Folder',
-        description: 'Organisational folder label.',
-        group: 'Attributes',
-        icon: FolderOpen,
-        options: null, // filled at render time from loaded evidence
-        shouldFilter: true,
-        resetBehavior: 'clearable',
-    },
-} satisfies Record<string, FilterDefInput>;
+// ─── Filter definitions (built per render) ──────────────────────────
 
-export const evidenceFilterDefs = createTypedFilterDefs()(STATIC_DEFS);
+function evidenceFilterDefsInput(t: T, tGroup: TGroup) {
+    return {
+        type: {
+            label: t('filters.type'),
+            description: t('filters.typeDesc'),
+            group: tGroup('attributes'),
+            icon: FileText,
+            options: optionsFromEnum(evidenceTypeLabels(t)),
+            multiple: true,
+            resetBehavior: 'clearable',
+        },
+        status: {
+            label: t('filters.status'),
+            description: t('filters.statusDesc'),
+            group: tGroup('workflow'),
+            icon: CircleDot,
+            options: optionsFromEnum(evidenceStatusLabels(t)),
+            multiple: true,
+            resetBehavior: 'clearable',
+        },
+        controlId: {
+            label: t('filters.controlId'),
+            description: t('filters.controlIdDesc'),
+            group: tGroup('linked'),
+            icon: Link2,
+            options: null, // filled at render time from the controls prop
+            shouldFilter: true,
+            resetBehavior: 'clearable',
+        },
+        // B8 follow-up — Folder filter. Options are derived at render
+        // time from the folders present in the currently-loaded
+        // evidence rows (plus a "No folder" pseudo-bucket when any
+        // unfoldered row exists). The `__none__` sentinel matches
+        // null/empty folders so legacy unfoldered evidence stays
+        // findable after rollout.
+        folder: {
+            label: t('filters.folder'),
+            description: t('filters.folderDesc'),
+            group: tGroup('attributes'),
+            icon: FolderOpen,
+            options: null, // filled at render time from loaded evidence
+            shouldFilter: true,
+            resetBehavior: 'clearable',
+        },
+    } satisfies Record<string, FilterDefInput>;
+}
 
-export const EVIDENCE_FILTER_KEYS = evidenceFilterDefs.filterKeys;
+/** Build the localized evidence filter defs. `t` = `useTranslations('evidence')`,
+ *  `tGroup` = `useTranslations('common.filterGroups')`. Memoize per render. */
+export function buildEvidenceFilterDefs(t: T, tGroup: TGroup) {
+    return createTypedFilterDefs()(evidenceFilterDefsInput(t, tGroup));
+}
+
+// The URL-sync KEYS are label-independent — derive them once with an identity
+// resolver so callers keep importing a stable `EVIDENCE_FILTER_KEYS` constant.
+const IDENTITY: T = (k) => k;
+const IDENTITY_GROUP: TGroup = (k) => k;
+export const EVIDENCE_FILTER_KEYS = buildEvidenceFilterDefs(IDENTITY, IDENTITY_GROUP).filterKeys;
 
 // ─── Runtime option builder ─────────────────────────────────────────
 
@@ -136,6 +157,7 @@ export interface EvidenceFolderLike {
 
 export function folderOptionsFromEvidence(
     evidence: ReadonlyArray<EvidenceFolderLike>,
+    t: T,
 ): FilterOption[] {
     const present = new Set<string>();
     let hasUnfoldered = false;
@@ -146,7 +168,7 @@ export function folderOptionsFromEvidence(
     }
     const out: FilterOption[] = [];
     if (hasUnfoldered) {
-        out.push({ value: '__none__', label: 'No folder' });
+        out.push({ value: '__none__', label: t('filters.noFolder') });
     }
     for (const f of Array.from(present).sort()) {
         out.push({ value: f, label: f });
@@ -157,10 +179,12 @@ export function folderOptionsFromEvidence(
 export function buildEvidenceFilters(
     controls: ReadonlyArray<ControlLike>,
     evidence: ReadonlyArray<EvidenceFolderLike> = [],
+    t: T = (k) => k,
+    tGroup: TGroup = (k) => k,
 ) {
     const controlOpts = controlOptionsFromControls(controls);
-    const folderOpts = folderOptionsFromEvidence(evidence);
-    return evidenceFilterDefs.filters.map((f) => {
+    const folderOpts = folderOptionsFromEvidence(evidence, t);
+    return buildEvidenceFilterDefs(t, tGroup).filters.map((f) => {
         if (f.key === 'controlId') return { ...f, options: controlOpts };
         if (f.key === 'folder') return { ...f, options: folderOpts };
         return f;
