@@ -11,14 +11,17 @@
  *   ownerUserId  → entity-reference (options derived from loaded rows)
  *   score        → range token; server consumes scoreMin + scoreMax
  *
- * The range-split transform lives alongside the filter defs so every caller
- * (page-level fetch, SSR filter normaliser, tests) shares one source of
- * truth for the UI ↔ API key translation.
+ * i18n (filter-defs factory): the display labels are no longer static English.
+ * `buildRiskFilterDefs(t, tGroup)` resolves every label / description /
+ * option-label through next-intl at render — `t` scoped to `risks`, `tGroup`
+ * scoped to the shared `common.filterGroups`. The URL-sync KEYS and API
+ * TRANSFORMS stay static (labels never touch them); `RISK_FILTER_KEYS` is
+ * derived once with an identity resolver. Option VALUES (the enum keys) are
+ * unchanged — only their rendered label is localized — so URL state + the
+ * server contract are byte-stable.
  */
 
-import type {
-    FilterDefInput,
-} from '@/components/ui/filter/filter-definitions';
+import type { FilterDefInput } from '@/components/ui/filter/filter-definitions';
 import {
     createTypedFilterDefs,
     optionsFromEnum,
@@ -27,74 +30,87 @@ import type { FilterOption } from '@/components/ui/filter/types';
 import { rangeSplitTransform, type FilterApiTransform } from '@/lib/filters/url-sync';
 import { CircleDot, Tag, Activity, UserCircle2 } from 'lucide-react';
 
-// ─── Static labels ──────────────────────────────────────────────────
+/** Surface-namespace resolver (`useTranslations('risks')`). */
+type T = (key: string, values?: Record<string, unknown>) => string;
+/** Shared filter-group resolver (`useTranslations('common.filterGroups')`). */
+type TGroup = (key: string) => string;
 
-export const RISK_STATUS_LABELS = {
-    OPEN: 'Open',
-    MITIGATING: 'Mitigating',
-    // Audit Coherence S1 — distinct from MITIGATING (active control
-    // implementation in progress) and ACCEPTED (residual explicitly
-    // signed-off). MITIGATED means the planned controls are in place
-    // and the residual score has been computed but no explicit
-    // acceptance call has been made yet.
-    MITIGATED: 'Mitigated',
-    ACCEPTED: 'Accepted',
-    CLOSED: 'Closed',
-} as const;
+// ─── Labels (resolved at render) ─────────────────────────────────────
 
-// ─── Static filter definitions ──────────────────────────────────────
+// RiskStatus enum → label. Values are the enum members (unchanged); labels
+// reuse the existing `risks.bulkStatus.*` copy (Open/Mitigating/…).
+function riskStatusLabels(t: T): Record<string, string> {
+    return {
+        OPEN: t('bulkStatus.open'),
+        MITIGATING: t('bulkStatus.mitigating'),
+        MITIGATED: t('bulkStatus.mitigated'),
+        ACCEPTED: t('bulkStatus.accepted'),
+        CLOSED: t('bulkStatus.closed'),
+    };
+}
 
-const STATIC_DEFS = {
-    status: {
-        label: 'Status',
-        description: 'Lifecycle stage of the risk.',
-        group: 'Attributes',
-        icon: CircleDot,
-        options: optionsFromEnum(RISK_STATUS_LABELS),
-        multiple: true,
-        resetBehavior: 'clearable',
-    },
-    category: {
-        label: 'Category',
-        description: 'Free-form risk category.',
-        group: 'Attributes',
-        icon: Tag,
-        options: null, // derived from loaded risks
-        multiple: true,
-        resetBehavior: 'clearable',
-    },
-    ownerUserId: {
-        label: 'Owner',
-        labelPlural: 'Owners',
-        description: 'User accountable for treating the risk.',
-        group: 'People',
-        icon: UserCircle2,
-        options: null, // derived from loaded risks
-        multiple: true,
-        shouldFilter: true,
-        resetBehavior: 'clearable',
-    },
-    score: {
-        label: 'Risk score',
-        description: 'Inherent risk score range (0–25 by default).',
-        group: 'Quantitative',
-        icon: Activity,
-        options: null,
-        type: 'range',
-        hideOperator: true,
-        rangeNumberStep: 1,
-        formatRangeBound: (n) => String(n),
-        formatRangePillLabel: (token) => {
-            const [min, max] = token.split('|');
-            const fmt = (raw: string) => (raw === '' ? '—' : raw);
-            return `Score ${fmt(min)}–${fmt(max)}`;
+function riskFilterDefsInput(t: T, tGroup: TGroup) {
+    return {
+        status: {
+            label: t('filters.status'),
+            description: t('filters.statusDesc'),
+            group: tGroup('attributes'),
+            icon: CircleDot,
+            options: optionsFromEnum(riskStatusLabels(t)),
+            multiple: true,
+            resetBehavior: 'clearable',
         },
-        resetBehavior: 'clearable',
-    },
-} satisfies Record<string, FilterDefInput>;
+        category: {
+            label: t('filters.category'),
+            description: t('filters.categoryDesc'),
+            group: tGroup('attributes'),
+            icon: Tag,
+            options: null, // derived from loaded risks
+            multiple: true,
+            resetBehavior: 'clearable',
+        },
+        ownerUserId: {
+            label: t('filters.owner'),
+            labelPlural: t('filters.ownerPlural'),
+            description: t('filters.ownerDesc'),
+            group: tGroup('people'),
+            icon: UserCircle2,
+            options: null, // derived from loaded risks
+            multiple: true,
+            shouldFilter: true,
+            resetBehavior: 'clearable',
+        },
+        score: {
+            label: t('filters.score'),
+            description: t('filters.scoreDesc'),
+            group: tGroup('quantitative'),
+            icon: Activity,
+            options: null,
+            type: 'range',
+            hideOperator: true,
+            rangeNumberStep: 1,
+            formatRangeBound: (n) => String(n),
+            formatRangePillLabel: (token) => {
+                const [min, max] = token.split('|');
+                const fmt = (raw: string) => (raw === '' ? '—' : raw);
+                return t('filters.scorePill', { min: fmt(min), max: fmt(max) });
+            },
+            resetBehavior: 'clearable',
+        },
+    } satisfies Record<string, FilterDefInput>;
+}
 
-export const riskFilterDefs = createTypedFilterDefs()(STATIC_DEFS);
-export const RISK_FILTER_KEYS = riskFilterDefs.filterKeys;
+/** Build the localized risk filter defs. `t` = `useTranslations('risks')`,
+ *  `tGroup` = `useTranslations('common.filterGroups')`. Memoize per render. */
+export function buildRiskFilterDefs(t: T, tGroup: TGroup) {
+    return createTypedFilterDefs()(riskFilterDefsInput(t, tGroup));
+}
+
+// The URL-sync KEYS are label-independent — derive them once with an identity
+// resolver so callers keep importing a stable `RISK_FILTER_KEYS` constant.
+const IDENTITY: T = (k) => k;
+const IDENTITY_GROUP: TGroup = (k) => k;
+export const RISK_FILTER_KEYS = buildRiskFilterDefs(IDENTITY, IDENTITY_GROUP).filterKeys;
 
 // ─── URL → API transforms ───────────────────────────────────────────
 
@@ -165,10 +181,16 @@ export function ownerOptionsFromRisks(
     return Array.from(seen.values()).sort((a, b) => a.label.localeCompare(b.label));
 }
 
-export function buildRiskFilters(risks: ReadonlyArray<RiskLike>) {
+/** Build the render-ready filter list (defs + derived category/owner options). */
+export function buildRiskFilters(
+    risks: ReadonlyArray<RiskLike>,
+    t: T,
+    tGroup: TGroup,
+) {
+    const defs = buildRiskFilterDefs(t, tGroup);
     const categoryOpts = categoryOptionsFromRisks(risks);
     const ownerOpts = ownerOptionsFromRisks(risks);
-    return riskFilterDefs.filters.map((f) => {
+    return defs.filters.map((f) => {
         if (f.key === 'category') return { ...f, options: categoryOpts };
         if (f.key === 'ownerUserId') return { ...f, options: ownerOpts };
         return f;

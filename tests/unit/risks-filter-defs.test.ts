@@ -1,7 +1,14 @@
 /**
  * Epic 53 — Risks filter config + score range-split URL sync.
+ *
+ * The filter defs are now built by a factory (`buildRiskFilterDefs(t, tGroup)`)
+ * so labels localize through next-intl. These tests resolve labels against the
+ * real en.json catalog — the enum VALUES (URL/API contract) are what's pinned;
+ * the display labels just have to resolve to the English copy.
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
 import {
     filterStateToUrlParams,
     parseUrlToFilterState,
@@ -9,14 +16,36 @@ import {
 } from '../../src/components/ui/filter/filter-state';
 import {
     buildRiskFilters,
+    buildRiskFilterDefs,
     categoryOptionsFromRisks,
     ownerOptionsFromRisks,
     RISK_API_TRANSFORMS,
     RISK_FILTER_KEYS,
-    RISK_STATUS_LABELS,
-    riskFilterDefs,
 } from '../../src/app/t/[tenantSlug]/(app)/risks/filter-defs';
 import { toApiSearchParams } from '../../src/lib/filters/url-sync';
+
+// ─── en.json-backed resolvers (mirror the runtime `useTranslations` seams) ──
+const EN = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', '..', 'messages/en.json'), 'utf-8'),
+) as Record<string, Record<string, unknown>>;
+
+function makeT(ns: string) {
+    return (key: string, values?: Record<string, unknown>) => {
+        let v = key
+            .split('.')
+            .reduce<unknown>(
+                (o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined),
+                EN[ns],
+            );
+        if (typeof v !== 'string') return `${ns}.${key}`;
+        if (values) for (const [p, val] of Object.entries(values)) v = (v as string).replace(new RegExp(`\\{${p}\\}`, 'g'), String(val));
+        return v as string;
+    };
+}
+const t = makeT('risks');
+const tGroup = (k: string) => (EN.common as { filterGroups: Record<string, string> }).filterGroups[k] ?? k;
+const riskFilterDefs = buildRiskFilterDefs(t, tGroup);
+const RISK_STATUS_VALUES = ['OPEN', 'MITIGATING', 'MITIGATED', 'ACCEPTED', 'CLOSED'];
 
 describe('Risks filter config', () => {
     it('manages the documented key set', () => {
@@ -29,7 +58,7 @@ describe('Risks filter config', () => {
         const status = riskFilterDefs.getFilter('status');
         expect(status.multiple).toBe(true);
         expect((status.options ?? []).map((o) => o.value).sort()).toEqual(
-            Object.keys(RISK_STATUS_LABELS).sort(),
+            [...RISK_STATUS_VALUES].sort(),
         );
     });
 
@@ -45,6 +74,14 @@ describe('Risks filter config', () => {
     it('category + ownerUserId start as async entity-ref filters', () => {
         expect(riskFilterDefs.getFilter('category').options).toBeNull();
         expect(riskFilterDefs.getFilter('ownerUserId').options).toBeNull();
+    });
+
+    it('labels resolve to the English catalog copy', () => {
+        expect(riskFilterDefs.getFilter('status').label).toBe('Status');
+        expect(riskFilterDefs.getFilter('score').label).toBe('Risk score');
+        expect(
+            (riskFilterDefs.getFilter('status').options ?? []).find((o) => o.value === 'OPEN')?.label,
+        ).toBe('Open');
     });
 });
 
@@ -93,16 +130,19 @@ describe('Risks runtime option builders', () => {
 
 describe('buildRiskFilters', () => {
     it('swaps category + ownerUserId options; score/status untouched', () => {
-        const live = buildRiskFilters([
-            { category: 'Tech', ownerUserId: 'u1', owner: { id: 'u1', name: 'Ada', email: 'a@a' } },
-        ]);
+        const live = buildRiskFilters(
+            [{ category: 'Tech', ownerUserId: 'u1', owner: { id: 'u1', name: 'Ada', email: 'a@a' } }],
+            t,
+            tGroup,
+        );
         expect(live.find((f) => f.key === 'category')?.options).toEqual([
             { value: 'Tech', label: 'Tech' },
         ]);
         const ownerOpts = live.find((f) => f.key === 'ownerUserId')?.options;
         expect(ownerOpts?.[0].value).toBe('u1');
-        expect(live.find((f) => f.key === 'status')?.options).toBe(
-            riskFilterDefs.getFilter('status').options,
+        // status options carry the same enum values as the standalone defs.
+        expect((live.find((f) => f.key === 'status')?.options ?? []).map((o) => o.value)).toEqual(
+            (riskFilterDefs.getFilter('status').options ?? []).map((o) => o.value),
         );
     });
 });

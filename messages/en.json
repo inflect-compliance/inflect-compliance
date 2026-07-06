@@ -29,6 +29,14 @@
             "body": "This page encountered an error. You can try again or navigate to another section using the sidebar.",
             "errorId": "Error ID: {id}",
             "goToDashboard": "Go to Dashboard"
+        },
+        "filterGroups": {
+            "attributes": "Attributes",
+            "people": "People",
+            "quantitative": "Quantitative",
+            "timeline": "Timeline",
+            "status": "Status",
+            "classification": "Classification"
         }
     },
     "login": {
@@ -842,7 +850,19 @@
             "roiLabel": "ROI",
             "perRiskImpact": "Per-risk impact"
         },
-        "breadcrumbRoot": "Risks"
+        "breadcrumbRoot": "Risks",
+        "filters": {
+            "status": "Status",
+            "statusDesc": "Lifecycle stage of the risk.",
+            "category": "Category",
+            "categoryDesc": "Free-form risk category.",
+            "owner": "Owner",
+            "ownerPlural": "Owners",
+            "ownerDesc": "User accountable for treating the risk.",
+            "score": "Risk score",
+            "scoreDesc": "Inherent risk score range (0–25 by default).",
+            "scorePill": "Score {min}–{max}"
+        }
     },
     "controls": {
         "title": "Controls Library",
