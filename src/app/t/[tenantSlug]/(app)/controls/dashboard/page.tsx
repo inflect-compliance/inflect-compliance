@@ -18,9 +18,9 @@ import { KPIStat } from '@/components/ui/metric';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SkeletonDashboard } from '@/components/ui/skeleton';
 
-const STATUS_LABELS: Record<string, string> = {
-    NOT_STARTED: 'Not Started', IN_PROGRESS: 'In Progress', IMPLEMENTED: 'Implemented', NEEDS_REVIEW: 'Needs Review',
-};
+const buildStatusLabels = (t: (k: string) => string): Record<string, string> => ({
+    NOT_STARTED: t('statusLabels.NOT_STARTED'), IN_PROGRESS: t('statusLabels.IN_PROGRESS'), IMPLEMENTED: t('statusLabels.IMPLEMENTED'), NEEDS_REVIEW: t('statusLabels.NEEDS_REVIEW'),
+});
 // Map control status onto semantic StatusBreakdown variants so the
 // distribution bar re-themes cleanly under Epic 51 light-mode. Drops
 // the hand-picked hex palette (#94a3b8/#38bdf8/#34d399/#fbbf24) the
@@ -36,6 +36,7 @@ export default function ControlsDashboard() {
     const apiUrl = useTenantApiUrl();
     const { permissions } = useTenantContext();
     const t = useTranslations('controls');
+    const STATUS_LABELS = buildStatusLabels(t);
 
     const [data, setData] = useState<ControlDashboardDTO | null>(null);
     const [loading, setLoading] = useState(true);

@@ -1402,6 +1402,46 @@
             "monthly": "Месечно",
             "quarterly": "Тримесечно",
             "annually": "Годишно"
+        },
+        "statusLabels": {
+            "NOT_STARTED": "Не е започнат",
+            "IN_PROGRESS": "В процес",
+            "IMPLEMENTED": "Внедрен",
+            "NEEDS_REVIEW": "Изисква преглед"
+        },
+        "automationTypeLabels": {
+            "AUTOMATED": "Автоматизиран",
+            "MANUAL": "Ръчен",
+            "IT_DEPENDENT_MANUAL": "Ръчен със ИТ зависимост"
+        },
+        "mitigationTypeLabels": {
+            "PREVENTIVE": "Превантивен",
+            "DETECTIVE": "Откриващ",
+            "DETERRENT": "Възпиращ",
+            "CORRECTIVE": "Коригиращ",
+            "COMPENSATING": "Компенсиращ"
+        },
+        "categoryLabels": {
+            "ORGANIZATIONAL": "Организационен",
+            "PEOPLE": "Хора",
+            "PHYSICAL": "Физически",
+            "TECHNOLOGICAL": "Технологичен"
+        },
+        "eventLabels": {
+            "CONTROL_CREATED": "Създаден",
+            "CONTROL_UPDATED": "Обновен",
+            "CONTROL_STATUS_CHANGED": "Променен статус",
+            "CONTROL_APPLICABILITY_CHANGED": "Променена приложимост",
+            "CONTROL_OWNER_CHANGED": "Променен отговорник",
+            "CONTROL_CONTRIBUTOR_ADDED": "Добавен сътрудник",
+            "CONTROL_CONTRIBUTOR_REMOVED": "Премахнат сътрудник",
+            "CONTROL_TASK_CREATED": "Създадена задача",
+            "CONTROL_TASK_COMPLETED": "Изпълнена задача",
+            "CONTROL_TASK_UPDATED": "Обновена задача",
+            "CONTROL_EVIDENCE_LINKED": "Свързано доказателство",
+            "CONTROL_EVIDENCE_UNLINKED": "Премахнато доказателство",
+            "CONTROL_TEST_COMPLETED": "Завършен тест",
+            "CONTROL_INSTALLED_FROM_TEMPLATE": "Инсталиран от шаблон"
         }
     },
     "evidence": {
@@ -3194,6 +3234,19 @@
             "riskAppetite": "Апетит за риск",
             "notifications": "Известия",
             "theme": "Тема"
+        },
+        "resourceLabels": {
+            "controls": "Контроли",
+            "evidence": "Доказателства",
+            "policies": "Политики",
+            "tasks": "Задачи",
+            "risks": "Рискове",
+            "vendors": "Доставчици",
+            "tests": "Тестове",
+            "frameworks": "Рамки",
+            "audits": "Одити",
+            "reports": "Отчети",
+            "admin": "Администриране"
         }
     },
     "riskManager": {
@@ -3687,6 +3740,24 @@
                 "overdue": "Просрочен преглед",
                 "next30d": "До 30 дни"
             }
+        },
+        "eventLabels": {
+            "BREACH_DETECTED": "Открито нарушение",
+            "ATTESTATION_EXPIRED": "Изтекла атестация",
+            "ATTESTATION_EXPIRING": "Изтичаща атестация",
+            "TLS_GRADE": "TLS оценка",
+            "REASSESSMENT_TRIGGERED": "Стартирана преоценка",
+            "MONITOR_RUN": "Изпълнение на мониторинг",
+            "STATUS_CHANGED": "Променен статус"
+        },
+        "docTypeLabels": {
+            "CONTRACT": "Договор",
+            "SOC2": "SOC 2",
+            "ISO_CERT": "ISO 27001",
+            "DPA": "DPA",
+            "SECURITY_POLICY": "Политика за сигурност",
+            "PEN_TEST": "Доклад от тест за проникване",
+            "OTHER": "Друго"
         }
     },
     "frameworks": {
@@ -4108,6 +4179,46 @@
                 "overdue": "Просрочени",
                 "next7d": "С краен срок до 7 дни"
             }
+        },
+        "statusLabels": {
+            "OPEN": "Отворена",
+            "TRIAGED": "Приоритизирана",
+            "IN_PROGRESS": "В процес",
+            "BLOCKED": "Блокирана",
+            "RESOLVED": "Разрешена",
+            "CLOSED": "Затворена",
+            "CANCELED": "Отменена"
+        },
+        "typeLabels": {
+            "AUDIT_FINDING": "Одитна находка",
+            "CONTROL_GAP": "Пропуск в контрола",
+            "INCIDENT": "Инцидент",
+            "IMPROVEMENT": "Подобрение",
+            "TASK": "Задача"
+        },
+        "severityLabels": {
+            "INFO": "Информация",
+            "LOW": "Ниска",
+            "MEDIUM": "Средна",
+            "HIGH": "Висока",
+            "CRITICAL": "Критична"
+        },
+        "priorityLabels": {
+            "P0": "P0 — Критичен",
+            "P1": "P1 — Висок",
+            "P2": "P2 — Среден",
+            "P3": "P3 — Нисък"
+        },
+        "findingSourceLabels": {
+            "INTERNAL": "Вътрешен",
+            "EXTERNAL_AUDITOR": "Външен одитор",
+            "PEN_TEST": "Тест за проникване",
+            "INCIDENT": "Инцидент"
+        },
+        "gapTypeLabels": {
+            "DESIGN": "Дизайн",
+            "OPERATING_EFFECTIVENESS": "Оперативна ефективност",
+            "DOCUMENTATION": "Документация"
         }
     },
     "processes": {
@@ -4176,6 +4287,26 @@
             "noRuns": "няма изпълнения",
             "successPct": "{pct}% успех",
             "subflowCalls": "Извиквания на подпотоци"
+        },
+        "ruleStatusLabels": {
+            "DRAFT": "Чернова",
+            "ENABLED": "Активирано",
+            "DISABLED": "Деактивирано",
+            "ARCHIVED": "Архивирано"
+        },
+        "ruleActionLabels": {
+            "NOTIFY_USER": "Уведоми потребител",
+            "CREATE_TASK": "Създай задача",
+            "UPDATE_STATUS": "Обнови статус",
+            "WEBHOOK": "Уебхук"
+        },
+        "filters": {
+            "status": "Статус",
+            "statusDesc": "Състояние на жизнения цикъл на правилото.",
+            "trigger": "Тригер",
+            "triggerDesc": "Доменното събитие, за което правилото се абонира.",
+            "action": "Действие",
+            "actionDesc": "Какво прави правилото, когато се задейства."
         }
     },
     "issues": {
@@ -4548,6 +4679,14 @@
             "due": {
                 "overdue": "Просрочен"
             }
+        },
+        "freq": {
+            "adHoc": "Ad hoc",
+            "daily": "Ежедневно",
+            "weekly": "Седмично",
+            "monthly": "Месечно",
+            "quarterly": "Тримесечно",
+            "annually": "Годишно"
         }
     },
     "agents": {

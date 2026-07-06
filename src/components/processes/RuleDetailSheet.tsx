@@ -23,7 +23,8 @@ import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { ExecutionsPanel } from '@/components/processes/ExecutionsPanel';
 import type { AutomationRuleRow } from '@/app/t/[tenantSlug]/(app)/processes/RulesTab';
-import { RULE_ACTION_LABELS } from '@/app/t/[tenantSlug]/(app)/processes/automation-filter-defs';
+import { buildRuleActionLabels } from '@/app/t/[tenantSlug]/(app)/processes/automation-filter-defs';
+import { useTranslations } from 'next-intl';
 
 function humanizeEvent(name: string): string {
     return name
@@ -42,6 +43,8 @@ export interface RuleDetailSheetProps {
 }
 
 export function RuleDetailSheet({ rule, open, onOpenChange, onEdit }: RuleDetailSheetProps) {
+    const t = useTranslations('processes');
+    const RULE_ACTION_LABELS = buildRuleActionLabels((k) => t(k as Parameters<typeof t>[0]));
     const apiUrl = useTenantApiUrl();
 
     const patchMutation = useTenantMutation<

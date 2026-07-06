@@ -79,29 +79,29 @@ import type {
 // Polish PR-1 — STATUS_BADGE moved to shared domain mapping as
 // CONTROL_STATUS_VARIANT in @/app-layer/domain/entity-status-mapping.
 // Labels stay local because they're presentation copy.
-const STATUS_LABELS: Record<string, string> = {
-    NOT_STARTED: 'Not Started', IN_PROGRESS: 'In Progress', IMPLEMENTED: 'Implemented',
-    NEEDS_REVIEW: 'Needs Review',
-};
-const FREQ_LABELS: Record<string, string> = {
-    AD_HOC: 'Ad Hoc', DAILY: 'Daily', WEEKLY: 'Weekly',
-    MONTHLY: 'Monthly', QUARTERLY: 'Quarterly', ANNUALLY: 'Annually',
-};
-const AUTOMATION_TYPE_LABELS: Record<string, string> = {
-    AUTOMATED: 'Automated', MANUAL: 'Manual', IT_DEPENDENT_MANUAL: 'IT-Dependent Manual',
-};
-const MITIGATION_TYPE_LABELS: Record<string, string> = {
-    PREVENTIVE: 'Preventive', DETECTIVE: 'Detective', DETERRENT: 'Deterrent',
-    CORRECTIVE: 'Corrective', COMPENSATING: 'Compensating',
-};
+const buildStatusLabels = (t: (k: string) => string): Record<string, string> => ({
+    NOT_STARTED: t('statusLabels.NOT_STARTED'), IN_PROGRESS: t('statusLabels.IN_PROGRESS'), IMPLEMENTED: t('statusLabels.IMPLEMENTED'),
+    NEEDS_REVIEW: t('statusLabels.NEEDS_REVIEW'),
+});
+const buildFreqLabels = (t: (k: string) => string): Record<string, string> => ({
+    AD_HOC: t('freq.adHoc'), DAILY: t('freq.daily'), WEEKLY: t('freq.weekly'),
+    MONTHLY: t('freq.monthly'), QUARTERLY: t('freq.quarterly'), ANNUALLY: t('freq.annually'),
+});
+const buildAutomationTypeLabels = (t: (k: string) => string): Record<string, string> => ({
+    AUTOMATED: t('automationTypeLabels.AUTOMATED'), MANUAL: t('automationTypeLabels.MANUAL'), IT_DEPENDENT_MANUAL: t('automationTypeLabels.IT_DEPENDENT_MANUAL'),
+});
+const buildMitigationTypeLabels = (t: (k: string) => string): Record<string, string> => ({
+    PREVENTIVE: t('mitigationTypeLabels.PREVENTIVE'), DETECTIVE: t('mitigationTypeLabels.DETECTIVE'), DETERRENT: t('mitigationTypeLabels.DETERRENT'),
+    CORRECTIVE: t('mitigationTypeLabels.CORRECTIVE'), COMPENSATING: t('mitigationTypeLabels.COMPENSATING'),
+});
 const FREQ_OPTIONS = ['', 'AD_HOC', 'DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'ANNUALLY'];
-const FREQ_CB_OPTIONS: ComboboxOption[] = FREQ_OPTIONS.filter(Boolean).map(f => ({ value: f, label: FREQ_LABELS[f] || f }));
+const buildFreqCbOptions = (freqLabels: Record<string, string>): ComboboxOption[] => FREQ_OPTIONS.filter(Boolean).map(fq => ({ value: fq, label: freqLabels[fq] || fq }));
 const CATEGORY_OPTIONS = ['', 'ORGANIZATIONAL', 'PEOPLE', 'PHYSICAL', 'TECHNOLOGICAL'];
-const CATEGORY_LABELS: Record<string, string> = {
-    ORGANIZATIONAL: 'Organizational', PEOPLE: 'People', PHYSICAL: 'Physical', TECHNOLOGICAL: 'Technological',
-};
-const CATEGORY_CB_OPTIONS: ComboboxOption[] = CATEGORY_OPTIONS.filter(Boolean).map(c => ({ value: c, label: CATEGORY_LABELS[c] || c }));
-const STATUS_CB_OPTIONS: ComboboxOption[] = Object.entries(STATUS_LABELS).map(([val, lbl]) => ({ value: val, label: lbl }));
+const buildCategoryLabels = (t: (k: string) => string): Record<string, string> => ({
+    ORGANIZATIONAL: t('categoryLabels.ORGANIZATIONAL'), PEOPLE: t('categoryLabels.PEOPLE'), PHYSICAL: t('categoryLabels.PHYSICAL'), TECHNOLOGICAL: t('categoryLabels.TECHNOLOGICAL'),
+});
+const buildCategoryCbOptions = (categoryLabels: Record<string, string>): ComboboxOption[] => CATEGORY_OPTIONS.filter(Boolean).map(c => ({ value: c, label: categoryLabels[c] || c }));
+const buildStatusCbOptions = (statusLabels: Record<string, string>): ComboboxOption[] => Object.entries(statusLabels).map(([val, lbl]) => ({ value: val, label: lbl }));
 
 type Tab = 'overview' | 'tasks' | 'evidence' | 'mappings' | 'traceability' | 'activity' | 'tests';
 
@@ -112,18 +112,20 @@ type Tab = 'overview' | 'tasks' | 'evidence' | 'mappings' | 'traceability' | 'ac
  */
 
 
-const EVENT_LABELS: Record<string, string> = {
-    CONTROL_CREATED: 'Created', CONTROL_UPDATED: 'Updated', CONTROL_STATUS_CHANGED: 'Status Changed',
-    CONTROL_APPLICABILITY_CHANGED: 'Applicability Changed', CONTROL_OWNER_CHANGED: 'Owner Changed',
-    CONTROL_CONTRIBUTOR_ADDED: 'Contributor Added', CONTROL_CONTRIBUTOR_REMOVED: 'Contributor Removed',
-    CONTROL_TASK_CREATED: 'Task Created', CONTROL_TASK_COMPLETED: 'Task Completed',
-    CONTROL_TASK_UPDATED: 'Task Updated', CONTROL_EVIDENCE_LINKED: 'Evidence Linked',
-    CONTROL_EVIDENCE_UNLINKED: 'Evidence Unlinked', CONTROL_TEST_COMPLETED: 'Test Completed',
-    CONTROL_INSTALLED_FROM_TEMPLATE: 'Installed from Template',
-};
+const EVENT_KEYS = ['CONTROL_CREATED','CONTROL_UPDATED','CONTROL_STATUS_CHANGED','CONTROL_APPLICABILITY_CHANGED','CONTROL_OWNER_CHANGED','CONTROL_CONTRIBUTOR_ADDED','CONTROL_CONTRIBUTOR_REMOVED','CONTROL_TASK_CREATED','CONTROL_TASK_COMPLETED','CONTROL_TASK_UPDATED','CONTROL_EVIDENCE_LINKED','CONTROL_EVIDENCE_UNLINKED','CONTROL_TEST_COMPLETED','CONTROL_INSTALLED_FROM_TEMPLATE'] as const;
+const buildEventLabels = (t: (k: string) => string): Record<string, string> => Object.fromEntries(EVENT_KEYS.map(k => [k, t(`eventLabels.${k}`)]));
 
 export default function ControlDetailPage() {
     const tx = useTranslations('controls');
+    const STATUS_LABELS = buildStatusLabels(tx);
+    const FREQ_LABELS = buildFreqLabels(tx);
+    const AUTOMATION_TYPE_LABELS = buildAutomationTypeLabels(tx);
+    const MITIGATION_TYPE_LABELS = buildMitigationTypeLabels(tx);
+    const CATEGORY_LABELS = buildCategoryLabels(tx);
+    const EVENT_LABELS = buildEventLabels(tx);
+    const FREQ_CB_OPTIONS = buildFreqCbOptions(FREQ_LABELS);
+    const CATEGORY_CB_OPTIONS = buildCategoryCbOptions(CATEGORY_LABELS);
+    const STATUS_CB_OPTIONS = buildStatusCbOptions(STATUS_LABELS);
     const params = useParams();
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();

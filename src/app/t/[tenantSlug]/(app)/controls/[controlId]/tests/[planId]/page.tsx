@@ -54,17 +54,17 @@ interface TestPlanDetail {
     createdAt: string;
 }
 
-const FREQ_LABELS: Record<string, string> = {
-    AD_HOC: 'Ad Hoc', DAILY: 'Daily', WEEKLY: 'Weekly',
-    MONTHLY: 'Monthly', QUARTERLY: 'Quarterly', ANNUALLY: 'Annually',
-};
+const buildFreqLabels = (t: (k: string) => string): Record<string, string> => ({
+    AD_HOC: t('freq.adHoc'), DAILY: t('freq.daily'), WEEKLY: t('freq.weekly'),
+    MONTHLY: t('freq.monthly'), QUARTERLY: t('freq.quarterly'), ANNUALLY: t('freq.annually'),
+});
 const RESULT_BADGE: Record<string, StatusBadgeVariant> = {
     PASS: 'success', FAIL: 'error', INCONCLUSIVE: 'warning',
 };
 const RUN_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     PLANNED: 'neutral', RUNNING: 'info', COMPLETED: 'success',
 };
-const FREQ_CB_OPTIONS: ComboboxOption[] = Object.entries(FREQ_LABELS).map(([v, l]) => ({ value: v, label: l }));
+const buildFreqCbOptions = (freqLabels: Record<string, string>): ComboboxOption[] => Object.entries(freqLabels).map(([v, l]) => ({ value: v, label: l }));
 const METHOD_OPTIONS: ComboboxOption[] = [{ value: 'MANUAL', label: 'Manual' }, { value: 'AUTOMATED', label: 'Automated' }];
 // Audit Coherence S2 — ARCHIVED is the terminal "retired control
 // test" state. Plans in ARCHIVED stay visible for historical audit
@@ -88,6 +88,8 @@ export default function TestPlanDetailPage() {
     const tenantHref = useTenantHref();
     const { permissions } = useTenantContext();
     const t = useTranslations('controls');
+    const FREQ_LABELS = buildFreqLabels(t);
+    const FREQ_CB_OPTIONS = buildFreqCbOptions(FREQ_LABELS);
     const planId = params?.planId as string;
 
     const [plan, setPlan] = useState<TestPlanDetail | null>(null);

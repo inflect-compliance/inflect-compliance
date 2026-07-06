@@ -63,23 +63,23 @@ const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     OPEN: 'neutral', TRIAGED: 'info', IN_PROGRESS: 'info',
     BLOCKED: 'error', RESOLVED: 'success', CLOSED: 'neutral', CANCELED: 'neutral',
 };
-const STATUS_LABELS: Record<string, string> = {
-    OPEN: 'Open', TRIAGED: 'Triaged', IN_PROGRESS: 'In Progress',
-    BLOCKED: 'Blocked', RESOLVED: 'Resolved', CLOSED: 'Closed', CANCELED: 'Canceled',
-};
+const buildStatusLabels = (t: (k: string) => string): Record<string, string> => ({
+    OPEN: t('statusLabels.OPEN'), TRIAGED: t('statusLabels.TRIAGED'), IN_PROGRESS: t('statusLabels.IN_PROGRESS'),
+    BLOCKED: t('statusLabels.BLOCKED'), RESOLVED: t('statusLabels.RESOLVED'), CLOSED: t('statusLabels.CLOSED'), CANCELED: t('statusLabels.CANCELED'),
+});
 const SEVERITY_BADGE: Record<string, StatusBadgeVariant> = {
     INFO: 'neutral', LOW: 'neutral', MEDIUM: 'warning',
     HIGH: 'error', CRITICAL: 'error',
 };
-const TYPE_LABELS: Record<string, string> = {
-    AUDIT_FINDING: 'Audit Finding', CONTROL_GAP: 'Control Gap',
-    INCIDENT: 'Incident', IMPROVEMENT: 'Improvement', TASK: 'Task',
-};
+const buildTypeLabels = (t: (k: string) => string): Record<string, string> => ({
+    AUDIT_FINDING: t('typeLabels.AUDIT_FINDING'), CONTROL_GAP: t('typeLabels.CONTROL_GAP'),
+    INCIDENT: t('typeLabels.INCIDENT'), IMPROVEMENT: t('typeLabels.IMPROVEMENT'), TASK: t('typeLabels.TASK'),
+});
 // Bulk status only offers ACTIVE transitions. Terminal statuses
 // (CLOSED / CANCELED) require a per-task resolution note (S8), which
 // the bulk bar can't collect — closing is a deliberate single-task
 // action via the task detail page. RESOLVED is retired everywhere.
-const BULK_STATUS_CB_OPTIONS: ComboboxOption[] = ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'BLOCKED'].map(s => ({ value: s, label: STATUS_LABELS[s] || s }));
+const buildBulkStatusCbOptions = (statusLabels: Record<string, string>): ComboboxOption[] => ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'BLOCKED'].map(sv => ({ value: sv, label: statusLabels[sv] || sv }));
 
 interface TaskListItem {
     id: string;
@@ -126,6 +126,9 @@ function TasksPageInner({
     appPermissions,
 }: TasksClientProps) {
     const t = useTranslations('tasks');
+    const STATUS_LABELS = buildStatusLabels(t);
+    const TYPE_LABELS = buildTypeLabels(t);
+    const BULK_STATUS_CB_OPTIONS = buildBulkStatusCbOptions(STATUS_LABELS);
     const apiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
     const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
     const { mutate: swrMutate } = useSWRConfig();

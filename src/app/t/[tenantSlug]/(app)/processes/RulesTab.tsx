@@ -34,16 +34,18 @@ import { toApiSearchParams } from '@/lib/filters/url-sync';
 import {
     buildRuleFilters,
     RULE_FILTER_KEYS,
-    RULE_STATUS_LABELS,
-    RULE_ACTION_LABELS,
+    buildRuleStatusLabels,
+    buildRuleActionLabels,
+    type RuleStatusKey,
+    type RuleActionKey,
 } from './automation-filter-defs';
 
 export interface AutomationRuleRow {
     id: string;
     name: string;
     triggerEvent: string;
-    actionType: keyof typeof RULE_ACTION_LABELS;
-    status: keyof typeof RULE_STATUS_LABELS;
+    actionType: RuleActionKey;
+    status: RuleStatusKey;
     priority: number;
     executionCount: number;
     lastTriggeredAt: string | Date | null;
@@ -81,6 +83,9 @@ export function RulesTab({ tenantSlug }: { tenantSlug: string }) {
 
 function RulesTabInner({ tenantSlug }: { tenantSlug: string }) {
     const t = useTranslations('processes');
+    const tGroup = useTranslations('common.filterGroups');
+    const RULE_STATUS_LABELS = buildRuleStatusLabels((k) => t(k as Parameters<typeof t>[0]));
+    const RULE_ACTION_LABELS = buildRuleActionLabels((k) => t(k as Parameters<typeof t>[0]));
     const { state, search } = useFilters();
     const { data, isLoading, error } = useTenantSWR<AutomationRuleRow[]>(
         CACHE_KEYS.automation.rules.list(),
@@ -190,7 +195,7 @@ function RulesTabInner({ tenantSlug }: { tenantSlug: string }) {
                     count: t('rules.count', { count: rows.length }),
                 }}
                 filters={{
-                    defs: buildRuleFilters(),
+                    defs: buildRuleFilters((k) => t(k as Parameters<typeof t>[0]), (k) => tGroup(k as Parameters<typeof tGroup>[0])),
                     toolbarActions: (
                         <Button variant="secondary" onClick={() => setTemplatesOpen(true)}>
                             {t('rules.templates')}

@@ -43,22 +43,19 @@ import { cn } from '@/lib/cn';
 // mapping. Local aliases preserved so the dozens of inline-table
 // consumers below stay short and readable.
 const CRIT_BADGE = VENDOR_CRITICALITY_VARIANT;
-const DOC_TYPE_LABELS: Record<string, string> = {
-    CONTRACT: 'Contract', SOC2: 'SOC 2', ISO_CERT: 'ISO 27001', DPA: 'DPA',
-    SECURITY_POLICY: 'Security Policy', PEN_TEST: 'Pen Test Report', OTHER: 'Other',
-};
-const DOC_TYPES = Object.keys(DOC_TYPE_LABELS);
+const DOC_TYPE_KEYS = ['CONTRACT','SOC2','ISO_CERT','DPA','SECURITY_POLICY','PEN_TEST','OTHER'] as const;
+const buildDocTypeLabels = (t: (k: string) => string): Record<string, string> => Object.fromEntries(DOC_TYPE_KEYS.map(k => [k, t(`docTypeLabels.${k}`)]));
+const DOC_TYPES = [...DOC_TYPE_KEYS];
+
 const ASSESSMENT_STATUS_BADGE = VENDOR_ASSESSMENT_VARIANT;
 const VENDOR_STATUS_OPTIONS: ComboboxOption[] = ['ACTIVE', 'ONBOARDING', 'OFFBOARDING', 'OFFBOARDED'].map(s => ({ value: s, label: s }));
 const VENDOR_CRIT_OPTIONS: ComboboxOption[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map(c => ({ value: c, label: c }));
-const DOC_TYPE_CB_OPTIONS: ComboboxOption[] = DOC_TYPES.map(t => ({ value: t, label: DOC_TYPE_LABELS[t] || t }));
+const buildDocTypeCbOptions = (docTypeLabels: Record<string, string>): ComboboxOption[] => DOC_TYPES.map(ty => ({ value: ty, label: docTypeLabels[ty] || ty }));
 // B4 — Document filter options. Prepended "All types" sentinel so
 // clearing the type filter is a single click.
-const DOC_TYPE_FILTER_OPTIONS: ComboboxOption[] = [
-    // "All types" sentinel — module-level label map, deferred (task #21).
-    // The visible filter placeholder is localised via tx('detail.allTypes').
-    { value: '', label: 'All types' },
-    ...DOC_TYPE_CB_OPTIONS,
+const buildDocTypeFilterOptions = (tx: (k: string) => string, docTypeCbOptions: ComboboxOption[]): ComboboxOption[] => [
+    { value: '', label: tx('detail.allTypes') },
+    ...docTypeCbOptions,
 ];
 const VENDOR_LINK_TYPE_OPTIONS: ComboboxOption[] = [
     { value: 'ASSET', label: 'Asset' }, { value: 'RISK', label: 'Risk' },
@@ -148,6 +145,9 @@ interface VendorBundleRow {
 export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: string; vendorId: string }> }) {
     const params = use(props.params);
     const tx = useTranslations('vendors');
+    const DOC_TYPE_LABELS = buildDocTypeLabels(tx);
+    const DOC_TYPE_CB_OPTIONS = buildDocTypeCbOptions(DOC_TYPE_LABELS);
+    const DOC_TYPE_FILTER_OPTIONS = buildDocTypeFilterOptions(tx, DOC_TYPE_CB_OPTIONS);
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const { permissions } = useTenantContext();
@@ -1051,6 +1051,7 @@ function VendorDocsTable({
     onRemove: (id: string) => void;
 }) {
     const tx = useTranslations('vendors');
+    const DOC_TYPE_LABELS = buildDocTypeLabels(tx);
     const columns = useMemo(
         () =>
             createColumns<VendorDocRow>([

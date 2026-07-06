@@ -1402,6 +1402,46 @@
             "monthly": "Monthly",
             "quarterly": "Quarterly",
             "annually": "Annually"
+        },
+        "statusLabels": {
+            "NOT_STARTED": "Not Started",
+            "IN_PROGRESS": "In Progress",
+            "IMPLEMENTED": "Implemented",
+            "NEEDS_REVIEW": "Needs Review"
+        },
+        "automationTypeLabels": {
+            "AUTOMATED": "Automated",
+            "MANUAL": "Manual",
+            "IT_DEPENDENT_MANUAL": "IT-Dependent Manual"
+        },
+        "mitigationTypeLabels": {
+            "PREVENTIVE": "Preventive",
+            "DETECTIVE": "Detective",
+            "DETERRENT": "Deterrent",
+            "CORRECTIVE": "Corrective",
+            "COMPENSATING": "Compensating"
+        },
+        "categoryLabels": {
+            "ORGANIZATIONAL": "Organizational",
+            "PEOPLE": "People",
+            "PHYSICAL": "Physical",
+            "TECHNOLOGICAL": "Technological"
+        },
+        "eventLabels": {
+            "CONTROL_CREATED": "Created",
+            "CONTROL_UPDATED": "Updated",
+            "CONTROL_STATUS_CHANGED": "Status Changed",
+            "CONTROL_APPLICABILITY_CHANGED": "Applicability Changed",
+            "CONTROL_OWNER_CHANGED": "Owner Changed",
+            "CONTROL_CONTRIBUTOR_ADDED": "Contributor Added",
+            "CONTROL_CONTRIBUTOR_REMOVED": "Contributor Removed",
+            "CONTROL_TASK_CREATED": "Task Created",
+            "CONTROL_TASK_COMPLETED": "Task Completed",
+            "CONTROL_TASK_UPDATED": "Task Updated",
+            "CONTROL_EVIDENCE_LINKED": "Evidence Linked",
+            "CONTROL_EVIDENCE_UNLINKED": "Evidence Unlinked",
+            "CONTROL_TEST_COMPLETED": "Test Completed",
+            "CONTROL_INSTALLED_FROM_TEMPLATE": "Installed from Template"
         }
     },
     "evidence": {
@@ -3194,6 +3234,19 @@
             "riskAppetite": "Risk Appetite",
             "notifications": "Notifications",
             "theme": "Theme"
+        },
+        "resourceLabels": {
+            "controls": "Controls",
+            "evidence": "Evidence",
+            "policies": "Policies",
+            "tasks": "Tasks",
+            "risks": "Risks",
+            "vendors": "Vendors",
+            "tests": "Tests",
+            "frameworks": "Frameworks",
+            "audits": "Audits",
+            "reports": "Reports",
+            "admin": "Admin"
         }
     },
     "riskManager": {
@@ -3687,6 +3740,24 @@
                 "overdue": "Review overdue",
                 "next30d": "Due in 30 days"
             }
+        },
+        "eventLabels": {
+            "BREACH_DETECTED": "Breach detected",
+            "ATTESTATION_EXPIRED": "Attestation expired",
+            "ATTESTATION_EXPIRING": "Attestation expiring",
+            "TLS_GRADE": "TLS grade",
+            "REASSESSMENT_TRIGGERED": "Reassessment triggered",
+            "MONITOR_RUN": "Monitor run",
+            "STATUS_CHANGED": "Status changed"
+        },
+        "docTypeLabels": {
+            "CONTRACT": "Contract",
+            "SOC2": "SOC 2",
+            "ISO_CERT": "ISO 27001",
+            "DPA": "DPA",
+            "SECURITY_POLICY": "Security Policy",
+            "PEN_TEST": "Pen Test Report",
+            "OTHER": "Other"
         }
     },
     "frameworks": {
@@ -4108,6 +4179,46 @@
                 "overdue": "Overdue",
                 "next7d": "Due in 7 days"
             }
+        },
+        "statusLabels": {
+            "OPEN": "Open",
+            "TRIAGED": "Triaged",
+            "IN_PROGRESS": "In Progress",
+            "BLOCKED": "Blocked",
+            "RESOLVED": "Resolved",
+            "CLOSED": "Closed",
+            "CANCELED": "Canceled"
+        },
+        "typeLabels": {
+            "AUDIT_FINDING": "Audit Finding",
+            "CONTROL_GAP": "Control Gap",
+            "INCIDENT": "Incident",
+            "IMPROVEMENT": "Improvement",
+            "TASK": "Task"
+        },
+        "severityLabels": {
+            "INFO": "Info",
+            "LOW": "Low",
+            "MEDIUM": "Medium",
+            "HIGH": "High",
+            "CRITICAL": "Critical"
+        },
+        "priorityLabels": {
+            "P0": "P0 — Critical",
+            "P1": "P1 — High",
+            "P2": "P2 — Medium",
+            "P3": "P3 — Low"
+        },
+        "findingSourceLabels": {
+            "INTERNAL": "Internal",
+            "EXTERNAL_AUDITOR": "External Auditor",
+            "PEN_TEST": "Pen Test",
+            "INCIDENT": "Incident"
+        },
+        "gapTypeLabels": {
+            "DESIGN": "Design",
+            "OPERATING_EFFECTIVENESS": "Operating Effectiveness",
+            "DOCUMENTATION": "Documentation"
         }
     },
     "processes": {
@@ -4176,6 +4287,26 @@
             "noRuns": "no runs",
             "successPct": "{pct}% success",
             "subflowCalls": "Sub-flow calls"
+        },
+        "ruleStatusLabels": {
+            "DRAFT": "Draft",
+            "ENABLED": "Enabled",
+            "DISABLED": "Disabled",
+            "ARCHIVED": "Archived"
+        },
+        "ruleActionLabels": {
+            "NOTIFY_USER": "Notify user",
+            "CREATE_TASK": "Create task",
+            "UPDATE_STATUS": "Update status",
+            "WEBHOOK": "Webhook"
+        },
+        "filters": {
+            "status": "Status",
+            "statusDesc": "Rule lifecycle state.",
+            "trigger": "Trigger",
+            "triggerDesc": "The domain event the rule subscribes to.",
+            "action": "Action",
+            "actionDesc": "What the rule does when it fires."
         }
     },
     "issues": {
@@ -4548,6 +4679,14 @@
             "due": {
                 "overdue": "Overdue"
             }
+        },
+        "freq": {
+            "adHoc": "Ad Hoc",
+            "daily": "Daily",
+            "weekly": "Weekly",
+            "monthly": "Monthly",
+            "quarterly": "Quarterly",
+            "annually": "Annually"
         }
     },
     "agents": {

@@ -46,17 +46,17 @@ import { cn } from '@/lib/cn';
 // Polish PR-1 — STATUS_BADGE / SEVERITY_BADGE moved to shared
 // domain mapping (TASK_STATUS_VARIANT / TASK_SEVERITY_VARIANT).
 // Labels stay local because they're presentation copy.
-const STATUS_LABELS: Record<string, string> = {
-    OPEN: 'Open', TRIAGED: 'Triaged', IN_PROGRESS: 'In Progress',
-    BLOCKED: 'Blocked', RESOLVED: 'Resolved', CLOSED: 'Closed', CANCELED: 'Canceled',
-};
-const PRIORITY_LABELS: Record<string, string> = {
-    P0: 'P0 — Critical', P1: 'P1 — High', P2: 'P2 — Medium', P3: 'P3 — Low',
-};
-const TYPE_LABELS: Record<string, string> = {
-    AUDIT_FINDING: 'Audit Finding', CONTROL_GAP: 'Control Gap',
-    INCIDENT: 'Incident', IMPROVEMENT: 'Improvement', TASK: 'Task',
-};
+const buildStatusLabels = (t: (k: string) => string): Record<string, string> => ({
+    OPEN: t('statusLabels.OPEN'), TRIAGED: t('statusLabels.TRIAGED'), IN_PROGRESS: t('statusLabels.IN_PROGRESS'),
+    BLOCKED: t('statusLabels.BLOCKED'), RESOLVED: t('statusLabels.RESOLVED'), CLOSED: t('statusLabels.CLOSED'), CANCELED: t('statusLabels.CANCELED'),
+});
+const buildPriorityLabels = (t: (k: string) => string): Record<string, string> => ({
+    P0: t('priorityLabels.P0'), P1: t('priorityLabels.P1'), P2: t('priorityLabels.P2'), P3: t('priorityLabels.P3'),
+});
+const buildTypeLabels = (t: (k: string) => string): Record<string, string> => ({
+    AUDIT_FINDING: t('typeLabels.AUDIT_FINDING'), CONTROL_GAP: t('typeLabels.CONTROL_GAP'),
+    INCIDENT: t('typeLabels.INCIDENT'), IMPROVEMENT: t('typeLabels.IMPROVEMENT'), TASK: t('typeLabels.TASK'),
+});
 const ENTITY_TYPE_OPTIONS = ['CONTROL', 'RISK', 'ASSET', 'EVIDENCE', 'FRAMEWORK_REQUIREMENT'];
 const ENTITY_TYPE_CB_OPTIONS: ComboboxOption[] = ENTITY_TYPE_OPTIONS.map(t => ({ value: t, label: t }));
 const RELATION_OPTIONS = ['RELATES_TO', 'CAUSED_BY', 'MITIGATED_BY', 'EVIDENCE_FOR'];
@@ -66,16 +66,16 @@ const RELATION_CB_OPTIONS: ComboboxOption[] = RELATION_OPTIONS.map(r => ({ value
 // badge; just not offered as a choice (a RESOLVED task is closed via
 // the CLOSED option). CLOSED + CANCELED prompt for a resolution note.
 const SELECTABLE_STATUSES = ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'BLOCKED', 'CLOSED', 'CANCELED'];
-const TASK_STATUS_CB_OPTIONS: ComboboxOption[] = SELECTABLE_STATUSES.map((val) => ({ value: val, label: STATUS_LABELS[val] }));
+const buildTaskStatusCbOptions = (statusLabels: Record<string, string>): ComboboxOption[] => SELECTABLE_STATUSES.map((val) => ({ value: val, label: statusLabels[val] }));
 
 type Tab = 'overview' | 'evidence' | 'links' | 'comments' | 'activity';
 
-const FINDING_SOURCE_LABELS: Record<string, string> = {
-    INTERNAL: 'Internal', EXTERNAL_AUDITOR: 'External Auditor', PEN_TEST: 'Pen Test', INCIDENT: 'Incident',
-};
-const GAP_TYPE_LABELS: Record<string, string> = {
-    DESIGN: 'Design', OPERATING_EFFECTIVENESS: 'Operating Effectiveness', DOCUMENTATION: 'Documentation',
-};
+const buildFindingSourceLabels = (t: (k: string) => string): Record<string, string> => ({
+    INTERNAL: t('findingSourceLabels.INTERNAL'), EXTERNAL_AUDITOR: t('findingSourceLabels.EXTERNAL_AUDITOR'), PEN_TEST: t('findingSourceLabels.PEN_TEST'), INCIDENT: t('findingSourceLabels.INCIDENT'),
+});
+const buildGapTypeLabels = (t: (k: string) => string): Record<string, string> => ({
+    DESIGN: t('gapTypeLabels.DESIGN'), OPERATING_EFFECTIVENESS: t('gapTypeLabels.OPERATING_EFFECTIVENESS'), DOCUMENTATION: t('gapTypeLabels.DOCUMENTATION'),
+});
 
 
 // getTask → WorkItemRepository.getById (full Task + relations + _count).
@@ -119,6 +119,12 @@ interface TaskActivityRow {
 
 export default function TaskDetailPage() {
     const t = useTranslations('tasks');
+    const STATUS_LABELS = buildStatusLabels(t);
+    const PRIORITY_LABELS = buildPriorityLabels(t);
+    const TYPE_LABELS = buildTypeLabels(t);
+    const FINDING_SOURCE_LABELS = buildFindingSourceLabels(t);
+    const GAP_TYPE_LABELS = buildGapTypeLabels(t);
+    const TASK_STATUS_CB_OPTIONS = buildTaskStatusCbOptions(STATUS_LABELS);
     const params = useParams();
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();

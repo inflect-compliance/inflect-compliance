@@ -49,15 +49,8 @@ interface Posture {
 const SEVERITY_VARIANT: Record<string, StatusBadgeVariant> = {
     CRITICAL: 'error', HIGH: 'error', MEDIUM: 'warning', LOW: 'neutral', INFO: 'info',
 };
-const EVENT_LABELS: Record<string, string> = {
-    BREACH_DETECTED: 'Breach detected',
-    ATTESTATION_EXPIRED: 'Attestation expired',
-    ATTESTATION_EXPIRING: 'Attestation expiring',
-    TLS_GRADE: 'TLS grade',
-    REASSESSMENT_TRIGGERED: 'Reassessment triggered',
-    MONITOR_RUN: 'Monitor run',
-    STATUS_CHANGED: 'Status changed',
-};
+const VENDOR_EVENT_KEYS = ['BREACH_DETECTED','ATTESTATION_EXPIRED','ATTESTATION_EXPIRING','TLS_GRADE','REASSESSMENT_TRIGGERED','MONITOR_RUN','STATUS_CHANGED'] as const;
+const buildEventLabels = (t: (k: string) => string): Record<string, string> => Object.fromEntries(VENDOR_EVENT_KEYS.map(k => [k, t(`eventLabels.${k}`)]));
 const GRADE_VARIANT = (g: string | null): StatusBadgeVariant =>
     g == null ? 'neutral' : g === 'A' || g === 'B' ? 'success' : g === 'C' ? 'warning' : 'error';
 
@@ -77,6 +70,7 @@ export function VendorMonitoringPanel({
     onChange?: () => void;
 }) {
     const t = useTranslations('vendors');
+    const EVENT_LABELS = buildEventLabels(t);
     const apiUrl = useCallback((p: string) => `/api/t/${tenantSlug}${p}`, [tenantSlug]);
     const [posture, setPosture] = useState<Posture | null>(null);
     const [loading, setLoading] = useState(true);

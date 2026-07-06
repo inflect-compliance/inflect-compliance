@@ -82,19 +82,8 @@ const PERMISSION_SCHEMA: Record<keyof PermissionSet, string[]> = {
     admin: ['view', 'manage', 'members', 'sso', 'scim'],
 };
 
-const RESOURCE_LABELS: Record<string, string> = {
-    controls: 'Controls',
-    evidence: 'Evidence',
-    policies: 'Policies',
-    tasks: 'Tasks',
-    risks: 'Risks',
-    vendors: 'Vendors',
-    tests: 'Tests',
-    frameworks: 'Frameworks',
-    audits: 'Audits',
-    reports: 'Reports',
-    admin: 'Admin',
-};
+const RESOURCE_KEYS = ['controls','evidence','policies','tasks','risks','vendors','tests','frameworks','audits','reports','admin'] as const;
+const buildResourceLabels = (t: (k: string) => string): Record<string, string> => Object.fromEntries(RESOURCE_KEYS.map(k => [k, t(`resourceLabels.${k}`)]));
 
 const BASE_ROLES: Role[] = ['ADMIN', 'EDITOR', 'AUDITOR', 'READER'];
 const ROLE_COLORS: Record<string, StatusBadgeVariant> = {
@@ -117,6 +106,7 @@ function PermissionGrid({
     readonly?: boolean;
 }) {
     const t = useTranslations('admin');
+    const RESOURCE_LABELS = buildResourceLabels(t);
     const toggle = (resource: keyof PermissionSet, action: string) => {
         if (readonly) return;
         const current = (permissions[resource] as Record<string, boolean>)[action];
