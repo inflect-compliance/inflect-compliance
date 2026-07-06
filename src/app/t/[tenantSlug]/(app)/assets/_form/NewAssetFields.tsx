@@ -11,9 +11,9 @@ import { Input } from '@/components/ui/input';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { AssetCriticalityFields } from './AssetCriticalityFields';
 import {
-    ASSET_CLASSIFICATION_OPTIONS,
-    ASSET_DATA_RESIDENCY_OPTIONS,
-    ASSET_STATUS_OPTIONS,
+    buildAssetClassificationOptions,
+    buildAssetDataResidencyOptions,
+    buildAssetStatusOptions,
 } from './asset-options';
 import type { NewAssetFormFields, NewAssetFormReturn } from './useNewAssetForm';
 
@@ -58,6 +58,10 @@ export function NewAssetFields({
     tenantSlug: string;
 }) {
     const t = useTranslations('assets');
+    const tOpt = (k: string) => t(k as Parameters<typeof t>[0]);
+    const classificationOptions = buildAssetClassificationOptions(tOpt);
+    const residencyOptions = buildAssetDataResidencyOptions(tOpt);
+    const statusOptions = buildAssetStatusOptions(tOpt);
     return (
         <>
             <FormField label={labels.name} required>
@@ -97,9 +101,9 @@ export function NewAssetFields({
                     <Combobox
                         id="asset-classification-input"
                         name="classification"
-                        options={ASSET_CLASSIFICATION_OPTIONS}
+                        options={classificationOptions}
                         selected={
-                            ASSET_CLASSIFICATION_OPTIONS.find(
+                            classificationOptions.find(
                                 (o) => o.value === form.fields.classification,
                             ) ?? null
                         }
@@ -145,9 +149,9 @@ export function NewAssetFields({
                     <Combobox
                         id="asset-status-select"
                         name="status"
-                        options={ASSET_STATUS_OPTIONS}
+                        options={statusOptions}
                         selected={
-                            ASSET_STATUS_OPTIONS.find(
+                            statusOptions.find(
                                 (o) => o.value === form.fields.status,
                             ) ?? null
                         }
@@ -168,9 +172,9 @@ export function NewAssetFields({
                     <Combobox
                         id="asset-data-residency-input"
                         name="dataResidency"
-                        options={ASSET_DATA_RESIDENCY_OPTIONS}
+                        options={residencyOptions}
                         selected={
-                            ASSET_DATA_RESIDENCY_OPTIONS.find(
+                            residencyOptions.find(
                                 (o) => o.value === form.fields.dataResidency,
                             ) ?? null
                         }

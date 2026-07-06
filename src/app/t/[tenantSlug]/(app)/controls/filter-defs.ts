@@ -16,6 +16,13 @@
  *
  * This module is the single source of truth for the Controls filter contract.
  * Do not scatter filter logic back into the page; extend the config instead.
+ *
+ * i18n (filter-defs factory): display labels resolve through next-intl at
+ * render via `buildControlFilters(loaded, t, tGroup)` — `t` scoped to
+ * `controls`, `tGroup` to the shared `common.filterGroups`. `buildControlStatusLabels(t)`
+ * is the single source of truth for status copy (the client reuses it for
+ * badges). The URL-sync KEYS stay static; option VALUES (enum members) are
+ * unchanged — only labels are localized.
  */
 
 // Import from concrete sub-modules (not the barrel) so that jest's node env
@@ -32,82 +39,96 @@ import {
 import type { FilterOption } from '@/components/ui/filter/types';
 import { CircleDot, Tag, UserCircle2, ShieldCheck } from 'lucide-react';
 
-// ─── Static labels (enum copy lives here, not in ControlsClient) ─────
+/** Surface-namespace resolver (`useTranslations('controls')`). */
+type T = (key: string, values?: Record<string, unknown>) => string;
+/** Shared filter-group resolver (`useTranslations('common.filterGroups')`). */
+type TGroup = (key: string) => string;
 
-export const CONTROL_STATUS_LABELS = {
-    NOT_STARTED: 'Not Started',
-    PLANNED: 'Planned',
-    IN_PROGRESS: 'In Progress',
-    IMPLEMENTING: 'Implementing',
-    IMPLEMENTED: 'Implemented',
-    NEEDS_REVIEW: 'Needs Review',
-    NOT_APPLICABLE: 'Not Applicable',
-} as const;
+// ─── Labels (resolved at render) ─────────────────────────────────────
 
-export const APPLICABILITY_LABELS = {
-    APPLICABLE: 'Applicable',
-    NOT_APPLICABLE: 'Not Applicable',
-} as const;
+/** ControlStatus enum → label. Single source of truth (client reuses it for
+ *  status badges). Values are the enum members (unchanged). */
+export function buildControlStatusLabels(t: T): Record<string, string> {
+    return {
+        NOT_STARTED: t('filterEnums.status.NOT_STARTED'),
+        PLANNED: t('filterEnums.status.PLANNED'),
+        IN_PROGRESS: t('filterEnums.status.IN_PROGRESS'),
+        IMPLEMENTING: t('filterEnums.status.IMPLEMENTING'),
+        IMPLEMENTED: t('filterEnums.status.IMPLEMENTED'),
+        NEEDS_REVIEW: t('filterEnums.status.NEEDS_REVIEW'),
+        NOT_APPLICABLE: t('filterEnums.status.NOT_APPLICABLE'),
+    };
+}
 
-// ─── Static filter definitions ───────────────────────────────────────
+function applicabilityLabels(t: T): Record<string, string> {
+    return {
+        APPLICABLE: t('filterEnums.applicability.APPLICABLE'),
+        NOT_APPLICABLE: t('filterEnums.applicability.NOT_APPLICABLE'),
+    };
+}
+
+// ─── Filter definitions (factory) ────────────────────────────────────
 //
 // Owner and Category default to `options: null` — FilterSelect treats that as
 // "async loading" and the page swaps in derived options at render time.
 
-const STATIC_DEFS = {
-    status: {
-        label: 'Status',
-        labelPlural: 'Statuses',
-        description: 'Lifecycle stage of the control.',
-        group: 'Attributes',
-        icon: CircleDot,
-        options: optionsFromEnum(CONTROL_STATUS_LABELS),
-        multiple: true,
-        resetBehavior: 'clearable',
-    },
-    applicability: {
-        label: 'Applicability',
-        description: 'Whether the control applies in the current SoA scope.',
-        group: 'Attributes',
-        icon: ShieldCheck,
-        options: optionsFromEnum(APPLICABILITY_LABELS),
-        resetBehavior: 'clearable',
-    },
-    ownerUserId: {
-        label: 'Owner',
-        labelPlural: 'Owners',
-        description: 'User accountable for this control.',
-        group: 'People',
-        icon: UserCircle2,
-        options: null, // filled in at render time from loaded controls
-        multiple: true,
-        shouldFilter: true, // cmdk filters the (client-derived) label text
-        resetBehavior: 'clearable',
-    },
-    category: {
-        label: 'Category',
-        labelPlural: 'Categories',
-        description: 'Free-form grouping assigned to the control.',
-        group: 'Attributes',
-        icon: Tag,
-        options: null, // filled in at render time from loaded controls
-        multiple: true,
-        resetBehavior: 'clearable',
-    },
-} satisfies Record<string, FilterDefInput>;
+function controlFilterDefsInput(t: T, tGroup: TGroup) {
+    return {
+        status: {
+            label: t('filters.status'),
+            labelPlural: t('filters.statusPlural'),
+            description: t('filters.statusDesc'),
+            group: tGroup('attributes'),
+            icon: CircleDot,
+            options: optionsFromEnum(buildControlStatusLabels(t)),
+            multiple: true,
+            resetBehavior: 'clearable',
+        },
+        applicability: {
+            label: t('filters.applicability'),
+            description: t('filters.applicabilityDesc'),
+            group: tGroup('attributes'),
+            icon: ShieldCheck,
+            options: optionsFromEnum(applicabilityLabels(t)),
+            resetBehavior: 'clearable',
+        },
+        ownerUserId: {
+            label: t('filters.owner'),
+            labelPlural: t('filters.ownerPlural'),
+            description: t('filters.ownerDesc'),
+            group: tGroup('people'),
+            icon: UserCircle2,
+            options: null, // filled in at render time from loaded controls
+            multiple: true,
+            shouldFilter: true, // cmdk filters the (client-derived) label text
+            resetBehavior: 'clearable',
+        },
+        category: {
+            label: t('filters.category'),
+            labelPlural: t('filters.categoryPlural'),
+            description: t('filters.categoryDesc'),
+            group: tGroup('attributes'),
+            icon: Tag,
+            options: null, // filled in at render time from loaded controls
+            multiple: true,
+            resetBehavior: 'clearable',
+        },
+    } satisfies Record<string, FilterDefInput>;
+}
+
+/** Build the localized control filter defs. `t` = `useTranslations('controls')`,
+ *  `tGroup` = `useTranslations('common.filterGroups')`. Memoize per render. */
+export function buildControlFilterDefs(t: T, tGroup: TGroup) {
+    return createTypedFilterDefs()(controlFilterDefsInput(t, tGroup));
+}
 
 // ─── Public API ──────────────────────────────────────────────────────
 
-/**
- * Resolved static filter definitions + narrowed `filterKeys` literal union.
- * Page authors iterate `filters` for FilterSelect and hand `filterKeys` to
- * `useFilterContext` so URL round-tripping knows which params to manage.
- */
-export const controlFilterDefs = createTypedFilterDefs()(STATIC_DEFS);
-
-/** URL param keys managed by the Controls filter set. `q` is the separate
- * search slot owned by `useFilterContext`. */
-export const CONTROL_FILTER_KEYS = controlFilterDefs.filterKeys;
+// The URL-sync KEYS are label-independent — derive them once with an identity
+// resolver so callers keep importing a stable `CONTROL_FILTER_KEYS` constant.
+const IDENTITY: T = (k) => k;
+const IDENTITY_GROUP: TGroup = (k) => k;
+export const CONTROL_FILTER_KEYS = buildControlFilterDefs(IDENTITY, IDENTITY_GROUP).filterKeys;
 
 // ─── Runtime option builders ─────────────────────────────────────────
 
@@ -169,10 +190,12 @@ export function buildControlFilters(
         owner?: OwnerLike | null;
         category?: string | null;
     }>,
+    t: T,
+    tGroup: TGroup,
 ): FilterDef[] {
     const ownerOpts = ownerOptionsFromControls(loaded);
     const categoryOpts = categoryOptionsFromControls(loaded);
-    return controlFilterDefs.filters.map((f) => {
+    return buildControlFilterDefs(t, tGroup).filters.map((f) => {
         if (f.key === 'ownerUserId') return { ...f, options: ownerOpts };
         if (f.key === 'category') return { ...f, options: categoryOpts };
         return f;

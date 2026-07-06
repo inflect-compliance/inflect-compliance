@@ -361,7 +361,15 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         description: tx('shortcutPrevAsset'),
     });
 
-    const liveFilters = useMemo(() => buildAssetFilters(), []);
+    const tGroup = useTranslations('common.filterGroups');
+    const liveFilters = useMemo(
+        () =>
+            buildAssetFilters(
+                (k, v) => tx(k as Parameters<typeof tx>[0], v as Parameters<typeof tx>[1]),
+                (k) => tGroup(k as Parameters<typeof tGroup>[0]),
+            ),
+        [tx, tGroup],
+    );
     // R-filter-gear (#3, 2026-06-07) — the gear controls the quantifiable
     // KPI cards (Total / Active / High criticality / Retired), not the
     // filter categories (which stay in the Filter dropdown).
