@@ -42,6 +42,7 @@
  */
 
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
@@ -84,67 +85,51 @@ interface WidgetTypeOption {
     defaultChartType: string;
 }
 
-const WIDGET_TYPES: ReadonlyArray<WidgetTypeOption> = [
-    {
-        type: 'KPI',
-        label: 'KPI tile',
-        description: 'Single number with label and optional sparkline.',
-        defaultSize: { w: 3, h: 2 },
-        defaultChartType: 'coverage',
-    },
-    {
-        type: 'DONUT',
-        label: 'Donut breakdown',
-        description: 'Distribution across labelled segments (e.g. RAG).',
-        defaultSize: { w: 4, h: 4 },
-        defaultChartType: 'rag-distribution',
-    },
-    {
-        type: 'TREND',
-        label: 'Trend chart',
-        description: 'Time-series area or bar chart over a window.',
-        defaultSize: { w: 6, h: 3 },
-        defaultChartType: 'risks-open',
-    },
-    {
-        type: 'TENANT_LIST',
-        label: 'Tenant coverage',
-        description: 'Per-tenant coverage list with drill-down rows.',
-        defaultSize: { w: 12, h: 6 },
-        defaultChartType: 'coverage',
-    },
-    {
-        type: 'DRILLDOWN_CTAS',
-        label: 'Drill-down CTAs',
-        description: 'Navigation cards into controls / risks / evidence.',
-        defaultSize: { w: 12, h: 2 },
-        defaultChartType: 'default',
-    },
+// Locale-independent per-type metadata (sizes + default chart variant).
+// The user-facing `label` / `description` are resolved at render time from
+// the `widgets.types.*` catalog via `buildWidgetTypes(t)`.
+const WIDGET_TYPE_META: Record<
+    WidgetTypeKey,
+    { defaultSize: WidgetSize; defaultChartType: string }
+> = {
+    KPI: { defaultSize: { w: 3, h: 2 }, defaultChartType: 'coverage' },
+    DONUT: { defaultSize: { w: 4, h: 4 }, defaultChartType: 'rag-distribution' },
+    TREND: { defaultSize: { w: 6, h: 3 }, defaultChartType: 'risks-open' },
+    TENANT_LIST: { defaultSize: { w: 12, h: 6 }, defaultChartType: 'coverage' },
+    DRILLDOWN_CTAS: { defaultSize: { w: 12, h: 2 }, defaultChartType: 'default' },
     // ─── Org-specific widgets (ported) ──────────────────────────────
     // Each locks a single chartType (banner / radar / list) per the Zod
     // discriminated union; the dispatcher renders the bespoke component.
-    {
-        type: 'ORG_THREAT_LEVEL',
-        label: 'Threat level',
-        description: 'Human-curated org-wide security posture banner.',
-        defaultSize: { w: 6, h: 2 },
-        defaultChartType: 'banner',
-    },
-    {
-        type: 'ORG_MATURITY',
-        label: 'Security maturity',
-        description: 'Self-assessed maturity rating across the CSF domains.',
-        defaultSize: { w: 6, h: 4 },
-        defaultChartType: 'radar',
-    },
-    {
-        type: 'ORG_INITIATIVES',
-        label: 'Security initiatives',
-        description: 'Top in-flight portfolio security programmes + progress.',
-        defaultSize: { w: 6, h: 4 },
-        defaultChartType: 'list',
-    },
+    ORG_THREAT_LEVEL: { defaultSize: { w: 6, h: 2 }, defaultChartType: 'banner' },
+    ORG_MATURITY: { defaultSize: { w: 6, h: 4 }, defaultChartType: 'radar' },
+    ORG_INITIATIVES: { defaultSize: { w: 6, h: 4 }, defaultChartType: 'list' },
+};
+
+// Render order of the type radio group — also the source of truth for
+// WIDGET_PICKER_TYPE_KEYS below.
+const WIDGET_TYPE_ORDER: ReadonlyArray<WidgetTypeKey> = [
+    'KPI',
+    'DONUT',
+    'TREND',
+    'TENANT_LIST',
+    'DRILLDOWN_CTAS',
+    'ORG_THREAT_LEVEL',
+    'ORG_MATURITY',
+    'ORG_INITIATIVES',
 ];
+
+/** i18n factory — resolves the type label + description at render time. */
+function buildWidgetTypes(
+    t: (key: string) => string,
+): ReadonlyArray<WidgetTypeOption> {
+    return WIDGET_TYPE_ORDER.map((type) => ({
+        type,
+        label: t(`types.${type}.label`),
+        description: t(`types.${type}.description`),
+        defaultSize: WIDGET_TYPE_META[type].defaultSize,
+        defaultChartType: WIDGET_TYPE_META[type].defaultChartType,
+    }));
+}
 
 /**
  * The widget types the "Add widget" picker offers. Exported so a parity test
@@ -152,43 +137,46 @@ const WIDGET_TYPES: ReadonlyArray<WidgetTypeOption> = [
  * check that was missing when the three ORG_* widgets shipped wired into the
  * dispatcher + schema + presets but absent from the picker.
  */
-export const WIDGET_PICKER_TYPE_KEYS: ReadonlyArray<string> = WIDGET_TYPES.map(
-    (w) => w.type,
-);
+export const WIDGET_PICKER_TYPE_KEYS: ReadonlyArray<string> = WIDGET_TYPE_ORDER;
 
-const CHART_TYPE_OPTIONS: Record<WidgetTypeKey, ReadonlyArray<{ value: string; label: string }>> = {
-    KPI: [
-        { value: 'coverage', label: 'Coverage' },
-        { value: 'critical-risks', label: 'Critical risks' },
-        { value: 'overdue-evidence', label: 'Overdue evidence' },
-        { value: 'tenants', label: 'Tenants' },
-    ],
-    DONUT: [
-        { value: 'rag-distribution', label: 'RAG distribution' },
-    ],
-    TREND: [
-        { value: 'risks-open', label: 'Open risks' },
-        { value: 'controls-coverage', label: 'Controls coverage' },
-        { value: 'evidence-overdue', label: 'Overdue evidence' },
-    ],
-    TENANT_LIST: [
-        { value: 'coverage', label: 'Coverage' },
-    ],
-    DRILLDOWN_CTAS: [
-        { value: 'default', label: 'Default (controls / risks / evidence)' },
-    ],
-    // Org widgets each have one fixed visualization; the "Data source"
-    // dropdown shows a single, self-describing option.
-    ORG_THREAT_LEVEL: [
-        { value: 'banner', label: 'Posture banner' },
-    ],
-    ORG_MATURITY: [
-        { value: 'radar', label: 'Maturity radar' },
-    ],
-    ORG_INITIATIVES: [
-        { value: 'list', label: 'Initiative list' },
-    ],
-};
+/** i18n factory — the per-type chart-variant dropdown options. */
+function buildChartTypeOptions(
+    t: (key: string) => string,
+): Record<WidgetTypeKey, ReadonlyArray<{ value: string; label: string }>> {
+    return {
+        KPI: [
+            { value: 'coverage', label: t('chartTypes.coverage') },
+            { value: 'critical-risks', label: t('chartTypes.criticalRisks') },
+            { value: 'overdue-evidence', label: t('chartTypes.overdueEvidence') },
+            { value: 'tenants', label: t('chartTypes.tenants') },
+        ],
+        DONUT: [
+            { value: 'rag-distribution', label: t('chartTypes.ragDistribution') },
+        ],
+        TREND: [
+            { value: 'risks-open', label: t('chartTypes.risksOpen') },
+            { value: 'controls-coverage', label: t('chartTypes.controlsCoverage') },
+            { value: 'evidence-overdue', label: t('chartTypes.evidenceOverdue') },
+        ],
+        TENANT_LIST: [
+            { value: 'coverage', label: t('chartTypes.coverage') },
+        ],
+        DRILLDOWN_CTAS: [
+            { value: 'default', label: t('chartTypes.drilldownDefault') },
+        ],
+        // Org widgets each have one fixed visualization; the "Data source"
+        // dropdown shows a single, self-describing option.
+        ORG_THREAT_LEVEL: [
+            { value: 'banner', label: t('chartTypes.postureBanner') },
+        ],
+        ORG_MATURITY: [
+            { value: 'radar', label: t('chartTypes.maturityRadar') },
+        ],
+        ORG_INITIATIVES: [
+            { value: 'list', label: t('chartTypes.initiativeList') },
+        ],
+    };
+}
 
 function defaultConfigFor(
     type: WidgetTypeKey,
@@ -246,6 +234,15 @@ export function WidgetPicker({
     onCreated,
     defaultPosition = { x: 0, y: 0 },
 }: WidgetPickerProps) {
+    const t = useTranslations('widgets');
+    const widgetTypes = useMemo(
+        () => buildWidgetTypes((k) => t(k as Parameters<typeof t>[0])),
+        [t],
+    );
+    const chartTypeOptions = useMemo(
+        () => buildChartTypeOptions((k) => t(k as Parameters<typeof t>[0])),
+        [t],
+    );
     const [type, setType] = useState<WidgetTypeKey>('KPI');
     const [chartType, setChartType] = useState<string>('coverage');
     const [title, setTitle] = useState<string>('');
@@ -266,10 +263,10 @@ export function WidgetPicker({
     const [error, setError] = useState<string | null>(null);
 
     const meta = useMemo(
-        () => WIDGET_TYPES.find((w) => w.type === type) ?? WIDGET_TYPES[0],
-        [type],
+        () => widgetTypes.find((w) => w.type === type) ?? widgetTypes[0],
+        [widgetTypes, type],
     );
-    const variants = CHART_TYPE_OPTIONS[type];
+    const variants = chartTypeOptions[type];
 
     // Reset form when modal toggles closed → open transitions are
     // discoverable. We don't want a half-filled prior session
@@ -293,7 +290,7 @@ export function WidgetPicker({
     function handleTypeChange(next: string) {
         const nextType = next as WidgetTypeKey;
         setType(nextType);
-        const m = WIDGET_TYPES.find((w) => w.type === nextType);
+        const m = widgetTypes.find((w) => w.type === nextType);
         if (m) setChartType(m.defaultChartType);
         setError(null);
     }
@@ -344,7 +341,7 @@ export function WidgetPicker({
             setError(
                 e instanceof Error
                     ? e.message
-                    : 'Could not create widget. Please retry.',
+                    : t('couldNotCreate'),
             );
         } finally {
             setSubmitting(false);
@@ -364,22 +361,22 @@ export function WidgetPicker({
             }}
         >
             <Modal.Header
-                title="Add widget"
-                description="Pick a widget type and a data variant. You can rearrange and resize after it lands."
+                title={t('addWidget')}
+                description={t('addWidgetDescription')}
             />
             <Modal.Body>
                 <div className="space-y-section">
                     {/* ── Step 1: type ── */}
                     <FormField
-                        label="Widget type"
-                        description="What kind of visualization do you want?"
+                        label={t('widgetType')}
+                        description={t('widgetTypeDescription')}
                     >
                         <RadioGroup
                             value={type}
                             onValueChange={handleTypeChange}
                             data-testid="widget-picker-type"
                         >
-                            {WIDGET_TYPES.map((opt) => (
+                            {widgetTypes.map((opt) => (
                                 <div
                                     key={opt.type}
                                     className="flex items-start gap-compact rounded-md border border-border-subtle p-3 hover:border-border-default"
@@ -407,11 +404,11 @@ export function WidgetPicker({
 
                     {/* ── Step 2: chart variant ── */}
                     <FormField
-                        label="Data source"
+                        label={t('dataSource')}
                         description={
                             type === 'TREND'
-                                ? 'Which metric should the chart track?'
-                                : 'Which slice of org data should this widget show?'
+                                ? t('dataSourceTrend')
+                                : t('dataSourceDefault')
                         }
                     >
                         <select
@@ -431,8 +428,8 @@ export function WidgetPicker({
                     {/* ── Step 3: per-type config ── */}
                     {type === 'KPI' && (
                         <FormField
-                            label="Format"
-                            description="How the headline number is rendered."
+                            label={t('format')}
+                            description={t('formatDescription')}
                         >
                             <RadioGroup
                                 value={kpiFormat}
@@ -443,8 +440,8 @@ export function WidgetPicker({
                                 className="flex gap-default"
                             >
                                 {[
-                                    { value: 'number', label: 'Number' },
-                                    { value: 'percent', label: 'Percent' },
+                                    { value: 'number', label: t('number') },
+                                    { value: 'percent', label: t('percent') },
                                 ].map((opt) => (
                                     <div
                                         key={opt.value}
@@ -469,8 +466,8 @@ export function WidgetPicker({
 
                     {type === 'TREND' && (
                         <FormField
-                            label="Window (days)"
-                            description="History length for the trend chart. Min 7, max 365."
+                            label={t('window')}
+                            description={t('windowDescription')}
                         >
                             <input
                                 type="number"
@@ -492,7 +489,7 @@ export function WidgetPicker({
                     )}
 
                     {type === 'DONUT' && (
-                        <FormField label="Options">
+                        <FormField label={t('options')}>
                             <label className="flex items-center gap-tight text-sm text-content-emphasis">
                                 <input
                                     type="checkbox"
@@ -503,15 +500,15 @@ export function WidgetPicker({
                                     data-testid="widget-picker-donut-legend"
                                     className="size-4 rounded border-border-default focus:ring-ring"
                                 />
-                                Show legend below the chart
+                                {t('showLegend')}
                             </label>
                         </FormField>
                     )}
 
                     {type === 'TENANT_LIST' && (
                         <FormField
-                            label="Sort by"
-                            description="How tenants are ordered in the list."
+                            label={t('sortBy')}
+                            description={t('sortByDescription')}
                         >
                             <select
                                 value={tenantSort}
@@ -526,15 +523,15 @@ export function WidgetPicker({
                                 data-testid="widget-picker-tenant-sort"
                                 className="block w-full rounded-md border border-border-default bg-bg-default px-3 py-2 text-sm text-content-emphasis focus:outline-none focus:ring-2 focus:ring-ring"
                             >
-                                <option value="rag">RAG (worst first)</option>
-                                <option value="name">Name (alphabetical)</option>
-                                <option value="coverage">Coverage</option>
+                                <option value="rag">{t('sortRag')}</option>
+                                <option value="name">{t('sortName')}</option>
+                                <option value="coverage">{t('sortCoverage')}</option>
                             </select>
                         </FormField>
                     )}
 
                     {type === 'ORG_THREAT_LEVEL' && (
-                        <FormField label="Options">
+                        <FormField label={t('options')}>
                             <label className="flex items-center gap-tight text-sm text-content-emphasis">
                                 <input
                                     type="checkbox"
@@ -543,7 +540,7 @@ export function WidgetPicker({
                                     data-testid="widget-picker-threat-history"
                                     className="size-4 rounded border-border-default focus:ring-ring"
                                 />
-                                Show the posture-history timeline
+                                {t('showPostureHistory')}
                             </label>
                         </FormField>
                     )}
@@ -551,8 +548,8 @@ export function WidgetPicker({
                     {type === 'ORG_MATURITY' && (
                         <>
                             <FormField
-                                label="Default view"
-                                description="Radar (CSF domains) or maturity-over-time trend."
+                                label={t('defaultView')}
+                                description={t('defaultViewDescription')}
                             >
                                 <select
                                     value={maturityView}
@@ -562,11 +559,11 @@ export function WidgetPicker({
                                     data-testid="widget-picker-maturity-view"
                                     className="block w-full rounded-md border border-border-default bg-bg-default px-3 py-2 text-sm text-content-emphasis focus:outline-none focus:ring-2 focus:ring-ring"
                                 >
-                                    <option value="radar">Radar</option>
-                                    <option value="trend">Trend</option>
+                                    <option value="radar">{t('radar')}</option>
+                                    <option value="trend">{t('trend')}</option>
                                 </select>
                             </FormField>
-                            <FormField label="Options">
+                            <FormField label={t('options')}>
                                 <label className="flex items-center gap-tight text-sm text-content-emphasis">
                                     <input
                                         type="checkbox"
@@ -575,7 +572,7 @@ export function WidgetPicker({
                                         data-testid="widget-picker-maturity-coverage-hint"
                                         className="size-4 rounded border-border-default focus:ring-ring"
                                     />
-                                    Show the derived-coverage hint
+                                    {t('showCoverageHint')}
                                 </label>
                             </FormField>
                         </>
@@ -583,8 +580,8 @@ export function WidgetPicker({
 
                     {type === 'ORG_INITIATIVES' && (
                         <FormField
-                            label="How many to show"
-                            description="Top in-flight initiatives to surface. Min 1, max 20."
+                            label={t('howManyToShow')}
+                            description={t('howManyDescription')}
                         >
                             <input
                                 type="number"
@@ -606,8 +603,8 @@ export function WidgetPicker({
 
                     {/* ── Step 4: title (optional) ── */}
                     <FormField
-                        label="Title"
-                        description="Leave blank to use the default title for this variant."
+                        label={t('title')}
+                        description={t('titleDescription')}
                     >
                         <input
                             type="text"
@@ -639,7 +636,7 @@ export function WidgetPicker({
                     data-testid="widget-picker-cancel"
                     disabled={submitting}
                 >
-                    Cancel
+                    {t('cancel')}
                 </Button>
                 <Button
                     variant="primary"
@@ -650,7 +647,7 @@ export function WidgetPicker({
                     data-testid="widget-picker-submit"
                     disabled={submitting}
                 >
-                    {submitting ? 'Adding…' : 'Add widget'}
+                    {submitting ? t('adding') : t('addWidget')}
                 </Button>
             </Modal.Actions>
         </Modal>

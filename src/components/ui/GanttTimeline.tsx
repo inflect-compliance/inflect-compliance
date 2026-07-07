@@ -19,6 +19,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/cn';
 import type {
     CalendarEvent,
@@ -113,10 +114,12 @@ export function GanttTimeline({
     to,
     events,
     today,
-    emptyMessage = 'No timeline events in this range.',
+    emptyMessage: emptyMessageProp,
     className,
     'data-testid': dataTestId = 'gantt-timeline',
 }: GanttTimelineProps) {
+    const t = useTranslations('common.chart');
+    const emptyMessage = emptyMessageProp ?? t('ganttEmptyMessage');
     const todayDate = today ?? new Date();
     const fromMs = from.getTime();
     const toMs = to.getTime();
@@ -159,7 +162,7 @@ export function GanttTimeline({
             className={cn('flex flex-col gap-tight', className)}
             data-testid={dataTestId}
             role="list"
-            aria-label="Gantt timeline"
+            aria-label={t('ganttTimeline')}
         >
             {/* Axis */}
             <div className="relative h-6 border-b border-border-subtle">

@@ -22,10 +22,14 @@ jest.mock('next-intl', () => {
     const en = require('../../messages/en.json');
     return {
         useTranslations: (ns: string) => (key: string, params?: Record<string, unknown>) => {
-            let v = key
+            // Resolve the full `ns.key` path from the catalog ROOT so dotted
+            // namespaces (e.g. `common.chart`) traverse correctly — `en[ns]`
+            // alone fails for a dotted namespace and returns the bare key.
+            const full = ns ? `${ns}.${key}` : key;
+            let v = full
                 .split('.')
                 .reduce((o: unknown, k) =>
-                    o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined, en[ns]);
+                    o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined, en as unknown);
             if (typeof v !== 'string') return key;
             if (params) for (const [p, val] of Object.entries(params)) v = (v as string).replace(new RegExp(`\\{${p}\\}`, 'g'), String(val));
             return v;

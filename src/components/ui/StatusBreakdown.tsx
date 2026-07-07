@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import { Heading } from '@/components/ui/typography';
 import { cardVariants } from '@/components/ui/card-variants';
 import { cn } from '@/lib/cn';
@@ -52,6 +55,7 @@ export default function StatusBreakdown({
     className = '',
     id,
 }: StatusBreakdownProps) {
+    const t = useTranslations('common.chart');
     const total = items.reduce((sum, item) => sum + item.value, 0);
 
     return (
@@ -60,7 +64,7 @@ export default function StatusBreakdown({
             <div className="flex items-center justify-between mb-3">
                 <Heading level={3}>{label}</Heading>
                 {showTotal && (
-                    <span className="text-xs text-content-subtle tabular-nums">{total} total</span>
+                    <span className="text-xs text-content-subtle tabular-nums">{t('total', { count: total })}</span>
                 )}
             </div>
 
@@ -82,7 +86,7 @@ export default function StatusBreakdown({
                         })}
                     </div>
                 ) : (
-                    <div className="h-full w-full bg-bg-subtle" title="No data" />
+                    <div className="h-full w-full bg-bg-subtle" title={t('noData')} />
                 )}
             </div>
 

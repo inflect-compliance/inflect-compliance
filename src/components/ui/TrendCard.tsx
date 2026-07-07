@@ -33,6 +33,7 @@ import {
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { formatDate } from "@/lib/format-date";
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 
 export interface TrendCardProps {
     /** Header label, e.g. "Coverage". */
@@ -56,6 +57,7 @@ export function TrendCard({
     points,
     colorClassName,
 }: TrendCardProps) {
+    const t = useTranslations("common.chart");
     const data = useMemo<TrendDatum[]>(
         () => points.map((p) => ({ date: p.date, values: { value: p.value } })),
         [points],
@@ -74,7 +76,7 @@ export function TrendCard({
     );
 
     const suffix = format ?? "";
-    const ariaLabel = `${label} trend`;
+    const ariaLabel = t("trendAria", { label });
 
     return (
         <div className="space-y-1" data-trend-card>

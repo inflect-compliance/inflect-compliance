@@ -100,7 +100,8 @@
             "previousPage": "предишната страница",
             "clearFilters": "Изчисти филтрите",
             "noEntitiesAvailable": "Няма налични {entity}s",
-            "noEntitiesMatch": "Няма съвпадащи {entity}s"
+            "noEntitiesMatch": "Няма съвпадащи {entity}s",
+            "moreActions": "Още действия"
         },
         "calendar": {
             "prevYear": "Към предходната година",
@@ -122,7 +123,38 @@
         "chart": {
             "couldntLoadChart": "Диаграмата не можа да се зареди",
             "noDataYet": "Все още няма данни",
-            "emptyDescription": "Когато постъпят данни, тази диаграма ще се попълни."
+            "emptyDescription": "Когато постъпят данни, тази диаграма ще се попълни.",
+            "riskMatrix": "Матрица на риска",
+            "riskHeatmap": "Топлинна карта на риска",
+            "swapAxes": "Размяна на осите",
+            "swapAxesAria": "Размяна на осите на матрицата",
+            "aleHeat": "€ ALE топлина",
+            "aleHeatAria": "Превключи наслагването на ALE топлина",
+            "movement": "Движение",
+            "movementAria": "Превключи наслагването на движение от присъщ към остатъчен риск",
+            "movementOverlayAria": "{count} риска се преместиха от присъща към остатъчна позиция",
+            "matrixAria": "Матрица {y} по {x}",
+            "likelihood": "Вероятност",
+            "impact": "Въздействие",
+            "severityLegendAria": "Легенда за тежестта на риска",
+            "total": "{count} общо",
+            "inherentOrigin": "присъщ (произход)",
+            "residualDestination": "остатъчен (местоназначение)",
+            "movementLegendHint": "по-дебела линия + ×N, когато няколко риска споделят пътя",
+            "noData": "Няма данни",
+            "noDataAvailable": "Няма налични данни",
+            "chartLoading": "Зареждане на диаграма",
+            "heatmapLoading": "Зареждане на топлинна карта",
+            "riskScore": "Оценка на риска",
+            "riskOne": "риск",
+            "riskOther": "рискове",
+            "cellTitle": "В{likelihood} × Вз{impact} = {score} — {count} {noun}",
+            "donutChartAria": "Кръгова диаграма: {segments}",
+            "ganttTimeline": "Времева линия на Гант",
+            "trendAria": "тенденция на {label}",
+            "ganttEmptyMessage": "Няма събития от времевата линия в този диапазон.",
+            "risksEmpty": "Все още няма регистрирани рискове.",
+            "severityBandsEmpty": "Няма конфигурирани нива на тежест."
         },
         "sections": {
             "accessReviews": "Прегледи на достъпа",
@@ -5252,5 +5284,135 @@
         "cancelEnrollment": "Отказ от регистрацията",
         "removeConfirmTitle": "Премахване на многофакторно удостоверяване?",
         "removeConfirmDesc": "Вашият акаунт ще бъде по-малко защитен. Можете да се регистрирате отново по всяко време."
+    },
+    "richtext": {
+        "placeholder": "Напишете вашата политика тук…",
+        "editorAria": "Редактор на форматиран текст",
+        "switchToWysiwyg": "Превключи към WYSIWYG",
+        "switchToMarkdown": "Превключи към Markdown",
+        "bold": "Получер",
+        "italic": "Курсив",
+        "strikethrough": "Зачертан",
+        "heading1": "Заглавие 1",
+        "heading2": "Заглавие 2",
+        "bulletList": "Списък с водачи",
+        "numberedList": "Номериран списък",
+        "quote": "Цитат",
+        "inlineCode": "Вграден код",
+        "pageBreak": "Разделител на страница",
+        "insertLink": "Вмъкни връзка",
+        "linkUrlPrompt": "URL на връзка (https://… или mailto:…)"
+    },
+    "approval": {
+        "approved": "Одобрено",
+        "rejected": "Отхвърлено",
+        "pendingReview": "Очаква преглед",
+        "regionAria": "Статус на одобрение на политиката",
+        "version": "Версия {number}",
+        "requestedByLabel": "Заявено от",
+        "approvedVerb": "одобрено",
+        "reviewedVerb": "прегледано",
+        "byLabel": "от",
+        "awaitingReviewer": "очаква преглед от администратор",
+        "cannotApproveOwn": "Не можете да одобрите собствената си заявка — трябва да реши друг рецензент.",
+        "unknown": "Неизвестен",
+        "addCommentAria": "Добавете коментар към решението си",
+        "comment": "Коментар",
+        "cannotApproveOwnTitle": "Рецензентите не могат да одобряват собствената си заявка",
+        "cannotRejectOwnTitle": "Рецензентите не могат да отхвърлят собствената си заявка",
+        "approve": "Одобри",
+        "reject": "Отхвърли",
+        "reviewerCommentLabel": "Коментар на рецензента (по избор)",
+        "commentPlaceholder": "Добавете контекст за заявителя…",
+        "addSecondVersion": "Добавете втора версия, за да активирате сравнение.",
+        "from": "От",
+        "to": "До",
+        "compareFromAria": "Сравни от версия",
+        "compareToAria": "Сравни до версия",
+        "pickTwoVersions": "Изберете две различни версии, за да видите разликите.",
+        "textualDiffEmpty": "Няма текстови промени между версия {from} и версия {to}."
+    },
+    "widgets": {
+        "addWidget": "Добави джаджа",
+        "addWidgetDescription": "Изберете тип джаджа и вариант на данните. Можете да пренаредите и преоразмерите след добавянето.",
+        "widgetType": "Тип джаджа",
+        "widgetTypeDescription": "Какъв вид визуализация желаете?",
+        "dataSource": "Източник на данни",
+        "dataSourceTrend": "Кой показател да проследява диаграмата?",
+        "dataSourceDefault": "Кой срез от организационни данни да показва тази джаджа?",
+        "format": "Формат",
+        "formatDescription": "Как се изобразява основното число.",
+        "number": "Число",
+        "percent": "Процент",
+        "window": "Прозорец (дни)",
+        "windowDescription": "Дължина на историята за диаграмата на тенденцията. Мин. 7, макс. 365.",
+        "options": "Опции",
+        "showLegend": "Покажи легенда под диаграмата",
+        "sortBy": "Сортирай по",
+        "sortByDescription": "Как са подредени наемателите в списъка.",
+        "sortRag": "RAG (най-лошите първи)",
+        "sortName": "Име (по азбучен ред)",
+        "sortCoverage": "Покритие",
+        "showPostureHistory": "Покажи времевата линия на историята на позицията",
+        "defaultView": "Изглед по подразбиране",
+        "defaultViewDescription": "Радар (CSF области) или тенденция на зрелостта във времето.",
+        "radar": "Радар",
+        "trend": "Тенденция",
+        "showCoverageHint": "Покажи подсказката за изведено покритие",
+        "howManyToShow": "Колко да се покажат",
+        "howManyDescription": "Най-важни текущи инициативи за показване. Мин. 1, макс. 20.",
+        "title": "Заглавие",
+        "titleDescription": "Оставете празно, за да използвате заглавието по подразбиране за този вариант.",
+        "cancel": "Отказ",
+        "adding": "Добавяне…",
+        "couldNotCreate": "Джаджата не можа да се създаде. Моля, опитайте отново.",
+        "types": {
+            "KPI": {
+                "label": "KPI плочка",
+                "description": "Едно число с етикет и незадължителна мини-графика."
+            },
+            "DONUT": {
+                "label": "Кръгова разбивка",
+                "description": "Разпределение по обозначени сегменти (напр. RAG)."
+            },
+            "TREND": {
+                "label": "Диаграма на тенденция",
+                "description": "Площна или стълбовидна диаграма на времеви редове за даден период."
+            },
+            "TENANT_LIST": {
+                "label": "Покритие на наематели",
+                "description": "Списък с покритие по наемател с редове за детайлизиране."
+            },
+            "DRILLDOWN_CTAS": {
+                "label": "Бутони за детайлизиране",
+                "description": "Навигационни карти към контроли / рискове / доказателства."
+            },
+            "ORG_THREAT_LEVEL": {
+                "label": "Ниво на заплаха",
+                "description": "Ръчно съставен банер за сигурността на цялата организация."
+            },
+            "ORG_MATURITY": {
+                "label": "Зрелост на сигурността",
+                "description": "Самооценка на зрелостта по областите на CSF."
+            },
+            "ORG_INITIATIVES": {
+                "label": "Инициативи за сигурност",
+                "description": "Най-важни текущи програми за сигурност в портфолиото + напредък."
+            }
+        },
+        "chartTypes": {
+            "coverage": "Покритие",
+            "criticalRisks": "Критични рискове",
+            "overdueEvidence": "Просрочени доказателства",
+            "tenants": "Наематели",
+            "ragDistribution": "RAG разпределение",
+            "risksOpen": "Отворени рискове",
+            "controlsCoverage": "Покритие на контролите",
+            "evidenceOverdue": "Просрочени доказателства",
+            "drilldownDefault": "По подразбиране (контроли / рискове / доказателства)",
+            "postureBanner": "Банер за позицията",
+            "maturityRadar": "Радар на зрелостта",
+            "initiativeList": "Списък с инициативи"
+        }
     }
 }

@@ -36,6 +36,7 @@
 
 import { diffLines } from 'diff';
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/card';
 
@@ -98,6 +99,7 @@ export function VersionDiff({
     className = '',
     'data-testid': dataTestId = 'version-diff',
 }: VersionDiffProps) {
+    const t = useTranslations('approval');
     const sorted = useMemo(
         () => [...versions].sort((a, b) => b.versionNumber - a.versionNumber),
         [versions],
@@ -122,7 +124,7 @@ export function VersionDiff({
                 className={cn('text-sm text-content-muted', className)}
                 data-testid={`${dataTestId}-empty`}
             >
-                Add a second version to enable comparison.
+                {t('addSecondVersion')}
             </Card>
         );
     }
@@ -147,12 +149,12 @@ export function VersionDiff({
         >
             <header className="flex flex-wrap items-center gap-compact border-b border-border-default px-3 py-2 text-xs text-content-muted">
                 <label className="inline-flex items-center gap-1.5">
-                    <span className="text-content-subtle">From</span>
+                    <span className="text-content-subtle">{t('from')}</span>
                     <select
                         className="input text-xs"
                         value={defaultFrom}
                         onChange={(e) => handleFromChange(e.target.value)}
-                        aria-label="Compare from version"
+                        aria-label={t('compareFromAria')}
                         data-testid="version-diff-from"
                     >
                         {sorted.map((v) => (
@@ -164,12 +166,12 @@ export function VersionDiff({
                 </label>
                 <span aria-hidden>→</span>
                 <label className="inline-flex items-center gap-1.5">
-                    <span className="text-content-subtle">To</span>
+                    <span className="text-content-subtle">{t('to')}</span>
                     <select
                         className="input text-xs"
                         value={defaultTo}
                         onChange={(e) => handleToChange(e.target.value)}
-                        aria-label="Compare to version"
+                        aria-label={t('compareToAria')}
                         data-testid="version-diff-to"
                     >
                         {sorted.map((v) => (
@@ -181,15 +183,17 @@ export function VersionDiff({
                 </label>
                 {sameVersion && (
                     <span className="text-content-subtle">
-                        Pick two different versions to see a diff.
+                        {t('pickTwoVersions')}
                     </span>
                 )}
             </header>
             {sameVersion ? null : chunks.length === 0 ||
               chunks.every((c) => !c.added && !c.removed) ? (
                 <div className="p-4 text-sm text-content-muted">
-                    No textual changes between v{fromV?.versionNumber} and v
-                    {toV?.versionNumber}.
+                    {t('textualDiffEmpty', {
+                        from: fromV?.versionNumber ?? '',
+                        to: toV?.versionNumber ?? '',
+                    })}
                 </div>
             ) : (
                 <pre

@@ -100,7 +100,8 @@
             "previousPage": "previous page",
             "clearFilters": "Clear filters",
             "noEntitiesAvailable": "No {entity}s available",
-            "noEntitiesMatch": "No {entity}s match"
+            "noEntitiesMatch": "No {entity}s match",
+            "moreActions": "More actions"
         },
         "calendar": {
             "prevYear": "Go to previous year",
@@ -122,7 +123,38 @@
         "chart": {
             "couldntLoadChart": "Couldn’t load chart",
             "noDataYet": "No data yet",
-            "emptyDescription": "Once data flows in, this chart will populate."
+            "emptyDescription": "Once data flows in, this chart will populate.",
+            "riskMatrix": "Risk Matrix",
+            "riskHeatmap": "Risk Heatmap",
+            "swapAxes": "Swap axes",
+            "swapAxesAria": "Swap matrix axes",
+            "aleHeat": "€ ALE heat",
+            "aleHeatAria": "Toggle ALE heat overlay",
+            "movement": "Movement",
+            "movementAria": "Toggle inherent to residual movement overlay",
+            "movementOverlayAria": "{count} risks moved from inherent to residual position",
+            "matrixAria": "{y} by {x} matrix",
+            "likelihood": "Likelihood",
+            "impact": "Impact",
+            "severityLegendAria": "Risk severity legend",
+            "total": "{count} total",
+            "inherentOrigin": "inherent (origin)",
+            "residualDestination": "residual (destination)",
+            "movementLegendHint": "thicker line + ×N where multiple risks share the path",
+            "noData": "No data",
+            "noDataAvailable": "No data available",
+            "chartLoading": "Chart loading",
+            "heatmapLoading": "Heatmap loading",
+            "riskScore": "Risk score",
+            "riskOne": "risk",
+            "riskOther": "risks",
+            "cellTitle": "L{likelihood} × I{impact} = {score} — {count} {noun}",
+            "donutChartAria": "Donut chart: {segments}",
+            "ganttTimeline": "Gantt timeline",
+            "trendAria": "{label} trend",
+            "ganttEmptyMessage": "No timeline events in this range.",
+            "risksEmpty": "No risks registered yet.",
+            "severityBandsEmpty": "No severity bands configured."
         },
         "sections": {
             "accessReviews": "Access reviews",
@@ -5252,5 +5284,135 @@
         "cancelEnrollment": "Cancel enrollment",
         "removeConfirmTitle": "Remove multi-factor authentication?",
         "removeConfirmDesc": "Your account will be less secure. You can re-enroll at any time."
+    },
+    "richtext": {
+        "placeholder": "Write your policy here…",
+        "editorAria": "Rich text editor",
+        "switchToWysiwyg": "Switch to WYSIWYG",
+        "switchToMarkdown": "Switch to Markdown",
+        "bold": "Bold",
+        "italic": "Italic",
+        "strikethrough": "Strikethrough",
+        "heading1": "Heading 1",
+        "heading2": "Heading 2",
+        "bulletList": "Bullet list",
+        "numberedList": "Numbered list",
+        "quote": "Quote",
+        "inlineCode": "Inline code",
+        "pageBreak": "Page break",
+        "insertLink": "Insert link",
+        "linkUrlPrompt": "Link URL (https://… or mailto:…)"
+    },
+    "approval": {
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "pendingReview": "Pending Review",
+        "regionAria": "Policy approval status",
+        "version": "Version {number}",
+        "requestedByLabel": "Requested by",
+        "approvedVerb": "approved",
+        "reviewedVerb": "reviewed",
+        "byLabel": "by",
+        "awaitingReviewer": "awaiting any admin reviewer",
+        "cannotApproveOwn": "You can't approve your own request — another reviewer must decide.",
+        "unknown": "Unknown",
+        "addCommentAria": "Add a comment with your decision",
+        "comment": "Comment",
+        "cannotApproveOwnTitle": "Reviewers cannot approve their own request",
+        "cannotRejectOwnTitle": "Reviewers cannot reject their own request",
+        "approve": "Approve",
+        "reject": "Reject",
+        "reviewerCommentLabel": "Reviewer comment (optional)",
+        "commentPlaceholder": "Add context for the requester…",
+        "addSecondVersion": "Add a second version to enable comparison.",
+        "from": "From",
+        "to": "To",
+        "compareFromAria": "Compare from version",
+        "compareToAria": "Compare to version",
+        "pickTwoVersions": "Pick two different versions to see a diff.",
+        "textualDiffEmpty": "No textual changes between v{from} and v{to}."
+    },
+    "widgets": {
+        "addWidget": "Add widget",
+        "addWidgetDescription": "Pick a widget type and a data variant. You can rearrange and resize after it lands.",
+        "widgetType": "Widget type",
+        "widgetTypeDescription": "What kind of visualization do you want?",
+        "dataSource": "Data source",
+        "dataSourceTrend": "Which metric should the chart track?",
+        "dataSourceDefault": "Which slice of org data should this widget show?",
+        "format": "Format",
+        "formatDescription": "How the headline number is rendered.",
+        "number": "Number",
+        "percent": "Percent",
+        "window": "Window (days)",
+        "windowDescription": "History length for the trend chart. Min 7, max 365.",
+        "options": "Options",
+        "showLegend": "Show legend below the chart",
+        "sortBy": "Sort by",
+        "sortByDescription": "How tenants are ordered in the list.",
+        "sortRag": "RAG (worst first)",
+        "sortName": "Name (alphabetical)",
+        "sortCoverage": "Coverage",
+        "showPostureHistory": "Show the posture-history timeline",
+        "defaultView": "Default view",
+        "defaultViewDescription": "Radar (CSF domains) or maturity-over-time trend.",
+        "radar": "Radar",
+        "trend": "Trend",
+        "showCoverageHint": "Show the derived-coverage hint",
+        "howManyToShow": "How many to show",
+        "howManyDescription": "Top in-flight initiatives to surface. Min 1, max 20.",
+        "title": "Title",
+        "titleDescription": "Leave blank to use the default title for this variant.",
+        "cancel": "Cancel",
+        "adding": "Adding…",
+        "couldNotCreate": "Could not create widget. Please retry.",
+        "types": {
+            "KPI": {
+                "label": "KPI tile",
+                "description": "Single number with label and optional sparkline."
+            },
+            "DONUT": {
+                "label": "Donut breakdown",
+                "description": "Distribution across labelled segments (e.g. RAG)."
+            },
+            "TREND": {
+                "label": "Trend chart",
+                "description": "Time-series area or bar chart over a window."
+            },
+            "TENANT_LIST": {
+                "label": "Tenant coverage",
+                "description": "Per-tenant coverage list with drill-down rows."
+            },
+            "DRILLDOWN_CTAS": {
+                "label": "Drill-down CTAs",
+                "description": "Navigation cards into controls / risks / evidence."
+            },
+            "ORG_THREAT_LEVEL": {
+                "label": "Threat level",
+                "description": "Human-curated org-wide security posture banner."
+            },
+            "ORG_MATURITY": {
+                "label": "Security maturity",
+                "description": "Self-assessed maturity rating across the CSF domains."
+            },
+            "ORG_INITIATIVES": {
+                "label": "Security initiatives",
+                "description": "Top in-flight portfolio security programmes + progress."
+            }
+        },
+        "chartTypes": {
+            "coverage": "Coverage",
+            "criticalRisks": "Critical risks",
+            "overdueEvidence": "Overdue evidence",
+            "tenants": "Tenants",
+            "ragDistribution": "RAG distribution",
+            "risksOpen": "Open risks",
+            "controlsCoverage": "Controls coverage",
+            "evidenceOverdue": "Overdue evidence",
+            "drilldownDefault": "Default (controls / risks / evidence)",
+            "postureBanner": "Posture banner",
+            "maturityRadar": "Maturity radar",
+            "initiativeList": "Initiative list"
+        }
     }
 }

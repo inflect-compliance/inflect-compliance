@@ -104,7 +104,13 @@ describe('GUARDRAIL: ORG_MATURITY engine integration', () => {
             const picker = read(
                 'src/components/ui/dashboard-widgets/WidgetPicker.tsx',
             );
-            expect(picker).toMatch(/type:\s*'ORG_MATURITY'/);
+            // The picker's type list is i18n-driven: labels/descriptions now
+            // resolve from the `widgets.types.*` catalog via a
+            // `buildWidgetTypes(t)` factory, so the type is no longer an
+            // inline `type: 'ORG_MATURITY'` object literal. It lives in the
+            // `WIDGET_TYPE_ORDER` array (source of truth for the radio group)
+            // as the quoted key. Assert that instead.
+            expect(picker).toMatch(/'ORG_MATURITY'/);
         });
     });
 
