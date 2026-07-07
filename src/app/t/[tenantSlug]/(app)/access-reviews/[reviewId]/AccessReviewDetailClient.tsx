@@ -64,7 +64,7 @@ interface ReviewDetail {
     id: string;
     name: string;
     description: string | null;
-    scope: 'ALL_USERS' | 'ADMIN_ONLY' | 'CUSTOM';
+    scope: 'ALL_USERS' | 'ADMIN_ONLY' | 'CUSTOM' | 'CONNECTED_APP';
     status: Status;
     periodStartAt: string | Date | null;
     periodEndAt: string | Date | null;
