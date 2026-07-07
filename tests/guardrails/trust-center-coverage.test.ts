@@ -29,6 +29,13 @@ const exists = (rel: string) => fs.existsSync(path.join(ROOT, rel));
 
 const PUBLIC_ROUTE = 'src/app/trust/[slug]/page.tsx';
 const PUBLIC_READ = 'src/lib/trust-center/public.ts';
+// H4 — the ACTUAL anonymous API entry points (previously un-ratcheted). Their
+// only allowed tenant-touching module is the curated `gated.ts`.
+const PUBLIC_API_ROUTES = [
+    'src/app/api/trust/[slug]/access-request/route.ts',
+    'src/app/api/trust/download/[token]/route.ts',
+];
+const CURATED_GATED = 'src/lib/trust-center/gated.ts';
 
 // ─── Transitive import graph of the public route ────────────────────
 // Follows local (`@/…` and relative) imports, collecting every reachable
@@ -98,6 +105,21 @@ describe('Trust Center — public route IMPORT ISOLATION (the leak lock)', () =>
             // The curated trust-center read is allowed; everything else under
             // the tenant-data layer is a leak risk.
             if (f === PUBLIC_READ) return false;
+            if (/^src\/app-layer\/repositories\//.test(f)) return true;
+            if (/^src\/app-layer\/usecases\//.test(f) && !/trust-center/.test(f)) return true;
+            return false;
+        });
+        expect(FORBIDDEN).toEqual([]);
+    });
+
+    // H4 — the public API routes are the real anonymous entry points; lock their
+    // import graphs the same way (no repository / non-trust-center usecase).
+    it.each(PUBLIC_API_ROUTES)('public API route %s reaches no tenant-data usecase/repository', (route) => {
+        expect(exists(route)).toBe(true);
+        const apiGraph = transitiveGraph(route);
+        const FORBIDDEN = [...apiGraph].filter((f) => {
+            if (f === PUBLIC_READ || f === CURATED_GATED) return false; // curated trust-center modules
+            if (/^src\/lib\/trust-center\//.test(f)) return false;
             if (/^src\/app-layer\/repositories\//.test(f)) return true;
             if (/^src\/app-layer\/usecases\//.test(f) && !/trust-center/.test(f)) return true;
             return false;

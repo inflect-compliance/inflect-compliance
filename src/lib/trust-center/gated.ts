@@ -16,8 +16,6 @@
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 
-const DOWNLOAD_TOKEN_TTL_DAYS = 7;
-
 export interface PublicGatedDocument {
     id: string;
     label: string;
@@ -54,32 +52,28 @@ export interface AccessRequestResult {
 }
 
 /**
- * A visitor requests access to a gated document. Auto-approves when the
- * requester's email domain is in the tenant's allowlist AND (if the tenant
- * requires an NDA) the NDA was accepted — issuing a single-use expiring token.
- * Otherwise the request stays REQUESTED for manual approval. Returns null for
- * a missing/disabled slug or unknown/ungated document (no existence disclosure).
+ * A visitor requests access to a gated document. The request is ALWAYS recorded
+ * as REQUESTED for human (admin) approval — H4: the previous auto-approve
+ * trusted a visitor-SUPPLIED email domain against the allowlist and returned
+ * the plaintext download token inline, so anyone who knew an allowlisted
+ * customer domain (`x@allowlisted.com`) instantly obtained a token to the gated
+ * SOC 2 / pentest with no proof of mailbox control and no audit trail. A token
+ * is now only ever issued by the authenticated, audited admin-approval flow
+ * (`approveTrustCenterAccessRequest`), which can deliver it to the verified
+ * requester out of band.
+ *
+ * Returns null for a missing/disabled slug or unknown/ungated document (no
+ * existence disclosure). On a valid request the caller returns a UNIFORM
+ * "request received" response regardless of allowlist/NDA state, so the
+ * endpoint can't be used as an allowlist-probing oracle.
  */
 export async function requestTrustCenterAccess(slug: string, documentId: string, input: AccessRequestInput, now: Date = new Date()): Promise<AccessRequestResult | null> {
-    const tc = await prisma.trustCenter.findFirst({ where: { slug, enabled: true }, select: { id: true, tenantId: true, accessDomainAllowlist: true, ndaRequired: true } });
+    const tc = await prisma.trustCenter.findFirst({ where: { slug, enabled: true }, select: { id: true, tenantId: true, ndaRequired: true } });
     if (!tc) return null;
     const doc = await prisma.trustCenterDocument.findFirst({ where: { id: documentId, trustCenterId: tc.id, gated: true }, select: { id: true } });
     if (!doc) return null;
 
     const email = input.requesterEmail.trim().toLowerCase();
-    const domain = email.split('@')[1] ?? '';
-    const allowlist = Array.isArray(tc.accessDomainAllowlist) ? (tc.accessDomainAllowlist as unknown[]).map((d) => String(d).toLowerCase()) : [];
-    const ndaOk = !tc.ndaRequired || input.ndaAccepted === true;
-    const autoApprove = domain !== '' && allowlist.includes(domain) && ndaOk;
-
-    let downloadToken: string | undefined;
-    let downloadTokenHash: string | null = null;
-    let expiresAt: Date | null = null;
-    if (autoApprove) {
-        downloadToken = `ictc_${crypto.randomBytes(24).toString('hex')}`;
-        downloadTokenHash = hashToken(downloadToken);
-        expiresAt = new Date(now.getTime() + DOWNLOAD_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000);
-    }
 
     await prisma.trustCenterAccessRequest.create({
         data: {
@@ -88,15 +82,17 @@ export async function requestTrustCenterAccess(slug: string, documentId: string,
             requesterName: input.requesterName.slice(0, 200),
             requesterEmail: email.slice(0, 320),
             company: input.company ? input.company.slice(0, 200) : null,
-            status: autoApprove ? 'APPROVED' : 'REQUESTED',
+            // Always pending human approval — never auto-granted, never a token here.
+            status: 'REQUESTED',
             ndaSignedAt: input.ndaAccepted ? now : null,
-            grantedAt: autoApprove ? now : null,
-            expiresAt,
-            downloadTokenHash,
+            grantedAt: null,
+            expiresAt: null,
+            downloadTokenHash: null,
         },
     });
 
-    return { status: autoApprove ? 'APPROVED' : 'REQUESTED', downloadToken };
+    // Uniform outcome — no APPROVED/token signal that would leak allowlist membership.
+    return { status: 'REQUESTED' };
 }
 
 export interface ResolvedDownload {

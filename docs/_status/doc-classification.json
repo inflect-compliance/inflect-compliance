@@ -1462,6 +1462,9 @@
     },
     "docs/implementation-notes/2026-07-07-h3-sync-integrity.md": {
       "class": "historical"
+    },
+    "docs/implementation-notes/2026-07-07-h4-egress-hardening.md": {
+      "class": "historical"
     }
   }
 }

@@ -24,7 +24,9 @@ export class OpenRouterQuestionnaireProvider implements QuestionnaireProvider {
         const res = await this.fetchImpl(OPENROUTER_API_URL, {
             method: 'POST',
             headers: { Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: this.model, messages: [{ role: 'system', content: system }, { role: 'user', content: user }], response_format: { type: 'json_object' }, temperature: 0.2 }),
+            // H4 — cap output tokens so a malicious/looping prompt can't drive an
+            // unbounded (costly) completion. A questionnaire answer is short.
+            body: JSON.stringify({ model: this.model, messages: [{ role: 'system', content: system }, { role: 'user', content: user }], response_format: { type: 'json_object' }, temperature: 0.2, max_tokens: 800 }),
         });
         if (!res.ok) throw new Error(`OpenRouter questionnaire draft failed (HTTP ${res.status})`);
         const body = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };

@@ -301,6 +301,11 @@ export class AccessReviewRepository {
         closedAt: Date,
         evidenceFileRecordId?: string | null,
     ) {
+        // NOTE: this is intentionally unconditional — the member close flow
+        // (Epic G-4) calls it twice (flip status, then attach
+        // evidenceFileRecordId after PDF generation). The connected-flow TOCTOU
+        // guard lives in `closeConnectedAccessReview` via a conditional status
+        // claim, so it does not depend on this shared method's predicate.
         const r = await db.accessReview.updateMany({
             where: { id, tenantId: ctx.tenantId, deletedAt: null },
             data: {
