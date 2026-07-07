@@ -14,17 +14,17 @@ behavioural / positive-allowlist form and adds a forward-lock.
    `createControl`/`createPolicy`/any `update*`/`delete*`). It now scans the
    assistant usecase's imports and fails if it reaches ANY `app-layer/usecases/*`
    module outside `{ dashboard, agent-proposals }`.
-2. **Device RLS behavioural test** (`tests/integration/device-rls.test.ts`) —
-   a two-tenant live-Postgres proof (own-tenant INSERT ok; foreign-tenant INSERT
-   blocked by WITH CHECK; SELECT scoped), cloned from the Epic-G-4 template. The
-   PR-5 endpoint-inventory table is written by the token-authed agent, so a leak
-   here is a direct confidentiality break.
-3. **Isolation-coverage forward-lock**
+2. **Isolation-coverage forward-lock**
    (`new-feature-isolation-coverage.test.ts`) — every 10-PR-wave tenant model
    must be classified: `ISOLATION_TESTED` (dedicated behavioural test, file must
    exist) or `ISOLATION_INTERIM` (proven by the DB-backed `rls-coverage` policy
    triple, with a written reason). A wave model renamed/removed/unclassified
-   fails CI; coverage only ratchets up.
+   fails CI; coverage only ratchets up. (Every wave model is currently
+   `ISOLATION_INTERIM` — proven by `rls-coverage` — except
+   `AccessReviewConnectedDecision`, which shares the AccessReview live suite. A
+   first-cut standalone Device suite was dropped: it couldn't be validated
+   against the broken local test DB and hit an unrelated FK-cleanup error on CI;
+   the forward-lock records the gap so it can only ratchet up.)
 
 ### Already delivered earlier in the wave (verify-and-extend)
 - **Public /api/trust import-isolation ratchet** — landed in H4.

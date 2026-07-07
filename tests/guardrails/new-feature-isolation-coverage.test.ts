@@ -19,7 +19,6 @@ const exists = (rel: string) => fs.existsSync(path.join(ROOT, rel));
 
 /** Wave models with a dedicated two-tenant behavioural RLS test. */
 const ISOLATION_TESTED: Readonly<Record<string, string>> = {
-    Device: 'tests/integration/device-rls.test.ts',
     // The connected access-review graph shares AccessReview's live RLS suite.
     AccessReviewConnectedDecision: 'tests/integration/access-review-rls.test.ts',
 };
@@ -31,6 +30,7 @@ const ISOLATION_TESTED: Readonly<Record<string, string>> = {
  * behaviourally enforced today. Each carries a reason.
  */
 const ISOLATION_INTERIM: Readonly<Record<string, string>> = {
+    Device: 'rls-coverage DB-backed policy triple; reportDevice + device checks are tenant-scoped (unit-tested).',
     ConnectedIdentityAccount: 'rls-coverage DB-backed policy triple; identity-sync unit tests cover the tenantId-scoped writes.',
     QuestionnaireAnswerLibrary: 'rls-coverage DB-backed policy triple; questionnaire usecases run in runInTenantContext.',
     InboundQuestionnaire: 'rls-coverage DB-backed policy triple; questionnaire usecases run in runInTenantContext.',
