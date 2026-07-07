@@ -16,6 +16,7 @@
  * and the server re-scores. This is a self-assessment AID, NOT legal advice.
  */
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import {
     Accordion,
@@ -29,34 +30,26 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { KPIStat } from '@/components/ui/metric';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/icons/loading-spinner';
-import {
-    DIGITAL_SOVEREIGNTY_ASSESSMENT,
-    type SelfAssessmentDimension,
-} from '@/data/self-assessments/digital-sovereignty';
+import { DIGITAL_SOVEREIGNTY_ASSESSMENT } from '@/data/self-assessments/digital-sovereignty';
 import {
     scoreSelfAssessment,
     buildGapSuggestions,
     type SelfAssessmentAnswers,
 } from '@/lib/self-assessments/scoring';
 
-const SOVEREIGNTY_DISCLAIMER =
-    'This is a self-assessment aid, NOT legal advice. EU sovereignty, residency and jurisdiction determinations are legal calls owned by your counsel.';
-const SOVEREIGNTY_ATTRIBUTION =
-    'The six-dimension model derives from the MIT-licensed Digital-Sovereignty-Assessment-Tool; regulatory material is clause-referenced, never reproduced.';
+type SovereigntyT = ReturnType<typeof useTranslations>;
 
-/** Human labels for the data bank's i18n `labelKey`s (onboarding steps render
- *  hard-coded English, mirroring the sibling NIS2 / AI-governance steps). */
-const DIMENSION_LABELS: Record<string, string> = {
-    cloudJurisdiction: 'Cloud Jurisdiction & Sovereign Cloud',
-    dataResidency: 'Data Residency & Transfer Mechanisms',
-    identitySovereignty: 'Identity & Sovereignty of Access',
-    infraExitReadiness: 'Infrastructure Dependency & Exit-Readiness',
-    regulatoryAlignment: 'Regulatory Alignment & Certification',
-    sovereignAi: 'Sovereign AI',
-};
-
-function dimLabel(dim: SelfAssessmentDimension): string {
-    return DIMENSION_LABELS[dim.labelKey] ?? dim.labelKey;
+/** Human labels for the data bank's i18n `labelKey`s, resolved through
+ *  next-intl (`onboarding.sovereignty.dimensions.*`). */
+function buildDimensionLabels(t: SovereigntyT): Record<string, string> {
+    return {
+        cloudJurisdiction: t('sovereignty.dimensions.cloudJurisdiction'),
+        dataResidency: t('sovereignty.dimensions.dataResidency'),
+        identitySovereignty: t('sovereignty.dimensions.identitySovereignty'),
+        infraExitReadiness: t('sovereignty.dimensions.infraExitReadiness'),
+        regulatoryAlignment: t('sovereignty.dimensions.regulatoryAlignment'),
+        sovereignAi: t('sovereignty.dimensions.sovereignAi'),
+    };
 }
 
 type Approval = { createRisk: boolean; createControl: boolean };
@@ -70,6 +63,9 @@ export function SovereigntySelfAssessmentStep({
     onCompleted?: () => void;
     onSkip?: () => void;
 }) {
+    const t = useTranslations('onboarding');
+    const dimensionLabels = buildDimensionLabels(t);
+    const dimLabel = (dim: { labelKey: string }): string => dimensionLabels[dim.labelKey] ?? dim.labelKey;
     const assessment = DIGITAL_SOVEREIGNTY_ASSESSMENT;
     const [answers, setAnswers] = useState<SelfAssessmentAnswers>({});
     // Per-dimension approval — defaults to both on for a surfaced gap.
@@ -113,17 +109,20 @@ export function SovereigntySelfAssessmentStep({
                     })),
                 }),
             });
-            if (!res.ok) throw new Error('Failed to create risks and controls.');
+            if (!res.ok) throw new Error(t('sovereignty.createError'));
             const data: { createdRiskIds: string[]; createdControlIds: string[]; skipped: number } = await res.json();
             const r = data.createdRiskIds.length;
             const c = data.createdControlIds.length;
             setMaterializeMsg(
                 r + c === 0
-                    ? 'Nothing new to create — your approved gaps already exist.'
-                    : `Created ${r} risk${r === 1 ? '' : 's'} and ${c} control${c === 1 ? '' : 's'} from your gaps.`,
+                    ? t('sovereignty.materializeNone')
+                    : t('sovereignty.createdFromGaps', {
+                          risks: t(r === 1 ? 'sovereignty.riskCountOne' : 'sovereignty.riskCountMany', { count: r }),
+                          controls: t(c === 1 ? 'sovereignty.controlCountOne' : 'sovereignty.controlCountMany', { count: c }),
+                      }),
             );
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to create risks and controls.');
+            setError(e instanceof Error ? e.message : t('sovereignty.createError'));
         } finally {
             setMaterializing(false);
         }
@@ -145,19 +144,15 @@ export function SovereigntySelfAssessmentStep({
         <div className="space-y-section" data-testid="sovereignty-self-assessment">
             <div className="space-y-tight">
                 <p className="text-sm text-content-muted">
-                    Six sovereignty dimensions — jurisdiction, residency, identity,
-                    exit-readiness, regulatory alignment and sovereign AI. Score each
-                    question from none (0) to leading (4); weak dimensions surface a
-                    suggested risk + control you can approve at the end. Nothing is
-                    saved until you create it.
+                    {t('sovereignty.intro')}
                 </p>
             </div>
 
             {/* Summary cards — a posture badge, NOT a compliance claim. */}
             <div className="grid grid-cols-1 gap-default sm:grid-cols-3" data-testid="sovereignty-summary-cards">
-                <KPIStat value={`${overallLabel}${score.overall100 == null ? '' : '/100'}`} label="Sovereignty posture" data-testid="sovereignty-overall" />
-                <KPIStat value={bandLabel} label="Maturity band" data-testid="sovereignty-band" />
-                <KPIStat value={`${score.answered}/${score.total}`} label="Questions answered" data-testid="sovereignty-answered" />
+                <KPIStat value={`${overallLabel}${score.overall100 == null ? '' : '/100'}`} label={t('sovereignty.posture')} data-testid="sovereignty-overall" />
+                <KPIStat value={bandLabel} label={t('sovereignty.maturityBand')} data-testid="sovereignty-band" />
+                <KPIStat value={`${score.answered}/${score.total}`} label={t('sovereignty.questionsAnswered')} data-testid="sovereignty-answered" />
             </div>
 
             {gaps.length > 0 && (
@@ -165,8 +160,8 @@ export function SovereigntySelfAssessmentStep({
                     className="rounded-lg border border-border-emphasis bg-bg-subtle px-3 py-2 text-sm text-content-default"
                     data-testid="sovereignty-gap-count"
                 >
-                    <strong>{gaps.length} weak dimension{gaps.length === 1 ? '' : 's'}</strong>{' '}
-                    below the gap threshold. Review the suggested risks + controls below before creating them.
+                    <strong>{t(gaps.length === 1 ? 'sovereignty.weakDimension' : 'sovereignty.weakDimensions', { count: gaps.length })}</strong>{' '}
+                    {t('sovereignty.weakSuffix')}
                 </div>
             )}
 
@@ -185,7 +180,7 @@ export function SovereigntySelfAssessmentStep({
                                     <StatusBadge variant="neutral" size="sm">D{dim.id}</StatusBadge>
                                     <span className="font-medium">{dimLabel(dim)}</span>
                                     <span className="text-xs text-content-muted">{answered}/{dim.questions.length}</span>
-                                    {isGap && <StatusBadge variant="warning" size="sm">Gap</StatusBadge>}
+                                    {isGap && <StatusBadge variant="warning" size="sm">{t('sovereignty.gapBadge')}</StatusBadge>}
                                 </span>
                             </AccordionTrigger>
                             <AccordionContent>
@@ -203,8 +198,8 @@ export function SovereigntySelfAssessmentStep({
                                                         {q.text}
                                                     </span>
                                                     <InfoTooltip
-                                                        content={`References: ${dim.clauseRefs.join(', ')}`}
-                                                        aria-label="Show the clause references"
+                                                        content={t('sovereignty.references', { refs: dim.clauseRefs.join(', ') })}
+                                                        aria-label={t('sovereignty.showClauseRefs')}
                                                     />
                                                 </div>
                                                 <RadioGroup
@@ -232,14 +227,14 @@ export function SovereigntySelfAssessmentStep({
             {/* Approve-and-create — the propose→commit boundary. */}
             {gaps.length > 0 && (
                 <div className="space-y-default rounded-lg border border-border-subtle p-4" data-testid="sovereignty-suggestions">
-                    <p className="text-sm font-medium text-content-emphasis">Create these? (below-threshold dimensions)</p>
+                    <p className="text-sm font-medium text-content-emphasis">{t('sovereignty.createThese')}</p>
                     <div className="space-y-tight">
                         {gaps.map((g) => {
                             const a = approvalFor(g.dimensionId);
                             return (
                                 <div key={g.dimensionId} className="rounded-md border border-border-subtle p-3 space-y-tight" data-testid={`sovereignty-suggestion-${g.dimensionId}`}>
                                     <div className="flex items-center gap-tight flex-wrap">
-                                        <span className="text-sm font-medium">{DIMENSION_LABELS[g.labelKey] ?? g.labelKey}</span>
+                                        <span className="text-sm font-medium">{dimensionLabels[g.labelKey] ?? g.labelKey}</span>
                                         <StatusBadge variant="neutral" size="sm">{g.clauseRef}</StatusBadge>
                                     </div>
                                     <label className="flex items-start gap-tight text-sm cursor-pointer">
@@ -249,7 +244,7 @@ export function SovereigntySelfAssessmentStep({
                                             checked={a.createRisk}
                                             onChange={(e) => setApproval(g.dimensionId, { createRisk: e.target.checked })}
                                         />
-                                        <span>Risk — <span className="text-content-muted">{g.riskTitle}</span></span>
+                                        <span>{t('sovereignty.riskPrefix')}<span className="text-content-muted">{g.riskTitle}</span></span>
                                     </label>
                                     <label className="flex items-start gap-tight text-sm cursor-pointer">
                                         <input
@@ -258,7 +253,7 @@ export function SovereigntySelfAssessmentStep({
                                             checked={a.createControl}
                                             onChange={(e) => setApproval(g.dimensionId, { createControl: e.target.checked })}
                                         />
-                                        <span>Control — <span className="text-content-muted">{g.controlName}</span></span>
+                                        <span>{t('sovereignty.controlPrefix')}<span className="text-content-muted">{g.controlName}</span></span>
                                     </label>
                                 </div>
                             );
@@ -271,12 +266,12 @@ export function SovereigntySelfAssessmentStep({
             <div className="flex items-center justify-between gap-compact border-t border-border-subtle pt-4">
                 {confirmSkip ? (
                     <div className="flex items-center gap-tight text-sm">
-                        <span className="text-content-muted">You can complete this later.</span>
-                        <Button variant="ghost" size="sm" onClick={() => setConfirmSkip(false)}>Keep going</Button>
-                        <Button variant="secondary" size="sm" onClick={() => onSkip?.()}>Skip for now</Button>
+                        <span className="text-content-muted">{t('sovereignty.youCanCompleteLater')}</span>
+                        <Button variant="ghost" size="sm" onClick={() => setConfirmSkip(false)}>{t('sovereignty.keepGoing')}</Button>
+                        <Button variant="secondary" size="sm" onClick={() => onSkip?.()}>{t('sovereignty.skipForNow')}</Button>
                     </div>
                 ) : (
-                    <Button variant="ghost" size="sm" onClick={() => setConfirmSkip(true)}>Skip for now</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setConfirmSkip(true)}>{t('sovereignty.skipForNow')}</Button>
                 )}
                 <div className="flex items-center gap-tight">
                     <Button
@@ -287,11 +282,11 @@ export function SovereigntySelfAssessmentStep({
                         data-testid="sovereignty-materialize"
                     >
                         {materializing ? <LoadingSpinner className="w-3.5 h-3.5" /> : null}
-                        Create risks + controls
+                        {t('sovereignty.createRisksControls')}
                     </Button>
                     <Button variant="primary" onClick={handleComplete} disabled={completing} data-testid="sovereignty-complete">
                         {completing ? <LoadingSpinner className="w-3.5 h-3.5" /> : null}
-                        Complete assessment
+                        {t('sovereignty.completeAssessment')}
                     </Button>
                 </div>
             </div>
@@ -299,8 +294,8 @@ export function SovereigntySelfAssessmentStep({
 
             {/* Attribution + the not-legal-advice disclaimer. */}
             <div className="space-y-tight">
-                <p className="text-xs text-content-subtle" data-testid="sovereignty-disclaimer">{SOVEREIGNTY_DISCLAIMER}</p>
-                <p className="text-xs text-content-subtle">{SOVEREIGNTY_ATTRIBUTION}</p>
+                <p className="text-xs text-content-subtle" data-testid="sovereignty-disclaimer">{t('sovereignty.disclaimer')}</p>
+                <p className="text-xs text-content-subtle">{t('sovereignty.attribution')}</p>
             </div>
         </div>
     );

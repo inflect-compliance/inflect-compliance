@@ -6,6 +6,7 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useTenantContext, useTenantHref } from '@/lib/tenant-context-provider';
 import { Combobox } from '@/components/ui/combobox';
@@ -42,22 +43,22 @@ import { SovereigntySelfAssessmentStep } from './SovereigntySelfAssessmentStep';
 // render in the canonical state colours (muted at rest, brand when
 // active, success when completed).
 const STEPS = [
-    { key: 'COMPANY_PROFILE', label: 'Company Profile', icon: Building2 },
-    { key: 'FRAMEWORK_SELECTION', label: 'Frameworks', icon: Map },
+    { key: 'COMPANY_PROFILE', labelKey: 'wizard.steps.companyProfile', icon: Building2 },
+    { key: 'FRAMEWORK_SELECTION', labelKey: 'wizard.steps.frameworks', icon: Map },
     // Conditional — rendered only when NIS2 is among the selected
     // frameworks (see stepApplicable / visibleSteps below).
-    { key: 'NIS2_SELF_ASSESSMENT', label: 'NIS2 Assessment', icon: ClipboardCheck },
+    { key: 'NIS2_SELF_ASSESSMENT', labelKey: 'wizard.steps.nis2Assessment', icon: ClipboardCheck },
     // Conditional — rendered only when an AI framework is selected (or the
     // AI-systems flag). See stepApplicable / visibleSteps below.
-    { key: 'AI_GOVERNANCE_SELF_ASSESSMENT', label: 'AI Governance', icon: Sparkles },
+    { key: 'AI_GOVERNANCE_SELF_ASSESSMENT', labelKey: 'wizard.steps.aiGovernance', icon: Sparkles },
     // Conditional — rendered only when an EU digital-regulation framework
     // (NIS2 / DORA / EU AI Act) is selected. See stepApplicable / visibleSteps.
-    { key: 'SOVEREIGNTY_SELF_ASSESSMENT', label: 'Digital Sovereignty', icon: Landmark },
-    { key: 'ASSET_SETUP', label: 'Assets', icon: Server },
-    { key: 'CONTROL_BASELINE_INSTALL', label: 'Controls', icon: ShieldCheck },
-    { key: 'INITIAL_RISK_REGISTER', label: 'Risks', icon: AlertTriangle },
-    { key: 'TEAM_SETUP', label: 'Team', icon: Users },
-    { key: 'REVIEW_AND_FINISH', label: 'Review & Finish', icon: CheckCircle2 },
+    { key: 'SOVEREIGNTY_SELF_ASSESSMENT', labelKey: 'wizard.steps.digitalSovereignty', icon: Landmark },
+    { key: 'ASSET_SETUP', labelKey: 'wizard.steps.assets', icon: Server },
+    { key: 'CONTROL_BASELINE_INSTALL', labelKey: 'wizard.steps.controls', icon: ShieldCheck },
+    { key: 'INITIAL_RISK_REGISTER', labelKey: 'wizard.steps.risks', icon: AlertTriangle },
+    { key: 'TEAM_SETUP', labelKey: 'wizard.steps.team', icon: Users },
+    { key: 'REVIEW_AND_FINISH', labelKey: 'wizard.steps.reviewFinish', icon: CheckCircle2 },
 ] as const;
 
 type StepKey = (typeof STEPS)[number]['key'];
@@ -129,6 +130,7 @@ async function apiFetch<T>(url: string, method = 'GET', body?: unknown): Promise
 // ─── Main Wizard Component ───
 
 export default function OnboardingWizard() {
+    const t = useTranslations('onboarding');
     const { tenantSlug, permissions } = useTenantContext();
     const tenantHref = useTenantHref();
     const router = useRouter();
@@ -156,11 +158,11 @@ export default function OnboardingWizard() {
             const idx = computeVisibleSteps(sd).findIndex(st => st.key === s.currentStep);
             if (idx >= 0) setActiveStepIdx(idx);
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to load onboarding state');
+            setError(e instanceof Error ? e.message : t('wizard.errors.loadState'));
         } finally {
             setLoading(false);
         }
-    }, [tenantSlug, permissions.canAdmin]);
+    }, [tenantSlug, permissions.canAdmin, t]);
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { loadState(); }, [loadState]);
@@ -172,7 +174,7 @@ export default function OnboardingWizard() {
             const s = await apiFetch<OnboardingState>(apiUrl(tenantSlug, 'start'), 'POST');
             setState(s);
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to start');
+            setError(e instanceof Error ? e.message : t('wizard.errors.start'));
         } finally {
             setSaving(false);
         }
@@ -186,7 +188,7 @@ export default function OnboardingWizard() {
             await apiFetch(apiUrl(tenantSlug, 'step'), 'POST', { step, action: 'save', data });
             setLocalData(prev => ({ ...prev, [step]: data }));
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to save');
+            setError(e instanceof Error ? e.message : t('wizard.errors.save'));
         } finally {
             setSaving(false);
         }
@@ -210,7 +212,7 @@ export default function OnboardingWizard() {
             const nextIdx = activeStepIdx + 1;
             if (nextIdx < vis.length) setActiveStepIdx(nextIdx);
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to complete step');
+            setError(e instanceof Error ? e.message : t('wizard.errors.completeStep'));
         } finally {
             setSaving(false);
         }
@@ -230,7 +232,7 @@ export default function OnboardingWizard() {
             });
             await loadState();
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to skip step');
+            setError(e instanceof Error ? e.message : t('wizard.errors.skipStep'));
         } finally {
             setSaving(false);
         }
@@ -250,7 +252,7 @@ export default function OnboardingWizard() {
             });
             await loadState();
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to skip step');
+            setError(e instanceof Error ? e.message : t('wizard.errors.skipStep'));
         } finally {
             setSaving(false);
         }
@@ -271,7 +273,7 @@ export default function OnboardingWizard() {
             });
             await loadState();
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to skip step');
+            setError(e instanceof Error ? e.message : t('wizard.errors.skipStep'));
         } finally {
             setSaving(false);
         }
@@ -290,7 +292,7 @@ export default function OnboardingWizard() {
                 router.push(tenantHref('/dashboard'));
             }, 2000);
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to finish');
+            setError(e instanceof Error ? e.message : t('wizard.errors.finish'));
         } finally {
             setSaving(false);
         }
@@ -321,8 +323,8 @@ export default function OnboardingWizard() {
             <div className="flex items-center justify-center min-h-[60vh]">
                 <Card className="text-center max-w-md">
                     <ShieldCheck className="w-12 h-12 text-content-subtle mx-auto mb-4" />
-                    <Heading level={2} className="text-content-emphasis mb-2">Access Restricted</Heading>
-                    <p className="text-sm text-content-muted">Only tenant administrators can access the onboarding wizard.</p>
+                    <Heading level={2} className="text-content-emphasis mb-2">{t('wizard.accessRestricted')}</Heading>
+                    <p className="text-sm text-content-muted">{t('wizard.accessRestrictedBody')}</p>
                 </Card>
             </div>
         );
@@ -349,14 +351,14 @@ export default function OnboardingWizard() {
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-bg-success-emphasis flex items-center justify-center">
                         <CheckCircle2 className="w-8 h-8 text-content-inverted" />
                     </div>
-                    <Heading level={2} className="text-content-emphasis mb-2">Onboarding Complete!</Heading>
-                    <p className="text-content-muted text-sm">Your workspace is ready. Redirecting to dashboard...</p>
+                    <Heading level={2} className="text-content-emphasis mb-2">{t('wizard.completeExclaim')}</Heading>
+                    <p className="text-content-muted text-sm">{t('wizard.completeRedirect')}</p>
                     {/* NIS2 hand-off — the wizard's gap run is now run #1 in the
                         lifecycle history on the Audits page. Shown only when NIS2
                         was selected. */}
                     {stepApplicable('NIS2_SELF_ASSESSMENT', localData) && (
                         <a href={tenantHref('/audits/nis2-gap')} className="mt-4 inline-block text-sm text-brand-default underline hover:text-content-emphasis">
-                            View your NIS2 Gap Assessment →
+                            {t('wizard.viewNis2Gap')}
                         </a>
                     )}
                     <div className="mt-4">
@@ -375,11 +377,11 @@ export default function OnboardingWizard() {
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[var(--brand-default)] flex items-center justify-center">
                         <Sparkles className="w-8 h-8 text-content-inverted" />
                     </div>
-                    <Heading level={2} className="text-content-emphasis mb-2">Welcome! Let&apos;s set up your workspace.</Heading>
-                    <p className="text-content-muted text-sm mb-6">This wizard will guide you through configuring your compliance platform in just a few steps.</p>
+                    <Heading level={2} className="text-content-emphasis mb-2">{t('wizard.welcome')}</Heading>
+                    <p className="text-content-muted text-sm mb-6">{t('wizard.welcomeBody')}</p>
                     <Button variant="primary" size="lg" onClick={handleStart} disabled={saving}>
                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                        Start Setup
+                        {t('wizard.startSetup')}
                     </Button>
                 </div>
             </div>
@@ -394,10 +396,10 @@ export default function OnboardingWizard() {
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-bg-success-emphasis flex items-center justify-center">
                         <CheckCircle2 className="w-8 h-8 text-content-inverted" />
                     </div>
-                    <Heading level={2} className="text-content-emphasis mb-2">Onboarding Complete</Heading>
-                    <p className="text-content-muted text-sm mb-6">Your workspace has been configured. You can always update settings from the admin panel.</p>
+                    <Heading level={2} className="text-content-emphasis mb-2">{t('wizard.completeTitle')}</Heading>
+                    <p className="text-content-muted text-sm mb-6">{t('wizard.completeBody')}</p>
                     <Button variant="primary" size="lg" onClick={() => router.push(tenantHref('/dashboard'))}>
-                        Go to Dashboard
+                        {t('wizard.goToDashboard')}
                     </Button>
                 </div>
             </div>
@@ -418,11 +420,11 @@ export default function OnboardingWizard() {
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-compact">
                 <div>
-                    <Heading level={1}>Setup Wizard</Heading>
-                    <p className="text-content-muted text-sm mt-1">Complete these steps to configure your compliance workspace.</p>
+                    <Heading level={1}>{t('wizard.title')}</Heading>
+                    <p className="text-content-muted text-sm mt-1">{t('wizard.subtitle')}</p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={handleSaveAndExit}>
-                    <Save className="w-3.5 h-3.5" /> Save & Exit
+                    <Save className="w-3.5 h-3.5" /> {t('wizard.saveExit')}
                 </Button>
             </div>
 
@@ -438,7 +440,7 @@ export default function OnboardingWizard() {
                 {/* ─── Progress Sidebar ─── */}
                 <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                     <div className="p-4 border-b border-border-subtle">
-                        <p className="text-xs text-content-muted font-medium uppercase tracking-wider">Progress</p>
+                        <p className="text-xs text-content-muted font-medium uppercase tracking-wider">{t('wizard.progress')}</p>
                         <div className="flex items-center gap-tight mt-2">
                             <div className="flex-1 bg-bg-default rounded-full h-2 overflow-hidden">
                                 <div className="h-full bg-[var(--brand-default)] rounded-full transition-all duration-500"
@@ -469,7 +471,7 @@ export default function OnboardingWizard() {
                                             <Icon className={`w-3.5 h-3.5 ${active ? 'text-content-inverted' : 'text-content-subtle'}`} />
                                         )}
                                     </div>
-                                    <span className="truncate">{step.label}</span>
+                                    <span className="truncate">{t(step.labelKey)}</span>
                                     {active && <ChevronRight className="w-3.5 h-3.5 ml-auto text-content-subtle" />}
                                 </button>
                             );
@@ -485,11 +487,11 @@ export default function OnboardingWizard() {
                                 <currentStep.icon className="w-4.5 h-4.5 text-content-inverted" />
                             </div>
                             <div>
-                                <Heading level={2} className="text-content-emphasis">{currentStep.label}</Heading>
-                                <p className="text-xs text-content-muted">Step {activeStepIdx + 1} of {visibleSteps.length}</p>
+                                <Heading level={2} className="text-content-emphasis">{t(currentStep.labelKey)}</Heading>
+                                <p className="text-xs text-content-muted">{t('wizard.stepOf', { current: activeStepIdx + 1, total: visibleSteps.length })}</p>
                             </div>
                             {isComplete(currentStep.key) && (
-                                <StatusBadge variant="success" className="ml-auto">Completed</StatusBadge>
+                                <StatusBadge variant="success" className="ml-auto">{t('wizard.completedBadge')}</StatusBadge>
                             )}
                         </div>
                         <div className="p-5">
@@ -516,7 +518,7 @@ export default function OnboardingWizard() {
                                 onClick={() => setActiveStepIdx(Math.max(0, activeStepIdx - 1))}
                                 disabled={activeStepIdx === 0}
                             >
-                                <ChevronLeft className="w-3.5 h-3.5" /> Back
+                                <ChevronLeft className="w-3.5 h-3.5" /> {t('wizard.back')}
                             </Button>
                             <div className="flex items-center gap-tight">
                                 {/* NIS2 step drives its own Complete/Skip inside
@@ -529,7 +531,7 @@ export default function OnboardingWizard() {
                                         disabled={saving}
                                     >
                                         {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                                        Continue <ChevronRight className="w-3.5 h-3.5" />
+                                        {t('wizard.continue')} <ChevronRight className="w-3.5 h-3.5" />
                                     </Button>
                                 )}
                                 {isLast && (
@@ -540,7 +542,7 @@ export default function OnboardingWizard() {
                                         disabled={saving}
                                     >
                                         {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                                        Complete Setup
+                                        {t('wizard.completeSetup')}
                                     </Button>
                                 )}
                             </div>
@@ -568,6 +570,7 @@ function StepContent({ step, data, onUpdate, completedSteps, allData, tenantSlug
     onSovereigntyCompleted: () => void;
     onSovereigntySkip: () => void;
 }) {
+    const t = useTranslations('onboarding');
     switch (step) {
         case 'COMPANY_PROFILE': return <CompanyProfileStep data={data} onUpdate={onUpdate} />;
         case 'FRAMEWORK_SELECTION': return <FrameworkSelectionStep data={data} onUpdate={onUpdate} />;
@@ -579,74 +582,73 @@ function StepContent({ step, data, onUpdate, completedSteps, allData, tenantSlug
         case 'INITIAL_RISK_REGISTER': return <RiskRegisterStep data={data} onUpdate={onUpdate} />;
         case 'TEAM_SETUP': return <TeamSetupStep data={data} onUpdate={onUpdate} />;
         case 'REVIEW_AND_FINISH': return <ReviewStep completedSteps={completedSteps} allData={allData} />;
-        default: return <p className="text-content-muted">Unknown step</p>;
+        default: return <p className="text-content-muted">{t('wizard.unknownStep')}</p>;
     }
 }
 
 // ─── COMPANY_PROFILE ───
 
+type OnboardingT = ReturnType<typeof useTranslations>;
+
+function buildIndustryOptions(t: OnboardingT): { value: string; label: string }[] {
+    return [
+        { value: 'technology', label: t('wizard.industry.technology') },
+        { value: 'finance', label: t('wizard.industry.finance') },
+        { value: 'healthcare', label: t('wizard.industry.healthcare') },
+        { value: 'manufacturing', label: t('wizard.industry.manufacturing') },
+        { value: 'government', label: t('wizard.industry.government') },
+        { value: 'energy', label: t('wizard.industry.energy') },
+        { value: 'retail', label: t('wizard.industry.retail') },
+        { value: 'other', label: t('wizard.industry.other') },
+    ];
+}
+
+function buildSizeOptions(t: OnboardingT): { value: string; label: string }[] {
+    return [
+        { value: '1-50', label: t('wizard.size.upTo50') },
+        { value: '51-200', label: t('wizard.size.upTo200') },
+        { value: '201-1000', label: t('wizard.size.upTo1000') },
+        { value: '1000+', label: t('wizard.size.over1000') },
+    ];
+}
+
 function CompanyProfileStep({ data, onUpdate }: { data: StepData; onUpdate: (d: StepData) => void }) {
+    const t = useTranslations('onboarding');
+    const industryOptions = buildIndustryOptions(t);
+    const sizeOptions = buildSizeOptions(t);
     return (
         <div className="space-y-default max-w-lg animate-fadeIn">
-            <p className="text-sm text-content-muted mb-4">Tell us about your organization. This information helps tailor your compliance experience.</p>
+            <p className="text-sm text-content-muted mb-4">{t('wizard.companyProfile.intro')}</p>
             <div>
-                <label className="input-label">Company / Legal Name *</label>
-                <input className="input" placeholder="Acme Corporation" value={data.name || ''}
+                <label className="input-label">{t('wizard.companyProfile.nameLabel')}</label>
+                <input className="input" placeholder={t('wizard.companyProfile.namePlaceholder')} value={data.name || ''}
                     onChange={(e) => onUpdate({ name: e.target.value })} data-testid="company-name" />
             </div>
             <div>
-                <label className="input-label">Industry</label>
+                <label className="input-label">{t('wizard.companyProfile.industryLabel')}</label>
                 <Combobox
                     hideSearch
-                    selected={[
-                        { value: 'technology', label: 'Technology' },
-                        { value: 'finance', label: 'Finance & Banking' },
-                        { value: 'healthcare', label: 'Healthcare' },
-                        { value: 'manufacturing', label: 'Manufacturing' },
-                        { value: 'government', label: 'Government' },
-                        { value: 'energy', label: 'Energy & Utilities' },
-                        { value: 'retail', label: 'Retail & E-commerce' },
-                        { value: 'other', label: 'Other' },
-                    ].find(o => o.value === (data.industry || '')) ?? null}
+                    selected={industryOptions.find(o => o.value === (data.industry || '')) ?? null}
                     setSelected={(opt) => onUpdate({ industry: opt?.value ?? '' })}
-                    options={[
-                        { value: 'technology', label: 'Technology' },
-                        { value: 'finance', label: 'Finance & Banking' },
-                        { value: 'healthcare', label: 'Healthcare' },
-                        { value: 'manufacturing', label: 'Manufacturing' },
-                        { value: 'government', label: 'Government' },
-                        { value: 'energy', label: 'Energy & Utilities' },
-                        { value: 'retail', label: 'Retail & E-commerce' },
-                        { value: 'other', label: 'Other' },
-                    ]}
-                    placeholder="Select industry..."
+                    options={industryOptions}
+                    placeholder={t('wizard.companyProfile.industryPlaceholder')}
                     matchTriggerWidth
                 />
             </div>
             <div className="grid grid-cols-2 gap-compact">
                 <div>
-                    <label className="input-label">Country</label>
-                    <input className="input" placeholder="e.g. Germany" value={data.country || ''}
+                    <label className="input-label">{t('wizard.companyProfile.countryLabel')}</label>
+                    <input className="input" placeholder={t('wizard.companyProfile.countryPlaceholder')} value={data.country || ''}
                         onChange={(e) => onUpdate({ country: e.target.value })} />
                 </div>
                 <div>
-                    <label className="input-label">Company Size</label>
+                    <label className="input-label">{t('wizard.companyProfile.sizeLabel')}</label>
                     <Combobox
                         hideSearch
-                        selected={[
-                            { value: '1-50', label: '1–50 employees' },
-                            { value: '51-200', label: '51–200 employees' },
-                            { value: '201-1000', label: '201–1,000 employees' },
-                            { value: '1000+', label: '1,000+ employees' },
-                        ].find(o => o.value === (data.size || '')) ?? null}
+                        selected={sizeOptions.find(o => o.value === (data.size || '')) ?? null}
                         setSelected={(opt) => onUpdate({ size: opt?.value ?? '' })}
-                        options={[
-                            { value: '1-50', label: '1–50 employees' },
-                            { value: '51-200', label: '51–200 employees' },
-                            { value: '201-1000', label: '201–1,000 employees' },
-                            { value: '1000+', label: '1,000+ employees' },
-                        ]}
-                        placeholder="Select..."
+                        options={sizeOptions}
+                        placeholder={t('wizard.companyProfile.sizePlaceholder')}
                         matchTriggerWidth
                     />
                 </div>
@@ -663,9 +665,9 @@ function CompanyProfileStep({ data, onUpdate }: { data: StepData; onUpdate: (d: 
                     data-testid="company-uses-ai"
                 />
                 <span className="text-sm">
-                    <span className="font-medium text-content-default">We build or use AI systems</span>
+                    <span className="font-medium text-content-default">{t('wizard.companyProfile.usesAiTitle')}</span>
                     <span className="block text-xs text-content-muted">
-                        Adds a short AI-governance self-assessment (OWASP AISVS / ISO 42001 / EU AI Act).
+                        {t('wizard.companyProfile.usesAiHint')}
                     </span>
                 </span>
             </label>
@@ -691,13 +693,14 @@ interface InstallableFramework {
  * directives/regulations carry an "EU" badge.
  */
 function frameworkBadge(fw: InstallableFramework): string | null {
-    if (fw.key === 'ISO27001') return 'Most Popular';
-    if (fw.kind === 'EU_DIRECTIVE' || fw.kind === 'REGULATION') return 'EU';
-    if (['NIS2', 'DORA', 'EU_AI_ACT'].includes(fw.key)) return 'EU';
+    if (fw.key === 'ISO27001') return 'wizard.frameworks.badgeMostPopular';
+    if (fw.kind === 'EU_DIRECTIVE' || fw.kind === 'REGULATION') return 'wizard.frameworks.badgeEu';
+    if (['NIS2', 'DORA', 'EU_AI_ACT'].includes(fw.key)) return 'wizard.frameworks.badgeEu';
     return null;
 }
 
 function FrameworkSelectionStep({ data, onUpdate }: { data: StepData; onUpdate: (d: StepData) => void }) {
+    const t = useTranslations('onboarding');
     const { tenantSlug } = useTenantContext();
     const [frameworks, setFrameworks] = useState<InstallableFramework[]>([]);
     const [loading, setLoading] = useState(true);
@@ -710,13 +713,13 @@ function FrameworkSelectionStep({ data, onUpdate }: { data: StepData; onUpdate: 
                 const list = await apiFetch<InstallableFramework[]>(apiUrl(tenantSlug, 'frameworks'));
                 if (!cancelled) setFrameworks(list);
             } catch (e) {
-                if (!cancelled) setLoadError(e instanceof Error ? e.message : 'Failed to load frameworks');
+                if (!cancelled) setLoadError(e instanceof Error ? e.message : t('wizard.frameworks.loadError'));
             } finally {
                 if (!cancelled) setLoading(false);
             }
         })();
         return () => { cancelled = true; };
-    }, [tenantSlug]);
+    }, [tenantSlug, t]);
 
     const selected: string[] = data.selectedFrameworks || [];
     // Case-insensitive membership: a legacy onboarding state may hold lowercase
@@ -745,17 +748,17 @@ function FrameworkSelectionStep({ data, onUpdate }: { data: StepData; onUpdate: 
 
     return (
         <div className="space-y-default animate-fadeIn">
-            <p className="text-sm text-content-muted mb-4">Select the compliance frameworks you want to implement. You can add more later.</p>
+            <p className="text-sm text-content-muted mb-4">{t('wizard.frameworks.intro')}</p>
 
             {loading ? (
                 <div className="flex items-center gap-tight text-sm text-content-muted py-6" data-testid="fw-loading">
-                    <Loader2 className="w-4 h-4 animate-spin" /> Loading frameworks…
+                    <Loader2 className="w-4 h-4 animate-spin" /> {t('wizard.frameworks.loading')}
                 </div>
             ) : loadError ? (
                 <InlineNotice variant="error" icon={null}>{loadError}</InlineNotice>
             ) : frameworks.length === 0 ? (
                 <InlineNotice variant="warning" icon={null}>
-                    No installable frameworks are available in the catalog.
+                    {t('wizard.frameworks.none')}
                 </InlineNotice>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-default">
@@ -770,14 +773,14 @@ function FrameworkSelectionStep({ data, onUpdate }: { data: StepData; onUpdate: 
                             >
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="font-semibold text-content-emphasis text-sm">{fw.name}</span>
-                                    {badge && <StatusBadge variant="info" size="sm">{badge}</StatusBadge>}
+                                    {badge && <StatusBadge variant="info" size="sm">{t(badge)}</StatusBadge>}
                                 </div>
                                 {fw.description && <p className="text-xs text-content-muted leading-relaxed">{fw.description}</p>}
                                 <p className="mt-2 text-xs text-content-subtle">
-                                    {fw.controlCount > 0 && <>Installs {fw.controlCount} baseline control{fw.controlCount === 1 ? '' : 's'} · </>}
-                                    {fw.requirementCount} requirement{fw.requirementCount === 1 ? '' : 's'}
+                                    {fw.controlCount > 0 && <>{t(fw.controlCount === 1 ? 'wizard.frameworks.installsControl' : 'wizard.frameworks.installsControls', { count: fw.controlCount })}</>}
+                                    {t(fw.requirementCount === 1 ? 'wizard.frameworks.requirement' : 'wizard.frameworks.requirements', { count: fw.requirementCount })}
                                 </p>
-                                {active && <div className="mt-2 flex items-center gap-1 text-brand-400 text-xs font-medium"><CheckCircle2 className="w-3.5 h-3.5" /> Selected</div>}
+                                {active && <div className="mt-2 flex items-center gap-1 text-brand-400 text-xs font-medium"><CheckCircle2 className="w-3.5 h-3.5" /> {t('wizard.frameworks.selected')}</div>}
                             </button>
                         );
                     })}
@@ -785,7 +788,7 @@ function FrameworkSelectionStep({ data, onUpdate }: { data: StepData; onUpdate: 
             )}
 
             {!loading && !loadError && frameworks.length > 0 && selected.length === 0 && (
-                <p className="text-xs text-content-warning">Select at least one framework to continue.</p>
+                <p className="text-xs text-content-warning">{t('wizard.frameworks.selectAtLeastOne')}</p>
             )}
         </div>
     );
@@ -794,6 +797,7 @@ function FrameworkSelectionStep({ data, onUpdate }: { data: StepData; onUpdate: 
 // ─── ASSET_SETUP ───
 
 function AssetSetupStep({ data, onUpdate }: { data: StepData; onUpdate: (d: StepData) => void }) {
+    const t = useTranslations('onboarding');
     const assets: string[] = data.assets || [];
     const [newAsset, setNewAsset] = useState('');
 
@@ -817,11 +821,11 @@ function AssetSetupStep({ data, onUpdate }: { data: StepData; onUpdate: (d: Step
 
     return (
         <div className="space-y-default max-w-lg animate-fadeIn">
-            <p className="text-sm text-content-muted mb-4">Add your key information assets. These are the systems, databases, and services you need to protect.</p>
+            <p className="text-sm text-content-muted mb-4">{t('wizard.assets.intro')}</p>
             <div className="flex gap-tight">
-                <input className="input flex-1" placeholder="e.g. Customer Database, Cloud Infrastructure..." value={newAsset}
+                <input className="input flex-1" placeholder={t('wizard.assets.placeholder')} value={newAsset}
                     onChange={(e) => setNewAsset(e.target.value)} onKeyDown={assetKeyDown} data-testid="asset-input" />
-                <Button variant="primary" onClick={addAsset}>Add</Button>
+                <Button variant="primary" onClick={addAsset}>{t('wizard.assets.add')}</Button>
             </div>
             {assets.length > 0 && (
                 <div className="space-y-1">
@@ -836,7 +840,7 @@ function AssetSetupStep({ data, onUpdate }: { data: StepData; onUpdate: (d: Step
                     ))}
                 </div>
             )}
-            <p className="text-xs text-content-subtle">You can import assets in bulk later from the Assets page.</p>
+            <p className="text-xs text-content-subtle">{t('wizard.assets.importLater')}</p>
         </div>
     );
 }
@@ -844,15 +848,16 @@ function AssetSetupStep({ data, onUpdate }: { data: StepData; onUpdate: (d: Step
 // ─── CONTROL_BASELINE_INSTALL ───
 
 function ControlInstallStep({ data, onUpdate, allData }: { data: StepData; onUpdate: (d: StepData) => void; allData: StepData }) {
+    const t = useTranslations('onboarding');
     const selectedFrameworks: string[] = allData['FRAMEWORK_SELECTION']?.selectedFrameworks || [];
     const fwLabels: Record<string, string> = allData['FRAMEWORK_SELECTION']?.frameworkLabels || {};
 
     return (
         <div className="space-y-default max-w-lg animate-fadeIn">
-            <p className="text-sm text-content-muted mb-4">We&apos;ll install baseline controls from your selected frameworks. This creates your initial control register.</p>
+            <p className="text-sm text-content-muted mb-4">{t('wizard.controls.intro')}</p>
             {selectedFrameworks.length === 0 ? (
                 <InlineNotice variant="warning" icon={null}>
-                    No frameworks selected. Go back to the Frameworks step to select at least one.
+                    {t('wizard.controls.frameworksRequired')}
                 </InlineNotice>
             ) : (
                 <div className="space-y-compact">
@@ -861,7 +866,7 @@ function ControlInstallStep({ data, onUpdate, allData }: { data: StepData; onUpd
                             <ShieldCheck className="w-5 h-5 text-brand-400" />
                             <div>
                                 <span className="text-sm font-medium text-content-emphasis">{fwLabels[fw] || fw}</span>
-                                <p className="text-xs text-content-subtle">Baseline controls will be installed</p>
+                                <p className="text-xs text-content-subtle">{t('wizard.controls.willInstall')}</p>
                             </div>
                             <CheckCircle2 className="w-4 h-4 text-content-success ml-auto" />
                         </div>
@@ -871,7 +876,7 @@ function ControlInstallStep({ data, onUpdate, allData }: { data: StepData; onUpd
             <label className="flex items-center gap-tight text-sm text-content-default cursor-pointer">
                 <input type="checkbox" checked={data.confirmed || false} onChange={(e) => onUpdate({ confirmed: e.target.checked })}
                     className="w-4 h-4 rounded border-border-default bg-bg-default text-brand-500 focus:ring-brand-500" />
-                I confirm installing baseline controls
+                {t('wizard.controls.confirm')}
             </label>
         </div>
     );
@@ -880,20 +885,21 @@ function ControlInstallStep({ data, onUpdate, allData }: { data: StepData; onUpd
 // ─── INITIAL_RISK_REGISTER ───
 
 function RiskRegisterStep({ data, onUpdate }: { data: StepData; onUpdate: (d: StepData) => void }) {
+    const t = useTranslations('onboarding');
     return (
         <div className="space-y-default max-w-lg animate-fadeIn">
-            <p className="text-sm text-content-muted mb-4">Generate a starter risk register based on your assets and selected frameworks.</p>
+            <p className="text-sm text-content-muted mb-4">{t('wizard.risks.intro')}</p>
             <div className="p-4 rounded-lg bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-border-warning">
                 <div className="flex items-center gap-compact mb-3">
                     <AlertTriangle className="w-5 h-5 text-content-warning" />
-                    <span className="font-medium text-content-emphasis text-sm">Starter Risk Register</span>
+                    <span className="font-medium text-content-emphasis text-sm">{t('wizard.risks.starterTitle')}</span>
                 </div>
-                <p className="text-xs text-content-muted leading-relaxed">We&apos;ll generate common information security risks based on industry best practices. You can customize, add, or remove risks later.</p>
+                <p className="text-xs text-content-muted leading-relaxed">{t('wizard.risks.starterBody')}</p>
             </div>
             <label className="flex items-center gap-tight text-sm text-content-default cursor-pointer">
                 <input type="checkbox" checked={data.generate !== false} onChange={(e) => onUpdate({ generate: e.target.checked })}
                     className="w-4 h-4 rounded border-border-default bg-bg-default text-brand-500 focus:ring-brand-500" />
-                Generate starter risks
+                {t('wizard.risks.generate')}
             </label>
         </div>
     );
@@ -902,6 +908,7 @@ function RiskRegisterStep({ data, onUpdate }: { data: StepData; onUpdate: (d: St
 // ─── TEAM_SETUP ───
 
 function TeamSetupStep({ data, onUpdate }: { data: StepData; onUpdate: (d: StepData) => void }) {
+    const t = useTranslations('onboarding');
     const emails: string[] = data.inviteEmails || [];
     const [newEmail, setNewEmail] = useState('');
 
@@ -922,11 +929,11 @@ function TeamSetupStep({ data, onUpdate }: { data: StepData; onUpdate: (d: StepD
 
     return (
         <div className="space-y-default max-w-lg animate-fadeIn">
-            <p className="text-sm text-content-muted mb-4">Invite your team members. They&apos;ll receive an email invitation to join your workspace.</p>
+            <p className="text-sm text-content-muted mb-4">{t('wizard.team.intro')}</p>
             <div className="flex gap-tight">
-                <input className="input flex-1" placeholder="colleague@company.com" type="email" value={newEmail}
+                <input className="input flex-1" placeholder={t('wizard.team.placeholder')} type="email" value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)} onKeyDown={emailKeyDown} data-testid="invite-email" />
-                <Button variant="primary" onClick={addEmail}>Invite</Button>
+                <Button variant="primary" onClick={addEmail}>{t('wizard.team.invite')}</Button>
             </div>
             {emails.length > 0 && (
                 <div className="space-y-1">
@@ -941,7 +948,7 @@ function TeamSetupStep({ data, onUpdate }: { data: StepData; onUpdate: (d: StepD
                     ))}
                 </div>
             )}
-            <p className="text-xs text-content-subtle">You can skip this step and invite team members later from the Admin panel.</p>
+            <p className="text-xs text-content-subtle">{t('wizard.team.inviteLater')}</p>
         </div>
     );
 }
@@ -949,22 +956,23 @@ function TeamSetupStep({ data, onUpdate }: { data: StepData; onUpdate: (d: StepD
 // ─── REVIEW_AND_FINISH ───
 
 function ReviewStep({ completedSteps, allData }: { completedSteps: string[]; allData: StepData }) {
+    const t = useTranslations('onboarding');
     const summaryItems = [
-        { key: 'COMPANY_PROFILE', label: 'Company Profile', detail: allData['COMPANY_PROFILE']?.name || 'Not configured' },
-        { key: 'FRAMEWORK_SELECTION', label: 'Frameworks', detail: (() => {
+        { key: 'COMPANY_PROFILE', label: t('wizard.steps.companyProfile'), detail: allData['COMPANY_PROFILE']?.name || t('wizard.review.notConfigured') },
+        { key: 'FRAMEWORK_SELECTION', label: t('wizard.steps.frameworks'), detail: (() => {
             const keys: string[] = allData['FRAMEWORK_SELECTION']?.selectedFrameworks || [];
             const labels: Record<string, string> = allData['FRAMEWORK_SELECTION']?.frameworkLabels || {};
-            return keys.map(k => labels[k] || k).join(', ') || 'None selected';
+            return keys.map(k => labels[k] || k).join(', ') || t('wizard.review.noneSelected');
         })() },
-        { key: 'ASSET_SETUP', label: 'Assets', detail: `${(allData['ASSET_SETUP']?.assets || []).length} assets added` },
-        { key: 'CONTROL_BASELINE_INSTALL', label: 'Controls', detail: allData['CONTROL_BASELINE_INSTALL']?.confirmed ? 'Baseline install confirmed' : 'Pending confirmation' },
-        { key: 'INITIAL_RISK_REGISTER', label: 'Risk Register', detail: allData['INITIAL_RISK_REGISTER']?.generate !== false ? 'Starter risks will be generated' : 'Skipped' },
-        { key: 'TEAM_SETUP', label: 'Team', detail: `${(allData['TEAM_SETUP']?.inviteEmails || []).length} invitations pending` },
+        { key: 'ASSET_SETUP', label: t('wizard.steps.assets'), detail: t('wizard.review.assetsAdded', { count: (allData['ASSET_SETUP']?.assets || []).length }) },
+        { key: 'CONTROL_BASELINE_INSTALL', label: t('wizard.steps.controls'), detail: allData['CONTROL_BASELINE_INSTALL']?.confirmed ? t('wizard.review.baselineConfirmed') : t('wizard.review.pendingConfirmation') },
+        { key: 'INITIAL_RISK_REGISTER', label: t('wizard.review.riskRegister'), detail: allData['INITIAL_RISK_REGISTER']?.generate !== false ? t('wizard.review.starterWillGenerate') : t('wizard.review.skipped') },
+        { key: 'TEAM_SETUP', label: t('wizard.steps.team'), detail: t('wizard.review.invitationsPending', { count: (allData['TEAM_SETUP']?.inviteEmails || []).length }) },
     ];
 
     return (
         <div className="space-y-default animate-fadeIn">
-            <p className="text-sm text-content-muted mb-4">Review your setup before completing onboarding.</p>
+            <p className="text-sm text-content-muted mb-4">{t('wizard.review.intro')}</p>
             <div className="space-y-tight">
                 {summaryItems.map(item => {
                     const done = completedSteps.includes(item.key);
@@ -984,7 +992,7 @@ function ReviewStep({ completedSteps, allData }: { completedSteps: string[]; all
                 })}
             </div>
             <InlineNotice variant="success" icon={null}>
-                Click &quot;Complete Setup&quot; below to finish onboarding and go to your dashboard.
+                {t('wizard.review.finishNotice')}
             </InlineNotice>
         </div>
     );

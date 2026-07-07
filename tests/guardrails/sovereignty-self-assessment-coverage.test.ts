@@ -152,7 +152,12 @@ describe('Sovereignty onboarding step (DS-2)', () => {
         const src = read('src/components/onboarding/SovereigntySelfAssessmentStep.tsx');
         expect(src).toContain('@/components/ui/accordion');
         expect(src).toContain('@/components/ui/radio-group');
-        expect(src).toMatch(/not legal advice/i);
+        // The disclaimer copy is localized via next-intl — the component
+        // renders it through `t('sovereignty.disclaimer')` and the English
+        // catalog holds the not-legal-advice text.
+        expect(src).toMatch(/t\(['"]sovereignty\.disclaimer['"]\)/);
+        const en = JSON.parse(read('messages/en.json')) as { onboarding: { sovereignty: { disclaimer: string } } };
+        expect(en.onboarding.sovereignty.disclaimer).toMatch(/not legal advice/i);
         // Imports the pure bank + scorer directly (stateless, client-scored).
         expect(src).toContain("@/data/self-assessments/digital-sovereignty");
         expect(src).toContain("@/lib/self-assessments/scoring");
