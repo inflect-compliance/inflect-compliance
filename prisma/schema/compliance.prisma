@@ -3114,8 +3114,63 @@ model TrustCenter {
   /// Audit pointer — who last toggled publish. Plain column (no relation) to
   /// keep the public read graph minimal.
   publishedByUserId   String?
+  /// PR-8 — email domains auto-approved for gated-document access (["acme.com"]).
+  accessDomainAllowlist Json  @default("[]")
+  /// PR-8 — require an NDA click-through before a gated download is granted.
+  ndaRequired         Boolean @default(false)
+  documents           TrustCenterDocument[]
 
   @@index([tenantId])
+}
+
+/// PR-8 — a document published on the trust center. `gated=true` requires an
+/// approved TrustCenterAccessRequest + a signed, expiring, single-use download
+/// token; `gated=false` is freely downloadable.
+model TrustCenterDocument {
+  id            String   @id @default(cuid())
+  tenantId      String
+  trustCenterId String
+  label         String
+  fileRecordId  String
+  gated         Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  trustCenter TrustCenter @relation(fields: [trustCenterId], references: [id], onDelete: Cascade)
+  requests    TrustCenterAccessRequest[]
+
+  @@index([tenantId])
+  @@index([tenantId, trustCenterId])
+}
+
+/// PR-8 — a visitor's request to access a gated document. Auto-approved when
+/// the requester email domain is in the tenant's allowlist; otherwise stays
+/// REQUESTED for manual approval. On approval a hashed, expiring, single-use
+/// download token is issued.
+model TrustCenterAccessRequest {
+  id                String                   @id @default(cuid())
+  tenantId          String
+  documentId        String
+  requesterName     String
+  requesterEmail    String
+  company           String?
+  status            TrustCenterAccessStatus  @default(REQUESTED)
+  ndaSignedAt       DateTime?
+  grantedAt         DateTime?
+  expiresAt         DateTime?
+  /// SHA-256 of the single-use download token (plaintext returned once).
+  downloadTokenHash String?                  @unique
+  downloadedAt      DateTime?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  tenant   Tenant              @relation(fields: [tenantId], references: [id])
+  document TrustCenterDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, documentId])
 }
 
 /// AI compliance-posture summary — a tenant-wide narrative + prioritized

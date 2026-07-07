@@ -878,6 +878,13 @@ enum BackgroundCheckStatus {
   FAILED
 }
 
+/// Gated trust-center document access-request lifecycle (PR-8).
+enum TrustCenterAccessStatus {
+  REQUESTED
+  APPROVED
+  DENIED
+}
+
 enum SyncDirection {
   PUSH
   PULL

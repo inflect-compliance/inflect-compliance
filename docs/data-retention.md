@@ -125,6 +125,8 @@ a `userId` but stores no contact PII).
 | `TrainingAssignment` | Business record | No | Cascade on employee/tenant delete | Training-completion record — compliance evidence of annual security-awareness training; retained while tenant active |
 | `BackgroundCheck` | PII subject | Yes (`resultSummary`) | Cascade on employee/tenant delete; result encrypted | Pre-employment screening record — sensitive PII (adverse-action detail encrypted at rest). **DSAR-relevant; needs a retention commitment.** |
 | `AccessReviewConnectedDecision` | Regulatory artefact | No | Cascade on review/tenant delete; account SetNull | Frozen access-review evidence for a connected identity account (SOC 2 UAR); retained with the parent review |
+| `TrustCenterDocument` | Configuration | No | Cascade on trust-center/tenant delete | Published document pointer (label + fileRecordId); lives with the trust center |
+| `TrustCenterAccessRequest` | Business record | No (token hashed) | Cascade on document/tenant delete; download token hashed + single-use + expiring | Gated-document access-request audit (who requested/downloaded); retained as access evidence |
 | `IntegrationWebhookEvent` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
 | `KeyRiskIndicator` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `KriReading` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
