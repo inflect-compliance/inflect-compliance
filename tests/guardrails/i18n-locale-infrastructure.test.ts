@@ -79,6 +79,21 @@ describe('src/i18n.ts wiring (regression guard)', () => {
     });
 });
 
+describe('root layout wraps the whole app in NextIntlClientProvider', () => {
+    const src = read('src/app/layout.tsx');
+
+    it('mounts <NextIntlClientProvider> OUTSIDE <Providers>', () => {
+        // App-wide client chrome inside <Providers> (command palette, the
+        // shortcut-help <Modal>, toasts) calls useTranslations(). If the intl
+        // provider sat inside <Providers>, those would render with no intl
+        // context and throw during SSR — 500-ing every route incl. /login.
+        // The provider MUST be the outer wrapper. (Match the real JSX, not the
+        // prose in surrounding comments that also names <Providers>.)
+        expect(src).toMatch(/<NextIntlClientProvider[^>]*>\s*<Providers>/);
+        expect(src).not.toMatch(/<Providers>\s*<NextIntlClientProvider/);
+    });
+});
+
 describe('locale switcher persists the cookie client-side', () => {
     const src = read('src/components/layout/LocaleSwitcher.tsx');
 
