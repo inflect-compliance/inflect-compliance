@@ -140,8 +140,8 @@ export async function runIdentitySync(input: {
             upserted += 1;
         }
 
-        // Reconcile: any still-ACTIVE account no longer in the directory is
-        // now deprovisioned. Bounded updateMany (NOT in the seen set).
+        // Reconcile still-ACTIVE accounts no longer in the directory — they
+        // are now deprovisioned. Bounded updateMany (NOT in the seen set).
         const reconcile = await db.connectedIdentityAccount.updateMany({
             where: {
                 tenantId: ctx.tenantId,

@@ -1420,6 +1420,9 @@
     },
     "docs/implementation-notes/2026-07-07-pr1-integration-checks-ui-and-failed-finding.md": {
       "class": "historical"
+    },
+    "docs/implementation-notes/2026-07-07-pr2-identity-providers.md": {
+      "class": "historical"
     }
   }
 }
