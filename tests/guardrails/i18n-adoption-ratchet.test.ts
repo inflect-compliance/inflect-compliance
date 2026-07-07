@@ -37,10 +37,12 @@
  *
  * ## Scope + known limitations (deliberate, documented)
  *
- *   • Scope is `.tsx` under `src/app/t/[tenantSlug]/(app)` — where
- *     the migration is happening. Module-level shared label maps in
- *     `.ts` files (filter-defs, `*-options.ts` enum labels) are the
- *     same documented follow-up the vendors/assets PRs carved out.
+ *   • Scope is `.tsx` under `src/app/t/[tenantSlug]/(app)`, the org
+ *     portal `src/app/org`, and the shared component library
+ *     `src/components` — the three surfaces the locale-selectable UI
+ *     work covered. Module-level shared label maps in `.ts` files
+ *     (filter-defs, `*-options.ts` enum labels) are the same
+ *     documented follow-up the vendors/assets PRs carved out.
  *   • This enforces next-intl ADOPTION, not per-string completeness.
  *     A file already on next-intl can still carry a residual literal
  *     (some partial migrations do today); catching every straggler is
@@ -56,6 +58,13 @@ import * as path from 'path';
 
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const APP_DIR = path.join(REPO_ROOT, 'src/app/t/[tenantSlug]/(app)');
+// The 2026-07 component-tree wave extended coverage past the tenant app to
+// the shared component library and the multi-tenant org portal — the two
+// blind spots that rendered English regardless of locale. `src/app/org` is
+// fully migrated (zero grandfathered files); `src/components` carries a
+// shrinking baseline of not-yet-localised primitives.
+const ORG_DIR = path.join(REPO_ROOT, 'src/app/org');
+const COMPONENTS_DIR = path.join(REPO_ROOT, 'src/components');
 
 // ─── Detection ──────────────────────────────────────────────────
 
@@ -118,18 +127,114 @@ function rel(abs: string): string {
 // Files that hardcode user-facing text and do NOT use next-intl.
 // This list ONLY shrinks. When you localise a file, remove it here
 // in the same PR (the no-stale test enforces this).
-// EMPTY — the surface-by-surface i18n migration is complete. Every
-// text-bearing `.tsx` under the tenant app tree now routes user-facing
-// strings through next-intl. This set stays empty: any new file that
-// renders hardcoded UI text without next-intl fails the forward test
-// below. (The former server-shim entries were retired once
-// `stripTypeAnnotations` removed the TS-generic false positive.)
-const UNMIGRATED_BASELINE: ReadonlySet<string> = new Set<string>([]);
+//
+// The tenant app tree (`src/app/t/.../(app)`) and the org portal
+// (`src/app/org`) are FULLY migrated — nothing from them is
+// grandfathered. The entries below are all `src/components/**`
+// primitives that the 2026-07 component-tree wave did not reach
+// (charts, low-level UI, layout shells like ListPageShell that are
+// imported by server components and so cannot take the client
+// `useTranslations` hook). Each is paid down by localising the file
+// and deleting its line here.
+const UNMIGRATED_BASELINE: ReadonlySet<string> = new Set<string>([
+    'src/components/dev/swr-devtools.tsx',
+    'src/components/layout/AppShell.tsx',
+    'src/components/layout/EntityListPage.tsx',
+    'src/components/layout/ListPageShell.tsx',
+    'src/components/layout/PageHeader.tsx',
+    'src/components/layout/TopChrome.tsx',
+    'src/components/layout/nav-item.tsx',
+    'src/components/layout/org-workspace-switcher.tsx',
+    'src/components/layout/tenant-switcher.tsx',
+    'src/components/nav/NavigationTracker.tsx',
+    'src/components/onboarding/Nis2SelfAssessmentStep.tsx',
+    'src/components/processes/ManualTriggerPanel.tsx',
+    'src/components/ui/CalendarHeatmap.tsx',
+    'src/components/ui/ComplianceStatusIndicator.tsx',
+    'src/components/ui/EvidenceGallery.tsx',
+    'src/components/ui/ExpiryCalendar.tsx',
+    'src/components/ui/FileDropzone.tsx',
+    'src/components/ui/FrameworkBuilder.tsx',
+    'src/components/ui/FrameworkMinimap.tsx',
+    'src/components/ui/FreshnessBadge.tsx',
+    'src/components/ui/GraphExplorer.tsx',
+    'src/components/ui/HeroMetric.tsx',
+    'src/components/ui/KpiCard.tsx',
+    'src/components/ui/NextBestActionCard.tsx',
+    'src/components/ui/OnboardingTour.tsx',
+    'src/components/ui/ProgressCard.tsx',
+    'src/components/ui/RiskMatrixCell.tsx',
+    'src/components/ui/SankeyChart.tsx',
+    'src/components/ui/TreeExpandCollapseToggle.tsx',
+    'src/components/ui/TreeView.tsx',
+    'src/components/ui/TruncationBanner.tsx',
+    'src/components/ui/accordion.tsx',
+    'src/components/ui/ai-assist-rail.tsx',
+    'src/components/ui/animated-size-container.tsx',
+    'src/components/ui/badge.tsx',
+    'src/components/ui/button.tsx',
+    'src/components/ui/card.tsx',
+    'src/components/ui/charts/ale-histogram.tsx',
+    'src/components/ui/charts/areas.tsx',
+    'src/components/ui/charts/bars.tsx',
+    'src/components/ui/charts/funnel-chart.tsx',
+    'src/components/ui/charts/gantt-chart.tsx',
+    'src/components/ui/charts/line-chart.tsx',
+    'src/components/ui/charts/loss-exceedance-curve.tsx',
+    'src/components/ui/charts/time-series-chart.tsx',
+    'src/components/ui/charts/tooltip-sync.tsx',
+    'src/components/ui/checkbox.tsx',
+    'src/components/ui/checklist-card.tsx',
+    'src/components/ui/checklist-gear-button.tsx',
+    'src/components/ui/combobox/index.tsx',
+    'src/components/ui/combobox/virtualized-options.tsx',
+    'src/components/ui/dashboard-widgets/DashboardGrid.tsx',
+    'src/components/ui/date-picker/date-picker.tsx',
+    'src/components/ui/date-picker/date-range-picker.tsx',
+    'src/components/ui/date-picker/trigger.tsx',
+    'src/components/ui/empty-state.tsx',
+    'src/components/ui/entity-prev-next-nav.tsx',
+    'src/components/ui/error-state.tsx',
+    'src/components/ui/filter/edit-filters-button.tsx',
+    'src/components/ui/filter/filter-list.tsx',
+    'src/components/ui/filter/filter-select.tsx',
+    'src/components/ui/filter/use-filter-card-visibility.tsx',
+    'src/components/ui/form.tsx',
+    'src/components/ui/hooks/use-copy-to-clipboard.tsx',
+    'src/components/ui/initials-avatar.tsx',
+    'src/components/ui/input.tsx',
+    'src/components/ui/kpi-filter-card.tsx',
+    'src/components/ui/label.tsx',
+    'src/components/ui/meta-strip.tsx',
+    'src/components/ui/number-stepper.tsx',
+    'src/components/ui/popover.tsx',
+    'src/components/ui/progress-bar.tsx',
+    'src/components/ui/radio-group.tsx',
+    'src/components/ui/selection-summary-panel.tsx',
+    'src/components/ui/skeleton.tsx',
+    'src/components/ui/status-badge.tsx',
+    'src/components/ui/status-breakdown.tsx',
+    'src/components/ui/switch.tsx',
+    'src/components/ui/tab-select.tsx',
+    'src/components/ui/table-load-more-footer.tsx',
+    'src/components/ui/table/edit-columns-button.tsx',
+    'src/components/ui/table/table-empty-state.tsx',
+    'src/components/ui/table/use-columns-dropdown.tsx',
+    'src/components/ui/table/virtual-table-body.tsx',
+    'src/components/ui/textarea.tsx',
+    'src/components/ui/tooltip.tsx',
+    'src/components/ui/typography.tsx',
+    'src/components/ui/view-toggle.tsx',
+]);
 
 // ─── The ratchet ────────────────────────────────────────────────
 
 describe('i18n adoption ratchet — new UI goes through next-intl', () => {
-    const files = walk(APP_DIR);
+    const files = [
+        ...walk(APP_DIR),
+        ...walk(ORG_DIR),
+        ...walk(COMPONENTS_DIR),
+    ];
 
     const textBearingWithoutIntl = files
         .filter((f) => {
