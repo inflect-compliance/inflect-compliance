@@ -199,6 +199,11 @@ describe('Structural Guard: Tenant Isolation Conventions', () => {
             // sits outside `/api/t/`. The avatar upload/delete acts
             // only on `session.user.id`; the serve route is read-only.
             'account',
+            // PR-8 — public trust-center visitor surface (access-request +
+            // token download). No session; tenant is resolved from the
+            // enabled TrustCenter row by public slug, mirroring
+            // vendor-assessment. Reads/writes only the 3 TrustCenter tables.
+            'trust',
             // Web-vitals RUM sink. A public, unauthenticated, best-effort
             // telemetry beacon receiver (Core Web Vitals + Next nav timing).
             // It carries NO tenant data and resolves no RequestContext —
