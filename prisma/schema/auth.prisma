@@ -119,6 +119,8 @@ model Tenant {
   trainingAssignments               TrainingAssignment[]
   backgroundChecks                  BackgroundCheck[]
   accessReviewConnectedDecisions    AccessReviewConnectedDecision[]
+  trustCenterDocuments              TrustCenterDocument[]
+  trustCenterAccessRequests         TrustCenterAccessRequest[]
   deviceTokens                      TenantDeviceToken[]
   scannerFindings                   ScannerFinding[]
   businessImpactAnalyses            BusinessImpactAnalysis[]

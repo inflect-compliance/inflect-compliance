@@ -246,6 +246,11 @@ describe('CI Guard: No direct prisma in tenant-scoped code', () => {
     // Auth routes are explicitly excluded — they handle registration/login with global tables
     const ROUTE_DIR_ALLOWLIST = [
         'auth', 'health', 'staging', 'scim', 'integrations',
+        // PR-8 — public trust-center download route consumes a single-use
+        // token then loads the FileRecord + storage under the table-owner
+        // role (no tenant session); the request path uses the isolated
+        // gated module.
+        'trust',
         // SP-4 — the MS Graph change-notification receiver verifies clientState
         // against policy.spSubscriptionId + enqueues a pull job. Caller is Graph
         // (no tenant context); the cross-tenant policy lookup is by id + the

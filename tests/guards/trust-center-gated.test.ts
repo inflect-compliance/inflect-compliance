@@ -1,0 +1,59 @@
+/**
+ * PR-8 — gated trust-center documents: structural security ratchet. The
+ * public gated module stays import-isolated; tokens are hashed + single-use +
+ * expiring; the models carry RLS.
+ */
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
+const ROOT = path.resolve(__dirname, '../..');
+const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+
+describe('trust-center gated documents — security invariants', () => {
+    const gated = read('src/lib/trust-center/gated.ts');
+
+    it('the public gated module imports NOTHING from the tenant-data layer', () => {
+        expect(gated).not.toMatch(/from ['"]@\/app-layer\/(repositories|usecases)\/(risk|control|evidence|finding|Risk|Control|Evidence|Finding)/);
+        // only prisma + crypto
+        expect(gated).toMatch(/from '@\/lib\/prisma'/);
+        expect(gated).toMatch(/import crypto from 'crypto'/);
+    });
+
+    it('resolves only ENABLED trust centers by public slug (no existence disclosure)', () => {
+        expect(gated).toMatch(/where: \{ slug, enabled: true \}/);
+        // request + consume return null on failure paths
+        expect(gated).toMatch(/return null/);
+    });
+
+    it('download tokens are hashed, single-use, and expiring', () => {
+        expect(gated).toMatch(/createHash\('sha256'\)/);
+        // single-use: consume claims atomically on downloadedAt: null
+        expect(gated).toMatch(/where: \{ id: req\.id, downloadedAt: null \}/);
+        // expiry check
+        expect(gated).toMatch(/req\.expiresAt && req\.expiresAt < now/);
+        // TTL applied on approval
+        expect(gated).toMatch(/DOWNLOAD_TOKEN_TTL_DAYS/);
+    });
+
+    it('the public gated-doc projection never selects fileRecordId', () => {
+        // listPublicTrustCenterDocuments select is label/gated only
+        const listBlock = gated.slice(gated.indexOf('listPublicTrustCenterDocuments'), gated.indexOf('AccessRequestInput'));
+        expect(listBlock).not.toMatch(/fileRecordId: true/);
+    });
+
+    it('the two models carry RLS + tenant indexes', () => {
+        const schema = read('prisma/schema/compliance.prisma');
+        expect(schema).toMatch(/model TrustCenterDocument \{/);
+        expect(schema).toMatch(/model TrustCenterAccessRequest \{/);
+        expect(schema).toMatch(/downloadTokenHash String\?\s+@unique/);
+        const mig = read('prisma/migrations/20260707150000_trust_center_gated_docs/migration.sql');
+        expect(mig).toMatch(/ARRAY\['TrustCenterDocument','TrustCenterAccessRequest'\]/);
+        expect(mig).toMatch(/FORCE ROW LEVEL SECURITY/);
+    });
+
+    it('the admin request-list projection omits the token hash', () => {
+        const admin = read('src/app-layer/usecases/trust-center-documents.ts');
+        const listBlock = admin.slice(admin.indexOf('listTrustCenterAccessRequests'), admin.indexOf('ApproveResult'));
+        expect(listBlock).not.toMatch(/downloadTokenHash: true/);
+    });
+});
