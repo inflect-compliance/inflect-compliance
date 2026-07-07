@@ -74,8 +74,8 @@ describe('Infrastructure Regression Guards', () => {
             }
         });
 
-        test('exactly 26 scheduled jobs exist', () => {
-            expect(SCHEDULED_JOBS).toHaveLength(26);
+        test('exactly 27 scheduled jobs exist', () => {
+            expect(SCHEDULED_JOBS).toHaveLength(27);
         });
 
         test('scheduled job names match expected set', () => {
@@ -105,6 +105,9 @@ describe('Infrastructure Regression Guards', () => {
                 // Epic G-5 — daily 30/14/7-day expiry reminder for
                 // control exceptions.
                 'exception-expiry-monitor',
+                // PR-2 — daily cross-tenant fan-out: an identity-sync per
+                // enabled Okta / Google Workspace connection.
+                'identity-sync-dispatch',
                 // NIS2 Article 23 — hourly deadline clock flipping
                 // incident notification deadlines PENDING→DUE→OVERDUE.
                 'incident-notification-deadlines',
