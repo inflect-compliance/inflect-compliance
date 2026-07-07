@@ -595,12 +595,26 @@ export interface JobPayloadMap {
     'aws-posture-collect': AwsPostureCollectPayload;
     'compliance-posture-summary': CompliancePostureSummaryPayload;
     'compliance-posture-summary-dispatch': CompliancePostureDispatchPayload;
+    'identity-sync': IdentitySyncPayload;
+    'identity-sync-dispatch': IdentitySyncDispatchPayload;
 }
 
 /** aws-posture connector — run one tenant connection's benchmark + collect evidence. */
 export interface AwsPostureCollectPayload {
     tenantId: string;
     connectionId: string;
+}
+
+/** identity-sync — sync one Okta / Google Workspace connection's directory. */
+export interface IdentitySyncPayload {
+    tenantId: string;
+    connectionId: string;
+}
+
+/** identity-sync-dispatch — fan out an identity-sync per enabled connection. */
+export interface IdentitySyncDispatchPayload {
+    // no fields — cron-triggered global fan-out
+    _?: never;
 }
 
 /** Union of all valid job names */
@@ -641,6 +655,20 @@ export const JOB_DEFAULTS: Record<JobName, {
         backoff: { type: 'fixed', delay: 0 },
         removeOnComplete: 50,
         removeOnFail: 200,
+    },
+    'identity-sync': {
+        // One attempt — a directory pull hits a rate-limited vendor API; a
+        // transient failure is picked up by the next scheduled fan-out.
+        attempts: 1,
+        backoff: { type: 'fixed', delay: 0 },
+        removeOnComplete: 50,
+        removeOnFail: 200,
+    },
+    'identity-sync-dispatch': {
+        attempts: 1,
+        backoff: { type: 'fixed', delay: 0 },
+        removeOnComplete: 20,
+        removeOnFail: 50,
     },
     'automation-runner': {
         attempts: 3,

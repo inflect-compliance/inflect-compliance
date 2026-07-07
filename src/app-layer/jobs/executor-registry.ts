@@ -1024,3 +1024,26 @@ executorRegistry.register('aws-posture-collect', async (payload) => {
         status: r.status,
     });
 });
+
+// PR-2 — identity-sync: sync one Okta / Google Workspace connection.
+executorRegistry.register('identity-sync', async (payload) => {
+    const startedAt = new Date().toISOString();
+    const startMs = performance.now();
+    const { runIdentitySyncJob } = await import('./identity-sync');
+    const r = await runIdentitySyncJob({ tenantId: payload.tenantId, connectionId: payload.connectionId });
+    return makeResult('identity-sync', startedAt, startMs, r.upserted, r.upserted, r.deprovisioned, {
+        executionId: r.executionId,
+        status: r.status,
+    });
+});
+
+// PR-2 — identity-sync-dispatch: fan out a sync per enabled identity connection.
+executorRegistry.register('identity-sync-dispatch', async () => {
+    const startedAt = new Date().toISOString();
+    const startMs = performance.now();
+    const { runIdentitySyncDispatch } = await import('./identity-sync');
+    const r = await runIdentitySyncDispatch();
+    return makeResult('identity-sync-dispatch', startedAt, startMs, r.connections, r.dispatched, 0, {
+        connections: r.connections,
+    });
+});

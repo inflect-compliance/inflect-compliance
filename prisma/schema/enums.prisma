@@ -834,6 +834,14 @@ enum SyncStatus {
   STALE
 }
 
+/// Lifecycle state of an identity account synced from a directory
+/// provider (Okta / Google Workspace) into ConnectedIdentityAccount.
+enum ConnectedAccountStatus {
+  ACTIVE
+  SUSPENDED
+  DEPROVISIONED
+}
+
 enum SyncDirection {
   PUSH
   PULL

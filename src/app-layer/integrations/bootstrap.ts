@@ -16,6 +16,8 @@
 import { registry, integrationRegistry } from './registry';
 import { GitHubProvider } from './providers/github';
 import { AwsPostureProvider } from './aws-posture-provider';
+import { OktaProvider } from './providers/okta';
+import { GoogleWorkspaceProvider } from './providers/google-workspace';
 import { GitHubClient } from './providers/github-client';
 import { GitHubBranchProtectionMapper } from './providers/github-mapper';
 import { GitHubSyncOrchestrator } from './providers/github/sync';
@@ -29,6 +31,12 @@ registry.register(new GitHubProvider());
 
 // AWS cloud posture — Powerpipe steampipe-mod-aws-compliance benchmark evidence.
 registry.register(new AwsPostureProvider());
+
+// Okta — directory sync + identity posture checks (MFA, dormant admins, …).
+registry.register(new OktaProvider());
+
+// Google Workspace — directory sync + identity posture checks.
+registry.register(new GoogleWorkspaceProvider());
 
 // Future providers:
 // registry.register(new AzureProvider());
