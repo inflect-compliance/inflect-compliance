@@ -363,6 +363,39 @@ model ConnectedIdentityAccount {
   @@index([tenantId, status])
 }
 
+/// A personnel record (PR-4). The people-layer hub — PR-5 devices + PR-6
+/// training/background attach here. Synced from an HRIS or entered manually;
+/// idempotent by (tenantId, workEmail). TERMINATED employees whose identity
+/// account is still ACTIVE are the offboarded_access_removed gap signal.
+model Employee {
+  id                String           @id @default(cuid())
+  tenantId          String
+  /// Stable id in the source HRIS (null for manual records).
+  externalId        String?
+  fullName          String
+  workEmail         String
+  status            EmploymentStatus @default(ACTIVE)
+  department        String?
+  jobTitle          String?
+  /// Self-reference to the manager's Employee row.
+  managerEmployeeId String?
+  startDate         DateTime?
+  endDate           DateTime?
+  /// 'HRIS' | 'MANUAL'.
+  source            String           @default("MANUAL")
+  syncedAt          DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  tenant   Tenant     @relation(fields: [tenantId], references: [id])
+  manager  Employee?  @relation("EmployeeManager", fields: [managerEmployeeId], references: [id], onDelete: SetNull)
+  reports  Employee[] @relation("EmployeeManager")
+
+  @@unique([tenantId, workEmail])
+  @@index([tenantId, status])
+  @@index([tenantId, managerEmployeeId])
+}
+
 /// Tenant-scoped normalised finding from a ScannerRun. Deduped across
 /// re-scans by `fingerprint` (SHA-256 of ruleId+location+message), so a
 /// recurring finding stays one row (the unique constraint makes ingest

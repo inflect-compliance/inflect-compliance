@@ -113,6 +113,7 @@ model Tenant {
   assetVulnerabilities              AssetVulnerability[]
   scannerRuns                       ScannerRun[]
   connectedIdentityAccounts         ConnectedIdentityAccount[]
+  employees                         Employee[]
   scannerFindings                   ScannerFinding[]
   businessImpactAnalyses            BusinessImpactAnalysis[]
   biaDependencies                   BiaDependency[]

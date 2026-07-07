@@ -1698,6 +1698,37 @@
             }
         }
     },
+    "personnel": {
+        "title": "Personnel",
+        "description": "{total} people in the roster — synced from your HRIS or added manually.",
+        "resourceSingular": "person",
+        "resourcePlural": "people",
+        "colName": "Name",
+        "colStatus": "Status",
+        "colDepartment": "Department",
+        "colTitle": "Job title",
+        "colSource": "Source",
+        "emptyTitle": "No personnel yet",
+        "emptyDesc": "Connect an HRIS (BambooHR) or add a person to build the roster.",
+        "emptyMatchingTitle": "No matching people",
+        "emptyMatchingDesc": "No personnel match the current filters.",
+        "fieldStartDate": "Start date",
+        "fieldEndDate": "End date",
+        "fieldExternalId": "HRIS id",
+        "filters": {
+            "status": "Employment status",
+            "statusDesc": "Filter by employment lifecycle"
+        },
+        "filterEnums": {
+            "status": {
+                "ACTIVE": "Active",
+                "ONBOARDING": "Onboarding",
+                "OFFBOARDING": "Offboarding",
+                "TERMINATED": "Terminated",
+                "LEAVE": "Leave"
+            }
+        }
+    },
     "policies": {
         "title": "Policy Management",
         "listDescription": "Authored, approved, and acknowledged — your live policy library.",

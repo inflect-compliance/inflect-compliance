@@ -450,6 +450,10 @@ describe('GUARDRAIL: Prisma schema has no unregistered self-referencing models',
         const EXEMPT_SELF_REF = new Set<string>([
             // RQ-5 — org hierarchy tree; not exportable, RLS-isolated.
             'RiskHierarchyNode',
+            // PR-4 — Employee.managerEmployeeId (manager tree); not part of the
+            // export/import system, RLS-isolated + same-tenant checks on the
+            // hris-sync / personnel usecases.
+            'Employee',
         ]);
 
         // Parse model blocks

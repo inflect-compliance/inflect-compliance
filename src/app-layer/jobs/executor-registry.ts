@@ -1065,3 +1065,21 @@ executorRegistry.register('gcp-posture-collect', async (payload) => {
     const r = await runGcpPostureCollectJob({ tenantId: payload.tenantId, connectionId: payload.connectionId });
     return makeResult('gcp-posture-collect', startedAt, startMs, 1, r.evidenceCreated, 0, { executionId: r.executionId, status: r.status });
 });
+
+// PR-4 — hris-sync: sync one BambooHR connection's roster.
+executorRegistry.register('hris-sync', async (payload) => {
+    const startedAt = new Date().toISOString();
+    const startMs = performance.now();
+    const { runHrisSyncJob } = await import('./hris-sync');
+    const r = await runHrisSyncJob({ tenantId: payload.tenantId, connectionId: payload.connectionId });
+    return makeResult('hris-sync', startedAt, startMs, r.upserted, r.upserted, r.managersLinked, { executionId: r.executionId, status: r.status });
+});
+
+// PR-4 — hris-sync-dispatch: fan out a sync per enabled HRIS connection.
+executorRegistry.register('hris-sync-dispatch', async () => {
+    const startedAt = new Date().toISOString();
+    const startMs = performance.now();
+    const { runHrisSyncDispatch } = await import('./hris-sync');
+    const r = await runHrisSyncDispatch();
+    return makeResult('hris-sync-dispatch', startedAt, startMs, r.connections, r.dispatched, 0, { connections: r.connections });
+});

@@ -86,6 +86,12 @@ export const SCHEDULED_JOBS: ScheduleDefinition[] = [
         defaultPayload: {},
     },
     {
+        name: 'hris-sync-dispatch',
+        pattern: '0 4 * * *',     // daily at 04:00 UTC
+        description: 'Fan out an hris-sync per enabled BambooHR connection (roster → Employee)',
+        defaultPayload: {},
+    },
+    {
         name: 'risk-appetite-monitor',
         pattern: '0 6 * * *',     // daily at 06:00 UTC
         description: 'Scan every tenant portfolio for risk-appetite threshold breaches (RQ-2)',

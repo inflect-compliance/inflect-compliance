@@ -1426,6 +1426,9 @@
     },
     "docs/implementation-notes/2026-07-07-pr3-azure-gcp-posture.md": {
       "class": "historical"
+    },
+    "docs/implementation-notes/2026-07-07-pr4-personnel-hris.md": {
+      "class": "historical"
     }
   }
 }
