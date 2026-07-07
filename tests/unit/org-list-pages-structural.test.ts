@@ -23,6 +23,16 @@ import * as path from 'path';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
+
+// i18n-aware: column headers now route through next-intl
+// (`header: t('<entity>.colTenant')`). Resolve the key against the
+// real English catalog so the original "Tenant" header intent holds.
+const EN = JSON.parse(read('messages/en.json'));
+const enOrg = (key: string): unknown =>
+    key.split('.').reduce<unknown>(
+        (o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined),
+        EN.org,
+    );
 const exists = (rel: string) => fs.existsSync(path.join(ROOT, rel));
 
 interface PageSpec {
@@ -143,7 +153,11 @@ describe('Epic O-4 — cross-tenant list pages structural contract', () => {
                 const src = read(spec.clientPath);
                 // Column id="tenantName" + a header that references "Tenant".
                 expect(src).toMatch(/id:\s*['"]tenantName['"]/);
-                expect(src).toMatch(/header:\s*['"]Tenant['"]/);
+                // i18n-aware: header now resolves `t('<entity>.colTenant')`.
+                expect(src).toMatch(
+                    new RegExp(`header:\\s*t\\('${spec.name}\\.colTenant'\\)`),
+                );
+                expect(enOrg(`${spec.name}.colTenant`)).toBe('Tenant');
                 // And renders the human-readable name from the row.
                 expect(src).toMatch(/row\.original\.tenantName/);
             });

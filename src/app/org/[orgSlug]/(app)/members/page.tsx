@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation';
 
+import { getTranslations } from 'next-intl/server';
+
 import { getOrgCtx } from '@/app-layer/context';
 import { forbidden } from '@/lib/errors/types';
 import { listOrgMembers } from '@/app-layer/usecases/org-members';
@@ -41,9 +43,8 @@ export default async function OrgMembersPage({ params }: PageProps) {
         // Same posture as `/org/{slug}/tenants/new` — non-managers
         // get the standard forbidden response, anti-enumeration
         // already collapsed at getOrgCtx for non-members.
-        throw forbidden(
-            'You do not have permission to manage members of this organization',
-        );
+        const t = await getTranslations('org');
+        throw forbidden(t('errors.noPermissionMembers'));
     }
 
     const [rows, invites] = await Promise.all([

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Paperclip } from 'lucide-react';
 
 import { ListPageShell } from '@/components/layout/ListPageShell';
@@ -26,17 +27,25 @@ const STATUS_VARIANTS: Record<OverdueEvidenceRow['status'], 'warning' | 'info' |
     REJECTED: 'error',
 };
 
+const STATUS_LABEL_KEY: Record<OverdueEvidenceRow['status'], string> = {
+    DRAFT: 'evidence.statusDraft',
+    SUBMITTED: 'evidence.statusSubmitted',
+    REJECTED: 'evidence.statusRejected',
+};
+
 function OverdueBadge({ days }: { days: number }) {
+    const t = useTranslations('org');
     // 30+ days → critical, 7+ → warning, otherwise pending.
     const variant = days >= 30 ? 'error' : days >= 7 ? 'warning' : 'warning';
     return (
         <StatusBadge variant={variant}>
-            {days}d overdue
+            {t('evidence.overdueBadge', { days })}
         </StatusBadge>
     );
 }
 
 export function EvidenceTable({ rows: initialRows, nextCursor: initialNextCursor, orgSlug }: Props) {
+    const t = useTranslations('org');
     const [sortBy, setSortBy] = useState<string>('daysOverdue');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
@@ -72,7 +81,7 @@ export function EvidenceTable({ rows: initialRows, nextCursor: initialNextCursor
             createColumns<OverdueEvidenceRow>([
                 {
                     id: 'tenantName',
-                    header: 'Tenant',
+                    header: t('evidence.colTenant'),
                     cell: ({ row }) => (
                         <span
                             className="text-xs font-medium text-content-muted"
@@ -84,7 +93,7 @@ export function EvidenceTable({ rows: initialRows, nextCursor: initialNextCursor
                 },
                 {
                     id: 'title',
-                    header: 'Evidence',
+                    header: t('evidence.colEvidence'),
                     cell: ({ row }) => (
                         <Link
                             href={row.original.drillDownUrl}
@@ -97,21 +106,21 @@ export function EvidenceTable({ rows: initialRows, nextCursor: initialNextCursor
                 },
                 {
                     id: 'daysOverdue',
-                    header: 'Overdue',
+                    header: t('evidence.colOverdue'),
                     cell: ({ row }) => <OverdueBadge days={row.original.daysOverdue} />,
                 },
                 {
                     id: 'status',
-                    header: 'Status',
+                    header: t('evidence.colStatus'),
                     cell: ({ row }) => (
                         <StatusBadge variant={STATUS_VARIANTS[row.original.status]}>
-                            {row.original.status}
+                            {t(STATUS_LABEL_KEY[row.original.status])}
                         </StatusBadge>
                     ),
                 },
                 {
                     id: 'nextReviewDate',
-                    header: 'Review due',
+                    header: t('evidence.colReviewDue'),
                     cell: ({ row }) => (
                         <span className="text-xs text-content-subtle tabular-nums">
                             {formatDate(row.original.nextReviewDate)}
@@ -119,7 +128,7 @@ export function EvidenceTable({ rows: initialRows, nextCursor: initialNextCursor
                     ),
                 },
             ]),
-        [],
+        [t],
     );
 
     return (
@@ -127,11 +136,11 @@ export function EvidenceTable({ rows: initialRows, nextCursor: initialNextCursor
             <ListPageShell.Header>
                 <div>
                     <Heading level={1}>
-                        Overdue Evidence
+                        {t('evidence.title')}
                     </Heading>
                     <p className="text-sm text-content-muted mt-1">
-                        {pagination.rows.length} evidence item{pagination.rows.length === 1 ? '' : 's'} past review across the portfolio
-                        {pagination.hasMore ? ' (more available)' : ''}
+                        {t('evidence.subtitle', { count: pagination.rows.length })}
+                        {pagination.hasMore ? t('evidence.moreAvailable') : ''}
                     </p>
                 </div>
             </ListPageShell.Header>
@@ -151,8 +160,8 @@ export function EvidenceTable({ rows: initialRows, nextCursor: initialNextCursor
                     resourceName={(plural) => (plural ? 'evidence items' : 'evidence item')}
                     emptyState={
                         <TableEmptyState
-                            title="No overdue evidence"
-                            description="Every non-approved evidence item is within its review window across this organization's tenants."
+                            title={t('evidence.emptyTitle')}
+                            description={t('evidence.emptyDesc')}
                             icon={<Paperclip className="size-10" />}
                         />
                     }
@@ -170,7 +179,7 @@ export function EvidenceTable({ rows: initialRows, nextCursor: initialNextCursor
                             }}
                             disabled={pagination.loading}
                         >
-                            {pagination.loading ? 'Loading…' : 'Load more evidence'}
+                            {pagination.loading ? t('common.loading') : t('evidence.loadMore')}
                         </Button>
                         {pagination.error && (
                             <span
@@ -178,7 +187,7 @@ export function EvidenceTable({ rows: initialRows, nextCursor: initialNextCursor
                                 role="alert"
                                 data-testid="org-evidence-load-error"
                             >
-                                Failed to load more — please retry.
+                                {t('evidence.failedLoadMore')}
                             </span>
                         )}
                     </div>

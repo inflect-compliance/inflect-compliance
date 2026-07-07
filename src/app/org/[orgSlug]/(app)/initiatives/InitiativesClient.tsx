@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import type { ColumnDef } from '@tanstack/react-table';
 
 import { DataTable, createColumns } from '@/components/ui/table';
@@ -29,6 +30,13 @@ const STATUS_VARIANT: Record<string, 'neutral' | 'info' | 'warning' | 'error' | 
     COMPLETED: 'success',
     CANCELLED: 'neutral',
 };
+const STATUS_LABEL_KEY: Record<string, string> = {
+    PLANNED: 'widgets.statusPlanned',
+    IN_PROGRESS: 'widgets.statusInProgress',
+    BLOCKED: 'widgets.statusBlocked',
+    COMPLETED: 'widgets.statusCompleted',
+    CANCELLED: 'widgets.statusCancelled',
+};
 
 function atRisk(r: Row): boolean {
     if (r.status === 'BLOCKED') return true;
@@ -46,6 +54,7 @@ export function InitiativesClient({
     initiatives: Row[];
 }) {
     const router = useRouter();
+    const t = useTranslations('org');
     const [createOpen, setCreateOpen] = useState(false);
 
     const columns = useMemo(
@@ -53,41 +62,45 @@ export function InitiativesClient({
             createColumns<Row>([
                 {
                     accessorKey: 'title',
-                    header: 'Initiative',
+                    header: t('initiatives.colInitiative'),
                     cell: ({ row }) => <span className="font-medium">{row.original.title}</span>,
                 },
                 {
                     accessorKey: 'status',
-                    header: 'Status',
+                    header: t('initiatives.colStatus'),
                     cell: ({ row }) => (
                         <StatusBadge variant={STATUS_VARIANT[row.original.status] ?? 'neutral'} size="sm">
-                            {row.original.status}
+                            {STATUS_LABEL_KEY[row.original.status]
+                                ? t(STATUS_LABEL_KEY[row.original.status])
+                                : row.original.status}
                         </StatusBadge>
                     ),
                 },
                 {
                     id: 'risk',
-                    header: 'Risk',
+                    header: t('initiatives.colRisk'),
                     cell: ({ row }) =>
                         atRisk(row.original) ? (
-                            <StatusBadge variant="warning" size="sm">At risk</StatusBadge>
+                            <StatusBadge variant="warning" size="sm">{t('initiatives.atRisk')}</StatusBadge>
                         ) : (
                             <span className="text-content-muted text-xs">—</span>
                         ),
                 },
                 {
                     id: 'linked',
-                    header: 'Linked work',
+                    header: t('initiatives.colLinkedWork'),
                     cell: ({ row }) => (
                         <span className="text-content-muted tabular-nums">
                             {row.original.linkCount}
-                            {row.original.tenantSpan > 0 ? ` · ${row.original.tenantSpan} tenant${row.original.tenantSpan === 1 ? '' : 's'}` : ''}
+                            {row.original.tenantSpan > 0
+                                ? t('initiatives.tenantSpan', { count: row.original.tenantSpan })
+                                : ''}
                         </span>
                     ),
                 },
                 {
                     accessorKey: 'targetDate',
-                    header: 'Target',
+                    header: t('initiatives.colTarget'),
                     cell: ({ row }) =>
                         row.original.targetDate ? (
                             <span className="text-content-muted">{formatDate(new Date(row.original.targetDate))}</span>
@@ -96,16 +109,16 @@ export function InitiativesClient({
                         ),
                 },
             ]),
-        [],
+        [t],
     );
 
     return (
         <div className="space-y-section p-4">
             <div className="flex items-center justify-between gap-compact flex-wrap">
-                <Heading level={1}>Security initiatives</Heading>
+                <Heading level={1}>{t('initiatives.title')}</Heading>
                 {canManage && (
                     <Button variant="primary" onClick={() => setCreateOpen(true)}>
-                        New initiative
+                        {t('initiatives.newInitiative')}
                     </Button>
                 )}
             </div>
@@ -137,6 +150,7 @@ function CreateInitiativeModal({
     onClose: () => void;
     onCreated: (id: string) => void;
 }) {
+    const t = useTranslations('org');
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [saving, setSaving] = useState(false);
@@ -144,7 +158,7 @@ function CreateInitiativeModal({
 
     const save = async () => {
         if (!title.trim()) {
-            setError('A title is required.');
+            setError(t('initiatives.titleRequired'));
             return;
         }
         setSaving(true);
@@ -154,11 +168,11 @@ function CreateInitiativeModal({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ title, description: description || null }),
             });
-            if (!res.ok) throw new Error('Failed to create initiative.');
+            if (!res.ok) throw new Error(t('initiatives.failedCreate'));
             const data = await res.json();
             onCreated(data.initiative.id);
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to create initiative.');
+            setError(e instanceof Error ? e.message : t('initiatives.failedCreate'));
         } finally {
             setSaving(false);
         }
@@ -166,12 +180,12 @@ function CreateInitiativeModal({
 
     return (
         <Modal showModal setShowModal={(o) => (o ? null : onClose())}>
-            <Modal.Header title="New security initiative" />
+            <Modal.Header title={t('initiatives.createModalTitle')} />
             <Modal.Body>
                 <div className="space-y-default">
                     <input
                         className="w-full rounded-md border border-border-subtle bg-bg-default p-2 text-sm"
-                        placeholder="Title (e.g. Roll out MFA across all subsidiaries)"
+                        placeholder={t('initiatives.titlePlaceholder')}
                         maxLength={200}
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
@@ -179,7 +193,7 @@ function CreateInitiativeModal({
                     <textarea
                         className="w-full rounded-md border border-border-subtle bg-bg-default p-2 text-sm"
                         rows={3}
-                        placeholder="Description (optional)"
+                        placeholder={t('initiatives.descriptionPlaceholder')}
                         maxLength={8000}
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
@@ -190,10 +204,10 @@ function CreateInitiativeModal({
             <Modal.Footer>
                 <Modal.Actions>
                     <Button variant="ghost" onClick={onClose} disabled={saving}>
-                        Cancel
+                        {t('common.cancel')}
                     </Button>
                     <Button variant="primary" onClick={save} disabled={saving}>
-                        Create initiative
+                        {t('initiatives.createInitiative')}
                     </Button>
                 </Modal.Actions>
             </Modal.Footer>

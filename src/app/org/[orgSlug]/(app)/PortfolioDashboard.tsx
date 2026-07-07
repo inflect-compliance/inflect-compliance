@@ -28,6 +28,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Building2, Pencil, Plus, RotateCcw, Trash2, X } from 'lucide-react';
 
 import {
@@ -129,6 +130,7 @@ async function resetWidgets(
 // client hydration mismatch, with the absolute timestamp as the
 // native `title`.
 function RefreshedAt({ iso }: { iso: string }) {
+    const t = useTranslations('org');
     const [now, setNow] = useState<Date | null>(null);
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -143,7 +145,7 @@ function RefreshedAt({ iso }: { iso: string }) {
             data-testid="portfolio-refreshed-at"
             className="text-xs text-content-muted"
         >
-            Portfolio data refreshed{display ? ` ${display}` : ''}
+            {t('dashboard.refreshedAt', { when: display ? ` ${display}` : '' })}
         </span>
     );
 }
@@ -156,6 +158,7 @@ export function PortfolioDashboard({
     canEdit,
 }: PortfolioDashboardProps) {
     const router = useRouter();
+    const t = useTranslations('org');
     const [widgets, setWidgets] = useState<OrgDashboardWidgetDto[]>(
         () => [...initialWidgets],
     );
@@ -191,12 +194,12 @@ export function PortfolioDashboard({
             } catch (e) {
                 setError(
                     e instanceof Error
-                        ? `Failed to save layout (${e.message})`
-                        : 'Failed to save layout',
+                        ? t('dashboard.failedSaveLayout', { message: e.message })
+                        : t('dashboard.failedSaveLayoutShort'),
                 );
             }
         },
-        [data.orgSlug],
+        [data.orgSlug, t],
     );
 
     const handleCreate = useCallback(
@@ -219,14 +222,14 @@ export function PortfolioDashboard({
             } catch (e) {
                 setError(
                     e instanceof Error
-                        ? `Failed to delete widget (${e.message})`
-                        : 'Failed to delete widget',
+                        ? t('dashboard.failedDeleteWidget', { message: e.message })
+                        : t('dashboard.failedDeleteWidgetShort'),
                 );
             } finally {
                 setBusy(false);
             }
         },
-        [data.orgSlug, busy],
+        [data.orgSlug, busy, t],
     );
 
     // ── Reset-to-preset handler ──
@@ -246,11 +249,11 @@ export function PortfolioDashboard({
         } catch (e) {
             setError(
                 e instanceof Error
-                    ? `Failed to reset layout (${e.message})`
-                    : 'Failed to reset layout',
+                    ? t('dashboard.failedResetLayout', { message: e.message })
+                    : t('dashboard.failedResetLayoutShort'),
             );
         }
-    }, [data.orgSlug, router]);
+    }, [data.orgSlug, router, t]);
 
     // PR-3 — DashboardLayout PageHeader description preserves the
     // pre-PR-3 stats line (tenant count + pending snapshot count)
@@ -263,7 +266,7 @@ export function PortfolioDashboard({
                 value={data.summary.tenants.total}
                 format={{ kind: 'integer' }}
             />
-            {' '}tenant{data.summary.tenants.total === 1 ? '' : 's'}
+            {' '}{data.summary.tenants.total === 1 ? t('dashboard.tenantOne') : t('dashboard.tenantOther')}
             {data.summary.tenants.pending > 0 && (
                 <>
                     {' · '}
@@ -271,7 +274,7 @@ export function PortfolioDashboard({
                         value={data.summary.tenants.pending}
                         format={{ kind: 'integer' }}
                     />
-                    {' pending first snapshot'}
+                    {' '}{t('dashboard.pendingFirstSnapshot')}
                 </>
             )}
         </span>
@@ -295,7 +298,7 @@ export function PortfolioDashboard({
                     data-testid="dashboard-edit-toggle"
                 >
                     <Pencil className="size-3.5" aria-hidden="true" />
-                    Edit dashboard
+                    {t('dashboard.editDashboard')}
                 </Button>
             )}
             {canEdit && editMode && (
@@ -308,7 +311,7 @@ export function PortfolioDashboard({
                         data-testid="dashboard-add-widget"
                     >
                         <Plus className="size-3.5" aria-hidden="true" />
-                        Add widget
+                        {t('dashboard.addWidget')}
                     </Button>
                     <Button
                         type="button"
@@ -318,7 +321,7 @@ export function PortfolioDashboard({
                         data-testid="dashboard-reset-layout"
                     >
                         <RotateCcw className="size-3.5" aria-hidden="true" />
-                        Reset to recommended layout
+                        {t('dashboard.resetLayout')}
                     </Button>
                     <Button
                         type="button"
@@ -328,7 +331,7 @@ export function PortfolioDashboard({
                         data-testid="dashboard-edit-done"
                     >
                         <X className="size-3.5" aria-hidden="true" />
-                        Done
+                        {t('dashboard.done')}
                     </Button>
                 </>
             )}
@@ -340,7 +343,7 @@ export function PortfolioDashboard({
             data-testid="org-dashboard"
             className="space-y-default"
             header={{
-                title: 'Portfolio Overview',
+                title: t('dashboard.title'),
                 description: headerDescription,
                 meta: headerMeta,
                 actions: headerActions,
@@ -368,12 +371,12 @@ export function PortfolioDashboard({
                     className="rounded-md border border-border-subtle bg-bg-muted/20 px-4 py-6 text-center"
                 >
                     <p className="text-sm font-medium text-content-emphasis">
-                        Dashboard is empty
+                        {t('dashboard.emptyTitle')}
                     </p>
                     <p className="text-xs text-content-muted mt-1">
                         {canEdit
-                            ? 'Run the backfill script (`npm run db:backfill-org-widgets -- --execute`) or add widgets via the picker.'
-                            : 'No widgets configured. Contact an org admin.'}
+                            ? t('dashboard.emptyAdmin')
+                            : t('dashboard.emptyReader')}
                     </p>
                 </div>
             )}
@@ -386,12 +389,12 @@ export function PortfolioDashboard({
                 <EmptyState
                     variant="no-records"
                     icon={Building2}
-                    title="Add tenants to populate your portfolio"
-                    description="This dashboard rolls up compliance posture — coverage, risks, evidence, and maturity — across every tenant in your organization. Link your first tenant and run a snapshot to bring it to life."
+                    title={t('dashboard.onboardingTitle')}
+                    description={t('dashboard.onboardingDesc')}
                     primaryAction={
                         canEdit
                             ? {
-                                  label: 'Manage tenants',
+                                  label: t('dashboard.manageTenants'),
                                   href: `/org/${data.orgSlug}/tenants`,
                               }
                             : undefined
@@ -418,7 +421,7 @@ export function PortfolioDashboard({
                                             void handleDelete(w.id);
                                         }}
                                         disabled={busy}
-                                        aria-label={`Delete ${w.title ?? w.chartType} widget`}
+                                        aria-label={t('dashboard.deleteWidgetAria', { name: w.title ?? w.chartType })}
                                         data-testid={`dashboard-delete-widget-${w.id}`}
                                         className="text-content-subtle hover:text-content-error transition-colors p-1 rounded"
                                     >
@@ -444,9 +447,9 @@ export function PortfolioDashboard({
                 showModal={resetConfirmOpen}
                 setShowModal={setResetConfirmOpen}
                 tone="danger"
-                title="Reset to recommended layout?"
-                description="This discards the current dashboard layout — including any widgets you added, removed, or rearranged — and restores the recommended default. This cannot be undone."
-                confirmLabel="Reset to recommended layout"
+                title={t('dashboard.resetConfirmTitle')}
+                description={t('dashboard.resetConfirmDesc')}
+                confirmLabel={t('dashboard.resetLayout')}
                 onConfirm={handleReset}
             />
         </DashboardLayout>

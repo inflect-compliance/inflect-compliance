@@ -25,6 +25,16 @@ import { assertWidgetTypedShape } from '@/app-layer/schemas/org-dashboard-widget
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
+// i18n-aware: the DrillDownCtas label + donut band labels now route
+// through next-intl. Resolve the keys against the English catalog so
+// the original visible-text intent still holds.
+const EN = JSON.parse(read('messages/en.json'));
+const enOrg = (key: string): unknown =>
+    key.split('.').reduce<unknown>(
+        (o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined),
+        EN.org,
+    );
+
 describe('GUARDRAIL: ORG_MATURITY engine integration', () => {
     describe('enum + schema', () => {
         it('ORG_MATURITY is a member of OrgDashboardWidgetType', () => {
@@ -146,8 +156,9 @@ describe('GUARDRAIL: ORG_MATURITY engine integration', () => {
             // The DrillDownCtas "Critical Risks" entry must bind to the SAME
             // field as the KPI — one source per metric.
             expect(SECTIONS).toMatch(
-                /label:\s*'Critical Risks',\s*\n\s*count:\s*summary\.risks\.critical/,
+                /label:\s*t\('nav\.criticalRisks'\),\s*\n\s*count:\s*summary\.risks\.critical/,
             );
+            expect(enOrg('nav.criticalRisks')).toBe('Critical Risks');
         });
 
         it('the donut\'s tenant-health bands are NOT labelled like the risk metric', () => {
@@ -160,7 +171,8 @@ describe('GUARDRAIL: ORG_MATURITY engine integration', () => {
                 DISPATCHER.indexOf("widget.chartType === 'rag-distribution'"),
             );
             const donut = arm.slice(0, arm.indexOf('return { chartType'));
-            expect(donut).toMatch(/label:\s*'Critical health'/);
+            expect(donut).toMatch(/label:\s*t\('widgets\.criticalHealth'\)/);
+            expect(enOrg('widgets.criticalHealth')).toBe('Critical health');
             expect(donut).not.toMatch(/label:\s*'Critical'\s*,/);
             expect(donut).not.toMatch(/centerSub:\s*'Active'/);
         });

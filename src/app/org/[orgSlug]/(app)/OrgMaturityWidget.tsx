@@ -13,6 +13,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Gauge } from 'lucide-react';
 
 import { RadarChart, TimeSeriesChart, Bars, XAxis, YAxis, chartReady, chartEmpty } from '@/components/ui/charts';
@@ -25,20 +26,20 @@ import { formatDate } from '@/lib/format-date';
 import type { OrgMaturityDto, MaturityDomainRating } from '@/app-layer/usecases/org-maturity';
 
 const LEVELS = ['INITIAL', 'REPEATABLE', 'DEFINED', 'MANAGED', 'OPTIMIZING'] as const;
-const LEVEL_LABEL: Record<string, string> = {
-    INITIAL: '1 · Initial',
-    REPEATABLE: '2 · Repeatable',
-    DEFINED: '3 · Defined',
-    MANAGED: '4 · Managed',
-    OPTIMIZING: '5 · Optimizing',
+const LEVEL_LABEL_KEY: Record<string, string> = {
+    INITIAL: 'widgets.levelInitial',
+    REPEATABLE: 'widgets.levelRepeatable',
+    DEFINED: 'widgets.levelDefined',
+    MANAGED: 'widgets.levelManaged',
+    OPTIMIZING: 'widgets.levelOptimizing',
 };
-const DOMAIN_LABEL: Record<string, string> = {
-    GOVERN: 'Govern',
-    IDENTIFY: 'Identify',
-    PROTECT: 'Protect',
-    DETECT: 'Detect',
-    RESPOND: 'Respond',
-    RECOVER: 'Recover',
+const DOMAIN_LABEL_KEY: Record<string, string> = {
+    GOVERN: 'widgets.domainGovern',
+    IDENTIFY: 'widgets.domainIdentify',
+    PROTECT: 'widgets.domainProtect',
+    DETECT: 'widgets.domainDetect',
+    RESPOND: 'widgets.domainRespond',
+    RECOVER: 'widgets.domainRecover',
 };
 
 const STALE_DAYS = 90;
@@ -62,13 +63,14 @@ export function OrgMaturityWidget({
     orgSlug: string;
 }) {
     const router = useRouter();
+    const t = useTranslations('org');
     const [rateOpen, setRateOpen] = useState(false);
     const age = daysSince(data.lastRatedAt);
     const isStale = age !== null && age > STALE_DAYS;
 
     const radarAxes = data.domains.map((d) => ({
         key: d.domain,
-        label: DOMAIN_LABEL[d.domain] ?? d.domain,
+        label: DOMAIN_LABEL_KEY[d.domain] ? t(DOMAIN_LABEL_KEY[d.domain]) : d.domain,
         value: d.levelNum,
     }));
 
@@ -79,14 +81,14 @@ export function OrgMaturityWidget({
                     <Gauge className="w-5 h-5 text-content-muted" aria-hidden="true" />
                     <KPIStat
                         value={data.isDefault ? '—' : `${data.overall.toFixed(1)} / 5`}
-                        label="Security maturity"
-                        description={data.overallLabel ? LEVEL_LABEL[data.overallLabel] : 'Not yet rated'}
+                        label={t('widgets.securityMaturity')}
+                        description={data.overallLabel && LEVEL_LABEL_KEY[data.overallLabel] ? t(LEVEL_LABEL_KEY[data.overallLabel]) : t('widgets.notYetRated')}
                         size="sm"
                     />
                 </div>
                 {canSet && (
                     <Button variant="secondary" size="sm" onClick={() => setRateOpen(true)}>
-                        Rate maturity
+                        {t('widgets.rateMaturity')}
                     </Button>
                 )}
             </div>
@@ -112,12 +114,12 @@ export function OrgMaturityWidget({
                         seriesIndex={2}
                         maxValue={5}
                         testId="org-maturity-radar"
-                        ariaLabel="Security maturity by CSF function"
+                        ariaLabel={t('widgets.maturityRadarAria')}
                         emptyFallback={
                             <EmptyState
                                 size="sm"
-                                title="No maturity ratings yet"
-                                description="Rate your maturity to populate this radar."
+                                title={t('widgets.ratingsEmptyTitle')}
+                                description={t('widgets.ratingsEmptyDesc')}
                             />
                         }
                     />
@@ -126,19 +128,23 @@ export function OrgMaturityWidget({
 
             {showCoverageHint && data.coverageHint && (
                 <p className="text-xs text-content-muted">
-                    Advisory: portfolio coverage {data.coverageHint.coveragePercent}% suggests ~
-                    {LEVEL_LABEL[data.coverageHint.suggestedLevel]} — coverage is a hint, not the rating.
+                    {t('widgets.coverageAdvisory', {
+                        percent: data.coverageHint.coveragePercent,
+                        level: LEVEL_LABEL_KEY[data.coverageHint.suggestedLevel]
+                            ? t(LEVEL_LABEL_KEY[data.coverageHint.suggestedLevel])
+                            : data.coverageHint.suggestedLevel,
+                    })}
                 </p>
             )}
 
             {!data.isDefault && (
                 <p className="text-xs text-content-muted">
-                    {age === 0 ? 'Last rated today.' : `Last rated ${age} day${age === 1 ? '' : 's'} ago.`}
+                    {age === 0 ? t('widgets.lastRatedToday') : t('widgets.lastRatedDaysAgo', { count: age ?? 0 })}
                 </p>
             )}
             {isStale && (
                 <p className="text-xs text-content-warning" data-testid="org-maturity-stale">
-                    Last rated {age} days ago — may be stale.
+                    {t('widgets.maturityStale', { count: age ?? 0 })}
                 </p>
             )}
 
@@ -157,6 +163,7 @@ export function OrgMaturityWidget({
 }
 
 function MaturityTrend({ orgSlug }: { orgSlug: string }) {
+    const t = useTranslations('org');
     const [points, setPoints] = useState<Array<{ date: Date; values: { overall: number } }> | null>(null);
     const load = useCallback(async () => {
         try {
@@ -179,7 +186,7 @@ function MaturityTrend({ orgSlug }: { orgSlug: string }) {
     }, [load]);
 
     if (!points || points.length < 2) {
-        return <p className="text-xs text-content-muted">Not enough history yet for a trend.</p>;
+        return <p className="text-xs text-content-muted">{t('widgets.notEnoughHistory')}</p>;
     }
     return (
         <TimeSeriesChart
@@ -209,6 +216,7 @@ function RateMaturitySheet({
     onClose: () => void;
     onSaved: () => void;
 }) {
+    const t = useTranslations('org');
     const [savingDomain, setSavingDomain] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -221,33 +229,37 @@ function RateMaturitySheet({
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ domain, level }),
                 });
-                if (!res.ok) throw new Error('Failed to save rating.');
+                if (!res.ok) throw new Error(t('widgets.failedSaveRating'));
                 onSaved();
             } catch (e) {
-                setError(e instanceof Error ? e.message : 'Failed to save rating.');
+                setError(e instanceof Error ? e.message : t('widgets.failedSaveRating'));
             } finally {
                 setSavingDomain(null);
             }
         },
-        [orgSlug, onSaved],
+        [orgSlug, onSaved, t],
     );
 
     return (
         <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-            <Sheet.Header title="Rate security maturity" />
+            <Sheet.Header title={t('widgets.rateSheetTitle')} />
             <Sheet.Body>
                 {coverageHint && (
                     <p className="text-xs text-content-muted mb-4">
-                        Advisory: portfolio coverage {coverageHint.coveragePercent}% ≈ {LEVEL_LABEL[coverageHint.suggestedLevel]}.
-                        Use your judgment — coverage is a hint, not the rating.
+                        {t('widgets.coverageAdvisorySheet', {
+                            percent: coverageHint.coveragePercent,
+                            level: LEVEL_LABEL_KEY[coverageHint.suggestedLevel]
+                                ? t(LEVEL_LABEL_KEY[coverageHint.suggestedLevel])
+                                : coverageHint.suggestedLevel,
+                        })}
                     </p>
                 )}
                 <div className="space-y-section">
                     {domains.map((d) => (
                         <div key={d.domain} className="space-y-tight" data-testid={`maturity-domain-${d.domain}`}>
                             <p className="text-sm font-medium">
-                                {DOMAIN_LABEL[d.domain] ?? d.domain}
-                                {savingDomain === d.domain && <span className="text-xs text-content-muted"> · saving…</span>}
+                                {DOMAIN_LABEL_KEY[d.domain] ? t(DOMAIN_LABEL_KEY[d.domain]) : d.domain}
+                                {savingDomain === d.domain && <span className="text-xs text-content-muted"> · {t('widgets.savingSuffix')}</span>}
                             </p>
                             <RadioGroup
                                 value={d.level ?? ''}
@@ -257,7 +269,7 @@ function RateMaturitySheet({
                                 {LEVELS.map((lvl) => (
                                     <label key={lvl} className="flex items-center gap-tight text-xs cursor-pointer">
                                         <RadioGroupItem value={lvl} />
-                                        {LEVEL_LABEL[lvl]}
+                                        {t(LEVEL_LABEL_KEY[lvl])}
                                     </label>
                                 ))}
                             </RadioGroup>

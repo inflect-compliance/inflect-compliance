@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { AlertTriangle } from 'lucide-react';
 
 import { ListPageShell } from '@/components/layout/ListPageShell';
@@ -26,6 +27,12 @@ const STATUS_VARIANTS: Record<CriticalRiskRow['status'], 'error' | 'warning' | '
     ACCEPTED: 'info',
 };
 
+const STATUS_LABEL_KEY: Record<CriticalRiskRow['status'], string> = {
+    OPEN: 'risks.statusOpen',
+    MITIGATING: 'risks.statusMitigating',
+    ACCEPTED: 'risks.statusAccepted',
+};
+
 function ScorePill({ score }: { score: number }) {
     // ≥ 20 critical (red), 15-19 high (warning).
     const variant = score >= 20 ? 'error' : 'warning';
@@ -33,6 +40,7 @@ function ScorePill({ score }: { score: number }) {
 }
 
 export function RisksTable({ rows: initialRows, nextCursor: initialNextCursor, orgSlug }: Props) {
+    const t = useTranslations('org');
     const [sortBy, setSortBy] = useState<string>('inherentScore');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
@@ -68,7 +76,7 @@ export function RisksTable({ rows: initialRows, nextCursor: initialNextCursor, o
             createColumns<CriticalRiskRow>([
                 {
                     id: 'tenantName',
-                    header: 'Tenant',
+                    header: t('risks.colTenant'),
                     cell: ({ row }) => (
                         <span
                             className="text-xs font-medium text-content-muted"
@@ -80,7 +88,7 @@ export function RisksTable({ rows: initialRows, nextCursor: initialNextCursor, o
                 },
                 {
                     id: 'title',
-                    header: 'Risk',
+                    header: t('risks.colRisk'),
                     cell: ({ row }) => (
                         <Link
                             href={row.original.drillDownUrl}
@@ -93,21 +101,21 @@ export function RisksTable({ rows: initialRows, nextCursor: initialNextCursor, o
                 },
                 {
                     id: 'inherentScore',
-                    header: 'Score',
+                    header: t('risks.colScore'),
                     cell: ({ row }) => <ScorePill score={row.original.inherentScore} />,
                 },
                 {
                     id: 'status',
-                    header: 'Status',
+                    header: t('risks.colStatus'),
                     cell: ({ row }) => (
                         <StatusBadge variant={STATUS_VARIANTS[row.original.status]}>
-                            {row.original.status}
+                            {t(STATUS_LABEL_KEY[row.original.status])}
                         </StatusBadge>
                     ),
                 },
                 {
                     id: 'updatedAt',
-                    header: 'Updated',
+                    header: t('risks.colUpdated'),
                     cell: ({ row }) => (
                         <span className="text-xs text-content-subtle tabular-nums">
                             {formatDate(row.original.updatedAt)}
@@ -115,7 +123,7 @@ export function RisksTable({ rows: initialRows, nextCursor: initialNextCursor, o
                     ),
                 },
             ]),
-        [],
+        [t],
     );
 
     return (
@@ -123,11 +131,11 @@ export function RisksTable({ rows: initialRows, nextCursor: initialNextCursor, o
             <ListPageShell.Header>
                 <div>
                     <Heading level={1}>
-                        Critical Risks
+                        {t('risks.title')}
                     </Heading>
                     <p className="text-sm text-content-muted mt-1">
-                        {pagination.rows.length} critical risk{pagination.rows.length === 1 ? '' : 's'} (score ≥ 15, not closed) across the portfolio
-                        {pagination.hasMore ? ' (more available)' : ''}
+                        {t('risks.subtitle', { count: pagination.rows.length })}
+                        {pagination.hasMore ? t('risks.moreAvailable') : ''}
                     </p>
                 </div>
             </ListPageShell.Header>
@@ -147,8 +155,8 @@ export function RisksTable({ rows: initialRows, nextCursor: initialNextCursor, o
                     resourceName={(plural) => (plural ? 'risks' : 'risk')}
                     emptyState={
                         <TableEmptyState
-                            title="No critical risks"
-                            description="No risk with inherent score ≥ 15 is currently open across this organization's tenants."
+                            title={t('risks.emptyTitle')}
+                            description={t('risks.emptyDesc')}
                             icon={<AlertTriangle className="size-10" />}
                         />
                     }
@@ -166,7 +174,7 @@ export function RisksTable({ rows: initialRows, nextCursor: initialNextCursor, o
                             }}
                             disabled={pagination.loading}
                         >
-                            {pagination.loading ? 'Loading…' : 'Load more risks'}
+                            {pagination.loading ? t('common.loading') : t('risks.loadMore')}
                         </Button>
                         {pagination.error && (
                             <span
@@ -174,7 +182,7 @@ export function RisksTable({ rows: initialRows, nextCursor: initialNextCursor, o
                                 role="alert"
                                 data-testid="org-risks-load-error"
                             >
-                                Failed to load more — please retry.
+                                {t('risks.failedLoadMore')}
                             </span>
                         )}
                     </div>

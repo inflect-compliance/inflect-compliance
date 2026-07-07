@@ -27,6 +27,11 @@ import * as path from 'node:path';
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
+// i18n-aware: the dashboard PageHeader title now routes through
+// next-intl (`title: t('dashboard.title')`). Resolve against the
+// English catalog so the "Portfolio Overview" intent still holds.
+const EN_PARITY = JSON.parse(read('messages/en.json'));
+
 describe('PR-3 — org dashboard → tenant dashboard parity', () => {
     const src = read('src/app/org/[orgSlug]/(app)/PortfolioDashboard.tsx');
 
@@ -49,7 +54,9 @@ describe('PR-3 — org dashboard → tenant dashboard parity', () => {
         expect(jsxIdx).toBeGreaterThan(0);
         const block = src.slice(jsxIdx, jsxIdx + 800);
         expect(block).toMatch(/header=\{\{/);
-        expect(block).toMatch(/title:\s*['"]Portfolio Overview['"]/);
+        // i18n-aware: header title resolves `t('dashboard.title')`.
+        expect(block).toMatch(/title:\s*t\('dashboard\.title'\)/);
+        expect(EN_PARITY.org.dashboard.title).toBe('Portfolio Overview');
         expect(block).toMatch(/description:\s*headerDescription/);
         expect(block).toMatch(/actions:\s*headerActions/);
     });

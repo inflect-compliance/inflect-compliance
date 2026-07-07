@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
     LayoutDashboard,
     Building2,
@@ -62,6 +63,7 @@ interface OrgNavSectionDef {
 export function useOrgNavSections(): OrgNavSectionDef[] {
     const orgHref = useOrgHref();
     const perms = useOrgPermissions();
+    const t = useTranslations('org');
 
     const sections: OrgNavSectionDef[] = [
         {
@@ -69,42 +71,42 @@ export function useOrgNavSections(): OrgNavSectionDef[] {
             // group (mirrors "Manage" below + "Govern" on the
             // tenant sidebar). Gives the org sidebar the same
             // visual hierarchy the tenant sidebar carries.
-            title: 'Portfolio',
+            title: t('nav.portfolio'),
             items: [
-                { href: orgHref('/'), label: 'Portfolio Overview', icon: LayoutDashboard },
-                { href: orgHref('/tenants'), label: 'All Tenants', icon: Building2 },
+                { href: orgHref('/'), label: t('nav.portfolioOverview'), icon: LayoutDashboard },
+                { href: orgHref('/tenants'), label: t('nav.allTenants'), icon: Building2 },
                 {
                     href: orgHref('/controls'),
-                    label: 'Non-Performing Controls',
+                    label: t('nav.nonPerformingControls'),
                     icon: ShieldCheck,
                     requiresDrillDown: true,
                 },
                 {
                     href: orgHref('/risks'),
-                    label: 'Critical Risks',
+                    label: t('nav.criticalRisks'),
                     icon: AlertTriangle,
                     requiresDrillDown: true,
                 },
                 {
                     href: orgHref('/evidence'),
-                    label: 'Overdue Evidence',
+                    label: t('nav.overdueEvidence'),
                     icon: Paperclip,
                     requiresDrillDown: true,
                 },
             ],
         },
         {
-            title: 'Manage',
+            title: t('nav.manage'),
             items: [
                 {
                     href: orgHref('/members'),
-                    label: 'Members',
+                    label: t('nav.members'),
                     icon: Users,
                     requiresManageMembers: true,
                 },
                 {
                     href: orgHref('/audit'),
-                    label: 'Audit Log',
+                    label: t('nav.auditLog'),
                     icon: ScrollText,
                     // Epic B — immutable per-org privilege ledger.
                     // Same gate as Members: ORG_ADMIN can review who
@@ -113,7 +115,7 @@ export function useOrgNavSections(): OrgNavSectionDef[] {
                 },
                 {
                     href: orgHref('/settings'),
-                    label: 'Settings',
+                    label: t('nav.settings'),
                     icon: Settings,
                     // Settings UI is ORG_ADMIN-only because the spec
                     // gates org config changes (rename, delete, etc.)
@@ -158,6 +160,7 @@ export function OrgSidebarContent({ user, onLogout, onNavClick, onToggleCollapse
     const org = useOrgContext();
     const sections = useOrgNavSections();
     const collapsed = useSidebarCollapsed();
+    const t = useTranslations('org');
 
     return (
         <div className="flex flex-col h-full">
@@ -181,7 +184,7 @@ export function OrgSidebarContent({ user, onLogout, onNavClick, onToggleCollapse
             </div>
 
             {/* Nav */}
-            <nav className="flex-1 p-2 overflow-y-auto" aria-label="Organization navigation">
+            <nav className="flex-1 p-2 overflow-y-auto" aria-label={t('nav.ariaLabel')}>
                 {sections.map((section, idx) => (
                     <NavSection
                         key={idx}
@@ -218,7 +221,7 @@ export function OrgSidebarContent({ user, onLogout, onNavClick, onToggleCollapse
                     <button
                         type="button"
                         onClick={onToggleCollapse}
-                        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        aria-label={collapsed ? t('nav.expandSidebar') : t('nav.collapseSidebar')}
                         aria-pressed={collapsed}
                         data-testid="sidebar-collapse-toggle"
                         className={cn(
@@ -231,7 +234,7 @@ export function OrgSidebarContent({ user, onLogout, onNavClick, onToggleCollapse
                         ) : (
                             <PanelLeftClose className="h-4 w-4 shrink-0" aria-hidden="true" />
                         )}
-                        {!collapsed && <span className="flex-1 text-left">Collapse</span>}
+                        {!collapsed && <span className="flex-1 text-left">{t('nav.collapse')}</span>}
                     </button>
                 </div>
             )}
@@ -252,11 +255,11 @@ export function OrgSidebarContent({ user, onLogout, onNavClick, onToggleCollapse
                     </div>
                 )}
                 {collapsed ? (
-                    <Tooltip content="Sign out" side="right">
+                    <Tooltip content={t('common.signOut')} side="right">
                         <button
                             type="button"
                             onClick={onLogout}
-                            aria-label="Sign out"
+                            aria-label={t('common.signOut')}
                             data-testid="org-nav-logout"
                             className="icon-btn icon-btn-sm mx-auto flex"
                         >
@@ -272,7 +275,7 @@ export function OrgSidebarContent({ user, onLogout, onNavClick, onToggleCollapse
                         data-testid="org-nav-logout"
                     >
                         <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
-                        Sign out
+                        {t('common.signOut')}
                     </Button>
                 )}
             </div>

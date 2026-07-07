@@ -24,6 +24,16 @@ import * as path from 'path';
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 
+// i18n-aware: nav labels now route through next-intl (`t('nav.*')`).
+// Resolve the key against the real English catalog so the original
+// intent (the visible English text) still holds.
+const EN = JSON.parse(read('messages/en.json'));
+const enOrg = (key: string): unknown =>
+    key.split('.').reduce<unknown>(
+        (o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined),
+        EN.org,
+    );
+
 const LAYOUT_PATH = 'src/app/org/[orgSlug]/layout.tsx';
 const SHELL_PATH = 'src/components/layout/AppShell.tsx';
 const NAV_PATH = 'src/components/layout/OrgSidebarNav.tsx';
@@ -91,22 +101,27 @@ describe('Epic O-4 — org shell structural contract', () => {
     it('drill-down nav entries are gated by canDrillDown', () => {
         const src = read(NAV_PATH);
         // The three drill-down items must carry `requiresDrillDown: true`.
-        expect(src).toMatch(/label:\s*['"]Non-Performing Controls['"][\s\S]+?requiresDrillDown:\s*true/);
-        expect(src).toMatch(/label:\s*['"]Critical Risks['"][\s\S]+?requiresDrillDown:\s*true/);
-        expect(src).toMatch(/label:\s*['"]Overdue Evidence['"][\s\S]+?requiresDrillDown:\s*true/);
+        expect(src).toMatch(/label:\s*t\('nav\.nonPerformingControls'\)[\s\S]+?requiresDrillDown:\s*true/);
+        expect(src).toMatch(/label:\s*t\('nav\.criticalRisks'\)[\s\S]+?requiresDrillDown:\s*true/);
+        expect(src).toMatch(/label:\s*t\('nav\.overdueEvidence'\)[\s\S]+?requiresDrillDown:\s*true/);
+        expect(enOrg('nav.nonPerformingControls')).toBe('Non-Performing Controls');
+        expect(enOrg('nav.criticalRisks')).toBe('Critical Risks');
+        expect(enOrg('nav.overdueEvidence')).toBe('Overdue Evidence');
         // And the filter must check `perms.canDrillDown` for those rows.
         expect(src).toMatch(/canDrillDown/);
     });
 
     it('Members nav entry is gated by canManageMembers', () => {
         const src = read(NAV_PATH);
-        expect(src).toMatch(/label:\s*['"]Members['"][\s\S]+?requiresManageMembers:\s*true/);
+        expect(src).toMatch(/label:\s*t\('nav\.members'\)[\s\S]+?requiresManageMembers:\s*true/);
+        expect(enOrg('nav.members')).toBe('Members');
         expect(src).toMatch(/canManageMembers/);
     });
 
     it('Settings nav entry is gated by canManageTenants', () => {
         const src = read(NAV_PATH);
-        expect(src).toMatch(/label:\s*['"]Settings['"][\s\S]+?requiresManageTenants:\s*true/);
+        expect(src).toMatch(/label:\s*t\('nav\.settings'\)[\s\S]+?requiresManageTenants:\s*true/);
+        expect(enOrg('nav.settings')).toBe('Settings');
         expect(src).toMatch(/canManageTenants/);
     });
 

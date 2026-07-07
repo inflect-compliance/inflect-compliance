@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { ChevronLeft } from 'lucide-react';
 
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -20,6 +21,13 @@ const STATUS_VARIANT: Record<string, 'neutral' | 'info' | 'warning' | 'error' | 
     BLOCKED: 'error',
     COMPLETED: 'success',
     CANCELLED: 'neutral',
+};
+const STATUS_LABEL_KEY: Record<string, string> = {
+    PLANNED: 'widgets.statusPlanned',
+    IN_PROGRESS: 'widgets.statusInProgress',
+    BLOCKED: 'widgets.statusBlocked',
+    COMPLETED: 'widgets.statusCompleted',
+    CANCELLED: 'widgets.statusCancelled',
 };
 
 type LinkRow = { id: string; linkedTenantId: string; entityType: string; entityId: string };
@@ -47,6 +55,7 @@ export function InitiativeDetailClient({
     progress: Progress;
 }) {
     const router = useRouter();
+    const t = useTranslations('org');
     const triggerUndoToast = useToastWithUndo();
     const [links, setLinks] = useState<LinkRow[]>(initiative.links);
     const [busy, setBusy] = useState(false);
@@ -75,21 +84,21 @@ export function InitiativeDetailClient({
                 router.refresh();
             },
             undoAction: () => setLinks((prev) => [...prev, link]),
-            message: `Unlinked ${link.entityType.toLowerCase()}`,
-            undoMessage: 'Undo',
+            message: t('initiativeDetail.unlinkedToast', { entity: link.entityType.toLowerCase() }),
+            undoMessage: t('initiativeDetail.undo'),
         });
     };
 
     const columns = createColumns<LinkRow>([
-        { accessorKey: 'entityType', header: 'Type', cell: ({ row }) => <StatusBadge variant="neutral" size="sm">{row.original.entityType}</StatusBadge> },
-        { accessorKey: 'linkedTenantId', header: 'Tenant', cell: ({ row }) => <span className="text-content-muted text-xs">{row.original.linkedTenantId}</span> },
-        { accessorKey: 'entityId', header: 'Entity', cell: ({ row }) => <span className="text-content-muted text-xs">{row.original.entityId}</span> },
+        { accessorKey: 'entityType', header: t('initiativeDetail.colType'), cell: ({ row }) => <StatusBadge variant="neutral" size="sm">{row.original.entityType}</StatusBadge> },
+        { accessorKey: 'linkedTenantId', header: t('initiativeDetail.colTenant'), cell: ({ row }) => <span className="text-content-muted text-xs">{row.original.linkedTenantId}</span> },
+        { accessorKey: 'entityId', header: t('initiativeDetail.colEntity'), cell: ({ row }) => <span className="text-content-muted text-xs">{row.original.entityId}</span> },
         ...(canManage
             ? [{
                   id: 'actions',
                   header: '',
                   cell: ({ row }: { row: { original: LinkRow } }) => (
-                      <Button variant="ghost" size="sm" onClick={() => unlink(row.original)}>Unlink</Button>
+                      <Button variant="ghost" size="sm" onClick={() => unlink(row.original)}>{t('initiativeDetail.unlink')}</Button>
                   ),
               } as ColumnDef<LinkRow>]
             : []),
@@ -100,34 +109,36 @@ export function InitiativeDetailClient({
     return (
         <div className="space-y-section p-4">
             <Button variant="ghost" size="sm" onClick={() => router.push(`/org/${orgSlug}/initiatives`)}>
-                <ChevronLeft className="w-3.5 h-3.5" /> Back to initiatives
+                <ChevronLeft className="w-3.5 h-3.5" /> {t('initiativeDetail.backToInitiatives')}
             </Button>
 
             <div className="space-y-tight">
                 <div className="flex items-center gap-compact flex-wrap">
                     <Heading level={1}>{initiative.title}</Heading>
-                    <StatusBadge variant={STATUS_VARIANT[initiative.status] ?? 'neutral'}>{initiative.status}</StatusBadge>
+                    <StatusBadge variant={STATUS_VARIANT[initiative.status] ?? 'neutral'}>
+                        {STATUS_LABEL_KEY[initiative.status] ? t(STATUS_LABEL_KEY[initiative.status]) : initiative.status}
+                    </StatusBadge>
                 </div>
                 {initiative.description && <p className="text-sm text-content-muted">{initiative.description}</p>}
                 {initiative.targetDate && (
-                    <p className="text-xs text-content-muted">Target: {formatDate(new Date(initiative.targetDate))}</p>
+                    <p className="text-xs text-content-muted">{t('initiativeDetail.target', { date: formatDate(new Date(initiative.targetDate)) })}</p>
                 )}
             </div>
 
             <div className="space-y-tight max-w-md">
                 <div className="flex items-center justify-between text-sm">
-                    <span className="text-content-muted">Progress {progress.manual ? '(manual)' : '(derived from linked work)'}</span>
+                    <span className="text-content-muted">{progress.manual ? t('initiativeDetail.progressManual') : t('initiativeDetail.progressDerived')}</span>
                     <span className="tabular-nums">{progress.percent}%{!progress.manual && ` · ${progress.completed}/${progress.total}`}</span>
                 </div>
-                <ProgressBar value={progress.percent} aria-label="Initiative progress" />
+                <ProgressBar value={progress.percent} aria-label={t('initiativeDetail.progressAria')} />
             </div>
 
             {canManage && (
                 <div className="flex items-center gap-tight flex-wrap">
-                    <span className="text-sm text-content-muted">Set status:</span>
+                    <span className="text-sm text-content-muted">{t('initiativeDetail.setStatus')}</span>
                     {STATUSES.map((s) => (
                         <Button key={s} variant="secondary" size="sm" disabled={busy || s === initiative.status} onClick={() => changeStatus(s)}>
-                            {s}
+                            {STATUS_LABEL_KEY[s] ? t(STATUS_LABEL_KEY[s]) : s}
                         </Button>
                     ))}
                 </div>
@@ -135,7 +146,7 @@ export function InitiativeDetailClient({
 
             <div className="space-y-tight">
                 <Heading level={3}>
-                    Linked work{tenantSpan > 0 ? ` · ${tenantSpan} tenant${tenantSpan === 1 ? '' : 's'}` : ''}
+                    {t('initiativeDetail.linkedWork')}{tenantSpan > 0 ? t('initiativeDetail.tenantSpan', { count: tenantSpan }) : ''}
                 </Heading>
                 <DataTable data={links} columns={columns} getRowId={(r) => r.id} />
             </div>

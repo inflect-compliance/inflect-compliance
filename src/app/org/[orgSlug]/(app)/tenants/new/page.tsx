@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation';
 
+import { getTranslations } from 'next-intl/server';
+
 import { getOrgCtx } from '@/app-layer/context';
 import { forbidden } from '@/lib/errors/types';
 import { NewTenantForm } from './NewTenantForm';
@@ -37,7 +39,8 @@ export default async function NewTenantPage({ params }: PageProps) {
         // Same anti-enumeration posture as the layout: a non-admin
         // sees a 404 rather than a "not allowed" message that
         // confirms the org exists and they're a member.
-        throw forbidden('You do not have permission to create tenants in this organization');
+        const t = await getTranslations('org');
+        throw forbidden(t('errors.noPermissionTenants'));
     }
 
     return <NewTenantForm orgSlug={orgSlug} />;

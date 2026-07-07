@@ -15,6 +15,7 @@
  */
 
 import { ShieldCheck, AlertTriangle, Paperclip, Building2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import {
     ChartRenderer,
@@ -40,6 +41,32 @@ import {
     TenantCoverageCards,
     TenantCoverageList,
 } from './dashboard-sections';
+
+type OrgTranslate = ReturnType<typeof useTranslations>;
+
+// Localized widget title — prefers the widget's own title, then a
+// catalog key for the known preset widgets, then the canonical
+// (English) fallback so a title is always present.
+const TITLE_KEY: Record<string, string> = {
+    'KPI/coverage': 'widgets.coverage',
+    'KPI/critical-risks': 'widgets.criticalRisks',
+    'KPI/overdue-evidence': 'widgets.overdueEvidence',
+    'KPI/tenants': 'widgets.tenants',
+    'DONUT/rag-distribution': 'widgets.tenantHealthDistribution',
+    'TREND/risks-open': 'widgets.trendRisksOpen',
+    'TREND/controls-coverage': 'widgets.trendControlsCoverage',
+    'TREND/evidence-overdue': 'widgets.trendEvidenceOverdue',
+    'TENANT_LIST/coverage': 'widgets.coverageByTenant',
+    'DRILLDOWN_CTAS/default': 'widgets.drilldown',
+};
+
+function localizedWidgetTitle(t: OrgTranslate, widget: OrgDashboardWidgetDto): string {
+    const own = widget.title?.trim();
+    if (own) return own;
+    const key = TITLE_KEY[`${widget.type}/${widget.chartType}`];
+    if (key) return t(key);
+    return resolveWidgetTitle(widget.type, widget.chartType, widget.title);
+}
 
 // ─── Public types ───────────────────────────────────────────────────
 
@@ -93,6 +120,7 @@ const KPI_ICONS = {
 } as const;
 
 function resolveKpiContent(
+    t: OrgTranslate,
     widget: OrgDashboardWidgetDto,
     data: PortfolioData,
 ): ChartRendererProps {
@@ -107,24 +135,30 @@ function resolveKpiContent(
             return {
                 chartType: 'kpi',
                 config: {
-                    label: widget.title ?? 'Coverage',
+                    label: widget.title ?? t('widgets.coverage'),
                     value: data.summary.controls.coveragePercent,
                     format,
                     gradient,
                     icon: KPI_ICONS.coverage,
-                    subtitle: `${data.summary.controls.implemented.toLocaleString()} of ${data.summary.controls.applicable.toLocaleString()} controls implemented`,
+                    subtitle: t('widgets.coverageSubtitle', {
+                        implemented: data.summary.controls.implemented.toLocaleString(),
+                        applicable: data.summary.controls.applicable.toLocaleString(),
+                    }),
                 },
             };
         case 'critical-risks':
             return {
                 chartType: 'kpi',
                 config: {
-                    label: widget.title ?? 'Critical Risks',
+                    label: widget.title ?? t('widgets.criticalRisks'),
                     value: data.summary.risks.critical,
                     format,
                     gradient,
                     icon: KPI_ICONS['critical-risks'],
-                    subtitle: `${data.summary.risks.open.toLocaleString()} open · ${data.summary.risks.high.toLocaleString()} high`,
+                    subtitle: t('widgets.criticalRisksSubtitle', {
+                        open: data.summary.risks.open.toLocaleString(),
+                        high: data.summary.risks.high.toLocaleString(),
+                    }),
                     trendPolarity: 'down-good',
                 },
             };
@@ -132,12 +166,14 @@ function resolveKpiContent(
             return {
                 chartType: 'kpi',
                 config: {
-                    label: widget.title ?? 'Overdue Evidence',
+                    label: widget.title ?? t('widgets.overdueEvidence'),
                     value: data.summary.evidence.overdue,
                     format,
                     gradient,
                     icon: KPI_ICONS['overdue-evidence'],
-                    subtitle: `${data.summary.evidence.dueSoon7d.toLocaleString()} due within 7 days`,
+                    subtitle: t('widgets.overdueEvidenceSubtitle', {
+                        dueSoon: data.summary.evidence.dueSoon7d.toLocaleString(),
+                    }),
                     trendPolarity: 'down-good',
                 },
             };
@@ -145,12 +181,14 @@ function resolveKpiContent(
             return {
                 chartType: 'kpi',
                 config: {
-                    label: widget.title ?? 'Tenants',
+                    label: widget.title ?? t('widgets.tenants'),
                     value: data.summary.tenants.total,
                     format,
                     gradient,
                     icon: KPI_ICONS.tenants,
-                    subtitle: `${data.summary.tenants.snapshotted.toLocaleString()} snapshotted`,
+                    subtitle: t('widgets.tenantsSubtitle', {
+                        snapshotted: data.summary.tenants.snapshotted.toLocaleString(),
+                    }),
                     trendPolarity: 'neutral',
                 },
             };
@@ -159,7 +197,7 @@ function resolveKpiContent(
         chartType: 'kpi',
         config: {
             // Never the raw chartType slug — resolve a guaranteed human title.
-            label: resolveWidgetTitle(widget.type, widget.chartType, widget.title),
+            label: localizedWidgetTitle(t, widget),
             value: null,
             format,
         },
@@ -176,6 +214,7 @@ const RAG_COLORS = {
 } as const;
 
 function resolveDonutContent(
+    t: OrgTranslate,
     widget: OrgDashboardWidgetDto,
     data: PortfolioData,
 ): ChartRendererProps {
@@ -188,10 +227,10 @@ function resolveDonutContent(
         // summary.risks.critical and surfaced by the KPI + drill-down). The
         // center reads "Tenants", not a bare "Active", for the same reason.
         const segments = [
-            { label: 'Healthy', value: data.summary.rag.green, color: RAG_COLORS.GREEN },
-            { label: 'At risk', value: data.summary.rag.amber, color: RAG_COLORS.AMBER },
-            { label: 'Critical health', value: data.summary.rag.red, color: RAG_COLORS.RED },
-            { label: 'Pending snapshot', value: data.summary.rag.pending, color: RAG_COLORS.PENDING },
+            { label: t('widgets.healthy'), value: data.summary.rag.green, color: RAG_COLORS.GREEN },
+            { label: t('widgets.atRisk'), value: data.summary.rag.amber, color: RAG_COLORS.AMBER },
+            { label: t('widgets.criticalHealth'), value: data.summary.rag.red, color: RAG_COLORS.RED },
+            { label: t('widgets.pendingSnapshot'), value: data.summary.rag.pending, color: RAG_COLORS.PENDING },
         ].filter((s) => s.value > 0);
         const totalCategorised = data.summary.rag.green + data.summary.rag.amber + data.summary.rag.red;
         return {
@@ -200,7 +239,7 @@ function resolveDonutContent(
                 segments,
                 centerLabel:
                     totalCategorised > 0 ? String(totalCategorised) : undefined,
-                centerSub: 'Tenants',
+                centerSub: t('widgets.tenantsCenter'),
                 showLegend: cfg.showLegend ?? true,
             },
         };
@@ -211,6 +250,7 @@ function resolveDonutContent(
 // ─── Trend variant resolver ────────────────────────────────────────
 
 function resolveTrendContent(
+    t: OrgTranslate,
     widget: OrgDashboardWidgetDto,
     data: PortfolioData,
 ): ChartRendererProps {
@@ -242,11 +282,7 @@ function resolveTrendContent(
             points,
             seriesId: widget.chartType,
             seriesColorClassName: colorMap[widget.chartType] ?? 'text-brand-default',
-            seriesLabel: resolveWidgetTitle(
-                widget.type,
-                widget.chartType,
-                widget.title,
-            ),
+            seriesLabel: localizedWidgetTitle(t, widget),
         },
     };
 }
@@ -281,15 +317,12 @@ export function DispatchedWidget({
     data,
     actionsSlot,
 }: DispatcherProps) {
+    const t = useTranslations('org');
     let body: React.ReactNode = null;
     // Guaranteed human title — never undefined / a raw slug. The DONUT /
     // TREND arms (and any future chart widget) rely on this so a null-title
     // widget renders titled, not as an untitled chart.
-    let title: string = resolveWidgetTitle(
-        widget.type,
-        widget.chartType,
-        widget.title,
-    );
+    let title: string = localizedWidgetTitle(t, widget);
     const domId = widgetDomId(widget);
 
     switch (widget.type) {
@@ -299,7 +332,7 @@ export function DispatchedWidget({
             // double-render the label. Render bare — the KpiCard IS
             // the widget surface for this type. The id wrapper exists
             // so the legacy `#org-stat-*` E2E selectors keep resolving.
-            const props = resolveKpiContent(widget, data);
+            const props = resolveKpiContent(t, widget, data);
             return (
                 <div id={domId} className="h-full">
                     <ChartRenderer {...props} />
@@ -345,11 +378,11 @@ export function DispatchedWidget({
             );
         }
         case 'DONUT': {
-            body = <ChartRenderer {...resolveDonutContent(widget, data)} />;
+            body = <ChartRenderer {...resolveDonutContent(t, widget, data)} />;
             break;
         }
         case 'TREND': {
-            body = <ChartRenderer {...resolveTrendContent(widget, data)} />;
+            body = <ChartRenderer {...resolveTrendContent(t, widget, data)} />;
             break;
         }
         case 'TENANT_LIST': {
@@ -358,7 +391,7 @@ export function DispatchedWidget({
                 limit?: number;
                 display?: 'list' | 'cards';
             };
-            title = widget.title ?? 'Coverage by Tenant';
+            title = widget.title ?? t('widgets.coverageByTenant');
             body = (
                 <div className="overflow-y-auto h-full -mx-2 px-2">
                     {cfg.display === 'cards' ? (
@@ -382,7 +415,7 @@ export function DispatchedWidget({
             const cfg = widget.config as {
                 entries?: ReadonlyArray<'controls' | 'risks' | 'evidence'>;
             };
-            title = widget.title ?? 'Drill-down';
+            title = widget.title ?? t('widgets.drilldown');
             body = (
                 <DrillDownCtas
                     summary={data.summary}

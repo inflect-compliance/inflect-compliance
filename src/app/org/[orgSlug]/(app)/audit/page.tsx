@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation';
 
+import { getTranslations } from 'next-intl/server';
+
 import { getOrgCtx } from '@/app-layer/context';
 import { forbidden } from '@/lib/errors/types';
 import { listOrgAudit } from '@/app-layer/usecases/org-audit';
@@ -34,9 +36,8 @@ export default async function OrgAuditPage({ params }: PageProps) {
     }
 
     if (!ctx.permissions.canManageMembers) {
-        throw forbidden(
-            'You do not have permission to view the audit log of this organization',
-        );
+        const t = await getTranslations('org');
+        throw forbidden(t('errors.noPermissionAudit'));
     }
 
     const initial = await listOrgAudit(ctx, { limit: 20 });

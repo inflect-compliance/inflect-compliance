@@ -12,6 +12,7 @@
  */
 
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { AlertTriangle, ChevronRight, Layers, Paperclip, ShieldCheck } from 'lucide-react';
 
 import { AnimatedNumber } from '@/components/ui/animated-number';
@@ -37,12 +38,13 @@ export function TenantCoverageList({
     sortBy?: 'rag' | 'name' | 'coverage';
     limit?: number;
 }) {
+    const t = useTranslations('org');
     if (rows.length === 0) {
         return (
             <EmptyState
                 icon={Layers}
-                title="No tenants linked"
-                description="Add tenants to this organization to see per-tenant coverage and health."
+                title={t('dashboard.emptyTenantsTitle')}
+                description={t('dashboard.emptyTenantsDesc')}
             />
         );
     }
@@ -98,9 +100,9 @@ export function TenantCoverageList({
                             </div>
                             <CoverageBar percent={row.coveragePercent} rag={row.rag} />
                             <div className="mt-1.5 flex items-center gap-default text-xs text-content-muted">
-                                <span>{row.openRisks ?? '—'} open risks</span>
-                                <span>{row.criticalRisks ?? 0} critical</span>
-                                <span>{row.overdueEvidence ?? 0} overdue evidence</span>
+                                <span>{row.openRisks ?? '—'} {t('dashboard.openRisksLower')}</span>
+                                <span>{row.criticalRisks ?? 0} {t('dashboard.criticalLower')}</span>
+                                <span>{row.overdueEvidence ?? 0} {t('dashboard.overdueEvidenceLower')}</span>
                             </div>
                         </div>
                         <ChevronRight
@@ -115,7 +117,8 @@ export function TenantCoverageList({
 }
 
 export function RagPill({ rag }: { rag: RagBadge | null }) {
-    if (rag === null) return <StatusBadge variant="neutral">Pending</StatusBadge>;
+    const t = useTranslations('org');
+    if (rag === null) return <StatusBadge variant="neutral">{t('common.pending')}</StatusBadge>;
     const variant: 'success' | 'warning' | 'error' =
         rag === 'GREEN' ? 'success' : rag === 'AMBER' ? 'warning' : 'error';
     return <StatusBadge variant={variant}>{rag}</StatusBadge>;
@@ -128,6 +131,7 @@ export function CoverageBar({
     percent: number | null;
     rag: RagBadge | null;
 }) {
+    const t = useTranslations('org');
     const width = percent === null ? 0 : Math.min(100, Math.max(0, percent));
     const colorClass =
         rag === 'GREEN' ? 'bg-bg-success-emphasis'
@@ -145,8 +149,8 @@ export function CoverageBar({
                 aria-valuemax={100}
                 aria-label={
                     percent !== null
-                        ? `${percent.toFixed(1)}% coverage`
-                        : 'Coverage pending'
+                        ? t('dashboard.coverageAria', { percent: percent.toFixed(1) })
+                        : t('dashboard.coveragePending')
                 }
             />
         </div>
@@ -188,12 +192,13 @@ export function TenantCoverageCards({
     limit,
     trends,
 }: TenantCoverageCardsProps) {
+    const t = useTranslations('org');
     if (rows.length === 0) {
         return (
             <EmptyState
                 icon={Layers}
-                title="No tenants linked"
-                description="Add tenants to this organization to see per-tenant coverage and health."
+                title={t('dashboard.emptyTenantsTitle')}
+                description={t('dashboard.emptyTenantsDesc')}
             />
         );
     }
@@ -224,7 +229,7 @@ export function TenantCoverageCards({
     const visible = limit ? sorted.slice(0, limit) : sorted;
 
     return (
-        <CardList aria-label="Tenant coverage" data-testid="org-tenant-coverage-cards">
+        <CardList aria-label={t('dashboard.tenantCoverageAria')} data-testid="org-tenant-coverage-cards">
             {visible.map((row) => {
                 const series = trends?.[row.tenantId] ?? [];
                 const hasSparkline = series.length > 1;
@@ -269,22 +274,22 @@ export function TenantCoverageCards({
                         <CardList.CardContent
                             kv={[
                                 {
-                                    label: 'Coverage',
+                                    label: t('dashboard.kvCoverage'),
                                     value:
                                         row.coveragePercent !== null
                                             ? `${row.coveragePercent.toFixed(1)}%`
                                             : '—',
                                 },
                                 {
-                                    label: 'Open risks',
+                                    label: t('dashboard.kvOpenRisks'),
                                     value: row.openRisks ?? '—',
                                 },
                                 {
-                                    label: 'Critical',
+                                    label: t('dashboard.kvCritical'),
                                     value: row.criticalRisks ?? 0,
                                 },
                                 {
-                                    label: 'Overdue evidence',
+                                    label: t('dashboard.kvOverdueEvidence'),
                                     value: row.overdueEvidence ?? 0,
                                 },
                             ]}
@@ -297,7 +302,7 @@ export function TenantCoverageCards({
                                     <MiniAreaChart
                                         data={series}
                                         variant={variant}
-                                        aria-label={`${row.name} coverage trend`}
+                                        aria-label={t('dashboard.coverageTrendAria', { name: row.name })}
                                     />
                                 </div>
                             ) : (
@@ -308,7 +313,7 @@ export function TenantCoverageCards({
                             )}
                             {row.snapshotDate && (
                                 <p className="text-xs text-content-subtle">
-                                    Last activity{' '}
+                                    {t('dashboard.lastActivity')}{' '}
                                     <TimestampTooltip date={row.snapshotDate} />
                                 </p>
                             )}
@@ -331,10 +336,11 @@ export function DrillDownCtas({
     orgSlug: string;
     entries?: ReadonlyArray<'controls' | 'risks' | 'evidence'>;
 }) {
+    const t = useTranslations('org');
     const all = [
         {
             key: 'controls' as const,
-            label: 'Non-Performing Controls',
+            label: t('nav.nonPerformingControls'),
             count: summary.controls.applicable - summary.controls.implemented,
             href: `/org/${orgSlug}/controls`,
             icon: ShieldCheck,
@@ -342,7 +348,7 @@ export function DrillDownCtas({
         },
         {
             key: 'risks' as const,
-            label: 'Critical Risks',
+            label: t('nav.criticalRisks'),
             count: summary.risks.critical,
             href: `/org/${orgSlug}/risks`,
             icon: AlertTriangle,
@@ -350,7 +356,7 @@ export function DrillDownCtas({
         },
         {
             key: 'evidence' as const,
-            label: 'Overdue Evidence',
+            label: t('nav.overdueEvidence'),
             count: summary.evidence.overdue,
             href: `/org/${orgSlug}/evidence`,
             icon: Paperclip,
@@ -393,7 +399,7 @@ export function DrillDownCtas({
                         />
                     </p>
                     <p className="text-xs text-content-muted">
-                        {cta.count === 1 ? 'item' : 'items'} across the portfolio
+                        {cta.count === 1 ? t('dashboard.item') : t('dashboard.items')} {t('dashboard.acrossThePortfolio')}
                     </p>
                 </Link>
             ))}
