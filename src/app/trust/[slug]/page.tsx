@@ -10,6 +10,7 @@
  */
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { getPublicTrustCenter } from '@/lib/trust-center/public';
 
 export const dynamic = 'force-dynamic';
@@ -20,14 +21,15 @@ export async function generateMetadata({
     params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
     const { slug } = await params;
+    const t = await getTranslations('external.trustCenter');
     const tc = await getPublicTrustCenter(slug);
     if (!tc) {
         // Don't disclose existence — generic, noindex.
-        return { title: 'Trust Center', robots: { index: false, follow: false } };
+        return { title: t('metaTitleFallback'), robots: { index: false, follow: false } };
     }
     return {
-        title: `${tc.displayName} — Trust Center`,
-        description: tc.tagline ?? `Security & compliance posture for ${tc.displayName}.`,
+        title: t('metaTitle', { name: tc.displayName }),
+        description: tc.tagline ?? t('metaDescriptionFallback', { name: tc.displayName }),
         // X-Robots equivalent — the tenant chooses whether the page is indexed.
         robots: tc.indexable ? { index: true, follow: true } : { index: false, follow: false },
     };
@@ -39,6 +41,7 @@ export default async function TrustCenterPage({
     params: Promise<{ slug: string }>;
 }) {
     const { slug } = await params;
+    const t = await getTranslations('external.trustCenter');
     const tc = await getPublicTrustCenter(slug);
     if (!tc) notFound();
 
@@ -51,7 +54,7 @@ export default async function TrustCenterPage({
 
             {tc.publishedFrameworks.length > 0 && (
                 <section className="space-y-default">
-                    <h2 className="text-sm font-semibold uppercase tracking-wide text-content-muted">Compliance</h2>
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-content-muted">{t('compliance')}</h2>
                     <ul className="flex flex-wrap gap-default">
                         {tc.publishedFrameworks.map((f) => (
                             <li
@@ -68,14 +71,14 @@ export default async function TrustCenterPage({
 
             {tc.postureSummary && (
                 <section className="space-y-default">
-                    <h2 className="text-sm font-semibold uppercase tracking-wide text-content-muted">Security posture</h2>
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-content-muted">{t('securityPosture')}</h2>
                     <p className="whitespace-pre-line text-content-default">{tc.postureSummary}</p>
                 </section>
             )}
 
             {tc.publishedDocuments.length > 0 && (
                 <section className="space-y-default">
-                    <h2 className="text-sm font-semibold uppercase tracking-wide text-content-muted">Documents</h2>
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-content-muted">{t('documents')}</h2>
                     <ul className="space-y-tight">
                         {tc.publishedDocuments.map((d, i) => (
                             <li key={i}>
@@ -95,13 +98,13 @@ export default async function TrustCenterPage({
 
             {tc.securityContact && (
                 <section className="space-y-tight">
-                    <h2 className="text-sm font-semibold uppercase tracking-wide text-content-muted">Security contact</h2>
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-content-muted">{t('securityContact')}</h2>
                     <p className="text-content-default">{tc.securityContact}</p>
                 </section>
             )}
 
             <footer className="border-t border-border-subtle pt-default text-sm text-content-muted">
-                Published {tc.updatedAt.toISOString().slice(0, 10)} · Trust Center
+                {t('footer', { date: tc.updatedAt.toISOString().slice(0, 10) })}
             </footer>
         </main>
     );
