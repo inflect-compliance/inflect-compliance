@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -9,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Heading } from '@/components/ui/typography';
 
 export function ChangePasswordForm() {
+    const t = useTranslations('account.security');
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -21,19 +23,19 @@ export function ChangePasswordForm() {
         setError('');
 
         if (!currentPassword || !newPassword || !confirmPassword) {
-            setError('Please fill in all three password fields.');
+            setError(t('fillAllThree'));
             return;
         }
         if (newPassword !== confirmPassword) {
-            setError('The two new passwords do not match.');
+            setError(t('newPasswordsNoMatch'));
             return;
         }
         if (newPassword.length < 8) {
-            setError('Your new password must be at least 8 characters long.');
+            setError(t('tooShort'));
             return;
         }
         if (newPassword === currentPassword) {
-            setError('Your new password must be different from your current password.');
+            setError(t('mustDiffer'));
             return;
         }
 
@@ -52,9 +54,9 @@ export function ChangePasswordForm() {
                 return;
             }
             const data = await res.json().catch(() => ({}));
-            setError(typeof data?.error === 'string' ? data.error : 'Could not change your password.');
+            setError(typeof data?.error === 'string' ? data.error : t('couldNotChange'));
         } catch {
-            setError('Could not change your password.');
+            setError(t('couldNotChange'));
         }
         setLoading(false);
     };
@@ -62,12 +64,12 @@ export function ChangePasswordForm() {
     return (
         <Card className="animate-fadeIn">
             <Heading level={2} className="mb-6">
-                Change password
+                {t('changePasswordTitle')}
             </Heading>
 
             {success ? (
                 <InlineNotice variant="success" className="mb-4" icon={null}>
-                    Your password has been changed. Redirecting to sign in…
+                    {t('passwordChangedRedirect')}
                 </InlineNotice>
             ) : (
                 <>
@@ -78,38 +80,38 @@ export function ChangePasswordForm() {
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-default">
-                        <FormField label="Current password" required>
+                        <FormField label={t('currentPassword')} required>
                             <Input
                                 type="password"
                                 name="currentPassword"
                                 value={currentPassword}
                                 onChange={(e) => setCurrentPassword(e.target.value)}
                                 required
-                                placeholder="Your current password"
+                                placeholder={t('currentPasswordPlaceholder')}
                             />
                         </FormField>
-                        <FormField label="New password" required>
+                        <FormField label={t('newPassword')} required>
                             <Input
                                 type="password"
                                 name="newPassword"
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
                                 required
-                                placeholder="At least 8 characters"
+                                placeholder={t('newPasswordPlaceholder')}
                             />
                         </FormField>
-                        <FormField label="Confirm new password" required>
+                        <FormField label={t('confirmPassword')} required>
                             <Input
                                 type="password"
                                 name="confirmPassword"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 required
-                                placeholder="Re-enter your new password"
+                                placeholder={t('confirmPasswordPlaceholder')}
                             />
                         </FormField>
                         <Button type="submit" variant="primary" size="sm" className="w-full" disabled={loading}>
-                            {loading ? 'Changing…' : 'Change password'}
+                            {loading ? t('changing') : t('changePassword')}
                         </Button>
                     </form>
                 </>

@@ -200,7 +200,25 @@
         "namePlaceholder": "Jane Smith",
         "orgPlaceholder": "Acme Corp",
         "emailPlaceholder": "you@company.com",
-        "passwordPlaceholder": "••••••••"
+        "passwordPlaceholder": "••••••••",
+        "continueWithGoogle": "Continue with Google",
+        "continueWithMicrosoft": "Continue with Microsoft",
+        "orContinueWithEmail": "or continue with email",
+        "forgotPassword": "Forgot your password?",
+        "emailVerified": "Email verified — you can sign in now.",
+        "linkExpired": "That verification link has expired. Request a new one below.",
+        "linkInvalid": "That verification link is not valid. Request a new one below.",
+        "resetSuccess": "Your password has been reset — sign in with your new password.",
+        "passwordChanged": "Your password has been changed — please sign in again.",
+        "resendPlaceholder": "Didn't get a verification email?",
+        "resendAria": "Email for verification resend",
+        "resend": "Resend",
+        "sending": "Sending…",
+        "resendSent": "If that email is registered and not yet verified, a new link is on its way.",
+        "aisvsBadge": "AISVS L2 compliant",
+        "registrationFailed": "Registration failed",
+        "loginFailed": "Login failed",
+        "invalidCredentials": "Invalid credentials"
     },
     "nav": {
         "dashboard": "Board",
@@ -5839,5 +5857,117 @@
             "stagingAria": "Staging environment",
             "devAria": "Development environment"
         }
+    },
+    "auth": {
+        "forgot": {
+            "resetTitle": "Reset your password",
+            "resetIntro": "Enter the email address for your account and we'll send you a link to reset your password.",
+            "emailLabel": "Email",
+            "emailPlaceholder": "you@company.com",
+            "sendResetLink": "Send reset link",
+            "sending": "Sending…",
+            "backToSignIn": "Back to sign in",
+            "resetSent": "If an account exists for that email, we've sent a password reset link. The link expires in 1 hour."
+        },
+        "reset": {
+            "chooseNewTitle": "Choose a new password",
+            "invalidLink": "This password reset link is invalid. Request a new one from the sign-in page.",
+            "requestNewLink": "Request a new reset link",
+            "newPasswordLabel": "New password",
+            "newPasswordPlaceholder": "At least 8 characters",
+            "confirmLabel": "Confirm new password",
+            "confirmPlaceholder": "Re-enter your new password",
+            "resetPassword": "Reset password",
+            "resetting": "Resetting…",
+            "fillBoth": "Please fill in both password fields.",
+            "passwordsNoMatch": "The two passwords do not match.",
+            "tooShort": "Your new password must be at least 8 characters long.",
+            "couldNotReset": "Could not reset your password.",
+            "backToSignIn": "Back to sign in"
+        }
+    },
+    "account": {
+        "profile": {
+            "profileTitle": "Your profile",
+            "avatarNote": "Upload a square image — it is resized to 256×256 and stored as WebP. Photo metadata, including location, is stripped in your browser before upload.",
+            "uploadPhoto": "Upload photo",
+            "changePhoto": "Change photo",
+            "working": "Working…",
+            "remove": "Remove",
+            "notReadableImage": "That file is not a readable image.",
+            "imageProcessingUnavailable": "Image processing is unavailable in this browser.",
+            "webpEncodeFailed": "This browser could not encode the image as WebP.",
+            "uploadFailed": "Upload failed.",
+            "couldNotRemovePhoto": "Could not remove the photo.",
+            "nameTitle": "Your name",
+            "nameSaved": "Saved — your name now shows on owner and assignee columns.",
+            "firstName": "First name",
+            "lastName": "Last name",
+            "saveName": "Save name",
+            "saving": "Saving…",
+            "enterAName": "Enter at least a first or last name.",
+            "couldNotSaveName": "Could not save your name."
+        },
+        "security": {
+            "securityTitle": "Account security",
+            "changePasswordTitle": "Change password",
+            "currentPassword": "Current password",
+            "currentPasswordPlaceholder": "Your current password",
+            "newPassword": "New password",
+            "newPasswordPlaceholder": "At least 8 characters",
+            "confirmPassword": "Confirm new password",
+            "confirmPasswordPlaceholder": "Re-enter your new password",
+            "changePassword": "Change password",
+            "changing": "Changing…",
+            "passwordChangedRedirect": "Your password has been changed. Redirecting to sign in…",
+            "fillAllThree": "Please fill in all three password fields.",
+            "newPasswordsNoMatch": "The two new passwords do not match.",
+            "tooShort": "Your new password must be at least 8 characters long.",
+            "mustDiffer": "Your new password must be different from your current password.",
+            "couldNotChange": "Could not change your password."
+        }
+    },
+    "invite": {
+        "notAvailableTitle": "Invite not available",
+        "notAvailableBody": "This invite link has expired, been revoked, or already been used. Ask your admin to send a new invite.",
+        "invitedTitle": "You have been invited",
+        "joinAs": "Join <b>{tenant}</b> as a <b>{role}</b>.",
+        "joinOrgAs": "Join the <b>{org}</b> organization as a <b>{role}</b>.",
+        "expires": "Expires {date}",
+        "signInToAccept": "Sign in to accept",
+        "acceptInvitation": "Accept invitation",
+        "wrongAccount": "You are signed in as <b>{email}</b>, but this invite was sent to a different email address. Sign in with the correct account to accept it."
+    },
+    "roles": {
+        "OWNER": "Owner",
+        "ADMIN": "Admin",
+        "EDITOR": "Editor",
+        "READER": "Reader",
+        "AUDITOR": "Auditor"
+    },
+    "orgRoles": {
+        "ORG_ADMIN": "Org admin",
+        "ORG_READER": "Org reader"
+    },
+    "errorPage": {
+        "title": "Something went wrong",
+        "description": "We're sorry, an unexpected error has occurred. Our team has been notified.",
+        "errorId": "Error ID: {id}",
+        "goToDashboard": "Go to Dashboard",
+        "notFoundTitle": "Page not found",
+        "notFoundBody": "Sorry, we couldn't find the page you're looking for. It might have been removed or the link is incorrect.",
+        "returnToDashboard": "Return to Dashboard"
+    },
+    "noTenant": {
+        "title": "No access yet",
+        "signedInAs": "You are signed in as <b>{email}</b>.",
+        "helpText": "You do not have access to any workspace yet. Ask your admin to invite you, then follow the link in the invitation email.",
+        "signOut": "Sign out",
+        "yourAccount": "your account"
+    },
+    "tenants": {
+        "chooseWorkspace": "Choose a workspace",
+        "multipleWorkspaces": "You are a member of multiple workspaces. Select one to continue.",
+        "signOut": "Sign out"
     }
 }
