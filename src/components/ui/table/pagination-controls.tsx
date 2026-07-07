@@ -20,6 +20,8 @@
  *   // PaginationControls is rendered automatically in the table footer.
  */
 
+import { useTranslations } from "next-intl";
+
 import { cn } from "./table-utils";
 import { Button } from "../button";
 import Link from "next/link";
@@ -65,6 +67,7 @@ export function PaginationControls({
   allRowsHref,
   className,
 }: PaginationControlsProps) {
+  const t = useTranslations("common");
   const meta: PaginationMeta = { page, pageSize, totalCount };
   const state = getPaginationState(meta);
 
@@ -91,22 +94,22 @@ export function PaginationControls({
         className,
       )}
       role="navigation"
-      aria-label="Pagination"
+      aria-label={t("table.paginationAria")}
       data-testid="pagination-controls"
     >
       {/* Range info: "Viewing 1–25 of 243 controls" */}
       <div>
-        <span className="hidden sm:inline-block">Viewing</span>{" "}
+        <span className="hidden sm:inline-block">{t("table.viewing")}</span>{" "}
         <span className="font-medium">
           {range.from.toLocaleString()}–{range.to.toLocaleString()}
         </span>{" "}
-        of{" "}
+        {t("table.of")}{" "}
         <As
           href={allRowsHref ?? "#"}
           className={cn("font-medium", allRowsHref && "hover:underline")}
         >
           {range.total.toLocaleString()}{" "}
-          {resourceName?.(range.total !== 1) ?? "items"}
+          {resourceName?.(range.total !== 1) ?? t("table.items")}
         </As>
       </div>
 
@@ -114,19 +117,19 @@ export function PaginationControls({
       <div className="flex items-center gap-tight">
         <Button
           variant="secondary"
-          text="Previous"
+          text={t("table.previous")}
           className="h-7 px-2"
           onClick={() => onPageChange(page - 1)}
           disabled={!state.canPreviousPage}
-          aria-label="Go to previous page"
+          aria-label={t("table.previousAria")}
         />
         <Button
           variant="secondary"
-          text="Next"
+          text={t("table.next")}
           className="h-7 px-2"
           onClick={() => onPageChange(page + 1)}
           disabled={!state.canNextPage}
-          aria-label="Go to next page"
+          aria-label={t("table.nextAria")}
         />
       </div>
     </div>

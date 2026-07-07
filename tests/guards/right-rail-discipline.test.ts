@@ -56,12 +56,15 @@ describe('Right-rail master-detail discipline (Roadmap-2 PR-5)', () => {
 
     it('EntityDetailLayout renders the rail aside with the canonical test-id', () => {
         const src = read(SHELL_PATH);
-        // The aside MUST be a real <aside aria-label="Context"> so
-        // screen readers announce the column distinctly. Removing
-        // the role/label would degrade a11y silently.
+        // The aside MUST be a real <aside> with a non-empty aria-label so
+        // screen readers announce the column distinctly. The label now flows
+        // through the catalog (i18n); assert the wiring + that the key still
+        // resolves to the canonical English label.
         expect(src).toMatch(
-            /<aside[\s\S]*?aria-label=["']Context["'][\s\S]*?data-testid=["']entity-detail-rail["']/,
+            /<aside[\s\S]*?aria-label=\{t\(['"]table\.context['"]\)\}[\s\S]*?data-testid=["']entity-detail-rail["']/,
         );
+        const en = JSON.parse(read('messages/en.json'));
+        expect(en.common.table.context).toBe('Context');
     });
 
     it('the rail layout activates at the xl breakpoint, not at md/lg', () => {

@@ -23,6 +23,7 @@
  *   />
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { IconAction } from '@/components/ui/icon-action';
 import { AppIcon } from '@/components/icons/AppIcon';
@@ -85,6 +86,7 @@ export function BulkActionBar({
     entityLabel,
     className,
 }: BulkActionBarProps) {
+    const t = useTranslations('common');
     const [action, setAction] = useState('');
     const [value, setValue] = useState('');
     const [label, setLabel] = useState('');
@@ -115,7 +117,7 @@ export function BulkActionBar({
         else onApply(action, value, label);
     };
 
-    const noun = entityLabel ?? 'items';
+    const noun = entityLabel ?? t('table.items');
 
     return (
         <div className={cn('flex items-center gap-compact', className)}>
@@ -129,7 +131,7 @@ export function BulkActionBar({
                     setLabel('');
                 }}
                 options={options}
-                placeholder="Choose action..."
+                placeholder={t('table.chooseAction')}
                 matchTriggerWidth
                 buttonProps={{ size: 'sm' }}
             />
@@ -145,21 +147,21 @@ export function BulkActionBar({
                 // below the row's text controls.
                 className="h-8 w-8 [&_svg]:size-3.5"
                 icon={<AppIcon name="checkCircle" size={14} />}
-                label="Apply"
+                label={t('table.apply')}
             />
             {active?.confirm && (() => {
                 const cfg = typeof active.confirm === 'object' ? active.confirm : {};
-                const verb = cfg.confirmLabel ?? 'Delete';
+                const verb = cfg.confirmLabel ?? t('table.confirmVerbDelete');
                 const tone = cfg.tone ?? 'danger';
                 return (
                     <Modal.Confirm
                         showModal={confirmOpen}
                         setShowModal={setConfirmOpen}
                         tone={tone}
-                        title={cfg.title ?? `${verb} ${selectedCount ?? 0} ${noun}?`}
+                        title={cfg.title ?? t('table.confirmTitle', { verb, count: selectedCount ?? 0, noun })}
                         description={
                             cfg.description ??
-                            `This removes the selected ${noun} from your workspace.`
+                            t('table.confirmDescription', { noun })
                         }
                         confirmLabel={verb}
                         onConfirm={() => {
