@@ -1160,6 +1160,7 @@
             "tabTraceability": "Traceability",
             "tabActivity": "Activity",
             "tabTests": "Tests",
+            "tabChecks": "Checks",
             "metaCode": "Code",
             "copyCodeAria": "Copy control code {code}",
             "codeCopied": "Control code copied",
@@ -1285,6 +1286,16 @@
             "remove": "× Remove",
             "emptyTitle": "No evidence linked",
             "emptyDesc": "Link existing evidence or upload new files to satisfy this control."
+        },
+        "checksTab": {
+            "colCheck": "Check",
+            "colStatus": "Status",
+            "colResult": "Result",
+            "colLastRun": "Last run",
+            "colTrigger": "Trigger",
+            "latestStatus": "Latest status",
+            "emptyTitle": "No automated checks yet",
+            "emptyDesc": "This control has no integration check runs. Set an automation key and evidence source of INTEGRATION to have the runner test it on a schedule."
         },
         "bestValue": {
             "empty": "No control yet carries a price + effectiveness + a quantified linked risk. The leaderboard appears once at least one does.",

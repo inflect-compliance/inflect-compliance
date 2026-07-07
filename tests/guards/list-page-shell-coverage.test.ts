@@ -120,6 +120,8 @@ const EXEMPTIONS: Record<string, string> = {
         'detail page sub-table — evidence rows for one control (R10-PR3 follow-up)',
     'controls/[controlId]/_tabs/ControlMappingsTab.tsx':
         'detail page sub-table — framework mappings for one control (R10-PR3 follow-up)',
+    'controls/[controlId]/_tabs/ControlChecksTab.tsx':
+        'detail page sub-table — automated-check history for one control (PR-1)',
 
     // R11-PR8 — task detail page mounts DataTable for the links
     // sub-table. Detail page (EntityDetailLayout).

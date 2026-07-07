@@ -16,6 +16,7 @@ import { EditControlModal } from './_modals/EditControlModal';
 import { ControlReverseLookupModal } from '@/components/controls/ControlReverseLookupModal';
 import { ControlMappingsTab } from './_tabs/ControlMappingsTab';
 import { EvidenceSubTable, type EvidenceTabData } from './_tabs/EvidenceSubTable';
+import { ControlChecksTab } from './_tabs/ControlChecksTab';
 import { EvidenceAddForm } from '@/components/EvidenceAddForm';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { CONTROL_STATUS_VARIANT } from '@/app-layer/domain/entity-status-mapping';
@@ -103,7 +104,7 @@ const buildCategoryLabels = (t: (k: string) => string): Record<string, string> =
 const buildCategoryCbOptions = (categoryLabels: Record<string, string>): ComboboxOption[] => CATEGORY_OPTIONS.filter(Boolean).map(c => ({ value: c, label: categoryLabels[c] || c }));
 const buildStatusCbOptions = (statusLabels: Record<string, string>): ComboboxOption[] => Object.entries(statusLabels).map(([val, lbl]) => ({ value: val, label: lbl }));
 
-type Tab = 'overview' | 'tasks' | 'evidence' | 'mappings' | 'traceability' | 'activity' | 'tests';
+type Tab = 'overview' | 'tasks' | 'evidence' | 'mappings' | 'traceability' | 'activity' | 'tests' | 'checks';
 
 /**
  * Evidence-tab payload — `GET /controls/{id}/evidence` (#102 item 1).
@@ -659,6 +660,7 @@ export default function ControlDetailPage() {
         { key: 'traceability', label: tx('detailPage.tabTraceability') },
         { key: 'activity', label: tx('detailPage.tabActivity') },
         { key: 'tests', label: tx('detailPage.tabTests') },
+        { key: 'checks', label: tx('detailPage.tabChecks') },
     ];
 
     // ── Header meta strip (Polish PR-1) ──
@@ -1092,6 +1094,8 @@ export default function ControlDetailPage() {
                     </div>
                 </div>
             )}
+
+            {tab === 'checks' && <ControlChecksTab controlId={controlId} />}
 
             {/* Epic G-5 — Control exceptions section. Scoped to the
               * Overview tab only: the request-exception workflow is
