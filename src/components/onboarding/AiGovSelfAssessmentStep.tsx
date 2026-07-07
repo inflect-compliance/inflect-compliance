@@ -13,6 +13,7 @@
  * This is a self-assessment AID, NOT legal advice (rendered below).
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import {
     Accordion,
@@ -28,12 +29,11 @@ import { ToggleGroup } from '@/components/ui/toggle-group';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/icons/loading-spinner';
 
-// Required attribution — AISVS is CC-BY-SA-4.0; render wherever questions show.
-export const AIGOV_ATTRIBUTION_TEXT =
-    'Questions reference OWASP AISVS v1.0 (CC-BY-SA-4.0, © OWASP Foundation), ISO/IEC 42001:2023 (clause refs) and the EU AI Act (2024/1689, public domain).';
+// Required attribution — AISVS is CC-BY-SA-4.0; rendered wherever questions
+// show via `onboarding.aiGov.attribution` / `.disclaimer`.
 const AISVS_SOURCE_URL = 'https://github.com/OWASP/AISVS';
-const AIGOV_DISCLAIMER =
-    'This is a self-assessment aid, NOT legal advice. EU AI Act risk classification and fundamental-rights determinations are legal calls owned by your counsel.';
+
+type AiGovT = ReturnType<typeof useTranslations>;
 
 type Architecture = 'NONE' | 'RAG' | 'AGENTIC' | 'BOTH';
 type AnswerVal = 'NA' | 'NO' | 'PARTIALLY' | 'YES';
@@ -69,19 +69,23 @@ type AssessmentState = {
     coverage: Coverage;
 };
 
-const ANSWER_OPTIONS: { value: AnswerVal; label: string }[] = [
-    { value: 'NA', label: 'N/A' },
-    { value: 'NO', label: 'No' },
-    { value: 'PARTIALLY', label: 'Partially' },
-    { value: 'YES', label: 'Yes' },
-];
+function buildAnswerOptions(t: AiGovT): { value: AnswerVal; label: string }[] {
+    return [
+        { value: 'NA', label: t('aiGov.answer.na') },
+        { value: 'NO', label: t('aiGov.answer.no') },
+        { value: 'PARTIALLY', label: t('aiGov.answer.partially') },
+        { value: 'YES', label: t('aiGov.answer.yes') },
+    ];
+}
 
-const ARCH_OPTIONS = [
-    { value: 'NONE', label: 'Prompt-completion' },
-    { value: 'RAG', label: 'RAG' },
-    { value: 'AGENTIC', label: 'Agentic' },
-    { value: 'BOTH', label: 'RAG + Agentic' },
-];
+function buildArchOptions(t: AiGovT) {
+    return [
+        { value: 'NONE', label: t('aiGov.arch.none') },
+        { value: 'RAG', label: t('aiGov.arch.rag') },
+        { value: 'AGENTIC', label: t('aiGov.arch.agentic') },
+        { value: 'BOTH', label: t('aiGov.arch.both') },
+    ];
+}
 
 function criticalityVariant(c: string): 'error' | 'warning' | 'info' | 'neutral' {
     if (c === 'CRITICAL') return 'error';
@@ -111,6 +115,9 @@ export function AiGovSelfAssessmentStep({
     onCompleted?: () => void;
     onSkip?: () => void;
 }) {
+    const t = useTranslations('onboarding');
+    const answerOptions = buildAnswerOptions(t);
+    const archOptions = buildArchOptions(t);
     const [state, setState] = useState<AssessmentState | null>(null);
     const [answers, setAnswers] = useState<Record<string, { answer: AnswerVal; note: string | null }>>({});
     const [architecture, setArchitecture] = useState<Architecture>('NONE');
@@ -128,7 +135,7 @@ export function AiGovSelfAssessmentStep({
         setLoading(true);
         try {
             const res = await fetch(`${base}?architecture=${arch}`);
-            if (!res.ok) throw new Error('Failed to load the AI-governance assessment.');
+            if (!res.ok) throw new Error(t('aiGov.loadError'));
             const data: AssessmentState = await res.json();
             setState(data);
             const map: Record<string, { answer: AnswerVal; note: string | null }> = {};
@@ -137,11 +144,11 @@ export function AiGovSelfAssessmentStep({
             }
             setAnswers(map);
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to load the AI-governance assessment.');
+            setError(e instanceof Error ? e.message : t('aiGov.loadError'));
         } finally {
             setLoading(false);
         }
-    }, [base]);
+    }, [base, t]);
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => {
@@ -158,31 +165,31 @@ export function AiGovSelfAssessmentStep({
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ answer, note }),
                 });
-                if (!res.ok) throw new Error('Failed to save answer.');
+                if (!res.ok) throw new Error(t('aiGov.saveError'));
                 // Refresh the coverage readout after a save (cheap, keeps the
                 // three cards live) without blocking the UI.
                 load(architecture);
             } catch (e) {
-                setError(e instanceof Error ? e.message : 'Failed to save answer.');
+                setError(e instanceof Error ? e.message : t('aiGov.saveError'));
             } finally {
                 setSavingId(null);
             }
         },
-        [base, load, architecture],
+        [base, load, architecture, t],
     );
 
     const handleComplete = useCallback(async () => {
         setCompleting(true);
         try {
             const res = await fetch(`${base}/complete`, { method: 'POST' });
-            if (!res.ok) throw new Error('Failed to complete the assessment.');
+            if (!res.ok) throw new Error(t('aiGov.completeError'));
             onCompleted?.();
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to complete the assessment.');
+            setError(e instanceof Error ? e.message : t('aiGov.completeError'));
         } finally {
             setCompleting(false);
         }
-    }, [base, onCompleted]);
+    }, [base, onCompleted, t]);
 
     const handleMaterialize = useCallback(async () => {
         setMaterializing(true);
@@ -193,19 +200,19 @@ export function AiGovSelfAssessmentStep({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ architecture }),
             });
-            if (!res.ok) throw new Error('Failed to create findings.');
+            if (!res.ok) throw new Error(t('aiGov.findingsError'));
             const data: { created: string[] } = await res.json();
             setMaterializeMsg(
                 data.created.length
-                    ? `Created ${data.created.length} finding${data.created.length === 1 ? '' : 's'} from your gaps.`
-                    : 'No new findings — your high-priority answers are covered.',
+                    ? t(data.created.length === 1 ? 'aiGov.materializeCreatedOne' : 'aiGov.materializeCreatedMany', { count: data.created.length })
+                    : t('aiGov.materializeNone'),
             );
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to create findings.');
+            setError(e instanceof Error ? e.message : t('aiGov.findingsError'));
         } finally {
             setMaterializing(false);
         }
-    }, [base, architecture]);
+    }, [base, architecture, t]);
 
     const questionsByDomain = useMemo(() => {
         const m = new Map<number, Question[]>();
@@ -220,7 +227,7 @@ export function AiGovSelfAssessmentStep({
     if (loading && !state) {
         return (
             <div className="flex items-center gap-tight text-content-muted text-sm">
-                <LoadingSpinner className="w-4 h-4" /> Loading the AI-governance self-assessment…
+                <LoadingSpinner className="w-4 h-4" /> {t('aiGov.loading')}
             </div>
         );
     }
@@ -233,17 +240,15 @@ export function AiGovSelfAssessmentStep({
         <div className="space-y-section" data-testid="ai-gov-self-assessment">
             <div className="space-y-tight">
                 <p className="text-sm text-content-muted">
-                    One assessment, three readouts. Your answers map to OWASP AISVS,
-                    ISO/IEC 42001 and the EU AI Act at once. Answers save automatically —
-                    leave and return any time.
+                    {t('aiGov.intro')}
                 </p>
                 {/* Architecture selector — gates the RAG / agentic questions. */}
                 <div className="flex items-center gap-tight flex-wrap">
-                    <span className="text-xs text-content-muted">Your AI system type:</span>
+                    <span className="text-xs text-content-muted">{t('aiGov.systemType')}</span>
                     <ToggleGroup
                         size="sm"
-                        ariaLabel="AI system architecture"
-                        options={ARCH_OPTIONS}
+                        ariaLabel={t('aiGov.archAriaLabel')}
+                        options={archOptions}
                         selected={architecture}
                         selectAction={(v) => setArchitecture(v as Architecture)}
                     />
@@ -252,9 +257,9 @@ export function AiGovSelfAssessmentStep({
 
             {/* The 3-way coverage cards — the differentiator. */}
             <div className="grid grid-cols-1 gap-default sm:grid-cols-3" data-testid="ai-gov-coverage-cards">
-                <KPIStat value={pct(cov.aisvs)} label="AISVS coverage" data-testid="ai-gov-cov-aisvs" />
-                <KPIStat value={pct(cov.iso42001)} label="ISO 42001 coverage" data-testid="ai-gov-cov-iso42001" />
-                <KPIStat value={pct(cov.euAiAct)} label="EU AI Act coverage" data-testid="ai-gov-cov-eu-ai-act" />
+                <KPIStat value={pct(cov.aisvs)} label={t('aiGov.covAisvs')} data-testid="ai-gov-cov-aisvs" />
+                <KPIStat value={pct(cov.iso42001)} label={t('aiGov.covIso')} data-testid="ai-gov-cov-iso42001" />
+                <KPIStat value={pct(cov.euAiAct)} label={t('aiGov.covEuAiAct')} data-testid="ai-gov-cov-eu-ai-act" />
             </div>
 
             {cov.criticalGaps.length > 0 && (
@@ -262,8 +267,8 @@ export function AiGovSelfAssessmentStep({
                     className="rounded-lg border border-border-emphasis bg-bg-subtle px-3 py-2 text-sm text-content-default"
                     data-testid="ai-gov-critical-gaps"
                 >
-                    <strong>{cov.criticalGaps.length} critical gap{cov.criticalGaps.length === 1 ? '' : 's'}</strong>{' '}
-                    flagged (potential EU AI Act legal exposure). Review with your counsel.
+                    <strong>{t(cov.criticalGaps.length === 1 ? 'aiGov.criticalGap' : 'aiGov.criticalGaps', { count: cov.criticalGaps.length })}</strong>{' '}
+                    {t('aiGov.criticalGapsSuffix')}
                 </div>
             )}
 
@@ -301,8 +306,8 @@ export function AiGovSelfAssessmentStep({
                                                         {q.text}
                                                     </span>
                                                     <InfoTooltip
-                                                        content={`Maps to: ${mappingSummary(q.mappings)}`}
-                                                        aria-label="Show the standard references"
+                                                        content={t('aiGov.mapsTo', { summary: mappingSummary(q.mappings) })}
+                                                        aria-label={t('aiGov.showReferences')}
                                                     />
                                                     <StatusBadge variant={criticalityVariant(q.criticality)} size="sm">
                                                         {q.criticality}
@@ -310,7 +315,7 @@ export function AiGovSelfAssessmentStep({
                                                 </div>
                                                 {naByArch ? (
                                                     <p className="text-xs italic text-content-muted">
-                                                        Not applicable to your AI system type ({q.conditional}) — counted as N/A.
+                                                        {t('aiGov.notApplicable', { conditional: q.conditional ?? '' })}
                                                     </p>
                                                 ) : (
                                                     <>
@@ -321,7 +326,7 @@ export function AiGovSelfAssessmentStep({
                                                                 saveAnswer(q.id, v as AnswerVal, answers[q.id]?.note ?? null)
                                                             }
                                                         >
-                                                            {ANSWER_OPTIONS.map((opt) => (
+                                                            {answerOptions.map((opt) => (
                                                                 <label key={opt.value} className="flex items-center gap-tight text-sm cursor-pointer">
                                                                     <RadioGroupItem value={opt.value} />
                                                                     {opt.label}
@@ -352,21 +357,21 @@ export function AiGovSelfAssessmentStep({
             <div className="flex items-center justify-between gap-compact border-t border-border-subtle pt-4">
                 {confirmSkip ? (
                     <div className="flex items-center gap-tight text-sm">
-                        <span className="text-content-muted">You can complete this later.</span>
-                        <Button variant="ghost" size="sm" onClick={() => setConfirmSkip(false)}>Keep going</Button>
-                        <Button variant="secondary" size="sm" onClick={() => onSkip?.()}>Skip for now</Button>
+                        <span className="text-content-muted">{t('aiGov.youCanCompleteLater')}</span>
+                        <Button variant="ghost" size="sm" onClick={() => setConfirmSkip(false)}>{t('aiGov.keepGoing')}</Button>
+                        <Button variant="secondary" size="sm" onClick={() => onSkip?.()}>{t('aiGov.skipForNow')}</Button>
                     </div>
                 ) : (
-                    <Button variant="ghost" size="sm" onClick={() => setConfirmSkip(true)}>Skip for now</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setConfirmSkip(true)}>{t('aiGov.skipForNow')}</Button>
                 )}
                 <div className="flex items-center gap-tight">
                     <Button variant="secondary" size="sm" onClick={handleMaterialize} disabled={materializing} data-testid="ai-gov-materialize">
                         {materializing ? <LoadingSpinner className="w-3.5 h-3.5" /> : null}
-                        Create findings for gaps
+                        {t('aiGov.createFindings')}
                     </Button>
                     <Button variant="primary" onClick={handleComplete} disabled={completing}>
                         {completing ? <LoadingSpinner className="w-3.5 h-3.5" /> : null}
-                        Complete assessment
+                        {t('aiGov.completeAssessment')}
                     </Button>
                 </div>
             </div>
@@ -374,11 +379,11 @@ export function AiGovSelfAssessmentStep({
 
             {/* Attribution + the not-legal-advice disclaimer — required wherever questions render */}
             <div className="space-y-tight">
-                <p className="text-xs text-content-subtle" data-testid="ai-gov-disclaimer">{AIGOV_DISCLAIMER}</p>
+                <p className="text-xs text-content-subtle" data-testid="ai-gov-disclaimer">{t('aiGov.disclaimer')}</p>
                 <p className="text-xs text-content-subtle">
-                    {AIGOV_ATTRIBUTION_TEXT}{' '}
+                    {t('aiGov.attribution')}{' '}
                     <a href={AISVS_SOURCE_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-content-muted">
-                        AISVS source
+                        {t('aiGov.aisvsSource')}
                     </a>
                 </p>
             </div>
@@ -398,6 +403,7 @@ function NoteField({
     onSave: (note: string) => void;
     disabled: boolean;
 }) {
+    const t = useTranslations('onboarding');
     const [open, setOpen] = useState(initial.trim() !== '');
     const [val, setVal] = useState(initial);
     if (disabled) return null;
@@ -408,7 +414,7 @@ function NoteField({
                 onClick={() => setOpen(true)}
                 className="text-xs text-content-muted underline hover:text-content-default"
             >
-                Add a note
+                {t('aiGov.addNote')}
             </button>
         );
     }
@@ -416,7 +422,7 @@ function NoteField({
         <textarea
             className="w-full rounded-md border border-border-subtle bg-bg-default p-2 text-sm"
             rows={2}
-            placeholder="Optional note (saved automatically)…"
+            placeholder={t('aiGov.notePlaceholder')}
             value={val}
             disabled={saving}
             onChange={(e) => setVal(e.target.value)}
