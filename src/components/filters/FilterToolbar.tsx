@@ -28,6 +28,7 @@
  * `searchPlaceholder` keep the classic category-only picker.
  */
 
+import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import {
     Filter as FilterUI,
@@ -141,6 +142,7 @@ export function FilterToolbar({
     leading,
     className,
 }: FilterToolbarProps) {
+    const t = useTranslations('common.ui');
     const ctx = useFilters();
     const { remove, removeAll, clearAll, search, setSearch, state } = ctx;
 
@@ -193,7 +195,7 @@ export function FilterToolbar({
                     onSearchChange={searchEnabled ? handleSearchChange : undefined}
                     className="h-9"
                 >
-                    {triggerLabel ?? 'Filter'}
+                    {triggerLabel ?? t('filter')}
                 </FilterUI.Select>
             </div>
             <div className="flex-1 min-w-0">

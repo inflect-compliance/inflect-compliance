@@ -138,11 +138,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 )}
             </head>
             <body suppressHydrationWarning nonce={nonce}>
-                <Providers>
-                    <NextIntlClientProvider messages={messages} locale={locale}>
-                        {children}
-                    </NextIntlClientProvider>
-                </Providers>
+                {/* NextIntlClientProvider MUST wrap <Providers>, not sit inside
+                    it: <Providers> renders app-wide client chrome (the command
+                    palette, the shortcut-help <Modal>, toasts) that now call
+                    useTranslations(). If the intl provider sat inside Providers,
+                    those components would render with no intl context and throw
+                    during SSR — 500-ing every route, including /login. */}
+                <NextIntlClientProvider messages={messages} locale={locale}>
+                    <Providers>{children}</Providers>
+                </NextIntlClientProvider>
             </body>
         </html>
     );

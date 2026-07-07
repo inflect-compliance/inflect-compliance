@@ -25,6 +25,7 @@
 
 import { cn } from "@/lib/cn";
 import { Check, Copy } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { type ReactNode, forwardRef } from "react";
 import { useToast } from "./hooks/use-toast";
 import { Tooltip } from "./tooltip";
@@ -57,9 +58,9 @@ export const CopyText = forwardRef<HTMLButtonElement, CopyTextProps>(
         {
             value,
             children,
-            label = "Copy",
+            label,
             successMessage,
-            errorMessage = "Copy failed",
+            errorMessage,
             onCopy,
             disabled,
             truncate,
@@ -68,6 +69,9 @@ export const CopyText = forwardRef<HTMLButtonElement, CopyTextProps>(
         },
         ref,
     ) {
+        const t = useTranslations("common.copy");
+        const resolvedLabel = label ?? t("copy");
+        const resolvedError = errorMessage ?? t("copyFailed");
         const { copy, copied } = useCopyToClipboard();
         const toast = useToast();
 
@@ -77,9 +81,11 @@ export const CopyText = forwardRef<HTMLButtonElement, CopyTextProps>(
             const ok = await copy(value);
             if (ok) {
                 onCopy?.(value);
-                toast.success(successMessage ?? `${label} copied`);
+                toast.success(
+                    successMessage ?? t("labelCopied", { label: resolvedLabel }),
+                );
             } else {
-                toast.error(errorMessage);
+                toast.error(resolvedError);
             }
         };
 
@@ -87,7 +93,7 @@ export const CopyText = forwardRef<HTMLButtonElement, CopyTextProps>(
             <button
                 ref={ref}
                 type="button"
-                aria-label={label}
+                aria-label={resolvedLabel}
                 disabled={disabled}
                 data-copied={copied ? "true" : undefined}
                 onClick={handleClick}
@@ -129,6 +135,6 @@ export const CopyText = forwardRef<HTMLButtonElement, CopyTextProps>(
         );
 
         if (disabled) return button;
-        return <Tooltip content={copied ? "Copied" : label} disableHoverableContent>{button}</Tooltip>;
+        return <Tooltip content={copied ? t("copied") : resolvedLabel} disableHoverableContent>{button}</Tooltip>;
     },
 );

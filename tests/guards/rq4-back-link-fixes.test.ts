@@ -28,9 +28,21 @@ const BACK_AFFORDANCE_PATH = path.resolve(
 
 describe('rq4 back-link fixes', () => {
     it('BackAffordance carries a SECTION_LABELS map mapping /audits to "Internal Audit"', () => {
+        // Post-i18n: SECTION_LABELS maps `/audits` to the
+        // `common.sections.audits` message KEY, and the English catalog
+        // resolves that key to the product display name "Internal Audit"
+        // (not the raw "Audits"). Both halves are asserted so a rename
+        // still fails CI.
         const source = fs.readFileSync(BACK_AFFORDANCE_PATH, 'utf-8');
         expect(source).toMatch(/SECTION_LABELS/);
-        expect(source).toMatch(/'\/audits':\s*'Internal Audit'/);
+        expect(source).toMatch(/'\/audits':\s*'audits'/);
+        const en = JSON.parse(
+            fs.readFileSync(
+                path.resolve(__dirname, '../../messages/en.json'),
+                'utf-8',
+            ),
+        );
+        expect(en.common.sections.audits).toBe('Internal Audit');
     });
 
     it('BackAffordance exposes a `noFallback` prop that skips canonical resolution', () => {

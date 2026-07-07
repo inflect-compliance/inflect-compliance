@@ -28,6 +28,7 @@
  */
 
 import { cn } from "@/lib/cn";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { FormDescription } from "./form-description";
 import { InfoTooltip } from "./tooltip";
@@ -82,6 +83,7 @@ const FieldGroup = React.forwardRef<HTMLElement, FieldGroupProps>(
         },
         ref,
     ) => {
+        const t = useTranslations("common.ui");
         const autoId = React.useId();
         const hasTitle = Boolean(title);
         const headingId = hasTitle ? `field-group-${autoId}-title` : undefined;
@@ -110,8 +112,8 @@ const FieldGroup = React.forwardRef<HTMLElement, FieldGroupProps>(
                                     content={hint}
                                     aria-label={
                                         typeof title === "string"
-                                            ? `More info about ${title}`
-                                            : "More information"
+                                            ? t("moreInfoAbout", { title })
+                                            : t("moreInformation")
                                     }
                                     iconClassName="h-3.5 w-3.5"
                                 />

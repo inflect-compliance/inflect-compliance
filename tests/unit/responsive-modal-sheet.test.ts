@@ -20,6 +20,7 @@ const ROOT = path.resolve(__dirname, '../../');
 function read(rel: string): string {
     return fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 }
+const EN = JSON.parse(read('messages/en.json'));
 
 // ─── 1. resolvePresentation — pure decision logic ─────────────────
 
@@ -114,8 +115,10 @@ describe('Modal — source contract', () => {
 
     it('renders a Dialog.Title so every dialog has an accessible name', () => {
         expect(src).toMatch(/<Dialog\.Title\b/);
-        // Fallback when no title is passed.
-        expect(src).toMatch(/["']Dialog["']/);
+        // Fallback when no title is passed. Post-i18n: resolves through
+        // next-intl (`common.ui.dialog`); the English catalog keeps "Dialog".
+        expect(src).toMatch(/\?\?\s*t\(["']ui\.dialog["']\)/);
+        expect(EN.common.ui.dialog).toBe('Dialog');
     });
 
     it('provides Header / Body / Footer slots + Close on the composite', () => {
@@ -128,7 +131,10 @@ describe('Modal — source contract', () => {
     });
 
     it('renders a focus-visible close button that uses the shared ring token', () => {
-        expect(src).toMatch(/aria-label="Close"/);
+        // Post-i18n: aria-label resolves through next-intl (`common.close`);
+        // the English catalog keeps the "Close" text.
+        expect(src).toMatch(/aria-label=\{t\(["']close["']\)\}/);
+        expect(EN.common.close).toBe('Close');
         expect(src).toMatch(/focus-visible:ring-ring/);
     });
 
@@ -183,7 +189,9 @@ describe('Sheet — source contract', () => {
 
     it('Header wires Drawer.Close on its built-in close affordance', () => {
         expect(src).toMatch(/<Drawer\.Close asChild/);
-        expect(src).toMatch(/aria-label="Close"/);
+        // Post-i18n: aria-label resolves through next-intl (`common.close`).
+        expect(src).toMatch(/aria-label=\{t\(["']close["']\)\}/);
+        expect(EN.common.close).toBe('Close');
     });
 
     it('Title renders a Drawer.Title so screen readers pick up the sheet name', () => {

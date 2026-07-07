@@ -23,6 +23,7 @@ function read(rel: string): string {
 }
 
 const MODAL_SRC = read('src/components/ui/modal.tsx');
+const EN = JSON.parse(read('messages/en.json'));
 
 // ─── 1. Size variants ────────────────────────────────────────────
 
@@ -176,7 +177,10 @@ describe('Modal — focus + dismissal', () => {
     });
 
     it('close button carries aria-label="Close" + focus-visible ring token', () => {
-        expect(MODAL_SRC).toMatch(/aria-label="Close"/);
+        // Post-i18n: aria-label resolves through next-intl (`common.close`);
+        // the English catalog keeps the "Close" text.
+        expect(MODAL_SRC).toMatch(/aria-label=\{t\(["']close["']\)\}/);
+        expect(EN.common.close).toBe('Close');
         expect(MODAL_SRC).toMatch(/focus-visible:ring-ring/);
     });
 

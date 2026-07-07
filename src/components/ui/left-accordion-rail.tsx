@@ -38,6 +38,7 @@
  * (the value list, the click handlers) is the caller's domain
  * knowledge.
  */
+import { useTranslations } from 'next-intl';
 import {
     useEffect,
     useId,
@@ -108,11 +109,13 @@ export function LeftAccordionRail({
     sections,
     defaultOpenIds,
     className,
-    ariaLabel = 'Table orientation',
+    ariaLabel: ariaLabelProp,
     id,
     persistKey,
     defaultFolded = false,
 }: LeftAccordionRailProps) {
+    const t = useTranslations('common.ui');
+    const ariaLabel = ariaLabelProp ?? t('tableOrientation');
     // Quiet-by-default — no sections open unless the consumer
     // explicitly seeds `defaultOpenIds`.
     const [openIds, setOpenIds] = useState<ReadonlySet<string>>(
@@ -183,7 +186,7 @@ export function LeftAccordionRail({
                 id={id}
                 data-testid={id ?? 'left-accordion-rail'}
                 data-rail-folded="true"
-                aria-label={`${ariaLabel} (collapsed)`}
+                aria-label={t('railCollapsed', { label: ariaLabel })}
                 className={cn(
                     cardVariants({ density: 'none' }),
                     'flex flex-col items-center self-start w-9 py-tight',
@@ -194,7 +197,7 @@ export function LeftAccordionRail({
                     type="button"
                     data-testid="rail-fold-toggle"
                     aria-expanded="false"
-                    aria-label="Expand rail"
+                    aria-label={t('expandRail')}
                     onClick={() => setFolded(false)}
                     className={cn(
                         'flex h-7 w-7 items-center justify-center rounded-md',
@@ -241,7 +244,7 @@ export function LeftAccordionRail({
                     type="button"
                     data-testid="rail-fold-toggle"
                     aria-expanded="true"
-                    aria-label="Collapse rail"
+                    aria-label={t('collapseRail')}
                     onClick={() => setFolded(true)}
                     className={cn(
                         'flex h-6 w-6 items-center justify-center rounded-md',

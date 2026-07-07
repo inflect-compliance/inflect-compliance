@@ -23,6 +23,7 @@
 import { cn } from "@/lib/cn";
 import { type VariantProps, cva } from "class-variance-authority";
 import { Check, Copy, type LucideIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { forwardRef } from "react";
 import { useToast } from "./hooks/use-toast";
 import { Tooltip } from "./tooltip";
@@ -86,9 +87,9 @@ export const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
     function CopyButton(
         {
             value,
-            label = "Copy",
+            label,
             successMessage,
-            errorMessage = "Copy failed",
+            errorMessage,
             icon,
             size,
             variant,
@@ -99,6 +100,9 @@ export const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
         },
         ref,
     ) {
+        const t = useTranslations("common.copy");
+        const resolvedLabel = label ?? t("copy");
+        const resolvedError = errorMessage ?? t("copyFailed");
         const { copy, copied } = useCopyToClipboard();
         const toast = useToast();
         const Glyph = icon ?? Copy;
@@ -110,9 +114,11 @@ export const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
             const ok = await copy(value);
             if (ok) {
                 onCopy?.(value);
-                toast.success(successMessage ?? `${label} copied`);
+                toast.success(
+                    successMessage ?? t("labelCopied", { label: resolvedLabel }),
+                );
             } else {
-                toast.error(errorMessage);
+                toast.error(resolvedError);
             }
         };
 
@@ -120,7 +126,7 @@ export const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
             <button
                 ref={ref}
                 type="button"
-                aria-label={label}
+                aria-label={resolvedLabel}
                 aria-live="polite"
                 disabled={disabled}
                 data-copied={copied ? "true" : undefined}
@@ -140,7 +146,7 @@ export const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
 
         if (disableTooltip || disabled) return button;
         return (
-            <Tooltip content={copied ? "Copied" : label} disableHoverableContent>
+            <Tooltip content={copied ? t("copied") : resolvedLabel} disableHoverableContent>
                 {button}
             </Tooltip>
         );
