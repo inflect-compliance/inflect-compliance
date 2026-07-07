@@ -124,6 +124,9 @@ log.info({ queueName: QUEUE_NAME, redisUrl: REDIS_URL.replace(/\/\/.*@/, '//***@
     const { installAutomationBusDispatcher } = await import(
         '../src/app-layer/automation/bus-bootstrap'
     );
+    // Register all integration providers process-wide (worker tier) so
+    // scheduled checks + sync jobs can resolve providers by automation key.
+    await import('../src/app-layer/integrations/bootstrap');
     const { installRlsTripwire } = await import(
         '../src/lib/db/rls-middleware'
     );

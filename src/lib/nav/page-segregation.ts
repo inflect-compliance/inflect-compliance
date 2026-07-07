@@ -102,9 +102,6 @@ export const BACK_AFFORDANCE_COHORT_TODO: readonly string[] = [
  */
 export const MAIN_PAGES: readonly string[] = [
     '/access-reviews',
-    '/devices',
-    '/personnel',
-    '/training',
     '/admin',
     '/assets',
     '/audits',
@@ -144,6 +141,7 @@ export const SUBPAGES: readonly string[] = [
     '/admin/api-keys',
     '/admin/audit-log',
     '/admin/billing',
+    '/admin/devices',
     '/admin/entra',
     '/admin/integrations',
     '/admin/integrations/sharepoint-health',
@@ -151,6 +149,7 @@ export const SUBPAGES: readonly string[] = [
     '/admin/mcp/agent-receipts',
     '/admin/members',
     '/admin/notifications',
+    '/admin/personnel',
     '/admin/rbac',
     '/admin/risk-appetite',
     '/admin/risk-matrix',
@@ -158,6 +157,7 @@ export const SUBPAGES: readonly string[] = [
     '/admin/scim',
     '/admin/security',
     '/admin/sso',
+    '/admin/training',
     '/admin/trust-center',
     '/admin/vendor-assessment-reviews/[assessmentId]',
     '/admin/vendor-templates',
