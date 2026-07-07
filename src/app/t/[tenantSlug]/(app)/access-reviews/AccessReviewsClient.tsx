@@ -36,7 +36,7 @@ import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 interface AccessReviewSummary {
     id: string;
     name: string;
-    scope: 'ALL_USERS' | 'ADMIN_ONLY' | 'CUSTOM';
+    scope: 'ALL_USERS' | 'ADMIN_ONLY' | 'CUSTOM' | 'CONNECTED_APP';
     status: 'OPEN' | 'IN_REVIEW' | 'CLOSED';
     periodStartAt: string | Date | null;
     periodEndAt: string | Date | null;
