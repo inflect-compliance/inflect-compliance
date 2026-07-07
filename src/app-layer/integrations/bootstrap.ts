@@ -23,6 +23,7 @@ import { GcpPostureProvider } from './providers/gcp-posture-provider';
 import { BambooHrProvider } from './providers/hris';
 import { PersonnelProvider } from './providers/personnel';
 import { DeviceProvider } from './providers/device';
+import { TrainingProvider } from './providers/training';
 import { GitHubClient } from './providers/github-client';
 import { GitHubBranchProtectionMapper } from './providers/github-mapper';
 import { GitHubSyncOrchestrator } from './providers/github/sync';
@@ -57,6 +58,9 @@ registry.register(new PersonnelProvider());
 
 // Device — internal checks (encryption, screen lock, antivirus, password manager).
 registry.register(new DeviceProvider());
+
+// Training & Background — internal checks (annual training completion, background-check status).
+registry.register(new TrainingProvider());
 
 // Future providers:
 // registry.register(new GitLabProvider());

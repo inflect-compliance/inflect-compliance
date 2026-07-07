@@ -88,6 +88,7 @@ const LEGACY_LUCIDE_USERS = new Set<string>([
     'src/app/t/[tenantSlug]/(app)/risks/ai-systems/filter-defs.ts',
     'src/app/t/[tenantSlug]/(app)/personnel/filter-defs.ts',
     'src/app/t/[tenantSlug]/(app)/devices/filter-defs.ts',
+    'src/app/t/[tenantSlug]/(app)/training/filter-defs.ts',
     'src/app/t/[tenantSlug]/(app)/coverage/CoverageClient.tsx',
     'src/app/t/[tenantSlug]/(app)/dashboard/DashboardClient.tsx',
     'src/app/t/[tenantSlug]/(app)/evidence/filter-defs.ts',

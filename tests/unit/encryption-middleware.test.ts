@@ -81,6 +81,11 @@ describe('ENCRYPTED_FIELDS manifest', () => {
         }
     });
 
+    it('encrypts BackgroundCheck.resultSummary (PR-6 — adverse-action detail)', () => {
+        expect(isEncryptedModel('BackgroundCheck')).toBe(true);
+        expect(getEncryptedFields('BackgroundCheck')).toContain('resultSummary');
+    });
+
     it('returns undefined for unknown models', () => {
         expect(getEncryptedFields('DoesNotExist')).toBeUndefined();
         expect(getEncryptedFields(undefined)).toBeUndefined();

@@ -382,6 +382,8 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
     ConnectedIdentityAccount: 'personnel provider reads all accounts for a tenant (offboarded-access join) — covered by @@index([tenantId, status]); bounded take ≤10000.',
     Device: 'listDevices + device provider read by tenantId (+platform) — covered by @@index([tenantId, platform]); bounded take ≤10000.',
     TenantDeviceToken: 'listDeviceTokens by tenantId — covered by @@index([tenantId]) / @@index([tenantId, revokedAt]); bounded take ≤200.',
+    TrainingAssignment: 'listTrainingAssignments + training provider by tenantId (+status) — covered by @@index([tenantId, status]) / @@index([tenantId, employeeId]); bounded take ≤10000.',
+    BackgroundCheck: 'listBackgroundChecks + training provider by tenantId (+status) — covered by @@index([tenantId, status]) / @@index([tenantId, employeeId]); bounded take ≤10000.',
     // EU AI Act registry — listAiSystems filters by tenantId (+ optional
     // riskTier / status), orders by riskTier then createdAt; covered by
     // @@index([tenantId, riskTier]) + @@index([tenantId, status]). Bounded

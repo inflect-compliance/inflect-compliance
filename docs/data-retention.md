@@ -121,6 +121,9 @@ a `userId` but stores no contact PII).
 | `Employee` | PII subject | No | Re-synced from HRIS (idempotent by workEmail) or manual; cascade on tenant delete | Personnel record (name + work email + employment status). No TTL today — tracks the live roster; purged on tenant deletion. **DSAR-relevant PII.** |
 | `Device` | Operational | No | Re-reported by agent/MDM (upsert by serial) or manual; cascade on tenant delete | Endpoint posture inventory (serial/hostname + encryption/lock/AV flags). No TTL; tracks the live fleet, purged on tenant deletion |
 | `TenantDeviceToken` | Security ephemeral | No (SHA-256 hash at rest) | Revocable (`revokedAt`); cascade on tenant delete | Per-tenant device-agent credential (like `TenantApiKey`) — hash-only at rest, single-use lookup; purged on tenant deletion |
+| `TrainingCourse` | Configuration | No | Cascade on tenant delete | Course catalogue; lives with tenant |
+| `TrainingAssignment` | Business record | No | Cascade on employee/tenant delete | Training-completion record — compliance evidence of annual security-awareness training; retained while tenant active |
+| `BackgroundCheck` | PII subject | Yes (`resultSummary`) | Cascade on employee/tenant delete; result encrypted | Pre-employment screening record — sensitive PII (adverse-action detail encrypted at rest). **DSAR-relevant; needs a retention commitment.** |
 | `IntegrationWebhookEvent` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
 | `KeyRiskIndicator` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `KriReading` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
