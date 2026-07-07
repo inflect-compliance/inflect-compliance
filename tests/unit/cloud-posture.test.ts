@@ -38,7 +38,7 @@ function fakeExec(stdout: string, missing = false) {
 
 describe('runPowerpipeBenchmark', () => {
     it('FAILs when any control alarms; counts land in details', async () => {
-        const r = await runPowerpipeBenchmark({ benchmarkId: 'azure_compliance.benchmark.soc_2', env: {}, secretValues: [], exec: fakeExec(BENCH_JSON) });
+        const r = await runPowerpipeBenchmark({ benchmarkId: 'azure_compliance.benchmark.soc_2', env: process.env, secretValues: [], exec: fakeExec(BENCH_JSON) });
         expect(r.status).toBe('FAILED');
         expect(r.summaryObj?.counts.total).toBe(3);
         expect(r.summaryObj?.counts.alarm).toBe(1);
@@ -46,12 +46,12 @@ describe('runPowerpipeBenchmark', () => {
 
     it('PASSes when no control alarms', async () => {
         const allOk = JSON.stringify({ controls: [{ control_id: 'x.control.ok', summary: { status: { ok: 1 } } }] });
-        const r = await runPowerpipeBenchmark({ benchmarkId: 'b', env: {}, secretValues: [], exec: fakeExec(allOk) });
+        const r = await runPowerpipeBenchmark({ benchmarkId: 'b', env: process.env, secretValues: [], exec: fakeExec(allOk) });
         expect(r.status).toBe('PASSED');
     });
 
     it('ERRORs when the CLI is missing', async () => {
-        const r = await runPowerpipeBenchmark({ benchmarkId: 'b', env: {}, secretValues: [], exec: fakeExec('', true) });
+        const r = await runPowerpipeBenchmark({ benchmarkId: 'b', env: process.env, secretValues: [], exec: fakeExec('', true) });
         expect(r.status).toBe('ERROR');
     });
 });
