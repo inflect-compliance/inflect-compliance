@@ -186,3 +186,9 @@ See also: [`SECURITY.md`](../SECURITY.md), [`docs/encryption-data-protection.md`
 > device inventory (encryption, screen lock, antivirus, password manager). It
 > calls no external service, so it is **not** a sub-processor. (A future MDM
 > connector — Jamf / Intune — would be added here as a real sub-processor.)
+
+
+> The `training` integration provider is **internal** — it evaluates
+> training-assignment completion + background-check status from data entered
+> manually or via a future KnowBe4 / Certn connector. It calls no external
+> service today, so it is **not** a sub-processor.

@@ -104,6 +104,7 @@ export const MAIN_PAGES: readonly string[] = [
     '/access-reviews',
     '/devices',
     '/personnel',
+    '/training',
     '/admin',
     '/assets',
     '/audits',

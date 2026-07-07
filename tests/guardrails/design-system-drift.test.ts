@@ -41,6 +41,8 @@ const MIGRATED_PAGES = [
     // PageHeader / Card / Button / StatusBadge only (no raw colours / .btn / .badge).
     'devices/page.tsx',
     'devices/DevicesClient.tsx',
+    'training/page.tsx',
+    'training/TrainingClient.tsx',
     'personnel/page.tsx',
     'personnel/PersonnelClient.tsx',
     'risks/ai-systems/page.tsx',

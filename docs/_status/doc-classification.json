@@ -1435,6 +1435,9 @@
     },
     "docs/implementation-notes/2026-07-07-pr5-device-monitoring.md": {
       "class": "historical"
+    },
+    "docs/implementation-notes/2026-07-07-pr6-training-background.md": {
+      "class": "historical"
     }
   }
 }

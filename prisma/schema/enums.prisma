@@ -860,6 +860,24 @@ enum DevicePlatform {
   LINUX
 }
 
+/// Security-awareness training assignment lifecycle (PR-6).
+enum TrainingStatus {
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+}
+
+/// Background-check outcome (PR-6). CLEAR = passed; CONSIDER = adjudication
+/// needed; FAILED = adverse.
+enum BackgroundCheckStatus {
+  PENDING
+  IN_PROGRESS
+  CLEAR
+  CONSIDER
+  FAILED
+}
+
 enum SyncDirection {
   PUSH
   PULL

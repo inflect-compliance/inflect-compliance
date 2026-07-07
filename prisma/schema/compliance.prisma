@@ -363,6 +363,67 @@ model ConnectedIdentityAccount {
   @@index([tenantId, status])
 }
 
+/// A security-awareness training course (PR-6). Provider-synced (KnowBe4) or
+/// manual. `cadenceDays` drives the annual-completion check.
+model TrainingCourse {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  provider    String?
+  cadenceDays Int?     @default(365)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant               @relation(fields: [tenantId], references: [id])
+  assignments TrainingAssignment[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+/// A training assignment to an employee (PR-6).
+model TrainingAssignment {
+  id          String         @id @default(cuid())
+  tenantId    String
+  employeeId  String
+  courseId    String
+  status      TrainingStatus @default(ASSIGNED)
+  assignedAt  DateTime       @default(now())
+  dueAt       DateTime?
+  completedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  tenant   Tenant         @relation(fields: [tenantId], references: [id])
+  employee Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  course   TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, employeeId])
+  @@index([tenantId, status])
+  @@index([tenantId, courseId])
+}
+
+/// A background check for an employee (PR-6). `resultSummary` is encrypted at
+/// rest (Epic B manifest) — it can quote adverse-action detail.
+model BackgroundCheck {
+  id            String                @id @default(cuid())
+  tenantId      String
+  employeeId    String
+  provider      String?
+  status        BackgroundCheckStatus @default(PENDING)
+  requestedAt   DateTime?
+  completedAt   DateTime?
+  resultSummary String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, employeeId])
+  @@index([tenantId, status])
+}
+
 /// A managed endpoint / device (PR-5). Reported by an MDM or a per-tenant
 /// device agent (token-authed) or entered manually. Optionally linked to an
 /// Employee. The boolean posture fields are THREE-STATE: true (pass), false
@@ -421,6 +482,8 @@ model Employee {
   manager  Employee?  @relation("EmployeeManager", fields: [managerEmployeeId], references: [id], onDelete: SetNull)
   reports  Employee[] @relation("EmployeeManager")
   devices  Device[]
+  trainingAssignments TrainingAssignment[]
+  backgroundChecks    BackgroundCheck[]
 
   @@unique([tenantId, workEmail])
   @@index([tenantId, status])

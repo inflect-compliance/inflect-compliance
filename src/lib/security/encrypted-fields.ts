@@ -200,6 +200,8 @@ export const ENCRYPTED_FIELDS: Readonly<Record<string, readonly string[]>> = {
     //  the read path wouldn't know to decrypt, returning the v2:
     //  ciphertext to callers.
     AccessReview: ['description'],
+    // PR-6 — background-check result can quote adverse-action detail.
+    BackgroundCheck: ['resultSummary'],
     AccessReviewDecision: ['notes'],
 
     // ─── Epic G-5 control exception register ───────────
