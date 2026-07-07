@@ -389,6 +389,9 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
     AccessReviewConnectedDecision: 'listConnectedDecisions + close by (tenantId, accessReviewId) — covered by @@index([tenantId, accessReviewId]); bounded take ≤5000.',
     TrustCenterDocument: 'listTrustCenterDocuments by tenantId — covered by @@index([tenantId]) / @@index([tenantId, trustCenterId]); bounded take ≤200.',
     TrustCenterAccessRequest: 'listTrustCenterAccessRequests by tenantId (+status) — covered by @@index([tenantId, status]); bounded take ≤500.',
+    InboundQuestionnaire: 'listQuestionnaires by tenantId (+status) — covered by @@index([tenantId, status]); bounded take ≤200.',
+    InboundQuestionnaireItem: 'getQuestionnaireItems + autofill by (tenantId, questionnaireId/status) — covered by @@index([tenantId, questionnaireId]) / @@index([tenantId, status]); bounded.',
+    QuestionnaireAnswerLibrary: 'library retrieval by tenantId — covered by @@index([tenantId]); bounded take ≤1000.',
     // EU AI Act registry — listAiSystems filters by tenantId (+ optional
     // riskTier / status), orders by riskTier then createdAt; covered by
     // @@index([tenantId, riskTier]) + @@index([tenantId, status]). Bounded

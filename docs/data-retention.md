@@ -127,6 +127,9 @@ a `userId` but stores no contact PII).
 | `AccessReviewConnectedDecision` | Regulatory artefact | No | Cascade on review/tenant delete; account SetNull | Frozen access-review evidence for a connected identity account (SOC 2 UAR); retained with the parent review |
 | `TrustCenterDocument` | Configuration | No | Cascade on trust-center/tenant delete | Published document pointer (label + fileRecordId); lives with the trust center |
 | `TrustCenterAccessRequest` | Business record | No (token hashed) | Cascade on document/tenant delete; download token hashed + single-use + expiring | Gated-document access-request audit (who requested/downloaded); retained as access evidence |
+| `QuestionnaireAnswerLibrary` | Business record | No | Cascade on tenant delete | Reusable Q&A knowledge base; improves over time; retained while tenant active |
+| `InboundQuestionnaire` | Operational | No | Cascade on tenant delete | Uploaded inbound questionnaire; no TTL today |
+| `InboundQuestionnaireItem` | Operational | No | Cascade on questionnaire/tenant delete | AI-drafted / accepted answers; no TTL today |
 | `IntegrationWebhookEvent` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
 | `KeyRiskIndicator` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `KriReading` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |

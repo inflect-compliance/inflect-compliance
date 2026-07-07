@@ -223,6 +223,7 @@ export const env = createEnv({
 
         // AI Risk Assessment
         AI_RISK_PROVIDER: z.string().default('stub'),
+        AI_QUESTIONNAIRE_PROVIDER: z.string().default('stub'),
         OPENROUTER_API_KEY: z.string().optional(),
         OPENROUTER_MODEL: z.string().optional(),
         // Local / self-hosted AI gateway (AI sovereignty). Base URL of an
@@ -382,6 +383,7 @@ export const env = createEnv({
         APP_URL: process.env.APP_URL,
 
         AI_RISK_PROVIDER: process.env.AI_RISK_PROVIDER,
+        AI_QUESTIONNAIRE_PROVIDER: process.env.AI_QUESTIONNAIRE_PROVIDER,
         OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
         OPENROUTER_MODEL: process.env.OPENROUTER_MODEL,
         AI_LOCAL_BASE_URL: process.env.AI_LOCAL_BASE_URL,

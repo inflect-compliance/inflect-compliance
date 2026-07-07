@@ -885,6 +885,22 @@ enum TrustCenterAccessStatus {
   DENIED
 }
 
+/// Inbound-questionnaire campaign lifecycle (PR-9).
+enum InboundQuestionnaireStatus {
+  UPLOADED
+  DRAFTING
+  REVIEW
+  EXPORTED
+}
+
+/// Per-question item state (PR-9). FLAGGED = low-confidence, needs a human.
+enum QuestionnaireItemStatus {
+  PENDING
+  DRAFTED
+  FLAGGED
+  ACCEPTED
+}
+
 enum SyncDirection {
   PUSH
   PULL
