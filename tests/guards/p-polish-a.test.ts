@@ -79,10 +79,22 @@ describe("PR-A polish — canvas micro-polish wiring", () => {
     describe("3. Reject reason toast", () => {
         it("REJECT_MESSAGES module-level table is exported with all three reasons", () => {
             const src = canvas();
-            expect(src).toMatch(/const REJECT_MESSAGES\b/);
-            // Every reason key must have a string value.
+            // The reject-reason table is now a localized factory.
+            expect(src).toMatch(/function buildRejectMessages\b/);
+            // Every reason key must map to an i18n lookup + a non-empty
+            // English catalog value.
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const en = require('../../messages/en.json');
+            const catKey = {
+                self: 'rejectSelf',
+                duplicate: 'rejectDuplicate',
+                annotation: 'rejectAnnotation',
+            } as const;
             for (const key of ["self", "duplicate", "annotation"] as const) {
-                expect(src).toMatch(new RegExp(`${key}:\\s*"`));
+                expect(src).toMatch(new RegExp(`${key}:\\s*t\\(`));
+                expect(en.automation.canvas[catKey[key]]).toEqual(
+                    expect.stringMatching(/\S/),
+                );
             }
         });
         it("isValidConnection's reject() fires toast.warning with the mapped message", () => {
@@ -92,7 +104,7 @@ describe("PR-A polish — canvas micro-polish wiring", () => {
             );
             expect(match).not.toBeNull();
             const body = match![0];
-            expect(body).toMatch(/toast\.warning\(REJECT_MESSAGES\[reason\]/);
+            expect(body).toMatch(/toast\.warning\(rejectMessages\[reason\]/);
         });
     });
 

@@ -24,6 +24,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/icons/loading-spinner";
@@ -60,6 +61,7 @@ export function CanvasDiffOverlay({
     currentSnapshot: DiffGraphSnapshot;
     currentVersion: number;
 }) {
+    const t = useTranslations("automation.diff");
     const [snapshot, setSnapshot] = useState<SnapshotResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -78,7 +80,9 @@ export function CanvasDiffOverlay({
                     `/api/t/${tenantSlug}/processes/${mapId}/snapshots/${targetVersion}`,
                 );
                 if (!res.ok) {
-                    throw new Error(`Diff load failed (${res.status})`);
+                    throw new Error(
+                        t("loadErrorStatus", { status: res.status }),
+                    );
                 }
                 const body = (await res.json()) as SnapshotResponse;
                 if (cancelled) return;
@@ -86,9 +90,7 @@ export function CanvasDiffOverlay({
             } catch (err) {
                 if (!cancelled) {
                     setError(
-                        err instanceof Error
-                            ? err.message
-                            : "Diff load failed",
+                        err instanceof Error ? err.message : t("loadError"),
                     );
                 }
             } finally {
@@ -98,7 +100,7 @@ export function CanvasDiffOverlay({
         return () => {
             cancelled = true;
         };
-    }, [open, tenantSlug, mapId, targetVersion]);
+    }, [open, tenantSlug, mapId, targetVersion, t]);
 
     const diff: CanvasDiff | null = snapshot
         ? computeCanvasDiff(snapshot.graphJson, currentSnapshot)
@@ -110,12 +112,12 @@ export function CanvasDiffOverlay({
             setShowModal={(next) =>
                 onOpenChange(typeof next === "boolean" ? next : !open)
             }
-            title={`Diff v${targetVersion} vs v${currentVersion}`}
-            description="Comparing the snapshot to the current canvas state"
+            title={t("title", { x: targetVersion, y: currentVersion })}
+            description={t("description")}
         >
             <Modal.Header
-                title={`Diff v${targetVersion} vs v${currentVersion}`}
-                description="Comparing the snapshot to the current canvas state"
+                title={t("title", { x: targetVersion, y: currentVersion })}
+                description={t("description")}
             />
             <Modal.Body>
                 <div
@@ -124,7 +126,7 @@ export function CanvasDiffOverlay({
                 >
                     {loading && (
                         <div className="flex items-center gap-tight text-sm text-content-muted">
-                            <LoadingSpinner /> Loading snapshot…
+                            <LoadingSpinner /> {t("loading")}
                         </div>
                     )}
                     {!loading && error && (
@@ -139,13 +141,13 @@ export function CanvasDiffOverlay({
                         <>
                             <DiffSummary diff={diff} />
                             <DiffList
-                                title="Node changes"
+                                title={t("nodeChanges")}
                                 entries={Array.from(diff.nodes.entries()).filter(
                                     ([, c]) => c !== "unchanged",
                                 )}
                             />
                             <DiffList
-                                title="Edge changes"
+                                title={t("edgeChanges")}
                                 entries={Array.from(diff.edges.entries()).filter(
                                     ([, c]) => c !== "unchanged",
                                 )}
@@ -161,7 +163,7 @@ export function CanvasDiffOverlay({
                         onClick={() => onOpenChange(false)}
                         data-testid="canvas-diff-overlay-close"
                     >
-                        Close
+                        {t("close")}
                     </Button>
                 </Modal.Actions>
             </Modal.Footer>
@@ -170,6 +172,7 @@ export function CanvasDiffOverlay({
 }
 
 function DiffSummary({ diff }: { diff: CanvasDiff }) {
+    const t = useTranslations("automation.diff");
     const s = diff.summary;
     const total =
         s.nodesAdded +
@@ -185,7 +188,7 @@ function DiffSummary({ diff }: { diff: CanvasDiff }) {
                 data-testid="canvas-diff-overlay-empty"
                 className="text-sm text-content-subtle"
             >
-                No changes between these versions.
+                {t("noChanges")}
             </p>
         );
     }
@@ -194,27 +197,39 @@ function DiffSummary({ diff }: { diff: CanvasDiff }) {
             data-testid="canvas-diff-summary"
             className="flex flex-wrap gap-tight text-[11px] text-content-muted"
         >
-            <SummaryChip count={s.nodesAdded} label="nodes added" tone="added" />
+            <SummaryChip
+                count={s.nodesAdded}
+                label={t("nodesAdded")}
+                tone="added"
+            />
             <SummaryChip
                 count={s.nodesRemoved}
-                label="nodes removed"
+                label={t("nodesRemoved")}
                 tone="removed"
             />
-            <SummaryChip count={s.nodesMoved} label="nodes moved" tone="moved" />
+            <SummaryChip
+                count={s.nodesMoved}
+                label={t("nodesMoved")}
+                tone="moved"
+            />
             <SummaryChip
                 count={s.nodesModified}
-                label="nodes modified"
+                label={t("nodesModified")}
                 tone="modified"
             />
-            <SummaryChip count={s.edgesAdded} label="edges added" tone="added" />
+            <SummaryChip
+                count={s.edgesAdded}
+                label={t("edgesAdded")}
+                tone="added"
+            />
             <SummaryChip
                 count={s.edgesRemoved}
-                label="edges removed"
+                label={t("edgesRemoved")}
                 tone="removed"
             />
             <SummaryChip
                 count={s.edgesModified}
-                label="edges modified"
+                label={t("edgesModified")}
                 tone="modified"
             />
         </ul>
@@ -245,7 +260,14 @@ function DiffList({
     title: string;
     entries: Array<[string, DiffClass]>;
 }) {
+    const t = useTranslations("automation.diff");
     if (entries.length === 0) return null;
+    const classLabels: Record<string, string> = {
+        added: t("classAdded"),
+        removed: t("classRemoved"),
+        moved: t("classMoved"),
+        modified: t("classModified"),
+    };
     return (
         <div className="flex flex-col gap-tight">
             <span className="text-[10px] uppercase tracking-wide text-content-subtle">
@@ -260,7 +282,9 @@ function DiffList({
                         className={`rounded-[6px] border border-border-subtle px-2 py-1 ${toneClass(klass)}`}
                     >
                         <span className="font-mono text-[11px]">{key}</span>{" "}
-                        <span className="text-[10px] uppercase">{klass}</span>
+                        <span className="text-[10px] uppercase">
+                            {classLabels[klass] ?? klass}
+                        </span>
                     </li>
                 ))}
             </ul>

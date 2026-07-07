@@ -12,6 +12,7 @@
  * invariant); it never writes logic back onto the node.
  */
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
@@ -35,12 +36,17 @@ interface Rule {
     slaWindowMinutes: number | null;
 }
 
-const ACTION_OPTIONS: ComboboxOption[] = [
-    { value: 'NOTIFY_USER', label: 'Notify user' },
-    { value: 'CREATE_TASK', label: 'Create task' },
-    { value: 'UPDATE_STATUS', label: 'Update status' },
-    { value: 'WEBHOOK', label: 'Webhook' },
-];
+/** Surface-namespace resolver (`useTranslations('automation.autoInspector')`). */
+type AutoTranslate = ReturnType<typeof useTranslations>;
+
+function buildActionOptions(t: AutoTranslate): ComboboxOption[] {
+    return [
+        { value: 'NOTIFY_USER', label: t('actionNotify') },
+        { value: 'CREATE_TASK', label: t('actionCreateTask') },
+        { value: 'UPDATE_STATUS', label: t('actionUpdateStatus') },
+        { value: 'WEBHOOK', label: t('actionWebhook') },
+    ];
+}
 
 const TRIGGER_OPTIONS: ComboboxOption[] = eventOptionsByDomain().flatMap((g) =>
     g.events.map((ev) => ({ value: ev.name, label: ev.label })),
@@ -53,6 +59,8 @@ export function AutomationInspectorPanel({
     kind: AutomationKind;
     ruleId: string | null;
 }) {
+    const t = useTranslations('automation.autoInspector');
+    const actionOptions = useMemo(() => buildActionOptions(t), [t]);
     const apiUrl = useTenantApiUrl();
     const { data: rule, mutate } = useTenantSWR<Rule>(
         ruleId ? CACHE_KEYS.automation.rules.detail(ruleId) : null,
@@ -83,14 +91,14 @@ export function AutomationInspectorPanel({
         [rule?.triggerEvent],
     );
     const actionSelected = useMemo(
-        () => ACTION_OPTIONS.find((o) => o.value === rule?.actionType) ?? null,
-        [rule?.actionType],
+        () => actionOptions.find((o) => o.value === rule?.actionType) ?? null,
+        [actionOptions, rule?.actionType],
     );
 
     if (!ruleId) {
         return (
             <p className="text-sm text-content-muted" data-testid="automation-inspector-unsynced">
-                Save the canvas to link this node to a rule, then configure it here.
+                {t('unsyncedHint')}
             </p>
         );
     }
@@ -99,19 +107,19 @@ export function AutomationInspectorPanel({
         <div className="space-y-default" data-testid="automation-inspector">
             <div className="flex items-center justify-between">
                 <span className="text-[11px] uppercase tracking-wide text-content-subtle">
-                    {kind} rule
+                    {t(`kindRule.${kind}`)}
                 </span>
                 <label className="flex items-center gap-tight text-xs text-content-muted">
-                    {rule?.status === 'ENABLED' ? 'Enabled' : 'Disabled'}
+                    {rule?.status === 'ENABLED' ? t('enabled') : t('disabled')}
                     <Switch
                         checked={rule?.status === 'ENABLED'}
                         onCheckedChange={(c) => patchRule({ status: c ? 'ENABLED' : 'DISABLED' })}
-                        aria-label="Toggle rule enabled"
+                        aria-label={t('toggleEnabledAria')}
                     />
                 </label>
             </div>
 
-            <FormField label="Rule name">
+            <FormField label={t('ruleName')}>
                 <Input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -120,12 +128,12 @@ export function AutomationInspectorPanel({
             </FormField>
 
             {kind === 'trigger' && (
-                <FormField label="Trigger event">
+                <FormField label={t('triggerEvent')}>
                     <Combobox
                         options={TRIGGER_OPTIONS}
                         selected={triggerSelected}
                         setSelected={(o) => o && patchRule({ triggerEvent: o.value })}
-                        placeholder="Select event…"
+                        placeholder={t('selectEvent')}
                         forceDropdown
                         matchTriggerWidth
                     />
@@ -133,12 +141,12 @@ export function AutomationInspectorPanel({
             )}
 
             {kind === 'action' && (
-                <FormField label="Action type">
+                <FormField label={t('actionType')}>
                     <Combobox
-                        options={ACTION_OPTIONS}
+                        options={actionOptions}
                         selected={actionSelected}
                         setSelected={(o) => o && patchRule({ actionType: o.value })}
-                        placeholder="Select action…"
+                        placeholder={t('selectAction')}
                         forceDropdown
                         matchTriggerWidth
                     />
@@ -147,13 +155,14 @@ export function AutomationInspectorPanel({
 
             {kind === 'condition' && (
                 <p className="text-xs text-content-subtle">
-                    Condition filter: {rule?.triggerFilterJson ? 'configured' : 'matches all'}.
-                    Edit the full filter in the rule builder.
+                    {t('conditionFilter', {
+                        state: rule?.triggerFilterJson ? t('configured') : t('matchesAll'),
+                    })}
                 </p>
             )}
 
             {kind === 'slaGate' && (
-                <FormField label="SLA window (minutes)">
+                <FormField label={t('slaLabel')}>
                     <Input
                         type="number"
                         min={1}
@@ -162,7 +171,7 @@ export function AutomationInspectorPanel({
                         onBlur={() =>
                             patchRule({ slaWindowMinutes: sla ? Number(sla) : null })
                         }
-                        placeholder="e.g. 1440"
+                        placeholder={t('slaPlaceholder')}
                     />
                 </FormField>
             )}

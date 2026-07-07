@@ -28,7 +28,7 @@ describe('VR-5 — chain edges', () => {
 
     it('ProcessEdge renders a per-kind automation style + chip', () => {
         const src = read('src/components/processes/ProcessEdge.tsx');
-        expect(src).toMatch(/AUTOMATION_EDGE_STYLE/);
+        expect(src).toMatch(/buildAutomationEdgeStyle/);
         expect(src).toMatch(/data-edge-kind-chip/);
     });
 });

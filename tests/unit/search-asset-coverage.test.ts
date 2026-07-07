@@ -91,8 +91,10 @@ describe('Asset search coverage', () => {
         );
         // ENTITY_META.asset → { heading: 'Assets', icon: Package }
         expect(src).toMatch(
-            /asset:\s*\{\s*heading:\s*['"]Assets['"][^}]*icon:\s*Package/,
+            /asset:\s*\{\s*heading:\s*t\('entityAsset'\)[^}]*icon:\s*Package/,
         );
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        expect(require('../../messages/en.json').commandPalette.entityAsset).toBe('Assets');
         // Package imported from lucide-react
         expect(src).toMatch(
             /import\s+\{[^}]*\bPackage\b[^}]*\}\s+from\s+['"]lucide-react['"]/,

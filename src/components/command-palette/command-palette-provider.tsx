@@ -26,6 +26,8 @@ import {
     type ReactNode,
 } from 'react';
 
+import { useTranslations } from 'next-intl';
+
 import { useKeyboardShortcut } from '@/lib/hooks/use-keyboard-shortcut';
 
 export interface CommandPaletteApi {
@@ -38,6 +40,7 @@ export interface CommandPaletteApi {
 const CommandPaletteContext = createContext<CommandPaletteApi | null>(null);
 
 export function CommandPaletteProvider({ children }: { children: ReactNode }) {
+    const t = useTranslations('commandPalette');
     const [isOpen, setIsOpen] = useState(false);
 
     const open = useCallback(() => setIsOpen(true), []);
@@ -52,7 +55,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
         allowInInputs: true,
         allowWhenOverlayOpen: true,
         priority: 100,
-        description: 'Open command palette',
+        description: t('openShortcut'),
     });
 
     const api = useMemo<CommandPaletteApi>(

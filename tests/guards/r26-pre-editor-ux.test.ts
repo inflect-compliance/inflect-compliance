@@ -55,7 +55,11 @@ describe("R26-PR-E — editor UX wiring", () => {
             expect(docBarSrc).toMatch(
                 /data-testid=["']process-name-input["']/,
             );
-            expect(docBarSrc).toMatch(/aria-label=["']Process name["']/);
+            // The name input aria-label is localized.
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const en = require('../../messages/en.json');
+            expect(en.automation.documentBar.processNameAria).toBe('Process name');
+            expect(docBarSrc).toMatch(/aria-label=\{t\("processNameAria"\)\}/);
         });
 
         it("rename commits on blur / Enter (NOT on every keystroke)", () => {

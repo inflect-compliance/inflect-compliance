@@ -55,8 +55,12 @@ describe("R25-PR-E — interaction model", () => {
             // The constrained model: one click adds a control with
             // a default label. No naming dialog, no inline editing
             // (those are explicitly out of R25 scope).
+            // The default label is localized — assert catalog value + key ref.
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const en = require('../../messages/en.json');
+            expect(en.automation.edges.defaultControlLabel).toBe('Control');
             expect(SRC).toMatch(
-                /control:\s*\{\s*label:\s*["']Control["']\s*\}/,
+                /control:\s*\{\s*label:\s*t\("defaultControlLabel"\)\s*\}/,
             );
         });
 

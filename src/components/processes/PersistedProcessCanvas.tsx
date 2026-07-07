@@ -30,11 +30,13 @@
 import {
     useCallback,
     useEffect,
+    useMemo,
     useRef,
     useState,
     type DragEvent,
     type ReactNode,
 } from "react";
+import { useTranslations } from "next-intl";
 import {
     Background,
     BackgroundVariant,
@@ -153,12 +155,20 @@ const PROXIMITY_PREVIEW_ID = "__proximity_preview__";
  * verdicts. Surfaced via `toast.warning(...)` from the canvas's
  * rejection path. A shared `id: "canvas-connection-rejected"`
  * collapses rapid-fire misclicks into one toast.
+ *
+ * i18n — the display text is built inside the component via this
+ * factory (called with the `automation.canvas` translator) so the
+ * strings resolve against the active locale.
  */
-const REJECT_MESSAGES: Record<"self" | "duplicate" | "annotation", string> = {
-    self: "A step can't connect to itself.",
-    duplicate: "These steps are already connected.",
-    annotation: "Annotations don't carry the flow — they sit beside it.",
-};
+function buildRejectMessages(
+    t: ReturnType<typeof useTranslations>,
+): Record<"self" | "duplicate" | "annotation", string> {
+    return {
+        self: t("rejectSelf"),
+        duplicate: t("rejectDuplicate"),
+        annotation: t("rejectAnnotation"),
+    };
+}
 
 // Every taxonomy kind registers the SAME renderer. The renderer
 // branches internally on `data.kind` so the chassis stays shared.
@@ -325,6 +335,8 @@ function Inner({
     onActiveIdChange,
     onProcessesChange,
 }: PersistedProcessCanvasProps) {
+    const t = useTranslations("automation.canvas");
+    const rejectMessages = useMemo(() => buildRejectMessages(t), [t]);
     const [nodes, setNodes] = useState<Node[]>([]);
     const [edges, setEdges] = useState<Edge[]>([]);
     const [loadedMap, setLoadedMap] = useState<LoadedGraph | null>(null);
@@ -1100,7 +1112,7 @@ function Inner({
             // refused — without inventing a phantom anchor element.
             const reject = (reason: "self" | "duplicate" | "annotation") => {
                 setRejectedSource(src);
-                toast.warning(REJECT_MESSAGES[reason], {
+                toast.warning(rejectMessages[reason], {
                     id: "canvas-connection-rejected",
                 });
                 return false;
@@ -1118,7 +1130,7 @@ function Inner({
             }
             return true;
         },
-        [nodes, edges, toast],
+        [nodes, edges, toast, rejectMessages],
     );
 
     // R28 — edge inspector commit. Patches the edge's label (top-
@@ -1481,15 +1493,15 @@ function Inner({
     ]);
 
     useKeyboardShortcut("mod+z", handleUndo, {
-        description: "Undo last canvas edit",
+        description: t("shortcutUndo"),
         enabled: Boolean(activeId),
     });
     useKeyboardShortcut("mod+shift+z", handleRedo, {
-        description: "Redo last undone edit",
+        description: t("shortcutRedo"),
         enabled: Boolean(activeId),
     });
     useKeyboardShortcut("mod+s", () => void handleSave(), {
-        description: "Save the current process map",
+        description: t("shortcutSave"),
         enabled: Boolean(activeId),
     });
 
@@ -1518,15 +1530,15 @@ function Inner({
         handlePaste();
     }, [nodes, edges, handlePaste]);
     useKeyboardShortcut("mod+c", handleCopy, {
-        description: "Copy selected nodes",
+        description: t("shortcutCopy"),
         enabled: Boolean(activeId),
     });
     useKeyboardShortcut("mod+v", handlePaste, {
-        description: "Paste nodes from clipboard",
+        description: t("shortcutPaste"),
         enabled: Boolean(activeId),
     });
     useKeyboardShortcut("mod+d", handleDuplicateSelection, {
-        description: "Duplicate selected nodes",
+        description: t("shortcutDuplicate"),
         enabled: Boolean(activeId),
         preventDefault: true,
     });
@@ -1569,7 +1581,7 @@ function Inner({
         autosave.markDirty();
     }, [nodes, edges, history, autosave]);
     useKeyboardShortcut("tab", handleTabCreate, {
-        description: "Tab — create a connected sibling node",
+        description: t("shortcutTab"),
         enabled: Boolean(activeId),
         preventDefault: true,
     });
@@ -1682,50 +1694,50 @@ function Inner({
     // Distribute / Delete), then mode toggles (Snap).
     const commandGroups: CanvasCommandGroup[] = [
         {
-            heading: "Document",
+            heading: t("groupDocument"),
             commands: [
                 {
                     id: "save",
-                    label: "Save",
-                    description: "Persist the current process map",
+                    label: t("cmdSaveLabel"),
+                    description: t("cmdSaveDesc"),
                     shortcut: "⌘S",
                     disabled: !activeId || saving || loading,
                     onSelect: () => void handleSave(),
                 },
                 {
                     id: "undo",
-                    label: "Undo",
-                    description: "Revert the last canvas edit",
+                    label: t("cmdUndoLabel"),
+                    description: t("cmdUndoDesc"),
                     shortcut: "⌘Z",
                     disabled: !history.canUndo || saving || loading,
                     onSelect: handleUndo,
                 },
                 {
                     id: "redo",
-                    label: "Redo",
-                    description: "Re-apply the last undone edit",
+                    label: t("cmdRedoLabel"),
+                    description: t("cmdRedoDesc"),
                     shortcut: "⌘⇧Z",
                     disabled: !history.canRedo || saving || loading,
                     onSelect: handleRedo,
                 },
                 {
                     id: "duplicate",
-                    label: "Duplicate process",
-                    description: "Clone the current graph into a new map",
+                    label: t("cmdDuplicateLabel"),
+                    description: t("cmdDuplicateDesc"),
                     disabled: !activeId || duplicating || saving || loading,
                     onSelect: handleDuplicate,
                 },
                 {
                     id: "new",
-                    label: "New process",
-                    description: "Start an empty process map",
+                    label: t("cmdNewLabel"),
+                    description: t("cmdNewDesc"),
                     disabled: creating,
                     onSelect: () => handleNew("DOCUMENT"),
                 },
                 {
                     id: "new-automation",
-                    label: "New automation workflow",
-                    description: "Start a visual rule editor (automation) canvas",
+                    label: t("cmdNewAutomationLabel"),
+                    description: t("cmdNewAutomationDesc"),
                     disabled: creating,
                     onSelect: () => handleNew("AUTOMATION"),
                 },
@@ -1733,19 +1745,19 @@ function Inner({
         },
         {
             // Epic P4-PR-A — dagre auto-layout.
-            heading: "Layout",
+            heading: t("groupLayout"),
             commands: [
                 {
                     id: "arrange-lr",
-                    label: "Arrange left-to-right",
-                    description: "Auto-layout the canvas with a left-to-right flow",
+                    label: t("cmdArrangeLrLabel"),
+                    description: t("cmdArrangeLrDesc"),
                     disabled: nodes.length === 0 || saving || loading,
                     onSelect: () => handleAutoLayout("LR"),
                 },
                 {
                     id: "arrange-tb",
-                    label: "Arrange top-to-bottom",
-                    description: "Auto-layout the canvas with a top-to-bottom flow",
+                    label: t("cmdArrangeTbLabel"),
+                    description: t("cmdArrangeTbDesc"),
                     disabled: nodes.length === 0 || saving || loading,
                     onSelect: () => handleAutoLayout("TB"),
                 },
@@ -1756,17 +1768,15 @@ function Inner({
                 // user expects.
                 {
                     id: "arrange-selection-lr",
-                    label: "Auto-arrange selection (left-to-right)",
-                    description:
-                        "Auto-layout only the selected nodes — left-to-right",
+                    label: t("cmdArrangeSelLrLabel"),
+                    description: t("cmdArrangeSelLrDesc"),
                     disabled: selectionCount < 2 || saving || loading,
                     onSelect: () => handleAutoLayoutSelection("LR"),
                 },
                 {
                     id: "arrange-selection-tb",
-                    label: "Auto-arrange selection (top-to-bottom)",
-                    description:
-                        "Auto-layout only the selected nodes — top-to-bottom",
+                    label: t("cmdArrangeSelTbLabel"),
+                    description: t("cmdArrangeSelTbDesc"),
                     disabled: selectionCount < 2 || saving || loading,
                     onSelect: () => handleAutoLayoutSelection("TB"),
                 },
@@ -1776,29 +1786,27 @@ function Inner({
                 // dynamically imported by `computeForceLayout`).
                 {
                     id: "arrange-force",
-                    label: "Force-directed layout (organic)",
-                    description:
-                        "Auto-layout the canvas as an organic spring-simulated graph",
+                    label: t("cmdArrangeForceLabel"),
+                    description: t("cmdArrangeForceDesc"),
                     disabled: nodes.length === 0 || saving || loading,
                     onSelect: () => void handleAutoLayoutForce(false),
                 },
                 {
                     id: "arrange-force-selection",
-                    label: "Force-directed layout (selection)",
-                    description:
-                        "Apply force-directed layout to only the selected nodes",
+                    label: t("cmdArrangeForceSelLabel"),
+                    description: t("cmdArrangeForceSelDesc"),
                     disabled: selectionCount < 2 || saving || loading,
                     onSelect: () => void handleAutoLayoutForce(true),
                 },
             ],
         },
         {
-            heading: "Selection",
+            heading: t("groupSelection"),
             commands: [
                 {
                     id: "group",
-                    label: "Group selected",
-                    description: "Wrap the selected nodes in a group container",
+                    label: t("cmdGroupLabel"),
+                    description: t("cmdGroupDesc"),
                     disabled:
                         selectionCount < 2 ||
                         nodes
@@ -1813,8 +1821,8 @@ function Inner({
                 },
                 {
                     id: "ungroup",
-                    label: "Ungroup",
-                    description: "Dissolve the selected group + lift children",
+                    label: t("cmdUngroupLabel"),
+                    description: t("cmdUngroupDesc"),
                     disabled:
                         !selectedNode ||
                         (selectedNode.data as { kind?: unknown })?.kind !==
@@ -1823,56 +1831,56 @@ function Inner({
                 },
                 {
                     id: "align-left",
-                    label: "Align left",
+                    label: t("cmdAlignLeftLabel"),
                     disabled: selectionCount < 2,
                     onSelect: () => handleAlign("left"),
                 },
                 {
                     id: "align-center-x",
-                    label: "Align centre horizontally",
+                    label: t("cmdAlignCenterXLabel"),
                     disabled: selectionCount < 2,
                     onSelect: () => handleAlign("center-x"),
                 },
                 {
                     id: "align-right",
-                    label: "Align right",
+                    label: t("cmdAlignRightLabel"),
                     disabled: selectionCount < 2,
                     onSelect: () => handleAlign("right"),
                 },
                 {
                     id: "align-top",
-                    label: "Align top",
+                    label: t("cmdAlignTopLabel"),
                     disabled: selectionCount < 2,
                     onSelect: () => handleAlign("top"),
                 },
                 {
                     id: "align-center-y",
-                    label: "Align centre vertically",
+                    label: t("cmdAlignCenterYLabel"),
                     disabled: selectionCount < 2,
                     onSelect: () => handleAlign("center-y"),
                 },
                 {
                     id: "align-bottom",
-                    label: "Align bottom",
+                    label: t("cmdAlignBottomLabel"),
                     disabled: selectionCount < 2,
                     onSelect: () => handleAlign("bottom"),
                 },
                 {
                     id: "distribute-h",
-                    label: "Distribute horizontally",
+                    label: t("cmdDistributeHLabel"),
                     disabled: selectionCount < 3,
                     onSelect: () => handleDistribute("horizontal"),
                 },
                 {
                     id: "distribute-v",
-                    label: "Distribute vertically",
+                    label: t("cmdDistributeVLabel"),
                     disabled: selectionCount < 3,
                     onSelect: () => handleDistribute("vertical"),
                 },
                 {
                     id: "delete",
-                    label: "Delete selected",
-                    description: "Remove every selected node + its edges",
+                    label: t("cmdDeleteLabel"),
+                    description: t("cmdDeleteDesc"),
                     shortcut: "Del",
                     disabled: selectionCount === 0,
                     onSelect: handleBulkDelete,
@@ -1880,14 +1888,14 @@ function Inner({
             ],
         },
         {
-            heading: "Modes",
+            heading: t("groupModes"),
             commands: [
                 {
                     id: "snap-toggle",
                     label: snapEnabled
-                        ? "Snap to grid: on"
-                        : "Snap to grid: off",
-                    description: "Toggle 16px-grid snapping while dragging",
+                        ? t("cmdSnapOnLabel")
+                        : t("cmdSnapOffLabel"),
+                    description: t("cmdSnapDesc"),
                     onSelect: () => setSnapEnabled((v) => !v),
                 },
             ],
@@ -2008,17 +2016,17 @@ function Inner({
                         data-single-group-toolbar="true"
                     >
                         <span className="mr-1 font-semibold uppercase tracking-wider text-content-subtle">
-                            Group selected
+                            {t("singleGroupLabel")}
                         </span>
                         <button
                             type="button"
                             className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-muted hover:border-border-emphasis hover:text-content-emphasis"
                             onClick={handleUngroup}
                             data-testid="ungroup-btn"
-                            aria-label="Ungroup"
-                            title="Ungroup"
+                            aria-label={t("ungroup")}
+                            title={t("ungroup")}
                         >
-                            Ungroup
+                            {t("ungroup")}
                         </button>
                     </div>
                 )}
@@ -2030,19 +2038,21 @@ function Inner({
                 >
                     <span
                         className="mr-1 font-semibold uppercase tracking-wider text-content-subtle"
-                        aria-label={`${selectionCount} nodes selected`}
+                        aria-label={t("selectedCountAria", {
+                            count: selectionCount,
+                        })}
                     >
-                        {selectionCount} selected
+                        {t("selectedCount", { count: selectionCount })}
                     </span>
                     <span className="mr-1 text-content-subtle">·</span>
-                    <span className="text-content-muted">Align</span>
+                    <span className="text-content-muted">{t("alignHeading")}</span>
                     <button
                         type="button"
                         className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-muted hover:border-border-emphasis hover:text-content-emphasis"
                         onClick={() => handleAlign("left")}
                         data-testid="align-left-btn"
-                        aria-label="Align left"
-                        title="Align left"
+                        aria-label={t("cmdAlignLeftLabel")}
+                        title={t("cmdAlignLeftLabel")}
                     >
                         L
                     </button>
@@ -2051,8 +2061,8 @@ function Inner({
                         className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-muted hover:border-border-emphasis hover:text-content-emphasis"
                         onClick={() => handleAlign("center-x")}
                         data-testid="align-center-x-btn"
-                        aria-label="Align centre horizontally"
-                        title="Align centre horizontally"
+                        aria-label={t("cmdAlignCenterXLabel")}
+                        title={t("cmdAlignCenterXLabel")}
                     >
                         C
                     </button>
@@ -2061,8 +2071,8 @@ function Inner({
                         className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-muted hover:border-border-emphasis hover:text-content-emphasis"
                         onClick={() => handleAlign("right")}
                         data-testid="align-right-btn"
-                        aria-label="Align right"
-                        title="Align right"
+                        aria-label={t("cmdAlignRightLabel")}
+                        title={t("cmdAlignRightLabel")}
                     >
                         R
                     </button>
@@ -2072,8 +2082,8 @@ function Inner({
                         className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-muted hover:border-border-emphasis hover:text-content-emphasis"
                         onClick={() => handleAlign("top")}
                         data-testid="align-top-btn"
-                        aria-label="Align top"
-                        title="Align top"
+                        aria-label={t("cmdAlignTopLabel")}
+                        title={t("cmdAlignTopLabel")}
                     >
                         T
                     </button>
@@ -2082,8 +2092,8 @@ function Inner({
                         className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-muted hover:border-border-emphasis hover:text-content-emphasis"
                         onClick={() => handleAlign("center-y")}
                         data-testid="align-center-y-btn"
-                        aria-label="Align centre vertically"
-                        title="Align centre vertically"
+                        aria-label={t("cmdAlignCenterYLabel")}
+                        title={t("cmdAlignCenterYLabel")}
                     >
                         M
                     </button>
@@ -2092,8 +2102,8 @@ function Inner({
                         className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-muted hover:border-border-emphasis hover:text-content-emphasis"
                         onClick={() => handleAlign("bottom")}
                         data-testid="align-bottom-btn"
-                        aria-label="Align bottom"
-                        title="Align bottom"
+                        aria-label={t("cmdAlignBottomLabel")}
+                        title={t("cmdAlignBottomLabel")}
                     >
                         B
                     </button>
@@ -2101,15 +2111,15 @@ function Inner({
                         <>
                             <span className="mx-1 text-content-subtle">·</span>
                             <span className="text-content-muted">
-                                Distribute
+                                {t("distributeHeading")}
                             </span>
                             <button
                                 type="button"
                                 className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-muted hover:border-border-emphasis hover:text-content-emphasis"
                                 onClick={() => handleDistribute("horizontal")}
                                 data-testid="distribute-h-btn"
-                                aria-label="Distribute horizontally"
-                                title="Distribute horizontally"
+                                aria-label={t("cmdDistributeHLabel")}
+                                title={t("cmdDistributeHLabel")}
                             >
                                 H
                             </button>
@@ -2118,8 +2128,8 @@ function Inner({
                                 className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-muted hover:border-border-emphasis hover:text-content-emphasis"
                                 onClick={() => handleDistribute("vertical")}
                                 data-testid="distribute-v-btn"
-                                aria-label="Distribute vertically"
-                                title="Distribute vertically"
+                                aria-label={t("cmdDistributeVLabel")}
+                                title={t("cmdDistributeVLabel")}
                             >
                                 V
                             </button>
@@ -2148,19 +2158,19 @@ function Inner({
                                 className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-muted hover:border-border-emphasis hover:text-content-emphasis disabled:opacity-50"
                                 onClick={handleGroupSelected}
                                 data-testid="group-selected-btn"
-                                aria-label="Group selected nodes"
+                                aria-label={t("groupButtonAria")}
                                 title={
                                     groupDisabled
-                                        ? "Can't nest groups or fold a node already inside a group"
-                                        : "Group selected"
+                                        ? t("groupDisabledTitle")
+                                        : t("cmdGroupLabel")
                                 }
                                 disabled={groupDisabled}
                             >
-                                Group
+                                {t("groupButton")}
                             </button>
                         );
                         return groupDisabled ? (
-                            <Tooltip content="Can't nest groups or fold a node already inside a group">
+                            <Tooltip content={t("groupDisabledTitle")}>
                                 {groupBtn}
                             </Tooltip>
                         ) : (
@@ -2173,10 +2183,12 @@ function Inner({
                         className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-error hover:border-border-error hover:bg-bg-error"
                         onClick={handleBulkDelete}
                         data-testid="bulk-delete-btn"
-                        aria-label={`Delete ${selectionCount} selected nodes`}
-                        title="Delete selected (Del)"
+                        aria-label={t("deleteButtonAria", {
+                            count: selectionCount,
+                        })}
+                        title={t("deleteButtonTitle")}
                     >
-                        Delete
+                        {t("deleteButton")}
                     </button>
                 </div>
             )}
@@ -2212,7 +2224,7 @@ function Inner({
                             data-canvas-empty-state="true"
                         >
                             <p className="text-[11px] text-content-subtle">
-                                Drag a process step from the palette to begin
+                                {t("dragToBegin")}
                             </p>
                         </div>
                     )}
@@ -2339,7 +2351,7 @@ function Inner({
                         onlyRenderVisibleElements
                         fitView
                         proOptions={{ hideAttribution: true }}
-                        aria-label="Process canvas"
+                        aria-label={t("ariaProcessCanvas")}
                     >
                         {/* R31 — two-layer background discipline.
                             Coarse 128px dot field at low opacity
@@ -2394,7 +2406,7 @@ function Inner({
                             showInteractive={false}
                             className="!bg-canvas-frame/90 !border !border-canvas-border !rounded-[8px] !shadow-canvas-node backdrop-blur"
                             data-testid="canvas-zoom-controls"
-                            aria-label="Zoom controls"
+                            aria-label={t("ariaZoomControls")}
                         />
                     </ReactFlow>
                 </div>
@@ -2454,6 +2466,7 @@ function CanvasEmpty({
     onNew: () => void;
     creating: boolean;
 }): ReactNode {
+    const t = useTranslations("automation.canvas");
     return (
         <div
             className="absolute inset-0 z-10 flex items-center justify-center"
@@ -2468,11 +2481,10 @@ function CanvasEmpty({
                     (`text-xs text-content-muted`) so the weight
                     hierarchy is explicit. */}
                 <p className="text-base font-medium text-content-emphasis">
-                    Map a business or IT process.
+                    {t("emptyTitle")}
                 </p>
                 <p className="text-xs text-content-muted">
-                    Capture the steps, mark the controls between them, and
-                    annotate the risks and assets each step touches.
+                    {t("emptyBody")}
                 </p>
                 <Button
                     size="sm"
@@ -2481,7 +2493,7 @@ function CanvasEmpty({
                     disabled={creating}
                     data-testid="empty-state-new-btn"
                 >
-                    {creating ? "Creating…" : "Create your first process"}
+                    {creating ? t("creating") : t("createFirstProcess")}
                 </Button>
             </div>
         </div>

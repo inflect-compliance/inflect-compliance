@@ -120,7 +120,12 @@ describe("R27-PR-B — edge connection language", () => {
 
     it("preserves the control-on-edge affordance", () => {
         expect(EDGE).toMatch(/!control && selected/);
-        expect(EDGE).toMatch(/Add control/);
+        // "Add control" is now localized — assert the English catalog value
+        // and that the edge references the i18n key.
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const enEdge = require('../../messages/en.json');
+        expect(enEdge.automation.edges.addControl).toMatch(/Add control/);
+        expect(EDGE).toMatch(/t\("addControl"\)/);
         expect(EDGE).toMatch(/data-control-on-edge-badge/);
     });
 });
@@ -139,7 +144,11 @@ describe("R27-PR-B — persistence", () => {
 
     it("the inspector exposes the size control", () => {
         expect(INSPECTOR).toMatch(/ToggleGroup/);
-        expect(INSPECTOR).toMatch(/Node size/);
+        // "Node size" is now localized (aria label) — assert catalog + key ref.
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const enSize = require('../../messages/en.json');
+        expect(enSize.automation.inspector.nodeSizeAria).toMatch(/Node size/);
+        expect(INSPECTOR).toMatch(/nodeSizeAria/);
     });
 
     it("--canvas-edge has light + dark theme parity", () => {

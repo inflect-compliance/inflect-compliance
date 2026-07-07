@@ -151,7 +151,13 @@ describe("R32-PR11 — small details bundle A", () => {
             // exact selector + tone tone so a future regression
             // (someone tightens it back to `text-sm`) fails CI.
             expect(src).toMatch(
-                /text-base font-medium text-content-emphasis[\s\S]{0,100}Map a business or IT process/,
+                /text-base font-medium text-content-emphasis[\s\S]{0,120}t\("emptyTitle"\)/,
+            );
+            // The lead copy is localized — assert the English catalog value.
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const en = require('../../messages/en.json');
+            expect(en.automation.canvas.emptyTitle).toMatch(
+                /Map a business or IT process/,
             );
         });
     });

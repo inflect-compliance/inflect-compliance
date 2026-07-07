@@ -32,6 +32,7 @@
  */
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { useRunMode } from "@/lib/processes/run-mode-context";
 import { useIsAutomationMode } from "@/lib/processes/canvas-mode-context";
@@ -101,6 +102,7 @@ export function CanvasDocumentBar({
     handlers,
     exportSlot,
 }: CanvasDocumentBarProps) {
+    const t = useTranslations("automation.documentBar");
     // VR-6 — Run Mode toggle (automation canvases only). Flips the canvas
     // between Design (edit) and Live (overlay live execution state on nodes).
     const isAutomation = useIsAutomationMode();
@@ -160,20 +162,20 @@ export function CanvasDocumentBar({
                 a separate page header. */}
             <nav
                 className="flex items-center gap-1 text-[11px] text-content-subtle"
-                aria-label="Breadcrumb"
+                aria-label={t("breadcrumb")}
                 data-canvas-document-breadcrumb="true"
             >
                 <a
                     href={`/t/${tenantSlug}/dashboard`}
                     className="rounded-[4px] px-1 text-content-muted hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:bg-bg-muted"
                 >
-                    Dashboard
+                    {t("dashboard")}
                 </a>
                 <span aria-hidden="true" className="text-content-subtle">
                     ›
                 </span>
                 <span className="px-1 font-medium text-content-emphasis">
-                    Processes
+                    {t("processes")}
                 </span>
                 <span aria-hidden="true" className="text-content-subtle">
                     ›
@@ -196,8 +198,8 @@ export function CanvasDocumentBar({
                     disabled={
                         processes.length === 0 || loading || saving
                     }
-                    aria-label="Select process map"
-                    placeholder="Select process…"
+                    aria-label={t("selectProcessAria")}
+                    placeholder={t("selectProcessPlaceholder")}
                 />
             </div>
             {activeId && (
@@ -225,12 +227,12 @@ export function CanvasDocumentBar({
                         }
                     }}
                     disabled={saving || loading}
-                    aria-label="Process name"
-                    placeholder="Untitled process"
+                    aria-label={t("processNameAria")}
+                    placeholder={t("untitledProcess")}
                     data-testid="process-name-input"
                     style={{
                         width: `${Math.max(
-                            (editedName.length || "Untitled process".length) + 2,
+                            (editedName.length || t("untitledProcess").length) + 2,
                             12,
                         )}ch`,
                     }}
@@ -244,7 +246,7 @@ export function CanvasDocumentBar({
                 disabled={creating}
                 data-testid="new-process-btn"
             >
-                {creating ? "Creating…" : "New process"}
+                {creating ? t("creating") : t("newProcess")}
             </Button>
             {activeId && (
                 <Button
@@ -254,7 +256,7 @@ export function CanvasDocumentBar({
                     disabled={duplicating || saving || loading}
                     data-testid="duplicate-process-btn"
                 >
-                    {duplicating ? "Duplicating…" : "Duplicate"}
+                    {duplicating ? t("duplicating") : t("duplicate")}
                 </Button>
             )}
             <div className="ml-auto flex items-center gap-default">
@@ -266,13 +268,13 @@ export function CanvasDocumentBar({
                         data-testid="canvas-mode-toggle"
                         title={
                             currentMode === "AUTOMATION"
-                                ? "Convert to a process map"
-                                : "Convert to an automation workflow"
+                                ? t("convertToProcessMap")
+                                : t("convertToAutomation")
                         }
                     >
                         {currentMode === "AUTOMATION"
-                            ? "Mode: Automation"
-                            : "Mode: Process map"}
+                            ? t("modeAutomation")
+                            : t("modeProcessMap")}
                     </Button>
                 )}
                 {isAutomation && activeId && (
@@ -282,7 +284,7 @@ export function CanvasDocumentBar({
                         onClick={() => setRunMode(!isRunMode)}
                         data-testid="run-mode-toggle"
                     >
-                        {isRunMode ? "Live" : "Design"}
+                        {isRunMode ? t("live") : t("design")}
                     </Button>
                 )}
                 {/* R28 — undo / redo. Pure icon buttons live in the
@@ -297,22 +299,22 @@ export function CanvasDocumentBar({
                             variant="secondary"
                             onClick={handleUndo}
                             disabled={!canUndo || saving || loading}
-                            aria-label="Undo"
-                            title="Undo (Cmd/Ctrl+Z)"
+                            aria-label={t("undo")}
+                            title={t("undoTitle")}
                             data-testid="canvas-undo-btn"
                         >
-                            Undo
+                            {t("undo")}
                         </Button>
                         <Button
                             size="sm"
                             variant="secondary"
                             onClick={handleRedo}
                             disabled={!canRedo || saving || loading}
-                            aria-label="Redo"
-                            title="Redo (Cmd/Ctrl+Shift+Z)"
+                            aria-label={t("redo")}
+                            title={t("redoTitle")}
                             data-testid="canvas-redo-btn"
                         >
-                            Redo
+                            {t("redo")}
                         </Button>
                         {/* Snap-to-grid toggle. Persists per tenant
                             in localStorage; reads as a soft pill so
@@ -322,11 +324,11 @@ export function CanvasDocumentBar({
                             onClick={() => setSnapEnabled((v) => !v)}
                             className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-1 text-[11px] font-medium text-content-muted hover:border-border-emphasis hover:text-content-emphasis aria-pressed:border-border-emphasis aria-pressed:bg-canvas-node aria-pressed:text-content-emphasis"
                             aria-pressed={snapEnabled}
-                            aria-label="Snap to grid"
-                            title="Snap to grid"
+                            aria-label={t("snapToGrid")}
+                            title={t("snapToGrid")}
                             data-testid="canvas-snap-toggle"
                         >
-                            Snap
+                            {t("snap")}
                         </button>
                     </>
                 )}
@@ -359,7 +361,7 @@ export function CanvasDocumentBar({
                         data-testid="autosave-status"
                         data-autosave-status="pending"
                     >
-                        Unsaved
+                        {t("unsaved")}
                     </span>
                 )}
                 {autosaveStatus === "saving" && (
@@ -368,7 +370,7 @@ export function CanvasDocumentBar({
                         data-testid="autosave-status"
                         data-autosave-status="saving"
                     >
-                        Saving…
+                        {t("saving")}
                     </span>
                 )}
                 {autosaveStatus === "saved" && (
@@ -377,7 +379,7 @@ export function CanvasDocumentBar({
                         data-testid="autosave-status"
                         data-autosave-status="saved"
                     >
-                        Saved
+                        {t("saved")}
                     </span>
                 )}
                 {exportSlot}
@@ -388,7 +390,7 @@ export function CanvasDocumentBar({
                     disabled={!activeId || saving || loading}
                     data-testid="save-process-btn"
                 >
-                    {saving ? "Saving…" : "Save"}
+                    {saving ? t("saving") : t("save")}
                 </Button>
             </div>
         </div>
