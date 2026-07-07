@@ -109,7 +109,12 @@ describe('Epic G-5 — control exception API + UI wiring', () => {
 
     it('panel header badge surfaces "Exception: {STATUS}"', () => {
         expect(panel).toContain('control-exception-header-badge');
-        expect(panel).toContain('Exception:');
+        // i18n: the "Exception" label flows through the catalog now; the badge
+        // renders `{t('exceptionLabel')}: {ex.status}`. Assert the wiring + that
+        // the key still resolves to the canonical English label.
+        expect(panel).toContain("t('exceptionLabel')");
+        const en = JSON.parse(read('messages/en.json'));
+        expect(en.panels.exceptions.exceptionLabel).toBe('Exception');
     });
 
     it('panel uses the canonical usecases through the API — no raw Prisma', () => {

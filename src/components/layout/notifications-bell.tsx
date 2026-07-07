@@ -37,6 +37,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Bell, CheckCheck } from 'lucide-react';
 
 import { Popover } from '@/components/ui/popover';
@@ -117,6 +118,7 @@ function formatRelativeTime(iso: string): string {
 // ─── Component ─────────────────────────────────────────────────────
 
 export function NotificationsBell() {
+    const t = useTranslations('panels.bell');
     const [open, setOpen] = useState(false);
     const [items, setItems] = useState<NotificationRow[] | null>(null);
     const [loading, setLoading] = useState(false);
@@ -285,11 +287,11 @@ export function NotificationsBell() {
             sideOffset={8}
             popoverContentClassName="w-[340px] max-w-[calc(100vw-1rem)] p-1"
             content={
-                <Popover.Menu aria-label="Notifications">
+                <Popover.Menu aria-label={t('notifications')}>
                     {/* Header row — count + mark-all-read action */}
                     <div className="flex items-center justify-between px-2.5 py-1.5">
                         <span className="text-[10px] font-semibold uppercase tracking-widest text-content-subtle">
-                            Notifications
+                            {t('notifications')}
                         </span>
                         {unreadCount > 0 && (
                             <button
@@ -302,7 +304,7 @@ export function NotificationsBell() {
                                     className="h-3 w-3"
                                     aria-hidden="true"
                                 />
-                                Mark all read
+                                {t('markAllRead')}
                             </button>
                         )}
                     </div>
@@ -316,7 +318,7 @@ export function NotificationsBell() {
                     >
                         {loading && items === null ? (
                             <div className="px-2.5 py-6 text-center text-xs text-content-muted animate-pulse">
-                                Loading…
+                                {t('loading')}
                             </div>
                         ) : error ? (
                             <div className="px-2.5 py-6 text-center text-xs text-content-error">
@@ -326,8 +328,8 @@ export function NotificationsBell() {
                             <div className="py-4">
                                 <EmptyState
                                     icon={Bell}
-                                    title="All clear"
-                                    description="You're caught up. New notifications will land here."
+                                    title={t('allClear')}
+                                    description={t('caughtUp')}
                                 />
                             </div>
                         ) : (
@@ -384,8 +386,8 @@ export function NotificationsBell() {
                 className={BELL_BUTTON_CLASS}
                 aria-label={
                     unreadCount > 0
-                        ? `${unreadCount} unread notifications`
-                        : 'Notifications'
+                        ? t('unreadAria', { count: unreadCount })
+                        : t('notifications')
                 }
                 aria-expanded={open}
                 aria-haspopup="menu"

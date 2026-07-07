@@ -14,7 +14,13 @@ const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 describe('score-chip a11y label', () => {
     test('the explainer derives its aria-label from the label prop', () => {
         const src = read('src/components/RiskScoreExplainer.tsx');
-        expect(src).toMatch(/aria-label=\{label \? `\$\{label\}, explain` : 'Explain this score'\}/);
+        // i18n-aware: the aria-label is now composed via next-intl. Assert
+        // the t('key') wiring in source AND that the en.json values still
+        // carry the canonical English the a11y contract requires.
+        expect(src).toMatch(/aria-label=\{label \? t\('explainLabelAria', \{ label \}\) : t\('explainAria'\)\}/);
+        const en = JSON.parse(read('messages/en.json'));
+        expect(en.panels.scoreExplainer.explainAria).toBe('Explain this score');
+        expect(en.panels.scoreExplainer.explainLabelAria).toBe('{label}, explain');
     });
 
     test('the risks list passes score · band', () => {

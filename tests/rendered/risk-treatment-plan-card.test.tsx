@@ -32,9 +32,10 @@ jest.mock('next/navigation', () => ({
     useSearchParams: () => new URLSearchParams(),
 }));
 
-jest.mock('next-intl', () => ({
-    useTranslations: () => (key: string) => key,
-}));
+// Use the global manual next-intl mock (__mocks__/next-intl.js), which
+// resolves keys against messages/en.json WITH `{param}` interpolation, so
+// assertions on visible text (e.g. the "1/2 milestones" progress label,
+// composed via t('milestonesCount', { done, total })) keep holding.
 
 import { RiskTreatmentPlanCard } from '@/components/RiskTreatmentPlanCard';
 

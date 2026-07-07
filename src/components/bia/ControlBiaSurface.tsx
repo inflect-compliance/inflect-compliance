@@ -12,6 +12,7 @@
  */
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { ShieldCheck } from '@/components/ui/icons/nucleo/shield-check';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { cardVariants } from '@/components/ui/card';
@@ -34,6 +35,12 @@ const CRITICALITY_VARIANT: Record<string, StatusBadgeVariant> = {
 export function ControlBiaSurface({ controlId }: { controlId: string }) {
     const { tenantSlug } = useParams<{ tenantSlug: string }>();
     const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
+    const t = useTranslations('panels.bia');
+    const tr = useTranslations();
+    const CRIT_LABELS: Record<string, string> = {
+        LOW: tr('panels.criticalityLabels.LOW'), MEDIUM: tr('panels.criticalityLabels.MEDIUM'),
+        HIGH: tr('panels.criticalityLabels.HIGH'), CRITICAL: tr('panels.criticalityLabels.CRITICAL'),
+    };
     const { data } = useTenantSWR<Surface>(`/controls/${controlId}/bia-surface`);
 
     if (!data || data.kind === 'none') return null;
@@ -46,9 +53,9 @@ export function ControlBiaSurface({ controlId }: { controlId: string }) {
                 data-testid="control-bia-chip"
             >
                 <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-content-subtle" aria-hidden="true" />
-                Protects <span className="font-medium text-content-default">{data.processLabel}</span>
-                {data.mtpdHours != null && <> · MTPD {data.mtpdHours}h</>}
-                {' '}· recovery #{data.recoveryRank}
+                {t('protects')} <span className="font-medium text-content-default">{data.processLabel}</span>
+                {data.mtpdHours != null && <> · {t('mtpd', { hours: data.mtpdHours })}</>}
+                {' '}· {t('recovery', { rank: data.recoveryRank })}
             </Link>
         );
     }
@@ -58,23 +65,22 @@ export function ControlBiaSurface({ controlId }: { controlId: string }) {
         <div className={cn(cardVariants({ density: 'none' }), 'space-y-default')} data-testid="control-bia-continuity">
             <div className="flex items-center gap-tight">
                 <ShieldCheck className="h-4 w-4 text-content-success" aria-hidden="true" />
-                <Heading level={3}>Business continuity</Heading>
+                <Heading level={3}>{t('businessContinuity')}</Heading>
             </div>
             <p className="text-sm text-content-muted">
-                Business Impact Analyses attached to this control as evidence it operationalises the continuity requirement
-                (NIS2 Art.21(2)(c)).
+                {t('continuityEvidence')}
             </p>
             {data.bias.length === 0 ? (
-                <p className="text-sm text-content-subtle">No BIA linked yet — attach one from a Business Continuity analysis.</p>
+                <p className="text-sm text-content-subtle">{t('biaLinkedEmpty')}</p>
             ) : (
                 <ul className="space-y-tight">
                     {data.bias.map((b) => (
                         <li key={b.id} className="flex items-center gap-compact text-sm">
-                            <StatusBadge variant={CRITICALITY_VARIANT[b.criticality] ?? 'neutral'}>{b.criticality}</StatusBadge>
+                            <StatusBadge variant={CRITICALITY_VARIANT[b.criticality] ?? 'neutral'}>{CRIT_LABELS[b.criticality] ?? b.criticality}</StatusBadge>
                             <Link href={tenantHref(`/audits/business-continuity/${b.id}`)} className="text-content-link hover:underline">
                                 {b.name}
                             </Link>
-                            {b.mtpdHours != null && <span className="text-content-subtle">MTPD {b.mtpdHours}h</span>}
+                            {b.mtpdHours != null && <span className="text-content-subtle">{t('mtpd', { hours: b.mtpdHours })}</span>}
                         </li>
                     ))}
                 </ul>

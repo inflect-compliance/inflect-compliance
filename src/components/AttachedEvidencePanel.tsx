@@ -13,6 +13,7 @@
  * below it.
  */
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
 import { useToastWithUndo } from '@/components/ui/hooks';
 import { EvidenceUploadSection } from '@/components/evidence/EvidenceUploadSection';
@@ -49,6 +50,7 @@ export function AttachedEvidencePanel({
     canWrite,
 }: AttachedEvidencePanelProps) {
     const triggerUndoToast = useToastWithUndo();
+    const t = useTranslations('panels.attachedEvidence');
     const [data, setData] = useState<EvidenceTabData | undefined>(undefined);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -81,8 +83,8 @@ export function AttachedEvidencePanel({
                 : prev,
         );
         triggerUndoToast({
-            message: 'Evidence removed',
-            undoMessage: 'Undo',
+            message: t('removed'),
+            undoMessage: t('undo'),
             action: async () => {
                 const res = await fetch(apiUrl(`${endpoint}/${evidenceId}`), {
                     method: 'DELETE',
@@ -107,8 +109,8 @@ export function AttachedEvidencePanel({
             />
             {error ? (
                 <InlineEmptyState
-                    title="Couldn't load evidence"
-                    description="Something went wrong fetching attached evidence. Reload the page to try again."
+                    title={t('errorTitle')}
+                    description={t('errorDesc')}
                 />
             ) : (
                 <EvidenceSubTable

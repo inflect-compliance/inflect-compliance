@@ -33,6 +33,7 @@
  * survives slug renames without per-call-site fix-ups.
  */
 
+import { useTranslations } from 'next-intl';
 import { useTenantHref } from '@/lib/tenant-context-provider';
 import { EmptyState } from '@/components/ui/empty-state';
 
@@ -54,25 +55,27 @@ export interface RiskFirstRunEmptyProps {
 
 export function RiskFirstRunEmpty({
     size = 'md',
-    ctaLabel = 'Create your first risk',
+    ctaLabel,
     onCreateClick,
 }: RiskFirstRunEmptyProps = {}) {
     const tenantHref = useTenantHref();
+    const t = useTranslations('panels.riskFirstRun');
+    const ctaText = ctaLabel ?? t('cta');
     return (
         <EmptyState
             size={size}
             variant="no-records"
-            title="No risks on the register yet"
-            description="Identify a threat, score its likelihood × impact, and link the controls that mitigate it. The dashboard, board, and analytics views populate from here."
+            title={t('title')}
+            description={t('description')}
             primaryAction={
                 onCreateClick
                     ? {
-                          label: ctaLabel,
+                          label: ctaText,
                           onClick: onCreateClick,
                           'data-testid': 'risk-first-run-cta',
                       }
                     : {
-                          label: ctaLabel,
+                          label: ctaText,
                           href: tenantHref('/risks?create=1'),
                           'data-testid': 'risk-first-run-cta',
                       }

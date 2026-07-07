@@ -41,9 +41,15 @@ describe('RQ3-OB-F — the canonical primitive holds its contract', () => {
         expect(primitive).toMatch(/tenantHref\('\/risks\?create=1'\)/);
     });
 
-    test('a hard-coded title + description anchor the message across surfaces', () => {
-        expect(primitive).toMatch(/title="No risks on the register yet"/);
-        expect(primitive).toMatch(/dashboard, board, and analytics views populate from here/);
+    test('a localised title + description anchor the message across surfaces', () => {
+        // i18n-aware: title + description are localised via next-intl.
+        // Assert the t('key') wiring in source AND that the en.json values
+        // still carry the canonical message the contract anchors on.
+        expect(primitive).toMatch(/title=\{t\('title'\)\}/);
+        expect(primitive).toMatch(/description=\{t\('description'\)\}/);
+        const en = JSON.parse(read('messages/en.json'));
+        expect(en.panels.riskFirstRun.title).toBe('No risks on the register yet');
+        expect(en.panels.riskFirstRun.description).toMatch(/dashboard, board, and analytics views populate from here/);
     });
 
     test('onCreateClick override swaps href for onClick (in-page modal escape hatch)', () => {

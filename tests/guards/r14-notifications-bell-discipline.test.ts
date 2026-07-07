@@ -102,9 +102,17 @@ describe('Roadmap-14 PR-8 — NotificationsBell discipline', () => {
             // Assistive tech needs to know whether the bell is
             // demanding attention. Static "Notifications" would
             // hide the count from screen readers.
+            //
+            // i18n-aware: the label is localised via next-intl. Assert the
+            // count-gated t('unreadAria') wiring AND that the en.json value
+            // still announces "unread notifications".
             expect(BELL_SRC).toMatch(
-                /aria-label=\{[\s\S]*?unreadCount\s*>\s*0[\s\S]*?unread notifications/,
+                /aria-label=\{[\s\S]*?unreadCount\s*>\s*0[\s\S]*?t\('unreadAria'/,
             );
+            const en = JSON.parse(
+                fs.readFileSync(path.join(ROOT, 'messages/en.json'), 'utf8'),
+            );
+            expect(en.panels.bell.unreadAria).toMatch(/unread notifications/);
         });
     });
 
@@ -178,7 +186,12 @@ describe('Roadmap-14 PR-8 — NotificationsBell discipline', () => {
                 /import\s+\{\s*EmptyState\s*\}\s+from\s+['"]@\/components\/ui\/empty-state['"]/,
             );
             expect(BELL_SRC).toMatch(/<EmptyState\b/);
-            expect(BELL_SRC).toMatch(/title="All clear"/);
+            // i18n-aware: title localised via next-intl; en value pinned.
+            expect(BELL_SRC).toMatch(/title=\{t\('allClear'\)\}/);
+            const en = JSON.parse(
+                fs.readFileSync(path.join(ROOT, 'messages/en.json'), 'utf8'),
+            );
+            expect(en.panels.bell.allClear).toBe('All clear');
         });
     });
 
@@ -187,12 +200,18 @@ describe('Roadmap-14 PR-8 — NotificationsBell discipline', () => {
             // No reason to render the action when there's nothing
             // to mark. The button only shows when at least one row
             // is unread.
+            // i18n-aware: the action label is localised; assert the
+            // count-gated t('markAllRead') wiring + the pinned en value.
             expect(BELL_SRC).toMatch(
-                /\{unreadCount\s*>\s*0\s*&&\s*\([\s\S]*?Mark all read/,
+                /\{unreadCount\s*>\s*0\s*&&\s*\([\s\S]*?t\('markAllRead'\)/,
             );
             expect(BELL_SRC).toMatch(
                 /data-testid="notifications-mark-all-read"/,
             );
+            const enBell = JSON.parse(
+                fs.readFileSync(path.join(ROOT, 'messages/en.json'), 'utf8'),
+            ).panels.bell;
+            expect(enBell.markAllRead).toBe('Mark all read');
         });
     });
 

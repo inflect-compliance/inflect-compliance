@@ -7,7 +7,8 @@
  * (each tagged with its owning control) and renders them — no
  * add/upload/unlink, since the evidence lives on the control.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
@@ -48,6 +49,18 @@ export function InheritedEvidencePanel({
 }) {
     const [rows, setRows] = useState<InheritedEvidenceRow[]>([]);
     const [loading, setLoading] = useState(true);
+    const t = useTranslations('panels');
+    const tr = useTranslations();
+    const entityWord = entityLabel === 'risk' ? t('inherited.entityRisk') : entityLabel === 'asset' ? t('inherited.entityAsset') : entityLabel;
+    const TYPE_LABELS = useMemo<Record<string, string>>(() => ({
+        FILE: tr('evidence.typeLabels.FILE'), LINK: tr('evidence.typeLabels.LINK'),
+        TEXT: tr('evidence.typeLabels.TEXT'), SCREENSHOT: tr('evidence.typeLabels.SCREENSHOT'),
+    }), [tr]);
+    const STATUS_LABELS = useMemo<Record<string, string>>(() => ({
+        DRAFT: tr('evidence.statusLabels.DRAFT'), SUBMITTED: tr('evidence.statusLabels.SUBMITTED'),
+        APPROVED: tr('evidence.statusLabels.APPROVED'), REJECTED: tr('evidence.statusLabels.REJECTED'),
+        PENDING_UPLOAD: tr('evidence.statusLabels.PENDING_UPLOAD'),
+    }), [tr]);
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => {
@@ -72,22 +85,25 @@ export function InheritedEvidencePanel({
     const columns = createColumns<InheritedEvidenceRow>([
         {
             id: 'title',
-            header: 'Evidence',
+            header: t('col.evidence'),
             accessorFn: (r) => r.title,
             cell: ({ row }) => <span className="text-sm text-content-default">{row.original.title}</span>,
         },
         {
             accessorKey: 'type',
-            header: 'Type',
-            cell: ({ getValue }) => <span className="text-xs text-content-muted">{getValue<string>()}</span>,
+            header: t('col.type'),
+            cell: ({ getValue }) => {
+                const v = getValue<string>();
+                return <span className="text-xs text-content-muted">{TYPE_LABELS[v] ?? v}</span>;
+            },
         },
         {
             id: 'status',
-            header: 'Status',
+            header: t('col.status'),
             cell: ({ row }) =>
                 row.original.status ? (
                     <StatusBadge variant={STATUS_BADGE[row.original.status] || 'neutral'} size="sm">
-                        {row.original.status}
+                        {STATUS_LABELS[row.original.status] ?? row.original.status}
                     </StatusBadge>
                 ) : (
                     <span className="text-xs text-content-subtle">—</span>
@@ -95,7 +111,7 @@ export function InheritedEvidencePanel({
         },
         {
             id: 'control',
-            header: 'Control',
+            header: t('col.control'),
             cell: ({ row }) =>
                 row.original.control ? (
                     <TableTitleCell href={tenantHref(`/controls/${row.original.control.id}`)}>
@@ -107,7 +123,7 @@ export function InheritedEvidencePanel({
         },
         {
             id: 'createdAt',
-            header: 'Collected',
+            header: t('col.collected'),
             cell: ({ row }) => (
                 <TimestampTooltip date={row.original.createdAt} className="text-xs text-content-muted" />
             ),
@@ -117,7 +133,7 @@ export function InheritedEvidencePanel({
     return (
         <div className="space-y-default">
             <InlineNotice variant="info">
-                Evidence is inherited from the controls mapped to this {entityLabel}. Manage it on each control.
+                {t('inherited.evidenceNotice', { entity: entityWord })}
             </InlineNotice>
             <DataTable<InheritedEvidenceRow>
                 data={rows}
@@ -128,8 +144,8 @@ export function InheritedEvidencePanel({
                     <EmptyState
                         size="sm"
                         variant="no-records"
-                        title="No inherited evidence"
-                        description={`No evidence is attached to the controls mapped to this ${entityLabel} yet.`}
+                        title={t('inherited.evidenceEmpty')}
+                        description={t('inherited.evidenceEmptyDesc', { entity: entityWord })}
                     />
                 }
             />
