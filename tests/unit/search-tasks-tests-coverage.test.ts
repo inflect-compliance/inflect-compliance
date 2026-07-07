@@ -93,8 +93,10 @@ describe('Task search coverage', () => {
             'utf8',
         );
         expect(src).toMatch(
-            /task:\s*\{\s*heading:\s*['"]Tasks['"][^}]*icon:\s*CheckSquare/,
+            /task:\s*\{\s*heading:\s*t\('entityTask'\)[^}]*icon:\s*CheckSquare/,
         );
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        expect(require('../../messages/en.json').commandPalette.entityTask).toBe('Tasks');
         expect(src).toMatch(
             /import\s+\{[^}]*\bCheckSquare\b[^}]*\}\s+from\s+['"]lucide-react['"]/,
         );
@@ -149,8 +151,10 @@ describe('Test (ControlTestPlan) search coverage', () => {
             'utf8',
         );
         expect(src).toMatch(
-            /test:\s*\{\s*heading:\s*['"]Tests['"][^}]*icon:\s*FlaskConical/,
+            /test:\s*\{\s*heading:\s*t\('entityTest'\)[^}]*icon:\s*FlaskConical/,
         );
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        expect(require('../../messages/en.json').commandPalette.entityTest).toBe('Tests');
         expect(src).toMatch(
             /import\s+\{[^}]*\bFlaskConical\b[^}]*\}\s+from\s+['"]lucide-react['"]/,
         );

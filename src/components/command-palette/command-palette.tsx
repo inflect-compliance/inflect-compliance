@@ -48,6 +48,7 @@ import {
     type LucideIcon,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import {
@@ -146,19 +147,20 @@ function renderShortcut(raw: string): ReactNode {
  * Renders nothing until the provider says `isOpen`. Mounting as a
  * portal keeps the palette isolated from layout and always on top.
  */
-const ENTITY_META: Record<
-    EntityKind,
-    { heading: string; icon: LucideIcon }
-> = {
-    control: { heading: 'Controls', icon: ShieldCheck },
-    risk: { heading: 'Risks', icon: Triangle },
-    task: { heading: 'Tasks', icon: CheckSquare },
-    policy: { heading: 'Policies', icon: FileText },
-    test: { heading: 'Tests', icon: FlaskConical },
-    evidence: { heading: 'Evidence', icon: Paperclip },
-    framework: { heading: 'Frameworks', icon: Layers },
-    asset: { heading: 'Assets', icon: Package },
-};
+function buildEntityMeta(
+    t: (key: string) => string,
+): Record<EntityKind, { heading: string; icon: LucideIcon }> {
+    return {
+        control: { heading: t('entityControl'), icon: ShieldCheck },
+        risk: { heading: t('entityRisk'), icon: Triangle },
+        task: { heading: t('entityTask'), icon: CheckSquare },
+        policy: { heading: t('entityPolicy'), icon: FileText },
+        test: { heading: t('entityTest'), icon: FlaskConical },
+        evidence: { heading: t('entityEvidence'), icon: Paperclip },
+        framework: { heading: t('entityFramework'), icon: Layers },
+        asset: { heading: t('entityAsset'), icon: Package },
+    };
+}
 
 const ENTITY_ORDER: EntityKind[] = [
     'control',
@@ -184,11 +186,13 @@ function groupByKind(
 }
 
 export function CommandPalette() {
+    const t = useTranslations('commandPalette');
     const { isOpen, close } = useCommandPalette();
     const shortcuts = useRegisteredShortcuts();
     const router = useRouter();
     const pathname = usePathname();
     const tenantSlug = tenantSlugFromPathname(pathname);
+    const entityMeta = useMemo(() => buildEntityMeta(t), [t]);
 
     const [query, setQuery] = useState('');
     const { loading, results, disabled: searchDisabled } = useEntitySearch(
@@ -283,7 +287,7 @@ export function CommandPalette() {
     const listedShortcuts = shortcuts.filter(
         (s) =>
             s.description &&
-            s.description !== 'Open command palette' &&
+            s.description !== t('openShortcut') &&
             !allCommandLabels.has(s.description),
     );
 
@@ -340,7 +344,7 @@ export function CommandPalette() {
                     )}
                 />
                 <Dialog.Content
-                    aria-label="Command palette"
+                    aria-label={t('title')}
                     onOpenAutoFocus={(e) => {
                         // Radix focuses the first focusable child. cmdk's
                         // `Command.Input` is first in the tree and gets it
@@ -360,10 +364,9 @@ export function CommandPalette() {
                     data-command-palette
                 >
                     <VisuallyHidden.Root>
-                        <Dialog.Title>Command palette</Dialog.Title>
+                        <Dialog.Title>{t('title')}</Dialog.Title>
                         <Dialog.Description>
-                            Search for pages, entities, and actions. Use arrow
-                            keys to navigate and Enter to activate.
+                            {t('description')}
                         </Dialog.Description>
                     </VisuallyHidden.Root>
 
@@ -376,7 +379,7 @@ export function CommandPalette() {
                         // matches, so disable it.
                         shouldFilter={false}
                         className="flex flex-col"
-                        label="Command palette"
+                        label={t('title')}
                     >
                         <div
                             className={cn(
@@ -394,8 +397,8 @@ export function CommandPalette() {
                                 onValueChange={setQuery}
                                 placeholder={
                                     searchDisabled
-                                        ? 'Sign in to search controls, risks, policies…'
-                                        : 'Search controls, risks, policies, evidence, frameworks…'
+                                        ? t('searchPlaceholderSignedOut')
+                                        : t('searchPlaceholder')
                                 }
                                 className={cn(
                                     'flex-1 bg-transparent text-sm',
@@ -431,7 +434,7 @@ export function CommandPalette() {
                             <div
                                 className="flex flex-wrap items-center gap-1.5 border-b border-border-subtle px-4 py-2"
                                 role="group"
-                                aria-label="Filter results by entity type"
+                                aria-label={t('filterResultsAria')}
                                 data-testid="palette-filter-chips"
                             >
                                 {(Object.keys(SEARCH_TYPE_DEFAULTS) as SearchHitType[]).map((kind) => {
@@ -474,12 +477,12 @@ export function CommandPalette() {
                                 )}
                             >
                                 {loading
-                                    ? 'Searching…'
+                                    ? t('searching')
                                     : searchDisabled
-                                      ? 'Entity search is available after sign-in.'
+                                      ? t('searchSignedOut')
                                       : activeKinds.size > 0 && results.length > 0
-                                        ? 'No matches in the selected categories. Toggle chips to widen.'
-                                        : 'No results found.'}
+                                        ? t('noMatchesInCategories')
+                                        : t('noResults')}
                             </Command.Empty>
 
                             {/* Recents — visible only when the user
@@ -497,7 +500,7 @@ export function CommandPalette() {
 
                             {navCommands.length > 0 && (
                                 <CommandGroup
-                                    heading="Navigation"
+                                    heading={t('groupNavigation')}
                                     items={navCommands}
                                     testIdPrefix="nav"
                                     onNavigate={handleSelect}
@@ -508,7 +511,7 @@ export function CommandPalette() {
 
                             {actionCommands.length > 0 && (
                                 <CommandGroup
-                                    heading="Actions"
+                                    heading={t('groupActions')}
                                     items={actionCommands}
                                     testIdPrefix="action"
                                     onNavigate={handleSelect}
@@ -521,7 +524,7 @@ export function CommandPalette() {
                                 ENTITY_ORDER.map((kind) => {
                                     const items = grouped.get(kind);
                                     if (!items || items.length === 0) return null;
-                                    const meta = ENTITY_META[kind];
+                                    const meta = entityMeta[kind];
                                     return (
                                         <EntityGroup
                                             key={kind}
@@ -558,7 +561,7 @@ export function CommandPalette() {
                              */}
                             {showShortcuts && listedShortcuts.length > 0 && (
                                 <ShortcutGroup
-                                    heading="Keyboard shortcuts"
+                                    heading={t('groupShortcuts')}
                                     items={listedShortcuts}
                                 />
                             )}
@@ -770,9 +773,10 @@ function RecentsGroup({
         item: Omit<RecentItem, 'lastVisitedAt'>,
     ) => void;
 }) {
+    const t = useTranslations('commandPalette');
     return (
         <Command.Group
-            heading="Recent"
+            heading={t('groupRecent')}
             className={cn(
                 '[&_[cmdk-group-heading]]:px-2',
                 '[&_[cmdk-group-heading]]:py-1.5',

@@ -20,6 +20,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { AsidePanel } from "@/components/ui/aside-panel";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/icons/loading-spinner";
@@ -58,6 +59,7 @@ export function CanvasHistorySidebar({
      */
     onRestored?: () => void;
 }) {
+    const t = useTranslations("automation.history");
     const toast = useToast();
     const [restoringVersion, setRestoringVersion] = useState<number | null>(
         null,
@@ -68,7 +70,7 @@ export function CanvasHistorySidebar({
         if (
             typeof window !== "undefined" &&
             !window.confirm(
-                `Restore to v${targetVersion}? The current state will be preserved as part of the history.`,
+                t("confirmRestore", { version: targetVersion }),
             )
         ) {
             return;
@@ -84,13 +86,15 @@ export function CanvasHistorySidebar({
                 },
             );
             if (!res.ok) {
-                throw new Error(`Restore failed (${res.status})`);
+                throw new Error(
+                    t("restoreFailedStatus", { status: res.status }),
+                );
             }
-            toast.success(`Restored to v${targetVersion}.`);
+            toast.success(t("restoredToast", { version: targetVersion }));
             onRestored?.();
         } catch (err) {
             toast.error(
-                err instanceof Error ? err.message : "Restore failed",
+                err instanceof Error ? err.message : t("restoreFailed"),
             );
         } finally {
             setRestoringVersion(null);
@@ -114,7 +118,9 @@ export function CanvasHistorySidebar({
                     `/api/t/${tenantSlug}/processes/${mapId}/snapshots`,
                 );
                 if (!res.ok) {
-                    throw new Error(`History load failed (${res.status})`);
+                    throw new Error(
+                        t("loadErrorStatus", { status: res.status }),
+                    );
                 }
                 const body = (await res.json()) as {
                     snapshots?: SnapshotRow[];
@@ -126,7 +132,7 @@ export function CanvasHistorySidebar({
                     setError(
                         err instanceof Error
                             ? err.message
-                            : "Could not load history",
+                            : t("loadError"),
                     );
                 }
             } finally {
@@ -139,11 +145,11 @@ export function CanvasHistorySidebar({
         // currentVersion changes on every save — refetch then so
         // the new snapshot lands at the top without a manual
         // refresh.
-    }, [tenantSlug, mapId, currentVersion]);
+    }, [tenantSlug, mapId, currentVersion, t]);
 
     return (
         <AsidePanel
-            title="Version history"
+            title={t("title")}
             surfaceKey="processes-history"
         >
             <div
@@ -152,7 +158,7 @@ export function CanvasHistorySidebar({
             >
                 {loading && (
                     <div className="flex items-center gap-tight text-sm text-content-muted">
-                        <LoadingSpinner /> Loading…
+                        <LoadingSpinner /> {t("loading")}
                     </div>
                 )}
                 {!loading && error && (
@@ -168,8 +174,7 @@ export function CanvasHistorySidebar({
                         data-testid="canvas-history-empty"
                         className="text-sm text-content-subtle"
                     >
-                        No versions yet. Save the canvas to capture the
-                        first snapshot.
+                        {t("empty")}
                     </p>
                 )}
                 {!loading && !error && rows !== null && rows.length > 0 && (
@@ -192,7 +197,7 @@ export function CanvasHistorySidebar({
                                                 className="text-[10px] uppercase tracking-wide text-brand-default"
                                                 data-testid="canvas-history-current"
                                             >
-                                                Current
+                                                {t("current")}
                                             </span>
                                         )}
                                     </div>
@@ -217,7 +222,7 @@ export function CanvasHistorySidebar({
                                                 disabled={!onDiffRequest}
                                                 data-testid="canvas-history-diff"
                                             >
-                                                Diff
+                                                {t("diff")}
                                             </Button>
                                             <Button
                                                 variant="secondary"
@@ -232,8 +237,8 @@ export function CanvasHistorySidebar({
                                                 data-testid="canvas-history-restore"
                                             >
                                                 {restoringVersion === r.version
-                                                    ? "Restoring…"
-                                                    : "Restore"}
+                                                    ? t("restoring")
+                                                    : t("restore")}
                                             </Button>
                                         </div>
                                     )}

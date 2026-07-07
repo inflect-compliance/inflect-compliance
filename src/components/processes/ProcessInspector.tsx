@@ -32,6 +32,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { Edge, Node } from "@xyflow/react";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import { AsidePanel } from "@/components/ui/aside-panel";
@@ -94,7 +95,7 @@ import {
     type ProcessNodeSize,
 } from "./ProcessTypedNode";
 import {
-    EDGE_VARIANT_META,
+    buildEdgeVariantMeta,
     EDGE_VARIANT_ORDER,
     isProcessEdgeVariant,
     type ProcessEdgeVariant,
@@ -195,6 +196,7 @@ export function ProcessInspector({
     const [subtitle, setSubtitle] = useState(data?.subtitle ?? "");
     // VR-4 — automation-mode inspector branch (hook stays unconditional).
     const isAutomation = useIsAutomationMode();
+    const t = useTranslations("automation.inspector");
 
     // Sync local mirror when the selected node changes.
     useEffect(() => {
@@ -227,7 +229,7 @@ export function ProcessInspector({
                 ? ((data as { ruleId?: string }).ruleId as string)
                 : null;
         return (
-            <AsidePanel title="Rule" surfaceKey="processes-inspector">
+            <AsidePanel title={t("ruleTitle")} surfaceKey="processes-inspector">
                 <div className="flex flex-col gap-default p-default">
                     <AutomationInspectorPanel
                         kind={data!.kind as "trigger" | "condition" | "action" | "slaGate"}
@@ -264,13 +266,13 @@ export function ProcessInspector({
     // testid the R28 ratchet pins; only the chrome moved.
     return (
         <AsidePanel
-            title="Inspector"
+            title={t("title")}
             surfaceKey="processes-inspector"
         >
             <div
                 className="flex flex-col gap-default"
                 data-process-inspector="true"
-                aria-label="Selected node properties"
+                aria-label={t("selectedNodeAria")}
             >
                 {kindMeta && (
                     <span className="text-[10px] uppercase tracking-wide text-content-subtle">
@@ -279,7 +281,7 @@ export function ProcessInspector({
                 )}
                 <label className="flex flex-col gap-tight">
                 <span className="text-[10px] uppercase tracking-wide text-content-muted">
-                    Label
+                    {t("label")}
                 </span>
                 <input
                     type="text"
@@ -297,7 +299,7 @@ export function ProcessInspector({
             </label>
             <label className="flex flex-col gap-tight">
                 <span className="text-[10px] uppercase tracking-wide text-content-muted">
-                    Subtitle
+                    {t("subtitle")}
                 </span>
                 <input
                     type="text"
@@ -309,18 +311,18 @@ export function ProcessInspector({
                             e.currentTarget.blur();
                         }
                     }}
-                    placeholder="optional"
+                    placeholder={t("optional")}
                     className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-1 text-xs text-content-emphasis focus:border-border-emphasis focus:outline-none"
                     data-testid="inspector-subtitle-input"
                 />
             </label>
             <div className="flex flex-col gap-tight">
                 <span className="text-[10px] uppercase tracking-wide text-content-muted">
-                    Size
+                    {t("size")}
                 </span>
                 <ToggleGroup
                     size="sm"
-                    ariaLabel="Node size"
+                    ariaLabel={t("nodeSizeAria")}
                     selected={size}
                     options={[
                         { value: "sm", label: "S" },
@@ -356,7 +358,7 @@ export function ProcessInspector({
                     <NodeBiaAffordance tenantSlug={tenantSlug} mapId={mapId} nodeKey={node.id} />
                 )}
                 <p className="text-[10px] text-content-subtle">
-                    Click off the field or press Enter to save the edit.
+                    {t("saveHint")}
                 </p>
             </div>
         </AsidePanel>
@@ -384,6 +386,7 @@ function NodeLinkedEntityPicker({
     // elsewhere reflects on the canvas without a reload. The cache
     // is shared module-scoped, so the 30s poll runs once per
     // tenant even with three concurrent hook mounts.
+    const t = useTranslations("automation.inspector");
     const slug = tenantSlug ?? "";
     const controls = useTenantControls(slug, { pollMs: ENTITY_STATUS_POLL_MS });
     const risks = useTenantRisks(slug, { pollMs: ENTITY_STATUS_POLL_MS });
@@ -396,32 +399,32 @@ function NodeLinkedEntityPicker({
     const active =
         nodeKind === "control"
             ? {
-                  label: "Linked control",
+                  label: t("linkedControl"),
                   options: controls.options.map((c) => ({
                       value: c.id,
                       label: formatControlLabel(c),
                   })),
                   loading: controls.loading,
-                  emptyHint: "No controls yet",
+                  emptyHint: t("noControls"),
               }
             : nodeKind === "risk"
               ? {
-                    label: "Linked risk",
+                    label: t("linkedRisk"),
                     options: risks.options.map((r) => ({
                         value: r.id,
                         label: r.title,
                     })),
                     loading: risks.loading,
-                    emptyHint: "No risks yet",
+                    emptyHint: t("noRisks"),
                 }
               : {
-                    label: "Linked asset",
+                    label: t("linkedAsset"),
                     options: assets.options.map((a) => ({
                         value: a.id,
                         label: formatAssetLabel(a),
                     })),
                     loading: assets.loading,
-                    emptyHint: "No assets yet",
+                    emptyHint: t("noAssets"),
                 };
 
     const selectedOption = selectedId
@@ -453,7 +456,7 @@ function NodeLinkedEntityPicker({
                         className={`rounded-[4px] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${entityStatusTone(liveStatus)}`}
                         data-testid="inspector-node-entity-status"
                         data-status={liveStatus}
-                        title={`Current status: ${liveStatus}`}
+                        title={t("currentStatus", { status: liveStatus })}
                     >
                         {liveStatus}
                     </span>
@@ -469,10 +472,10 @@ function NodeLinkedEntityPicker({
                 aria-label={active.label}
                 placeholder={
                     active.loading
-                        ? "Loading…"
+                        ? t("loading")
                         : active.options.length === 0
                           ? active.emptyHint
-                          : "Pick one…"
+                          : t("pickOne")
                 }
             />
         </div>
@@ -490,6 +493,9 @@ function EdgeInspectorBody({
     tenantSlug?: string;
     onEdgeUpdate?: ProcessInspectorProps["onEdgeUpdate"];
 }) {
+    const t = useTranslations("automation.inspector");
+    const tEdges = useTranslations("automation.edges");
+    const edgeMeta = useMemo(() => buildEdgeVariantMeta(tEdges), [tEdges]);
     const variantRaw = (edge.data as { variant?: unknown } | undefined)
         ?.variant;
     const variant: ProcessEdgeVariant = isProcessEdgeVariant(variantRaw)
@@ -563,21 +569,21 @@ function EdgeInspectorBody({
     // inspector panel persist its collapse state across both modes.
     return (
         <AsidePanel
-            title="Inspector"
+            title={t("title")}
             surfaceKey="processes-inspector"
         >
             <div
                 className="flex flex-col gap-default"
                 data-process-inspector="true"
                 data-inspector-mode="edge"
-                aria-label="Selected edge properties"
+                aria-label={t("selectedEdgeAria")}
             >
                 <span className="text-[10px] uppercase tracking-wide text-content-subtle">
-                    Connection
+                    {t("connection")}
                 </span>
                 <label className="flex flex-col gap-tight">
                 <span className="text-[10px] uppercase tracking-wide text-content-muted">
-                    Label
+                    {t("label")}
                 </span>
                 <input
                     type="text"
@@ -589,22 +595,22 @@ function EdgeInspectorBody({
                             e.currentTarget.blur();
                         }
                     }}
-                    placeholder="optional"
+                    placeholder={t("optional")}
                     className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-1 text-xs text-content-emphasis focus:border-border-emphasis focus:outline-none"
                     data-testid="inspector-edge-label-input"
                 />
             </label>
             <div className="flex flex-col gap-tight">
                 <span className="text-[10px] uppercase tracking-wide text-content-muted">
-                    Variant
+                    {t("variant")}
                 </span>
                 <ToggleGroup
                     size="sm"
-                    ariaLabel="Edge variant"
+                    ariaLabel={t("edgeVariantAria")}
                     selected={variant}
                     options={EDGE_VARIANT_ORDER.map((v) => ({
                         value: v,
-                        label: EDGE_VARIANT_META[v].label,
+                        label: edgeMeta[v].label,
                     }))}
                     selectAction={(v) =>
                         onEdgeUpdate?.(edge.id, {
@@ -613,7 +619,7 @@ function EdgeInspectorBody({
                     }
                 />
                 <span className="text-[10px] text-content-subtle">
-                    {EDGE_VARIANT_META[variant].description}
+                    {edgeMeta[variant].description}
                 </span>
             </div>
             {/* Epic P2-PR-A — Linked control picker. Mounts a tenant-
@@ -626,29 +632,28 @@ function EdgeInspectorBody({
                 data-testid="inspector-edge-control-picker"
             >
                 <span className="text-[10px] uppercase tracking-wide text-content-muted">
-                    Linked control
+                    {t("linkedControl")}
                 </span>
                 <Combobox
                     selected={selectedControlOption}
                     setSelected={commitLinkedControl}
                     options={controlOptions}
                     disabled={controlsLoading || tenantControls.length === 0}
-                    aria-label="Linked control"
+                    aria-label={t("linkedControl")}
                     placeholder={
                         controlsLoading
-                            ? "Loading controls…"
+                            ? t("loadingControls")
                             : tenantControls.length === 0
-                              ? "No controls yet"
-                              : "Pick a control…"
+                              ? t("noControls")
+                              : t("pickControl")
                     }
                 />
                 <span className="text-[10px] text-content-subtle">
-                    Auditors see the chosen control as a shield pill on
-                    the connection.
+                    {t("auditorsHint")}
                 </span>
             </div>
                 <p className="text-[10px] text-content-subtle">
-                    Click off the field or press Enter to save the edit.
+                    {t("saveHint")}
                 </p>
             </div>
         </AsidePanel>

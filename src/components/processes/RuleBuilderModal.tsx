@@ -16,6 +16,7 @@
  * validation; the modal does light client-side gating to drive Next/Save.
  */
 import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { useTranslations } from 'next-intl';
 import { useSWRConfig } from 'swr';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
@@ -45,15 +46,22 @@ interface Condition {
     value: string;
 }
 
-const OPERATOR_OPTIONS: ReadonlyArray<{ value: Operator; label: string }> = [
-    { value: 'eq', label: 'equals' },
-    { value: 'neq', label: 'not equals' },
-    { value: 'in', label: 'any of' },
-    { value: 'not_in', label: 'none of' },
-    { value: 'gt', label: 'greater than' },
-    { value: 'lt', label: 'less than' },
-    { value: 'contains', label: 'contains' },
-];
+/** Surface-namespace resolver (`useTranslations('automation.ruleBuilder')`). */
+type RuleTranslate = ReturnType<typeof useTranslations>;
+
+function buildOperatorOptions(
+    t: RuleTranslate,
+): ReadonlyArray<{ value: Operator; label: string }> {
+    return [
+        { value: 'eq', label: t('opEquals') },
+        { value: 'neq', label: t('opNotEquals') },
+        { value: 'in', label: t('opAnyOf') },
+        { value: 'not_in', label: t('opNoneOf') },
+        { value: 'gt', label: t('opGreaterThan') },
+        { value: 'lt', label: t('opLessThan') },
+        { value: 'contains', label: t('opContains') },
+    ];
+}
 
 interface BuilderState {
     name: string;
@@ -87,12 +95,16 @@ const EMPTY: BuilderState = {
     nextRuleDelay: '',
 };
 
-const ACTION_OPTIONS: ReadonlyArray<{ value: ActionType; label: string; hint: string }> = [
-    { value: 'NOTIFY_USER', label: 'Notify user', hint: 'Send an in-app notification' },
-    { value: 'CREATE_TASK', label: 'Create task', hint: 'Open a remediation task' },
-    { value: 'UPDATE_STATUS', label: 'Update status', hint: 'Move an entity to a status' },
-    { value: 'WEBHOOK', label: 'Webhook', hint: 'POST to an external URL' },
-];
+function buildActionOptions(
+    t: RuleTranslate,
+): ReadonlyArray<{ value: ActionType; label: string; hint: string }> {
+    return [
+        { value: 'NOTIFY_USER', label: t('actionNotify'), hint: t('actionNotifyHint') },
+        { value: 'CREATE_TASK', label: t('actionCreateTask'), hint: t('actionCreateTaskHint') },
+        { value: 'UPDATE_STATUS', label: t('actionUpdateStatus'), hint: t('actionUpdateStatusHint') },
+        { value: 'WEBHOOK', label: t('actionWebhook'), hint: t('actionWebhookHint') },
+    ];
+}
 
 const triggerOptions: ComboboxOption[] = eventOptionsByDomain().flatMap((g) =>
     g.events.map((ev) => ({ value: ev.name, label: ev.label })),
@@ -107,6 +119,9 @@ export interface RuleBuilderModalProps {
 }
 
 export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBuilderModalProps) {
+    const t = useTranslations('automation.ruleBuilder');
+    const operatorOptions = useMemo(() => buildOperatorOptions(t), [t]);
+    const actionOptions = useMemo(() => buildActionOptions(t), [t]);
     const apiUrl = useTenantApiUrl();
     const { mutate } = useSWRConfig();
     // Epic 7 — chain targets (other rules). Excludes the rule being edited.
@@ -210,15 +225,15 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                 body: JSON.stringify(payload),
             });
             if (!res.ok) {
-                const e = await res.json().catch(() => ({ error: 'Save failed' }));
-                throw new Error(e.error ?? 'Save failed');
+                const e = await res.json().catch(() => ({ error: t('saveFailed') }));
+                throw new Error(e.error ?? t('saveFailed'));
             }
             await mutate(apiUrl(CACHE_KEYS.automation.rules.list()));
             setOpen(false);
             setForm(EMPTY);
             setStep(1);
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Save failed');
+            setError(e instanceof Error ? e.message : t('saveFailed'));
         } finally {
             setSubmitting(false);
         }
@@ -229,29 +244,36 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
         : null;
 
     return (
-        <Modal showModal={open} setShowModal={setOpen} title={editRule ? 'Edit rule' : 'New rule'} size="lg">
-            <Modal.Header title={editRule ? 'Edit automation rule' : 'New automation rule'} />
+        <Modal showModal={open} setShowModal={setOpen} title={editRule ? t('editTitle') : t('newTitle')} size="lg">
+            <Modal.Header title={editRule ? t('editHeader') : t('newHeader')} />
             <Modal.Body>
                 <p className="mb-default text-xs uppercase tracking-wide text-content-subtle">
-                    Step {step} of 3 —{' '}
-                    {step === 1 ? 'Trigger' : step === 2 ? 'Conditions' : 'Action'}
+                    {t('stepIndicator', {
+                        step,
+                        phase:
+                            step === 1
+                                ? t('phaseTrigger')
+                                : step === 2
+                                  ? t('phaseConditions')
+                                  : t('phaseAction'),
+                    })}
                 </p>
 
                 {step === 1 && (
                     <div className="space-y-default">
-                        <FormField label="Rule name" required>
+                        <FormField label={t('ruleName')} required>
                             <Input
                                 value={form.name}
                                 onChange={(e) => patch({ name: e.target.value })}
-                                placeholder="Notify owner on critical risk"
+                                placeholder={t('ruleNamePlaceholder')}
                             />
                         </FormField>
-                        <FormField label="Trigger event" required>
+                        <FormField label={t('triggerEvent')} required>
                             <Combobox
                                 options={triggerOptions}
                                 selected={triggerSelected}
                                 setSelected={(o) => patch({ triggerEvent: o?.value ?? '', conditions: [] })}
-                                placeholder="Select an event…"
+                                placeholder={t('selectEvent')}
                                 forceDropdown
                                 matchTriggerWidth
                                 optionDescription={(o) =>
@@ -266,25 +288,24 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                     <div className="space-y-default">
                         {availableFields.length === 0 ? (
                             <p className="text-sm text-content-muted">
-                                This event has no filterable fields — the rule fires on every
-                                occurrence.
+                                {t('filterableFieldsHint')}
                             </p>
                         ) : (
                             <>
                                 {/* AND/OR group logic — shown once ≥2 conditions exist. */}
                                 {form.conditions.length > 1 && (
                                     <div className="flex items-center gap-compact text-sm">
-                                        <span className="text-content-muted">Match</span>
+                                        <span className="text-content-muted">{t('match')}</span>
                                         <RadioGroup
                                             value={form.logic}
                                             onValueChange={(v) => patch({ logic: v as 'AND' | 'OR' })}
                                             className="flex gap-default"
                                         >
                                             <label className="flex items-center gap-tight">
-                                                <RadioGroupItem value="AND" /> all (AND)
+                                                <RadioGroupItem value="AND" /> {t('allAnd')}
                                             </label>
                                             <label className="flex items-center gap-tight">
-                                                <RadioGroupItem value="OR" /> any (OR)
+                                                <RadioGroupItem value="OR" /> {t('anyOr')}
                                             </label>
                                         </RadioGroup>
                                     </div>
@@ -294,7 +315,7 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                     const isSet = cond.operator === 'in' || cond.operator === 'not_in';
                                     return (
                                         <div key={i} className="flex items-end gap-compact">
-                                            <FormField label={i === 0 ? 'Field' : undefined} className="flex-1">
+                                            <FormField label={i === 0 ? t('field') : undefined} className="flex-1">
                                                 <Combobox
                                                     options={availableFields.map((f) => ({
                                                         value: f.field,
@@ -310,21 +331,21 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                                         next[i] = { ...next[i], field: o?.value ?? '', value: '' };
                                                         patch({ conditions: next });
                                                     }}
-                                                    placeholder="Field…"
+                                                    placeholder={t('fieldPlaceholder')}
                                                     forceDropdown
                                                     matchTriggerWidth
                                                 />
                                             </FormField>
-                                            <FormField label={i === 0 ? 'Operator' : undefined}>
+                                            <FormField label={i === 0 ? t('operator') : undefined}>
                                                 <Combobox
-                                                    options={OPERATOR_OPTIONS.map((op) => ({
+                                                    options={operatorOptions.map((op) => ({
                                                         value: op.value,
                                                         label: op.label,
                                                     }))}
                                                     selected={{
                                                         value: cond.operator,
                                                         label:
-                                                            OPERATOR_OPTIONS.find((op) => op.value === cond.operator)
+                                                            operatorOptions.find((op) => op.value === cond.operator)
                                                                 ?.label ?? cond.operator,
                                                     }}
                                                     setSelected={(o) => {
@@ -339,7 +360,7 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                                     matchTriggerWidth
                                                 />
                                             </FormField>
-                                            <FormField label={i === 0 ? 'Value' : undefined} className="flex-1">
+                                            <FormField label={i === 0 ? t('value') : undefined} className="flex-1">
                                                 {fieldDef?.type === 'enum' && !isSet ? (
                                                     <Combobox
                                                         options={(fieldDef.options ?? []).map((opt) => ({
@@ -356,7 +377,7 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                                             next[i] = { ...next[i], value: o?.value ?? '' };
                                                             patch({ conditions: next });
                                                         }}
-                                                        placeholder="Value…"
+                                                        placeholder={t('valuePlaceholder')}
                                                         forceDropdown
                                                         matchTriggerWidth
                                                     />
@@ -373,7 +394,7 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                                             next[i] = { ...next[i], value: e.target.value };
                                                             patch({ conditions: next });
                                                         }}
-                                                        placeholder={isSet ? 'comma,separated,values' : 'Value'}
+                                                        placeholder={isSet ? t('commaSeparated') : t('valuePlain')}
                                                     />
                                                 )}
                                             </FormField>
@@ -384,9 +405,9 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                                         conditions: form.conditions.filter((_, j) => j !== i),
                                                     })
                                                 }
-                                                aria-label="Remove condition"
+                                                aria-label={t('removeCondition')}
                                             >
-                                                Remove
+                                                {t('remove')}
                                             </Button>
                                         </div>
                                     );
@@ -406,11 +427,10 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                         })
                                     }
                                 >
-                                    Add condition
+                                    {t('addCondition')}
                                 </Button>
                                 <p className="text-xs text-content-subtle">
-                                    Set operators (any of / none of) take a comma-separated value
-                                    set. Numeric fields support greater/less than.
+                                    {t('conditionsHint')}
                                 </p>
                             </>
                         )}
@@ -424,7 +444,7 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                             onValueChange={(v) => patch({ actionType: v as ActionType })}
                             className="space-y-tight"
                         >
-                            {ACTION_OPTIONS.map((a) => (
+                            {actionOptions.map((a) => (
                                 <label key={a.value} className="flex items-center gap-compact text-sm">
                                     <RadioGroupItem value={a.value} />
                                     <span className="text-content-emphasis">{a.label}</span>
@@ -436,7 +456,7 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                         <div className="border-t border-border-subtle pt-default space-y-default">
                             {form.actionType === 'NOTIFY_USER' && (
                                 <>
-                                    <FormField label="Recipients" required>
+                                    <FormField label={t('recipients')} required>
                                         <UserCombobox
                                             tenantSlug={tenantSlug}
                                             multiple
@@ -448,47 +468,47 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                             matchTriggerWidth
                                         />
                                     </FormField>
-                                    <FormField label="Message" required>
+                                    <FormField label={t('message')} required>
                                         <Textarea
                                             value={form.notify.message}
                                             onChange={(e) =>
                                                 patch({ notify: { ...form.notify, message: e.target.value } })
                                             }
-                                            placeholder="Risk {{title}} was escalated."
+                                            placeholder={t('messagePlaceholder')}
                                         />
                                     </FormField>
                                 </>
                             )}
                             {form.actionType === 'CREATE_TASK' && (
-                                <FormField label="Task title" required>
+                                <FormField label={t('taskTitle')} required>
                                     <Input
                                         value={form.task.title}
                                         onChange={(e) =>
                                             patch({ task: { ...form.task, title: e.target.value } })
                                         }
-                                        placeholder="Remediate {{title}}"
+                                        placeholder={t('taskTitlePlaceholder')}
                                     />
                                 </FormField>
                             )}
                             {form.actionType === 'UPDATE_STATUS' && (
-                                <FormField label="New status" required>
+                                <FormField label={t('newStatus')} required>
                                     <Input
                                         value={form.status.toStatus}
                                         onChange={(e) =>
                                             patch({ status: { ...form.status, toStatus: e.target.value } })
                                         }
-                                        placeholder="IN_REVIEW"
+                                        placeholder={t('newStatusPlaceholder')}
                                     />
                                 </FormField>
                             )}
                             {form.actionType === 'WEBHOOK' && (
-                                <FormField label="Webhook URL" required>
+                                <FormField label={t('webhookUrl')} required>
                                     <Input
                                         value={form.webhook.url}
                                         onChange={(e) =>
                                             patch({ webhook: { ...form.webhook, url: e.target.value } })
                                         }
-                                        placeholder="https://hooks.example.com/…"
+                                        placeholder={t('webhookUrlPlaceholder')}
                                     />
                                 </FormField>
                             )}
@@ -497,15 +517,15 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                         {/* SLA window (Epic 5) — optional deadline for resolution. */}
                         <div className="border-t border-border-subtle pt-default">
                             <FormField
-                                label="SLA window (minutes)"
-                                description="Optional. If an execution runs past this many minutes it's flagged as breached."
+                                label={t('slaLabel')}
+                                description={t('slaDescription')}
                             >
                                 <Input
                                     type="number"
                                     min={1}
                                     value={form.slaWindowMinutes}
                                     onChange={(e) => patch({ slaWindowMinutes: e.target.value })}
-                                    placeholder="e.g. 1440 (24h)"
+                                    placeholder={t('slaPlaceholder')}
                                 />
                             </FormField>
                         </div>
@@ -513,8 +533,8 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                         {/* Chain to next rule (Epic 7) — sequential workflow. */}
                         <div className="border-t border-border-subtle pt-default space-y-default">
                             <FormField
-                                label="Chain to next rule"
-                                description="Optional. After this rule succeeds, fire another rule."
+                                label={t('chainLabel')}
+                                description={t('chainDescription')}
                             >
                                 <Combobox
                                     options={chainOptions}
@@ -524,19 +544,19 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                             : null
                                     }
                                     setSelected={(o) => patch({ nextRuleId: o?.value ?? '' })}
-                                    placeholder="No chained rule"
+                                    placeholder={t('noChainedRule')}
                                     forceDropdown
                                     matchTriggerWidth
                                 />
                             </FormField>
                             {form.nextRuleId && (
-                                <FormField label="Chain delay (minutes)">
+                                <FormField label={t('chainDelayLabel')}>
                                     <Input
                                         type="number"
                                         min={0}
                                         value={form.nextRuleDelay}
                                         onChange={(e) => patch({ nextRuleDelay: e.target.value })}
-                                        placeholder="0 (immediate)"
+                                        placeholder={t('chainDelayPlaceholder')}
                                     />
                                 </FormField>
                             )}
@@ -551,7 +571,7 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                     variant="ghost"
                     onClick={() => (step === 1 ? setOpen(false) : setStep((s) => (s - 1) as 1 | 2))}
                 >
-                    {step === 1 ? 'Cancel' : 'Back'}
+                    {step === 1 ? t('cancel') : t('back')}
                 </Button>
                 {step < 3 ? (
                     <Button
@@ -559,7 +579,7 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                         disabled={step === 1 && !step1Valid}
                         onClick={() => setStep((s) => (s + 1) as 2 | 3)}
                     >
-                        Next
+                        {t('next')}
                     </Button>
                 ) : (
                     <Button
@@ -568,7 +588,7 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                         disabled={!step3Valid || submitting}
                         onClick={handleSave}
                     >
-                        {editRule ? 'Save rule' : 'Create rule'}
+                        {editRule ? t('saveRule') : t('createRule')}
                     </Button>
                 )}
             </Modal.Actions>

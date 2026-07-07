@@ -222,8 +222,10 @@ describe("Epic P5-PR-A — process map snapshots + version-history sidebar", () 
         });
 
         it("re-fetches when currentVersion changes (so a new save lands at the top)", () => {
+            // The localized component adds the stable `t` translator to the
+            // effect deps; the fetch still keys on currentVersion.
             expect(src).toMatch(
-                /\}\,\s*\[tenantSlug,\s*mapId,\s*currentVersion\]\)/,
+                /\}\,\s*\[tenantSlug,\s*mapId,\s*currentVersion(?:,\s*t)?\]\)/,
             );
         });
     });

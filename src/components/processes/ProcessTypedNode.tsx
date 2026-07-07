@@ -30,6 +30,7 @@
 
 import { Handle, Position, useReactFlow, type NodeProps } from "@xyflow/react";
 import { memo, useCallback, type MouseEvent } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronRight } from "@/components/ui/icons/nucleo/chevron-right";
 import { cn } from "@/lib/cn";
 import {
@@ -363,6 +364,7 @@ function GroupNodeChrome({
     Icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean | "true" | "false" }>;
     setNodes: ReturnType<typeof useReactFlow>["setNodes"];
 }) {
+    const t = useTranslations("automation.node");
     const toggleCollapsed = useCallback(
         (event: MouseEvent<HTMLButtonElement>) => {
             event.stopPropagation();
@@ -427,7 +429,7 @@ function GroupNodeChrome({
     // group is expanded the chevron rotates 90° via CSS so it
     // points downward (the canonical "click to collapse" visual).
     const chevronRotation = collapsed ? "" : "rotate-90";
-    const chevronLabel = collapsed ? "Expand group" : "Collapse group";
+    const chevronLabel = collapsed ? t("expandGroup") : t("collapseGroup");
 
     if (collapsed) {
         // Compact pill — single row with icon + label + chevron.

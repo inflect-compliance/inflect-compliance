@@ -11,6 +11,7 @@
  * <AsidePanel> wrapper; this component owns the list + actions.
  */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTenantApiUrl, useCurrentUserId } from '@/lib/tenant-context-provider';
 import { CACHE_KEYS } from '@/lib/swr-keys';
@@ -44,6 +45,11 @@ function draftConfig(s: RuleSuggestion, currentUserId: string): Record<string, u
 }
 
 export function AutomationSuggestionsRail() {
+    const t = useTranslations('automation.suggestions');
+    // Translated trigger-event label with a raw humanized fallback for any
+    // event not (yet) in the catalog — keeps unknown events readable.
+    const eventLabel = (name: string): string =>
+        t.has(`events.${name}`) ? t(`events.${name}`) : humanizeEvent(name);
     // No `useSession()` — the app mounts no <SessionProvider> (it returns
     // undefined and throws on destructure). The current user id comes from the
     // server-resolved tenant context.
@@ -81,17 +87,16 @@ export function AutomationSuggestionsRail() {
     return (
         <div className="space-y-default" data-testid="automation-suggestions-rail">
             <p className="text-xs text-content-muted">
-                Automations that would close gaps in your current posture — each
-                scored, with a rationale. Create one as a draft, then refine it.
+                {t('intro')}
             </p>
 
             {isLoading && (
-                <p className="text-xs text-content-subtle">Analysing your posture…</p>
+                <p className="text-xs text-content-subtle">{t('analysing')}</p>
             )}
 
             {!isLoading && suggestions.length === 0 && (
                 <p className="text-xs text-content-subtle">
-                    No new suggestions — your enabled rules already cover the obvious gaps.
+                    {t('empty')}
                 </p>
             )}
 
@@ -111,7 +116,7 @@ export function AutomationSuggestionsRail() {
                         <p className="text-xs text-content-muted">{s.rationale}</p>
                         <div className="flex items-center gap-tight">
                             <span className="inline-flex items-center rounded-[4px] border border-border-subtle px-1.5 py-0.5 text-[10px] text-content-muted">
-                                {humanizeEvent(s.triggerEvent)}
+                                {eventLabel(s.triggerEvent)}
                             </span>
                             {/* confidence bar */}
                             <span className="h-1 flex-1 overflow-hidden rounded-full bg-bg-muted">
@@ -123,7 +128,7 @@ export function AutomationSuggestionsRail() {
                         </div>
                         <div className="flex items-center gap-tight pt-1">
                             {applied.has(s.id) ? (
-                                <span className="text-[11px] text-content-success">Draft created</span>
+                                <span className="text-[11px] text-content-success">{t('draftCreated')}</span>
                             ) : (
                                 <>
                                     <Button
@@ -132,7 +137,7 @@ export function AutomationSuggestionsRail() {
                                         disabled={busy === s.id}
                                         onClick={() => createRule(s)}
                                     >
-                                        Create draft
+                                        {t('createDraft')}
                                     </Button>
                                     <button
                                         type="button"
@@ -141,7 +146,7 @@ export function AutomationSuggestionsRail() {
                                             setDismissed((prev) => new Set(prev).add(s.id))
                                         }
                                     >
-                                        Dismiss
+                                        {t('dismiss')}
                                     </button>
                                 </>
                             )}

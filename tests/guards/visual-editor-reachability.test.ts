@@ -34,7 +34,13 @@ describe('visual editor reachability', () => {
     it('AUTOMATION canvas mode is creatable from the UI', () => {
         const src = read(CANVAS);
         expect(src).toMatch(/handleNew\("AUTOMATION"\)/);
-        expect(src).toMatch(/New automation workflow/);
+        // The palette command label is localized.
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const en = require('../../messages/en.json');
+        expect(en.automation.canvas.cmdNewAutomationLabel).toBe(
+            'New automation workflow',
+        );
+        expect(src).toMatch(/t\("cmdNewAutomationLabel"\)/);
     });
 
     it('exposes a Run Mode toggle in the document bar', () => {

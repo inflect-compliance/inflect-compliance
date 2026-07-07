@@ -88,9 +88,15 @@ describe("R31 (Bundle 8) — canvas command palette", () => {
             // Locked at exactly three groups so the canonical
             // taxonomy doesn't drift silently. Adding a fourth
             // group means a deliberate update here.
-            expect(src).toMatch(/heading:\s*["']Document["']/);
-            expect(src).toMatch(/heading:\s*["']Selection["']/);
-            expect(src).toMatch(/heading:\s*["']Modes["']/);
+            // The palette group headings are localized.
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const en = require('../../messages/en.json');
+            expect(en.automation.canvas.groupDocument).toBe('Document');
+            expect(en.automation.canvas.groupSelection).toBe('Selection');
+            expect(en.automation.canvas.groupModes).toBe('Modes');
+            expect(src).toMatch(/heading:\s*t\("groupDocument"\)/);
+            expect(src).toMatch(/heading:\s*t\("groupSelection"\)/);
+            expect(src).toMatch(/heading:\s*t\("groupModes"\)/);
         });
 
         it("registers every R28-R31 canvas verb as a command", () => {

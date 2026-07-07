@@ -10,6 +10,7 @@
  */
 import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { useSWRConfig } from 'swr';
+import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -26,7 +27,21 @@ interface Template {
     tags: string[];
 }
 
-const ALL_TAGS = ['risk', 'control', 'task', 'issue', 'notify', 'webhook'] as const;
+/**
+ * Filter-chip vocabulary. The `value` is the immutable tag id used
+ * for filtering (`template.tags.includes(value)`); the `label` is
+ * the translated display string.
+ */
+function buildAllTags(t: (key: string) => string): { value: string; label: string }[] {
+    return [
+        { value: 'risk', label: t('tagRisk') },
+        { value: 'control', label: t('tagControl') },
+        { value: 'task', label: t('tagTask') },
+        { value: 'issue', label: t('tagIssue') },
+        { value: 'notify', label: t('tagNotify') },
+        { value: 'webhook', label: t('tagWebhook') },
+    ];
+}
 
 export interface TemplateLibraryModalProps {
     open: boolean;
@@ -34,14 +49,17 @@ export interface TemplateLibraryModalProps {
 }
 
 export function TemplateLibraryModal({ open, setOpen }: TemplateLibraryModalProps) {
+    const t = useTranslations('automation.templates');
     const apiUrl = useTenantApiUrl();
     const { mutate } = useSWRConfig();
     const { data: templates } = useTenantSWR<Template[]>(CACHE_KEYS.automation.templates());
     const [tag, setTag] = useState<string | null>(null);
     const [usingId, setUsingId] = useState<string | null>(null);
 
+    const allTags = useMemo(() => buildAllTags(t), [t]);
+
     const visible = useMemo(
-        () => (templates ?? []).filter((t) => !tag || t.tags.includes(tag)),
+        () => (templates ?? []).filter((tpl) => !tag || tpl.tags.includes(tag)),
         [templates, tag],
     );
 
@@ -63,8 +81,8 @@ export function TemplateLibraryModal({ open, setOpen }: TemplateLibraryModalProp
     }
 
     return (
-        <Modal showModal={open} setShowModal={setOpen} title="Rule templates" size="xl">
-            <Modal.Header title="Rule templates" />
+        <Modal showModal={open} setShowModal={setOpen} title={t('title')} size="xl">
+            <Modal.Header title={t('title')} />
             <Modal.Body>
                 <div className="mb-default flex flex-wrap gap-tight">
                     <button
@@ -72,29 +90,29 @@ export function TemplateLibraryModal({ open, setOpen }: TemplateLibraryModalProp
                         onClick={() => setTag(null)}
                         className={`rounded-full px-2.5 py-0.5 text-xs ${tag === null ? 'bg-bg-inverted text-content-inverted' : 'bg-bg-muted text-content-muted'}`}
                     >
-                        All
+                        {t('all')}
                     </button>
-                    {ALL_TAGS.map((t) => (
+                    {allTags.map((chip) => (
                         <button
-                            key={t}
+                            key={chip.value}
                             type="button"
-                            onClick={() => setTag(t)}
-                            className={`rounded-full px-2.5 py-0.5 text-xs capitalize ${tag === t ? 'bg-bg-inverted text-content-inverted' : 'bg-bg-muted text-content-muted'}`}
+                            onClick={() => setTag(chip.value)}
+                            className={`rounded-full px-2.5 py-0.5 text-xs ${tag === chip.value ? 'bg-bg-inverted text-content-inverted' : 'bg-bg-muted text-content-muted'}`}
                         >
-                            {t}
+                            {chip.label}
                         </button>
                     ))}
                 </div>
                 <div className="grid grid-cols-1 gap-default md:grid-cols-2" data-testid="template-grid">
-                    {visible.map((t) => (
+                    {visible.map((tpl) => (
                         <div
-                            key={t.id}
+                            key={tpl.id}
                             className="surface-popup-texture flex flex-col gap-tight rounded-lg p-3"
                         >
-                            <p className="text-sm font-medium text-content-emphasis">{t.name}</p>
-                            <p className="text-xs text-content-muted">{t.description}</p>
+                            <p className="text-sm font-medium text-content-emphasis">{tpl.name}</p>
+                            <p className="text-xs text-content-muted">{tpl.description}</p>
                             <div className="flex flex-wrap gap-tight">
-                                {t.tags.map((tg) => (
+                                {tpl.tags.map((tg) => (
                                     <StatusBadge key={tg} variant="neutral">
                                         {tg}
                                     </StatusBadge>
@@ -104,11 +122,11 @@ export function TemplateLibraryModal({ open, setOpen }: TemplateLibraryModalProp
                                 <Button
                                     variant="secondary"
                                     size="sm"
-                                    loading={usingId === t.id}
+                                    loading={usingId === tpl.id}
                                     disabled={usingId !== null}
-                                    onClick={() => useTemplate(t.id)}
+                                    onClick={() => useTemplate(tpl.id)}
                                 >
-                                    Use template
+                                    {t('useTemplate')}
                                 </Button>
                             </div>
                         </div>
@@ -117,7 +135,7 @@ export function TemplateLibraryModal({ open, setOpen }: TemplateLibraryModalProp
             </Modal.Body>
             <Modal.Actions align="right">
                 <Button variant="ghost" onClick={() => setOpen(false)}>
-                    Close
+                    {t('close')}
                 </Button>
             </Modal.Actions>
         </Modal>

@@ -40,8 +40,12 @@ import {
     type EdgeProps,
 } from "@xyflow/react";
 import { ShieldCheck, ShieldPlus, Spline } from "lucide-react";
-import { memo, useCallback, type CSSProperties } from "react";
+import { memo, useCallback, useMemo, type CSSProperties } from "react";
+import { useTranslations } from "next-intl";
 import { useCanvasEmphasis } from "@/lib/processes/canvas-emphasis-context";
+
+/** Surface-namespace resolver (`useTranslations('automation.edges')`). */
+type EdgesTranslate = ReturnType<typeof useTranslations>;
 
 /** The three connection variants. Minimal, meaningful, curated. */
 export type ProcessEdgeVariant = "flow" | "conditional" | "reference";
@@ -53,20 +57,27 @@ export const EDGE_VARIANT_ORDER: ProcessEdgeVariant[] = [
     "reference",
 ];
 
-export const EDGE_VARIANT_META: Record<
-    ProcessEdgeVariant,
-    { label: string; description: string }
-> = {
-    flow: { label: "Flow", description: "Normal sequential flow" },
-    conditional: {
-        label: "Conditional",
-        description: "Optional / branch path",
-    },
-    reference: {
-        label: "Reference",
-        description: "Informational dependency — not sequence",
-    },
-};
+/**
+ * i18n factory — the three connection-variant labels + descriptions,
+ * resolved through next-intl at render. Consumers (ProcessEdge itself,
+ * ProcessInspector) call this with a `t` scoped to `automation.edges`.
+ * Shape is unchanged from the pre-i18n `EDGE_VARIANT_META` constant.
+ */
+export function buildEdgeVariantMeta(
+    t: EdgesTranslate,
+): Record<ProcessEdgeVariant, { label: string; description: string }> {
+    return {
+        flow: { label: t("flowLabel"), description: t("flowDescription") },
+        conditional: {
+            label: t("conditionalLabel"),
+            description: t("conditionalDescription"),
+        },
+        reference: {
+            label: t("referenceLabel"),
+            description: t("referenceDescription"),
+        },
+    };
+}
 
 /**
  * Runtime guard — `edgeKind` is a free `String` column, so a
@@ -147,17 +158,18 @@ function strokeFor(
  * VR-5 — automation edge styling. Each semantic edge kind gets a distinct
  * stroke + label chip so the workflow graph reads without opening any node.
  */
-const AUTOMATION_EDGE_STYLE: Record<
-    string,
-    { stroke: string; dash?: string; label: string }
-> = {
-    "trigger-flow": { stroke: "var(--brand-default)", label: "" },
-    "condition-pass": { stroke: "var(--content-success)", label: "Pass" },
-    "condition-fail": { stroke: "var(--content-error)", dash: "6 4", label: "Fail" },
-    "chain-delay": { stroke: "var(--canvas-edge)", dash: "2 5", label: "Chain" },
-    "sla-breach": { stroke: "var(--content-warning)", label: "SLA breach" },
-    "sla-pass": { stroke: "var(--content-success)", label: "On time" },
-};
+export function buildAutomationEdgeStyle(
+    t: EdgesTranslate,
+): Record<string, { stroke: string; dash?: string; label: string }> {
+    return {
+        "trigger-flow": { stroke: "var(--brand-default)", label: "" },
+        "condition-pass": { stroke: "var(--content-success)", label: t("autoPass") },
+        "condition-fail": { stroke: "var(--content-error)", dash: "6 4", label: t("autoFail") },
+        "chain-delay": { stroke: "var(--canvas-edge)", dash: "2 5", label: t("autoChain") },
+        "sla-breach": { stroke: "var(--content-warning)", label: t("autoSlaBreach") },
+        "sla-pass": { stroke: "var(--content-success)", label: t("autoOnTime") },
+    };
+}
 
 function ProcessEdgeImpl(props: EdgeProps) {
     const {
@@ -184,6 +196,10 @@ function ProcessEdgeImpl(props: EdgeProps) {
         targetPosition,
     });
 
+    const t = useTranslations("automation.edges");
+    const edgeVariantMeta = useMemo(() => buildEdgeVariantMeta(t), [t]);
+    const automationEdgeStyle = useMemo(() => buildAutomationEdgeStyle(t), [t]);
+
     const edgeData = data as ProcessEdgeData | undefined;
     const control = edgeData?.control;
     const isPreview = edgeData?.isPreview === true;
@@ -201,13 +217,13 @@ function ProcessEdgeImpl(props: EdgeProps) {
                           ...edge,
                           data: {
                               ...(edge.data as ProcessEdgeData | undefined),
-                              control: { label: "Control" },
+                              control: { label: t("defaultControlLabel") },
                           },
                       }
                     : edge,
             ),
         );
-    }, [id, setEdges]);
+    }, [id, setEdges, t]);
 
     // R27-PR-B — cycle the connection variant
     // flow → conditional → reference → flow. One affordance, no
@@ -249,7 +265,7 @@ function ProcessEdgeImpl(props: EdgeProps) {
     // semantic stroke + emits a label chip.
     const autoKind =
         typeof edgeData?.edgeKind === "string" ? edgeData.edgeKind : undefined;
-    const autoStyle = autoKind ? AUTOMATION_EDGE_STYLE[autoKind] : undefined;
+    const autoStyle = autoKind ? automationEdgeStyle[autoKind] : undefined;
     const baseStyle: CSSProperties = autoStyle
         ? {
               stroke: autoStyle.stroke,
@@ -356,7 +372,9 @@ function ProcessEdgeImpl(props: EdgeProps) {
                         <button
                             type="button"
                             onClick={cycleVariant}
-                            title={`${EDGE_VARIANT_META[variant].description} — click to change`}
+                            title={t("variantTooltip", {
+                                description: edgeVariantMeta[variant].description,
+                            })}
                             className="inline-flex items-center gap-1 rounded-[8px] border border-canvas-border bg-canvas-frame px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-content-default transition-colors hover:border-border-emphasis hover:text-content-emphasis"
                             data-edge-variant-affordance="true"
                         >
@@ -364,7 +382,7 @@ function ProcessEdgeImpl(props: EdgeProps) {
                                 className="h-3 w-3 shrink-0 text-[color:var(--brand-default)]"
                                 aria-hidden="true"
                             />
-                            <span>{EDGE_VARIANT_META[variant].label}</span>
+                            <span>{edgeVariantMeta[variant].label}</span>
                         </button>
                         {!control && selected && (
                             <button
@@ -377,7 +395,7 @@ function ProcessEdgeImpl(props: EdgeProps) {
                                     className="h-3 w-3 shrink-0 text-[color:var(--brand-default)]"
                                     aria-hidden="true"
                                 />
-                                <span>Add control</span>
+                                <span>{t("addControl")}</span>
                             </button>
                         )}
                     </div>
