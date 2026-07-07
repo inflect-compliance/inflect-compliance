@@ -597,10 +597,24 @@ export interface JobPayloadMap {
     'compliance-posture-summary-dispatch': CompliancePostureDispatchPayload;
     'identity-sync': IdentitySyncPayload;
     'identity-sync-dispatch': IdentitySyncDispatchPayload;
+    'azure-posture-collect': AzurePostureCollectPayload;
+    'gcp-posture-collect': GcpPostureCollectPayload;
 }
 
 /** aws-posture connector — run one tenant connection's benchmark + collect evidence. */
 export interface AwsPostureCollectPayload {
+    tenantId: string;
+    connectionId: string;
+}
+
+/** azure-posture connector — run one tenant connection's benchmark + collect evidence. */
+export interface AzurePostureCollectPayload {
+    tenantId: string;
+    connectionId: string;
+}
+
+/** gcp-posture connector — run one tenant connection's benchmark + collect evidence. */
+export interface GcpPostureCollectPayload {
     tenantId: string;
     connectionId: string;
 }
@@ -669,6 +683,18 @@ export const JOB_DEFAULTS: Record<JobName, {
         backoff: { type: 'fixed', delay: 0 },
         removeOnComplete: 20,
         removeOnFail: 50,
+    },
+    'azure-posture-collect': {
+        attempts: 1,
+        backoff: { type: 'fixed', delay: 0 },
+        removeOnComplete: 50,
+        removeOnFail: 200,
+    },
+    'gcp-posture-collect': {
+        attempts: 1,
+        backoff: { type: 'fixed', delay: 0 },
+        removeOnComplete: 50,
+        removeOnFail: 200,
     },
     'automation-runner': {
         attempts: 3,

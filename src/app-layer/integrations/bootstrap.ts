@@ -18,6 +18,8 @@ import { GitHubProvider } from './providers/github';
 import { AwsPostureProvider } from './aws-posture-provider';
 import { OktaProvider } from './providers/okta';
 import { GoogleWorkspaceProvider } from './providers/google-workspace';
+import { AzurePostureProvider } from './providers/azure-posture-provider';
+import { GcpPostureProvider } from './providers/gcp-posture-provider';
 import { GitHubClient } from './providers/github-client';
 import { GitHubBranchProtectionMapper } from './providers/github-mapper';
 import { GitHubSyncOrchestrator } from './providers/github/sync';
@@ -38,8 +40,13 @@ registry.register(new OktaProvider());
 // Google Workspace — directory sync + identity posture checks.
 registry.register(new GoogleWorkspaceProvider());
 
+// Azure cloud posture — Powerpipe steampipe-mod-azure-compliance benchmark evidence.
+registry.register(new AzurePostureProvider());
+
+// GCP cloud posture — Powerpipe steampipe-mod-gcp-compliance benchmark evidence.
+registry.register(new GcpPostureProvider());
+
 // Future providers:
-// registry.register(new AzureProvider());
 // registry.register(new GitLabProvider());
 
 // ─── IntegrationRegistry: Client + Mapper Bundles ────────────────────

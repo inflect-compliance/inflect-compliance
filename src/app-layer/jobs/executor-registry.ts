@@ -1047,3 +1047,21 @@ executorRegistry.register('identity-sync-dispatch', async () => {
         connections: r.connections,
     });
 });
+
+// PR-3 — azure-posture-collect: run one Azure connection's benchmark + collect evidence.
+executorRegistry.register('azure-posture-collect', async (payload) => {
+    const startedAt = new Date().toISOString();
+    const startMs = performance.now();
+    const { runAzurePostureCollectJob } = await import('./cloud-posture-collect');
+    const r = await runAzurePostureCollectJob({ tenantId: payload.tenantId, connectionId: payload.connectionId });
+    return makeResult('azure-posture-collect', startedAt, startMs, 1, r.evidenceCreated, 0, { executionId: r.executionId, status: r.status });
+});
+
+// PR-3 — gcp-posture-collect: run one GCP connection's benchmark + collect evidence.
+executorRegistry.register('gcp-posture-collect', async (payload) => {
+    const startedAt = new Date().toISOString();
+    const startMs = performance.now();
+    const { runGcpPostureCollectJob } = await import('./cloud-posture-collect');
+    const r = await runGcpPostureCollectJob({ tenantId: payload.tenantId, connectionId: payload.connectionId });
+    return makeResult('gcp-posture-collect', startedAt, startMs, 1, r.evidenceCreated, 0, { executionId: r.executionId, status: r.status });
+});
