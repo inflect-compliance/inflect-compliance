@@ -12,6 +12,7 @@
  * then only has to validate + store the bytes.
  */
 import { useRef, useState, type ChangeEvent } from 'react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/cn';
 
 import { InitialsAvatar } from '@/components/ui/initials-avatar';
@@ -25,9 +26,12 @@ const AVATAR_PX = 256;
  * canvas. Throws a user-readable error if the file is not a readable
  * image or the browser cannot encode WebP.
  */
-async function toAvatarWebp(file: File): Promise<Blob> {
+async function toAvatarWebp(
+    file: File,
+    t: (key: string) => string,
+): Promise<Blob> {
     const bitmap = await createImageBitmap(file).catch(() => {
-        throw new Error('That file is not a readable image.');
+        throw new Error(t('notReadableImage'));
     });
     const canvas = document.createElement('canvas');
     canvas.width = AVATAR_PX;
@@ -35,7 +39,7 @@ async function toAvatarWebp(file: File): Promise<Blob> {
     const ctx = canvas.getContext('2d');
     if (!ctx) {
         bitmap.close();
-        throw new Error('Image processing is unavailable in this browser.');
+        throw new Error(t('imageProcessingUnavailable'));
     }
     // Cover-crop: scale so the shorter side fills the square, centre
     // the overflow.
@@ -52,7 +56,7 @@ async function toAvatarWebp(file: File): Promise<Blob> {
         canvas.toBlob(resolve, 'image/webp', 0.85),
     );
     if (!blob || blob.type !== 'image/webp') {
-        throw new Error('This browser could not encode the image as WebP.');
+        throw new Error(t('webpEncodeFailed'));
     }
     return blob;
 }
@@ -68,6 +72,7 @@ export function AvatarUploadField({
     email,
     initialImage,
 }: AvatarUploadFieldProps) {
+    const t = useTranslations('account.profile');
     const fileRef = useRef<HTMLInputElement>(null);
     const [image, setImage] = useState<string | null>(initialImage);
     const [busy, setBusy] = useState(false);
@@ -82,7 +87,7 @@ export function AvatarUploadField({
         setError(null);
         setBusy(true);
         try {
-            const blob = await toAvatarWebp(file);
+            const blob = await toAvatarWebp(file, t);
             const body = new FormData();
             body.append('file', blob, 'avatar.webp');
             const res = await fetch('/api/account/avatar', {
@@ -93,7 +98,7 @@ export function AvatarUploadField({
             if (!res.ok) {
                 const payload = await res.json().catch(() => ({}));
                 throw new Error(
-                    payload.error || payload.message || 'Upload failed.',
+                    payload.error || payload.message || t('uploadFailed'),
                 );
             }
             const { imageUrl } = (await res.json()) as { imageUrl: string };
@@ -101,7 +106,7 @@ export function AvatarUploadField({
             // browser would otherwise show the previous image.
             setImage(`${imageUrl}?t=${Date.now()}`);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Upload failed.');
+            setError(err instanceof Error ? err.message : t('uploadFailed'));
         } finally {
             setBusy(false);
         }
@@ -115,11 +120,11 @@ export function AvatarUploadField({
                 method: 'DELETE',
                 credentials: 'same-origin',
             });
-            if (!res.ok) throw new Error('Could not remove the photo.');
+            if (!res.ok) throw new Error(t('couldNotRemovePhoto'));
             setImage(null);
         } catch (err) {
             setError(
-                err instanceof Error ? err.message : 'Could not remove the photo.',
+                err instanceof Error ? err.message : t('couldNotRemovePhoto'),
             );
         } finally {
             setBusy(false);
@@ -150,9 +155,7 @@ export function AvatarUploadField({
             </div>
 
             <p className="text-xs text-content-muted">
-                Upload a square image — it is resized to 256×256 and stored
-                as WebP. Photo metadata, including location, is stripped in
-                your browser before upload.
+                {t('avatarNote')}
             </p>
 
             <div className="flex gap-tight">
@@ -172,10 +175,10 @@ export function AvatarUploadField({
                     onClick={() => fileRef.current?.click()}
                 >
                     {busy
-                        ? 'Working…'
+                        ? t('working')
                         : image
-                          ? 'Change photo'
-                          : 'Upload photo'}
+                          ? t('changePhoto')
+                          : t('uploadPhoto')}
                 </Button>
                 {image && (
                     <Button
@@ -185,7 +188,7 @@ export function AvatarUploadField({
                         disabled={busy}
                         onClick={handleRemove}
                     >
-                        Remove
+                        {t('remove')}
                     </Button>
                 )}
             </div>

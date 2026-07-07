@@ -1,6 +1,7 @@
 'use client'; // Error boundaries must be Client Components
 
 import { useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import * as Sentry from '@sentry/nextjs';
 import { ErrorState } from '@/components/ui/error-state';
 import { Card } from '@/components/ui/card';
@@ -22,6 +23,7 @@ export default function GlobalError({
     error: Error & { digest?: string };
     reset: () => void;
 }) {
+    const t = useTranslations('errorPage');
     useEffect(() => {
         // Report to Sentry — wrapped in try/catch so the error boundary
         // itself never crashes (which causes "missing required error components")
@@ -38,21 +40,20 @@ export default function GlobalError({
         <div className="flex flex-col items-center justify-center min-h-screen bg-bg-page p-6">
             <Card elevation="floating" className="max-w-md w-full">
                 <ErrorState
-                    title="Something went wrong"
+                    title={t('title')}
                     description={
                         <>
-                            We&apos;re sorry, an unexpected error has occurred.
-                            Our team has been notified.
+                            {t('description')}
                             {error.digest && (
                                 <span className="block mt-2 text-xs font-mono text-content-subtle">
-                                    Error ID: {error.digest}
+                                    {t('errorId', { id: error.digest })}
                                 </span>
                             )}
                         </>
                     }
                     onRetry={() => reset()}
                     secondaryAction={{
-                        label: 'Go to Dashboard',
+                        label: t('goToDashboard'),
                         onClick: () => {
                             window.location.href = '/dashboard';
                         },

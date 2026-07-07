@@ -18,6 +18,7 @@
  */
 import { auth, signOut } from '@/auth';
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import prisma from '@/lib/prisma';
 import { Heading } from '@/components/ui/typography';
 
@@ -49,16 +50,19 @@ export default async function TenantsPage() {
         redirect(`/t/${memberships[0].slug}/dashboard`);
     }
 
+    const t = await getTranslations('tenants');
+    const tRoles = await getTranslations('roles');
+
     // >1 memberships — render the picker
     return (
         <main className="min-h-screen bg-bg-default flex items-center justify-center p-4">
             <div className="max-w-lg w-full">
                 <div className="mb-8 text-center">
                     <Heading level={1} className="mb-2">
-                        Choose a workspace
+                        {t('chooseWorkspace')}
                     </Heading>
                     <p className="text-content-muted">
-                        You are a member of multiple workspaces. Select one to continue.
+                        {t('multipleWorkspaces')}
                     </p>
                 </div>
                 <div className="flex flex-col gap-compact">
@@ -70,8 +74,8 @@ export default async function TenantsPage() {
                         >
                             <div>
                                 <p className="font-medium text-content-default">{m.slug}</p>
-                                <p className="text-sm text-content-muted capitalize">
-                                    {m.role.toLowerCase()}
+                                <p className="text-sm text-content-muted">
+                                    {tRoles.has(m.role) ? tRoles(m.role) : m.role}
                                 </p>
                             </div>
                             <svg
@@ -99,7 +103,7 @@ export default async function TenantsPage() {
                             type="submit"
                             className="text-sm text-content-muted hover:text-content-default transition-colors"
                         >
-                            Sign out
+                            {t('signOut')}
                         </button>
                     </form>
                 </div>
