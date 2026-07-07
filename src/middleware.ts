@@ -76,6 +76,36 @@ async function authMiddleware(req: NextRequest): Promise<NextResponse> {
         return NextResponse.next();
     }
 
+    // ── 0b. Public Trust Center API — rate-limit (per-IP + per-slug), THEN
+    // allow. These anonymous endpoints (`/api/trust/<slug>/access-request`,
+    // `/api/trust/download/<token>`) authenticate in-handler (slug/enabled +
+    // single-use token); the edge limit protects the allowlist-probing +
+    // token-guessing surface before the handler runs.
+    if (pathname.startsWith('/api/trust/')) {
+        // /api/trust/<slug>/access-request → slug at [3]; /api/trust/download/<token> → 'download'.
+        const key = pathname.startsWith('/api/trust/download/')
+            ? 'apitrust:download'
+            : `apitrust:${pathname.split('/')[3] ?? ''}`;
+        const rl = await checkApiReadRateLimit(req, null, key);
+        if (!rl.ok && rl.response) {
+            return rl.response;
+        }
+        return NextResponse.next();
+    }
+
+    // ── 0c. Device-agent posture report — rate-limit (per-IP + per-token),
+    // THEN allow. A device agent authenticates with a Bearer device token and
+    // no session cookie; the token verify runs in-handler. Key by a truncated
+    // token so many devices behind one NAT get independent buckets.
+    if (/^\/api\/t\/[^/]+\/devices\/report$/.test(pathname)) {
+        const bearer = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+        const rl = await checkApiReadRateLimit(req, null, `devreport:${bearer.slice(0, 16)}`);
+        if (!rl.ok && rl.response) {
+            return rl.response;
+        }
+        return NextResponse.next();
+    }
+
     // ── 1. Allow public paths (login, auth callbacks, static, etc.) ──
     if (isPublicPath(pathname)) {
         return NextResponse.next();

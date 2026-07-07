@@ -1453,6 +1453,9 @@
     },
     "docs/implementation-notes/2026-07-07-integrations-catalog-and-admin-subpages.md": {
       "class": "historical"
+    },
+    "docs/implementation-notes/2026-07-07-h1-fleet-ignition-reachability.md": {
+      "class": "historical"
     }
   }
 }

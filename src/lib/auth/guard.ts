@@ -43,6 +43,23 @@ const PUBLIC_PATH_EXACT = new Set([
 const STATIC_EXTENSIONS = /\.(ico|png|jpg|jpeg|gif|svg|webp|css|js|woff|woff2|ttf|eot|map|json)$/;
 
 /**
+ * Public API routes that the prefix allowlist cannot express — they carry a
+ * dynamic tenant slug or resource id in the MIDDLE of the path, so a prefix
+ * would over-expose the whole tenant API. These are anonymous, token- or
+ * slug-authed endpoints whose real authentication runs INSIDE the handler
+ * (device-token verify; trust-center slug/token checks). The middleware
+ * matcher only stops the blanket 401 so the request reaches that handler.
+ *
+ *   - `POST /api/t/<slug>/devices/report`            — device-agent token auth
+ *   - `POST /api/trust/<slug>/access-request`        — anonymous gated-doc request
+ *   - `GET  /api/trust/download/<token>`             — single-use download token
+ */
+export const PUBLIC_API_REGEXES: readonly RegExp[] = [
+    /^\/api\/t\/[^/]+\/devices\/report$/,
+    /^\/api\/trust\/(?:[^/]+\/access-request|download\/[^/]+)$/,
+];
+
+/**
  * Check if a pathname is public (should bypass auth).
  */
 export function isPublicPath(pathname: string): boolean {
@@ -51,6 +68,9 @@ export function isPublicPath(pathname: string): boolean {
 
     // Prefix matches
     if (PUBLIC_PATH_PREFIXES.some((p) => pathname.startsWith(p))) return true;
+
+    // Regex matches — public API routes with a dynamic segment mid-path.
+    if (PUBLIC_API_REGEXES.some((re) => re.test(pathname))) return true;
 
     // Static file extensions
     if (STATIC_EXTENSIONS.test(pathname)) return true;
