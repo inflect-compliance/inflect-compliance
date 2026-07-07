@@ -31,11 +31,14 @@ export class StubQuestionnaireProvider implements QuestionnaireProvider {
 
         const top = ranked[0];
         const citations = ranked.map((r) => ({ kind: r.g.kind, id: r.g.id, label: r.g.label }));
-        // Confidence tracks the best-match overlap, capped — the stub never
-        // claims certainty. A single strong match → ~0.6-0.8.
-        const confidence = Math.min(0.85, 0.35 + top.score * 0.6);
+        // H4 — a single keyword overlap must NOT clear the 0.4 auto-DRAFT floor
+        // (it previously did: 0.35 + score*0.6). Require substantial overlap
+        // before the answer is auto-drafted rather than flagged for a human.
+        const confidence = Math.min(0.85, 0.15 + top.score * 0.7);
         const basis = ranked.map((r) => r.g.label).join('; ');
-        const answer = `Yes. This is addressed by our ${top.g.kind.toLowerCase()} "${top.g.label}": ${top.g.text.slice(0, 400)}${top.g.text.length > 400 ? '…' : ''} (see also: ${basis}).`;
+        // H4 — do NOT lead with an affirmative "Yes." (a false-affirmative
+        // security answer). Phrase neutrally and let the human confirm.
+        const answer = `Our ${top.g.kind.toLowerCase()} "${top.g.label}" is relevant: ${top.g.text.slice(0, 400)}${top.g.text.length > 400 ? '…' : ''} (see also: ${basis}). Please verify before submitting.`;
 
         return { answer, confidence, citations };
     }

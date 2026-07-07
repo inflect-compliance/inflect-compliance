@@ -16,7 +16,7 @@ import { assertCanAdmin, assertCanRead } from '../policies/common';
 import { logEvent } from '../events/audit';
 import { runInTenantContext } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
-import { badRequest, notFound } from '@/lib/errors/types';
+import { badRequest, notFound, forbidden } from '@/lib/errors/types';
 
 const IDENTITY_PROVIDERS = ['okta', 'google-workspace'];
 const MAX_SUBJECTS = 5000;
@@ -106,6 +106,22 @@ export async function submitConnectedDecision(ctx: RequestContext, decisionId: s
     assertCanRead(ctx);
     const parsed = SubmitConnectedDecisionSchema.parse(input);
     return runInTenantContext(ctx, async (db) => {
+        // H4 — a CONNECTED_APP verdict becomes SOC 2 evidence and spawns
+        // deprovision tasks, so it must carry the SAME reviewer gate as the
+        // member flow: only the campaign's assigned reviewer (or a tenant admin)
+        // may decide, and never on a CLOSED campaign. Previously this was
+        // assertCanRead ONLY — any read-only member could record verdicts.
+        const decision = await db.accessReviewConnectedDecision.findFirst({
+            where: { id: decisionId, tenantId: ctx.tenantId },
+            select: { id: true, decision: true, accessReview: { select: { reviewerUserId: true, status: true, deletedAt: true } } },
+        });
+        if (!decision || !decision.accessReview || decision.accessReview.deletedAt !== null) throw notFound('Decision not found.');
+        if (decision.accessReview.status === 'CLOSED') throw badRequest('This campaign is closed; decisions are immutable.');
+        const isAssignedReviewer = decision.accessReview.reviewerUserId === ctx.userId;
+        if (!isAssignedReviewer && !ctx.permissions?.canAdmin) {
+            throw forbidden('Only the assigned reviewer (or a tenant admin) may submit connected-app decisions.');
+        }
+
         const res = await db.accessReviewConnectedDecision.updateMany({
             where: { id: decisionId, tenantId: ctx.tenantId, decision: null },
             data: { decision: parsed.decision, notes: parsed.notes ? sanitizePlainText(parsed.notes) : null, decidedAt: now, decidedByUserId: ctx.userId },
@@ -134,14 +150,25 @@ export async function closeConnectedAccessReview(ctx: RequestContext, accessRevi
         if (!review || review.deletedAt !== null) throw notFound('Access review not found');
         if (review.status === 'CLOSED') throw badRequest('Campaign is already closed.');
 
-        const decisions = await db.accessReviewConnectedDecision.findMany({ where: { tenantId: ctx.tenantId, accessReviewId }, select: { id: true, subjectRef: true, decision: true } });
+        const decisions = await db.accessReviewConnectedDecision.findMany({ where: { tenantId: ctx.tenantId, accessReviewId }, select: { id: true, subjectRef: true, decision: true, executedAt: true } });
         const pending = decisions.filter((d) => d.decision === null);
         if (pending.length > 0) {
             throw badRequest(`Cannot close: ${pending.length} decision(s) are still pending. Every account must be CONFIRMed, REVOKEd, or MODIFYd before close.`);
         }
 
+        // H4 — win the conditional close BEFORE creating any side effects. Two
+        // concurrent closes both pass the read-check above, but only one
+        // transitions the campaign to CLOSED; the loser gets count===0 and bails
+        // without creating duplicate remediation tasks.
+        const closed = await AccessReviewRepository.closeCampaign(db, ctx, accessReviewId, now);
+        if (closed === 0) {
+            return { accessReviewId, executed: decisions.length, remediationTasks: 0 };
+        }
+
         let remediationTasks = 0;
         for (const d of decisions) { // guardrail-allow: n+1 — per-decision, bounded by campaign size
+            // Skip decisions already executed by a prior (partial) close — idempotent.
+            if (d.executedAt) continue;
             if (d.decision === 'REVOKE' || d.decision === 'MODIFY') {
                 await db.task.create({
                     data: {
@@ -154,10 +181,9 @@ export async function closeConnectedAccessReview(ctx: RequestContext, accessRevi
                 });
                 remediationTasks += 1;
             }
-            await db.accessReviewConnectedDecision.updateMany({ where: { id: d.id, tenantId: ctx.tenantId }, data: { executedAt: now, executedByUserId: ctx.userId } });
+            await db.accessReviewConnectedDecision.updateMany({ where: { id: d.id, tenantId: ctx.tenantId, executedAt: null }, data: { executedAt: now, executedByUserId: ctx.userId } });
         }
 
-        await AccessReviewRepository.closeCampaign(db, ctx, accessReviewId, now);
         await logEvent(db, ctx, {
             action: 'ACCESS_REVIEW_DECISION_EXECUTED',
             entityType: 'AccessReview',

@@ -16,12 +16,13 @@ jest.mock('@/app-layer/repositories/AccessReviewRepository', () => ({
 }));
 
 import { createConnectedAccessReview, submitConnectedDecision, closeConnectedAccessReview } from '@/app-layer/usecases/access-review-connected';
+import { AccessReviewRepository } from '@/app-layer/repositories/AccessReviewRepository';
 import { makeRequestContext } from '../helpers/make-context';
 
 const NOW = new Date('2026-06-01T00:00:00.000Z');
 const mockDb = {
     connectedIdentityAccount: { findMany: jest.fn() },
-    accessReviewConnectedDecision: { createMany: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() },
+    accessReviewConnectedDecision: { createMany: jest.fn(), findMany: jest.fn(), updateMany: jest.fn(), findFirst: jest.fn() },
     accessReview: { findFirst: jest.fn() },
     task: { create: jest.fn() },
 };
@@ -36,6 +37,9 @@ beforeEach(() => {
     mockDb.accessReview.findFirst.mockResolvedValue({ id: 'ar-1', name: 'Q3 connected', status: 'OPEN', deletedAt: null });
     mockDb.task.create.mockResolvedValue({ id: 'task-1' });
     mockDb.accessReviewConnectedDecision.updateMany.mockResolvedValue({ count: 1 });
+    // H4 — submitConnectedDecision loads the decision + its campaign for the
+    // reviewer gate. Default: an open campaign whose reviewer is 'u-rev'.
+    mockDb.accessReviewConnectedDecision.findFirst.mockResolvedValue({ id: 'dec-1', decision: null, accessReview: { reviewerUserId: 'u-rev', status: 'OPEN', deletedAt: null } });
 });
 
 describe('createConnectedAccessReview', () => {
@@ -75,6 +79,24 @@ describe('submitConnectedDecision', () => {
         const ctx = makeRequestContext('ADMIN');
         await expect(submitConnectedDecision(ctx, 'dec-1', { decision: 'CONFIRM' }, NOW)).rejects.toThrow(/already decided|not found/i);
     });
+
+    it('H4 — the assigned reviewer may decide', async () => {
+        const ctx = makeRequestContext('EDITOR', { userId: 'u-rev' }); // matches reviewerUserId
+        const r = await submitConnectedDecision(ctx, 'dec-1', { decision: 'CONFIRM' }, NOW);
+        expect(r.decision).toBe('CONFIRM');
+    });
+
+    it('H4 — a read-only NON-reviewer, non-admin member is FORBIDDEN (was assertCanRead only)', async () => {
+        const ctx = makeRequestContext('READER', { userId: 'someone-else' });
+        await expect(submitConnectedDecision(ctx, 'dec-1', { decision: 'REVOKE' }, NOW)).rejects.toThrow(/assigned reviewer|admin/i);
+        expect(mockDb.accessReviewConnectedDecision.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('H4 — rejects a decision on a CLOSED campaign', async () => {
+        mockDb.accessReviewConnectedDecision.findFirst.mockResolvedValueOnce({ id: 'dec-1', decision: null, accessReview: { reviewerUserId: 'u-rev', status: 'CLOSED', deletedAt: null } });
+        const ctx = makeRequestContext('ADMIN');
+        await expect(submitConnectedDecision(ctx, 'dec-1', { decision: 'CONFIRM' }, NOW)).rejects.toThrow(/closed/i);
+    });
 });
 
 describe('closeConnectedAccessReview', () => {
@@ -89,6 +111,18 @@ describe('closeConnectedAccessReview', () => {
         expect(r.executed).toBe(3);
         expect(r.remediationTasks).toBe(2); // REVOKE + MODIFY, not CONFIRM
         expect(mockDb.task.create).toHaveBeenCalledTimes(2);
+    });
+
+    it('H4 — a concurrent close that lost the conditional update creates NO tasks (TOCTOU)', async () => {
+        mockDb.accessReviewConnectedDecision.findMany.mockResolvedValue([
+            { id: 'd1', subjectRef: 'okta:a@x.com', decision: 'REVOKE' },
+        ]);
+        // The conditional close matched 0 rows — another close already won.
+        (AccessReviewRepository.closeCampaign as jest.Mock).mockResolvedValueOnce(0);
+        const ctx = makeRequestContext('ADMIN');
+        const r = await closeConnectedAccessReview(ctx, 'ar-1', NOW);
+        expect(r.remediationTasks).toBe(0);
+        expect(mockDb.task.create).not.toHaveBeenCalled(); // no double remediation
     });
 
     it('refuses to close with pending decisions', async () => {

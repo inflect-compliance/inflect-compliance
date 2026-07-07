@@ -31,8 +31,13 @@ describe('trust-center gated documents — security invariants', () => {
         expect(gated).toMatch(/where: \{ id: req\.id, downloadedAt: null \}/);
         // expiry check
         expect(gated).toMatch(/req\.expiresAt && req\.expiresAt < now/);
-        // TTL applied on approval
-        expect(gated).toMatch(/DOWNLOAD_TOKEN_TTL_DAYS/);
+        // H4 — token ISSUANCE (with the TTL) moved out of the public gated
+        // module into the authenticated admin-approval usecase; the anonymous
+        // request path no longer mints tokens at all.
+        const adminApprove = read('src/app-layer/usecases/trust-center-documents.ts');
+        expect(adminApprove).toMatch(/DOWNLOAD_TOKEN_TTL_DAYS/);
+        // The public request path must NOT auto-grant a token inline.
+        expect(gated).not.toMatch(/status: autoApprove/);
     });
 
     it('the public gated-doc projection never selects fileRecordId', () => {

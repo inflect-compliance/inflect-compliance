@@ -66,17 +66,32 @@ export async function getQuestionnaireItems(ctx: RequestContext, questionnaireId
     );
 }
 
-/** Gather approved compliance content as grounding snippets. Bounded. */
+/**
+ * H4 — minimize PII before grounding leaves the tenant boundary to the LLM.
+ * `guardEgress` only scans for secret shapes, not personal data. Redact email
+ * addresses and long digit runs (phone / SSN / account numbers) from any
+ * snippet text bound for the provider.
+ */
+const EMAIL_RE = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi;
+const LONG_DIGITS_RE = /\b\d[\d\s-]{6,}\d\b/g;
+function minimizePii(text: string): string {
+    return text.replace(EMAIL_RE, '[email]').replace(LONG_DIGITS_RE, '[redacted]');
+}
+
+/** Gather approved compliance content as grounding snippets. Bounded + minimized. */
 async function gatherGrounding(db: Parameters<Parameters<typeof runInTenantContext>[1]>[0], tenantId: string): Promise<GroundingSnippet[]> {
     const [controls, policies, evidence] = await Promise.all([
         db.control.findMany({ where: { tenantId, deletedAt: null, applicability: 'APPLICABLE' }, select: { id: true, name: true, objective: true, successCriteria: true }, take: 200 }),
         db.policy.findMany({ where: { tenantId }, select: { id: true, title: true, description: true }, take: 100 }),
-        db.evidence.findMany({ where: { tenantId, status: 'APPROVED', deletedAt: null }, select: { id: true, title: true, content: true }, take: 100 }),
+        // H4 — evidence `content` is often a raw artefact dump (screenshots
+        // transcribed, log excerpts, exports) laden with PII; ship only the
+        // TITLE, never the body, to the third-party model.
+        db.evidence.findMany({ where: { tenantId, status: 'APPROVED', deletedAt: null }, select: { id: true, title: true }, take: 100 }),
     ]);
     const out: GroundingSnippet[] = [];
-    for (const c of controls) out.push({ kind: 'CONTROL', id: c.id, label: c.name, text: [c.objective, c.successCriteria].filter(Boolean).join(' ').slice(0, 1000) });
-    for (const p of policies) out.push({ kind: 'POLICY', id: p.id, label: p.title, text: (p.description ?? '').slice(0, 1000) });
-    for (const e of evidence) out.push({ kind: 'EVIDENCE', id: e.id, label: e.title, text: (e.content ?? '').slice(0, 500) });
+    for (const c of controls) out.push({ kind: 'CONTROL', id: c.id, label: c.name, text: minimizePii([c.objective, c.successCriteria].filter(Boolean).join(' ').slice(0, 1000)) });
+    for (const p of policies) out.push({ kind: 'POLICY', id: p.id, label: p.title, text: minimizePii((p.description ?? '').slice(0, 1000)) });
+    for (const e of evidence) out.push({ kind: 'EVIDENCE', id: e.id, label: e.title, text: '' });
     return out.slice(0, MAX_GROUNDING);
 }
 
@@ -124,7 +139,13 @@ export async function autofillQuestionnaire(ctx: RequestContext, questionnaireId
                 await db.questionnaireAnswerLibrary.updateMany({ where: { id: libMatch.l.id, tenantId: ctx.tenantId }, data: { useCount: { increment: 1 }, lastUsedAt: new Date() } });
             } else {
                 // 2. Grounded AI draft — never fabricates beyond the grounding.
+                // H4 — charge the limiter PER provider call. The loop can make up
+                // to MAX_QUESTIONS model calls; the old per-RUN charge let one
+                // 500-question upload drive ~500× the daily quota of OpenRouter
+                // calls. checkRateLimit throws when the quota is exhausted.
+                checkRateLimit(ctx.tenantId, ctx.userId);
                 const out = await provider.draftAnswer({ question: item.questionText, grounding });
+                recordGeneration(ctx.tenantId, ctx.userId);
                 draftAnswer = sanitizePlainText(out.answer);
                 confidence = out.confidence;
                 citation = out.citations.length ? out.citations.map((c) => `${c.kind}: ${c.label}`).join('; ') : 'No supporting control/policy found.';
@@ -139,7 +160,8 @@ export async function autofillQuestionnaire(ctx: RequestContext, questionnaireId
         return { drafted, flagged, fromLibrary };
     });
 
-    recordGeneration(ctx.tenantId, ctx.userId);
+    // H4 — generation is now charged PER question inside the loop (above), not
+    // once per run.
     return result;
 }
 

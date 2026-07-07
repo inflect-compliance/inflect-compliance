@@ -29,29 +29,29 @@ beforeEach(() => {
 });
 
 describe('requestTrustCenterAccess', () => {
-    it('auto-approves an allowlisted domain and returns a one-time token', async () => {
+    it('H4 — an allowlisted domain does NOT auto-grant a token (never trust a visitor-supplied domain)', async () => {
         const r = await requestTrustCenterAccess('acme', 'doc-1', { requesterName: 'X', requesterEmail: 'x@acme.com' }, NOW);
-        expect(r?.status).toBe('APPROVED');
-        expect(r?.downloadToken?.startsWith('ictc_')).toBe(true);
+        // Uniform REQUESTED, no inline token — even for an allowlisted domain.
+        expect(r?.status).toBe('REQUESTED');
+        expect(r?.downloadToken).toBeUndefined();
         const data = m.trustCenterAccessRequest.create.mock.calls[0][0].data;
-        expect(data.status).toBe('APPROVED');
-        expect(data.downloadTokenHash).toBeTruthy();
-        expect(data.expiresAt).toBeInstanceOf(Date);
+        expect(data.status).toBe('REQUESTED');
+        expect(data.downloadTokenHash).toBeNull();
+        expect(data.grantedAt).toBeNull();
     });
 
-    it('leaves a non-allowlisted domain REQUESTED with no token', async () => {
+    it('H4 — a non-allowlisted domain gets the SAME uniform REQUESTED response (no oracle)', async () => {
         const r = await requestTrustCenterAccess('acme', 'doc-1', { requesterName: 'X', requesterEmail: 'x@evil.com' }, NOW);
         expect(r?.status).toBe('REQUESTED');
         expect(r?.downloadToken).toBeUndefined();
         expect(m.trustCenterAccessRequest.create.mock.calls[0][0].data.downloadTokenHash).toBeNull();
     });
 
-    it('requires NDA acceptance to auto-approve when ndaRequired', async () => {
+    it('H4 — NDA-required tenant still never auto-grants inline (admin approval only)', async () => {
         m.trustCenter.findFirst.mockResolvedValue({ id: 'tc-1', tenantId: 'T1', accessDomainAllowlist: ['acme.com'], ndaRequired: true });
-        const noNda = await requestTrustCenterAccess('acme', 'doc-1', { requesterName: 'X', requesterEmail: 'x@acme.com' }, NOW);
-        expect(noNda?.status).toBe('REQUESTED');
         const withNda = await requestTrustCenterAccess('acme', 'doc-1', { requesterName: 'X', requesterEmail: 'x@acme.com', ndaAccepted: true }, NOW);
-        expect(withNda?.status).toBe('APPROVED');
+        expect(withNda?.status).toBe('REQUESTED');
+        expect(withNda?.downloadToken).toBeUndefined();
     });
 
     it('returns null for a disabled/missing slug (no existence disclosure)', async () => {
