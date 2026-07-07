@@ -69,6 +69,7 @@ export interface AutomationRunnerResult {
     passed: number;
     failed: number;
     errors: number;
+    notApplicable: number;
     skipped: number;
     dryRun: boolean;
     jobRunId: string;
@@ -218,7 +219,7 @@ export async function executeControlAutomation(
     control: DueControl,
     jobRunId: string,
     now: Date
-): Promise<{ status: 'PASSED' | 'FAILED' | 'ERROR'; executionId: string }> {
+): Promise<{ status: CheckResult['status']; executionId: string }> {
     const parsed = parseAutomationKey(control.automationKey);
     if (!parsed) {
         logger.warn('Invalid automationKey', {
@@ -334,7 +335,11 @@ export async function executeControlAutomation(
         result
     );
 
-    if (evidencePayload) {
+    // H2 — never write APPROVED evidence off a broken run (ERROR) or an empty
+    // population (NOT_APPLICABLE). Only PASSED/FAILED reflect a real
+    // observation the evidence can attest to.
+    const evidenceEligible = result.status === 'PASSED' || result.status === 'FAILED';
+    if (evidencePayload && evidenceEligible) {
         const evidence = await prisma.evidence.create({
             data: {
                 tenantId: control.tenantId,
@@ -413,11 +418,14 @@ export const INTEGRATION_CHECK_SOURCE_KIND = 'INTEGRATION_CHECK';
  */
 async function reconcileFindingForCheck(
     control: DueControl,
-    status: 'PASSED' | 'FAILED' | 'ERROR',
+    status: CheckResult['status'],
     result: CheckResult,
     now: Date,
 ): Promise<void> {
-    if (status === 'ERROR') return;
+    // H2 — a broken run (ERROR) or an empty population (NOT_APPLICABLE) is NOT
+    // a pass: it must never auto-close an open finding. Only a genuine
+    // FAILED/PASSED derived from a real parsed result reconciles findings.
+    if (status === 'ERROR' || status === 'NOT_APPLICABLE') return;
 
     const sourceRef = `${control.id}:${control.automationKey}`;
     try {
@@ -506,6 +514,7 @@ export async function runScheduledAutomations(
                 passed: 0,
                 failed: 0,
                 errors: 0,
+                notApplicable: 0,
                 skipped: dueControls.length,
                 dryRun: true,
                 jobRunId,
@@ -517,6 +526,7 @@ export async function runScheduledAutomations(
         let passed = 0;
         let failed = 0;
         let errors = 0;
+        let notApplicable = 0;
         let skipped = 0;
 
         for (const control of dueControls) {
@@ -539,6 +549,7 @@ export async function runScheduledAutomations(
                     case 'PASSED': passed++; break;
                     case 'FAILED': failed++; break;
                     case 'ERROR': errors++; break;
+                    case 'NOT_APPLICABLE': notApplicable++; break;
                 }
             } catch (err) {
                 errors++;
@@ -558,6 +569,7 @@ export async function runScheduledAutomations(
             passed,
             failed,
             errors,
+            notApplicable,
             skipped,
         });
 
@@ -567,6 +579,7 @@ export async function runScheduledAutomations(
             passed,
             failed,
             errors,
+            notApplicable,
             skipped,
             dryRun: false,
             jobRunId,

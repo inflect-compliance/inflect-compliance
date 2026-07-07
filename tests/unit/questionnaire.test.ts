@@ -9,7 +9,7 @@ jest.mock('@/lib/db-context', () => ({
 jest.mock('@/app-layer/events/audit', () => ({ logEvent: jest.fn() }));
 jest.mock('@/app-layer/ai/risk-assessment/feature-gate', () => ({ enforceFeatureGate: jest.fn() }));
 jest.mock('@/app-layer/ai/risk-assessment/rate-limiter', () => ({ checkRateLimit: jest.fn(), recordGeneration: jest.fn() }));
-jest.mock('@/app-layer/ai/guard', () => ({ guardUntrustedInput: jest.fn(async () => ({ allowed: true })), guardEgress: jest.fn(async () => ({ allowed: true })), assertGuardAllowed: jest.fn() }));
+jest.mock('@/app-layer/ai/guard', () => ({ guardUntrustedInput: jest.fn(async () => ({ allowed: true, reviewRequired: false })), guardEgress: jest.fn(async () => ({ allowed: true, reviewRequired: false })), assertGuardAllowed: jest.fn(), assertNoReviewRequired: jest.fn() }));
 
 import { StubQuestionnaireProvider } from '@/app-layer/ai/questionnaire/stub-provider';
 import { autofillQuestionnaire, uploadQuestionnaire, acceptQuestionnaireItem } from '@/app-layer/usecases/questionnaire';

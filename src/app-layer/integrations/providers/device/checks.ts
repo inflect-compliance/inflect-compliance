@@ -51,9 +51,14 @@ export function runDeviceCheck(checkType: string, devices: CheckDevice[], now: D
             failed.push({ ref: ref(d), reason: `${checkType} = false` });
         }
     }
+    // H2 — if no device has an applicable (non-N/A) value for this field, the
+    // check has no population to judge: NOT_APPLICABLE, not a green PASSED.
+    const applicable = passed + failed.length;
     return {
-        status: failed.length === 0 ? 'PASSED' : 'FAILED',
-        summary: failed.length === 0 ? `${passed} device(s) pass ${checkType} (${notApplicable} n/a)` : `${failed.length}/${passed + failed.length} device(s) fail ${checkType}`,
+        status: applicable === 0 ? 'NOT_APPLICABLE' : failed.length === 0 ? 'PASSED' : 'FAILED',
+        summary: applicable === 0
+            ? `No devices with an applicable ${checkType} value (${notApplicable} n/a)`
+            : failed.length === 0 ? `${passed} device(s) pass ${checkType} (${notApplicable} n/a)` : `${failed.length}/${applicable} device(s) fail ${checkType}`,
         details: { check: checkType, passed, failed: failed.length, notApplicable, items: failed.slice(0, 500) },
     };
 }

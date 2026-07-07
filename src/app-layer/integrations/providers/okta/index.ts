@@ -61,17 +61,25 @@ function normalizeOktaUser(u: OktaUser): NormalizedIdentityAccount {
     const profile = u.profile ?? {};
     const name = profile.displayName || [profile.firstName, profile.lastName].filter(Boolean).join(' ') || undefined;
     const providerType = u.credentials?.provider?.type;
-    const factors = u._embedded?.factors ?? [];
     return {
         externalUserId: u.id,
         email: profile.email || profile.login || '',
         displayName: name,
         status: mapOktaStatus(u.status),
-        // Admin membership is enriched via group/role; conservatively false
-        // unless the directory marks it (see enrichment in the live client).
-        isAdmin: false,
-        mfaEnrolled: factors.some((f) => f.status === 'ACTIVE'),
-        // Okta federated / social login accounts authenticate via SSO.
+        // H2 — admin membership needs group/role enrichment that the users-list
+        // endpoint does not carry. Report `null` (unknown) rather than a
+        // hardcoded `false` that would make no_dormant_admins /
+        // admin_count_within_threshold vacuously pass.
+        isAdmin: null,
+        // H2 — MFA factors are NOT returned by `/api/v1/users` (they need the
+        // per-user `/factors` endpoint or an `expand`). Only report a value when
+        // the payload actually includes factors; otherwise `null` (unknown) so
+        // mfa_enforced is NOT_APPLICABLE instead of measuring an empty array.
+        mfaEnrolled: u._embedded?.factors === undefined
+            ? null
+            : u._embedded.factors.some((f) => f.status === 'ACTIVE'),
+        // Okta federated / social login accounts authenticate via SSO — a real
+        // per-account signal from the credentials provider type.
         ssoEnrolled: providerType === 'FEDERATION' || providerType === 'SOCIAL',
         groups: [],
         lastActiveAt: u.lastLogin ? new Date(u.lastLogin) : null,

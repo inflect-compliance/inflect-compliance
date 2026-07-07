@@ -274,6 +274,11 @@ export class AwsPostureProvider implements ScheduledCheckProvider {
         if (res.missing) {
             return { status: 'ERROR', summary: 'Powerpipe CLI not installed on the collector host.', details: { benchmark }, durationMs: Date.now() - start, errorMessage: 'powerpipe not installed — see docs/aws-posture-connector.md' };
         }
+        // H2 — fail CLOSED on a non-zero collector exit (revoked credential /
+        // network error) rather than parsing empty stdout into a false PASS.
+        if (!res.ok) {
+            return { status: 'ERROR', summary: 'Powerpipe collector exited non-zero.', details: { benchmark }, durationMs: Date.now() - start, errorMessage: `collector error; stderr: ${res.stderr.slice(0, 300)}` };
+        }
         let controls: PowerpipeControlResult[] = [];
         try {
             controls = parsePowerpipeBenchmarkJson(JSON.parse(res.stdout || '{}'));
@@ -281,6 +286,10 @@ export class AwsPostureProvider implements ScheduledCheckProvider {
             return { status: 'ERROR', summary: 'Failed to parse Powerpipe JSON output.', details: { benchmark }, durationMs: Date.now() - start, errorMessage: `parse error; stderr: ${res.stderr.slice(0, 300)}` };
         }
         const summary = summariseBenchmark(benchmark, controls);
+        // H2 — zero parsed controls is insufficient data, not a pass.
+        if (summary.counts.total === 0) {
+            return { status: 'ERROR', summary: `${benchmark}: no controls parsed (insufficient data).`, details: summary as unknown as Record<string, unknown>, durationMs: Date.now() - start, errorMessage: 'collector returned zero controls' };
+        }
         const status: CheckResult['status'] = summary.counts.alarm > 0 ? 'FAILED' : summary.counts.error > 0 ? 'ERROR' : 'PASSED';
         return {
             status,
@@ -291,7 +300,9 @@ export class AwsPostureProvider implements ScheduledCheckProvider {
     }
 
     mapResultToEvidence(input: CheckInput, result: CheckResult): EvidencePayload | null {
-        if (result.status === 'ERROR') return null;
+        // H2 — no evidence for a broken run (ERROR) or an empty population
+        // (NOT_APPLICABLE); passing evidence must reflect a real observation.
+        if (result.status === 'ERROR' || result.status === 'NOT_APPLICABLE') return null;
         return {
             title: `AWS posture — ${input.parsed.checkType}`,
             content: result.summary,

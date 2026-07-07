@@ -824,6 +824,10 @@ enum IntegrationExecutionStatus {
   PASSED
   FAILED
   ERROR
+  // H2 — the check ran cleanly but its applicable population was empty (no
+  // accounts / devices / roster / assignments). Distinct from PASSED: it must
+  // NOT close findings or write APPROVED evidence — "no data" is not "compliant".
+  NOT_APPLICABLE
 }
 
 enum SyncStatus {

@@ -199,3 +199,20 @@ export function assertGuardAllowed(outcome: GuardOutcome): void {
         );
     }
 }
+
+/**
+ * Stricter gate for AUTO-DRAFT surfaces (questionnaire autofill, assistant)
+ * where the model output isn't gated by a separate human accept/approve step
+ * before it can influence a decision. H2 — abort the model call on ANY
+ * review-required verdict (`flag` OR `block`), not only a hard block: under the
+ * default `balanced` mode a `malicious` INPUT resolves to `flag`, so
+ * `assertGuardAllowed` alone would let an injected prompt through to the LLM.
+ */
+export function assertNoReviewRequired(outcome: GuardOutcome): void {
+    if (outcome.reviewRequired) {
+        throw forbidden(
+            `ai_guard_review_required: ${outcome.direction} ${outcome.verdict} ` +
+                `[${outcome.ruleIds.join(',')}]`,
+        );
+    }
+}

@@ -1456,6 +1456,9 @@
     },
     "docs/implementation-notes/2026-07-07-h1-fleet-ignition-reachability.md": {
       "class": "historical"
+    },
+    "docs/implementation-notes/2026-07-07-h2-fail-closed-checks.md": {
+      "class": "historical"
     }
   }
 }
