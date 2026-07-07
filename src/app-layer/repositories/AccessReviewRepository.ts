@@ -301,13 +301,13 @@ export class AccessReviewRepository {
         closedAt: Date,
         evidenceFileRecordId?: string | null,
     ) {
-        // H4 — conditional close guards the check-then-act TOCTOU: two
-        // concurrent closes previously both matched (no status predicate) and
-        // both executed → double remediation tasks + double PDF. Only a
-        // not-yet-CLOSED campaign transitions; the caller treats count===0 as
-        // "already closed" and skips the one-time side effects.
+        // NOTE: this is intentionally unconditional — the member close flow
+        // (Epic G-4) calls it twice (flip status, then attach
+        // evidenceFileRecordId after PDF generation). The connected-flow TOCTOU
+        // guard lives in `closeConnectedAccessReview` via a conditional status
+        // claim, so it does not depend on this shared method's predicate.
         const r = await db.accessReview.updateMany({
-            where: { id, tenantId: ctx.tenantId, deletedAt: null, status: { not: 'CLOSED' } },
+            where: { id, tenantId: ctx.tenantId, deletedAt: null },
             data: {
                 status: 'CLOSED',
                 closedAt,

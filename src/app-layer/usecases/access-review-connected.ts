@@ -156,12 +156,15 @@ export async function closeConnectedAccessReview(ctx: RequestContext, accessRevi
             throw badRequest(`Cannot close: ${pending.length} decision(s) are still pending. Every account must be CONFIRMed, REVOKEd, or MODIFYd before close.`);
         }
 
-        // H4 — win the conditional close BEFORE creating any side effects. Two
-        // concurrent closes both pass the read-check above, but only one
-        // transitions the campaign to CLOSED; the loser gets count===0 and bails
-        // without creating duplicate remediation tasks.
-        const closed = await AccessReviewRepository.closeCampaign(db, ctx, accessReviewId, now);
-        if (closed === 0) {
+        // H4 — atomically CLAIM the close (conditional on not-yet-CLOSED) BEFORE
+        // creating any side effects. Two concurrent closes both pass the
+        // read-check above, but only one updateMany matches a not-CLOSED row;
+        // the loser gets count===0 and bails without duplicate remediation tasks.
+        const claim = await db.accessReview.updateMany({
+            where: { id: accessReviewId, tenantId: ctx.tenantId, deletedAt: null, status: { not: 'CLOSED' } },
+            data: { status: 'CLOSED', closedAt: now, closedByUserId: ctx.userId },
+        });
+        if (claim.count === 0) {
             return { accessReviewId, executed: decisions.length, remediationTasks: 0 };
         }
 

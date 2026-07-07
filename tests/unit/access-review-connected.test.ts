@@ -16,14 +16,13 @@ jest.mock('@/app-layer/repositories/AccessReviewRepository', () => ({
 }));
 
 import { createConnectedAccessReview, submitConnectedDecision, closeConnectedAccessReview } from '@/app-layer/usecases/access-review-connected';
-import { AccessReviewRepository } from '@/app-layer/repositories/AccessReviewRepository';
 import { makeRequestContext } from '../helpers/make-context';
 
 const NOW = new Date('2026-06-01T00:00:00.000Z');
 const mockDb = {
     connectedIdentityAccount: { findMany: jest.fn() },
     accessReviewConnectedDecision: { createMany: jest.fn(), findMany: jest.fn(), updateMany: jest.fn(), findFirst: jest.fn() },
-    accessReview: { findFirst: jest.fn() },
+    accessReview: { findFirst: jest.fn(), updateMany: jest.fn() },
     task: { create: jest.fn() },
 };
 
@@ -40,6 +39,8 @@ beforeEach(() => {
     // H4 — submitConnectedDecision loads the decision + its campaign for the
     // reviewer gate. Default: an open campaign whose reviewer is 'u-rev'.
     mockDb.accessReviewConnectedDecision.findFirst.mockResolvedValue({ id: 'dec-1', decision: null, accessReview: { reviewerUserId: 'u-rev', status: 'OPEN', deletedAt: null } });
+    // H4 — the connected close claims the campaign atomically via updateMany.
+    mockDb.accessReview.updateMany.mockResolvedValue({ count: 1 });
 });
 
 describe('createConnectedAccessReview', () => {
@@ -117,8 +118,8 @@ describe('closeConnectedAccessReview', () => {
         mockDb.accessReviewConnectedDecision.findMany.mockResolvedValue([
             { id: 'd1', subjectRef: 'okta:a@x.com', decision: 'REVOKE' },
         ]);
-        // The conditional close matched 0 rows — another close already won.
-        (AccessReviewRepository.closeCampaign as jest.Mock).mockResolvedValueOnce(0);
+        // The conditional close-claim matched 0 rows — another close already won.
+        mockDb.accessReview.updateMany.mockResolvedValueOnce({ count: 0 });
         const ctx = makeRequestContext('ADMIN');
         const r = await closeConnectedAccessReview(ctx, 'ar-1', NOW);
         expect(r.remediationTasks).toBe(0);
