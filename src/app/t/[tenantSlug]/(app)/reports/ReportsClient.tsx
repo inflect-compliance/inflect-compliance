@@ -1,7 +1,9 @@
 'use client';
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Download } from 'lucide-react';
+import { Download, ShieldCheck } from 'lucide-react';
+import { Tooltip } from '@/components/ui/tooltip';
 import { SoAClient } from './soa/SoAClient';
 import { PdfExportButton } from '@/components/PdfExportButton';
 import { RequirePermission } from '@/components/require-permission';
@@ -140,6 +142,19 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
                         live ONCE in the page header — they used
                         to live both here AND inside SoAClient,
                         which read as a doubled chrome. */}
+                    <div className="flex items-center gap-tight">
+                    <RequirePermission resource="admin" action="manage">
+                        <Tooltip content={tx('trustCenter')}>
+                            <Link
+                                href={`/t/${tenantSlug}/admin/trust-center`}
+                                aria-label={tx('trustCenter')}
+                                id="reports-trust-center-link"
+                                className={buttonVariants({ variant: 'secondary', size: 'icon' })}
+                            >
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                            </Link>
+                        </Tooltip>
+                    </RequirePermission>
                     <RequirePermission resource="reports" action="export">
                         <div className="flex flex-wrap gap-tight">
                             {tab === 'soa' ? (
@@ -184,6 +199,7 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
                             )}
                         </div>
                     </RequirePermission>
+                    </div>
                 </div>
             </ListPageShell.Header>
 
