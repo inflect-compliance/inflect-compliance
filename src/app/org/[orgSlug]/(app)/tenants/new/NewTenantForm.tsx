@@ -20,6 +20,7 @@
  */
 import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { getCsrfToken } from 'next-auth/react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -42,19 +43,24 @@ interface FrameworkOption {
     description: string;
 }
 
+type OrgTranslate = ReturnType<typeof useTranslations>;
+
 // The framework catalog lives behind a per-tenant context and isn't
 // reachable from org-scope, so the picker shows a curated short list
 // of the well-known compliance frameworks (matches the catalog used
 // on the per-tenant frameworks page). "later" is the no-redirect
-// fall-through.
-const FRAMEWORK_OPTIONS: FrameworkOption[] = [
-    { key: 'later', label: 'Choose later', description: 'Skip framework selection — pick on the new tenant dashboard.' },
-    { key: 'ISO27001', label: 'ISO/IEC 27001', description: 'Information security management.' },
-    { key: 'NIS2', label: 'NIS2', description: 'EU cybersecurity directive.' },
-    { key: 'ISO9001', label: 'ISO 9001', description: 'Quality management system.' },
-    { key: 'ISO28000', label: 'ISO 28000', description: 'Supply chain security.' },
-    { key: 'ISO39001', label: 'ISO 39001', description: 'Road traffic safety management.' },
-];
+// fall-through. Framework names are proper nouns (kept verbatim);
+// only "Choose later" + the descriptions are localized.
+function buildFrameworkOptions(t: OrgTranslate): FrameworkOption[] {
+    return [
+        { key: 'later', label: t('newTenant.fwChooseLater'), description: t('newTenant.fwChooseLaterDesc') },
+        { key: 'ISO27001', label: 'ISO/IEC 27001', description: t('newTenant.fwIso27001Desc') },
+        { key: 'NIS2', label: 'NIS2', description: t('newTenant.fwNis2Desc') },
+        { key: 'ISO9001', label: 'ISO 9001', description: t('newTenant.fwIso9001Desc') },
+        { key: 'ISO28000', label: 'ISO 28000', description: t('newTenant.fwIso28000Desc') },
+        { key: 'ISO39001', label: 'ISO 39001', description: t('newTenant.fwIso39001Desc') },
+    ];
+}
 
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
 
@@ -102,26 +108,27 @@ async function refreshSessionClaims(): Promise<void> {
     }
 }
 
-function validate({ name, slug }: { name: string; slug: string }): FieldErrors {
+function validate({ name, slug }: { name: string; slug: string }, t: OrgTranslate): FieldErrors {
     const errors: FieldErrors = {};
     const trimmedName = name.trim();
     if (!trimmedName) {
-        errors.name = 'Name is required.';
+        errors.name = t('newTenant.nameRequired');
     } else if (trimmedName.length > 120) {
-        errors.name = 'Name must be 120 characters or fewer.';
+        errors.name = t('newTenant.nameTooLong');
     }
     const trimmedSlug = slug.trim();
     if (!trimmedSlug) {
-        errors.slug = 'Slug is required.';
+        errors.slug = t('newTenant.slugRequired');
     } else if (!SLUG_RE.test(trimmedSlug)) {
-        errors.slug =
-            'Slug must be lowercase letters, numbers, and dashes (no leading or trailing dashes).';
+        errors.slug = t('newTenant.slugInvalid');
     }
     return errors;
 }
 
 export function NewTenantForm({ orgSlug }: Props) {
     const router = useRouter();
+    const t = useTranslations('org');
+    const FRAMEWORK_OPTIONS = useMemo(() => buildFrameworkOptions(t), [t]);
 
     const [name, setName] = useState('');
     const [slug, setSlug] = useState('');
@@ -134,7 +141,7 @@ export function NewTenantForm({ orgSlug }: Props) {
         slug: false,
     });
 
-    const errors = useMemo(() => validate({ name, slug }), [name, slug]);
+    const errors = useMemo(() => validate({ name, slug }, t), [name, slug, t]);
     const hasErrors = Boolean(errors.name || errors.slug);
 
     const onNameChange = useCallback(
@@ -169,7 +176,7 @@ export function NewTenantForm({ orgSlug }: Props) {
                     body: JSON.stringify({ name: name.trim(), slug: slug.trim() }),
                 });
                 if (!res.ok) {
-                    let message = `Tenant creation failed (${res.status}).`;
+                    let message = t('newTenant.tenantCreationFailed', { status: res.status });
                     try {
                         const body = (await res.json()) as { error?: { message?: string } };
                         if (body?.error?.message) message = body.error.message;
@@ -196,12 +203,12 @@ export function NewTenantForm({ orgSlug }: Props) {
                 setSubmitError(
                     err instanceof Error
                         ? err.message
-                        : 'Unexpected error while creating tenant.',
+                        : t('newTenant.unexpectedCreate'),
                 );
                 setSubmitting(false);
             }
         },
-        [orgSlug, name, slug, framework, hasErrors, router],
+        [orgSlug, name, slug, framework, hasErrors, router, t],
     );
 
     return (
@@ -213,14 +220,13 @@ export function NewTenantForm({ orgSlug }: Props) {
                     data-testid="org-new-tenant-back"
                 >
                     <ArrowLeft className="size-4" aria-hidden="true" />
-                    Back to tenants
+                    {t('newTenant.backToTenants')}
                 </Link>
                 <Heading level={1} className="mt-3">
-                    Create a new tenant
+                    {t('newTenant.title')}
                 </Heading>
                 <p className="text-sm text-content-muted mt-1">
-                    Tenants are isolated workspaces under this organization. Other
-                    org admins are auto-provisioned with AUDITOR access on creation.
+                    {t('newTenant.subtitle')}
                 </p>
             </div>
 
@@ -231,8 +237,8 @@ export function NewTenantForm({ orgSlug }: Props) {
                 className={cn(cardVariants(), 'space-y-default')}
             >
                 <FormField
-                    label="Name"
-                    description="Display name shown across the tenant workspace and audit reports."
+                    label={t('newTenant.nameLabel')}
+                    description={t('newTenant.nameDesc')}
                     error={touched.name ? errors.name : undefined}
                     required
                 >
@@ -250,8 +256,8 @@ export function NewTenantForm({ orgSlug }: Props) {
                 </FormField>
 
                 <FormField
-                    label="Slug"
-                    description="Lowercase URL identifier. Auto-derived from the name; edit if you need something different."
+                    label={t('newTenant.slugLabel')}
+                    description={t('newTenant.slugDesc')}
                     error={touched.slug ? errors.slug : undefined}
                     required
                 >
@@ -274,16 +280,15 @@ export function NewTenantForm({ orgSlug }: Props) {
                     naming preserved verbatim — no spec changes. */}
                 <div className="space-y-tight" data-testid="org-new-tenant-framework-group">
                     <p className="text-sm font-medium text-content-emphasis">
-                        Starting framework
+                        {t('newTenant.startingFramework')}
                     </p>
                     <p className="text-xs text-content-muted">
-                        Pick the compliance framework you want to install first. You can
-                        add more (or change this choice) from the new tenant dashboard.
+                        {t('newTenant.frameworkHint')}
                     </p>
                     <RadioGroup
                         value={framework}
                         onValueChange={(v) => setFramework(v as typeof framework)}
-                        aria-label="Starting framework"
+                        aria-label={t('newTenant.frameworkAria')}
                         className="space-y-1.5 pt-1"
                     >
                         {FRAMEWORK_OPTIONS.map((opt) => {
@@ -336,7 +341,7 @@ export function NewTenantForm({ orgSlug }: Props) {
                         className={buttonVariants({ variant: 'ghost', size: 'sm' })}
                         data-testid="org-new-tenant-cancel"
                     >
-                        Cancel
+                        {t('common.cancel')}
                     </Link>
                     <Button
                         type="submit"
@@ -344,7 +349,7 @@ export function NewTenantForm({ orgSlug }: Props) {
                         loading={submitting}
                         disabled={submitting || hasErrors}
                         data-testid="org-new-tenant-submit"
-                        text={submitting ? 'Creating…' : 'Create tenant'}
+                        text={submitting ? t('newTenant.creating') : t('newTenant.createTenant')}
                     />
                 </div>
             </form>

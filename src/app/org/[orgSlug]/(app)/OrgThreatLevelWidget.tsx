@@ -13,6 +13,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { ShieldAlert, History } from 'lucide-react';
 
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -33,12 +34,12 @@ const TIER_VARIANT: Record<Tier, 'neutral' | 'info' | 'warning' | 'error'> = {
     HIGH: 'error',
     SEVERE: 'error',
 };
-const TIER_LABEL: Record<Tier, string> = {
-    GUARDED: 'Guarded',
-    LOW: 'Low',
-    ELEVATED: 'Elevated',
-    HIGH: 'High',
-    SEVERE: 'Severe',
+const TIER_LABEL_KEY: Record<Tier, string> = {
+    GUARDED: 'widgets.tierGuarded',
+    LOW: 'widgets.tierLow',
+    ELEVATED: 'widgets.tierElevated',
+    HIGH: 'widgets.tierHigh',
+    SEVERE: 'widgets.tierSevere',
 };
 // HIGH/SEVERE get a tinted banner surface for extra weight.
 const BANNER_SURFACE: Record<Tier, string> = {
@@ -69,6 +70,7 @@ export function OrgThreatLevelWidget({
     orgSlug: string;
 }) {
     const router = useRouter();
+    const t = useTranslations('org');
     const level = (TIERS as readonly string[]).includes(data.level) ? (data.level as Tier) : 'GUARDED';
     const age = daysSince(data.setAt);
     const isStale = age !== null && age > STALE_DAYS;
@@ -82,21 +84,21 @@ export function OrgThreatLevelWidget({
                 <div className="flex items-center gap-compact">
                     <ShieldAlert className="w-5 h-5 text-content-muted" aria-hidden="true" />
                     <div>
-                        <p className="text-[11px] uppercase tracking-wide text-content-muted">Threat level</p>
+                        <p className="text-[11px] uppercase tracking-wide text-content-muted">{t('widgets.threatLevel')}</p>
                         <StatusBadge variant={TIER_VARIANT[level]} size="md" tone="solid">
-                            {TIER_LABEL[level]}
+                            {t(TIER_LABEL_KEY[level])}
                         </StatusBadge>
                     </div>
                 </div>
                 <div className="flex items-center gap-tight">
                     {showHistory && !data.isDefault && (
                         <Button variant="ghost" size="sm" onClick={() => setHistOpen(true)}>
-                            <History className="w-3.5 h-3.5" /> History
+                            <History className="w-3.5 h-3.5" /> {t('widgets.history')}
                         </Button>
                     )}
                     {canSet && (
                         <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
-                            Update
+                            {t('widgets.update')}
                         </Button>
                     )}
                 </div>
@@ -108,26 +110,29 @@ export function OrgThreatLevelWidget({
             {/* Provenance */}
             <p className="text-xs text-content-muted">
                 {data.isDefault
-                    ? 'No posture set yet.'
-                    : `Set ${age === 0 ? 'today' : `${age} day${age === 1 ? '' : 's'} ago`}${data.setByName ? ` by ${data.setByName}` : ''}.`}
+                    ? t('widgets.postureEmpty')
+                    : t('widgets.setProvenance', {
+                          when: age === 0 ? t('widgets.today') : t('widgets.daysAgo', { count: age ?? 0 }),
+                          by: data.setByName ? t('widgets.setBy', { name: data.setByName }) : '',
+                      })}
             </p>
 
             {/* Staleness — curated signals go stale; make it visible. */}
             {isStale && (
                 <p className="text-xs text-content-warning" data-testid="org-threat-level-stale">
-                    Last updated {age} days ago — may be stale.
+                    {t('widgets.threatStale', { count: age ?? 0 })}
                 </p>
             )}
 
             {/* Mini 5-level legend */}
             <div className="mt-auto flex flex-wrap gap-tight pt-2">
-                {TIERS.map((t) => (
+                {TIERS.map((tier) => (
                     <span
-                        key={t}
-                        className={`text-[10px] px-1.5 py-0.5 rounded ${t === level ? 'ring-1 ring-border-emphasis' : 'opacity-60'}`}
+                        key={tier}
+                        className={`text-[10px] px-1.5 py-0.5 rounded ${tier === level ? 'ring-1 ring-border-emphasis' : 'opacity-60'}`}
                     >
-                        <StatusBadge variant={TIER_VARIANT[t]} size="sm">
-                            {TIER_LABEL[t]}
+                        <StatusBadge variant={TIER_VARIANT[tier]} size="sm">
+                            {t(TIER_LABEL_KEY[tier])}
                         </StatusBadge>
                     </span>
                 ))}
@@ -162,6 +167,7 @@ function UpdateThreatModal({
     onClose: () => void;
     onSaved: () => void;
 }) {
+    const t = useTranslations('org');
     const [level, setLevel] = useState<Tier>(current);
     const [summary, setSummary] = useState('');
     const [detail, setDetail] = useState('');
@@ -170,7 +176,7 @@ function UpdateThreatModal({
 
     const save = useCallback(async () => {
         if (!summary.trim()) {
-            setError('A summary is required.');
+            setError(t('widgets.summaryRequired'));
             return;
         }
         setSaving(true);
@@ -180,33 +186,33 @@ function UpdateThreatModal({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ level, summary, detail: detail || null }),
             });
-            if (!res.ok) throw new Error('Failed to set the threat level.');
+            if (!res.ok) throw new Error(t('widgets.setThreatFailed'));
             onSaved();
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to set the threat level.');
+            setError(e instanceof Error ? e.message : t('widgets.setThreatFailed'));
         } finally {
             setSaving(false);
         }
-    }, [orgSlug, level, summary, detail, onSaved]);
+    }, [orgSlug, level, summary, detail, onSaved, t]);
 
     return (
         <Modal showModal setShowModal={(o) => (o ? null : onClose())}>
-            <Modal.Header title="Update threat level" />
+            <Modal.Header title={t('widgets.updateThreatTitle')} />
             <Modal.Body>
                 <div className="space-y-default">
                     <RadioGroup value={level} onValueChange={(v) => setLevel(v as Tier)} className="space-y-tight">
-                        {TIERS.map((t) => (
-                            <label key={t} className="flex items-center gap-tight text-sm cursor-pointer">
-                                <RadioGroupItem value={t} />
-                                <StatusBadge variant={TIER_VARIANT[t]} size="sm">
-                                    {TIER_LABEL[t]}
+                        {TIERS.map((tier) => (
+                            <label key={tier} className="flex items-center gap-tight text-sm cursor-pointer">
+                                <RadioGroupItem value={tier} />
+                                <StatusBadge variant={TIER_VARIANT[tier]} size="sm">
+                                    {t(TIER_LABEL_KEY[tier])}
                                 </StatusBadge>
                             </label>
                         ))}
                     </RadioGroup>
                     <input
                         className="w-full rounded-md border border-border-subtle bg-bg-default p-2 text-sm"
-                        placeholder="Headline (e.g. Active phishing campaign targeting finance)"
+                        placeholder={t('widgets.headlinePlaceholder')}
                         maxLength={280}
                         value={summary}
                         onChange={(e) => setSummary(e.target.value)}
@@ -214,7 +220,7 @@ function UpdateThreatModal({
                     <textarea
                         className="w-full rounded-md border border-border-subtle bg-bg-default p-2 text-sm"
                         rows={3}
-                        placeholder="Optional context for the estate…"
+                        placeholder={t('widgets.contextPlaceholder')}
                         maxLength={4000}
                         value={detail}
                         onChange={(e) => setDetail(e.target.value)}
@@ -225,10 +231,10 @@ function UpdateThreatModal({
             <Modal.Footer>
                 <Modal.Actions>
                     <Button variant="ghost" onClick={onClose} disabled={saving}>
-                        Cancel
+                        {t('common.cancel')}
                     </Button>
                     <Button variant="primary" onClick={save} disabled={saving}>
-                        Set threat level
+                        {t('widgets.setThreatLevel')}
                     </Button>
                 </Modal.Actions>
             </Modal.Footer>
@@ -245,6 +251,7 @@ function ThreatHistorySheet({
     open: boolean;
     onClose: () => void;
 }) {
+    const t = useTranslations('org');
     const [rows, setRows] = useState<OrgThreatLevelDto[] | null>(null);
     const load = useCallback(async () => {
         try {
@@ -269,7 +276,7 @@ function ThreatHistorySheet({
                 if (!o) onClose();
             }}
         >
-            <Sheet.Header title="Threat level history" />
+            <Sheet.Header title={t('widgets.threatHistoryTitle')} />
             <Sheet.Body>
                 <div className="space-y-default">
                     {(rows ?? []).map((r, i) => {
@@ -277,7 +284,7 @@ function ThreatHistorySheet({
                         return (
                             <div key={i} className="border-b border-border-subtle pb-2">
                                 <StatusBadge variant={TIER_VARIANT[tier]} size="sm">
-                                    {TIER_LABEL[tier]}
+                                    {t(TIER_LABEL_KEY[tier])}
                                 </StatusBadge>
                                 <p className="text-sm text-content-default mt-1">{r.summary}</p>
                                 <p className="text-xs text-content-muted">
@@ -288,7 +295,7 @@ function ThreatHistorySheet({
                         );
                     })}
                     {rows !== null && rows.length === 0 && (
-                        <p className="text-sm text-content-muted">No history yet.</p>
+                        <p className="text-sm text-content-muted">{t('widgets.historyEmpty')}</p>
                     )}
                 </div>
             </Sheet.Body>

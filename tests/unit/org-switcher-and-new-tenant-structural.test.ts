@@ -20,6 +20,14 @@ const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 const exists = (rel: string) => fs.existsSync(path.join(ROOT, rel));
 
+// i18n-aware: the trigger aria-label now routes through next-intl.
+const EN = JSON.parse(read('messages/en.json'));
+const enOrg = (key: string): unknown =>
+    key.split('.').reduce<unknown>(
+        (o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined),
+        EN.org,
+    );
+
 const SWITCHER = 'src/components/org-switcher.tsx';
 const ORG_NAV = 'src/components/layout/OrgSidebarNav.tsx';
 const NEW_TENANT_PAGE = 'src/app/org/[orgSlug]/(app)/tenants/new/page.tsx';
@@ -71,7 +79,9 @@ describe('Epic O-4 — OrgSwitcher structural contract', () => {
 
     it('renders an aria-label on the trigger and role="status" on the loading region', () => {
         const src = read(SWITCHER);
-        expect(src).toMatch(/aria-label="Switch organization context"/);
+        // i18n-aware: aria-label now resolves `t('switcher.switchOrgContextAria')`.
+        expect(src).toMatch(/aria-label=\{t\('switcher\.switchOrgContextAria'\)\}/);
+        expect(enOrg('switcher.switchOrgContextAria')).toBe('Switch organization context');
         expect(src).toMatch(/role="status"/);
     });
 

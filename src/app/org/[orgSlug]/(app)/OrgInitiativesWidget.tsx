@@ -10,6 +10,7 @@
  * tone; stale rows (IN_PROGRESS, no update in 30 days) get a muted flag.
  */
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Rocket, AlertTriangle } from 'lucide-react';
 
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -24,38 +25,39 @@ const STATUS_VARIANT: Record<string, 'neutral' | 'info' | 'warning' | 'error' | 
     COMPLETED: 'success',
     CANCELLED: 'neutral',
 };
-const STATUS_LABEL: Record<string, string> = {
-    PLANNED: 'Planned',
-    IN_PROGRESS: 'In progress',
-    BLOCKED: 'Blocked',
-    COMPLETED: 'Completed',
-    CANCELLED: 'Cancelled',
+const STATUS_LABEL_KEY: Record<string, string> = {
+    PLANNED: 'widgets.statusPlanned',
+    IN_PROGRESS: 'widgets.statusInProgress',
+    BLOCKED: 'widgets.statusBlocked',
+    COMPLETED: 'widgets.statusCompleted',
+    CANCELLED: 'widgets.statusCancelled',
 };
 
 export function OrgInitiativesWidget({ data, orgSlug }: { data: InitiativeWidgetData; orgSlug: string }) {
+    const t = useTranslations('org');
     return (
         <div className="flex h-full flex-col gap-tight rounded-lg bg-bg-subtle p-4" data-testid="org-initiatives-widget">
             <div className="flex items-center justify-between gap-compact flex-wrap">
                 <div className="flex items-center gap-compact">
                     <Rocket className="w-5 h-5 text-content-muted" aria-hidden="true" />
                     <div>
-                        <p className="text-[11px] uppercase tracking-wide text-content-muted">Security initiatives</p>
+                        <p className="text-[11px] uppercase tracking-wide text-content-muted">{t('widgets.securityInitiatives')}</p>
                         <p className="text-sm font-medium">
-                            {data.inFlight} in flight
+                            {t('widgets.inFlight', { count: data.inFlight })}
                             {data.atRisk > 0 && (
-                                <span className="text-content-warning"> · {data.atRisk} at risk</span>
+                                <span className="text-content-warning"> · {t('widgets.atRiskCount', { count: data.atRisk })}</span>
                             )}
                         </p>
                     </div>
                 </div>
                 <Link href={`/org/${orgSlug}/initiatives`} className="text-xs text-content-info underline hover:text-content-default">
-                    View all
+                    {t('widgets.viewAll')}
                 </Link>
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto space-y-tight">
                 {data.rows.length === 0 && (
-                    <p className="text-sm text-content-muted">No initiatives in flight.</p>
+                    <p className="text-sm text-content-muted">{t('widgets.initiativesEmpty')}</p>
                 )}
                 {data.rows.map((r) => (
                     <Link
@@ -73,20 +75,20 @@ export function OrgInitiativesWidget({ data, orgSlug }: { data: InitiativeWidget
                                 {r.title}
                             </span>
                             <StatusBadge variant={STATUS_VARIANT[r.status] ?? 'neutral'} size="sm">
-                                {STATUS_LABEL[r.status] ?? r.status}
+                                {STATUS_LABEL_KEY[r.status] ? t(STATUS_LABEL_KEY[r.status]) : r.status}
                             </StatusBadge>
                         </div>
                         <ProgressBar
                             value={r.progress.percent}
-                            aria-label={`${r.title} progress`}
+                            aria-label={t('widgets.progressAria', { title: r.title })}
                             variant={r.atRisk ? 'warning' : undefined}
                         />
                         <div className="flex items-center gap-tight flex-wrap text-xs text-content-muted">
-                            <span>{r.progress.percent}%{r.progress.manual ? ' (manual)' : ''}</span>
-                            <span>· {r.linkCount} linked{r.tenantSpan > 0 ? ` across ${r.tenantSpan} tenant${r.tenantSpan === 1 ? '' : 's'}` : ''}</span>
-                            {r.targetDate && <span>· due {formatDate(new Date(r.targetDate))}</span>}
+                            <span>{r.progress.percent}%{r.progress.manual ? ' ' + t('widgets.manual') : ''}</span>
+                            <span>· {t('widgets.linkedCount', { count: r.linkCount })}{r.tenantSpan > 0 ? ' ' + t('widgets.acrossTenants', { count: r.tenantSpan }) : ''}</span>
+                            {r.targetDate && <span>· {t('widgets.due', { date: formatDate(new Date(r.targetDate)) })}</span>}
                             {r.stale && (
-                                <span className="italic" data-testid="org-initiative-stale">· no recent activity</span>
+                                <span className="italic" data-testid="org-initiative-stale">· {t('widgets.recentActivityEmpty')}</span>
                             )}
                         </div>
                     </Link>

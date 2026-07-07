@@ -29,6 +29,16 @@ const SIDEBAR_PATH = 'src/components/layout/OrgSidebarNav.tsx';
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 const exists = (rel: string) => fs.existsSync(path.join(ROOT, rel));
 
+// i18n-aware: nav labels + callout copy now route through next-intl.
+// Resolve keys against the real English catalog so the original
+// visible-text intent still holds.
+const EN = JSON.parse(read('messages/en.json'));
+const enOrg = (key: string): unknown =>
+    key.split('.').reduce<unknown>(
+        (o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined),
+        EN.org,
+    );
+
 describe('GAP O4-2 — org members page structural contract', () => {
     it('server page exists at the canonical path the sidebar nav links to', () => {
         // The sidebar nav (`OrgSidebarNav.tsx`) emits an `orgHref('/members')`
@@ -41,7 +51,9 @@ describe('GAP O4-2 — org members page structural contract', () => {
     it('sidebar nav still routes Members to /members (no drift)', () => {
         const src = read(SIDEBAR_PATH);
         expect(src).toMatch(/orgHref\(['"]\/members['"]\)/);
-        expect(src).toContain("label: 'Members'");
+        // i18n-aware: label now resolves `t('nav.members')`.
+        expect(src).toMatch(/label:\s*t\('nav\.members'\)/);
+        expect(enOrg('nav.members')).toBe('Members');
     });
 
     it('server page declares dynamic = "force-dynamic"', () => {
@@ -101,8 +113,13 @@ describe('GAP O4-2 — org members page structural contract', () => {
         const src = read(CLIENT_PATH);
         expect(src).toMatch(/org-change-role-promotion-callout/);
         expect(src).toMatch(/org-change-role-demotion-callout/);
-        // Promotion callout names the AUDITOR fan-out.
-        expect(src).toMatch(/AUDITOR\s+membership[\s\S]*?every[\s\S]*?child\s+tenant/i);
+        // Promotion callout names the AUDITOR fan-out. i18n-aware: the
+        // callout copy now lives in the catalog under
+        // `members.promotionCallout` — assert the wiring + the copy.
+        expect(src).toMatch(/t\('members\.promotionCallout'\)/);
+        expect(enOrg('members.promotionCallout')).toMatch(
+            /AUDITOR\s+membership[\s\S]*?every[\s\S]*?child\s+tenant/i,
+        );
     });
 
     it('role-change submit is disabled on no-op transitions', () => {

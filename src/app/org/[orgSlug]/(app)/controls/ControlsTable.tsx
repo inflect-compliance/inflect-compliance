@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { ShieldCheck } from 'lucide-react';
 
 import { ListPageShell } from '@/components/layout/ListPageShell';
@@ -33,12 +34,22 @@ const STATUS_VARIANTS: Record<NonPerformingControlRow['status'], 'warning' | 'in
     NEEDS_REVIEW: 'warning',
 };
 
+const STATUS_LABEL_KEY: Record<NonPerformingControlRow['status'], string> = {
+    NOT_STARTED: 'controls.statusNotStarted',
+    PLANNED: 'controls.statusPlanned',
+    IN_PROGRESS: 'controls.statusInProgress',
+    IMPLEMENTING: 'controls.statusImplementing',
+    NEEDS_REVIEW: 'controls.statusNeedsReview',
+};
+
 function StatusBadgeForControl({ status }: { status: NonPerformingControlRow['status'] }) {
+    const t = useTranslations('org');
     const variant = STATUS_VARIANTS[status];
-    return <StatusBadge variant={variant}>{status.replace(/_/g, ' ')}</StatusBadge>;
+    return <StatusBadge variant={variant}>{t(STATUS_LABEL_KEY[status])}</StatusBadge>;
 }
 
 export function ControlsTable({ rows: initialRows, nextCursor: initialNextCursor, orgSlug }: Props) {
+    const t = useTranslations('org');
     const [sortBy, setSortBy] = useState<string>('tenantName');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
@@ -62,10 +73,10 @@ export function ControlsTable({ rows: initialRows, nextCursor: initialNextCursor
             tenantName: (x) => x.tenantName || '',
             name: (x) => x.name || '',
             code: (x) => x.code ?? '—',
-            status: (x) => x.status.replace(/_/g, ' '),
+            status: (x) => t(STATUS_LABEL_KEY[x.status]),
             updatedAt: (x) => x.updatedAt,
         }),
-        [],
+        [t],
     );
     const sorted = useMemo(
         () => sortRowsByDisplay(pagination.rows, sortAccessors, sortBy, sortOrder),
@@ -77,7 +88,7 @@ export function ControlsTable({ rows: initialRows, nextCursor: initialNextCursor
             createColumns<NonPerformingControlRow>([
                 {
                     id: 'tenantName',
-                    header: 'Tenant',
+                    header: t('controls.colTenant'),
                     cell: ({ row }) => (
                         <span
                             className="text-xs font-medium text-content-muted"
@@ -89,7 +100,7 @@ export function ControlsTable({ rows: initialRows, nextCursor: initialNextCursor
                 },
                 {
                     id: 'name',
-                    header: 'Control',
+                    header: t('controls.colControl'),
                     cell: ({ row }) => (
                         <Link
                             href={row.original.drillDownUrl}
@@ -102,7 +113,7 @@ export function ControlsTable({ rows: initialRows, nextCursor: initialNextCursor
                 },
                 {
                     id: 'code',
-                    header: 'Code',
+                    header: t('controls.colCode'),
                     cell: ({ row }) => (
                         <span className="font-mono text-xs text-content-muted">
                             {row.original.code ?? '—'}
@@ -111,12 +122,12 @@ export function ControlsTable({ rows: initialRows, nextCursor: initialNextCursor
                 },
                 {
                     id: 'status',
-                    header: 'Status',
+                    header: t('controls.colStatus'),
                     cell: ({ row }) => <StatusBadgeForControl status={row.original.status} />,
                 },
                 {
                     id: 'updatedAt',
-                    header: 'Updated',
+                    header: t('controls.colUpdated'),
                     cell: ({ row }) => (
                         <span className="text-xs text-content-subtle tabular-nums">
                             {formatDate(row.original.updatedAt)}
@@ -124,7 +135,7 @@ export function ControlsTable({ rows: initialRows, nextCursor: initialNextCursor
                     ),
                 },
             ]),
-        [],
+        [t],
     );
 
     return (
@@ -132,11 +143,11 @@ export function ControlsTable({ rows: initialRows, nextCursor: initialNextCursor
             <ListPageShell.Header>
                 <div>
                     <Heading level={1}>
-                        Non-Performing Controls
+                        {t('controls.title')}
                     </Heading>
                     <p className="text-sm text-content-muted mt-1">
-                        {pagination.rows.length} applicable control{pagination.rows.length === 1 ? '' : 's'} not yet implemented across the portfolio
-                        {pagination.hasMore ? ' (more available)' : ''}
+                        {t('controls.subtitle', { count: pagination.rows.length })}
+                        {pagination.hasMore ? t('controls.moreAvailable') : ''}
                     </p>
                 </div>
             </ListPageShell.Header>
@@ -163,8 +174,8 @@ export function ControlsTable({ rows: initialRows, nextCursor: initialNextCursor
                     resourceName={(plural) => (plural ? 'controls' : 'control')}
                     emptyState={
                         <TableEmptyState
-                            title="All controls performing"
-                            description="No applicable controls are sitting in a non-implemented state across this organization's tenants."
+                            title={t('controls.emptyTitle')}
+                            description={t('controls.emptyDesc')}
                             icon={<ShieldCheck className="size-10" />}
                         />
                     }
@@ -182,7 +193,7 @@ export function ControlsTable({ rows: initialRows, nextCursor: initialNextCursor
                             }}
                             disabled={pagination.loading}
                         >
-                            {pagination.loading ? 'Loading…' : 'Load more controls'}
+                            {pagination.loading ? t('common.loading') : t('controls.loadMore')}
                         </Button>
                         {pagination.error && (
                             <span
@@ -190,7 +201,7 @@ export function ControlsTable({ rows: initialRows, nextCursor: initialNextCursor
                                 role="alert"
                                 data-testid="org-controls-load-error"
                             >
-                                Failed to load more — please retry.
+                                {t('controls.failedLoadMore')}
                             </span>
                         )}
                     </div>

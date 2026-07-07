@@ -13,6 +13,8 @@
  * (`space-y-section` between bands, `gap-default` within) — never an
  * ad-hoc spinner or raw numeric gap.
  */
+import { getTranslations } from 'next-intl/server';
+
 import { Skeleton, SkeletonHeading, SkeletonLine } from '@/components/ui/skeleton';
 
 function Tile({ className = '' }: { className?: string }) {
@@ -22,13 +24,14 @@ function Tile({ className = '' }: { className?: string }) {
     return <Skeleton className={`rounded-lg ${className}`} />;
 }
 
-export function DashboardSkeleton() {
+export async function DashboardSkeleton() {
+    const t = await getTranslations('org');
     return (
         <div
             className="space-y-section"
             data-testid="org-dashboard-skeleton"
             aria-busy="true"
-            aria-label="Loading portfolio overview"
+            aria-label={t('dashboard.loadingAria')}
         >
             {/* Header — title + dashboard-level refresh meta line. */}
             <div className="space-y-tight">

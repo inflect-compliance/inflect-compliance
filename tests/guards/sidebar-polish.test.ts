@@ -30,6 +30,11 @@ import * as path from 'path';
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 
+// i18n-aware: the org sidebar eyebrow title now routes through
+// next-intl (`title: t('nav.portfolio')`). Resolve against the
+// English catalog so the "capitalized eyebrow" intent still holds.
+const EN_SIDEBAR = JSON.parse(read('messages/en.json'));
+
 describe('Sidebar polish discipline (Roadmap-2 PR-3)', () => {
     it('tenant sidebar primary nav group carries an eyebrow title', () => {
         // The legacy primary group used to render without an
@@ -68,7 +73,9 @@ describe('Sidebar polish discipline (Roadmap-2 PR-3)', () => {
         expect(fnMatch).not.toBeNull();
         const sections = fnMatch![1]!;
         const head = sections.slice(0, 800);
-        expect(head).toMatch(/title:\s*['"][A-Z]/);
+        // i18n-aware: eyebrow title resolves `t('nav.portfolio')`.
+        expect(head).toMatch(/title:\s*t\('nav\.portfolio'\)/);
+        expect(EN_SIDEBAR.org.nav.portfolio).toMatch(/^[A-Z]/);
     });
 
     it('SidebarContent renders the inline command-palette opener', () => {
