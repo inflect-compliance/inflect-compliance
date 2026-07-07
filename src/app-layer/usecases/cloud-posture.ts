@@ -33,7 +33,7 @@ function makeSystemCtx(tenantId: string, cloud: string): RequestContext {
 
 export interface CloudPostureCollectResult {
     executionId: string;
-    status: 'PASSED' | 'FAILED' | 'ERROR';
+    status: 'PASSED' | 'FAILED' | 'ERROR' | 'NOT_APPLICABLE';
     counts: { ok: number; alarm: number; skip: number; error: number; total: number } | null;
     evidenceCreated: number;
     errorMessage?: string;

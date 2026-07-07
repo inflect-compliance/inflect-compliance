@@ -42,7 +42,7 @@ function makeSystemCtx(tenantId: string): RequestContext {
 
 export interface AwsPostureCollectResult {
     executionId: string;
-    status: 'PASSED' | 'FAILED' | 'ERROR';
+    status: 'PASSED' | 'FAILED' | 'ERROR' | 'NOT_APPLICABLE';
     counts: { ok: number; alarm: number; skip: number; error: number; total: number } | null;
     evidenceCreated: number;
     errorMessage?: string;
