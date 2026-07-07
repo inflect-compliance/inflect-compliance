@@ -27,7 +27,8 @@ const NOW = new Date('2026-06-01T00:00:00.000Z');
 const mPrisma = prisma as unknown as { tenantDeviceToken: { findUnique: jest.Mock; update: jest.Mock }; tenant: { findUnique: jest.Mock } };
 
 const mockDb = {
-    device: { upsert: jest.fn(), findMany: jest.fn() },
+    // H3 — reportDevice checks findUnique + count (new-device cap) before upsert.
+    device: { upsert: jest.fn(), findMany: jest.fn(), findUnique: jest.fn().mockResolvedValue({ id: 'existing' }), count: jest.fn().mockResolvedValue(0) },
     tenantDeviceToken: { create: jest.fn(), updateMany: jest.fn() },
 };
 
@@ -102,6 +103,20 @@ describe('device usecases', () => {
         expect(call.where.tenantId_serialNumber).toEqual({ tenantId: 'T1', serialNumber: 'SN1' });
         expect(call.create.source).toBe('AGENT');
         expect(call.create.diskEncrypted).toBe(true);
+    });
+
+    it('H3 — reportDevice rejects a NEW device once the per-tenant cap is reached', async () => {
+        mockDb.device.findUnique.mockResolvedValueOnce(null); // brand-new serial
+        mockDb.device.count.mockResolvedValueOnce(10000); // at cap
+        await expect(reportDevice('T1', { serialNumber: 'NEW', platform: 'MACOS' }, NOW)).rejects.toThrow(/limit reached/i);
+        expect(mockDb.device.upsert).not.toHaveBeenCalled();
+    });
+
+    it('H3 — reportDevice still accepts a report for an EXISTING device at the cap', async () => {
+        mockDb.device.findUnique.mockResolvedValueOnce({ id: 'existing' }); // known serial
+        await reportDevice('T1', { serialNumber: 'SN1', platform: 'MACOS' }, NOW);
+        expect(mockDb.device.count).not.toHaveBeenCalled(); // no cap check for updates
+        expect(mockDb.device.upsert).toHaveBeenCalled();
     });
 
     it('issueDeviceToken returns a plaintext once (manage permission)', async () => {

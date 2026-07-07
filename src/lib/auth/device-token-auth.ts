@@ -12,6 +12,8 @@ import { prisma } from '@/lib/prisma';
 const DEVICE_TOKEN_PREFIX = 'icdt_';
 const TOKEN_RANDOM_BYTES = 24; // 192 bits
 const PREFIX_DISPLAY_LENGTH = 8;
+/** H3 — throttle the per-verify lastUsedAt write to at most once per 5 min. */
+const LAST_USED_THROTTLE_MS = 5 * 60_000;
 
 /** Generate a device token. `plaintext` is shown once. */
 export function generateDeviceToken(): { plaintext: string; tokenHash: string; tokenPrefix: string } {
@@ -45,15 +47,20 @@ export async function verifyDeviceToken(bearerToken: string, clientIp?: string |
         return { valid: false, reason: 'invalid_format' };
     }
     const tokenHash = hashDeviceToken(bearerToken);
-    const token = await prisma.tenantDeviceToken.findUnique({ where: { tokenHash }, select: { id: true, tenantId: true, expiresAt: true, revokedAt: true } });
+    const token = await prisma.tenantDeviceToken.findUnique({ where: { tokenHash }, select: { id: true, tenantId: true, expiresAt: true, revokedAt: true, lastUsedAt: true } });
     if (!token) return { valid: false, reason: 'not_found' };
     if (token.revokedAt) return { valid: false, reason: 'revoked' };
     if (token.expiresAt && token.expiresAt < now) return { valid: false, reason: 'expired' };
-    // Best-effort last-used touch — never block auth on it.
-    try {
-        await prisma.tenantDeviceToken.update({ where: { id: token.id }, data: { lastUsedAt: now, lastUsedIp: clientIp ?? null } });
-    } catch {
-        /* non-fatal */
+    // Best-effort last-used touch — never block auth on it. H3 — throttle to at
+    // most once per 5 min so a high-frequency (or looping/abusive) agent doesn't
+    // drive a DB write on every single report.
+    const staleTouch = !token.lastUsedAt || token.lastUsedAt < new Date(now.getTime() - LAST_USED_THROTTLE_MS);
+    if (staleTouch) {
+        try {
+            await prisma.tenantDeviceToken.update({ where: { id: token.id }, data: { lastUsedAt: now, lastUsedIp: clientIp ?? null } });
+        } catch {
+            /* non-fatal */
+        }
     }
     return { valid: true, tenantId: token.tenantId, tokenId: token.id };
 }

@@ -20,7 +20,8 @@ const NOW = new Date('2026-06-01T00:00:00.000Z');
 const mockDb = {
     integrationConnection: { findFirst: jest.fn() },
     integrationExecution: { create: jest.fn(), update: jest.fn() },
-    employee: { upsert: jest.fn(), findMany: jest.fn(), update: jest.fn() },
+    // H3 — runHrisSync now reconciles departed employees via updateMany.
+    employee: { upsert: jest.fn(), findMany: jest.fn(), update: jest.fn(), updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
 };
 
 function emp(over: Partial<CheckEmployee>): CheckEmployee {
@@ -88,8 +89,8 @@ describe('runHrisSync', () => {
         ]);
     });
 
-    function stub(roster: NormalizedEmployee[]) {
-        return { listEmployees: jest.fn(async () => roster) };
+    function stub(roster: NormalizedEmployee[], complete = true) {
+        return { listEmployees: jest.fn(async () => ({ employees: roster, complete })) };
     }
     function nEmp(over: Partial<NormalizedEmployee>): NormalizedEmployee {
         return { externalId: over.externalId ?? '1', fullName: over.fullName ?? 'X', workEmail: over.workEmail ?? 'x@x.com', status: over.status ?? 'ACTIVE', managerEmail: over.managerEmail ?? null, startDate: null, endDate: null };
@@ -114,6 +115,25 @@ describe('runHrisSync', () => {
         const r = await runHrisSync({ tenantId: 't1', connectionId: 'conn-1', now: NOW, provider: stub([]) });
         expect(r.status).toBe('ERROR');
         expect(mockDb.employee.upsert).not.toHaveBeenCalled();
+    });
+
+    it('H3 — reconciles departed (deleted-from-BambooHR) employees to TERMINATED on a complete roster', async () => {
+        const provider = stub([nEmp({ workEmail: 'alice@x.com' })], true);
+        await runHrisSync({ tenantId: 't1', connectionId: 'conn-1', now: NOW, provider });
+        // Departure reconcile ran: HRIS employees not in the roster → TERMINATED.
+        expect(mockDb.employee.updateMany).toHaveBeenCalled();
+        const call = mockDb.employee.updateMany.mock.calls[0][0];
+        expect(call.where).toMatchObject({ source: 'HRIS', status: { not: 'TERMINATED' } });
+        expect(call.where.workEmail.notIn).toContain('alice@x.com');
+        expect(call.data.status).toBe('TERMINATED');
+    });
+
+    it('H3 — a TRUNCATED roster fails ERROR and does NOT run the departure reconcile', async () => {
+        const provider = stub([nEmp({ workEmail: 'alice@x.com' })], false); // complete=false
+        const r = await runHrisSync({ tenantId: 't1', connectionId: 'conn-1', now: NOW, provider });
+        expect(r.status).toBe('ERROR');
+        expect(mockDb.employee.updateMany).not.toHaveBeenCalled(); // no mass-terminate on partial roster
+        expect(mockDb.employee.upsert).toHaveBeenCalled(); // but seen rows still upserted
     });
 
     it('records ERROR (not a throw) when the roster fetch fails', async () => {
