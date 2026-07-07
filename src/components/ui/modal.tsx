@@ -37,6 +37,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { cva, type VariantProps } from "class-variance-authority";
 import { AlertTriangle, Info, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import {
     ComponentProps,
@@ -155,6 +156,7 @@ function ModalRoot({
     description,
     showCloseButton = true,
 }: ModalProps) {
+    const t = useTranslations("common");
     const router = useRouter();
     const { isMobile } = useMediaQuery();
 
@@ -169,13 +171,13 @@ function ModalRoot({
 
     const fallbackDialogTitle = (
         <VisuallyHidden.Root>
-            <Dialog.Title>{title ?? "Dialog"}</Dialog.Title>
+            <Dialog.Title>{title ?? t("ui.dialog")}</Dialog.Title>
             <Dialog.Description>{description ?? ""}</Dialog.Description>
         </VisuallyHidden.Root>
     );
     const fallbackDrawerTitle = (
         <VisuallyHidden.Root>
-            <Drawer.Title>{title ?? "Dialog"}</Drawer.Title>
+            <Drawer.Title>{title ?? t("ui.dialog")}</Drawer.Title>
             <Drawer.Description>{description ?? ""}</Drawer.Description>
         </VisuallyHidden.Root>
     );
@@ -256,11 +258,11 @@ function ModalRoot({
                     {fallbackDialogTitle}
                     {children}
                     {showCloseButton && !preventDefaultClose ? (
-                        <Tooltip content="Close" shortcut="Esc">
+                        <Tooltip content={t("close")} shortcut="Esc">
                             <Dialog.Close asChild>
                                 <button
                                     type="button"
-                                    aria-label="Close"
+                                    aria-label={t("close")}
                                     className="absolute right-3 top-3 rounded-md p-1.5 text-content-muted transition-colors hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                     data-modal-close
                                 >
@@ -498,11 +500,14 @@ function Confirm({
     title,
     description,
     tone = "warning",
-    confirmLabel = "Confirm",
-    cancelLabel = "Cancel",
+    confirmLabel,
+    cancelLabel,
     onConfirm,
     onCancel,
 }: ConfirmModalProps) {
+    const t = useTranslations("common");
+    const resolvedConfirmLabel = confirmLabel ?? t("ui.confirm");
+    const resolvedCancelLabel = cancelLabel ?? t("cancel");
     const handleConfirm = async () => {
         const result = onConfirm();
         if (result instanceof Promise) {
@@ -557,7 +562,7 @@ function Confirm({
                     data-modal-cancel
                     onClick={handleCancel}
                 >
-                    {cancelLabel}
+                    {resolvedCancelLabel}
                 </Button>
                 <Button
                     type="button"
@@ -566,7 +571,7 @@ function Confirm({
                     data-modal-confirm
                     onClick={handleConfirm}
                 >
-                    {confirmLabel}
+                    {resolvedConfirmLabel}
                 </Button>
             </Actions>
         </ModalRoot>

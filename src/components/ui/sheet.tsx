@@ -24,6 +24,7 @@
 import { cn } from "@/lib/cn";
 import { cva, type VariantProps } from "class-variance-authority";
 import { X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { ComponentProps, type HTMLAttributes, type ReactNode } from "react";
 import { ContentProps, type DialogProps, Drawer } from "vaul";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
@@ -88,6 +89,7 @@ function SheetRoot({
     overlayClassName,
     ...rest
 }: SheetRootProps) {
+    const t = useTranslations("common");
     const { isMobile } = useMediaQuery();
     const RootComponent = nested ? Drawer.NestedRoot : Drawer.Root;
 
@@ -102,7 +104,7 @@ function SheetRoot({
 
     const fallbackTitle = (
         <VisuallyHidden.Root>
-            <Drawer.Title>{title ?? "Sheet"}</Drawer.Title>
+            <Drawer.Title>{title ?? t("ui.sheet")}</Drawer.Title>
             <Drawer.Description>{description ?? ""}</Drawer.Description>
         </VisuallyHidden.Root>
     );
@@ -225,6 +227,7 @@ function Header({
     /** Toggle the built-in close button. Default: true. */
     showCloseButton?: boolean;
 }) {
+    const t = useTranslations("common");
     return (
         <div
             data-sheet-header
@@ -240,11 +243,11 @@ function Header({
                 {children}
             </div>
             {showCloseButton ? (
-                <Tooltip content="Close" shortcut="Esc">
+                <Tooltip content={t("close")} shortcut="Esc">
                     <Drawer.Close asChild>
                         <button
                             type="button"
-                            aria-label="Close"
+                            aria-label={t("close")}
                             data-sheet-close
                             className="shrink-0 rounded-md p-1.5 text-content-muted transition-colors hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >

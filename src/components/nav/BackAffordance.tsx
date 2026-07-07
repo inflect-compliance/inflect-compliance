@@ -20,6 +20,7 @@
  * keeping the existing static `{ href, label }` form working unchanged.
  */
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { usePathname } from 'next/navigation';
 import { ArrowLeft } from '@/components/ui/icons/nucleo';
 import {
@@ -31,39 +32,51 @@ import {
     type CanonicalParent,
 } from '@/lib/nav/canonical-parents';
 
+type CommonTranslate = ReturnType<typeof useTranslations<'common'>>;
+
 /**
- * Map of in-tenant section paths to their canonical display names.
- *
- * `labelFromPathname` consults this map first; an unmapped section
- * falls back to capitalising the first segment. The map lets the
- * referrer-based affordance show the right product name (e.g.
- * `/audits` → "Internal Audit", not the raw "Audits") without forcing
- * every section to be listed.
+ * Map of in-tenant section paths to their `common.sections.*` message
+ * key. `buildSectionLabels` resolves each through next-intl so the
+ * referrer-based affordance shows the localised product name (e.g.
+ * `/audits` → "Internal Audit" / "Вътрешен одит", not the raw
+ * "Audits") without forcing every section to be listed.
  */
 const SECTION_LABELS: Record<string, string> = {
-    '/access-reviews': 'Access reviews',
-    '/admin': 'Admin',
-    '/assets': 'Assets',
-    '/audits': 'Internal Audit',
-    '/calendar': 'Calendar',
-    '/clauses': 'Clauses',
-    '/controls': 'Controls',
-    '/coverage': 'Coverage',
-    '/dashboard': 'Dashboard',
-    '/evidence': 'Evidence',
-    '/findings': 'Findings',
-    '/frameworks': 'Frameworks',
-    '/issues': 'Issues',
-    '/mapping': 'Mapping',
-    '/notifications': 'Notifications',
-    '/policies': 'Policies',
-    '/processes': 'Processes',
-    '/reports': 'Reports',
-    '/risks': 'Risks',
-    '/tasks': 'Tasks',
-    '/tests': 'Tests',
-    '/vendors': 'Vendors',
+    '/access-reviews': 'accessReviews',
+    '/admin': 'admin',
+    '/assets': 'assets',
+    '/audits': 'audits',
+    '/calendar': 'calendar',
+    '/clauses': 'clauses',
+    '/controls': 'controls',
+    '/coverage': 'coverage',
+    '/dashboard': 'dashboard',
+    '/evidence': 'evidence',
+    '/findings': 'findings',
+    '/frameworks': 'frameworks',
+    '/issues': 'issues',
+    '/mapping': 'mapping',
+    '/notifications': 'notifications',
+    '/policies': 'policies',
+    '/processes': 'processes',
+    '/reports': 'reports',
+    '/risks': 'risks',
+    '/tasks': 'tasks',
+    '/tests': 'tests',
+    '/vendors': 'vendors',
 };
+
+/**
+ * Resolve the `SECTION_LABELS` path → message-key map into a path →
+ * localised-label map for the active locale.
+ */
+function buildSectionLabels(t: CommonTranslate): Record<string, string> {
+    const out: Record<string, string> = {};
+    for (const [path, key] of Object.entries(SECTION_LABELS)) {
+        out[path] = t(`sections.${key}`);
+    }
+    return out;
+}
 
 /**
  * Convert an in-tenant pathname back into a CanonicalParent shape by
@@ -71,12 +84,16 @@ const SECTION_LABELS: Record<string, string> = {
  * "label for any path" registry yet, so for now the smart label uses the
  * IA section name derived from the first segment.
  */
-function labelFromPathname(pathname: string): string {
+function labelFromPathname(
+    pathname: string,
+    sectionLabels: Record<string, string>,
+    previousPageLabel: string,
+): string {
     const stripped = pathname.replace(/^\/t\/[^/]+/, '');
     const seg = stripped.split('/').filter(Boolean)[0];
-    if (!seg) return 'previous page';
+    if (!seg) return previousPageLabel;
     const sectionKey = `/${seg}`;
-    if (SECTION_LABELS[sectionKey]) return SECTION_LABELS[sectionKey];
+    if (sectionLabels[sectionKey]) return sectionLabels[sectionKey];
     return seg.charAt(0).toUpperCase() + seg.slice(1);
 }
 
@@ -98,6 +115,8 @@ export interface BackAffordanceProps {
 }
 
 export function BackAffordance({ override, noFallback }: BackAffordanceProps) {
+    const t = useTranslations('common');
+    const sectionLabels = buildSectionLabels(t);
     const pathname = usePathname() ?? '';
     const tenantSlug = tenantSlugFromPath(pathname);
     const referrer = usePreviousPath(tenantSlug);
@@ -119,7 +138,14 @@ export function BackAffordance({ override, noFallback }: BackAffordanceProps) {
             canonical != null &&
             resolveCanonicalParent(referrer, tenantSlug)?.href === canonical.href;
         if (referrer && referrer !== pathname && !referrerIsSibling) {
-            destination = { href: referrer, label: labelFromPathname(referrer) };
+            destination = {
+                href: referrer,
+                label: labelFromPathname(
+                    referrer,
+                    sectionLabels,
+                    t('ui.previousPage'),
+                ),
+            };
         } else {
             destination = canonical;
         }
@@ -132,13 +158,13 @@ export function BackAffordance({ override, noFallback }: BackAffordanceProps) {
             href={destination.href}
             className="inline-flex items-center gap-1 text-content-muted text-xs hover:text-content-emphasis motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out print:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring-default rounded-sm"
             data-testid="page-header-back"
-            aria-label={`Back to ${destination.label}`}
+            aria-label={t('ui.backTo', { label: destination.label })}
         >
             <ArrowLeft
                 aria-hidden="true"
                 className="h-3.5 w-3.5"
             />
-            <span>Back to {destination.label}</span>
+            <span>{t('ui.backTo', { label: destination.label })}</span>
         </Link>
     );
 }

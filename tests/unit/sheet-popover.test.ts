@@ -23,6 +23,7 @@ function read(rel: string): string {
 
 const SHEET_SRC = read('src/components/ui/sheet.tsx');
 const POPOVER_SRC = read('src/components/ui/popover.tsx');
+const EN = JSON.parse(read('messages/en.json'));
 
 // ─── Sheet — size variants ───────────────────────────────────────
 
@@ -86,7 +87,10 @@ describe('Sheet — accessibility', () => {
     it('always renders a Drawer.Title (visually-hidden fallback keeps SR anchored)', () => {
         expect(SHEET_SRC).toMatch(/from ["']@radix-ui\/react-visually-hidden["']/);
         expect(SHEET_SRC).toMatch(/<Drawer\.Title\b/);
-        expect(SHEET_SRC).toMatch(/\?\?\s*["']Sheet["']/);
+        // Post-i18n: the fallback title resolves through next-intl
+        // (`common.ui.sheet`); the English catalog keeps the "Sheet" text.
+        expect(SHEET_SRC).toMatch(/\?\?\s*t\(["']ui\.sheet["']\)/);
+        expect(EN.common.ui.sheet).toBe('Sheet');
     });
 
     it('wires the optional description through Drawer.Description', () => {
@@ -95,7 +99,10 @@ describe('Sheet — accessibility', () => {
     });
 
     it('Header renders a dedicated close button with aria-label="Close" + focus ring', () => {
-        expect(SHEET_SRC).toMatch(/aria-label="Close"/);
+        // Post-i18n: aria-label resolves through next-intl (`common.close`);
+        // the English catalog keeps the "Close" text.
+        expect(SHEET_SRC).toMatch(/aria-label=\{t\(["']close["']\)\}/);
+        expect(EN.common.close).toBe('Close');
         expect(SHEET_SRC).toMatch(/focus-visible:ring-ring/);
     });
 

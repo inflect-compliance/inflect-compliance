@@ -41,6 +41,7 @@ import {
     ChevronsLeft,
     ChevronsRight,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import {
     forwardRef,
     useState,
@@ -111,6 +112,7 @@ export function Calendar({
     endMonth,
     ...props
 }: CalendarProps) {
+    const t = useTranslations('common.calendar');
     const [month, setMonth] = useState<Date>(
         (props as { defaultMonth?: Date }).defaultMonth ?? new Date(),
     );
@@ -222,7 +224,7 @@ export function Calendar({
                                                 addYears(month, -1).getTime() <
                                                     startMonth.getTime())
                                         }
-                                        aria-label="Go to previous year"
+                                        aria-label={t('prevYear')}
                                         data-testid="calendar-prev-year"
                                         onClick={goToPreviousYear}
                                         icon={ChevronsLeft}
@@ -231,7 +233,7 @@ export function Calendar({
                                 {!hidePreviousButton && (
                                     <NavigationButton
                                         disabled={!canGoBack}
-                                        aria-label="Go to previous month"
+                                        aria-label={t('prevMonth')}
                                         data-testid="calendar-prev-month"
                                         onClick={() =>
                                             canGoBack &&
@@ -257,7 +259,7 @@ export function Calendar({
                                 {!hideNextButton && (
                                     <NavigationButton
                                         disabled={!canGoForward}
-                                        aria-label="Go to next month"
+                                        aria-label={t('nextMonth')}
                                         data-testid="calendar-next-month"
                                         onClick={() =>
                                             canGoForward &&
@@ -274,7 +276,7 @@ export function Calendar({
                                                 addYears(month, 1).getTime() >
                                                     endMonth.getTime())
                                         }
-                                        aria-label="Go to next year"
+                                        aria-label={t('nextYear')}
                                         data-testid="calendar-next-year"
                                         onClick={goToNextYear}
                                         icon={ChevronsRight}

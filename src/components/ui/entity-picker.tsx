@@ -37,6 +37,7 @@
  * to fall back to a paste workflow (most don't), but the picker
  * itself never blocks the rest of the form.
  */
+import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState, type ComponentProps } from 'react';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 
@@ -72,12 +73,13 @@ interface FetchedCandidate {
 function rowsFromResponse(
     kind: EntityPickerKind,
     rows: ReadonlyArray<FetchedCandidate>,
+    untitled: string,
 ): CandidateRow[] {
     switch (kind) {
         case 'CONTROL':
             return rows.map((r) => {
                 const prefix = (r.code as string) || (r.annexId as string) || '';
-                const name = (r.name as string) || '(untitled)';
+                const name = (r.name as string) || untitled;
                 return {
                     id: r.id,
                     label: prefix ? `${prefix}: ${name}` : name,
@@ -86,7 +88,7 @@ function rowsFromResponse(
         case 'RISK':
             return rows.map((r) => {
                 const key = (r.key as string) || '';
-                const title = (r.title as string) || '(untitled)';
+                const title = (r.title as string) || untitled;
                 return {
                     id: r.id,
                     label: key ? `${key}: ${title}` : title,
@@ -95,22 +97,22 @@ function rowsFromResponse(
         case 'ASSET':
             return rows.map((r) => ({
                 id: r.id,
-                label: (r.name as string) || '(untitled)',
+                label: (r.name as string) || untitled,
             }));
         case 'EVIDENCE':
             return rows.map((r) => ({
                 id: r.id,
-                label: (r.title as string) || '(untitled)',
+                label: (r.title as string) || untitled,
             }));
         case 'VENDOR':
             return rows.map((r) => ({
                 id: r.id,
-                label: (r.name as string) || '(untitled)',
+                label: (r.name as string) || untitled,
             }));
         case 'ISSUE':
             return rows.map((r) => ({
                 id: r.id,
-                label: (r.title as string) || '(untitled)',
+                label: (r.title as string) || untitled,
             }));
         case 'FRAMEWORK_REQUIREMENT':
             // FRAMEWORK_REQUIREMENT is the only type whose canonical
@@ -121,7 +123,7 @@ function rowsFromResponse(
             // dropdown is still usable — just empty.
             return rows.map((r) => {
                 const code = (r.code as string) || '';
-                const title = (r.title as string) || '(untitled)';
+                const title = (r.title as string) || untitled;
                 return {
                     id: r.id,
                     label: code ? `${code}: ${title}` : title,
@@ -237,10 +239,13 @@ export function EntityPicker({
     onChange,
     id,
     testId = 'entity-picker',
-    placeholder = 'Select…',
+    placeholder: placeholderProp,
     className,
     extraQuery,
 }: EntityPickerProps) {
+    const t = useTranslations('common');
+    const placeholder = placeholderProp ?? t('ui.select');
+    const entityWord = entityType.toLowerCase().replace(/_/g, ' ');
     const [candidates, setCandidates] = useState<CandidateRow[]>([]);
     const [loading, setLoading] = useState(false);
     const extraKey = useMemo(
@@ -263,7 +268,7 @@ export function EntityPicker({
             .then((rows) => {
                 if (cancelled) return;
                 // eslint-disable-next-line react-hooks/set-state-in-effect
-                setCandidates(rowsFromResponse(entityType, rows));
+                setCandidates(rowsFromResponse(entityType, rows, t('ui.untitled')));
             })
             .finally(() => {
                 if (cancelled) return;
@@ -293,12 +298,12 @@ export function EntityPicker({
             setSelected={(opt) => onChange(opt?.value ?? '')}
             placeholder={
                 loading
-                    ? 'Loading…'
+                    ? t('ui.loading')
                     : options.length === 0
-                      ? `No ${entityType.toLowerCase().replace(/_/g, ' ')}s available`
+                      ? t('ui.noEntitiesAvailable', { entity: entityWord })
                       : placeholder
             }
-            emptyState={`No ${entityType.toLowerCase().replace(/_/g, ' ')}s match`}
+            emptyState={t('ui.noEntitiesMatch', { entity: entityWord })}
             matchTriggerWidth
             // Combobox doesn't accept `data-testid` directly — the
             // testid lands on the trigger button via `buttonProps`.

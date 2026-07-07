@@ -38,6 +38,7 @@
  *   3. If `width === 0` (the box is genuinely unmeasurable — detached
  *      or display:none), the frame shows its skeleton, never a blank.
  */
+import { useTranslations } from 'next-intl';
 import {
     ReactElement,
     ReactNode,
@@ -116,6 +117,7 @@ export function ChartFrame<T>({
     emptyFallback,
     errorFallback,
 }: ChartFrameProps<T>): ReactElement {
+    const t = useTranslations('common.chart');
     // Client-only gate. The auto-sizer measures the DOM, which is 0×0
     // during SSR + the first synchronous client render. Showing the
     // skeleton until mount guarantees the measure runs against a real
@@ -151,7 +153,7 @@ export function ChartFrame<T>({
             >
                 {errorFallback ?? (
                     <ErrorState
-                        title="Couldn’t load chart"
+                        title={t('couldntLoadChart')}
                         description={state.message}
                     />
                 )}
@@ -170,8 +172,8 @@ export function ChartFrame<T>({
                 {emptyFallback ?? (
                     <EmptyState
                         size="sm"
-                        title="No data yet"
-                        description="Once data flows in, this chart will populate."
+                        title={t('noDataYet')}
+                        description={t('emptyDescription')}
                     />
                 )}
             </ChartFrameOuter>

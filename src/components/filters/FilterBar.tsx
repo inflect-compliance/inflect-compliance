@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useUrlFilters } from '@/lib/hooks/useUrlFilters';
 import { Combobox } from '@/components/ui/combobox';
 import { Button } from '@/components/ui/button';
@@ -42,11 +43,13 @@ interface FilterBarProps {
  */
 export function FilterBar({
     filterKeys,
-    searchPlaceholder = 'Search…',
+    searchPlaceholder: searchPlaceholderProp,
     selects = [],
     toggles = [],
     className = '',
 }: FilterBarProps) {
+    const t = useTranslations('common');
+    const searchPlaceholder = searchPlaceholderProp ?? t('search');
     const { filters, setFilter, clearFilters, hasActiveFilters } = useUrlFilters(filterKeys);
 
     return (
@@ -105,7 +108,7 @@ export function FilterBar({
                         className="text-xs"
                         id="filter-clear"
                     >
-                        × Clear filters
+                        {`× ${t('ui.clearFilters')}`}
                     </Button>
                 )}
             </div>

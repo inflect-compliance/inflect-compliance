@@ -98,8 +98,19 @@ describe('rq4-4 back affordance', () => {
     });
 
     it('BackAffordance carries an aria-label naming the destination', () => {
+        // Post-i18n: the aria-label is resolved through next-intl via the
+        // `common.ui.backTo` message ("Back to {label}") rather than an
+        // inline template literal. Assert the component references that
+        // key AND the English catalog still starts with "Back to ".
         const source = fs.readFileSync(BACK_AFFORDANCE_PATH, 'utf-8');
-        expect(source).toMatch(/aria-label=\{?`?Back to /);
+        expect(source).toMatch(/aria-label=\{t\(['"]ui\.backTo['"]/);
+        const en = JSON.parse(
+            fs.readFileSync(
+                path.resolve(__dirname, '../../messages/en.json'),
+                'utf-8',
+            ),
+        );
+        expect(en.common.ui.backTo).toMatch(/^Back to /);
     });
 
     it('BackAffordance hides under @media print (OB-I)', () => {
