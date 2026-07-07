@@ -25,7 +25,11 @@ describe('BulkActionBar — canonical bulk action row', () => {
     it('preserves the canonical "Choose action…" picker + Apply test-ids', () => {
         expect(bar).toMatch(/id="bulk-action-select"/);
         expect(bar).toMatch(/id="bulk-apply-btn"/);
-        expect(bar).toMatch(/placeholder="Choose action\.\.\."/);
+        // i18n: placeholder flows through the catalog; assert the wiring +
+        // that the key still resolves to the canonical English label.
+        expect(bar).toMatch(/placeholder=\{t\('table\.chooseAction'\)\}/);
+        const en = JSON.parse(read('messages/en.json'));
+        expect(en.common.table.chooseAction).toBe('Choose action...');
     });
 
     it('clears its form once an apply settles', () => {

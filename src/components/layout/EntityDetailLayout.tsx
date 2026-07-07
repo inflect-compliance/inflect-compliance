@@ -35,6 +35,7 @@
  */
 
 import { type ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import { cardVariants } from '@/components/ui/card';
 
 import { cn } from '@/lib/cn';
@@ -177,6 +178,7 @@ export function EntityDetailLayout<TKey extends string = string>({
     children,
     rail,
 }: EntityDetailLayoutProps<TKey>) {
+    const t = useTranslations('common');
     // v2-fu-4 — render the breadcrumbs / back link in EVERY state
     // (loading / error / empty / main). Previously the loading
     // skeleton, error block, and empty block returned early before
@@ -256,7 +258,7 @@ export function EntityDetailLayout<TKey extends string = string>({
                 <nav
                     className="flex gap-1 border-b border-border-default overflow-x-auto"
                     role="tablist"
-                    aria-label="Detail sections"
+                    aria-label={t('table.detailSections')}
                     data-testid="entity-detail-tabs"
                 >
                     {tabs.map((t) => {
@@ -337,7 +339,7 @@ export function EntityDetailLayout<TKey extends string = string>({
                     )}
                     <aside
                         className="flex-shrink-0 space-y-default xl:sticky xl:top-20 xl:self-start"
-                        aria-label="Context"
+                        aria-label={t('table.context')}
                         data-testid="entity-detail-rail"
                     >
                         {rail}

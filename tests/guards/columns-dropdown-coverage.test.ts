@@ -197,7 +197,11 @@ describe('R-filter-gear — both gears mount the shared ChecklistGearButton', ()
         expect(src).toMatch(/ChecklistGearButton/);
         expect(src).toMatch(/\bColumns3\b/);
         expect(src).toMatch(/data-testid="toggle-columns-button"/);
-        expect(src).toMatch(/title="Toggle columns"/);
+        // i18n: title now flows through the catalog. Assert the wiring +
+        // that the key still resolves to the canonical English label.
+        expect(src).toMatch(/title=\{t\("table\.toggleColumns"\)\}/);
+        const en = JSON.parse(read('messages/en.json'));
+        expect(en.common.table.toggleColumns).toBe('Toggle columns');
     });
 
     it('filter gear delegates to ChecklistGearButton (Settings, edit-filters-button)', () => {

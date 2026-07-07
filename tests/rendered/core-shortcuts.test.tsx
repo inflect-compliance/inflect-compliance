@@ -275,15 +275,39 @@ describe('Call sites carry palette-ready descriptions', () => {
             description: 'Clear all filters',
         },
         {
+            // i18n: the description now flows through the catalog.
             file: 'src/components/ui/table/selection-toolbar.tsx',
             description: 'Clear selection',
+            i18nKey: 'common.table.clearSelection',
         },
-    ];
+    ] as Array<{ file: string; description: string; i18nKey?: string }>;
 
     for (const s of sites) {
         it(`${s.file} registers with description "${s.description}"`, () => {
             const src = fs.readFileSync(path.join(ROOT, s.file), 'utf-8');
-            expect(src).toContain(`description: "${s.description}"`);
+            if (s.i18nKey) {
+                // Assert the shortcut wires description through t(<key>) and
+                // that the key still resolves to the canonical English label.
+                const [ns, ...rest] = s.i18nKey.split('.');
+                const shortKey = rest.join('.');
+                expect(src).toContain(`description: t("${shortKey}")`);
+                const en = JSON.parse(
+                    fs.readFileSync(path.join(ROOT, 'messages/en.json'), 'utf-8'),
+                );
+                const resolved = s.i18nKey
+                    .split('.')
+                    .reduce(
+                        (o: unknown, k: string) =>
+                            o && typeof o === 'object'
+                                ? (o as Record<string, unknown>)[k]
+                                : undefined,
+                        en,
+                    );
+                expect(resolved).toBe(s.description);
+                expect(ns).toBe('common');
+            } else {
+                expect(src).toContain(`description: "${s.description}"`);
+            }
         });
     }
 });

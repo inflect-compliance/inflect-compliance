@@ -6,6 +6,8 @@
  * fields (disableTruncate / headerTooltip) are now typed via the module
  * augmentation in `./tanstack-table.d.ts` and no longer require casts.
  */
+import { useTranslations } from "next-intl";
+
 import { cn, deepEqual, isClickOnInteractiveChild } from "./table-utils";
 import {
   Column,
@@ -138,6 +140,8 @@ export function useTable<T extends any>(
     columnResizeMode = "onChange",
   } = props;
 
+  const t = useTranslations("common");
+
   // R12-PR1 — select column is default-on. Pages opt out via
   // `selectionEnabled={false}`. The previous gating (require either
   // `onRowSelectionChange` or `selectionControls`) made the select
@@ -246,10 +250,10 @@ export function useTable<T extends any>(
                     e.stopPropagation();
                     table.toggleAllRowsSelected();
                   }}
-                  title="Select all"
+                  title={t("table.selectAll")}
                 >
                   <Checkbox
-                    aria-label="Select all rows"
+                    aria-label={t("table.selectAllRows")}
                     className="border-border-emphasis pointer-events-none size-4 rounded-full data-[state=checked]:bg-[var(--brand-emphasis)] data-[state=indeterminate]:bg-[var(--brand-emphasis)]"
                     checked={
                       table.getIsAllRowsSelected()
@@ -331,10 +335,10 @@ export function useTable<T extends any>(
                     tabIndex={-1}
                     className="flex size-full cursor-pointer items-center justify-center"
                     onClick={onSelectRow}
-                    title="Select"
+                    title={t("table.select")}
                   >
                     <Checkbox
-                      aria-label="Select row"
+                      aria-label={t("table.selectRow")}
                       className="border-border-emphasis pointer-events-none size-4 rounded-full data-[state=checked]:bg-[var(--brand-emphasis)] data-[state=indeterminate]:bg-[var(--brand-emphasis)]"
                       checked={row.getIsSelected()}
                     />
@@ -661,6 +665,7 @@ export function Table<T>({
   onReachEnd,
   enableColumnResizing = false,
 }: TableProps<T>) {
+  const t = useTranslations("common");
   const selectionEnabled = selectionEnabledProp ?? true;
   const visibleColumns = table.getVisibleLeafColumns();
   const columnsAfterSelect = new Set<string>();
@@ -848,7 +853,7 @@ export function Table<T>({
             // meaningful announce-name for the table viewport.
             tabIndex={0}
             role="region"
-            aria-label="Table contents (scrollable)"
+            aria-label={t("table.tableContents")}
             className={cn(
               "relative overflow-x-auto rounded-[inherit]",
               // B6 (2026-06-07): the 400px floor is for the EMPTY state only
@@ -996,7 +1001,7 @@ export function Table<T>({
                               {...(isSortableColumn && {
                                 type: "button",
                                 disabled: !isSortableColumn,
-                                "aria-label": "Sort by column",
+                                "aria-label": t("table.sortByColumn"),
                                 onClick: () =>
                                   onSortChange?.({
                                     sortBy: header.column.id,
@@ -1226,7 +1231,7 @@ export function Table<T>({
                                   <button
                                     type="button"
                                     aria-label={
-                                      row.getIsExpanded() ? "Collapse row" : "Expand row"
+                                      row.getIsExpanded() ? t("table.collapseRow") : t("table.expandRow")
                                     }
                                     aria-expanded={row.getIsExpanded()}
                                     onClick={(e) => {
@@ -1339,14 +1344,14 @@ export function Table<T>({
               error
             )
           ) : (
-            emptyState || `No ${resourceName?.(true) || "items"} found.`
+            emptyState || t("table.emptyFallback", { items: resourceName?.(true) || t("table.items") })
           )}
         </div>
       )}
       {pagination && !error && !!data?.length && !!rowCount && (
         <div className="border-border-subtle bg-bg-default text-content-default sticky bottom-0 z-10 mx-auto -mt-px flex w-full max-w-full items-center justify-between rounded-b-[inherit] border-t px-4 py-3.5 text-sm leading-6 before:pointer-events-none before:absolute before:bottom-full before:left-0 before:right-0 before:h-6 before:bg-gradient-to-t before:from-bg-default before:to-transparent">
           <div>
-            <span className="hidden sm:inline-block">Viewing</span>{" "}
+            <span className="hidden sm:inline-block">{t("table.viewing")}</span>{" "}
             <span className="font-medium">
               {(
                 (pagination.pageIndex - 1) * pagination.pageSize +
@@ -1359,16 +1364,16 @@ export function Table<T>({
                 table.getRowCount(),
               ).toLocaleString()}
             </span>{" "}
-            of{" "}
+            {t("table.of")}{" "}
             <As href={paginationAllRowsHref ?? "#"} className="font-medium">
               {table.getRowCount().toLocaleString()}{" "}
-              {resourceName?.(table.getRowCount() !== 1) || "items"}
+              {resourceName?.(table.getRowCount() !== 1) || t("table.items")}
             </As>
           </div>
           <div className="flex items-center gap-tight">
             <Button
               variant="secondary"
-              text="Previous"
+              text={t("table.previous")}
               className="h-7 px-2"
               onClick={() => table.previousPage()}
               // disabled={!table.getCanPreviousPage()}
@@ -1376,7 +1381,7 @@ export function Table<T>({
             />
             <Button
               variant="secondary"
-              text="Next"
+              text={t("table.next")}
               className="h-7 px-2"
               onClick={() => table.nextPage()}
               // disabled={!table.getCanNextPage()}
