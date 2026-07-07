@@ -7,7 +7,10 @@
  *   - `src/i18n.ts` resolves the locale from the cookie (NOT hardcoded to
  *     'en' as it was before this work) — a regression back to the pinned
  *     literal would silently strand every non-en catalog again;
- *   - the set-locale server action is a real `'use server'` module.
+ *   - the language switcher persists the locale cookie CLIENT-SIDE (via
+ *     `document.cookie`), not through a Server Action — a Server Action would
+ *     couple the switch to a build-specific action ID and fail with
+ *     `UnrecognizedActionError` on a stale tab after a deploy.
  *
  * Pure file reads — no DB, no runtime.
  */
@@ -76,12 +79,21 @@ describe('src/i18n.ts wiring (regression guard)', () => {
     });
 });
 
-describe('set-locale server action', () => {
-    const src = read('src/lib/set-locale-action.ts');
+describe('locale switcher persists the cookie client-side', () => {
+    const src = read('src/components/layout/LocaleSwitcher.tsx');
 
-    it('is a real server action that writes the locale cookie', () => {
-        expect(src).toMatch(/^['"]use server['"]/m);
+    it('writes the locale cookie in the browser, coerced through resolveLocale', () => {
+        expect(src).toContain('document.cookie');
         expect(src).toContain('LOCALE_COOKIE');
         expect(src).toContain('resolveLocale'); // coerces before persisting
+        expect(src).toContain('router.refresh'); // server tree re-reads the cookie
+    });
+
+    it('does NOT depend on a Server Action (deploy-skew regression guard)', () => {
+        // A `'use server'` action would reintroduce the stale-action-ID 404.
+        expect(src).not.toMatch(/^['"]use server['"]/m);
+        expect(src).not.toContain('setLocaleAction');
+        // The old server-action module must stay deleted.
+        expect(fs.existsSync(path.join(ROOT, 'src/lib/set-locale-action.ts'))).toBe(false);
     });
 });

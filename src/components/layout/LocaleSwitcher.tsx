@@ -4,10 +4,17 @@
  * Language switcher — segmented control for the UI locale.
  *
  * Mounted inside `<UserMenu>` beside the theme toggle. Selecting a locale
- * persists it to the `inflect_locale` cookie via the `setLocaleAction` server
- * action, then calls `router.refresh()` so every server component re-renders
- * with the new next-intl catalog (the cookie is read server-side in
- * `src/i18n.ts`).
+ * persists it to the `inflect_locale` cookie CLIENT-SIDE (mirroring
+ * `ThemeProvider.persistTheme`), then calls `router.refresh()` so every server
+ * component re-renders with the new next-intl catalog (the cookie is read
+ * server-side in `src/i18n.ts`).
+ *
+ * Why a client-side cookie and not a Server Action: the cookie is not
+ * HttpOnly, so `document.cookie` can write it directly. Using a Server Action
+ * (the previous implementation) coupled the switch to a build-specific action
+ * ID — after a deploy, an already-open tab held a stale ID and the POST failed
+ * with `UnrecognizedActionError` (a 404 on the current route). Writing the
+ * cookie in the browser has no such coupling and is immune to deploy skew.
  *
  * Options are labelled with endonyms ("English" / "Български") — each language
  * in its own tongue — so the control is legible whichever locale is active.
@@ -21,9 +28,9 @@ import { ToggleGroup } from '@/components/ui/toggle-group';
 import {
     SUPPORTED_LOCALES,
     LOCALE_LABELS,
+    LOCALE_COOKIE,
     resolveLocale,
 } from '@/lib/locale-constants';
-import { setLocaleAction } from '@/lib/set-locale-action';
 
 export interface LocaleSwitcherProps {
     className?: string;
@@ -34,6 +41,19 @@ const OPTIONS = SUPPORTED_LOCALES.map((locale) => ({
     label: LOCALE_LABELS[locale],
 }));
 
+/** 1 year — mirrors the theme cookie + the old server-action `max-age`. */
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+
+/** Persist the locale to the server-readable `inflect_locale` cookie. */
+function persistLocale(locale: string) {
+    try {
+        const secure = window.location?.protocol === 'https:' ? '; secure' : '';
+        document.cookie = `${LOCALE_COOKIE}=${locale}; path=/; max-age=${COOKIE_MAX_AGE}; samesite=lax${secure}`;
+    } catch {
+        // document.cookie may be unavailable — ignore.
+    }
+}
+
 export function LocaleSwitcher({ className }: LocaleSwitcherProps) {
     // Active locale from the NextIntlClientProvider (driven by the cookie).
     const current = resolveLocale(useLocale());
@@ -42,8 +62,11 @@ export function LocaleSwitcher({ className }: LocaleSwitcherProps) {
 
     const onSelect = (next: string) => {
         if (next === current || pending) return;
-        startTransition(async () => {
-            await setLocaleAction(next);
+        // Coerce to a supported locale before persisting so a tampered option
+        // can never write a cookie pointing the request-config `import()` at a
+        // missing catalog (defence in depth — `OPTIONS` is already closed).
+        persistLocale(resolveLocale(next));
+        startTransition(() => {
             // Server components (incl. the whole app tree) re-read the cookie.
             router.refresh();
         });
