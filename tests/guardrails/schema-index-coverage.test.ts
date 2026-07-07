@@ -164,6 +164,8 @@ const FK_INDEX_EXEMPT: Record<string, string> = {
     'AccessReview.evidenceFileRecordId': R_ONE_TO_ONE,
     'AccessReviewDecision.decidedByUserId': R_ACTOR,
     'AccessReviewDecision.executedByUserId': R_ACTOR,
+    'AccessReviewConnectedDecision.decidedByUserId': R_ACTOR,
+    'AccessReviewConnectedDecision.connectedAccountId': R_REVERSE_RARE,
     'Account.userId': R_ACTOR,
     'AuthSession.userId': R_ACTOR,
     'TenantInvite.invitedById': R_ACTOR,
@@ -384,6 +386,7 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
     TenantDeviceToken: 'listDeviceTokens by tenantId — covered by @@index([tenantId]) / @@index([tenantId, revokedAt]); bounded take ≤200.',
     TrainingAssignment: 'listTrainingAssignments + training provider by tenantId (+status) — covered by @@index([tenantId, status]) / @@index([tenantId, employeeId]); bounded take ≤10000.',
     BackgroundCheck: 'listBackgroundChecks + training provider by tenantId (+status) — covered by @@index([tenantId, status]) / @@index([tenantId, employeeId]); bounded take ≤10000.',
+    AccessReviewConnectedDecision: 'listConnectedDecisions + close by (tenantId, accessReviewId) — covered by @@index([tenantId, accessReviewId]); bounded take ≤5000.',
     // EU AI Act registry — listAiSystems filters by tenantId (+ optional
     // riskTier / status), orders by riskTier then createdAt; covered by
     // @@index([tenantId, riskTier]) + @@index([tenantId, status]). Bounded

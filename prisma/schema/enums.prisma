@@ -929,6 +929,10 @@ enum AccessReviewScope {
   ALL_USERS
   ADMIN_ONLY
   CUSTOM
+  /// PR-7 — review connected identity-provider accounts (Okta / Google
+  /// Workspace) rather than tenant memberships. Decisions land in
+  /// AccessReviewConnectedDecision.
+  CONNECTED_APP
 }
 
 /// Lifecycle for an access review campaign.

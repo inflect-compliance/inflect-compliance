@@ -118,6 +118,7 @@ model Tenant {
   trainingCourses                   TrainingCourse[]
   trainingAssignments               TrainingAssignment[]
   backgroundChecks                  BackgroundCheck[]
+  accessReviewConnectedDecisions    AccessReviewConnectedDecision[]
   deviceTokens                      TenantDeviceToken[]
   scannerFindings                   ScannerFinding[]
   businessImpactAnalyses            BusinessImpactAnalysis[]
@@ -612,6 +613,43 @@ model TenantDeviceToken {
   @@index([tenantId, revokedAt])
 }
 
+/// PR-7 — a decision row for an access review whose scope is CONNECTED_APP.
+/// Parallel to AccessReviewDecision but the subject is a ConnectedIdentityAccount
+/// (Okta / Google Workspace), not a TenantMembership. Kept separate so the
+/// mature membership-review model is untouched. The entitlement is frozen into
+/// snapshotJson at creation; REVOKE emits a remediation task on close.
+model AccessReviewConnectedDecision {
+  id                 String                    @id @default(cuid())
+  tenantId           String
+  accessReviewId     String
+  /// FK to the connected account under review (SetNull so a deprovision
+  /// mid-review doesn't shred the audit row — snapshotJson preserves it).
+  connectedAccountId String?
+  /// Frozen identity for the evidence record: provider + email + admin/mfa.
+  subjectRef         String
+  snapshotJson       Json
+
+  decision        AccessReviewDecisionType?
+  decidedAt       DateTime?
+  decidedByUserId String?
+  notes           String?
+
+  executedAt       DateTime?
+  executedByUserId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant       Tenant                    @relation(fields: [tenantId], references: [id])
+  accessReview AccessReview              @relation(fields: [accessReviewId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  account      ConnectedIdentityAccount? @relation(fields: [connectedAccountId], references: [id], onDelete: SetNull)
+  decidedBy    User?                     @relation("ConnectedDecisionDecider", fields: [decidedByUserId], references: [id])
+
+  @@unique([accessReviewId, subjectRef])
+  @@index([tenantId])
+  @@index([tenantId, accessReviewId])
+}
+
 model TenantMembership {
   id                    String                 @id @default(cuid())
   tenantId              String
@@ -734,6 +772,7 @@ model AccessReview {
   deletedBy    User?                  @relation("AccessReviewDeleter", fields: [deletedByUserId], references: [id])
   evidenceFile FileRecord?            @relation("AccessReviewEvidence", fields: [evidenceFileRecordId], references: [id], onDelete: SetNull)
   decisions    AccessReviewDecision[]
+  connectedDecisions AccessReviewConnectedDecision[]
 
   /// Composite parent key used by AccessReviewDecision's compound FK
   /// (the same denorm-tenantId pattern Phase 2 introduced for
@@ -904,6 +943,7 @@ model User {
   accessReviewsDeleted          AccessReview[]               @relation("AccessReviewDeleter")
   accessReviewDecisionsSubject  AccessReviewDecision[]       @relation("AccessReviewDecisionSubject")
   accessReviewDecisionsDecided  AccessReviewDecision[]       @relation("AccessReviewDecisionDecider")
+  connectedReviewDecisions AccessReviewConnectedDecision[] @relation("ConnectedDecisionDecider")
   accessReviewDecisionsExecuted AccessReviewDecision[]       @relation("AccessReviewDecisionExecutor")
   // Epic G-5 — control exceptions involve up to five distinct
   // user-roles per row (creator, risk-acceptor, approver, rejecter,
