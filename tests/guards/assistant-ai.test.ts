@@ -33,10 +33,31 @@ describe('assistant AI — governance + propose-not-commit', () => {
         expect(usecase).toMatch(/createAgentProposal\(ctx, \{/);
         expect(usecase).toMatch(/kind: 'FINDING'/);
         expect(usecase).toMatch(/kind: 'RISK'/);
-        // Propose-not-commit: the assistant must NOT import a create-usecase.
-        expect(usecase).not.toMatch(/import\s+\{[^}]*\bcreateTask\b/);
-        expect(usecase).not.toMatch(/import\s+\{[^}]*\bcreateFinding\b/);
-        expect(usecase).not.toMatch(/import\s+\{[^}]*\bcreateRisk\b/);
+    });
+
+    // H5 — POSITIVE allowlist (was a 3-name blacklist that missed
+    // createControl / createPolicy / any update*/delete*). The assistant may
+    // reach ONLY these usecase-layer modules; any other app-layer/usecases
+    // import is a propose-not-commit escape and fails CI.
+    it('imports ONLY the allowlisted usecase-layer modules (read + the propose queue)', () => {
+        const ALLOWED_USECASE_MODULES = new Set(['dashboard', 'agent-proposals']);
+        // Match every `from './x'` / `from '../x'` / `@/app-layer/usecases/x` import.
+        const importRe = /from\s+['"]((?:\.\.?\/|@\/app-layer\/usecases\/)[^'"]+)['"]/g;
+        const offenders: string[] = [];
+        let m: RegExpExecArray | null;
+        while ((m = importRe.exec(usecase)) !== null) {
+            const spec = m[1];
+            // Only police the usecases layer: bare './name' (sibling usecase) or
+            // an explicit @/app-layer/usecases/ path. Other layers (ai, types,
+            // lib, db-context) are not create-usecases.
+            const isSiblingUsecase = /^\.\/[a-z-]+$/.test(spec); // './dashboard'
+            const isExplicitUsecase = spec.includes('@/app-layer/usecases/');
+            if (!isSiblingUsecase && !isExplicitUsecase) continue;
+            if (spec === '../types') continue; // the RequestContext type
+            const base = spec.split('/').pop()!;
+            if (!ALLOWED_USECASE_MODULES.has(base)) offenders.push(spec);
+        }
+        expect(offenders).toEqual([]);
     });
 
     it('read answers come from live tenant posture data', () => {
