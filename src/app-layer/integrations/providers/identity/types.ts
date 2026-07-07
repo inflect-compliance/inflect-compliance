@@ -35,9 +35,21 @@ export interface NormalizedIdentityAccount {
  * A provider that can enumerate its directory for the `identity-sync` job.
  * Concrete providers implement this alongside `ScheduledCheckProvider`.
  */
+/**
+ * H3 — the result of enumerating a directory. `complete` is false when the
+ * enumeration hit the `MAX_USERS` cap with MORE pages still available (Okta
+ * `link` rel=next / Google `nextPageToken` still set) — i.e. a KNOWN-PARTIAL
+ * enumeration. A partial enumeration must NEVER drive the deprovision reconcile
+ * (accounts past the cap would be wrongly marked DEPROVISIONED).
+ */
+export interface ListAccountsResult {
+    accounts: NormalizedIdentityAccount[];
+    complete: boolean;
+}
+
 export interface IdentitySyncProvider {
     /** Enumerate every account in the connected directory. */
-    listAccounts(config: Record<string, unknown>): Promise<NormalizedIdentityAccount[]>;
+    listAccounts(config: Record<string, unknown>): Promise<ListAccountsResult>;
 }
 
 export function isIdentitySyncProvider(p: unknown): p is IdentitySyncProvider {

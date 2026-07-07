@@ -94,8 +94,11 @@ export async function runIdentitySync(input: {
 
         const start = Date.now();
         let accounts: NormalizedIdentityAccount[];
+        let complete: boolean;
         try {
-            accounts = await resolved.listAccounts({ ...config, ...secrets });
+            const res = await resolved.listAccounts({ ...config, ...secrets });
+            accounts = res.accounts;
+            complete = res.complete;
         } catch (e) {
             const msg = (e instanceof Error ? e.message : String(e)).slice(0, 500);
             await db.integrationExecution.update({
@@ -140,8 +143,25 @@ export async function runIdentitySync(input: {
             upserted += 1;
         }
 
-        // Reconcile still-ACTIVE accounts no longer in the directory — they
-        // are now deprovisioned. Bounded updateMany (NOT in the seen set).
+        // H3 — a KNOWN-PARTIAL enumeration (directory larger than MAX_USERS)
+        // must NEVER drive the deprovision reconcile: accounts past the cap
+        // weren't observed and would be wrongly flipped to DEPROVISIONED. Upsert
+        // what we did see (idempotent, additive), skip the reconcile, and fail
+        // the execution loudly so the truncation is visible.
+        if (!complete) {
+            const msg = `Partial directory enumeration: hit the ${accounts.length}-account cap with more pages remaining. Deprovision reconcile skipped to avoid wrongful mass-deprovisioning.`;
+            await db.integrationExecution.update({
+                where: { id: execution.id },
+                data: { status: 'ERROR', errorMessage: msg, resultJson: { upserted, deprovisioned: 0, total: accounts.length, truncated: true }, durationMs: Date.now() - start, completedAt: new Date() },
+            });
+            logger.warn('identity-sync partial enumeration — deprovision skipped', { component: 'identity-sync', tenantId: ctx.tenantId, provider: conn.provider, executionId: execution.id, upserted });
+            return { executionId: execution.id, status: 'ERROR', upserted, deprovisioned: 0, errorMessage: msg };
+        }
+
+        // Reconcile still-ACTIVE accounts no longer in the (fully-enumerated)
+        // directory — they are now deprovisioned. Runs ONLY on a confirmed-
+        // complete enumeration. The whole callback is one RLS transaction
+        // (runInTenantContext), so upsert + reconcile commit atomically.
         const reconcile = await db.connectedIdentityAccount.updateMany({
             where: {
                 tenantId: ctx.tenantId,

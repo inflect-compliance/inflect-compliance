@@ -24,6 +24,7 @@ import {
     runIdentityCheck,
     IDENTITY_CHECKS,
     type IdentitySyncProvider,
+    type ListAccountsResult,
     type NormalizedIdentityAccount,
 } from '../identity/types';
 
@@ -121,12 +122,12 @@ export class GoogleWorkspaceProvider implements ScheduledCheckProvider, Identity
         }
     }
 
-    async listAccounts(config: Record<string, unknown>): Promise<NormalizedIdentityAccount[]> {
-        if (this.deps.listAccounts) return this.deps.listAccounts(config);
+    async listAccounts(config: Record<string, unknown>): Promise<ListAccountsResult> {
+        if (this.deps.listAccounts) return { accounts: await this.deps.listAccounts(config), complete: true };
         return this.fetchGoogleAccounts(config);
     }
 
-    private async fetchGoogleAccounts(config: Record<string, unknown>): Promise<NormalizedIdentityAccount[]> {
+    private async fetchGoogleAccounts(config: Record<string, unknown>): Promise<ListAccountsResult> {
         const doFetch = this.deps.fetchImpl ?? fetch;
         const token = this.deps.getAccessToken
             ? await this.deps.getAccessToken(config)
@@ -148,13 +149,15 @@ export class GoogleWorkspaceProvider implements ScheduledCheckProvider, Identity
             for (const u of body.users ?? []) out.push(normalizeGoogleUser(u));
             pageToken = body.nextPageToken;
         } while (pageToken && out.length < MAX_USERS);
-        return out;
+        // H3 — a still-present nextPageToken means we hit MAX_USERS mid-directory:
+        // the enumeration is KNOWN-PARTIAL and must not drive deprovisioning.
+        return { accounts: out, complete: !pageToken };
     }
 
     async runCheck(input: CheckInput): Promise<CheckResult> {
         const start = Date.now();
         try {
-            const accounts = await this.listAccounts(input.connectionConfig);
+            const { accounts } = await this.listAccounts(input.connectionConfig);
             const result = runIdentityCheck(input.parsed.checkType, accounts, input.connectionConfig, new Date());
             return { ...result, durationMs: Date.now() - start };
         } catch (err) {

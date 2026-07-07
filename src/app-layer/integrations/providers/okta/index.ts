@@ -20,6 +20,7 @@ import {
     runIdentityCheck,
     IDENTITY_CHECKS,
     type IdentitySyncProvider,
+    type ListAccountsResult,
     type NormalizedIdentityAccount,
 } from '../identity/types';
 
@@ -130,12 +131,13 @@ export class OktaProvider implements ScheduledCheckProvider, IdentitySyncProvide
     }
 
     /** Enumerate the Okta directory into normalized accounts. */
-    async listAccounts(config: Record<string, unknown>): Promise<NormalizedIdentityAccount[]> {
-        if (this.deps.listAccounts) return this.deps.listAccounts(config);
+    async listAccounts(config: Record<string, unknown>): Promise<ListAccountsResult> {
+        // A test/dep injection returns a bare array — treat it as complete.
+        if (this.deps.listAccounts) return { accounts: await this.deps.listAccounts(config), complete: true };
         return this.fetchOktaAccounts(config);
     }
 
-    private async fetchOktaAccounts(config: Record<string, unknown>): Promise<NormalizedIdentityAccount[]> {
+    private async fetchOktaAccounts(config: Record<string, unknown>): Promise<ListAccountsResult> {
         const orgUrl = String(config.orgUrl ?? '').replace(/\/$/, '');
         const apiToken = String((config as { apiToken?: string }).apiToken ?? '');
         const doFetch = this.deps.fetchImpl ?? fetch;
@@ -151,13 +153,15 @@ export class OktaProvider implements ScheduledCheckProvider, IdentitySyncProvide
             // Okta paginates via RFC-5988 Link headers (rel="next").
             url = parseNextLink(res.headers.get('link'));
         }
-        return out;
+        // H3 — if we stopped with a `next` link still present, we hit MAX_USERS
+        // mid-directory: the enumeration is KNOWN-PARTIAL (do not deprovision).
+        return { accounts: out, complete: url === null };
     }
 
     async runCheck(input: CheckInput): Promise<CheckResult> {
         const start = Date.now();
         try {
-            const accounts = await this.listAccounts(input.connectionConfig);
+            const { accounts } = await this.listAccounts(input.connectionConfig);
             const result = runIdentityCheck(input.parsed.checkType, accounts, input.connectionConfig, new Date());
             return { ...result, durationMs: Date.now() - start };
         } catch (err) {

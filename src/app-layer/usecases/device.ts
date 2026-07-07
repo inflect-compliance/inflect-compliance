@@ -3,15 +3,20 @@
  * device-token lifecycle. Tenant-scoped via runInTenantContext.
  *
  * Devices are part of the people layer, so viewing is gated by
- * `personnel.view` and token/roster management by `personnel.manage`
- * (reusing PR-4's permission rather than minting a new domain). The
- * agent-report path is token-authed, not permission-gated.
+ * `personnel.view`. Device-agent TOKEN management (issue/revoke) requires
+ * `admin.manage` (H3 — a long-lived tenant credential; matches the route +
+ * route-permissions.ts). The agent-report path is token-authed, not
+ * permission-gated.
  */
 import { z } from 'zod';
 import type { RequestContext } from '../types';
 import { runInTenantContext } from '@/lib/db-context';
 import { getPermissionsForRole } from '@/lib/permissions';
-import { forbidden } from '@/lib/errors/types';
+import { forbidden, badRequest } from '@/lib/errors/types';
+
+/** H3 — hard ceiling on distinct devices per tenant; bounds a leaked/looping
+ * token from creating unlimited rows (which could also poison device checks). */
+const MAX_DEVICES_PER_TENANT = 10000;
 import { logEvent } from '../events/audit';
 import { generateDeviceToken } from '@/lib/auth/device-token-auth';
 
@@ -62,6 +67,18 @@ export async function reportDevice(tenantId: string, data: z.infer<typeof Device
             passwordManagerPresent: data.passwordManagerPresent ?? null,
             lastCheckIn: now,
         };
+        // H3 — cap NEW devices per tenant. Reporting an existing serial (update)
+        // is always allowed; only a brand-new serial past the ceiling is rejected.
+        const existing = await db.device.findUnique({
+            where: { tenantId_serialNumber: { tenantId, serialNumber: data.serialNumber } },
+            select: { id: true },
+        });
+        if (!existing) {
+            const count = await db.device.count({ where: { tenantId } });
+            if (count >= MAX_DEVICES_PER_TENANT) {
+                throw badRequest(`Device limit reached for this tenant (${MAX_DEVICES_PER_TENANT}).`);
+            }
+        }
         return db.device.upsert({
             where: { tenantId_serialNumber: { tenantId, serialNumber: data.serialNumber } },
             create: { tenantId, serialNumber: data.serialNumber, source: 'AGENT', ...common },
@@ -87,7 +104,10 @@ export const IssueDeviceTokenSchema = z.object({ name: z.string().min(1).max(120
 
 /** Issue a device-agent token. Returns the plaintext ONCE. */
 export async function issueDeviceToken(ctx: RequestContext, data: z.infer<typeof IssueDeviceTokenSchema>) {
-    if (!ctx.appPermissions?.personnel?.manage && !ctx.permissions?.canAdmin) {
+    // H3 — device tokens are long-lived tenant credentials; require admin.manage
+    // to match the route + route-permissions.ts (was personnel.manage||canAdmin,
+    // a privilege drift below what the HTTP layer enforces).
+    if (!ctx.appPermissions?.admin?.manage) {
         throw forbidden('You do not have permission to manage device tokens.');
     }
     const { plaintext, tokenHash, tokenPrefix } = generateDeviceToken();
@@ -109,7 +129,10 @@ export async function issueDeviceToken(ctx: RequestContext, data: z.infer<typeof
 }
 
 export async function revokeDeviceToken(ctx: RequestContext, id: string, now: Date = new Date()) {
-    if (!ctx.appPermissions?.personnel?.manage && !ctx.permissions?.canAdmin) {
+    // H3 — device tokens are long-lived tenant credentials; require admin.manage
+    // to match the route + route-permissions.ts (was personnel.manage||canAdmin,
+    // a privilege drift below what the HTTP layer enforces).
+    if (!ctx.appPermissions?.admin?.manage) {
         throw forbidden('You do not have permission to manage device tokens.');
     }
     return runInTenantContext(ctx, async (db) => {

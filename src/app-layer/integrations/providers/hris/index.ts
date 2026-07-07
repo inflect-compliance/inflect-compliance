@@ -34,8 +34,18 @@ export interface NormalizedEmployee {
     endDate?: Date | null;
 }
 
+/**
+ * H3 — `complete` is false when the roster hit the `MAX_EMPLOYEES` cap with
+ * more rows available. A truncated roster must NOT drive the departed-employee
+ * reconcile (rows past the cap would be wrongly marked TERMINATED).
+ */
+export interface ListEmployeesResult {
+    employees: NormalizedEmployee[];
+    complete: boolean;
+}
+
 export interface HrisSyncProvider {
-    listEmployees(config: Record<string, unknown>): Promise<NormalizedEmployee[]>;
+    listEmployees(config: Record<string, unknown>): Promise<ListEmployeesResult>;
 }
 
 export function isHrisSyncProvider(p: unknown): p is HrisSyncProvider {
@@ -100,12 +110,12 @@ export class BambooHrProvider implements ScheduledCheckProvider, HrisSyncProvide
         return { valid: true };
     }
 
-    async listEmployees(config: Record<string, unknown>): Promise<NormalizedEmployee[]> {
-        if (this.deps.listEmployees) return this.deps.listEmployees(config);
+    async listEmployees(config: Record<string, unknown>): Promise<ListEmployeesResult> {
+        if (this.deps.listEmployees) return { employees: await this.deps.listEmployees(config), complete: true };
         return this.fetchBambooRoster(config);
     }
 
-    private async fetchBambooRoster(config: Record<string, unknown>): Promise<NormalizedEmployee[]> {
+    private async fetchBambooRoster(config: Record<string, unknown>): Promise<ListEmployeesResult> {
         const subdomain = String(config.subdomain ?? '');
         const apiKey = String((config as { apiKey?: string }).apiKey ?? '');
         const doFetch = this.deps.fetchImpl ?? fetch;
@@ -120,7 +130,9 @@ export class BambooHrProvider implements ScheduledCheckProvider, HrisSyncProvide
         if (!res.ok) throw new Error(`BambooHR roster fetch failed (HTTP ${res.status})`);
         const body = (await res.json()) as { employees?: Array<Record<string, string>> };
         const rows = body.employees ?? [];
-        return rows.slice(0, MAX_EMPLOYEES).map((r) => ({
+        // H3 — signal truncation instead of silently dropping rows past the cap.
+        const complete = rows.length <= MAX_EMPLOYEES;
+        const employees = rows.slice(0, MAX_EMPLOYEES).map((r) => ({
             externalId: r.employeeNumber || r.id || r.workEmail,
             fullName: [r.firstName, r.lastName].filter(Boolean).join(' ') || r.workEmail,
             workEmail: r.workEmail || '',
@@ -131,6 +143,7 @@ export class BambooHrProvider implements ScheduledCheckProvider, HrisSyncProvide
             startDate: r.hireDate ? new Date(r.hireDate) : null,
             endDate: r.terminationDate ? new Date(r.terminationDate) : null,
         })).filter((e) => e.workEmail);
+        return { employees, complete };
     }
 
     // HRIS runs no scheduled checks — personnel checks route to the personnel provider.

@@ -1459,6 +1459,9 @@
     },
     "docs/implementation-notes/2026-07-07-h2-fail-closed-checks.md": {
       "class": "historical"
+    },
+    "docs/implementation-notes/2026-07-07-h3-sync-integrity.md": {
+      "class": "historical"
     }
   }
 }

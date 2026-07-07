@@ -70,8 +70,11 @@ export async function runHrisSync(input: {
 
         const start = Date.now();
         let roster: NormalizedEmployee[];
+        let complete: boolean;
         try {
-            roster = await resolved.listEmployees({ ...config, ...secrets });
+            const res = await resolved.listEmployees({ ...config, ...secrets });
+            roster = res.employees;
+            complete = res.complete;
         } catch (e) {
             const msg = (e instanceof Error ? e.message : String(e)).slice(0, 500);
             await db.integrationExecution.update({ where: { id: execution.id }, data: { status: 'ERROR', errorMessage: msg, durationMs: Date.now() - start, completedAt: new Date() } });
@@ -104,11 +107,39 @@ export async function runHrisSync(input: {
             managersLinked += 1;
         }
 
+        // H3 — a truncated roster must not report a green PASSED and must NOT
+        // drive the departure reconcile (unseen employees would be wrongly
+        // terminated). Upsert what we saw, skip departures, fail loudly.
+        if (!complete) {
+            const msg = `Partial HRIS roster: hit the ${roster.length}-employee cap with more rows available. Departure reconcile skipped.`;
+            await db.integrationExecution.update({
+                where: { id: execution.id },
+                data: { status: 'ERROR', errorMessage: msg, resultJson: { upserted, managersLinked, total: roster.length, truncated: true }, durationMs: Date.now() - start, completedAt: new Date() },
+            });
+            logger.warn('hris-sync partial roster — departure reconcile skipped', { component: 'hris-sync', tenantId: ctx.tenantId, executionId: execution.id, upserted });
+            return { executionId: execution.id, status: 'ERROR', upserted, managersLinked, errorMessage: msg };
+        }
+
+        // H3 — departed-employee reconcile: a source=HRIS employee absent from a
+        // COMPLETE roster was DELETED in BambooHR (not just terminated) and would
+        // otherwise stay ACTIVE forever, invisible to offboarding. Mark them
+        // TERMINATED. Guarded on a non-empty roster so an empty-but-complete
+        // response (likely an API glitch) never mass-terminates.
+        let departed = 0;
+        if (roster.length > 0) {
+            const seenEmails = roster.map((e) => e.workEmail).filter(Boolean);
+            const res = await db.employee.updateMany({
+                where: { tenantId: ctx.tenantId, source: 'HRIS', status: { not: 'TERMINATED' }, workEmail: { notIn: seenEmails } },
+                data: { status: 'TERMINATED', syncedAt: now },
+            });
+            departed = res.count;
+        }
+
         await db.integrationExecution.update({
             where: { id: execution.id },
-            data: { status: 'PASSED', resultJson: { upserted, managersLinked, total: roster.length }, durationMs: Date.now() - start, completedAt: new Date() },
+            data: { status: 'PASSED', resultJson: { upserted, managersLinked, departed, total: roster.length }, durationMs: Date.now() - start, completedAt: new Date() },
         });
-        logger.info('hris-sync complete', { component: 'hris-sync', tenantId: ctx.tenantId, executionId: execution.id, upserted, managersLinked });
+        logger.info('hris-sync complete', { component: 'hris-sync', tenantId: ctx.tenantId, executionId: execution.id, upserted, managersLinked, departed });
         return { executionId: execution.id, status: 'PASSED', upserted, managersLinked };
     });
 }

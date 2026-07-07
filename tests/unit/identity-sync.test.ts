@@ -21,7 +21,7 @@ const mockDb = {
 const NOW = new Date('2026-06-01T00:00:00.000Z');
 
 function stubProvider(accounts: NormalizedIdentityAccount[]) {
-    return { listAccounts: jest.fn(async () => accounts) };
+    return { listAccounts: jest.fn(async () => ({ accounts, complete: true })) };
 }
 
 function acct(id: string): NormalizedIdentityAccount {
@@ -49,6 +49,21 @@ describe('runIdentitySync', () => {
         expect(where.tenantId_provider_externalUserId).toEqual({ tenantId: 't1', provider: 'okta', externalUserId: 'a' });
         // execution finalized PASSED
         expect(mockDb.integrationExecution.update.mock.calls.at(-1)?.[0].data.status).toBe('PASSED');
+    });
+
+    it('H3 — a PARTIAL (truncated) enumeration does NOT deprovision and marks ERROR', async () => {
+        // Directory larger than the cap: complete=false. Accounts past the cap
+        // weren't observed, so deprovisioning "everything not seen" would be
+        // catastrophic — it must be skipped and the run failed.
+        const provider = { listAccounts: jest.fn(async () => ({ accounts: [acct('a')], complete: false })) };
+        const r = await runIdentitySync({ tenantId: 't1', connectionId: 'conn-1', now: NOW, provider });
+
+        expect(r.status).toBe('ERROR');
+        expect(r.deprovisioned).toBe(0);
+        // The load-bearing assertion: NO deprovision reconcile ran.
+        expect(mockDb.connectedIdentityAccount.updateMany).not.toHaveBeenCalled();
+        // But the accounts we DID see were still upserted (additive, safe).
+        expect(mockDb.connectedIdentityAccount.upsert).toHaveBeenCalledTimes(1);
     });
 
     it('reconciles vanished accounts to DEPROVISIONED (excludes the seen set)', async () => {
