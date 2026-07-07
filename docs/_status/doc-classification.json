@@ -1417,6 +1417,9 @@
     },
     "docs/implementation-notes/2026-07-04-i18n-adoption-ratchet.md": {
       "class": "historical"
+    },
+    "docs/implementation-notes/2026-07-07-pr1-integration-checks-ui-and-failed-finding.md": {
+      "class": "historical"
     }
   }
 }
