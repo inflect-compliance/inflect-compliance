@@ -70,12 +70,12 @@ export async function getQuestionnaireItems(ctx: RequestContext, questionnaireId
 async function gatherGrounding(db: Parameters<Parameters<typeof runInTenantContext>[1]>[0], tenantId: string): Promise<GroundingSnippet[]> {
     const [controls, policies, evidence] = await Promise.all([
         db.control.findMany({ where: { tenantId, deletedAt: null, applicability: 'APPLICABLE' }, select: { id: true, name: true, objective: true, successCriteria: true }, take: 200 }),
-        db.policy.findMany({ where: { tenantId }, select: { id: true, name: true, description: true }, take: 100 }),
+        db.policy.findMany({ where: { tenantId }, select: { id: true, title: true, description: true }, take: 100 }),
         db.evidence.findMany({ where: { tenantId, status: 'APPROVED', deletedAt: null }, select: { id: true, title: true, content: true }, take: 100 }),
     ]);
     const out: GroundingSnippet[] = [];
     for (const c of controls) out.push({ kind: 'CONTROL', id: c.id, label: c.name, text: [c.objective, c.successCriteria].filter(Boolean).join(' ').slice(0, 1000) });
-    for (const p of policies) out.push({ kind: 'POLICY', id: p.id, label: p.name, text: (p.description ?? '').slice(0, 1000) });
+    for (const p of policies) out.push({ kind: 'POLICY', id: p.id, label: p.title, text: (p.description ?? '').slice(0, 1000) });
     for (const e of evidence) out.push({ kind: 'EVIDENCE', id: e.id, label: e.title, text: (e.content ?? '').slice(0, 500) });
     return out.slice(0, MAX_GROUNDING);
 }
