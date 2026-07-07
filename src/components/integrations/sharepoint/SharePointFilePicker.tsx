@@ -14,6 +14,7 @@
  * Graph boundary is never touched directly here.
  */
 import { useState, useEffect, useCallback, type Dispatch, type SetStateAction } from 'react';
+import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
@@ -76,11 +77,14 @@ export function SharePointFilePicker({
     onConfirmFolder?: (sel: { driveId: string; folderId?: string; folderName: string }) => void;
 }) {
     const apiUrl = useTenantApiUrl();
+    const t = useTranslations('panels.sharepoint');
+    const filterLabel = (f: Filter) =>
+        f === 'all' ? t('filterAll') : f === 'documents' ? t('filterDocuments') : f === 'spreadsheets' ? t('filterSpreadsheets') : t('filterPdf');
     const [sites, setSites] = useState<Opt[]>([]);
     const [drives, setDrives] = useState<Record<string, Opt[]>>({});
     const [siteId, setSiteId] = useState('');
     const [driveId, setDriveId] = useState('');
-    const [path, setPath] = useState<{ id?: string; name: string }[]>([{ name: 'Library' }]);
+    const [path, setPath] = useState<{ id?: string; name: string }[]>([{ name: t('library') }]);
     const [items, setItems] = useState<SpBrowseItem[]>([]);
     const [selected, setSelected] = useState<Record<string, SpPickedItem>>({});
     const [filter, setFilter] = useState<Filter>('all');
@@ -108,11 +112,11 @@ export function SharePointFilePicker({
                 setSiteId(firstSite);
                 setDriveId(driveOpts[firstSite]?.[0]?.value ?? '');
             } catch {
-                if (!cancelled) setError('Could not load SharePoint sites — check the connection.');
+                if (!cancelled) setError(t('couldNotLoadSites'));
             }
         })();
         return () => { cancelled = true; };
-    }, [showModal, connectionId, apiUrl]);
+    }, [showModal, connectionId, apiUrl, t]);
 
     const loadFolder = useCallback(
         async (folderId?: string) => {
@@ -127,20 +131,20 @@ export function SharePointFilePicker({
                 const data = await res.json();
                 setItems(data.items);
             } catch {
-                setError('Could not list this folder.');
+                setError(t('couldNotList'));
             } finally {
                 setLoading(false);
             }
         },
-        [apiUrl, connectionId, driveId],
+        [apiUrl, connectionId, driveId, t],
     );
 
     // Reset to the drive root whenever the drive changes.
     useEffect(() => {
         if (!driveId) return;
-        setPath([{ name: 'Library' }]);
+        setPath([{ name: t('library') }]);
         void loadFolder(undefined);
-    }, [driveId, loadFolder]);
+    }, [driveId, loadFolder, t]);
 
     const enterFolder = (f: SpBrowseItem) => {
         setPath((p) => [...p, { id: f.id, name: f.name }]);
@@ -181,8 +185,8 @@ export function SharePointFilePicker({
     };
 
     return (
-        <Modal showModal={showModal} setShowModal={setShowModal} size="lg" title="Import from SharePoint">
-            <Modal.Header title="Import from SharePoint" description="Browse a document library and choose files." />
+        <Modal showModal={showModal} setShowModal={setShowModal} size="lg" title={t('title')}>
+            <Modal.Header title={t('title')} description={t('description')} />
             <Modal.Body className="space-y-default">
                 {error && <InlineNotice variant="error">{error}</InlineNotice>}
 
@@ -192,7 +196,7 @@ export function SharePointFilePicker({
                         options={sites}
                         selected={sites.find((o) => o.value === siteId) ?? null}
                         setSelected={(o) => setSiteId(o?.value ?? '')}
-                        placeholder="Site"
+                        placeholder={t('site')}
                         matchTriggerWidth
                     />
                     <Combobox
@@ -200,7 +204,7 @@ export function SharePointFilePicker({
                         options={drives[siteId] ?? []}
                         selected={(drives[siteId] ?? []).find((o) => o.value === driveId) ?? null}
                         setSelected={(o) => setDriveId(o?.value ?? '')}
-                        placeholder="Library"
+                        placeholder={t('library')}
                         matchTriggerWidth
                     />
                 </div>
@@ -230,7 +234,7 @@ export function SharePointFilePicker({
                             size="sm"
                             onClick={() => setFilter(f)}
                         >
-                            {f === 'all' ? 'All' : f === 'pdf' ? 'PDFs' : f[0].toUpperCase() + f.slice(1)}
+                            {filterLabel(f)}
                         </Button>
                     ))}
                 </div>
@@ -276,7 +280,7 @@ export function SharePointFilePicker({
                                 </li>
                             ))}
                             {folders.length === 0 && files.length === 0 && (
-                                <li className="px-4 py-6 text-center text-sm text-content-muted">This folder is empty.</li>
+                                <li className="px-4 py-6 text-center text-sm text-content-muted">{t('empty')}</li>
                             )}
                         </ul>
                     )}
@@ -286,17 +290,17 @@ export function SharePointFilePicker({
                 {folderSelect ? (
                     <>
                         <span className="mr-auto truncate text-sm text-content-muted">
-                            Destination: {path[path.length - 1].name}
+                            {t('destination', { name: path[path.length - 1].name })}
                         </span>
-                        <Button variant="ghost" onClick={() => setShowModal(false)}>Cancel</Button>
-                        <Button variant="primary" onClick={confirmFolder} disabled={!driveId}>Use this folder</Button>
+                        <Button variant="ghost" onClick={() => setShowModal(false)}>{t('cancel')}</Button>
+                        <Button variant="primary" onClick={confirmFolder} disabled={!driveId}>{t('useFolder')}</Button>
                     </>
                 ) : (
                     <>
-                        <span className="mr-auto text-sm text-content-muted">{selectedCount} selected</span>
-                        <Button variant="ghost" onClick={() => setShowModal(false)}>Cancel</Button>
+                        <span className="mr-auto text-sm text-content-muted">{t('selectedCount', { count: selectedCount })}</span>
+                        <Button variant="ghost" onClick={() => setShowModal(false)}>{t('cancel')}</Button>
                         <Button variant="primary" onClick={confirm} disabled={selectedCount === 0}>
-                            {multiple ? `Import ${selectedCount || ''}`.trim() : 'Select'}
+                            {multiple ? t('importCount', { count: selectedCount || '' }) : t('select')}
                         </Button>
                     </>
                 )}

@@ -14,6 +14,7 @@
  * list the consumer owns (e.g. the risk detail `<EvidenceSubTable>`).
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { FileDropzone, type FileUploadEntry } from '@/components/ui/FileDropzone';
 import { Button } from '@/components/ui/button';
 import { Download, ArrowUpRight } from '@/components/ui/icons/nucleo';
@@ -161,11 +162,13 @@ export function EvidenceUploadSection({
     canWrite,
     listEndpoint,
     onUploaded,
-    label = 'Files',
+    label,
     urlLinkEndpoint,
     urlLinkBody,
     compactDropzone = false,
 }: EvidenceUploadSectionProps) {
+    const t = useTranslations('panels.evidenceUpload');
+    const labelText = label ?? t('files');
     const [items, setItems] = useState<DisplayItem[] | null>(null);
     const [url, setUrl] = useState('');
     const [note, setNote] = useState('');
@@ -270,25 +273,25 @@ export function EvidenceUploadSection({
             });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
-                throw new Error(err.error || err.message || 'Failed to link evidence');
+                throw new Error(err.error || err.message || t('failedLink'));
             }
             setUrl('');
             setNote('');
             void refetch();
             onUploaded?.();
         } catch (e) {
-            setLinkError(e instanceof Error ? e.message : 'Failed to link evidence');
+            setLinkError(e instanceof Error ? e.message : t('failedLink'));
         } finally {
             setLinking(false);
         }
-    }, [url, note, urlLinkEndpoint, urlLinkBody, tenantSlug, refetch, onUploaded]);
+    }, [url, note, urlLinkEndpoint, urlLinkBody, tenantSlug, refetch, onUploaded, t]);
 
     return (
         <div className="space-y-default" data-testid="evidence-upload-section">
             {canWrite && (
                 <div>
                     <label className="mb-1 block text-xs font-medium text-content-muted">
-                        {label}
+                        {labelText}
                     </label>
                     <FileDropzone
                         accept={EVIDENCE_ACCEPT}
@@ -309,12 +312,12 @@ export function EvidenceUploadSection({
                     data-testid="evidence-link-url-form"
                 >
                     <label className="block text-xs font-medium text-content-muted">
-                        …or link a URL
+                        {t('orLinkUrl')}
                     </label>
                     <input
                         type="url"
                         className="input w-full"
-                        placeholder="https://…"
+                        placeholder={t('urlPlaceholder')}
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}
                         data-testid="evidence-link-url"
@@ -322,7 +325,7 @@ export function EvidenceUploadSection({
                     <input
                         type="text"
                         className="input w-full"
-                        placeholder="Note (optional)"
+                        placeholder={t('noteOptional')}
                         value={note}
                         onChange={(e) => setNote(e.target.value)}
                     />
@@ -336,7 +339,7 @@ export function EvidenceUploadSection({
                         onClick={() => void linkUrl()}
                         disabled={!url.trim() || linking}
                         data-testid="evidence-link-url-submit"
-                        text={linking ? 'Linking…' : 'Link URL'}
+                        text={linking ? t('linking') : t('linkUrl')}
                     />
                 </div>
             )}
@@ -360,7 +363,7 @@ export function EvidenceUploadSection({
                                             ? { download: it.name || undefined }
                                             : { target: '_blank', rel: 'noopener noreferrer' })}
                                         className="flex flex-1 items-center gap-tight truncate text-content-link hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-default)] rounded-sm"
-                                        title={isFile ? `Download ${it.name}` : `Open ${it.name}`}
+                                        title={isFile ? t('downloadTitle', { name: it.name }) : t('openTitle', { name: it.name })}
                                         data-testid="evidence-attached-link"
                                     >
                                         {isFile ? (

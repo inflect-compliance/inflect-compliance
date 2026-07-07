@@ -8,6 +8,7 @@
  */
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { LifeRing } from '@/components/ui/icons/nucleo/life-ring';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { cn } from '@/lib/cn';
@@ -24,6 +25,7 @@ interface BiaContextRow {
 export function IncidentBiaContext({ incidentId }: { incidentId: string }) {
     const { tenantSlug } = useParams<{ tenantSlug: string }>();
     const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
+    const t = useTranslations('panels.bia');
     const { data } = useTenantSWR<{ rows: BiaContextRow[] }>(`/incidents/${incidentId}/bia-context`);
     const rows = data?.rows ?? [];
     if (rows.length === 0) return null;
@@ -35,21 +37,21 @@ export function IncidentBiaContext({ incidentId }: { incidentId: string }) {
         >
             <div className="flex items-center gap-tight">
                 <LifeRing className="h-4 w-4 text-content-attention" aria-hidden="true" />
-                <span className="text-sm font-medium text-content-default">Recovery deadlines (business continuity)</span>
+                <span className="text-sm font-medium text-content-default">{t('recoveryDeadlines')}</span>
             </div>
             <ul className="space-y-tight">
                 {rows.map((b) => (
                     <li key={b.id} className="text-sm text-content-muted">
-                        Affects{' '}
+                        {t('affects')}{' '}
                         <Link href={tenantHref(`/audits/business-continuity/${b.id}`)} className="text-content-link hover:underline">
                             {b.name}
                         </Link>
                         {b.mtpdHours != null ? (
-                            <span className="text-content-default"> — MTPD {b.mtpdHours}h</span>
+                            <span className="text-content-default"> — {t('mtpd', { hours: b.mtpdHours })}</span>
                         ) : (
-                            <span className="text-content-subtle"> — no MTPD set</span>
+                            <span className="text-content-subtle">{t('noMtpd')}</span>
                         )}
-                        {b.rtoHours != null && <span className="text-content-subtle"> · RTO {b.rtoHours}h</span>}
+                        {b.rtoHours != null && <span className="text-content-subtle">{t('rto', { hours: b.rtoHours })}</span>}
                     </li>
                 ))}
             </ul>

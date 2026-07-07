@@ -10,6 +10,7 @@
  */
 import Link from 'next/link';
 import useSWR from 'swr';
+import { useTranslations } from 'next-intl';
 import { apiGet } from '@/lib/api-client';
 import { LifeRing } from '@/components/ui/icons/nucleo/life-ring';
 
@@ -27,6 +28,7 @@ export function NodeBiaAffordance({
     mapId: string;
     nodeKey: string;
 }) {
+    const t = useTranslations('panels.bia');
     const url = `/api/t/${tenantSlug}/business-continuity?processMapId=${encodeURIComponent(mapId)}&nodeKey=${encodeURIComponent(nodeKey)}`;
     const { data } = useSWR<NodeBia>(url, (u: string) => apiGet<NodeBia>(u));
     const rows = data?.rows ?? [];
@@ -36,7 +38,7 @@ export function NodeBiaAffordance({
         <div className="space-y-tight border-t border-border-subtle pt-3" data-testid="node-bia-affordance">
             <div className="flex items-center gap-tight">
                 <LifeRing className="h-3.5 w-3.5 text-content-subtle" aria-hidden="true" />
-                <span className="text-xs font-medium uppercase tracking-wide text-content-subtle">Business continuity</span>
+                <span className="text-xs font-medium uppercase tracking-wide text-content-subtle">{t('businessContinuity')}</span>
             </div>
             {rows.length > 0 ? (
                 <ul className="space-y-tight">
@@ -45,15 +47,15 @@ export function NodeBiaAffordance({
                             <Link href={`/t/${tenantSlug}/audits/business-continuity/${b.id}`} className="text-content-link hover:underline">
                                 {b.name}
                             </Link>
-                            {b.mtpdHours != null && <span className="text-content-subtle"> · MTPD {b.mtpdHours}h</span>}
+                            {b.mtpdHours != null && <span className="text-content-subtle"> · {t('mtpd', { hours: b.mtpdHours })}</span>}
                         </li>
                     ))}
                 </ul>
             ) : (
-                <p className="text-xs text-content-subtle">No BIA for this process yet.</p>
+                <p className="text-xs text-content-subtle">{t('biaProcessEmpty')}</p>
             )}
             <Link href={addHref} className="inline-block text-xs text-content-link hover:underline">
-                {rows.length > 0 ? 'Add another BIA' : 'Add BIA'}
+                {rows.length > 0 ? t('addAnotherBia') : t('addBia')}
             </Link>
         </div>
     );

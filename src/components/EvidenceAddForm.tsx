@@ -9,6 +9,7 @@
  * submit handler and passes them in, plus the element ids it needs to
  * keep stable for E2E selectors.
  */
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { cardVariants } from '@/components/ui/card';
@@ -75,12 +76,13 @@ export function EvidenceAddForm({
     uploading,
     saving,
 }: EvidenceAddFormProps) {
+    const t = useTranslations('panels.evidenceForm');
     return (
         <>
             {canWrite && (
                 <div className="flex justify-end">
                     <Button variant="primary" onClick={onToggleShow} id={ids.trigger}>
-                        Add Evidence
+                        {t('add')}
                     </Button>
                 </div>
             )}
@@ -96,12 +98,12 @@ export function EvidenceAddForm({
                                 className="mb-1 block text-xs font-medium text-content-muted"
                                 htmlFor={ids.title}
                             >
-                                Title
+                                {t('labelTitle')}
                             </label>
                             <input
                                 type="text"
                                 className="input w-full"
-                                placeholder="Title (defaults to filename)"
+                                placeholder={t('placeholderTitle')}
                                 value={title}
                                 onChange={(e) => onTitleChange(e.target.value)}
                                 id={ids.title}
@@ -112,7 +114,7 @@ export function EvidenceAddForm({
                                 className="mb-1 block text-xs font-medium text-content-muted"
                                 htmlFor={ids.file}
                             >
-                                Upload a file
+                                {t('uploadFile')}
                             </label>
                             <input
                                 ref={fileInputRef}
@@ -134,12 +136,12 @@ export function EvidenceAddForm({
                             className="block text-xs font-medium text-content-muted"
                             htmlFor={ids.url}
                         >
-                            …or link a URL
+                            {t('orLinkUrl')}
                         </label>
                         <input
                             type="url"
                             className="input w-full"
-                            placeholder="https://…"
+                            placeholder={t('urlPlaceholder')}
                             value={url}
                             onChange={(e) => onUrlChange(e.target.value)}
                             id={ids.url}
@@ -148,7 +150,7 @@ export function EvidenceAddForm({
                         <textarea
                             className="input w-full"
                             rows={2}
-                            placeholder="Note (optional)"
+                            placeholder={t('noteOptional')}
                             value={note}
                             onChange={(e) => onNoteChange(e.target.value)}
                             id={ids.note}
@@ -168,7 +170,7 @@ export function EvidenceAddForm({
                             value={60}
                             size="md"
                             variant="brand"
-                            aria-label="Uploading evidence file"
+                            aria-label={t('uploadingAria')}
                         />
                     )}
                     <Button
@@ -177,7 +179,7 @@ export function EvidenceAddForm({
                         disabled={uploading || saving || (!file && !url.trim())}
                         id={ids.submit}
                     >
-                        {uploading ? 'Uploading...' : saving ? 'Linking...' : 'Add Evidence'}
+                        {uploading ? t('uploading') : saving ? t('linking') : t('add')}
                     </Button>
                 </form>
             )}

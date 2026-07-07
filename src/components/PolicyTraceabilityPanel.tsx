@@ -12,7 +12,8 @@
  * coverage is purely derived. The shape mirrors the Asset/Risk inherited
  * data panels for visual consistency.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
@@ -84,10 +85,6 @@ const CRITICALITY_BADGE: Record<string, StatusBadgeVariant> = {
     LOW: 'neutral',
 };
 
-function viaLabel(n: number): string {
-    return `via ${n} control${n === 1 ? '' : 's'}`;
-}
-
 export default function PolicyTraceabilityPanel({
     endpoint,
     tenantHref,
@@ -98,6 +95,31 @@ export default function PolicyTraceabilityPanel({
 }) {
     const [data, setData] = useState<PolicyTraceData | null>(null);
     const [loading, setLoading] = useState(true);
+    const t = useTranslations('panels');
+    const tr = useTranslations();
+
+    const CONTROL_STATUS_LABELS = useMemo<Record<string, string>>(() => ({
+        NOT_STARTED: tr('controls.statusLabels.NOT_STARTED'), IN_PROGRESS: tr('controls.statusLabels.IN_PROGRESS'),
+        IMPLEMENTED: tr('controls.statusLabels.IMPLEMENTED'), NEEDS_REVIEW: tr('controls.statusLabels.NEEDS_REVIEW'),
+        IMPLEMENTING: tr('controls.implementing'), PLANNED: tr('controls.planned'),
+        NOT_APPLICABLE: tr('controls.notApplicable'),
+    }), [tr]);
+    const RISK_STATUS_LABELS = useMemo<Record<string, string>>(() => ({
+        OPEN: tr('risks.bulkStatus.open'), MITIGATING: tr('risks.bulkStatus.mitigating'),
+        MITIGATED: tr('risks.bulkStatus.mitigated'), ACCEPTED: tr('risks.bulkStatus.accepted'),
+        CLOSED: tr('risks.bulkStatus.closed'),
+    }), [tr]);
+    const ASSET_TYPE_LABELS = useMemo<Record<string, string>>(() => ({
+        INFORMATION: tr('assets.filterEnums.type.INFORMATION'), SYSTEM: tr('assets.filterEnums.type.SYSTEM'),
+        SERVICE: tr('assets.filterEnums.type.SERVICE'), DATA_STORE: tr('assets.filterEnums.type.DATA_STORE'),
+        VENDOR: tr('assets.filterEnums.type.VENDOR'), PEOPLE_PROCESS: tr('assets.filterEnums.type.PEOPLE_PROCESS'),
+        APPLICATION: tr('assets.filterEnums.type.APPLICATION'), INFRASTRUCTURE: tr('assets.filterEnums.type.INFRASTRUCTURE'),
+        PROCESS: tr('assets.filterEnums.type.PROCESS'), OTHER: tr('assets.filterEnums.type.OTHER'),
+    }), [tr]);
+    const CRIT_LABELS = useMemo<Record<string, string>>(() => ({
+        LOW: t('criticalityLabels.LOW'), MEDIUM: t('criticalityLabels.MEDIUM'),
+        HIGH: t('criticalityLabels.HIGH'), CRITICAL: t('criticalityLabels.CRITICAL'),
+    }), [t]);
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => {
@@ -119,10 +141,12 @@ export default function PolicyTraceabilityPanel({
         };
     }, [endpoint]);
 
+    const viaLabelT = (n: number) => n === 1 ? t('policyTrace.viaOne', { count: n }) : t('policyTrace.viaMany', { count: n });
+
     const controlColumns = createColumns<ControlEntry>([
         {
             id: 'control',
-            header: 'Control',
+            header: t('col.control'),
             cell: ({ row }) => (
                 <TableTitleCell href={tenantHref(`/controls/${row.original.control.id}`)}>
                     {row.original.control.code || row.original.control.name}
@@ -131,14 +155,14 @@ export default function PolicyTraceabilityPanel({
         },
         {
             id: 'name',
-            header: 'Name',
+            header: t('col.name'),
             cell: ({ row }) => (
                 <span className="text-sm text-content-default">{row.original.control.name}</span>
             ),
         },
         {
             id: 'category',
-            header: 'Category',
+            header: t('col.category'),
             cell: ({ row }) =>
                 row.original.control.category ? (
                     <span className="text-sm text-content-muted">{row.original.control.category}</span>
@@ -148,12 +172,12 @@ export default function PolicyTraceabilityPanel({
         },
         {
             id: 'status',
-            header: 'Status',
+            header: t('col.status'),
             cell: ({ row }) => {
                 const s = row.original.control.status;
                 return s ? (
                     <StatusBadge variant={CONTROL_STATUS_BADGE[s] ?? 'neutral'} size="sm">
-                        {s.replace(/_/g, ' ')}
+                        {CONTROL_STATUS_LABELS[s] ?? s.replace(/_/g, ' ')}
                     </StatusBadge>
                 ) : (
                     <span className="text-xs text-content-subtle">—</span>
@@ -165,7 +189,7 @@ export default function PolicyTraceabilityPanel({
     const riskColumns = createColumns<RiskEntry>([
         {
             id: 'risk',
-            header: 'Risk',
+            header: t('col.risk'),
             cell: ({ row }) => (
                 <TableTitleCell href={tenantHref(`/risks/${row.original.risk.id}`)}>
                     {row.original.risk.title}
@@ -174,7 +198,7 @@ export default function PolicyTraceabilityPanel({
         },
         {
             id: 'category',
-            header: 'Category',
+            header: t('col.category'),
             cell: ({ row }) =>
                 row.original.risk.category ? (
                     <span className="text-sm text-content-muted">{row.original.risk.category}</span>
@@ -184,7 +208,7 @@ export default function PolicyTraceabilityPanel({
         },
         {
             id: 'score',
-            header: 'Score',
+            header: t('col.score'),
             cell: ({ row }) => (
                 <span className="text-sm tabular-nums text-content-default">
                     {row.original.risk.score ?? '—'}
@@ -193,12 +217,12 @@ export default function PolicyTraceabilityPanel({
         },
         {
             id: 'status',
-            header: 'Status',
+            header: t('col.status'),
             cell: ({ row }) => {
                 const s = row.original.risk.status;
                 return s ? (
                     <StatusBadge variant={RISK_STATUS_BADGE[s] ?? 'neutral'} size="sm">
-                        {s}
+                        {RISK_STATUS_LABELS[s] ?? s}
                     </StatusBadge>
                 ) : (
                     <span className="text-xs text-content-subtle">—</span>
@@ -207,9 +231,9 @@ export default function PolicyTraceabilityPanel({
         },
         {
             id: 'via',
-            header: 'Coverage',
+            header: t('col.coverage'),
             cell: ({ row }) => (
-                <span className="text-xs text-content-subtle">{viaLabel(row.original.viaControls)}</span>
+                <span className="text-xs text-content-subtle">{viaLabelT(row.original.viaControls)}</span>
             ),
         },
     ]);
@@ -217,7 +241,7 @@ export default function PolicyTraceabilityPanel({
     const assetColumns = createColumns<AssetEntry>([
         {
             id: 'asset',
-            header: 'Asset',
+            header: t('col.asset'),
             cell: ({ row }) => (
                 <TableTitleCell href={tenantHref(`/assets/${row.original.asset.id}`)}>
                     {row.original.asset.name}
@@ -226,11 +250,11 @@ export default function PolicyTraceabilityPanel({
         },
         {
             id: 'type',
-            header: 'Type',
+            header: t('col.type'),
             cell: ({ row }) =>
                 row.original.asset.type ? (
                     <span className="text-sm text-content-muted">
-                        {row.original.asset.type.replace(/_/g, ' ')}
+                        {ASSET_TYPE_LABELS[row.original.asset.type] ?? row.original.asset.type.replace(/_/g, ' ')}
                     </span>
                 ) : (
                     <span className="text-xs text-content-subtle">—</span>
@@ -238,12 +262,12 @@ export default function PolicyTraceabilityPanel({
         },
         {
             id: 'criticality',
-            header: 'Criticality',
+            header: t('col.criticality'),
             cell: ({ row }) => {
                 const c = row.original.asset.criticality;
                 return c ? (
                     <StatusBadge variant={CRITICALITY_BADGE[c] ?? 'neutral'} size="sm">
-                        {c}
+                        {CRIT_LABELS[c] ?? c}
                     </StatusBadge>
                 ) : (
                     <span className="text-xs text-content-subtle">—</span>
@@ -252,9 +276,9 @@ export default function PolicyTraceabilityPanel({
         },
         {
             id: 'via',
-            header: 'Coverage',
+            header: t('col.coverage'),
             cell: ({ row }) => (
-                <span className="text-xs text-content-subtle">{viaLabel(row.original.viaControls)}</span>
+                <span className="text-xs text-content-subtle">{viaLabelT(row.original.viaControls)}</span>
             ),
         },
     ]);
@@ -262,12 +286,11 @@ export default function PolicyTraceabilityPanel({
     return (
         <div className="space-y-section">
             <InlineNotice variant="info">
-                A policy links directly to controls; the risks those controls mitigate and the
-                assets they protect are inherited through them. Manage these links on each control.
+                {t('policyTrace.notice')}
             </InlineNotice>
 
             <div className="space-y-default">
-                <Heading level={3}>Controls</Heading>
+                <Heading level={3}>{tr('common.sections.controls')}</Heading>
                 <DataTable<ControlEntry>
                     data={data?.controls ?? []}
                     columns={controlColumns}
@@ -277,15 +300,15 @@ export default function PolicyTraceabilityPanel({
                         <EmptyState
                             size="sm"
                             variant="no-records"
-                            title="No linked controls"
-                            description="This policy is not linked to any controls yet."
+                            title={t('policyTrace.emptyLinkedControls')}
+                            description={t('policyTrace.emptyLinkedControlsDesc')}
                         />
                     }
                 />
             </div>
 
             <div className="space-y-default">
-                <Heading level={3}>Risks</Heading>
+                <Heading level={3}>{tr('common.sections.risks')}</Heading>
                 <DataTable<RiskEntry>
                     data={data?.risks ?? []}
                     columns={riskColumns}
@@ -295,15 +318,15 @@ export default function PolicyTraceabilityPanel({
                         <EmptyState
                             size="sm"
                             variant="no-records"
-                            title="No related risks"
-                            description="None of this policy's controls mitigate a risk yet."
+                            title={t('policyTrace.emptyRelatedRisks')}
+                            description={t('policyTrace.emptyRelatedRisksDesc')}
                         />
                     }
                 />
             </div>
 
             <div className="space-y-default">
-                <Heading level={3}>Assets</Heading>
+                <Heading level={3}>{tr('common.sections.assets')}</Heading>
                 <DataTable<AssetEntry>
                     data={data?.assets ?? []}
                     columns={assetColumns}
@@ -313,8 +336,8 @@ export default function PolicyTraceabilityPanel({
                         <EmptyState
                             size="sm"
                             variant="no-records"
-                            title="No related assets"
-                            description="None of this policy's controls protect an asset yet."
+                            title={t('policyTrace.emptyRelatedAssets')}
+                            description={t('policyTrace.emptyRelatedAssetsDesc')}
                         />
                     }
                 />

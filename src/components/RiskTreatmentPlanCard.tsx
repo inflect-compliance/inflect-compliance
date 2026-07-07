@@ -13,6 +13,7 @@
  *   - canAdmin → Complete plan.
  */
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import useSWR, { useSWRConfig } from 'swr';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
@@ -91,13 +92,6 @@ const STATUS_VARIANT: Record<Status, 'warning' | 'info' | 'success' | 'error'> =
     OVERDUE: 'error',
 };
 
-const STRATEGY_OPTIONS: ComboboxOption[] = [
-    { value: 'MITIGATE', label: 'Mitigate — implement controls' },
-    { value: 'ACCEPT', label: 'Accept — formally accept residual risk' },
-    { value: 'TRANSFER', label: 'Transfer — shift to a third party' },
-    { value: 'AVOID', label: 'Avoid — eliminate the activity' },
-];
-
 export function RiskTreatmentPlanCard({
     tenantSlug,
     riskId,
@@ -106,6 +100,7 @@ export function RiskTreatmentPlanCard({
     canAdmin,
 }: Props) {
     const { mutate: swrMutate } = useSWRConfig();
+    const t = useTranslations('panels.treatment');
     const apiBase = `/api/t/${tenantSlug}/risks/${riskId}/treatment-plans`;
 
     const plansQuery = useSWR<{ rows: PlanSummary[] }>(
@@ -140,14 +135,14 @@ export function RiskTreatmentPlanCard({
         >
             <header className="flex items-center justify-between">
                 <Heading level={2} className="inline-flex items-center gap-tight">
-                    Treatment Plan
+                    {t('title')}
                 </Heading>
                 {canWrite && !activeSummary ? (
                     <Button
                         onClick={() => setCreateOpen(true)}
                         data-testid="treatment-plan-create-button"
                     >
-                        Create treatment plan
+                        {t('create')}
                     </Button>
                 ) : null}
             </header>
@@ -157,8 +152,8 @@ export function RiskTreatmentPlanCard({
                     className="text-sm text-content-muted"
                     data-testid="treatment-plan-empty"
                 >
-                    No treatment plan yet. Click <strong>Create treatment plan</strong>{' '}
-                    to record strategy, owner, target date, and milestones.
+                    {t('emptyPrefix')} <strong>{t('create')}</strong>{' '}
+                    {t('emptySuffix')}
                 </p>
             ) : (
                 <ActivePlanBlock
@@ -234,6 +229,7 @@ function ActivePlanBlock({
     onComplete: () => void;
     onMutated: () => void;
 }) {
+    const t = useTranslations('panels.treatment');
     const planQuery = useSWR<PlanDetail>(
         `${apiBase}/${planId}`,
         async (url: string) => {
@@ -250,7 +246,7 @@ function ActivePlanBlock({
                 className="rounded border border-border-subtle p-4 text-sm text-content-muted"
                 data-testid="treatment-plan-loading"
             >
-                Loading plan…
+                {t('loading')}
             </div>
         );
     }
@@ -281,7 +277,7 @@ function ActivePlanBlock({
                         {plan.strategy}
                     </StatusBadge>
                     <span className="text-sm text-content-muted">
-                        target {formatDate(plan.targetDate)}
+                        {t('target', { date: formatDate(plan.targetDate) })}
                     </span>
                 </div>
                 <div className="flex gap-tight">
@@ -291,7 +287,7 @@ function ActivePlanBlock({
                             onClick={onAddMilestone}
                             data-testid="treatment-plan-add-milestone-button"
                         >
-                            Add milestone
+                            {t('addMilestone')}
                         </Button>
                     ) : null}
                     {canCloseNow ? (
@@ -299,7 +295,7 @@ function ActivePlanBlock({
                             onClick={onComplete}
                             data-testid="treatment-plan-complete-button"
                         >
-                            Complete plan
+                            {t('completePlan')}
                         </Button>
                     ) : null}
                 </div>
@@ -309,7 +305,7 @@ function ActivePlanBlock({
                 <ProgressBar
                     value={pct}
                     variant={pct >= 100 ? 'success' : pct >= 50 ? 'info' : 'brand'}
-                    aria-label={`${done} of ${total} milestones complete`}
+                    aria-label={t('milestonesAria', { done, total })}
                     className="w-full sm:w-64"
                     data-testid="treatment-plan-progress"
                 />
@@ -317,12 +313,12 @@ function ActivePlanBlock({
                     className="text-xs text-content-muted whitespace-nowrap"
                     data-testid="treatment-plan-progress-label"
                 >
-                    {done}/{total} milestones
+                    {t('milestonesCount', { done, total })}
                 </span>
             </div>
 
             <p className="text-xs text-content-muted">
-                Owner: {plan.owner.name || plan.owner.email}
+                {t('owner', { owner: plan.owner.name || plan.owner.email })}
             </p>
 
             {plan.milestones.length > 0 ? (
@@ -343,10 +339,10 @@ function ActivePlanBlock({
                 </ul>
             ) : (
                 <p className="text-sm text-content-muted">
-                    No milestones yet.{' '}
+                    {t('milestonesEmpty')}{' '}
                     {canWrite && plan.status !== 'COMPLETED' ? (
                         <span>
-                            Add the first milestone to make progress trackable.
+                            {t('addFirstMilestone')}
                         </span>
                     ) : null}
                 </p>
@@ -354,7 +350,7 @@ function ActivePlanBlock({
 
             {plan.status === 'COMPLETED' && plan.closingRemark ? (
                 <p className="mt-2 text-xs text-content-muted">
-                    <strong>Closing remark:</strong> {plan.closingRemark}
+                    <strong>{t('closingRemarkPrefix')}</strong> {plan.closingRemark}
                 </p>
             ) : null}
         </div>
@@ -374,6 +370,7 @@ function MilestoneRowItem({
     canWrite: boolean;
     onMutated: () => void;
 }) {
+    const t = useTranslations('panels.treatment');
     const completed = milestone.completedAt !== null;
     const [completing, setCompleting] = useState(false);
     const handleComplete = async () => {
@@ -411,7 +408,7 @@ function MilestoneRowItem({
                 onChange={() => {
                     if (!completed && canWrite) void handleComplete();
                 }}
-                aria-label={`Complete milestone ${milestone.title}`}
+                aria-label={t('completeMilestoneAria', { title: milestone.title })}
                 data-testid={`treatment-plan-milestone-checkbox-${milestone.id}`}
                 className="h-4 w-4 rounded border-border-subtle text-brand-emphasis"
             />
@@ -425,7 +422,7 @@ function MilestoneRowItem({
                 {milestone.title}
             </span>
             <span className="ml-auto text-xs text-content-muted">
-                due {formatDate(milestone.dueDate)}
+                {t('dueMilestone', { date: formatDate(milestone.dueDate) })}
             </span>
         </li>
     );
@@ -446,6 +443,13 @@ function CreatePlanDialog({
     onClose: () => void;
     onSuccess: () => void;
 }) {
+    const t = useTranslations('panels.treatment');
+    const STRATEGY_OPTIONS: ComboboxOption[] = useMemo(() => [
+        { value: 'MITIGATE', label: t('optMitigate') },
+        { value: 'ACCEPT', label: t('optAccept') },
+        { value: 'TRANSFER', label: t('optTransfer') },
+        { value: 'AVOID', label: t('optAvoid') },
+    ], [t]);
     const [strategy, setStrategy] = useState<Strategy>('MITIGATE');
     const [ownerUserId, setOwnerUserId] = useState<string>(
         ownerChoices[0]?.userId ?? '',
@@ -468,7 +472,7 @@ function CreatePlanDialog({
         try {
             setError(null);
             if (!targetDate) {
-                throw new Error('Target date is required.');
+                throw new Error(t('targetDateRequired'));
             }
             const res = await fetch(apiBase, {
                 method: 'POST',
@@ -486,7 +490,7 @@ function CreatePlanDialog({
             }
             onSuccess();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Unknown error');
+            setError(err instanceof Error ? err.message : t('unknownError'));
         } finally {
             setSubmitting(false);
         }
@@ -496,10 +500,10 @@ function CreatePlanDialog({
 
     return (
         <Modal showModal setShowModal={(v) => !v && onClose()}>
-            <Modal.Header title="Create treatment plan" />
+            <Modal.Header title={t('create')} />
             <Modal.Body>
                 <div className="space-y-default">
-                    <FormField label="Strategy" required>
+                    <FormField label={t('strategyLabel')} required>
                         <Combobox
                             options={STRATEGY_OPTIONS}
                             selected={
@@ -510,11 +514,11 @@ function CreatePlanDialog({
                             setSelected={(opt) =>
                                 opt && setStrategy(opt.value as Strategy)
                             }
-                            placeholder="Pick a strategy"
+                            placeholder={t('pickStrategy')}
                             data-testid="treatment-plan-form-strategy"
                         />
                     </FormField>
-                    <FormField label="Owner" required>
+                    <FormField label={t('ownerLabel')} required>
                         <Combobox
                             options={ownerOptions}
                             selected={
@@ -525,11 +529,11 @@ function CreatePlanDialog({
                             setSelected={(opt) =>
                                 opt && setOwnerUserId(String(opt.value))
                             }
-                            placeholder="Pick an owner"
+                            placeholder={t('pickOwner')}
                             data-testid="treatment-plan-form-owner"
                         />
                     </FormField>
-                    <FormField label="Target date" required>
+                    <FormField label={t('targetDateLabel')} required>
                         <DatePicker value={targetDate} onChange={setTargetDate} />
                     </FormField>
                     {error ? (
@@ -544,14 +548,14 @@ function CreatePlanDialog({
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={onClose}>
-                    Cancel
+                    {t('cancel')}
                 </Button>
                 <Button
                     onClick={() => void handleSubmit()}
                     disabled={!valid || submitting}
                     data-testid="treatment-plan-form-submit"
                 >
-                    {submitting ? 'Creating…' : 'Create plan'}
+                    {submitting ? t('creating') : t('createPlan')}
                 </Button>
             </Modal.Footer>
         </Modal>
@@ -569,6 +573,7 @@ function AddMilestoneDialog({
     onClose: () => void;
     onSuccess: () => void;
 }) {
+    const t = useTranslations('panels.treatment');
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [dueDate, setDueDate] = useState<Date | null>(null);
@@ -579,7 +584,7 @@ function AddMilestoneDialog({
         setSubmitting(true);
         try {
             setError(null);
-            if (!dueDate) throw new Error('Due date is required.');
+            if (!dueDate) throw new Error(t('dueDateRequired'));
             const res = await fetch(`${apiBase}/${planId}/milestones`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -595,7 +600,7 @@ function AddMilestoneDialog({
             }
             onSuccess();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Unknown error');
+            setError(err instanceof Error ? err.message : t('unknownError'));
         } finally {
             setSubmitting(false);
         }
@@ -605,19 +610,19 @@ function AddMilestoneDialog({
 
     return (
         <Modal showModal setShowModal={(v) => !v && onClose()}>
-            <Modal.Header title="Add milestone" />
+            <Modal.Header title={t('addMilestoneHeader')} />
             <Modal.Body>
                 <div className="space-y-default">
-                    <FormField label="Title" required>
+                    <FormField label={t('milestoneTitleLabel')} required>
                         <input
                             className="input"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            placeholder="What needs to happen?"
+                            placeholder={t('milestonePlaceholder')}
                             data-testid="milestone-form-title"
                         />
                     </FormField>
-                    <FormField label="Description (optional)">
+                    <FormField label={t('descriptionOptional')}>
                         <textarea
                             className="input"
                             rows={3}
@@ -625,7 +630,7 @@ function AddMilestoneDialog({
                             onChange={(e) => setDescription(e.target.value)}
                         />
                     </FormField>
-                    <FormField label="Due date" required>
+                    <FormField label={t('dueDateLabel')} required>
                         <DatePicker value={dueDate} onChange={setDueDate} />
                     </FormField>
                     {error ? (
@@ -640,14 +645,14 @@ function AddMilestoneDialog({
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={onClose}>
-                    Cancel
+                    {t('cancel')}
                 </Button>
                 <Button
                     onClick={() => void handleSubmit()}
                     disabled={!valid || submitting}
                     data-testid="milestone-form-submit"
                 >
-                    {submitting ? 'Adding…' : 'Add milestone'}
+                    {submitting ? t('adding') : t('addMilestone')}
                 </Button>
             </Modal.Footer>
         </Modal>
@@ -665,6 +670,7 @@ function CompletePlanDialog({
     onClose: () => void;
     onSuccess: () => void;
 }) {
+    const t = useTranslations('panels.treatment');
     const [closingRemark, setClosingRemark] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
@@ -683,29 +689,28 @@ function CompletePlanDialog({
             }
             onSuccess();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Unknown error');
+            setError(err instanceof Error ? err.message : t('unknownError'));
         } finally {
             setSubmitting(false);
         }
     };
     return (
         <Modal showModal setShowModal={(v) => !v && onClose()}>
-            <Modal.Header title="Complete treatment plan" />
+            <Modal.Header title={t('completeHeader')} />
             <Modal.Body>
                 <div className="space-y-default">
                     <p className="text-sm text-content-muted">
-                        Closing this plan will transition the linked risk per
-                        the strategy:{' '}
-                        <strong>MITIGATE/TRANSFER/AVOID → CLOSED</strong>,{' '}
-                        <strong>ACCEPT → ACCEPTED</strong>.
+                        {t('completeIntro')}{' '}
+                        <strong>{t('completeRule1')}</strong>,{' '}
+                        <strong>{t('completeRule2')}</strong>.
                     </p>
-                    <FormField label="Closing remark" required>
+                    <FormField label={t('closingRemarkLabel')} required>
                         <textarea
                             className="input"
                             rows={3}
                             value={closingRemark}
                             onChange={(e) => setClosingRemark(e.target.value)}
-                            placeholder="Summarise what was done"
+                            placeholder={t('closingRemarkPlaceholder')}
                             data-testid="complete-plan-remark"
                         />
                     </FormField>
@@ -721,14 +726,14 @@ function CompletePlanDialog({
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={onClose}>
-                    Cancel
+                    {t('cancel')}
                 </Button>
                 <Button
                     onClick={() => void handleSubmit()}
                     disabled={!closingRemark.trim() || submitting}
                     data-testid="complete-plan-submit"
                 >
-                    {submitting ? 'Completing…' : 'Complete plan'}
+                    {submitting ? t('completing') : t('completePlan')}
                 </Button>
             </Modal.Footer>
         </Modal>

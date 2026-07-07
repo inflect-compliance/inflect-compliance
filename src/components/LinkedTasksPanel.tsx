@@ -5,6 +5,7 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { Button } from '@/components/ui/button';
@@ -30,17 +31,9 @@ const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     OPEN: 'neutral', TRIAGED: 'info', IN_PROGRESS: 'info',
     BLOCKED: 'error', RESOLVED: 'success', CLOSED: 'neutral', CANCELED: 'neutral',
 };
-const STATUS_LABELS: Record<string, string> = {
-    OPEN: 'Open', TRIAGED: 'Triaged', IN_PROGRESS: 'In Progress',
-    BLOCKED: 'Blocked', RESOLVED: 'Resolved', CLOSED: 'Closed', CANCELED: 'Canceled',
-};
 const SEVERITY_BADGE: Record<string, StatusBadgeVariant> = {
     INFO: 'neutral', LOW: 'neutral', MEDIUM: 'warning',
     HIGH: 'error', CRITICAL: 'error',
-};
-const TYPE_LABELS: Record<string, string> = {
-    AUDIT_FINDING: 'Audit Finding', CONTROL_GAP: 'Control Gap',
-    INCIDENT: 'Incident', IMPROVEMENT: 'Improvement', TASK: 'Task',
 };
 
 interface LinkedTask {
@@ -80,6 +73,24 @@ export default function LinkedTasksPanel({
     canWrite = false,
 }: LinkedTasksPanelProps) {
     const router = useRouter();
+    const t = useTranslations('panels');
+    const tr = useTranslations();
+    const STATUS_LABELS = useMemo<Record<string, string>>(() => ({
+        OPEN: tr('tasks.statusLabels.OPEN'), TRIAGED: tr('tasks.statusLabels.TRIAGED'),
+        IN_PROGRESS: tr('tasks.statusLabels.IN_PROGRESS'), BLOCKED: tr('tasks.statusLabels.BLOCKED'),
+        RESOLVED: tr('tasks.statusLabels.RESOLVED'), CLOSED: tr('tasks.statusLabels.CLOSED'),
+        CANCELED: tr('tasks.statusLabels.CANCELED'),
+    }), [tr]);
+    const TYPE_LABELS = useMemo<Record<string, string>>(() => ({
+        AUDIT_FINDING: tr('tasks.typeLabels.AUDIT_FINDING'), CONTROL_GAP: tr('tasks.typeLabels.CONTROL_GAP'),
+        INCIDENT: tr('tasks.typeLabels.INCIDENT'), IMPROVEMENT: tr('tasks.typeLabels.IMPROVEMENT'),
+        TASK: tr('tasks.typeLabels.TASK'),
+    }), [tr]);
+    const SEVERITY_LABELS = useMemo<Record<string, string>>(() => ({
+        INFO: tr('tasks.severityLabels.INFO'), LOW: tr('tasks.severityLabels.LOW'),
+        MEDIUM: tr('tasks.severityLabels.MEDIUM'), HIGH: tr('tasks.severityLabels.HIGH'),
+        CRITICAL: tr('tasks.severityLabels.CRITICAL'),
+    }), [tr]);
     const [tasks, setTasks] = useState<LinkedTask[]>([]);
     const [loading, setLoading] = useState(true);
     const [creating, setCreating] = useState(false);
@@ -128,7 +139,7 @@ export default function LinkedTasksPanel({
             createColumns<LinkedTask>([
                 {
                     id: 'title',
-                    header: 'Title',
+                    header: t('col.title'),
                     accessorFn: (t) => t.title,
                     // Title is a link to the task detail page — same UX
                     // as the global Tasks table. Normal truncation so a
@@ -143,7 +154,7 @@ export default function LinkedTasksPanel({
                 },
                 {
                     id: 'type',
-                    header: 'Type',
+                    header: t('col.type'),
                     accessorFn: (t) => t.type ?? '',
                     cell: ({ getValue }) => (
                         <span className="text-xs text-content-muted">
@@ -153,14 +164,14 @@ export default function LinkedTasksPanel({
                 },
                 {
                     id: 'severity',
-                    header: 'Severity',
+                    header: t('col.severity'),
                     accessorFn: (t) => t.severity ?? '',
                     cell: ({ row }) =>
                         row.original.severity ? (
                             <StatusBadge
                                 variant={SEVERITY_BADGE[row.original.severity] || 'neutral'}
                             >
-                                {row.original.severity}
+                                {SEVERITY_LABELS[row.original.severity] ?? row.original.severity}
                             </StatusBadge>
                         ) : (
                             <span className="text-content-subtle">—</span>
@@ -168,7 +179,7 @@ export default function LinkedTasksPanel({
                 },
                 {
                     id: 'status',
-                    header: 'Status',
+                    header: t('col.status'),
                     accessorFn: (t) => t.status,
                     cell: ({ row }) => (
                         <StatusBadge
@@ -180,7 +191,7 @@ export default function LinkedTasksPanel({
                 },
                 {
                     id: 'assignee',
-                    header: 'Assignee',
+                    header: t('col.assignee'),
                     accessorFn: (t) => t.assignee?.name || '—',
                     cell: ({ getValue }) => (
                         <span className="text-xs text-content-muted">
@@ -190,7 +201,7 @@ export default function LinkedTasksPanel({
                 },
                 {
                     id: 'dueAt',
-                    header: 'Due Date',
+                    header: t('col.dueDate'),
                     cell: ({ row }) => (
                         <TimestampTooltip
                             date={row.original.dueAt ?? null}
@@ -199,7 +210,7 @@ export default function LinkedTasksPanel({
                     ),
                 },
             ]),
-        [tenantHref],
+        [tenantHref, t, STATUS_LABELS, TYPE_LABELS, SEVERITY_LABELS],
     );
 
     return (
@@ -213,7 +224,7 @@ export default function LinkedTasksPanel({
                             onClick={() => setCreating(true)}
                             id="linked-task-create-btn"
                             data-testid="linked-task-create-btn"
-                            text="Task"
+                            text={t('linkedTasks.task')}
                             icon={<Plus className="size-4" aria-hidden="true" />}
                         />
                     </div>
@@ -243,7 +254,7 @@ export default function LinkedTasksPanel({
                     router.push(tenantHref(`/tasks/${row.original.id}`))
                 }
                 resourceName={(plural) => (plural ? 'tasks' : 'task')}
-                emptyState="No linked tasks"
+                emptyState={t('linkedTasks.empty')}
                 data-testid="linked-tasks-table"
             />
         </div>

@@ -9,6 +9,7 @@
  * mapping lives on the control.
  */
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -47,6 +48,8 @@ export function InheritedMappingsPanel({
 }) {
     const [rows, setRows] = useState<InheritedMappingRow[]>([]);
     const [loading, setLoading] = useState(true);
+    const t = useTranslations('panels');
+    const entityWord = entityLabel === 'risk' ? t('inherited.entityRisk') : entityLabel === 'asset' ? t('inherited.entityAsset') : entityLabel;
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => {
@@ -71,7 +74,7 @@ export function InheritedMappingsPanel({
     const columns = createColumns<InheritedMappingRow>([
         {
             id: 'code',
-            header: 'Requirement',
+            header: t('col.requirement'),
             accessorFn: (r) => r.code,
             cell: ({ row }) => (
                 <span className="text-sm font-medium text-content-default">
@@ -81,14 +84,14 @@ export function InheritedMappingsPanel({
         },
         {
             accessorKey: 'title',
-            header: 'Title',
+            header: t('col.title'),
             cell: ({ getValue }) => (
                 <span className="text-sm text-content-default">{getValue<string>()}</span>
             ),
         },
         {
             id: 'framework',
-            header: 'Framework',
+            header: t('col.framework'),
             cell: ({ row }) =>
                 row.original.framework ? (
                     <StatusBadge variant="info" size="sm">
@@ -103,7 +106,7 @@ export function InheritedMappingsPanel({
         },
         {
             id: 'control',
-            header: 'Via Control',
+            header: t('col.viaControl'),
             cell: ({ row }) =>
                 row.original.control ? (
                     <TableTitleCell href={tenantHref(`/controls/${row.original.control.id}`)}>
@@ -120,8 +123,7 @@ export function InheritedMappingsPanel({
     return (
         <div className="space-y-default">
             <InlineNotice variant="info">
-                Framework mappings are inherited from the controls mapped to this{' '}
-                {entityLabel}. Manage them on each control.
+                {t('inherited.mappingsNotice', { entity: entityWord })}
             </InlineNotice>
             <DataTable<InheritedMappingRow>
                 data={rows}
@@ -132,8 +134,8 @@ export function InheritedMappingsPanel({
                     <EmptyState
                         size="sm"
                         variant="no-records"
-                        title="No inherited mappings"
-                        description={`None of the controls mapped to this ${entityLabel} are linked to a framework requirement yet.`}
+                        title={t('inherited.mappingsEmpty')}
+                        description={t('inherited.mappingsEmptyDesc', { entity: entityWord })}
                     />
                 }
             />

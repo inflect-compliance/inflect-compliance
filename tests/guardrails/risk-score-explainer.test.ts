@@ -68,7 +68,12 @@ describe('RQ2-3 — score chips explain themselves', () => {
     });
 
     test('MIGRATION provenance is labelled honestly in the popover', () => {
-        expect(component).toMatch(/case 'MIGRATION':\s*\n\s*return 'pre-provenance backfill'/);
+        // i18n-aware: the label is localised via next-intl. Assert the
+        // MIGRATION branch returns the t('provMigration') key AND that the
+        // en.json value still labels it honestly ("pre-provenance backfill").
+        expect(component).toMatch(/case 'MIGRATION':\s*\n\s*return t\('provMigration'\)/);
+        const en = JSON.parse(read('messages/en.json'));
+        expect(en.panels.scoreExplainer.provMigration).toBe('pre-provenance backfill');
     });
 
     test('the aggregator stays read-bounded (events take-5, breaches unresolved + bounded)', () => {

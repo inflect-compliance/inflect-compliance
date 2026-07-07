@@ -168,12 +168,16 @@ describe('Roadmap-14 PR-9 — EnvironmentBadge discipline', () => {
         });
 
         it('carries an env-specific `aria-label`', () => {
-            expect(BADGE_SRC).toMatch(
-                /aria-label="Staging environment"/,
+            // i18n-aware: aria-labels are localised via next-intl. Assert
+            // the t('key') wiring AND that en.json still carries the
+            // canonical English the a11y contract requires.
+            expect(BADGE_SRC).toMatch(/aria-label=\{t\('stagingAria'\)\}/);
+            expect(BADGE_SRC).toMatch(/aria-label=\{t\('devAria'\)\}/);
+            const en = JSON.parse(
+                fs.readFileSync(path.join(ROOT, 'messages/en.json'), 'utf8'),
             );
-            expect(BADGE_SRC).toMatch(
-                /aria-label="Development environment"/,
-            );
+            expect(en.panels.env.stagingAria).toBe('Staging environment');
+            expect(en.panels.env.devAria).toBe('Development environment');
         });
     });
 

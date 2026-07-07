@@ -6,7 +6,8 @@
  * controls. This panel fetches the aggregated plans (each tagged with
  * its owning control + latest run) and renders them read-only.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
@@ -48,6 +49,17 @@ export function InheritedTestPlansPanel({
 }) {
     const [rows, setRows] = useState<InheritedTestPlanRow[]>([]);
     const [loading, setLoading] = useState(true);
+    const t = useTranslations('panels');
+    const tr = useTranslations();
+    const entityWord = entityLabel === 'risk' ? t('inherited.entityRisk') : entityLabel === 'asset' ? t('inherited.entityAsset') : entityLabel;
+    const PLAN_STATUS_LABELS = useMemo<Record<string, string>>(() => ({
+        ACTIVE: tr('controlTests.filterEnums.status.ACTIVE'), PAUSED: tr('controlTests.filterEnums.status.PAUSED'),
+        ARCHIVED: tr('controlTests.filterEnums.status.ARCHIVED'),
+    }), [tr]);
+    const RESULT_LABELS = useMemo<Record<string, string>>(() => ({
+        PASS: tr('controlTests.filterEnums.result.PASS'), FAIL: tr('controlTests.filterEnums.result.FAIL'),
+        INCONCLUSIVE: tr('controlTests.filterEnums.result.INCONCLUSIVE'),
+    }), [tr]);
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => {
@@ -72,40 +84,44 @@ export function InheritedTestPlansPanel({
     const columns = createColumns<InheritedTestPlanRow>([
         {
             id: 'name',
-            header: 'Test Plan',
+            header: t('col.testPlan'),
             accessorFn: (r) => r.name,
             cell: ({ row }) => <span className="text-sm text-content-default">{row.original.name}</span>,
         },
         {
             accessorKey: 'method',
-            header: 'Method',
-            cell: ({ getValue }) => <span className="text-xs text-content-muted">{getValue<string>()}</span>,
+            header: t('col.method'),
+            cell: ({ getValue }) => {
+                const v = getValue<string>();
+                const label = v === 'MANUAL' ? t('testPlans.manual') : v === 'AUTOMATED' ? t('testPlans.automated') : v;
+                return <span className="text-xs text-content-muted">{label}</span>;
+            },
         },
         {
             id: 'status',
-            header: 'Status',
+            header: t('col.status'),
             cell: ({ row }) => (
                 <StatusBadge variant={PLAN_STATUS_BADGE[row.original.status] || 'neutral'} size="sm">
-                    {row.original.status}
+                    {PLAN_STATUS_LABELS[row.original.status] ?? row.original.status}
                 </StatusBadge>
             ),
         },
         {
             id: 'latest',
-            header: 'Latest Result',
+            header: t('col.latestResult'),
             cell: ({ row }) => {
                 const latest = row.original.runs?.[0];
                 if (!latest?.result) return <span className="text-xs text-content-subtle">—</span>;
                 return (
                     <StatusBadge variant={RESULT_BADGE[latest.result] || 'neutral'} size="sm">
-                        {latest.result}
+                        {RESULT_LABELS[latest.result] ?? latest.result}
                     </StatusBadge>
                 );
             },
         },
         {
             id: 'control',
-            header: 'Control',
+            header: t('col.control'),
             cell: ({ row }) =>
                 row.original.control ? (
                     <TableTitleCell href={tenantHref(`/controls/${row.original.control.id}`)}>
@@ -117,7 +133,7 @@ export function InheritedTestPlansPanel({
         },
         {
             id: 'nextDueAt',
-            header: 'Next Due',
+            header: t('col.nextDue'),
             cell: ({ row }) => (
                 <TimestampTooltip date={row.original.nextDueAt} className="text-xs text-content-muted" />
             ),
@@ -127,7 +143,7 @@ export function InheritedTestPlansPanel({
     return (
         <div className="space-y-default">
             <InlineNotice variant="info">
-                Tests run on the controls mapped to this {entityLabel}. Manage test plans on each control.
+                {t('inherited.testsNotice', { entity: entityWord })}
             </InlineNotice>
             <DataTable<InheritedTestPlanRow>
                 data={rows}
@@ -138,8 +154,8 @@ export function InheritedTestPlansPanel({
                     <EmptyState
                         size="sm"
                         variant="no-records"
-                        title="No inherited tests"
-                        description={`No test plans exist on the controls mapped to this ${entityLabel} yet.`}
+                        title={t('inherited.testsEmpty')}
+                        description={t('inherited.testsEmptyDesc', { entity: entityWord })}
                     />
                 }
             />
