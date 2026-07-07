@@ -302,7 +302,7 @@ describe('Executor Registry — structural tenant-scope guards', () => {
     // identity-sync-dispatch (PR-2) is a global cross-tenant fan-out — it
     // scans enabled Okta / Google Workspace connections across all tenants
     // and enqueues a per-connection identity-sync (which IS tenant-scoped).
-    const EXEMPT_JOBS = ['health-check', 'sync-pull', 'schedule-trigger-sweep', 'sharepoint-delta-sync-dispatch', 'sharepoint-subscription-renew', 'risk-appetite-monitor', 'risk-snapshot', 'report-delivery', 'dau-mau-aggregator', 'onboarding-abandonment-sweep', 'nvd-cve-sync', 'compliance-posture-summary-dispatch', 'identity-sync-dispatch'];
+    const EXEMPT_JOBS = ['health-check', 'sync-pull', 'schedule-trigger-sweep', 'sharepoint-delta-sync-dispatch', 'sharepoint-subscription-renew', 'risk-appetite-monitor', 'risk-snapshot', 'report-delivery', 'dau-mau-aggregator', 'onboarding-abandonment-sweep', 'nvd-cve-sync', 'compliance-posture-summary-dispatch', 'identity-sync-dispatch', 'hris-sync-dispatch'];
 
     test('no executor uses _payload (unused parameter = ignored tenantId)', () => {
         const pattern = /executorRegistry\.register\('[^']+',\s*async\s*\(_payload\)/g;
@@ -374,7 +374,7 @@ describe('Payload Type Contract — tenantId field audit', () => {
     // single tenantId; it enqueues per-tenant SharePointDeltaSyncPayload jobs.
     // CompliancePostureDispatchPayload (daily fan-out cron) has no single
     // tenantId — it enqueues per-tenant CompliancePostureSummaryPayload jobs.
-    const EXEMPT_PAYLOADS = ['HealthCheckPayload', 'SyncPullPayload', 'ScheduleTriggerSweepPayload', 'SharePointDeltaSyncDispatchPayload', 'SharePointSubscriptionRenewPayload', 'RiskAppetiteMonitorPayload', 'RiskSnapshotPayload', 'ReportDeliveryPayload', 'DauMauAggregatorPayload', 'OnboardingAbandonmentPayload', 'NvdCveSyncPayload', 'CompliancePostureDispatchPayload', 'IdentitySyncDispatchPayload'];
+    const EXEMPT_PAYLOADS = ['HealthCheckPayload', 'SyncPullPayload', 'ScheduleTriggerSweepPayload', 'SharePointDeltaSyncDispatchPayload', 'SharePointSubscriptionRenewPayload', 'RiskAppetiteMonitorPayload', 'RiskSnapshotPayload', 'ReportDeliveryPayload', 'DauMauAggregatorPayload', 'OnboardingAbandonmentPayload', 'NvdCveSyncPayload', 'CompliancePostureDispatchPayload', 'IdentitySyncDispatchPayload', 'HrisSyncDispatchPayload'];
 
     test('every non-exempt payload interface has tenantId field', () => {
         // Extract all payload interfaces

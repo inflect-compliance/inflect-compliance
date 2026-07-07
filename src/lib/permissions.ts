@@ -17,6 +17,8 @@ export type PermissionSet = {
      * visibility.
      */
     incidents: { view: boolean; manage: boolean };
+    /** People layer (PR-4). `manage` = connect HRIS + edit the roster (OWNER/ADMIN); `view` for all. */
+    personnel: { view: boolean; manage: boolean };
     frameworks: { view: boolean; install: boolean };
     audits: { view: boolean; manage: boolean; freeze: boolean; share: boolean };
     reports: { view: boolean; export: boolean };
@@ -53,6 +55,7 @@ const PERMISSION_SCHEMA: Record<keyof PermissionSet, string[]> = {
     vendors: ['view', 'create', 'edit'],
     tests: ['view', 'create', 'execute'],
     incidents: ['view', 'manage'],
+    personnel: ['view', 'manage'],
     frameworks: ['view', 'install'],
     audits: ['view', 'manage', 'freeze', 'share'],
     reports: ['view', 'export'],
@@ -83,6 +86,7 @@ export function getPermissionsForRole(role: Role): PermissionSet {
                 vendors: { view: true, create: true, edit: true },
                 tests: { view: true, create: true, execute: true },
                 incidents: { view: true, manage: true },
+                personnel: { view: true, manage: true },
                 frameworks: { view: true, install: true },
                 audits: { view: true, manage: true, freeze: true, share: true },
                 reports: { view: true, export: true },
@@ -102,6 +106,7 @@ export function getPermissionsForRole(role: Role): PermissionSet {
                 vendors: { view: true, create: true, edit: true },
                 tests: { view: true, create: true, execute: true },
                 incidents: { view: true, manage: true },
+                personnel: { view: true, manage: true },
                 frameworks: { view: true, install: true },
                 audits: { view: true, manage: true, freeze: true, share: true },
                 reports: { view: true, export: true },
@@ -125,6 +130,7 @@ export function getPermissionsForRole(role: Role): PermissionSet {
                 vendors: { view: true, create: true, edit: true },
                 tests: { view: true, create: true, execute: true },
                 incidents: { view: true, manage: false },
+                personnel: { view: true, manage: false },
                 frameworks: { view: true, install: false },
                 audits: { view: true, manage: false, freeze: false, share: false },
                 reports: { view: true, export: true },
@@ -143,6 +149,7 @@ export function getPermissionsForRole(role: Role): PermissionSet {
                 vendors: { view: true, create: false, edit: false },
                 tests: { view: true, create: false, execute: false },
                 incidents: { view: true, manage: false },
+                personnel: { view: true, manage: false },
                 frameworks: { view: true, install: false },
                 // Auditors can view and maybe export/share depending on policy, but let's keep view/share
                 audits: { view: true, manage: false, freeze: false, share: true },
@@ -161,6 +168,7 @@ export function getPermissionsForRole(role: Role): PermissionSet {
                 vendors: { view: true, create: false, edit: false },
                 tests: { view: true, create: false, execute: false },
                 incidents: { view: true, manage: false },
+                personnel: { view: true, manage: false },
                 frameworks: { view: true, install: false },
                 audits: { view: true, manage: false, freeze: false, share: false },
                 reports: { view: true, export: false },

@@ -102,6 +102,7 @@ export const BACK_AFFORDANCE_COHORT_TODO: readonly string[] = [
  */
 export const MAIN_PAGES: readonly string[] = [
     '/access-reviews',
+    '/personnel',
     '/admin',
     '/assets',
     '/audits',

@@ -70,6 +70,7 @@ export const mockCtx: RequestContext = {
         risks: { view: true, create: true, edit: true },
         assets: { view: true, create: true, edit: true },
         vendors: { view: true, create: true, edit: true },
+        personnel: { view: true, manage: true },
         tests: { view: true, create: true, execute: true },
         incidents: { view: true, manage: true },
         frameworks: { view: true, install: true },

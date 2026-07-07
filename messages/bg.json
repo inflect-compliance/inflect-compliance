@@ -1698,6 +1698,37 @@
             }
         }
     },
+    "personnel": {
+        "title": "Персонал",
+        "description": "{total} души в списъка — синхронизирани от вашата HRIS или добавени ръчно.",
+        "resourceSingular": "човек",
+        "resourcePlural": "хора",
+        "colName": "Име",
+        "colStatus": "Статус",
+        "colDepartment": "Отдел",
+        "colTitle": "Длъжност",
+        "colSource": "Източник",
+        "emptyTitle": "Все още няма персонал",
+        "emptyDesc": "Свържете HRIS (BambooHR) или добавете човек, за да изградите списъка.",
+        "emptyMatchingTitle": "Няма съвпадащи хора",
+        "emptyMatchingDesc": "Няма персонал, който да съответства на текущите филтри.",
+        "fieldStartDate": "Начална дата",
+        "fieldEndDate": "Крайна дата",
+        "fieldExternalId": "HRIS идентификатор",
+        "filters": {
+            "status": "Статус на заетост",
+            "statusDesc": "Филтриране по жизнен цикъл на заетост"
+        },
+        "filterEnums": {
+            "status": {
+                "ACTIVE": "Активен",
+                "ONBOARDING": "Въвеждане",
+                "OFFBOARDING": "Освобождаване",
+                "TERMINATED": "Прекратен",
+                "LEAVE": "Отпуск"
+            }
+        }
+    },
     "policies": {
         "title": "Управление на политики",
         "listDescription": "Изготвени, одобрени и потвърдени — вашата активна библиотека с политики.",

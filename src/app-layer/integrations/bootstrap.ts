@@ -20,6 +20,8 @@ import { OktaProvider } from './providers/okta';
 import { GoogleWorkspaceProvider } from './providers/google-workspace';
 import { AzurePostureProvider } from './providers/azure-posture-provider';
 import { GcpPostureProvider } from './providers/gcp-posture-provider';
+import { BambooHrProvider } from './providers/hris';
+import { PersonnelProvider } from './providers/personnel';
 import { GitHubClient } from './providers/github-client';
 import { GitHubBranchProtectionMapper } from './providers/github-mapper';
 import { GitHubSyncOrchestrator } from './providers/github/sync';
@@ -45,6 +47,12 @@ registry.register(new AzurePostureProvider());
 
 // GCP cloud posture — Powerpipe steampipe-mod-gcp-compliance benchmark evidence.
 registry.register(new GcpPostureProvider());
+
+// BambooHR — HRIS roster sync into the personnel hub.
+registry.register(new BambooHrProvider());
+
+// Personnel — internal checks (offboarded access, onboarding SLA, manager coverage).
+registry.register(new PersonnelProvider());
 
 // Future providers:
 // registry.register(new GitLabProvider());

@@ -118,6 +118,7 @@ a `userId` but stores no contact PII).
 | `IntegrationExecution` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
 | `IntegrationSyncMapping` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
 | `ConnectedIdentityAccount` | Operational | No | Re-synced each run; vanished accounts reconciled to DEPROVISIONED; cascade on tenant delete | Directory mirror (Okta / Google Workspace) — no TTL; row lifecycle tracks the live directory, purged on tenant deletion |
+| `Employee` | PII subject | No | Re-synced from HRIS (idempotent by workEmail) or manual; cascade on tenant delete | Personnel record (name + work email + employment status). No TTL today — tracks the live roster; purged on tenant deletion. **DSAR-relevant PII.** |
 | `IntegrationWebhookEvent` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
 | `KeyRiskIndicator` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `KriReading` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |

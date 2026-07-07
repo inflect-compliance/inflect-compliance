@@ -38,6 +38,7 @@ auditor can verify the inventory is accurate, not merely asserted.
 | Microsoft SharePoint | Document metadata (per-tenant integration only) | Document sync | Global | Token lifetime | Yes (per-tenant opt-in) |
 | Okta | Directory account metadata — email, status, MFA/admin flags (per-tenant integration only; read-only pull) | Identity posture sync | Global | Token lifetime | Yes (per-tenant opt-in) |
 | Google Workspace (`google-workspace`) | Directory account metadata — email, status, 2SV/admin flags (per-tenant integration only; read-only pull) | Identity posture sync | Global | Token lifetime | Yes (per-tenant opt-in) |
+| BambooHR (`hris`) | Employee roster metadata — name, work email, employment status, department (per-tenant integration only; read-only pull) | HRIS sync | Global | Token lifetime | Yes (per-tenant opt-in) |
 
 > **Customer-configured SSO IdPs.** A tenant may configure its own SAML
 > or OIDC identity provider (`src/app/api/auth/sso/saml/*`,
@@ -173,3 +174,9 @@ auditor can verify the inventory is accurate, not merely asserted.
 - **OpenRouter, GitHub, SharePoint** are off unless explicitly enabled.
 
 See also: [`SECURITY.md`](../SECURITY.md), [`docs/encryption-data-protection.md`](./encryption-data-protection.md) (the technical "how data is protected"), and [`docs/data-processing-agreement-template.md`](./data-processing-agreement-template.md).
+
+
+> The `personnel` integration provider is **internal** — it evaluates the
+> employee roster against already-connected identity accounts (offboarded
+> access, onboarding SLA, manager coverage). It calls no external service, so
+> it is **not** a sub-processor.

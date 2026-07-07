@@ -377,6 +377,8 @@ const LIST_QUERY_INDEXES: readonly CompositeIndex[] = [
 // curated composite index is needed."
 
 const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
+    Employee: 'listEmployees filters by tenantId (+status) — covered by @@index([tenantId, status]); bounded take ≤500.',
+    ConnectedIdentityAccount: 'personnel provider reads all accounts for a tenant (offboarded-access join) — covered by @@index([tenantId, status]); bounded take ≤10000.',
     // EU AI Act registry — listAiSystems filters by tenantId (+ optional
     // riskTier / status), orders by riskTier then createdAt; covered by
     // @@index([tenantId, riskTier]) + @@index([tenantId, status]). Bounded

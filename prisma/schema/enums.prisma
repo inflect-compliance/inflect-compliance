@@ -842,6 +842,16 @@ enum ConnectedAccountStatus {
   DEPROVISIONED
 }
 
+/// Employment lifecycle for a personnel record (PR-4). TERMINATED drives
+/// the offboarded-access check against ConnectedIdentityAccount.
+enum EmploymentStatus {
+  ACTIVE
+  ONBOARDING
+  OFFBOARDING
+  TERMINATED
+  LEAVE
+}
+
 enum SyncDirection {
   PUSH
   PULL

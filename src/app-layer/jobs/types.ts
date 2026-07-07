@@ -599,6 +599,8 @@ export interface JobPayloadMap {
     'identity-sync-dispatch': IdentitySyncDispatchPayload;
     'azure-posture-collect': AzurePostureCollectPayload;
     'gcp-posture-collect': GcpPostureCollectPayload;
+    'hris-sync': HrisSyncPayload;
+    'hris-sync-dispatch': HrisSyncDispatchPayload;
 }
 
 /** aws-posture connector — run one tenant connection's benchmark + collect evidence. */
@@ -617,6 +619,17 @@ export interface AzurePostureCollectPayload {
 export interface GcpPostureCollectPayload {
     tenantId: string;
     connectionId: string;
+}
+
+/** hris-sync — sync one BambooHR connection's roster into Employee. */
+export interface HrisSyncPayload {
+    tenantId: string;
+    connectionId: string;
+}
+
+/** hris-sync-dispatch — fan out an hris-sync per enabled HRIS connection. */
+export interface HrisSyncDispatchPayload {
+    _?: never;
 }
 
 /** identity-sync — sync one Okta / Google Workspace connection's directory. */
@@ -695,6 +708,18 @@ export const JOB_DEFAULTS: Record<JobName, {
         backoff: { type: 'fixed', delay: 0 },
         removeOnComplete: 50,
         removeOnFail: 200,
+    },
+    'hris-sync': {
+        attempts: 1,
+        backoff: { type: 'fixed', delay: 0 },
+        removeOnComplete: 50,
+        removeOnFail: 200,
+    },
+    'hris-sync-dispatch': {
+        attempts: 1,
+        backoff: { type: 'fixed', delay: 0 },
+        removeOnComplete: 20,
+        removeOnFail: 50,
     },
     'automation-runner': {
         attempts: 3,
