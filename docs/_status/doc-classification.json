@@ -1447,6 +1447,9 @@
     },
     "docs/implementation-notes/2026-07-07-pr9-questionnaire-ai.md": {
       "class": "historical"
+    },
+    "docs/implementation-notes/2026-07-07-pr10-assistant.md": {
+      "class": "historical"
     }
   }
 }
