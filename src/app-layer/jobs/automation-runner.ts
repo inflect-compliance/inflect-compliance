@@ -339,9 +339,14 @@ export async function executeControlAutomation(
             data: {
                 tenantId: control.tenantId,
                 controlId: control.id,
-                // EvidencePayload.type uses integration-layer vocab (CONFIGURATION etc.)
-                // that maps to Prisma EvidenceType at runtime; cast is narrow and bounded.
-                type: evidencePayload.type as EvidenceType,
+                // Integration EvidencePayload.type uses a wider vocabulary
+                // (DOCUMENT/SCREENSHOT/LOG/CONFIGURATION/REPORT) than the
+                // narrow Prisma EvidenceType (FILE/LINK/TEXT). Integration-
+                // created evidence is always a text summary of the check
+                // result, so map it to TEXT explicitly — mirrors the
+                // usecase writer in usecases/integrations.ts and removes the
+                // former `as EvidenceType` cast (PR-1).
+                type: EvidenceType.TEXT,
                 title: evidencePayload.title,
                 content: evidencePayload.content,
                 category: evidencePayload.category ?? 'integration',
@@ -364,6 +369,11 @@ export async function executeControlAutomation(
         },
     });
 
+    // PR-1 — close the failing-check loop: materialize (or reconcile) a
+    // Finding from the outcome. Fail-safe — the execution + evidence are
+    // already committed, so a finding-side error is logged, not thrown.
+    await reconcileFindingForCheck(control, result.status, result, now);
+
     // Advance control scheduling
     const nextDueAt = computeNextDueAt(control.frequency, now);
     await prisma.control.update({
@@ -375,6 +385,92 @@ export async function executeControlAutomation(
     });
 
     return { status: result.status, executionId: execution.id };
+}
+
+// ─── FAILED → Finding (PR-1) ─────────────────────────────────────────
+
+/** Provenance tag on Findings materialized from an automated check. */
+export const INTEGRATION_CHECK_SOURCE_KIND = 'INTEGRATION_CHECK';
+
+/**
+ * Turn a scheduled-check outcome into a tracked Finding, closing the
+ * failing-check loop.
+ *
+ * On FAILED — open a de-duplicated OPEN Finding for (control, automationKey),
+ * tagged `sourceKind='INTEGRATION_CHECK'` /
+ * `sourceRef='<controlId>:<automationKey>'`. Re-runs never pile up
+ * duplicates; the `Finding[tenantId, sourceKind, sourceRef]` index backs the
+ * lookup (mirrors the scanner-ingestion / NIS2 materializer contract).
+ *
+ * On PASSED — reconcile: auto-close any still-open finding for that source,
+ * so a check that recovers clears its finding.
+ *
+ * On ERROR — the check could not run (creds/network); not a compliance
+ * failure, so neither open nor close.
+ *
+ * Fully fail-safe — errors are logged and swallowed, never propagated to
+ * the run.
+ */
+async function reconcileFindingForCheck(
+    control: DueControl,
+    status: 'PASSED' | 'FAILED' | 'ERROR',
+    result: CheckResult,
+    now: Date,
+): Promise<void> {
+    if (status === 'ERROR') return;
+
+    const sourceRef = `${control.id}:${control.automationKey}`;
+    try {
+        if (status === 'FAILED') {
+            const existing = await prisma.finding.findFirst({
+                where: {
+                    tenantId: control.tenantId,
+                    sourceKind: INTEGRATION_CHECK_SOURCE_KIND,
+                    sourceRef,
+                    status: { not: 'CLOSED' },
+                    deletedAt: null,
+                },
+                select: { id: true },
+            });
+            if (existing) return; // de-duplicate — one open finding per source
+
+            await prisma.finding.create({
+                data: {
+                    tenantId: control.tenantId,
+                    controlId: control.id,
+                    severity: 'MEDIUM',
+                    type: 'NONCONFORMITY',
+                    title: `Automated check failed: ${control.name}`.slice(0, 250),
+                    description: (result.summary || `Check ${control.automationKey} failed.`).slice(0, 2000),
+                    status: 'OPEN',
+                    sourceKind: INTEGRATION_CHECK_SOURCE_KIND,
+                    sourceRef,
+                },
+            });
+        } else {
+            // PASSED — reconcile any still-open finding for this source.
+            await prisma.finding.updateMany({
+                where: {
+                    tenantId: control.tenantId,
+                    sourceKind: INTEGRATION_CHECK_SOURCE_KIND,
+                    sourceRef,
+                    status: { not: 'CLOSED' },
+                },
+                data: {
+                    status: 'CLOSED',
+                    verificationNotes: `Auto-closed: ${control.automationKey} passed on ${now.toISOString().slice(0, 10)}`,
+                    verifiedAt: now,
+                },
+            });
+        }
+    } catch (err) {
+        logger.error('Automated-check finding reconcile failed (non-fatal)', {
+            component: 'automation-runner',
+            controlId: control.id,
+            automationKey: control.automationKey,
+            error: err instanceof Error ? err.message : String(err),
+        });
+    }
 }
 
 // ─── Batch Runner ────────────────────────────────────────────────────

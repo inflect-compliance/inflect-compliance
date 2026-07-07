@@ -34,6 +34,11 @@ jest.mock('@/lib/prisma', () => ({
         evidence: {
             create: jest.fn(),
         },
+        finding: {
+            findFirst: jest.fn(),
+            create: jest.fn(),
+            updateMany: jest.fn(),
+        },
     },
 }));
 
@@ -463,5 +468,101 @@ describe('runScheduledAutomations', () => {
 
         expect(res).toMatchObject({ totalDue: 0, executed: 0, dryRun: false });
         expect(typeof res.jobRunId).toBe('string');
+    });
+});
+
+// ─── PR-1: FAILED → Finding materialize + reconcile ───
+
+describe('reconcileFindingForCheck (via executeControlAutomation)', () => {
+    /** Wire a provider that returns the given status and an evidence payload. */
+    function wire(status: 'PASSED' | 'FAILED') {
+        const provider = makeProvider({
+            runCheck: jest.fn().mockResolvedValue({ status, summary: `sum-${status}`, details: { passed: 1, failed: status === 'FAILED' ? 2 : 0 } }),
+            mapResultToEvidence: jest.fn().mockReturnValue({ title: 'E', content: 'C', type: 'CONFIGURATION', category: 'integration' }),
+        });
+        mRegistry.resolveByAutomationKey.mockReturnValue({ provider });
+        mPrisma.integrationConnection.findFirst.mockResolvedValue({ id: 'conn-1', secretEncrypted: null, configJson: {} });
+        mPrisma.integrationExecution.create.mockResolvedValue({ id: 'exec-x' });
+        mPrisma.integrationExecution.update.mockResolvedValue({});
+        mPrisma.evidence.create.mockResolvedValue({ id: 'ev-1' });
+        mPrisma.control.update.mockResolvedValue({});
+        return provider;
+    }
+
+    test('FAILED opens a de-duplicated Finding tagged INTEGRATION_CHECK', async () => {
+        wire('FAILED');
+        mPrisma.finding.findFirst.mockResolvedValue(null); // none open yet
+        mPrisma.finding.create.mockResolvedValue({ id: 'find-1' });
+
+        await executeControlAutomation(makeDueControl(), 'job-1', NOW);
+
+        expect(mPrisma.finding.findFirst).toHaveBeenCalledTimes(1);
+        const where = mPrisma.finding.findFirst.mock.calls[0][0].where;
+        expect(where).toMatchObject({
+            tenantId: 'tenant-1',
+            sourceKind: 'INTEGRATION_CHECK',
+            sourceRef: 'ctrl-1:github.branch_protection',
+            status: { not: 'CLOSED' },
+        });
+        expect(mPrisma.finding.create).toHaveBeenCalledTimes(1);
+        const data = mPrisma.finding.create.mock.calls[0][0].data;
+        expect(data).toMatchObject({
+            tenantId: 'tenant-1',
+            controlId: 'ctrl-1',
+            severity: 'MEDIUM',
+            type: 'NONCONFORMITY',
+            status: 'OPEN',
+            sourceKind: 'INTEGRATION_CHECK',
+            sourceRef: 'ctrl-1:github.branch_protection',
+        });
+        expect(data.description).toBe('sum-FAILED');
+    });
+
+    test('FAILED with an existing open Finding does NOT create a duplicate', async () => {
+        wire('FAILED');
+        mPrisma.finding.findFirst.mockResolvedValue({ id: 'existing-find' });
+
+        await executeControlAutomation(makeDueControl(), 'job-1', NOW);
+
+        expect(mPrisma.finding.create).not.toHaveBeenCalled();
+    });
+
+    test('PASSED reconciles (auto-closes) any still-open Finding for the source', async () => {
+        wire('PASSED');
+        mPrisma.finding.updateMany.mockResolvedValue({ count: 1 });
+
+        await executeControlAutomation(makeDueControl(), 'job-1', NOW);
+
+        expect(mPrisma.finding.create).not.toHaveBeenCalled();
+        expect(mPrisma.finding.updateMany).toHaveBeenCalledTimes(1);
+        const call = mPrisma.finding.updateMany.mock.calls[0][0];
+        expect(call.where).toMatchObject({
+            tenantId: 'tenant-1',
+            sourceKind: 'INTEGRATION_CHECK',
+            sourceRef: 'ctrl-1:github.branch_protection',
+            status: { not: 'CLOSED' },
+        });
+        expect(call.data.status).toBe('CLOSED');
+    });
+
+    test('a Finding-side error never fails the run (fail-safe)', async () => {
+        wire('FAILED');
+        mPrisma.finding.findFirst.mockRejectedValue(new Error('db down'));
+
+        const out = await executeControlAutomation(makeDueControl(), 'job-1', NOW);
+
+        expect(out.status).toBe('FAILED'); // run still reports the check outcome
+    });
+
+    test('auto-created Evidence is mapped to EvidenceType.TEXT (no wider-vocab cast)', async () => {
+        wire('PASSED');
+        mPrisma.finding.updateMany.mockResolvedValue({ count: 0 });
+
+        await executeControlAutomation(makeDueControl(), 'job-1', NOW);
+
+        expect(mPrisma.evidence.create).toHaveBeenCalledTimes(1);
+        // provider.mapResultToEvidence returned type 'CONFIGURATION', but the
+        // runner forces the narrow Prisma EvidenceType.TEXT.
+        expect(mPrisma.evidence.create.mock.calls[0][0].data.type).toBe('TEXT');
     });
 });
