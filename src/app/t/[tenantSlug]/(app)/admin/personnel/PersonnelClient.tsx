@@ -79,7 +79,7 @@ function PersonnelInner({ initialRows }: Props) {
                     cell: ({ row }) => (
                         <div className="min-w-0">
                             <div className="truncate font-medium text-content-default">{row.original.fullName}</div>
-                            <div className="truncate text-xs text-content-subtle">{row.original.workEmail}</div>
+                            <div className="truncate text-content-subtle">{row.original.workEmail}</div>
                         </div>
                     ),
                 },
@@ -91,7 +91,7 @@ function PersonnelInner({ initialRows }: Props) {
                 },
                 { id: 'department', header: t('colDepartment'), accessorFn: (r) => r.department ?? '', cell: ({ row }) => <span className="text-content-muted">{row.original.department ?? '—'}</span> },
                 { id: 'jobTitle', header: t('colTitle'), accessorFn: (r) => r.jobTitle ?? '', cell: ({ row }) => <span className="text-content-muted">{row.original.jobTitle ?? '—'}</span> },
-                { id: 'source', header: t('colSource'), accessorFn: (r) => r.source, cell: ({ row }) => <span className="text-xs text-content-subtle">{row.original.source}</span> },
+                { id: 'source', header: t('colSource'), accessorFn: (r) => r.source, cell: ({ row }) => <span className="text-content-subtle">{row.original.source}</span> },
             ]),
         [t],
     );
@@ -106,6 +106,7 @@ function PersonnelInner({ initialRows }: Props) {
                     </>
                 ),
                 description: t('description', { total: initialRows.length }),
+                back: { smart: true },
             }}
             filters={{ defs: filterDefs }}
             table={{

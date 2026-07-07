@@ -79,6 +79,10 @@ export async function register() {
         const { installAutomationBusDispatcher } = await import(
             '@/app-layer/automation/bus-bootstrap'
         );
+        // Register all integration providers process-wide (web tier). Without
+        // this the provider registry is empty for scheduled checks, identity/
+        // HRIS sync, and webhook routing triggered from the web process.
+        await import('@/app-layer/integrations/bootstrap');
         const { installRlsTripwire } = await import('@/lib/db/rls-middleware');
         const { prisma } = await import('@/lib/prisma');
         const { installShutdownHandlers } = await import('@/lib/observability/shutdown');

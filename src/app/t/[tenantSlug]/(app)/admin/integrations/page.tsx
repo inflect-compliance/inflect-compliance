@@ -96,6 +96,27 @@ export default function AdminIntegrationsPage() {
         setShowSecrets(false);
     };
 
+    /** Open the Add form pre-selected to a catalog provider ("Connect" card). */
+    const handleConnect = (providerId: string) => {
+        setEditingId(null);
+        setFormProvider(providerId);
+        setFormName('');
+        setFormConfig({});
+        setFormSecrets({});
+        setShowSecrets(false);
+        setMessage(null);
+        setShowForm(true);
+        // Defer so the form has mounted before we scroll it into view.
+        setTimeout(() => document.getElementById('save-integration-btn')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+    };
+
+    // External providers worth surfacing as connectable cards — those that
+    // actually take a config or secret (internal-only check providers like
+    // personnel/device/training carry no config and are driven by their pages).
+    const connectableProviders = providers.filter(
+        (p) => p.configSchema.configFields.length + p.configSchema.secretFields.length > 0,
+    );
+
     const handleSave = async () => {
         if (!formProvider || !formName) {
             setMessage({ type: 'error', text: t('integrations.providerNameRequired') });
@@ -203,6 +224,47 @@ export default function AdminIntegrationsPage() {
                 {/* SP-1 — SharePoint connection (delegated consent, separate
                     from the generic config-field connections below). */}
                 <SharePointCard />
+
+                {/* Available-integrations catalog — every registered external
+                    provider (AWS / GCP / Okta / Azure / HRIS / GitHub, …) shown
+                    as a Connect card that opens the Add form pre-selected. */}
+                {connectableProviders.length > 0 && (
+                    <div>
+                        <Heading level={2} className="mb-1">{t('integrations.availableTitle')}</Heading>
+                        <p className="text-sm text-content-muted mb-3">{t('integrations.availableSubtitle')}</p>
+                        <div className="grid gap-default sm:grid-cols-2 lg:grid-cols-3">
+                            {connectableProviders.map((p) => (
+                                <div key={p.id} className={cn(cardVariants(), 'flex flex-col gap-compact')}>
+                                    <div>
+                                        <Heading level={3}>{p.displayName}</Heading>
+                                        <p className="text-xs text-content-subtle mt-0.5 line-clamp-2">{p.description}</p>
+                                    </div>
+                                    {p.supportedChecks.length > 0 && (
+                                        <div className="flex flex-wrap gap-1">
+                                            {p.supportedChecks.slice(0, 3).map((check) => (
+                                                <StatusBadge variant="neutral" key={check}>{check}</StatusBadge>
+                                            ))}
+                                            {p.supportedChecks.length > 3 && (
+                                                <span className="text-xs text-content-subtle self-center">+{p.supportedChecks.length - 3}</span>
+                                            )}
+                                        </div>
+                                    )}
+                                    <div className="mt-auto pt-2">
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            icon={<Link2 className="w-3.5 h-3.5" />}
+                                            onClick={() => handleConnect(p.id)}
+                                            id={`connect-${p.id}-btn`}
+                                        >
+                                            {t('integrations.connect')}
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Message banner */}
                 {message && (

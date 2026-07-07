@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { Shield, CreditCard, KeyRound, ShieldCheck, ShieldPlus, Users, UserCog, CloudCog, Plug, Palette, Grid3x3, Gauge, Bell, ScrollText, Globe } from 'lucide-react';
+import { Shield, CreditCard, KeyRound, ShieldCheck, ShieldPlus, Users, UserCog, CloudCog, Plug, Palette, Grid3x3, Gauge, Bell, ScrollText, Globe, Laptop, GraduationCap } from 'lucide-react';
 import { Robot } from '@/components/ui/icons/nucleo';
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button-variants';
@@ -113,6 +113,30 @@ export default async function AdminPage({
                 >
                     <UserCog className="w-3.5 h-3.5" />
                     {t('nav.entra')}
+                </Link>
+                <Link
+                    href={tenantHref('/admin/personnel')}
+                    className={buttonVariants({ variant: 'secondary' })}
+                    id="personnel-pill-btn"
+                >
+                    <Users className="w-3.5 h-3.5" />
+                    {t('nav.personnel')}
+                </Link>
+                <Link
+                    href={tenantHref('/admin/devices')}
+                    className={buttonVariants({ variant: 'secondary' })}
+                    id="devices-pill-btn"
+                >
+                    <Laptop className="w-3.5 h-3.5" />
+                    {t('nav.devices')}
+                </Link>
+                <Link
+                    href={tenantHref('/admin/training')}
+                    className={buttonVariants({ variant: 'secondary' })}
+                    id="training-pill-btn"
+                >
+                    <GraduationCap className="w-3.5 h-3.5" />
+                    {t('nav.training')}
                 </Link>
                 <Link
                     href={tenantHref('/admin/integrations')}

@@ -76,14 +76,14 @@ function TrainingInner({ initialRows }: Props) {
                     cell: ({ row }) => (
                         <div className="min-w-0">
                             <div className="truncate font-medium text-content-default">{row.original.employee.fullName}</div>
-                            <div className="truncate text-xs text-content-subtle">{row.original.employee.workEmail}</div>
+                            <div className="truncate text-content-subtle">{row.original.employee.workEmail}</div>
                         </div>
                     ),
                 },
                 { id: 'course', header: t('colCourse'), accessorFn: (r) => r.course.name, cell: ({ row }) => <span className="text-content-default">{row.original.course.name}</span> },
                 { id: 'status', header: t('colStatus'), accessorFn: (r) => r.status, cell: ({ row }) => <StatusBadge variant={STATUS_VARIANT[row.original.status] ?? 'neutral'}>{row.original.status}</StatusBadge> },
-                { id: 'due', header: t('colDue'), accessorFn: (r) => r.dueAt ?? '', cell: ({ row }) => <span className="text-xs text-content-muted">{row.original.dueAt ? formatDate(row.original.dueAt) : '—'}</span> },
-                { id: 'completed', header: t('colCompleted'), accessorFn: (r) => r.completedAt ?? '', cell: ({ row }) => <span className="text-xs text-content-muted">{row.original.completedAt ? formatDate(row.original.completedAt) : '—'}</span> },
+                { id: 'due', header: t('colDue'), accessorFn: (r) => r.dueAt ?? '', cell: ({ row }) => <span className="text-content-muted">{row.original.dueAt ? formatDate(row.original.dueAt) : '—'}</span> },
+                { id: 'completed', header: t('colCompleted'), accessorFn: (r) => r.completedAt ?? '', cell: ({ row }) => <span className="text-content-muted">{row.original.completedAt ? formatDate(row.original.completedAt) : '—'}</span> },
             ]),
         [t],
     );
@@ -98,6 +98,7 @@ function TrainingInner({ initialRows }: Props) {
                     </>
                 ),
                 description: t('description', { total: initialRows.length }),
+                back: { smart: true },
             }}
             filters={{ defs: filterDefs }}
             table={{

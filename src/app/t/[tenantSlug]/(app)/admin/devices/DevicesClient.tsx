@@ -107,6 +107,7 @@ function DevicesInner({ initialRows }: Props) {
                     </>
                 ),
                 description: t('description', { total: initialRows.length }),
+                back: { smart: true },
             }}
             filters={{ defs: filterDefs }}
             table={{
