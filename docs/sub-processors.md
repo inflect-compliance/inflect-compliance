@@ -180,3 +180,9 @@ See also: [`SECURITY.md`](../SECURITY.md), [`docs/encryption-data-protection.md`
 > employee roster against already-connected identity accounts (offboarded
 > access, onboarding SLA, manager coverage). It calls no external service, so
 > it is **not** a sub-processor.
+
+
+> The `device` integration provider is **internal** — it evaluates the
+> device inventory (encryption, screen lock, antivirus, password manager). It
+> calls no external service, so it is **not** a sub-processor. (A future MDM
+> connector — Jamf / Intune — would be added here as a real sub-processor.)

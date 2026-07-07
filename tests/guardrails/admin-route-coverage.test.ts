@@ -51,6 +51,8 @@ const ADMIN_ONLY_ROUTES = [
     'admin/trust-center/enable/route.ts',
     'admin/api-keys/route.ts',
     'admin/api-keys/[keyId]/route.ts',
+    'admin/device-tokens/route.ts',
+    'admin/device-tokens/[tokenId]/route.ts',
     'admin/key-rotation/route.ts',
     'admin/tenant-dek-rotation/route.ts',
     'admin/billing/plan/route.ts',

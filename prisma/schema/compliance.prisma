@@ -363,6 +363,36 @@ model ConnectedIdentityAccount {
   @@index([tenantId, status])
 }
 
+/// A managed endpoint / device (PR-5). Reported by an MDM or a per-tenant
+/// device agent (token-authed) or entered manually. Optionally linked to an
+/// Employee. The boolean posture fields are THREE-STATE: true (pass), false
+/// (fail), null (NOT_APPLICABLE — e.g. LINUX has no screen-lock check). Never
+/// treat null as fail.
+model Device {
+  id                    String         @id @default(cuid())
+  tenantId              String
+  employeeId            String?
+  serialNumber          String?
+  hostname              String?
+  platform              DevicePlatform
+  /// 'MDM' | 'AGENT' | 'MANUAL'.
+  source                String         @default("MANUAL")
+  diskEncrypted         Boolean?
+  screenLockEnabled     Boolean?
+  antivirusRunning      Boolean?
+  passwordManagerPresent Boolean?
+  lastCheckIn           DateTime?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, serialNumber])
+  @@index([tenantId, employeeId])
+  @@index([tenantId, platform])
+}
+
 /// A personnel record (PR-4). The people-layer hub — PR-5 devices + PR-6
 /// training/background attach here. Synced from an HRIS or entered manually;
 /// idempotent by (tenantId, workEmail). TERMINATED employees whose identity
@@ -390,6 +420,7 @@ model Employee {
   tenant   Tenant     @relation(fields: [tenantId], references: [id])
   manager  Employee?  @relation("EmployeeManager", fields: [managerEmployeeId], references: [id], onDelete: SetNull)
   reports  Employee[] @relation("EmployeeManager")
+  devices  Device[]
 
   @@unique([tenantId, workEmail])
   @@index([tenantId, status])
