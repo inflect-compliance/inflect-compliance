@@ -1423,6 +1423,9 @@
     },
     "docs/implementation-notes/2026-07-07-pr2-identity-providers.md": {
       "class": "historical"
+    },
+    "docs/implementation-notes/2026-07-07-pr3-azure-gcp-posture.md": {
+      "class": "historical"
     }
   }
 }
