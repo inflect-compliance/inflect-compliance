@@ -114,6 +114,8 @@ model Tenant {
   scannerRuns                       ScannerRun[]
   connectedIdentityAccounts         ConnectedIdentityAccount[]
   employees                         Employee[]
+  devices                           Device[]
+  deviceTokens                      TenantDeviceToken[]
   scannerFindings                   ScannerFinding[]
   businessImpactAnalyses            BusinessImpactAnalysis[]
   biaDependencies                   BiaDependency[]
@@ -583,6 +585,30 @@ model TenantApiKey {
   @@index([tenantId, revokedAt])
 }
 
+/// A per-tenant device-agent token (PR-5). Authenticates POST /devices/report
+/// so an endpoint agent can push its posture without a user session. Cloned
+/// from TenantApiKey — SHA-256 token hash at rest, single-use lookup by hash.
+model TenantDeviceToken {
+  id          String    @id @default(cuid())
+  tenantId    String
+  name        String
+  tokenPrefix String
+  tokenHash   String
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  lastUsedAt  DateTime?
+  lastUsedIp  String?
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  createdBy   User      @relation("DeviceTokenCreator", fields: [createdById], references: [id])
+
+  @@unique([tokenHash])
+  @@index([tenantId])
+  @@index([tenantId, revokedAt])
+}
+
 model TenantMembership {
   id                    String                 @id @default(cuid())
   tenantId              String
@@ -859,6 +885,7 @@ model User {
   vendorDocsUploaded            VendorDocument[]             @relation("VendorDocUploader")
   vendorBundlesCreated          VendorEvidenceBundle[]       @relation("EvidenceBundleCreator")
   apiKeysCreated                TenantApiKey[]               @relation("ApiKeyCreator")
+  deviceTokensCreated TenantDeviceToken[] @relation("DeviceTokenCreator")
   userSessions                  UserSession[]                @relation("UserSessionOwner")
   passwordResetTokens           PasswordResetToken[]         @relation("UserPasswordResetTokens")
   orgMemberships                OrgMembership[]

@@ -152,6 +152,15 @@ export const ROUTE_PERMISSIONS: readonly RoutePermissionRule[] = [
             'credential against the tenant; treat as admin-only.',
     },
 
+    // ── Device-agent tokens (PR-5) ──────────────────────────────────
+    {
+        path: new RegExp(`^${T}\\/admin\\/device-tokens(\\/.*)?$`),
+        permission: 'admin.manage',
+        note:
+            'Device-agent token issuance + revocation — a long-lived ' +
+            'per-tenant credential authenticating /devices/report; admin-only.',
+    },
+
     // ── Master-KEK rotation (Epic B.3) ──────────────────────────────
     {
         path: new RegExp(`^${T}\\/admin\\/key-rotation(\\/.*)?$`),

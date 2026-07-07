@@ -22,6 +22,7 @@ import { AzurePostureProvider } from './providers/azure-posture-provider';
 import { GcpPostureProvider } from './providers/gcp-posture-provider';
 import { BambooHrProvider } from './providers/hris';
 import { PersonnelProvider } from './providers/personnel';
+import { DeviceProvider } from './providers/device';
 import { GitHubClient } from './providers/github-client';
 import { GitHubBranchProtectionMapper } from './providers/github-mapper';
 import { GitHubSyncOrchestrator } from './providers/github/sync';
@@ -53,6 +54,9 @@ registry.register(new BambooHrProvider());
 
 // Personnel — internal checks (offboarded access, onboarding SLA, manager coverage).
 registry.register(new PersonnelProvider());
+
+// Device — internal checks (encryption, screen lock, antivirus, password manager).
+registry.register(new DeviceProvider());
 
 // Future providers:
 // registry.register(new GitLabProvider());

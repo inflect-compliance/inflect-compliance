@@ -156,6 +156,7 @@ const FK_INDEX_EXEMPT: Record<string, string> = {
     'AuditPackShare.createdByUserId': R_ACTOR,
     'OrgInvite.invitedById': R_ACTOR,
     'TenantApiKey.createdById': R_ACTOR,
+    'TenantDeviceToken.createdById': R_ACTOR,
     'TenantMembership.invitedByUserId': R_ACTOR,
     'AccessReview.createdByUserId': R_ACTOR,
     'AccessReview.closedByUserId': R_ACTOR,
@@ -379,6 +380,8 @@ const LIST_QUERY_INDEXES: readonly CompositeIndex[] = [
 const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
     Employee: 'listEmployees filters by tenantId (+status) — covered by @@index([tenantId, status]); bounded take ≤500.',
     ConnectedIdentityAccount: 'personnel provider reads all accounts for a tenant (offboarded-access join) — covered by @@index([tenantId, status]); bounded take ≤10000.',
+    Device: 'listDevices + device provider read by tenantId (+platform) — covered by @@index([tenantId, platform]); bounded take ≤10000.',
+    TenantDeviceToken: 'listDeviceTokens by tenantId — covered by @@index([tenantId]) / @@index([tenantId, revokedAt]); bounded take ≤200.',
     // EU AI Act registry — listAiSystems filters by tenantId (+ optional
     // riskTier / status), orders by riskTier then createdAt; covered by
     // @@index([tenantId, riskTier]) + @@index([tenantId, status]). Bounded

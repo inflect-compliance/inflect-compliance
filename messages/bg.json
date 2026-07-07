@@ -1729,6 +1729,35 @@
             }
         }
     },
+    "devices": {
+        "title": "Устройства",
+        "description": "{total} управлявани крайни точки — докладвани от агент или въведени ръчно.",
+        "resourceSingular": "устройство",
+        "resourcePlural": "устройства",
+        "colDevice": "Устройство",
+        "colEncrypted": "Криптирано",
+        "colScreenLock": "Заключване",
+        "colAntivirus": "Антивирус",
+        "colPwManager": "Мениджър пароли",
+        "yes": "Да",
+        "no": "Не",
+        "naShort": "Н/П",
+        "emptyTitle": "Все още няма устройства",
+        "emptyDesc": "Издайте токен за устройство и стартирайте агента, или свържете MDM, за да изградите инвентара.",
+        "emptyMatchingTitle": "Няма съвпадащи устройства",
+        "emptyMatchingDesc": "Няма устройства, съответстващи на текущите филтри.",
+        "filters": {
+            "platform": "Платформа",
+            "platformDesc": "Филтриране по ОС платформа"
+        },
+        "filterEnums": {
+            "platform": {
+                "MACOS": "macOS",
+                "WINDOWS": "Windows",
+                "LINUX": "Linux"
+            }
+        }
+    },
     "policies": {
         "title": "Управление на политики",
         "listDescription": "Изготвени, одобрени и потвърдени — вашата активна библиотека с политики.",

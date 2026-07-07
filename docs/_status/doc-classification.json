@@ -1429,6 +1429,12 @@
     },
     "docs/implementation-notes/2026-07-07-pr4-personnel-hris.md": {
       "class": "historical"
+    },
+    "docs/device-monitoring.md": {
+      "class": "authoritative"
+    },
+    "docs/implementation-notes/2026-07-07-pr5-device-monitoring.md": {
+      "class": "historical"
     }
   }
 }

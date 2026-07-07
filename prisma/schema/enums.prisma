@@ -852,6 +852,14 @@ enum EmploymentStatus {
   LEAVE
 }
 
+/// Device OS platform (PR-5). Drives which posture checks apply
+/// (e.g. LINUX has no screen-lock/AV check → NOT_APPLICABLE).
+enum DevicePlatform {
+  MACOS
+  WINDOWS
+  LINUX
+}
+
 enum SyncDirection {
   PUSH
   PULL

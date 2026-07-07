@@ -1729,6 +1729,35 @@
             }
         }
     },
+    "devices": {
+        "title": "Devices",
+        "description": "{total} managed endpoints — reported by an agent or entered manually.",
+        "resourceSingular": "device",
+        "resourcePlural": "devices",
+        "colDevice": "Device",
+        "colEncrypted": "Encrypted",
+        "colScreenLock": "Screen lock",
+        "colAntivirus": "Antivirus",
+        "colPwManager": "Password mgr",
+        "yes": "Yes",
+        "no": "No",
+        "naShort": "N/A",
+        "emptyTitle": "No devices yet",
+        "emptyDesc": "Issue a device token and run the reporter agent, or connect an MDM, to build the inventory.",
+        "emptyMatchingTitle": "No matching devices",
+        "emptyMatchingDesc": "No devices match the current filters.",
+        "filters": {
+            "platform": "Platform",
+            "platformDesc": "Filter by OS platform"
+        },
+        "filterEnums": {
+            "platform": {
+                "MACOS": "macOS",
+                "WINDOWS": "Windows",
+                "LINUX": "Linux"
+            }
+        }
+    },
     "policies": {
         "title": "Policy Management",
         "listDescription": "Authored, approved, and acknowledged — your live policy library.",
