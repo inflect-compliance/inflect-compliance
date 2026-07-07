@@ -130,6 +130,7 @@ auditor can verify the inventory is accurate, not merely asserted.
 - **Transfer:** OpenRouter US/global; per its terms.
 - **Vendor pages:** https://openrouter.ai/privacy · https://openrouter.ai/terms
 - **Operator-optional:** default `AI_RISK_PROVIDER=stub` (a local template provider — no external call). Set `AI_RISK_PROVIDER=openrouter` + `OPENROUTER_API_KEY` to enable.
+- **Also used by** the inbound-questionnaire autofill (PR-9): env `AI_QUESTIONNAIRE_PROVIDER` (default `stub`; `openrouter` + `OPENROUTER_API_KEY` to enable) — routes questionnaire questions + grounding through OpenRouter (`src/app-layer/ai/questionnaire/openrouter-provider.ts`).
 - **Codebase:** `src/app-layer/ai/risk-assessment/openrouter-provider.ts:14` (`https://openrouter.ai/api/v1/chat/completions`); env `AI_RISK_PROVIDER`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` (`src/env.ts:213`).
 
 ### Anthropic (Claude API) — AI compliance-posture summary (optional)
