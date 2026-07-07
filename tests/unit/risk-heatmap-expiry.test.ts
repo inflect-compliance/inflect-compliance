@@ -15,6 +15,13 @@ import * as path from 'path';
 
 const UI_DIR = path.resolve(__dirname, '../../src/components/ui');
 const REPO_FILE = path.resolve(__dirname, '../../src/app-layer/repositories/DashboardRepository.ts');
+
+// i18n: RiskHeatmap routes its user-facing strings through next-intl now, so
+// the source no longer holds the English literals. Resolve the moved keys
+// against the real catalog so these structural checks still pin the intent.
+const EN_CHART = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '../../messages/en.json'), 'utf-8'),
+).common.chart;
 const USECASE_FILE = path.resolve(__dirname, '../../src/app-layer/usecases/dashboard.ts');
 const DASHBOARD_PAGE_FILE = path.resolve(
     __dirname,
@@ -51,7 +58,8 @@ describe('RiskHeatmap Widget', () => {
 
     test('handles empty state (zero risks)', () => {
         expect(content).toContain('totalRisks === 0');
-        expect(content).toContain('No risks registered yet');
+        expect(content).toContain("t('risksEmpty')");
+        expect(EN_CHART.risksEmpty).toBe('No risks registered yet.');
     });
 
     test('color-codes by risk score via R21-PR-C useHeatScale', () => {
@@ -73,8 +81,10 @@ describe('RiskHeatmap Widget', () => {
     });
 
     test('has axis labels (Likelihood + Impact)', () => {
-        expect(content).toContain('Likelihood');
-        expect(content).toContain('Impact');
+        expect(content).toContain("t('likelihood')");
+        expect(content).toContain("t('impact')");
+        expect(EN_CHART.likelihood).toBe('Likelihood');
+        expect(EN_CHART.impact).toBe('Impact');
     });
 
     test('has a gradient legend (R21-PR-C ChartLegend)', () => {
@@ -337,7 +347,11 @@ describe('RiskHeatmap Score Logic (post R21-PR-C heatmap rebuild)', () => {
         // The score + cell count are surfaced in the tooltip
         // string. Severity buckets aren't a separate label any
         // more — the colour communicates severity directly.
-        expect(content).toContain('L${likelihood} × I${impact} = ${score}');
-        expect(content).toContain('${count} risk');
+        expect(content).toContain("t('cellTitle'");
+        expect(EN_CHART.cellTitle).toContain('L{likelihood} × I{impact} = {score}');
+        // The count + pluralized noun now live in the cellTitle ICU message
+        // ("… — {count} {noun}") rather than an inline `${count} risk` string.
+        expect(EN_CHART.cellTitle).toContain('{count}');
+        expect(content).toMatch(/t\('cellTitle',\s*\{[\s\S]*?\bcount\b/);
     });
 });

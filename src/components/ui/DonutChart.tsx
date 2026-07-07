@@ -44,6 +44,7 @@
  */
 
 import { useId, useState } from 'react';
+import { useTranslations } from 'next-intl';
 // @visx 4.0 drops deep `/lib/...` import paths (exports-map gated) — Pie is a
 // named export off the package root now.
 import { Pie } from '@visx/shape';
@@ -132,6 +133,7 @@ export default function DonutChart({
     id,
     loading = false,
 }: DonutChartProps) {
+    const t = useTranslations('common.chart');
     // useId provides a unique-per-instance gradient id prefix so
     // multiple donuts on the same page don't collide on SVG defs.
     const reactId = useId();
@@ -208,7 +210,7 @@ export default function DonutChart({
                         rows={Math.max(4, Math.round(size / 16))}
                         cols={Math.max(4, Math.round(size / 16))}
                         className="h-full w-full"
-                        aria-label="Chart loading"
+                        aria-label={t('chartLoading')}
                     />
                 </div>
             </div>
@@ -260,7 +262,7 @@ export default function DonutChart({
                     height={size}
                     viewBox={`0 0 ${size} ${size}`}
                     role="img"
-                    aria-label="No data available"
+                    aria-label={t('noDataAvailable')}
                 >
                     <circle
                         cx={center}
@@ -306,9 +308,11 @@ export default function DonutChart({
                 height={size}
                 viewBox={`0 0 ${size} ${size}`}
                 role="img"
-                aria-label={`Donut chart: ${segments
-                    .map((s) => `${s.label} ${s.value}`)
-                    .join(', ')}`}
+                aria-label={t('donutChartAria', {
+                    segments: segments
+                        .map((s) => `${s.label} ${s.value}`)
+                        .join(', '),
+                })}
             >
                 <defs>
                     {seriesInUse.map((series) => (

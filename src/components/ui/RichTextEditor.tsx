@@ -36,6 +36,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { EditorContent, useEditor, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -127,13 +128,15 @@ export function RichTextEditor({
     value,
     contentType,
     onChange,
-    placeholder = 'Write your policy here…',
+    placeholder: placeholderProp,
     disabled = false,
     minHeightPx = 300,
     id,
     'data-testid': dataTestId = 'rich-text-editor',
     className = '',
 }: RichTextEditorProps) {
+    const t = useTranslations('richtext');
+    const placeholder = placeholderProp ?? t('placeholder');
     const [mode, setMode] = useState<RichTextContentType>(contentType);
     // Track whether onChange originated from the editor (avoids the
     // round-trip render → onUpdate → setEditorContent loop).
@@ -152,7 +155,7 @@ export function RichTextEditor({
                 'data-testid': 'rich-text-editor-content',
                 role: 'textbox',
                 'aria-multiline': 'true',
-                'aria-label': 'Rich text editor',
+                'aria-label': t('editorAria'),
             },
         },
         onUpdate: ({ editor: ed }) => {
@@ -273,6 +276,7 @@ function Toolbar({
     disabled: boolean;
     onToggleMode: () => void;
 }) {
+    const t = useTranslations('richtext');
     return (
         <div className="flex flex-wrap items-center gap-1 border-b border-border-default px-2 py-1.5">
             <button
@@ -280,7 +284,7 @@ function Toolbar({
                 onClick={onToggleMode}
                 disabled={disabled}
                 className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] text-content-muted hover:bg-bg-muted hover:text-content-emphasis disabled:opacity-50"
-                aria-label={mode === 'MARKDOWN' ? 'Switch to WYSIWYG' : 'Switch to Markdown'}
+                aria-label={mode === 'MARKDOWN' ? t('switchToWysiwyg') : t('switchToMarkdown')}
                 data-testid="rich-text-editor-toggle"
                 data-mode={mode}
             >
@@ -302,21 +306,21 @@ function Toolbar({
                         action={() => editor.chain().focus().toggleBold().run()}
                         active={editor.isActive('bold')}
                         icon={<Bold size={12} />}
-                        label="Bold"
+                        label={t('bold')}
                     />
                     <FormatButton
                         editor={editor}
                         action={() => editor.chain().focus().toggleItalic().run()}
                         active={editor.isActive('italic')}
                         icon={<Italic size={12} />}
-                        label="Italic"
+                        label={t('italic')}
                     />
                     <FormatButton
                         editor={editor}
                         action={() => editor.chain().focus().toggleStrike().run()}
                         active={editor.isActive('strike')}
                         icon={<Strikethrough size={12} />}
-                        label="Strikethrough"
+                        label={t('strikethrough')}
                     />
                     <Divider />
                     <FormatButton
@@ -326,7 +330,7 @@ function Toolbar({
                         }
                         active={editor.isActive('heading', { level: 1 })}
                         icon={<Heading1 size={12} />}
-                        label="Heading 1"
+                        label={t('heading1')}
                     />
                     <FormatButton
                         editor={editor}
@@ -335,7 +339,7 @@ function Toolbar({
                         }
                         active={editor.isActive('heading', { level: 2 })}
                         icon={<Heading2 size={12} />}
-                        label="Heading 2"
+                        label={t('heading2')}
                     />
                     <Divider />
                     <FormatButton
@@ -345,7 +349,7 @@ function Toolbar({
                         }
                         active={editor.isActive('bulletList')}
                         icon={<List size={12} />}
-                        label="Bullet list"
+                        label={t('bulletList')}
                     />
                     <FormatButton
                         editor={editor}
@@ -354,7 +358,7 @@ function Toolbar({
                         }
                         active={editor.isActive('orderedList')}
                         icon={<ListOrdered size={12} />}
-                        label="Numbered list"
+                        label={t('numberedList')}
                     />
                     <FormatButton
                         editor={editor}
@@ -363,14 +367,14 @@ function Toolbar({
                         }
                         active={editor.isActive('blockquote')}
                         icon={<Quote size={12} />}
-                        label="Quote"
+                        label={t('quote')}
                     />
                     <FormatButton
                         editor={editor}
                         action={() => editor.chain().focus().toggleCode().run()}
                         active={editor.isActive('code')}
                         icon={<CodeIcon size={12} />}
-                        label="Inline code"
+                        label={t('inlineCode')}
                     />
                     <Divider />
                     <FormatButton
@@ -378,15 +382,13 @@ function Toolbar({
                         action={() => editor.chain().focus().setHorizontalRule().run()}
                         active={false}
                         icon={<SeparatorHorizontal size={12} />}
-                        label="Page break"
+                        label={t('pageBreak')}
                     />
                     <Divider />
                     <button
                         type="button"
                         onClick={() => {
-                            const url = window.prompt(
-                                'Link URL (https://… or mailto:…)',
-                            );
+                            const url = window.prompt(t('linkUrlPrompt'));
                             if (!url) return;
                             editor
                                 .chain()
@@ -396,7 +398,7 @@ function Toolbar({
                                 .run();
                         }}
                         className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-content-muted hover:bg-bg-muted hover:text-content-emphasis"
-                        aria-label="Insert link"
+                        aria-label={t('insertLink')}
                         data-testid="rich-text-editor-link"
                     >
                         <LinkIcon size={12} />

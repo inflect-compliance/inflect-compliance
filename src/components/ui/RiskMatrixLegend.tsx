@@ -24,6 +24,7 @@
  * of decorative chips.
  */
 
+import { useTranslations } from 'next-intl';
 import {
     bandRangeLabel,
 } from '@/lib/risk-matrix/scoring';
@@ -50,6 +51,7 @@ export function RiskMatrixLegend({
     className = '',
     'data-testid': dataTestId = 'risk-matrix-legend',
 }: RiskMatrixLegendProps) {
+    const t = useTranslations('common.chart');
     const bands = config.bands ?? [];
     if (bands.length === 0) {
         return (
@@ -58,14 +60,14 @@ export function RiskMatrixLegend({
                 className={`text-xs text-content-muted ${className}`.trim()}
                 data-testid={dataTestId}
             >
-                No severity bands configured.
+                {t('severityBandsEmpty')}
             </div>
         );
     }
     return (
         <ul
             role="list"
-            aria-label="Risk severity legend"
+            aria-label={t('severityLegendAria')}
             data-testid={dataTestId}
             className={[
                 'flex',

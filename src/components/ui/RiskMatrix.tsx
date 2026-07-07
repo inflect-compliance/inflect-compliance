@@ -51,6 +51,7 @@
  */
 
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { ArrowLeftRight } from 'lucide-react';
 import { useLocalStorage } from '@/components/ui/hooks';
 
@@ -183,7 +184,7 @@ export function RiskMatrix({
     swapAxes: swapAxesProp,
     showSwapToggle = true,
     showHeader = true,
-    title = 'Risk Matrix',
+    title: titleProp,
     onCellClick,
     selectedKey = null,
     storageKey,
@@ -191,6 +192,8 @@ export function RiskMatrix({
     id,
     'data-testid': dataTestId = 'risk-matrix',
 }: RiskMatrixProps) {
+    const t = useTranslations('common.chart');
+    const title = titleProp ?? t('riskMatrix');
     // The toggle is internal-state-by-default but accepts an external
     // override via `swapAxesProp` so a parent (e.g. a saved view) can
     // pin the value without us flickering on first render.
@@ -377,10 +380,10 @@ export function RiskMatrix({
                                         ? 'border-border-emphasis text-content-emphasis'
                                         : 'border-border-subtle text-content-muted hover:border-border-emphasis hover:text-content-emphasis',
                                 )}
-                                aria-label="Toggle inherent to residual movement overlay"
+                                aria-label={t('movementAria')}
                                 data-testid="risk-matrix-movement-toggle"
                             >
-                                → Movement
+                                → {t('movement')}
                             </button>
                         )}
                         {hasAleData && (
@@ -394,10 +397,10 @@ export function RiskMatrix({
                                         ? 'border-border-emphasis text-content-emphasis'
                                         : 'border-border-subtle text-content-muted hover:border-border-emphasis hover:text-content-emphasis',
                                 )}
-                                aria-label="Toggle ALE heat overlay"
+                                aria-label={t('aleHeatAria')}
                                 data-testid="risk-matrix-ale-toggle"
                             >
-                                € ALE heat
+                                {t('aleHeat')}
                             </button>
                         )}
                         {showSwapToggle && swapAxesProp === undefined && (
@@ -405,15 +408,15 @@ export function RiskMatrix({
                                 type="button"
                                 onClick={() => setInternalSwap((p) => !p)}
                                 className="inline-flex items-center gap-1 rounded-md border border-border-subtle px-2 py-0.5 text-[10px] text-content-muted transition-colors hover:border-border-emphasis hover:text-content-emphasis"
-                                aria-label="Swap matrix axes"
+                                aria-label={t('swapAxesAria')}
                                 data-testid="risk-matrix-swap"
                             >
                                 <ArrowLeftRight size={12} />
-                                Swap axes
+                                {t('swapAxes')}
                             </button>
                         )}
                         <span className="text-xs text-content-subtle tabular-nums">
-                            {totalRisks} {totalRisks === 1 ? 'risk' : 'risks'}
+                            {totalRisks} {t(totalRisks === 1 ? 'riskOne' : 'riskOther')}
                         </span>
                     </div>
                 </div>
@@ -439,7 +442,7 @@ export function RiskMatrix({
                     <div
                         ref={gridRef}
                         role="grid"
-                        aria-label={`${yAxisLabel} by ${xAxisLabel} matrix`}
+                        aria-label={t('matrixAria', { y: yAxisLabel, x: xAxisLabel })}
                         data-testid="risk-matrix-grid"
                         className="relative grid gap-[3px]"
                         style={{
@@ -522,7 +525,9 @@ export function RiskMatrix({
                                 viewBox="0 0 100 100"
                                 preserveAspectRatio="none"
                                 role="img"
-                                aria-label={`${movementArrows.reduce((sum, a) => sum + a.count, 0)} risks moved from inherent to residual position`}
+                                aria-label={t('movementOverlayAria', {
+                                    count: movementArrows.reduce((sum, a) => sum + a.count, 0),
+                                })}
                                 data-testid="risk-matrix-movement-overlay"
                                 className="pointer-events-none"
                                 style={{
@@ -635,14 +640,14 @@ export function RiskMatrix({
                 >
                     <span className="inline-flex items-center gap-1">
                         <span aria-hidden="true" className="inline-block h-2 w-2 rounded-full border border-content-emphasis bg-transparent" />
-                        inherent (origin)
+                        {t('inherentOrigin')}
                     </span>
                     <span className="inline-flex items-center gap-1">
                         <span aria-hidden="true" className="inline-block h-2 w-2 rounded-full bg-content-emphasis" />
-                        residual (destination)
+                        {t('residualDestination')}
                     </span>
                     <span>·</span>
-                    <span>thicker line + ×N where multiple risks share the path</span>
+                    <span>{t('movementLegendHint')}</span>
                 </div>
             )}
 

@@ -16,6 +16,11 @@ import * as path from 'path';
 
 const UI_DIR = path.resolve(__dirname, '../../src/components/ui');
 
+// i18n: StatusBreakdown's "No data" title flows through next-intl now.
+const EN_CHART = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '../../messages/en.json'), 'utf-8'),
+).common.chart;
+
 // ─── Module Export Guards ───
 
 describe('Dashboard Widget Exports', () => {
@@ -98,7 +103,8 @@ describe('Widget Empty State Handling', () => {
     test('StatusBreakdown handles zero total gracefully', () => {
         const content = fs.readFileSync(path.join(UI_DIR, 'StatusBreakdown.tsx'), 'utf-8');
         expect(content).toContain('total > 0');
-        expect(content).toContain('No data');
+        expect(content).toContain("t('noData')");
+        expect(EN_CHART.noData).toBe('No data');
     });
 
     test('DonutChart avoids division by zero for flat range', () => {
