@@ -25,9 +25,12 @@ export const TRAINING_CHECKS = ['training_completed_annually', 'background_check
 const DAY = 24 * 60 * 60 * 1000;
 
 function summarize(check: string, passed: number, failed: Array<{ ref: string; reason: string }>): CheckResult {
+    // H2 — no assignments / no background checks in scope is NOT_APPLICABLE,
+    // never a pass.
+    const applicable = passed + failed.length;
     return {
-        status: failed.length === 0 ? 'PASSED' : 'FAILED',
-        summary: failed.length === 0 ? `${passed} pass ${check}` : `${failed.length} fail ${check}`,
+        status: applicable === 0 ? 'NOT_APPLICABLE' : failed.length === 0 ? 'PASSED' : 'FAILED',
+        summary: applicable === 0 ? `No population in scope for ${check}` : failed.length === 0 ? `${passed} pass ${check}` : `${failed.length} fail ${check}`,
         details: { check, passed, failed: failed.length, items: failed.slice(0, 500) },
     };
 }
@@ -42,10 +45,15 @@ export function runTrainingCheck(
             const failed: Array<{ ref: string; reason: string }> = [];
             let passed = 0;
             for (const a of data.assignments) {
-                const overdue = a.status === 'OVERDUE' || ((a.status === 'ASSIGNED' || a.status === 'IN_PROGRESS') && a.dueAt !== null && a.dueAt < now);
+                const isOpen = a.status === 'ASSIGNED' || a.status === 'IN_PROGRESS';
+                const overdue = a.status === 'OVERDUE' || (isOpen && a.dueAt !== null && a.dueAt < now);
+                // H2 — an open assignment with NO due date can't be shown timely,
+                // so it must not silently pass. Surface it as a gap.
+                const noDueDate = isOpen && a.dueAt === null;
                 const cadence = a.cadenceDays ?? 365;
                 const stale = a.status === 'COMPLETED' && a.completedAt !== null && a.completedAt < new Date(now.getTime() - cadence * DAY);
                 if (overdue) failed.push({ ref: a.employeeEmail, reason: 'Training overdue' });
+                else if (noDueDate) failed.push({ ref: a.employeeEmail, reason: 'Open training assignment has no due date' });
                 else if (stale) failed.push({ ref: a.employeeEmail, reason: `Training stale (> ${cadence}d)` });
                 else passed += 1;
             }

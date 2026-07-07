@@ -51,9 +51,9 @@ describe('runDeviceCheck', () => {
         expect(r.details.failed).toBe(0);
     });
 
-    it('all-null PASSes (nothing applicable)', () => {
+    it('all-null is NOT_APPLICABLE (H2 — no applicable population, never a false PASS)', () => {
         const r = runDeviceCheck('devices_antivirus', [dev({ antivirusRunning: null })], NOW);
-        expect(r.status).toBe('PASSED');
+        expect(r.status).toBe('NOT_APPLICABLE');
     });
 
     it('unknown check ERRORs', () => {

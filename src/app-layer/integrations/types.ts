@@ -97,8 +97,13 @@ export interface CheckInput {
  * Result of a check execution.
  */
 export interface CheckResult {
-    /** Whether the check passed */
-    status: 'PASSED' | 'FAILED' | 'ERROR';
+    /**
+     * Check outcome. `NOT_APPLICABLE` (H2) means the check ran cleanly but its
+     * applicable population was empty (zero accounts / devices / roster /
+     * assignments / parsed controls) — it must render distinctly from PASSED
+     * and never close a finding or create passing evidence.
+     */
+    status: 'PASSED' | 'FAILED' | 'ERROR' | 'NOT_APPLICABLE';
     /** Human-readable summary */
     summary: string;
     /** Provider-specific structured result */

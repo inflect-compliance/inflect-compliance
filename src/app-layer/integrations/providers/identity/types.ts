@@ -17,10 +17,15 @@ export interface NormalizedIdentityAccount {
     displayName?: string;
     /** ACTIVE | SUSPENDED | DEPROVISIONED. */
     status: 'ACTIVE' | 'SUSPENDED' | 'DEPROVISIONED';
-    isAdmin: boolean;
-    mfaEnrolled: boolean;
-    /** Whether the account authenticates via federated SSO. */
-    ssoEnrolled: boolean;
+    // H2 — `null` means the provider could NOT determine this signal from the
+    // data it fetched (e.g. Okta admin membership needs group/role enrichment;
+    // MFA factors aren't on the users-list endpoint). A check whose entire
+    // active population is `null` for its signal returns NOT_APPLICABLE rather
+    // than manufacturing a false PASS from a hardcoded value.
+    isAdmin: boolean | null;
+    mfaEnrolled: boolean | null;
+    /** Whether the account authenticates via federated SSO. `null` = unknown. */
+    ssoEnrolled: boolean | null;
     /** Group / role names. */
     groups: string[];
     lastActiveAt?: Date | null;
@@ -87,27 +92,36 @@ export function runIdentityCheck(
 
     switch (checkType) {
         case 'mfa_enforced': {
-            const verdicts: AccountVerdict[] = active.map((a) => ({
+            // H2 — only judge accounts whose MFA signal is KNOWN. If none are
+            // known (provider doesn't expose it), summarize → NOT_APPLICABLE.
+            const known = active.filter((a) => a.mfaEnrolled !== null);
+            const verdicts: AccountVerdict[] = known.map((a) => ({
                 externalUserId: a.externalUserId,
                 email: a.email,
-                passed: a.mfaEnrolled,
+                passed: a.mfaEnrolled === true,
                 reason: a.mfaEnrolled ? undefined : 'MFA not enrolled',
             }));
             return summarize('mfa_enforced', verdicts);
         }
         case 'sso_enforced': {
-            const verdicts: AccountVerdict[] = active.map((a) => ({
+            const known = active.filter((a) => a.ssoEnrolled !== null);
+            const verdicts: AccountVerdict[] = known.map((a) => ({
                 externalUserId: a.externalUserId,
                 email: a.email,
-                passed: a.ssoEnrolled,
+                passed: a.ssoEnrolled === true,
                 reason: a.ssoEnrolled ? undefined : 'Not federated via SSO',
             }));
             return summarize('sso_enforced', verdicts);
         }
         case 'no_dormant_admins': {
+            // H2 — if admin membership is unknown for the whole population, we
+            // cannot identify admins: NOT_APPLICABLE, not a vacuous pass.
+            if (active.every((a) => a.isAdmin === null)) {
+                return { status: 'NOT_APPLICABLE', summary: 'Admin membership signal unavailable for this provider', details: { check: 'no_dormant_admins' } };
+            }
             const dormantDays = numConfig(config, 'dormantDays', DEFAULT_DORMANT_DAYS);
             const cutoff = new Date(now.getTime() - dormantDays * 24 * 60 * 60 * 1000);
-            const admins = active.filter((a) => a.isAdmin);
+            const admins = active.filter((a) => a.isAdmin === true);
             const verdicts: AccountVerdict[] = admins.map((a) => {
                 const dormant = !a.lastActiveAt || a.lastActiveAt < cutoff;
                 return {
@@ -120,8 +134,11 @@ export function runIdentityCheck(
             return summarize('no_dormant_admins', verdicts);
         }
         case 'admin_count_within_threshold': {
+            if (active.every((a) => a.isAdmin === null)) {
+                return { status: 'NOT_APPLICABLE', summary: 'Admin membership signal unavailable for this provider', details: { check: 'admin_count_within_threshold' } };
+            }
             const maxAdmins = numConfig(config, 'maxAdmins', DEFAULT_MAX_ADMINS);
-            const admins = active.filter((a) => a.isAdmin);
+            const admins = active.filter((a) => a.isAdmin === true);
             const passed = admins.length <= maxAdmins;
             return {
                 status: passed ? 'PASSED' : 'FAILED',
@@ -147,11 +164,17 @@ export function runIdentityCheck(
 
 function summarize(checkType: string, verdicts: AccountVerdict[]): CheckResult {
     const failed = verdicts.filter((v) => !v.passed);
-    const status = failed.length === 0 ? 'PASSED' : 'FAILED';
+    // H2 — an empty account population is NOT_APPLICABLE, never a pass: a
+    // directory that returned zero accounts (or a not-yet-synced connection)
+    // has earned no compliance signal.
+    const status: CheckResult['status'] =
+        verdicts.length === 0 ? 'NOT_APPLICABLE' : failed.length === 0 ? 'PASSED' : 'FAILED';
     return {
         status,
         summary:
-            failed.length === 0
+            verdicts.length === 0
+                ? `No accounts in scope for ${checkType}`
+                : failed.length === 0
                 ? `${verdicts.length} account(s) pass ${checkType}`
                 : `${failed.length}/${verdicts.length} account(s) fail ${checkType}`,
         details: {

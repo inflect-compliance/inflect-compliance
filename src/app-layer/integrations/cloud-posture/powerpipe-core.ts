@@ -111,6 +111,13 @@ export async function runPowerpipeBenchmark(input: RunBenchmarkInput): Promise<C
     if (res.missing) {
         return { status: 'ERROR', summary: 'Powerpipe CLI not installed on the collector host.', details: { benchmark: input.benchmarkId }, durationMs: nowMs() - start, errorMessage: 'powerpipe not installed — see docs/cloud-posture-connector.md', summaryObj: null };
     }
+    // H2 — fail CLOSED on a non-zero collector exit. Previously `JSON.parse(
+    // res.stdout || '{}')` ran regardless of `res.ok`, so a revoked credential
+    // (non-zero exit, empty stdout) parsed to zero controls and the ladder
+    // below yielded PASSED — marking the tenant compliant off a broken run.
+    if (!res.ok) {
+        return { status: 'ERROR', summary: 'Powerpipe collector exited non-zero.', details: { benchmark: input.benchmarkId }, durationMs: nowMs() - start, errorMessage: `collector error; stderr: ${res.stderr.slice(0, 300)}`, summaryObj: null };
+    }
     let controls;
     try {
         controls = parsePowerpipeBenchmarkJson(JSON.parse(res.stdout || '{}'));
@@ -118,6 +125,11 @@ export async function runPowerpipeBenchmark(input: RunBenchmarkInput): Promise<C
         return { status: 'ERROR', summary: 'Failed to parse Powerpipe JSON output.', details: { benchmark: input.benchmarkId }, durationMs: nowMs() - start, errorMessage: `parse error; stderr: ${res.stderr.slice(0, 300)}`, summaryObj: null };
     }
     const summary = summariseBenchmark(input.benchmarkId, controls);
+    // H2 — zero parsed controls is insufficient data, NOT a pass. Only allow
+    // PASSED when ≥1 control parsed with a real status.
+    if (summary.counts.total === 0) {
+        return { status: 'ERROR', summary: `${input.benchmarkId}: no controls parsed (insufficient data).`, details: summary as unknown as Record<string, unknown>, durationMs: nowMs() - start, errorMessage: 'collector returned zero controls', summaryObj: summary };
+    }
     const status: CheckResult['status'] = summary.counts.alarm > 0 ? 'FAILED' : summary.counts.error > 0 ? 'ERROR' : 'PASSED';
     return {
         status,

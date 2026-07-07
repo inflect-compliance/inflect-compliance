@@ -29,10 +29,23 @@ function num(config: Record<string, unknown>, key: string, fallback: number): nu
     return fallback;
 }
 
-function result(check: string, passedCount: number, failed: Array<{ ref: string; reason: string }>): CheckResult {
+function result(
+    check: string,
+    passedCount: number,
+    failed: Array<{ ref: string; reason: string }>,
+    // The size of the population this check actually judges. Defaults to
+    // passed+failed, but a check whose `passedCount` isn't its judged
+    // population (offboarded_access_removed counts unrelated active accounts)
+    // passes its real population size so an empty scope reads NOT_APPLICABLE.
+    applicableCount?: number,
+): CheckResult {
+    // H2 — an empty applicable population (no roster / no accounts in scope) is
+    // NOT_APPLICABLE, never a pass: a brand-new tenant with no data must not
+    // show green compliance evidence.
+    const applicable = applicableCount ?? passedCount + failed.length;
     return {
-        status: failed.length === 0 ? 'PASSED' : 'FAILED',
-        summary: failed.length === 0 ? `${passedCount} pass ${check}` : `${failed.length} fail ${check}`,
+        status: applicable === 0 ? 'NOT_APPLICABLE' : failed.length === 0 ? 'PASSED' : 'FAILED',
+        summary: applicable === 0 ? `No population in scope for ${check}` : failed.length === 0 ? `${passedCount} pass ${check}` : `${failed.length} fail ${check}`,
         details: { check, passed: passedCount, failed: failed.length, items: failed.slice(0, 500) },
     };
 }
@@ -46,13 +59,20 @@ export function runPersonnelCheck(
     const { employees, accounts } = data;
     switch (checkType) {
         case 'offboarded_access_removed': {
-            // Terminated employees whose identity account is still ACTIVE.
-            const terminated = new Set(employees.filter((e) => e.status === 'TERMINATED').map((e) => e.workEmail.toLowerCase()));
+            // H2 — TERMINATED *and* OFFBOARDING (pending termination) employees
+            // whose identity account is still ACTIVE. Including OFFBOARDING
+            // catches lingering access DURING the offboarding window, not only
+            // after the termination date has passed.
+            const departing = new Set(
+                employees.filter((e) => e.status === 'TERMINATED' || e.status === 'OFFBOARDING').map((e) => e.workEmail.toLowerCase()),
+            );
             const failed = accounts
-                .filter((a) => a.status === 'ACTIVE' && terminated.has(a.email.toLowerCase()))
-                .map((a) => ({ ref: `${a.provider}:${a.email}`, reason: 'Active account for a terminated employee' }));
+                .filter((a) => a.status === 'ACTIVE' && departing.has(a.email.toLowerCase()))
+                .map((a) => ({ ref: `${a.provider}:${a.email}`, reason: 'Active account for a departing (terminated/offboarding) employee' }));
             const activeCount = accounts.filter((a) => a.status === 'ACTIVE').length;
-            return result('offboarded_access_removed', activeCount - failed.length, failed);
+            // Applicable population = departing employees. Zero departing → the
+            // check doesn't apply (NOT_APPLICABLE); departing-but-all-removed → PASS.
+            return result('offboarded_access_removed', activeCount - failed.length, failed, departing.size);
         }
         case 'onboarding_complete_within_sla': {
             const slaDays = num(config, 'onboardingSlaDays', DEFAULT_ONBOARDING_SLA_DAYS);

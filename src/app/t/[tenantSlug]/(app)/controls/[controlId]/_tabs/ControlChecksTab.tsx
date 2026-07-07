@@ -27,7 +27,7 @@ interface ExecutionRow {
     id: string;
     provider: string;
     automationKey: string;
-    status: 'RUNNING' | 'PASSED' | 'FAILED' | 'ERROR';
+    status: 'RUNNING' | 'PASSED' | 'FAILED' | 'ERROR' | 'NOT_APPLICABLE';
     resultJson: Record<string, unknown> | null;
     durationMs: number | null;
     triggeredBy: string | null;
@@ -44,6 +44,9 @@ function statusVariant(status: ExecutionRow['status']): StatusBadgeVariant {
             return 'error';
         case 'ERROR':
             return 'warning';
+        case 'NOT_APPLICABLE':
+            // H2 — "no applicable data" reads distinctly from a green PASS.
+            return 'neutral';
         default:
             return 'info';
     }

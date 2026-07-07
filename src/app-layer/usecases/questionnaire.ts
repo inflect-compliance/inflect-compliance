@@ -24,7 +24,7 @@ import { sanitizePlainText } from '@/lib/security/sanitize';
 import { forbidden, notFound } from '@/lib/errors/types';
 import { enforceFeatureGate } from '@/app-layer/ai/risk-assessment/feature-gate';
 import { checkRateLimit, recordGeneration } from '@/app-layer/ai/risk-assessment/rate-limiter';
-import { guardUntrustedInput, guardEgress, assertGuardAllowed } from '@/app-layer/ai/guard';
+import { guardUntrustedInput, guardEgress, assertGuardAllowed, assertNoReviewRequired } from '@/app-layer/ai/guard';
 import { getQuestionnaireProvider, type GroundingSnippet } from '@/app-layer/ai/questionnaire';
 import { relevance } from '@/app-layer/ai/questionnaire/types';
 
@@ -105,7 +105,10 @@ export async function autofillQuestionnaire(ctx: RequestContext, questionnaireId
         // secret-leak verdict aborts the whole autofill.
         const inputGuard = await guardUntrustedInput(ctx, items.map((i) => i.questionText).join('\n'), { source: 'questionnaire', db });
         const egressGuard = await guardEgress(ctx, { grounding }, { source: 'questionnaire:outbound', db });
-        assertGuardAllowed(inputGuard);
+        // H2 — auto-draft surface: abort on ANY review-required input verdict
+        // (flag OR block), so an injected question never reaches the LLM even
+        // under the default balanced guard mode.
+        assertNoReviewRequired(inputGuard);
         assertGuardAllowed(egressGuard);
 
         let drafted = 0, flagged = 0, fromLibrary = 0;

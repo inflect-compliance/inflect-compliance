@@ -62,11 +62,14 @@ function normalizeGoogleUser(u: GoogleUser): NormalizedIdentityAccount {
         email: u.primaryEmail || '',
         displayName: u.name?.fullName,
         status: mapGoogleStatus(u),
+        // Real Directory-API signals.
         isAdmin: Boolean(u.isAdmin || u.isDelegatedAdmin),
         mfaEnrolled: Boolean(u.isEnrolledIn2Sv),
-        // Workspace accounts authenticate against Google SSO by construction;
-        // treat a managed (non-suspended) account as federated.
-        ssoEnrolled: true,
+        // H2 — a blanket `true` made sso_enforced impossible to fail. Per-user
+        // SAML SSO assignment is NOT in the basic Directory user object, so
+        // report `null` (unknown) until that signal is fetched — sso_enforced is
+        // then NOT_APPLICABLE for Google rather than a guaranteed pass.
+        ssoEnrolled: null,
         groups: [],
         lastActiveAt:
             u.lastLoginTime && u.lastLoginTime !== '1970-01-01T00:00:00.000Z'

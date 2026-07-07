@@ -25,7 +25,7 @@ import type { RequestContext } from '../types';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { enforceFeatureGate } from '@/app-layer/ai/risk-assessment/feature-gate';
 import { checkRateLimit, recordGeneration } from '@/app-layer/ai/risk-assessment/rate-limiter';
-import { guardUntrustedInput, guardEgress, assertGuardAllowed } from '@/app-layer/ai/guard';
+import { guardUntrustedInput, guardEgress, assertGuardAllowed, assertNoReviewRequired } from '@/app-layer/ai/guard';
 import { getDashboardData } from './dashboard';
 import { createAgentProposal } from './agent-proposals';
 
@@ -59,8 +59,11 @@ export async function askAssistant(
     checkRateLimit(ctx.tenantId, ctx.userId);
     const question = input.question;
 
-    // The question is untrusted external input — guard before it steers anything.
-    assertGuardAllowed(await guardUntrustedInput(ctx, question, { source: 'assistant' }));
+    // The question is untrusted external input — guard before it steers
+    // anything. H2 — auto-draft surface: abort on ANY review-required verdict
+    // (flag OR block) so an injected prompt never reaches the model/router even
+    // under the default balanced guard mode.
+    assertNoReviewRequired(await guardUntrustedInput(ctx, question, { source: 'assistant' }));
 
     const q = question.toLowerCase();
     let answer: AssistantAnswer;

@@ -49,11 +49,28 @@ interface BambooDeps {
     fetchImpl?: typeof fetch;
 }
 
-/** Map a BambooHR employmentStatus / status to the normalized enum. */
-function mapBambooStatus(row: { status?: string; employmentStatus?: string }): NormalizedEmployee['status'] {
+/**
+ * Map a BambooHR row to the normalized employment status.
+ *
+ * H2 — the old mapping only ever emitted ACTIVE/LEAVE/TERMINATED, so
+ * `onboarding_complete_within_sla` (keys on ONBOARDING) was permanently
+ * vacuous and a mid-offboarding employee (scheduled termination, still
+ * employed) mapped to ACTIVE — hiding their lingering access from
+ * `offboarded_access_removed`. Derive ONBOARDING (pre-hire / future start) and
+ * OFFBOARDING (pending termination) from the hire/termination dates + status.
+ */
+function mapBambooStatus(
+    row: { status?: string; employmentStatus?: string; hireDate?: string | null; terminationDate?: string | null },
+    now: Date = new Date(),
+): NormalizedEmployee['status'] {
     const s = (row.status || row.employmentStatus || '').toLowerCase();
     if (s.includes('terminat')) return 'TERMINATED';
     if (s.includes('leave')) return 'LEAVE';
+    // Pending termination — still employed, termination scheduled in the future.
+    if (row.terminationDate && new Date(row.terminationDate) > now) return 'OFFBOARDING';
+    // Pre-hire — start date in the future, or an explicit pre-hire/onboarding status.
+    if (row.hireDate && new Date(row.hireDate) > now) return 'ONBOARDING';
+    if (s.includes('pre-hire') || s.includes('prehire') || s.includes('onboard')) return 'ONBOARDING';
     return 'ACTIVE';
 }
 
