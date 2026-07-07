@@ -39,12 +39,12 @@ const MIGRATED_PAGES = [
     'risks/reports/page.tsx',
     // EU AI Act — AI-System Registry; semantic tokens + EntityListPage /
     // PageHeader / Card / Button / StatusBadge only (no raw colours / .btn / .badge).
-    'devices/page.tsx',
-    'devices/DevicesClient.tsx',
-    'training/page.tsx',
-    'training/TrainingClient.tsx',
-    'personnel/page.tsx',
-    'personnel/PersonnelClient.tsx',
+    'admin/devices/page.tsx',
+    'admin/devices/DevicesClient.tsx',
+    'admin/training/page.tsx',
+    'admin/training/TrainingClient.tsx',
+    'admin/personnel/page.tsx',
+    'admin/personnel/PersonnelClient.tsx',
     'risks/ai-systems/page.tsx',
     'risks/ai-systems/AiSystemsClient.tsx',
     'risks/ai-systems/[systemId]/page.tsx',

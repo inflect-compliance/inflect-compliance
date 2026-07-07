@@ -12,13 +12,6 @@
 import { Prisma, EvidenceType } from '@prisma/client';
 import type { RequestContext } from '../types';
 import { runInTenantContext } from '@/lib/db-context';
-// Side-effect: register every integration provider into the registry. The
-// bootstrap module is otherwise never imported, so without this the registry
-// is empty in the web request path — `listAvailableProviders()` returns [] and
-// the admin "Add Integration → provider" dropdown renders nothing. Importing it
-// here guarantees registration before any registry read in this usecase (no
-// provider imports back into this module, so there is no import cycle).
-import '../integrations/bootstrap';
 import { registry } from '../integrations/registry';
 import { isScheduledCheckProvider } from '../integrations/types';
 import type { CheckResult, EvidencePayload } from '../integrations/types';
