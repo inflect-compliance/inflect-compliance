@@ -55,6 +55,7 @@ const AI_GUARD_COVERAGE: Readonly<Record<string, readonly GuardFn[]>> = {
     'src/app-layer/usecases/vendor-doc-extraction.ts': ['guardUntrustedInput', 'guardEgress'],
     'src/app-layer/usecases/agent-proposals.ts': ['guardUntrustedInput', 'guardEgress'],
     'src/app-layer/usecases/questionnaire.ts': ['guardUntrustedInput', 'guardEgress'],
+    'src/app-layer/usecases/assistant.ts': ['guardUntrustedInput', 'guardEgress'],
 };
 
 /**
