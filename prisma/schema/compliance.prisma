@@ -331,6 +331,38 @@ model ScannerRun {
   @@index([tenantId])
 }
 
+/// A user account discovered in a connected directory / identity provider
+/// (Okta, Google Workspace — PR-2). Synced idempotently by the
+/// `identity-sync` job and joined against Personnel (PR-4) for
+/// offboarded-access checks. `groupsJson` is a string[] of group names.
+/// Not encrypted — directory metadata (email + status flags), not content.
+model ConnectedIdentityAccount {
+  id             String                 @id @default(cuid())
+  tenantId       String
+  /// Provider prefix — 'okta' | 'google-workspace'. Matches the
+  /// ScheduledCheckProvider id so `{provider}.{check}` routing lines up.
+  provider       String
+  /// Stable id of the user in the provider's directory.
+  externalUserId String
+  email          String
+  displayName    String?
+  status         ConnectedAccountStatus @default(ACTIVE)
+  isAdmin        Boolean                @default(false)
+  mfaEnrolled    Boolean                @default(false)
+  /// string[] of group / role names the account belongs to.
+  groupsJson     Json                   @default("[]")
+  lastActiveAt   DateTime?
+  syncedAt       DateTime
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, provider, externalUserId])
+  @@index([tenantId, provider])
+  @@index([tenantId, status])
+}
+
 /// Tenant-scoped normalised finding from a ScannerRun. Deduped across
 /// re-scans by `fingerprint` (SHA-256 of ruleId+location+message), so a
 /// recurring finding stays one row (the unique constraint makes ingest

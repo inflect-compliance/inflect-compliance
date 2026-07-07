@@ -80,6 +80,12 @@ export const SCHEDULED_JOBS: ScheduleDefinition[] = [
         defaultPayload: {},
     },
     {
+        name: 'identity-sync-dispatch',
+        pattern: '0 3 * * *',     // daily at 03:00 UTC
+        description: 'Fan out an identity-sync per enabled Okta / Google Workspace connection (directory → ConnectedIdentityAccount)',
+        defaultPayload: {},
+    },
+    {
         name: 'risk-appetite-monitor',
         pattern: '0 6 * * *',     // daily at 06:00 UTC
         description: 'Scan every tenant portfolio for risk-appetite threshold breaches (RQ-2)',
