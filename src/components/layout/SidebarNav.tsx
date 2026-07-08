@@ -19,7 +19,6 @@ import {
     FileText,
     ClipboardList,
     ClipboardCheck,
-    UserCheck,
     FlaskConical,
     Truck,
     BarChart3,
@@ -110,10 +109,6 @@ export function useNavSections(): NavSectionDef[] {
                     badge: calendarBadge,
                 },
                 { href: tenantHref('/tests'), label: 'Review', icon: FlaskConical },
-                // Access reviews (UAR, PR-7) — periodic user-access
-                // certification. A compliance-cadence workflow, so it sits
-                // in Comply alongside Audit / Review.
-                { href: tenantHref('/access-reviews'), label: 'Access', icon: UserCheck },
                 // Scans (security-testing) moved off the sidebar onto the
                 // Internal Audit page — scan findings are audit evidence.
                 { href: tenantHref('/evidence'), label: 'Docs', icon: Paperclip },
