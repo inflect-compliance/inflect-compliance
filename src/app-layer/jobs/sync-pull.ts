@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import '../integrations/bootstrap'; // populate the provider registry in THIS module graph (see usecases/integrations)
 import { integrationRegistry } from '../integrations/registry';
 import { PrismaSyncMappingStore } from '../integrations/prisma-sync-store';
 import { PrismaLocalStore } from '../integrations/prisma-local-store';

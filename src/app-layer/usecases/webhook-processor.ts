@@ -18,6 +18,7 @@
  */
 import { EvidenceType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import '../integrations/bootstrap'; // populate the provider registry in THIS module graph (see usecases/integrations)
 import { registry, integrationRegistry } from '../integrations/registry';
 import { isWebhookEventProvider } from '../integrations/types';
 import type { WebhookProcessResult } from '../integrations/types';

@@ -5166,6 +5166,7 @@
         "fieldScope": "Обхват",
         "scopeAllUsers": "Всички потребители",
         "scopeAdminOnly": "Само собственици + администратори",
+        "scopeConnectedApp": "Свързани приложения (Okta / Google Workspace)",
         "fieldReviewer": "Проверяващ",
         "reviewerPlaceholder": "Изберете проверяващ",
         "searchMembers": "Търсене на членове…",

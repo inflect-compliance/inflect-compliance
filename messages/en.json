@@ -5166,6 +5166,7 @@
         "fieldScope": "Scope",
         "scopeAllUsers": "All users",
         "scopeAdminOnly": "Owners + admins only",
+        "scopeConnectedApp": "Connected apps (Okta / Google Workspace)",
         "fieldReviewer": "Reviewer",
         "reviewerPlaceholder": "Select a reviewer",
         "searchMembers": "Search members…",

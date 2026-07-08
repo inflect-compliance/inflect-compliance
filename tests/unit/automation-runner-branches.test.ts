@@ -56,6 +56,7 @@ jest.mock('@/lib/observability/logger', () => ({
     },
 }));
 
+jest.mock('@/app-layer/integrations/bootstrap', () => ({}));
 jest.mock('../../src/app-layer/integrations/registry', () => ({
     registry: {
         resolveByAutomationKey: jest.fn(),

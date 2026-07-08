@@ -242,7 +242,7 @@ function CreateCampaignButton({
     const [open, setOpen] = useState(false);
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [scope, setScope] = useState<'ALL_USERS' | 'ADMIN_ONLY'>('ALL_USERS');
+    const [scope, setScope] = useState<'ALL_USERS' | 'ADMIN_ONLY' | 'CONNECTED_APP'>('ALL_USERS');
     const [reviewerUserId, setReviewerUserId] = useState('');
     const [dueAt, setDueAt] = useState<Date | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -254,14 +254,25 @@ function CreateCampaignButton({
         setSubmitting(true);
         setError(null);
         try {
-            const body = {
-                name,
-                description: description || undefined,
-                scope,
-                reviewerUserId,
-                dueAt: dueAt ? dueAt.toISOString() : undefined,
-            };
-            const res = await fetch(apiUrl, {
+            // A CONNECTED_APP review runs over synced identity-provider accounts
+            // (Okta / Google Workspace) via a separate endpoint + usecase; the
+            // member scopes (ALL_USERS / ADMIN_ONLY) use the roster endpoint.
+            const isConnected = scope === 'CONNECTED_APP';
+            const body = isConnected
+                ? {
+                      name,
+                      description: description || undefined,
+                      reviewerUserId,
+                      dueAt: dueAt ? dueAt.toISOString() : undefined,
+                  }
+                : {
+                      name,
+                      description: description || undefined,
+                      scope,
+                      reviewerUserId,
+                      dueAt: dueAt ? dueAt.toISOString() : undefined,
+                  };
+            const res = await fetch(isConnected ? `${apiUrl}/connected` : apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
@@ -328,7 +339,7 @@ function CreateCampaignButton({
                                     value={scope}
                                     onValueChange={(v) =>
                                         setScope(
-                                            v as 'ALL_USERS' | 'ADMIN_ONLY',
+                                            v as 'ALL_USERS' | 'ADMIN_ONLY' | 'CONNECTED_APP',
                                         )
                                     }
                                     className="flex flex-col gap-tight"
@@ -337,6 +348,9 @@ function CreateCampaignButton({
                                         [
                                             ['ALL_USERS', t('scopeAllUsers')],
                                             ['ADMIN_ONLY', t('scopeAdminOnly')],
+                                            // Reviews connected identity-provider accounts (Okta /
+                                            // Google Workspace) synced via the integrations connector.
+                                            ['CONNECTED_APP', t('scopeConnectedApp')],
                                         ] as const
                                     ).map(([value, labelText]) => (
                                         <label

@@ -7,6 +7,7 @@ jest.mock('@/lib/db-context', () => ({
 }));
 jest.mock('@/lib/security/encryption', () => ({ decryptField: jest.fn(() => '{}') }));
 jest.mock('@/lib/observability/logger', () => ({ logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() } }));
+jest.mock('@/app-layer/integrations/bootstrap', () => ({}));
 jest.mock('@/app-layer/integrations/registry', () => ({ registry: { getProvider: jest.fn() } }));
 
 import { runIdentitySync } from '@/app-layer/usecases/identity-sync';

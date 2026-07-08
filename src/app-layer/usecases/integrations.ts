@@ -12,6 +12,13 @@
 import { Prisma, EvidenceType } from '@prisma/client';
 import type { RequestContext } from '../types';
 import { runInTenantContext } from '@/lib/db-context';
+// Side-effect: register every provider into the registry IN THIS MODULE GRAPH.
+// The registry is a module singleton; relying on `instrumentation.ts` to
+// populate it does NOT work when Next bundles instrumentation and the route
+// handler into different module instances (the dropdown then renders empty and
+// automation-runner/identity-sync resolve no provider). Importing bootstrap
+// here guarantees the registry is populated wherever these usecases load.
+import '../integrations/bootstrap';
 import { registry } from '../integrations/registry';
 import { isScheduledCheckProvider } from '../integrations/types';
 import type { CheckResult, EvidencePayload } from '../integrations/types';
