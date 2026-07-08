@@ -1465,6 +1465,9 @@
     },
     "docs/implementation-notes/2026-07-07-h4-egress-hardening.md": {
       "class": "historical"
+    },
+    "docs/implementation-notes/2026-07-07-h5-test-depth.md": {
+      "class": "historical"
     }
   }
 }
