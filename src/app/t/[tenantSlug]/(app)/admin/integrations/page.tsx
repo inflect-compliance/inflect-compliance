@@ -403,6 +403,14 @@ export default function AdminIntegrationsPage() {
                             />
                         </div>
 
+                        {/* Internal-provider note — no credentials to enter; the
+                            provider evaluates data already in Inflect. */}
+                        {selectedProvider && selectedProvider.configSchema.configFields.length === 0 && selectedProvider.configSchema.secretFields.length === 0 && (
+                            <div className="p-3 rounded-lg border border-border-info bg-bg-info text-sm text-content-info">
+                                {t('integrations.internalProviderNote')}
+                            </div>
+                        )}
+
                         {/* Config fields */}
                         {selectedProvider && selectedProvider.configSchema.configFields.length > 0 && (
                             <div className="space-y-compact">

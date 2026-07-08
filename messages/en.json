@@ -3096,6 +3096,7 @@
             "syncHealth": "Sync health →",
             "connecting": "Connecting…",
             "connect": "Connect",
+            "internalProviderNote": "This is an internal check — no credentials to enter. It evaluates data already in Inflect (e.g. your employee roster synced from HRIS, or your device inventory reported by the agent). Creating it just enables the scheduled checks — give it any name.",
             "description": "Source compliance evidence from SharePoint document libraries and keep policies in sync. Connecting grants IC delegated read access to the sites you choose.",
             "connected": "SharePoint connected.",
             "declined": "Consent was declined.",
