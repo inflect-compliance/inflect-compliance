@@ -12,6 +12,7 @@ import { getPermissionsForRole } from '@/lib/permissions';
 import { decryptField } from '@/lib/security/encryption';
 import { logger } from '@/lib/observability/logger';
 import { recordSyncTruncated } from '@/lib/observability/integration-metrics';
+import '../integrations/bootstrap'; // populate the provider registry in THIS module graph (see usecases/integrations)
 import { registry } from '../integrations/registry';
 import { isHrisSyncProvider, type HrisSyncProvider, type NormalizedEmployee } from '../integrations/providers/hris';
 

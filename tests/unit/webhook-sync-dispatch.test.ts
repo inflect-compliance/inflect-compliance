@@ -146,6 +146,7 @@ const mockProvider = {
     mapResultToEvidence: jest.fn(),
 };
 
+jest.mock('@/app-layer/integrations/bootstrap', () => ({}));
 jest.mock('@/app-layer/integrations/registry', () => ({
     __esModule: true,
     registry: {

@@ -71,6 +71,7 @@ const mockIntegrationRegistry = {
     has: jest.fn(() => false),
     createOrchestrator: jest.fn(),
 };
+jest.mock('@/app-layer/integrations/bootstrap', () => ({}));
 jest.mock('@/app-layer/integrations/registry', () => ({
     registry: mockRegistry,
     integrationRegistry: mockIntegrationRegistry,

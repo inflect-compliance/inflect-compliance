@@ -50,6 +50,7 @@ import { Prisma, EvidenceType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { runJob } from '@/lib/observability/job-runner';
 import { logger } from '@/lib/observability/logger';
+import '../integrations/bootstrap'; // populate the provider registry in THIS module graph (see usecases/integrations)
 import { registry } from '../integrations/registry';
 import { isScheduledCheckProvider, parseAutomationKey } from '../integrations/types';
 import { recordCheckOutcome } from '@/lib/observability/integration-metrics';

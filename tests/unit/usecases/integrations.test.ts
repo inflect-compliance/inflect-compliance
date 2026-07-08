@@ -41,6 +41,11 @@ jest.mock('@/app-layer/integrations/registry', () => ({
         listAllAutomationKeys: jest.fn().mockReturnValue([]),
     },
 }));
+// The usecase imports the provider-bootstrap side-effect module (so the registry
+// is populated in the request path). Mock it to a no-op here — this unit test
+// drives the fully-mocked registry above, and the real bootstrap would call
+// `registry.register(...)` on the mock (which has no such method).
+jest.mock('@/app-layer/integrations/bootstrap', () => ({}));
 
 jest.mock('@/app-layer/integrations/types', () => ({
     parseAutomationKey: jest.fn(),

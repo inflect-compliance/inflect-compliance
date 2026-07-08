@@ -1472,6 +1472,9 @@
     "docs/implementation-notes/2026-07-07-h6-observability.md": {
       "class": "historical"
     },
+    "docs/implementation-notes/2026-07-08-provider-registry-request-path-fix.md": {
+      "class": "historical"
+    },
     "docs/integration-observability.md": {
       "class": "authoritative"
     }
