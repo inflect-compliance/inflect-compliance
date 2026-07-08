@@ -14,6 +14,7 @@ import { runInTenantContext } from '@/lib/db-context';
 import { getPermissionsForRole } from '@/lib/permissions';
 import { decryptField } from '@/lib/security/encryption';
 import { logger } from '@/lib/observability/logger';
+import { recordSyncTruncated, recordIdentityDeprovisioned } from '@/lib/observability/integration-metrics';
 import { registry } from '../integrations/registry';
 import { isIdentitySyncProvider, type IdentitySyncProvider, type NormalizedIdentityAccount } from '../integrations/providers/identity/types';
 
@@ -155,6 +156,7 @@ export async function runIdentitySync(input: {
                 data: { status: 'ERROR', errorMessage: msg, resultJson: { upserted, deprovisioned: 0, total: accounts.length, truncated: true }, durationMs: Date.now() - start, completedAt: new Date() },
             });
             logger.warn('identity-sync partial enumeration — deprovision skipped', { component: 'identity-sync', tenantId: ctx.tenantId, provider: conn.provider, executionId: execution.id, upserted });
+            recordSyncTruncated({ provider: conn.provider }); // H6 — alertable truncation signal
             return { executionId: execution.id, status: 'ERROR', upserted, deprovisioned: 0, errorMessage: msg };
         }
 
@@ -182,6 +184,7 @@ export async function runIdentitySync(input: {
             },
         });
 
+        recordIdentityDeprovisioned({ provider: conn.provider, count: reconcile.count }); // H6 — spike = wrongful mass-deprovision
         logger.info('identity-sync complete', { component: 'identity-sync', tenantId: ctx.tenantId, provider: conn.provider, executionId: execution.id, upserted, deprovisioned: reconcile.count });
         return { executionId: execution.id, status: 'PASSED', upserted, deprovisioned: reconcile.count };
     });

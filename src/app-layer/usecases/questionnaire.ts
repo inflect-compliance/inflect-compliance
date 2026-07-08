@@ -24,6 +24,7 @@ import { sanitizePlainText } from '@/lib/security/sanitize';
 import { forbidden, notFound } from '@/lib/errors/types';
 import { enforceFeatureGate } from '@/app-layer/ai/risk-assessment/feature-gate';
 import { checkRateLimit, recordGeneration } from '@/app-layer/ai/risk-assessment/rate-limiter';
+import { recordAiGeneration } from '@/lib/observability/integration-metrics';
 import { guardUntrustedInput, guardEgress, assertGuardAllowed, assertNoReviewRequired } from '@/app-layer/ai/guard';
 import { getQuestionnaireProvider, type GroundingSnippet } from '@/app-layer/ai/questionnaire';
 import { relevance } from '@/app-layer/ai/questionnaire/types';
@@ -146,6 +147,7 @@ export async function autofillQuestionnaire(ctx: RequestContext, questionnaireId
                 checkRateLimit(ctx.tenantId, ctx.userId);
                 const out = await provider.draftAnswer({ question: item.questionText, grounding });
                 recordGeneration(ctx.tenantId, ctx.userId);
+                recordAiGeneration({ feature: 'questionnaire' }); // H6 — AI cost visibility
                 draftAnswer = sanitizePlainText(out.answer);
                 confidence = out.confidence;
                 citation = out.citations.length ? out.citations.map((c) => `${c.kind}: ${c.label}`).join('; ') : 'No supporting control/policy found.';

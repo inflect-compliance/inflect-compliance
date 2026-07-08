@@ -127,6 +127,8 @@ log.info({ queueName: QUEUE_NAME, redisUrl: REDIS_URL.replace(/\/\/.*@/, '//***@
     // Register all integration providers process-wide (worker tier) so
     // scheduled checks + sync jobs can resolve providers by automation key.
     await import('../src/app-layer/integrations/bootstrap');
+    const { startIntegrationFreshnessReporting } = await import('../src/lib/observability/integration-metrics');
+    startIntegrationFreshnessReporting();
     const { installRlsTripwire } = await import(
         '../src/lib/db/rls-middleware'
     );
