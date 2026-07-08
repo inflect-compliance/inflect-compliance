@@ -13,6 +13,7 @@ import type { RequestContext } from '../types';
 import { runInTenantContext } from '@/lib/db-context';
 import { getPermissionsForRole } from '@/lib/permissions';
 import { forbidden, badRequest } from '@/lib/errors/types';
+import { recordDeviceReport } from '@/lib/observability/integration-metrics';
 
 /** H3 — hard ceiling on distinct devices per tenant; bounds a leaked/looping
  * token from creating unlimited rows (which could also poison device checks). */
@@ -79,6 +80,7 @@ export async function reportDevice(tenantId: string, data: z.infer<typeof Device
                 throw badRequest(`Device limit reached for this tenant (${MAX_DEVICES_PER_TENANT}).`);
             }
         }
+        recordDeviceReport(); // H6 — ingest counter; a looping token spikes the global rate
         return db.device.upsert({
             where: { tenantId_serialNumber: { tenantId, serialNumber: data.serialNumber } },
             create: { tenantId, serialNumber: data.serialNumber, source: 'AGENT', ...common },

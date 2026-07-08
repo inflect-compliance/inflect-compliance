@@ -11,6 +11,7 @@ import { runInTenantContext } from '@/lib/db-context';
 import { getPermissionsForRole } from '@/lib/permissions';
 import { decryptField } from '@/lib/security/encryption';
 import { logger } from '@/lib/observability/logger';
+import { recordSyncTruncated } from '@/lib/observability/integration-metrics';
 import { registry } from '../integrations/registry';
 import { isHrisSyncProvider, type HrisSyncProvider, type NormalizedEmployee } from '../integrations/providers/hris';
 
@@ -117,6 +118,7 @@ export async function runHrisSync(input: {
                 data: { status: 'ERROR', errorMessage: msg, resultJson: { upserted, managersLinked, total: roster.length, truncated: true }, durationMs: Date.now() - start, completedAt: new Date() },
             });
             logger.warn('hris-sync partial roster — departure reconcile skipped', { component: 'hris-sync', tenantId: ctx.tenantId, executionId: execution.id, upserted });
+            recordSyncTruncated({ provider: 'bamboohr' }); // H6 — alertable truncation signal
             return { executionId: execution.id, status: 'ERROR', upserted, managersLinked, errorMessage: msg };
         }
 

@@ -52,6 +52,7 @@ import { runJob } from '@/lib/observability/job-runner';
 import { logger } from '@/lib/observability/logger';
 import { registry } from '../integrations/registry';
 import { isScheduledCheckProvider, parseAutomationKey } from '../integrations/types';
+import { recordCheckOutcome } from '@/lib/observability/integration-metrics';
 import type { CheckInput, CheckResult } from '../integrations/types';
 import { decryptField } from '@/lib/security/encryption';
 
@@ -373,6 +374,11 @@ export async function executeControlAutomation(
             completedAt: now,
         },
     });
+
+    // H6 — domain metric so a broken collector / false PASSED / NOT_APPLICABLE
+    // is alertable (the generic job.execution.count can't see it).
+    const outcomeKey = parseAutomationKey(control.automationKey);
+    recordCheckOutcome({ provider: outcomeKey?.provider ?? 'unknown', checkType: outcomeKey?.checkType ?? 'unknown', status: result.status, durationMs });
 
     // PR-1 — close the failing-check loop: materialize (or reconcile) a
     // Finding from the outcome. Fail-safe — the execution + evidence are

@@ -83,6 +83,8 @@ export async function register() {
         // this the provider registry is empty for scheduled checks, identity/
         // HRIS sync, and webhook routing triggered from the web process.
         await import('@/app-layer/integrations/bootstrap');
+        const { startIntegrationFreshnessReporting } = await import('@/lib/observability/integration-metrics');
+        startIntegrationFreshnessReporting();
         const { installRlsTripwire } = await import('@/lib/db/rls-middleware');
         const { prisma } = await import('@/lib/prisma');
         const { installShutdownHandlers } = await import('@/lib/observability/shutdown');

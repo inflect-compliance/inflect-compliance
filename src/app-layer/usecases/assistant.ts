@@ -25,6 +25,7 @@ import type { RequestContext } from '../types';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { enforceFeatureGate } from '@/app-layer/ai/risk-assessment/feature-gate';
 import { checkRateLimit, recordGeneration } from '@/app-layer/ai/risk-assessment/rate-limiter';
+import { recordAiGeneration } from '@/lib/observability/integration-metrics';
 import { guardUntrustedInput, guardEgress, assertGuardAllowed, assertNoReviewRequired } from '@/app-layer/ai/guard';
 import { getDashboardData } from './dashboard';
 import { createAgentProposal } from './agent-proposals';
@@ -121,5 +122,6 @@ export async function askAssistant(
     // Guard the outbound message before it leaves the boundary.
     assertGuardAllowed(await guardEgress(ctx, { message: answer.message }, { source: 'assistant:outbound' }));
     recordGeneration(ctx.tenantId, ctx.userId);
+    recordAiGeneration({ feature: 'assistant' }); // H6 — AI cost visibility
     return answer;
 }
