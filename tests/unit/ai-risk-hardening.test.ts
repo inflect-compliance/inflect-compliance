@@ -183,19 +183,19 @@ describe('Rate Limiter', () => {
         _resetForTesting();
     });
 
-    it('allows requests within limits', () => {
-        expect(() => checkRateLimit('tenant-1', 'user-1')).not.toThrow();
+    it('allows requests within limits', async () => {
+        await expect(checkRateLimit('tenant-1', 'user-1')).resolves.toBeUndefined();
     });
 
-    it('throws 429 when user per-minute limit exceeded', () => {
+    it('throws 429 when user per-minute limit exceeded', async () => {
         // Record enough to exceed per-minute limit
         for (let i = 0; i < LIMITS.USER_PER_MINUTE_LIMIT; i++) {
-            recordGeneration('tenant-1', 'user-1');
+            await recordGeneration('tenant-1', 'user-1');
         }
 
-        expect(() => checkRateLimit('tenant-1', 'user-1')).toThrow(AppError);
+        await expect(checkRateLimit('tenant-1', 'user-1')).rejects.toThrow(AppError);
         try {
-            checkRateLimit('tenant-1', 'user-1');
+            await checkRateLimit('tenant-1', 'user-1');
         } catch (e) {
             expect(e).toBeInstanceOf(AppError);
             expect((e as AppError).status).toBe(429);
@@ -203,25 +203,25 @@ describe('Rate Limiter', () => {
         }
     });
 
-    it('allows different users to have separate limits', () => {
+    it('allows different users to have separate limits', async () => {
         // Exhaust user-1's limit
         for (let i = 0; i < LIMITS.USER_PER_MINUTE_LIMIT; i++) {
-            recordGeneration('tenant-1', 'user-1');
+            await recordGeneration('tenant-1', 'user-1');
         }
 
         // user-2 should still be allowed
-        expect(() => checkRateLimit('tenant-1', 'user-2')).not.toThrow();
+        await expect(checkRateLimit('tenant-1', 'user-2')).resolves.toBeUndefined();
     });
 
-    it('throws 429 when tenant daily quota exceeded', () => {
+    it('throws 429 when tenant daily quota exceeded', async () => {
         // Record enough to exceed daily quota
         for (let i = 0; i < LIMITS.TENANT_DAILY_QUOTA; i++) {
-            recordGeneration('tenant-1', `user-${i}`);
+            await recordGeneration('tenant-1', `user-${i}`);
         }
 
-        expect(() => checkRateLimit('tenant-1', 'user-new')).toThrow(AppError);
+        await expect(checkRateLimit('tenant-1', 'user-new')).rejects.toThrow(AppError);
         try {
-            checkRateLimit('tenant-1', 'user-new');
+            await checkRateLimit('tenant-1', 'user-new');
         } catch (e) {
             expect(e).toBeInstanceOf(AppError);
             expect((e as AppError).status).toBe(429);
@@ -229,27 +229,27 @@ describe('Rate Limiter', () => {
         }
     });
 
-    it('different tenants have independent quotas', () => {
+    it('different tenants have independent quotas', async () => {
         for (let i = 0; i < LIMITS.TENANT_DAILY_QUOTA; i++) {
-            recordGeneration('tenant-1', `user-${i}`);
+            await recordGeneration('tenant-1', `user-${i}`);
         }
 
         // tenant-2 should still be allowed
-        expect(() => checkRateLimit('tenant-2', 'user-1')).not.toThrow();
+        await expect(checkRateLimit('tenant-2', 'user-1')).resolves.toBeUndefined();
     });
 
-    it('returns correct usage info', () => {
-        recordGeneration('tenant-1', 'user-1');
-        recordGeneration('tenant-1', 'user-2');
+    it('returns correct usage info', async () => {
+        await recordGeneration('tenant-1', 'user-1');
+        await recordGeneration('tenant-1', 'user-2');
 
-        const usage = getUsageInfo('tenant-1');
+        const usage = await getUsageInfo('tenant-1');
         expect(usage.used).toBe(2);
         expect(usage.limit).toBe(LIMITS.TENANT_DAILY_QUOTA);
         expect(usage.resetAt).not.toBeNull();
     });
 
-    it('returns zero usage for unknown tenant', () => {
-        const usage = getUsageInfo('unknown-tenant');
+    it('returns zero usage for unknown tenant', async () => {
+        const usage = await getUsageInfo('unknown-tenant');
         expect(usage.used).toBe(0);
     });
 });

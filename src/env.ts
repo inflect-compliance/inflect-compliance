@@ -235,8 +235,16 @@ export const env = createEnv({
         AI_LOCAL_API_KEY: z.string().optional(),
         AI_RISK_DAILY_QUOTA: z.string().optional(),
         AI_RISK_USER_RPM: z.string().optional(),
+        // Global AI kill switch. 'false' disables EVERY AI feature
+        // (risk suggestions, assistant, questionnaire autofill).
         AI_RISK_ENABLED: z.string().default('true'),
         AI_RISK_PLAN_REQUIRED: z.string().default(''),
+        // Per-feature enable flags (GAP-2). Each defaults 'true' and is
+        // ANDed with the global AI_RISK_ENABLED master switch, so an
+        // operator can disable one feature without touching the others.
+        AI_RISK_SUGGESTIONS_ENABLED: z.string().default('true'),
+        AI_ASSISTANT_ENABLED: z.string().default('true'),
+        AI_QUESTIONNAIRE_ENABLED: z.string().default('true'),
 
         // AI Compliance-Posture Summary (dashboard hero, daily cron).
         // 'stub' (default) is fully functional with zero config; 'anthropic'
@@ -393,6 +401,9 @@ export const env = createEnv({
         AI_RISK_USER_RPM: process.env.AI_RISK_USER_RPM,
         AI_RISK_ENABLED: process.env.AI_RISK_ENABLED,
         AI_RISK_PLAN_REQUIRED: process.env.AI_RISK_PLAN_REQUIRED,
+        AI_RISK_SUGGESTIONS_ENABLED: process.env.AI_RISK_SUGGESTIONS_ENABLED,
+        AI_ASSISTANT_ENABLED: process.env.AI_ASSISTANT_ENABLED,
+        AI_QUESTIONNAIRE_ENABLED: process.env.AI_QUESTIONNAIRE_ENABLED,
         AI_POSTURE_PROVIDER: process.env.AI_POSTURE_PROVIDER,
         ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
         ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL,

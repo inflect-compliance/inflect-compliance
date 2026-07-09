@@ -16,7 +16,7 @@ describe('assistant AI — governance + propose-not-commit', () => {
     const usecase = read('src/app-layer/usecases/assistant.ts');
 
     it('follows the governed-AI ordering (gate → rate-limit → record)', () => {
-        expect(usecase).toMatch(/enforceFeatureGate\(ctx\)/);
+        expect(usecase).toMatch(/enforceFeatureGate\(ctx, 'assistant'\)/);
         expect(usecase).toMatch(/checkRateLimit\(ctx\.tenantId, ctx\.userId\)/);
         expect(usecase).toMatch(/recordGeneration\(ctx\.tenantId, ctx\.userId\)/);
         expect(usecase.indexOf('enforceFeatureGate')).toBeLessThan(usecase.indexOf('checkRateLimit'));

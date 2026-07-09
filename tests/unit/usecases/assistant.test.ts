@@ -66,7 +66,7 @@ beforeEach(() => {
 describe('askAssistant — governance ordering', () => {
     it('runs enforceFeatureGate then checkRateLimit then records generation', async () => {
         await askAssistant(ctx, { question: 'how many high risks?' });
-        expect(enforceFeatureGate).toHaveBeenCalledWith(ctx);
+        expect(enforceFeatureGate).toHaveBeenCalledWith(ctx, 'assistant');
         expect(checkRateLimit).toHaveBeenCalledWith('t1', 'u1');
         expect(recordGeneration).toHaveBeenCalledWith('t1', 'u1');
         const gateOrder = (enforceFeatureGate as jest.Mock).mock.invocationCallOrder[0];

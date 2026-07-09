@@ -103,9 +103,9 @@ export interface AutofillResult {
 }
 
 export async function autofillQuestionnaire(ctx: RequestContext, questionnaireId: string): Promise<AutofillResult> {
-    enforceFeatureGate(ctx);
+    enforceFeatureGate(ctx, 'questionnaire');
     if (!ctx.permissions?.canWrite) throw forbidden('You do not have permission to autofill questionnaires.');
-    checkRateLimit(ctx.tenantId, ctx.userId);
+    await checkRateLimit(ctx.tenantId, ctx.userId);
     const provider = getQuestionnaireProvider();
 
     const result = await runInTenantContext(ctx, async (db) => {
@@ -144,9 +144,9 @@ export async function autofillQuestionnaire(ctx: RequestContext, questionnaireId
                 // to MAX_QUESTIONS model calls; the old per-RUN charge let one
                 // 500-question upload drive ~500× the daily quota of OpenRouter
                 // calls. checkRateLimit throws when the quota is exhausted.
-                checkRateLimit(ctx.tenantId, ctx.userId);
+                await checkRateLimit(ctx.tenantId, ctx.userId);
                 const out = await provider.draftAnswer({ question: item.questionText, grounding });
-                recordGeneration(ctx.tenantId, ctx.userId);
+                await recordGeneration(ctx.tenantId, ctx.userId);
                 recordAiGeneration({ feature: 'questionnaire' }); // H6 — AI cost visibility
                 draftAnswer = sanitizePlainText(out.answer);
                 confidence = out.confidence;
