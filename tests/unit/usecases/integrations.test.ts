@@ -75,6 +75,7 @@ import {
     removeIntegrationConnection,
     runAutomationForControl,
     handleIncomingWebhook,
+    getConnectionsHealth,
 } from '@/app-layer/usecases/integrations';
 import { runInTenantContext } from '@/lib/db-context';
 import { registry } from '@/app-layer/integrations/registry';
@@ -412,5 +413,63 @@ describe('handleIncomingWebhook', () => {
         });
 
         expect(result.status).toBe('processed');
+    });
+});
+
+// ─── GAP-3 — per-connection freshness (admin health view) ───
+
+describe('getConnectionsHealth', () => {
+    const NOW = 1_700_000_000_000;
+    const minsAgo = (m: number) => new Date(NOW - m * 60_000);
+    let realNow: () => number;
+
+    beforeEach(() => {
+        realNow = Date.now;
+        Date.now = () => NOW;
+    });
+    afterEach(() => {
+        Date.now = realNow;
+    });
+
+    it('returns empty when there are no enabled connections', async () => {
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({
+                integrationConnection: { findMany: jest.fn().mockResolvedValue([]) },
+                integrationExecution: { groupBy: jest.fn() },
+            } as never),
+        );
+        const res = await getConnectionsHealth(makeRequestContext('ADMIN'));
+        expect(res.connections).toEqual([]);
+        expect(res.staleThresholdSeconds).toBeGreaterThan(0);
+    });
+
+    it('flags a connection with no recent success as stale, a recent one as fresh', async () => {
+        const groupBy = jest.fn().mockResolvedValue([
+            { connectionId: 'fresh', _max: { completedAt: minsAgo(10), executedAt: minsAgo(11) } },
+            // stale: last success 5 days ago (> 48h threshold)
+            { connectionId: 'stale', _max: { completedAt: minsAgo(60 * 24 * 5), executedAt: null } },
+        ]);
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({
+                integrationConnection: {
+                    findMany: jest.fn().mockResolvedValue([
+                        { id: 'fresh', provider: 'okta', name: 'Okta', createdAt: minsAgo(10_000), lastTestedAt: null, lastTestStatus: null },
+                        { id: 'stale', provider: 'aws', name: 'AWS', createdAt: minsAgo(10_000), lastTestedAt: null, lastTestStatus: null },
+                        { id: 'never', provider: 'gcp', name: 'GCP', createdAt: minsAgo(10_000), lastTestedAt: null, lastTestStatus: null },
+                    ]),
+                },
+                integrationExecution: { groupBy },
+            } as never),
+        );
+        const res = await getConnectionsHealth(makeRequestContext('ADMIN'));
+        const byId = Object.fromEntries(res.connections.map((c) => [c.connectionId, c]));
+        expect(byId.fresh.isStale).toBe(false);
+        expect(byId.fresh.hasEverSucceeded).toBe(true);
+        expect(byId.stale.isStale).toBe(true);
+        // never-succeeded → stale + null lastSuccessAt
+        expect(byId.never.isStale).toBe(true);
+        expect(byId.never.hasEverSucceeded).toBe(false);
+        expect(byId.never.lastSuccessAt).toBeNull();
+        expect(res.staleCount).toBe(2);
     });
 });

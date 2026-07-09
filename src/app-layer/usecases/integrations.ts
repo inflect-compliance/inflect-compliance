@@ -26,6 +26,7 @@ import { encryptField, decryptField } from '@/lib/security/encryption';
 import { logEvent } from '../events/audit';
 import { notFound, badRequest, forbidden } from '@/lib/errors/types';
 import { logger } from '@/lib/observability/logger';
+import { CONNECTION_STALE_AFTER_SECONDS } from '@/lib/observability/connection-freshness';
 
 // ─── Connection Management ───────────────────────────────────────────
 
@@ -575,6 +576,71 @@ export async function getIntegrationDiagnostics(ctx: RequestContext) {
             recentWebhooks,
             errorCount24h,
             generatedAt: new Date().toISOString(),
+        };
+    });
+}
+
+/**
+ * GAP-3 — per-connection freshness for the admin integrations-health view.
+ *
+ * For every ENABLED connection, the seconds since its last SUCCESSFUL
+ * (PASSED) IntegrationExecution. A connection whose collector has silently
+ * died — or that has never once succeeded — surfaces as `isStale`. Two
+ * bounded queries (enabled connections + a grouped max(PASSED) per
+ * connection); never a per-connection query in a loop.
+ *
+ * The DB-backed OTel gauge `integration.connection.freshness_seconds`
+ * (src/lib/observability/connection-freshness.ts) reports the same signal
+ * platform-wide for alerting; this is the tenant-scoped, on-demand view.
+ */
+export async function getConnectionsHealth(ctx: RequestContext) {
+    return runInTenantContext(ctx, async (db) => {
+        const connections = await db.integrationConnection.findMany({
+            where: { tenantId: ctx.tenantId, isEnabled: true },
+            select: { id: true, provider: true, name: true, createdAt: true, lastTestedAt: true, lastTestStatus: true },
+            orderBy: [{ provider: 'asc' }, { name: 'asc' }],
+            take: 500,
+        });
+
+        const now = Date.now();
+        if (connections.length === 0) {
+            return { connections: [], staleThresholdSeconds: CONNECTION_STALE_AFTER_SECONDS, generatedAt: new Date(now).toISOString() };
+        }
+
+        const grouped = await db.integrationExecution.groupBy({
+            by: ['connectionId'],
+            where: { tenantId: ctx.tenantId, status: 'PASSED', connectionId: { in: connections.map((c) => c.id) } },
+            _max: { completedAt: true, executedAt: true },
+        });
+        const lastByConn = new Map<string, Date>();
+        for (const g of grouped) {
+            if (!g.connectionId) continue;
+            const ts = g._max.completedAt ?? g._max.executedAt;
+            if (ts) lastByConn.set(g.connectionId, ts);
+        }
+
+        const rows = connections.map((c) => {
+            const last = lastByConn.get(c.id) ?? null;
+            const secondsSinceLastSuccess = last ? Math.max(0, Math.round((now - last.getTime()) / 1000)) : null;
+            const isStale = secondsSinceLastSuccess == null || secondsSinceLastSuccess > CONNECTION_STALE_AFTER_SECONDS;
+            return {
+                connectionId: c.id,
+                provider: c.provider,
+                name: c.name,
+                lastSuccessAt: last ? last.toISOString() : null,
+                secondsSinceLastSuccess,
+                hasEverSucceeded: last != null,
+                isStale,
+                lastTestedAt: c.lastTestedAt ? c.lastTestedAt.toISOString() : null,
+                lastTestStatus: c.lastTestStatus,
+            };
+        });
+
+        return {
+            connections: rows,
+            staleThresholdSeconds: CONNECTION_STALE_AFTER_SECONDS,
+            staleCount: rows.filter((r) => r.isStale).length,
+            generatedAt: new Date(now).toISOString(),
         };
     });
 }

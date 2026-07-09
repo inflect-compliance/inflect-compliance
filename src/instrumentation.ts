@@ -85,6 +85,9 @@ export async function register() {
         await import('@/app-layer/integrations/bootstrap');
         const { startIntegrationFreshnessReporting } = await import('@/lib/observability/integration-metrics');
         startIntegrationFreshnessReporting();
+        // GAP-3 — durable, per-connection freshness gauge (DB-backed).
+        const { startConnectionFreshnessReporting } = await import('@/lib/observability/connection-freshness');
+        startConnectionFreshnessReporting();
         const { installRlsTripwire } = await import('@/lib/db/rls-middleware');
         const { prisma } = await import('@/lib/prisma');
         const { installShutdownHandlers } = await import('@/lib/observability/shutdown');

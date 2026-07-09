@@ -89,6 +89,9 @@ const NON_SUBPROCESSOR_ALLOWLIST: Record<string, string> = {
     // More feature flags / config / internal secrets.
     AI_RISK_ENABLED: 'AI feature flag',
     AI_RISK_PLAN_REQUIRED: 'AI plan-gating flag',
+    AI_RISK_SUGGESTIONS_ENABLED: 'per-feature AI enable flag (GAP-2) — no external service',
+    AI_ASSISTANT_ENABLED: 'per-feature AI enable flag (GAP-2) — no external service',
+    AI_QUESTIONNAIRE_ENABLED: 'per-feature AI enable flag (GAP-2) — no external service',
     AUDIT_STREAM_RETRY_ENABLED: 'audit-stream retry flag (target SIEM is the customer\'s own per-tenant endpoint, not an env sub-processor)',
     NEXT_PUBLIC_NOTIFICATIONS_SSE: 'notifications transport feature flag',
     NOTIFICATIONS_TZ: 'notification timezone config',

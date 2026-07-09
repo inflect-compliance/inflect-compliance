@@ -22,6 +22,7 @@ import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 import { useTranslations } from 'next-intl';
 import { SharePointCard } from './SharePointCard';
+import { ConnectionHealthPanel } from './ConnectionHealthPanel';
 
 interface ConnectionDTO {
     id: string;
@@ -365,6 +366,10 @@ export default function AdminIntegrationsPage() {
                         })()
                     )}
                 </div>
+
+                {/* GAP-3 — per-connection freshness (self-renders only when
+                    there is at least one enabled connection). */}
+                <ConnectionHealthPanel />
 
                 {/* Add/Edit Form */}
                 {showForm && (
