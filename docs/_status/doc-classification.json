@@ -1501,6 +1501,9 @@
         },
         "docs/implementation-notes/2026-07-10-runtime-verification-conventions.md": {
             "class": "historical"
+        },
+        "docs/implementation-notes/2026-07-10-encryption-manifest-coverage-guard.md": {
+            "class": "historical"
         }
     }
 }

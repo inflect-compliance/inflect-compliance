@@ -47,6 +47,17 @@
  * drives encrypt-on-write and decrypt-on-read; no other code path
  * should consult these columns without going through the middleware.
  *
+ * **Enforcement — this manifest is opt-OUT, not opt-in-by-memory.**
+ * `tests/guardrails/encryption-manifest-coverage.test.ts` scans the live
+ * Prisma schema and fails CI if any tenant-scoped `String` column whose
+ * NAME looks sensitive (note / comment / description / summary / … — see
+ * the guard's `SENSITIVITY_HEURISTIC`) is neither listed here NOR
+ * justified in that guard's `NOT_SENSITIVE` allowlist with a written
+ * reason. So a new sensitive column can no longer silently ship
+ * plaintext just because nobody remembered this file: the author must
+ * consciously encrypt it (add it below) or record why it stays
+ * plaintext. Widen the heuristic there as new sensitive shapes appear.
+ *
  * Pattern: **in-place encryption**. Unlike the PII middleware
  * (`src/lib/security/pii-middleware.ts`) which uses dual `*Encrypted`
  * sibling columns, the Epic B business-content fields are encrypted
@@ -94,11 +105,17 @@
  *   1. Append to the list here.
  *   2. Verify it's not used in a `contains` / `startsWith` /
  *      `orderBy` in any repository. If it is, either move the
- *      repository off the search (preferred) or skip this field.
+ *      repository off the search (preferred) or skip this field
+ *      (record the skip in the guard's `NOT_SENSITIVE` allowlist).
  *   3. Extend `tests/unit/encryption-middleware.test.ts` with a
  *      write-then-read round-trip assertion for the new field.
  *   4. Backfill existing rows as a follow-up migration before the
  *      next tenant writes to the column.
+ *
+ * If you instead add a NEW sensitive-shaped column and decide it does
+ * NOT need encryption, the coverage guard
+ * (`encryption-manifest-coverage.test.ts`) will fail until you justify
+ * it in its `NOT_SENSITIVE` allowlist — that is the intended opt-out.
  */
 export const ENCRYPTED_FIELDS: Readonly<Record<string, readonly string[]>> = {
     // ─── Tenant security settings ──────────────────────
