@@ -2,8 +2,8 @@
     "$schema": "internal: docs classification source of truth",
     "description": "Classification of every docs/**/*.md. authoritative = true today; living = partially-shipped design direction; historical = moment-in-time record (incl. all of docs/implementation-notes/); deprecated = superseded redirect. Enforced by tests/guardrails/docs-accuracy.test.ts. See CLAUDE.md \"Doc classifications\".",
     "counts": {
-        "authoritative": 109,
-        "historical": 353,
+        "authoritative": 110,
+        "historical": 354,
         "living": 5,
         "deprecated": 1
     },
@@ -1486,6 +1486,12 @@
         },
         "docs/implementation-notes/2026-07-09-gap4-identity-enrichment.md": {
             "class": "historical"
+        },
+        "docs/branch-divergence-o64va-analysis.md": {
+            "class": "historical"
+        },
+        "docs/prisma-upgrade-path.md": {
+            "class": "authoritative"
         }
     }
 }
