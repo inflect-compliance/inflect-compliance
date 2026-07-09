@@ -32,10 +32,20 @@ const MAX_USERS = 5000;
 const PAGE_SIZE = 200;
 const DIRECTORY_BASE = 'https://admin.googleapis.com/admin/directory/v1';
 
+/** GAP-4 — domain-level inbound SAML SSO coverage, derived from assignments. */
+interface SsoCoverage {
+    /** A SAML_SSO assignment applies to the whole customer (all users). */
+    customerWide: boolean;
+    /** At least one SAML_SSO assignment exists (possibly OU/group-scoped only). */
+    hasSaml: boolean;
+}
+
 interface GwsDeps {
     listAccounts?: (config: Record<string, unknown>) => Promise<NormalizedIdentityAccount[]>;
     /** Injectable token getter (defaults to a service-account JWT exchange). */
     getAccessToken?: (config: Record<string, unknown>) => Promise<string>;
+    /** Injectable SSO-assignment reader (defaults to the Cloud Identity API). */
+    listSsoAssignments?: (token: string) => Promise<SsoCoverage>;
     fetchImpl?: typeof fetch;
 }
 
@@ -92,6 +102,7 @@ export class GoogleWorkspaceProvider implements ScheduledCheckProvider, Identity
             { key: 'adminEmail', label: 'Admin to impersonate', type: 'string', required: true, placeholder: 'admin@acme.com', description: 'A super-admin the service account impersonates via domain-wide delegation.' },
             { key: 'maxAdmins', label: 'Max active admins', type: 'number', required: false, description: 'Threshold for admin_count_within_threshold (default 5).' },
             { key: 'dormantDays', label: 'Dormant admin threshold (days)', type: 'number', required: false, description: 'Admin considered dormant after this many days idle (default 90).' },
+            { key: 'enrichSso', label: 'SAML SSO enrichment', type: 'boolean', required: false, description: 'Read inbound SAML assignments so the SSO check reflects real coverage (default on; needs the cloud-identity.inboundsso.readonly scope).' },
         ],
         secretFields: [
             { key: 'serviceAccountJson', label: 'Service-account JSON', type: 'string', required: true, description: 'A domain-wide-delegated service-account key (JSON).' },
@@ -149,6 +160,29 @@ export class GoogleWorkspaceProvider implements ScheduledCheckProvider, Identity
             for (const u of body.users ?? []) out.push(normalizeGoogleUser(u));
             pageToken = body.nextPageToken;
         } while (pageToken && out.length < MAX_USERS);
+
+        // GAP-4 — per-user SAML SSO is not on the Directory user object, so
+        // `normalizeGoogleUser` leaves `ssoEnrolled` null. Derive it from the
+        // inbound SAML SSO assignments (Cloud Identity) so `sso_enforced` can
+        // fail when SSO is not configured:
+        //   • customer-wide SAML assignment → every account is ssoEnrolled
+        //   • no SAML assignment at all      → every account is NOT ssoEnrolled (FAIL)
+        //   • only OU/group-scoped SAML      → unknown (null → NOT_APPLICABLE),
+        //     since mapping an assignment's OU/group to each user needs calls
+        //     this sync doesn't make. Opt out with `enrichSso: false`.
+        const enrichSso = String((config as { enrichSso?: unknown }).enrichSso ?? 'true').toLowerCase() !== 'false';
+        if (enrichSso) {
+            try {
+                const cov = this.deps.listSsoAssignments
+                    ? await this.deps.listSsoAssignments(token)
+                    : await fetchSsoCoverage(token, doFetch);
+                const value: boolean | null = cov.customerWide ? true : cov.hasSaml ? null : false;
+                for (const a of out) a.ssoEnrolled = value;
+            } catch {
+                // SSO scope not authorised / API blip — leave null (NOT_APPLICABLE).
+            }
+        }
+
         // H3 — a still-present nextPageToken means we hit MAX_USERS mid-directory:
         // the enumeration is KNOWN-PARTIAL and must not drive deprovisioning.
         return { accounts: out, complete: !pageToken };
@@ -197,7 +231,11 @@ async function getGoogleAccessToken(config: Record<string, unknown>): Promise<st
     const claim = {
         iss: sa.client_email,
         sub: adminEmail,
-        scope: 'https://www.googleapis.com/auth/admin.directory.user.readonly',
+        // GAP-4 — cloud-identity.inboundsso.readonly is added so the SSO
+        // enrichment can read inbound SAML assignments. The DWD grant must
+        // authorise both scopes; if the SSO scope is not authorised the
+        // assignments fetch 403s and SSO falls back to unknown (NOT_APPLICABLE).
+        scope: 'https://www.googleapis.com/auth/admin.directory.user.readonly https://www.googleapis.com/auth/cloud-identity.inboundsso.readonly',
         aud: 'https://oauth2.googleapis.com/token',
         iat: now,
         exp: now + 3600,
@@ -215,4 +253,39 @@ async function getGoogleAccessToken(config: Record<string, unknown>): Promise<st
     const json = (await res.json()) as { access_token?: string };
     if (!json.access_token) throw new Error('Google token exchange returned no access_token');
     return json.access_token;
+}
+
+const CLOUD_IDENTITY_BASE = 'https://cloudidentity.googleapis.com/v1';
+
+interface InboundSsoAssignment {
+    ssoMode?: string;
+    targetOrgUnit?: string;
+    targetGroup?: string;
+}
+
+/**
+ * GAP-4 — read the inbound SSO assignments and reduce them to domain-level
+ * SAML coverage. A `SAML_SSO` assignment that targets neither an OU nor a
+ * group applies to the whole customer.
+ */
+async function fetchSsoCoverage(token: string, doFetch: typeof fetch): Promise<SsoCoverage> {
+    let customerWide = false;
+    let hasSaml = false;
+    let pageToken: string | undefined;
+    do {
+        const url = new URL(`${CLOUD_IDENTITY_BASE}/inboundSsoAssignments`);
+        if (pageToken) url.searchParams.set('pageToken', pageToken);
+        const res = await doFetch(url.toString(), {
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        });
+        if (!res.ok) throw new Error(`Google SSO assignments fetch failed (HTTP ${res.status})`);
+        const body = (await res.json()) as { inboundSsoAssignments?: InboundSsoAssignment[]; nextPageToken?: string };
+        for (const a of body.inboundSsoAssignments ?? []) {
+            if (a.ssoMode !== 'SAML_SSO') continue;
+            hasSaml = true;
+            if (!a.targetOrgUnit && !a.targetGroup) customerWide = true;
+        }
+        pageToken = body.nextPageToken;
+    } while (pageToken);
+    return { customerWide, hasSaml };
 }

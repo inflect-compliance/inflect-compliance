@@ -23,16 +23,39 @@ import {
     type ListAccountsResult,
     type NormalizedIdentityAccount,
 } from '../identity/types';
+import { logger } from '@/lib/observability/logger';
 
 /** Max users pulled per sync — bounds a runaway directory. */
 const MAX_USERS = 5000;
 const PAGE_LIMIT = 200;
+/**
+ * GAP-4 — the per-user enrichment (`/factors` + `/roles`) is TWO extra HTTP
+ * calls per account. Cap the enriched population so a huge directory can't
+ * fan out to 10 000+ Okta calls in one sync; accounts past the cap keep their
+ * base (null) signal → the check reports NOT_APPLICABLE for them rather than a
+ * false PASS. The cap is logged, never silent.
+ */
+const MAX_ENRICH = 2000;
+/** Bounded concurrency for the enrichment fan-out (Okta rate-limits hard). */
+const ENRICH_CONCURRENCY = 8;
 
 interface OktaDeps {
     /** Injectable directory fetch (defaults to the live Okta REST client). */
     listAccounts?: (config: Record<string, unknown>) => Promise<NormalizedIdentityAccount[]>;
     /** Injectable fetch, for validateConnection ping tests. */
     fetchImpl?: typeof fetch;
+}
+
+/** Run `fn` over `items` with at most `limit` in flight. */
+async function mapPool<T>(items: T[], limit: number, fn: (item: T) => Promise<void>): Promise<void> {
+    let cursor = 0;
+    const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+        while (cursor < items.length) {
+            const idx = cursor++;
+            await fn(items[idx]);
+        }
+    });
+    await Promise.all(workers);
 }
 
 /** Map an Okta user status to the normalized lifecycle enum. */
@@ -99,6 +122,7 @@ export class OktaProvider implements ScheduledCheckProvider, IdentitySyncProvide
             { key: 'orgUrl', label: 'Okta org URL', type: 'string', required: true, placeholder: 'https://acme.okta.com' },
             { key: 'maxAdmins', label: 'Max active admins', type: 'number', required: false, description: 'Threshold for admin_count_within_threshold (default 5).' },
             { key: 'dormantDays', label: 'Dormant admin threshold (days)', type: 'number', required: false, description: 'Admin considered dormant after this many days idle (default 90).' },
+            { key: 'enrichPerUser', label: 'Per-user MFA + admin enrichment', type: 'boolean', required: false, description: 'Fetch each user’s factors + roles so MFA / admin checks measure real signals. Disable on very large directories (default on).' },
         ],
         secretFields: [
             { key: 'apiToken', label: 'API token (SSWS)', type: 'string', required: true, description: 'A read-only Okta API token.' },
@@ -153,9 +177,68 @@ export class OktaProvider implements ScheduledCheckProvider, IdentitySyncProvide
             // Okta paginates via RFC-5988 Link headers (rel="next").
             url = parseNextLink(res.headers.get('link'));
         }
+
+        // GAP-4 — the users-list endpoint carries neither MFA factors nor admin
+        // role membership, so `normalizeOktaUser` leaves both null. Enrich each
+        // account from the per-user `/factors` + `/roles` endpoints so
+        // `mfa_enforced` / `no_dormant_admins` / `admin_count_within_threshold`
+        // measure real signals instead of vacuously passing. Opt-out via
+        // `enrichPerUser: false` on a directory too large to fan out over.
+        const enrichPerUser = String((config as { enrichPerUser?: unknown }).enrichPerUser ?? 'true').toLowerCase() !== 'false';
+        if (enrichPerUser) {
+            await this.enrichAccounts(orgUrl, apiToken, out, doFetch);
+        }
+
         // H3 — if we stopped with a `next` link still present, we hit MAX_USERS
         // mid-directory: the enumeration is KNOWN-PARTIAL (do not deprovision).
         return { accounts: out, complete: url === null };
+    }
+
+    /**
+     * GAP-4 — enrich each account's `mfaEnrolled` (from `/factors`) and
+     * `isAdmin` (from `/roles`), bounded-concurrency + capped at MAX_ENRICH.
+     * A per-user fetch failure leaves that account's signal at its base value
+     * (null) rather than failing the whole sync.
+     */
+    private async enrichAccounts(
+        orgUrl: string,
+        apiToken: string,
+        accounts: NormalizedIdentityAccount[],
+        doFetch: typeof fetch,
+    ): Promise<void> {
+        const toEnrich = accounts.slice(0, MAX_ENRICH);
+        if (accounts.length > MAX_ENRICH) {
+            logger.warn('Okta per-user enrichment capped; accounts past the cap keep null (NOT_APPLICABLE) signals', {
+                component: 'integration-okta',
+                total: accounts.length,
+                enriched: MAX_ENRICH,
+            });
+        }
+        const authHeaders = { Authorization: `SSWS ${apiToken}`, Accept: 'application/json' };
+        const getJson = async (path: string): Promise<unknown> => {
+            const res = await doFetch(`${orgUrl}${path}`, { headers: authHeaders });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+        };
+        await mapPool(toEnrich, ENRICH_CONCURRENCY, async (acct) => {
+            try {
+                const [factors, roles] = await Promise.all([
+                    getJson(`/api/v1/users/${encodeURIComponent(acct.externalUserId)}/factors`),
+                    getJson(`/api/v1/users/${encodeURIComponent(acct.externalUserId)}/roles`),
+                ]);
+                // Any factor in ACTIVE state means MFA is enrolled.
+                if (Array.isArray(factors)) {
+                    acct.mfaEnrolled = factors.some((f) => (f as { status?: string }).status === 'ACTIVE');
+                }
+                // Okta `/roles` returns ADMIN role grants (direct or group-derived).
+                // A non-empty set means the account holds an administrator role.
+                if (Array.isArray(roles)) {
+                    acct.isAdmin = roles.length > 0;
+                }
+            } catch {
+                // Leave base (null) signals — a single flaky user must not fail the sync.
+            }
+        });
     }
 
     async runCheck(input: CheckInput): Promise<CheckResult> {
