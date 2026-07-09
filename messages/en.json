@@ -3179,7 +3179,17 @@
             "supportedChecks": "Supported Checks",
             "updateConnection": "Update Connection",
             "createConnection": "Create Connection",
-            "cancel": "Cancel"
+            "cancel": "Cancel",
+            "health": {
+                "title": "Connection health",
+                "description": "Time since each enabled connection last succeeded. A stale connection may have a broken credential or a silently-dead collector.",
+                "colLastSuccess": "Last success",
+                "colFreshness": "Freshness",
+                "neverSucceeded": "Never succeeded",
+                "stale": "Stale",
+                "fresh": "Fresh",
+                "staleSummary": "{count} stale"
+            }
         },
         "forbidden": {
             "title": "Admin Access Required",

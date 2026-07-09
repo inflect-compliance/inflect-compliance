@@ -85,6 +85,12 @@ const EXEMPTIONS: Record<string, string> = {
     'admin/integrations/page.tsx':
         'multi-section admin page',
 
+    // GAP-3 — freshness sub-panel embedded inside the (exempt)
+    // integrations page. Parent decides layout; this file just renders
+    // a per-connection health table given data.
+    'admin/integrations/ConnectionHealthPanel.tsx':
+        'sub-panel of the multi-section admin/integrations page',
+
     // Sub-component embedded inside the billing page. Parent
     // decides layout; this file just renders a table given data.
     'admin/billing/BillingEventLog.tsx':
