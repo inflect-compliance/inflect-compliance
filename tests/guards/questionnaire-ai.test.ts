@@ -13,7 +13,7 @@ describe('questionnaire AI — governance + wiring', () => {
     const usecase = read('src/app-layer/usecases/questionnaire.ts');
 
     it('follows the governed-AI ordering (gate → rate-limit → context → record)', () => {
-        expect(usecase).toMatch(/enforceFeatureGate\(ctx\)/);
+        expect(usecase).toMatch(/enforceFeatureGate\(ctx, 'questionnaire'\)/);
         expect(usecase).toMatch(/checkRateLimit\(ctx\.tenantId, ctx\.userId\)/);
         expect(usecase).toMatch(/recordGeneration\(ctx\.tenantId, ctx\.userId\)/);
         expect(usecase).toMatch(/runInTenantContext/);

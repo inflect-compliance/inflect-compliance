@@ -1,10 +1,11 @@
 /**
  * AI Risk Assessment — Feature Gate
  *
- * Controls access to AI risk assessment based on:
- * 1. Global feature flag (env: AI_RISK_ENABLED)
- * 2. Role-based access (admin/editor only)
- * 3. Optional plan-based gating (env: AI_RISK_PLAN_REQUIRED)
+ * Controls access to AI features based on:
+ * 1. Global feature flag (env: AI_RISK_ENABLED) — master kill switch
+ * 2. Per-feature enable flag (GAP-2) — disable one feature in isolation
+ * 3. Role-based access (admin/editor only)
+ * 4. Optional plan-based gating (env: AI_RISK_PLAN_REQUIRED)
  *
  * When billing/entitlements are added, extend `checkPlanEntitlement`
  * to query the tenant's subscription plan.
@@ -15,8 +16,30 @@ import { env } from '@/env';
 
 // ─── Configuration ───
 
-/** Global kill switch for AI risk assessment. Set to 'false' to disable. */
+/** Global kill switch for ALL AI features. Set to 'false' to disable. */
 const AI_RISK_ENABLED = (env.AI_RISK_ENABLED ?? 'true').toLowerCase() !== 'false';
+
+const isOn = (raw: string | undefined) => (raw ?? 'true').toLowerCase() !== 'false';
+
+/**
+ * The AI features that carry an independent enable flag. Each flag is
+ * ANDed with the global `AI_RISK_ENABLED` master switch, so an operator
+ * can turn off (say) the assistant while leaving risk suggestions on.
+ */
+export type AiFeature = 'risk' | 'assistant' | 'questionnaire';
+
+/** Per-feature enable flags (GAP-2). Each defaults ON. */
+const FEATURE_ENABLED: Readonly<Record<AiFeature, boolean>> = {
+    risk: isOn(env.AI_RISK_SUGGESTIONS_ENABLED),
+    assistant: isOn(env.AI_ASSISTANT_ENABLED),
+    questionnaire: isOn(env.AI_QUESTIONNAIRE_ENABLED),
+};
+
+const FEATURE_LABEL: Readonly<Record<AiFeature, string>> = {
+    risk: 'AI risk assessment',
+    assistant: 'the AI assistant',
+    questionnaire: 'AI questionnaire autofill',
+};
 
 /**
  * If set, AI risk assessment requires this plan tier.
@@ -46,27 +69,32 @@ export interface FeatureGateResult {
  * returns a deny `reason` when it fails; reaching the end of the list is the
  * only way to `allowed: true`.
  */
-const AI_ACCESS_ALLOWLIST: ReadonlyArray<(ctx: RequestContext) => FeatureGateResult> = [
-    // 1. Global feature flag must be on (kill switch; off by default in prod).
+const AI_ACCESS_ALLOWLIST: ReadonlyArray<(ctx: RequestContext, feature: AiFeature) => FeatureGateResult> = [
+    // 1. Global master switch must be on (kill switch for ALL AI features).
     () =>
         AI_RISK_ENABLED
             ? { allowed: true }
-            : { allowed: false, reason: 'AI risk assessment is currently disabled' },
-    // 2. Caller must hold the write capability (Editor / Admin / Owner).
+            : { allowed: false, reason: 'AI features are currently disabled' },
+    // 2. The specific feature's enable flag must be on (GAP-2).
+    (_ctx, feature) =>
+        FEATURE_ENABLED[feature]
+            ? { allowed: true }
+            : { allowed: false, reason: `${FEATURE_LABEL[feature]} is currently disabled` },
+    // 3. Caller must hold the write capability (Editor / Admin / Owner).
     (ctx) =>
         ctx.permissions.canWrite
             ? { allowed: true }
-            : { allowed: false, reason: 'AI risk assessment requires Editor or Admin role' },
-    // 3. Plan entitlement, when a required plan is configured.
+            : { allowed: false, reason: 'AI features require Editor or Admin role' },
+    // 4. Plan entitlement, when a required plan is configured.
     (ctx) =>
         AI_RISK_PLAN_REQUIRED ? checkPlanEntitlement(ctx, AI_RISK_PLAN_REQUIRED) : { allowed: true },
 ];
 
-export function checkFeatureGate(ctx: RequestContext): FeatureGateResult {
+export function checkFeatureGate(ctx: RequestContext, feature: AiFeature = 'risk'): FeatureGateResult {
     // Default-deny: return the FIRST failing predicate's reason; reaching the
     // end (every predicate passed) is the only allow path.
     for (const predicate of AI_ACCESS_ALLOWLIST) {
-        const result = predicate(ctx);
+        const result = predicate(ctx, feature);
         if (!result.allowed) return result;
     }
     return { allowed: true };
@@ -74,11 +102,15 @@ export function checkFeatureGate(ctx: RequestContext): FeatureGateResult {
 
 /**
  * Enforce the feature gate — throws forbidden if not allowed.
+ *
+ * @param feature — which AI feature is being gated (defaults to 'risk'
+ *   for backward compatibility). Each feature carries an independent
+ *   enable flag ANDed with the global master switch.
  */
-export function enforceFeatureGate(ctx: RequestContext): void {
-    const result = checkFeatureGate(ctx);
+export function enforceFeatureGate(ctx: RequestContext, feature: AiFeature = 'risk'): void {
+    const result = checkFeatureGate(ctx, feature);
     if (!result.allowed) {
-        throw forbidden(result.reason ?? 'AI risk assessment is not available');
+        throw forbidden(result.reason ?? 'This AI feature is not available');
     }
 }
 

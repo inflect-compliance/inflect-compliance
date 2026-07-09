@@ -56,8 +56,8 @@ export async function askAssistant(
     ctx: RequestContext,
     input: z.infer<typeof AskAssistantSchema>,
 ): Promise<AssistantAnswer> {
-    enforceFeatureGate(ctx);
-    checkRateLimit(ctx.tenantId, ctx.userId);
+    enforceFeatureGate(ctx, 'assistant');
+    await checkRateLimit(ctx.tenantId, ctx.userId);
     const question = input.question;
 
     // The question is untrusted external input — guard before it steers
@@ -121,7 +121,7 @@ export async function askAssistant(
 
     // Guard the outbound message before it leaves the boundary.
     assertGuardAllowed(await guardEgress(ctx, { message: answer.message }, { source: 'assistant:outbound' }));
-    recordGeneration(ctx.tenantId, ctx.userId);
+    await recordGeneration(ctx.tenantId, ctx.userId);
     recordAiGeneration({ feature: 'assistant' }); // H6 — AI cost visibility
     return answer;
 }

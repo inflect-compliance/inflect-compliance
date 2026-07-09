@@ -34,8 +34,8 @@ export async function generateRiskSuggestions(
     ctx: RequestContext,
     apiInput: RiskAssessmentApiInput,
 ) {
-    // 1. Feature gate (global flag + role + optional plan)
-    enforceFeatureGate(ctx);
+    // 1. Feature gate (global flag + per-feature flag + role + optional plan)
+    enforceFeatureGate(ctx, 'risk');
 
     // 2. Permission check (admin/editor only — redundant with feature gate but explicit)
     if (!ctx.permissions.canWrite) {
@@ -43,7 +43,7 @@ export async function generateRiskSuggestions(
     }
 
     // 3. Rate limit check (before any DB work)
-    checkRateLimit(ctx.tenantId, ctx.userId);
+    await checkRateLimit(ctx.tenantId, ctx.userId);
 
     return runInTenantContext(ctx, async (db) => {
         // 4. Fetch tenant profile
@@ -348,7 +348,7 @@ export async function generateRiskSuggestions(
         });
 
         // 13. Record rate limit usage (after success)
-        recordGeneration(ctx.tenantId, ctx.userId);
+        await recordGeneration(ctx.tenantId, ctx.userId);
 
         // 14. Audit log with full traceability
         await logEvent(db, ctx, {
@@ -427,7 +427,7 @@ export async function getSession(ctx: RequestContext, sessionId: string) {
 
 export async function applySession(ctx: RequestContext, sessionId: string, input: ApplySessionInput) {
     // Feature gate + permission check
-    enforceFeatureGate(ctx);
+    enforceFeatureGate(ctx, 'risk');
     if (!ctx.permissions.canWrite) {
         throw forbidden('Only editors and admins can apply AI risk suggestions');
     }
@@ -564,7 +564,7 @@ export async function applySession(ctx: RequestContext, sessionId: string, input
 
 export async function dismissSession(ctx: RequestContext, sessionId: string) {
     // Feature gate + permission check
-    enforceFeatureGate(ctx);
+    enforceFeatureGate(ctx, 'risk');
     if (!ctx.permissions.canWrite) {
         throw forbidden('Only editors and admins can dismiss AI risk suggestions');
     }
