@@ -1,0 +1,75 @@
+# ───────────────────────────────────────────────────────────────
+#  Branch Freshness — nudge long-lived branches to rebase
+#
+#  A branch that drifts far behind `main` becomes a standing merge
+#  hazard: features on one line go dormant/absent on the other, and a
+#  framework-major skew (e.g. the Prisma 5→7 gap that stranded
+#  `claude/implement-login-O64VA`) makes the eventual reconcile
+#  expensive. This job measures how many commits a PR branch is BEHIND
+#  its base and annotates the PR when that exceeds a threshold — a
+#  nudge to rebase early and often.
+#
+#  Non-blocking BY DESIGN: it emits a `::warning::` + a job summary and
+#  always exits 0. A stale-but-correct PR should never be BLOCKED from
+#  merging by this signal; it should only be reminded. Escalation (if
+#  ever wanted) is a one-line change to the exit code below.
+# ───────────────────────────────────────────────────────────────
+name: Branch Freshness
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: branch-freshness-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Warn once a PR branch is more than this many commits behind its base.
+  BEHIND_THRESHOLD: '200'
+
+jobs:
+  freshness:
+    name: "Branch freshness (behind-base nudge)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Full history so the merge-base + behind-count are exact.
+          fetch-depth: 0
+
+      - name: Measure commits behind base
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+          # Commits on the base branch that are NOT in the PR head = how far
+          # behind the branch is. rev-list A..B = commits reachable from B but
+          # not A, so BASE not in HEAD is HEAD..BASE.
+          behind=$(git rev-list --count "${HEAD_SHA}..${BASE_SHA}" || echo 0)
+          ahead=$(git rev-list --count "${BASE_SHA}..${HEAD_SHA}" || echo 0)
+          echo "Branch is ${behind} commit(s) behind ${BASE_REF}, ${ahead} ahead."
+          {
+            echo "## Branch freshness"
+            echo ""
+            echo "| metric | value |"
+            echo "| --- | --- |"
+            echo "| behind \`${BASE_REF}\` | ${behind} |"
+            echo "| ahead | ${ahead} |"
+            echo "| threshold | ${BEHIND_THRESHOLD} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "${behind}" -gt "${BEHIND_THRESHOLD}" ]; then
+            echo "::warning title=Branch is stale::This branch is ${behind} commits behind ${BASE_REF} (threshold ${BEHIND_THRESHOLD}). Rebase onto ${BASE_REF} to avoid a compounding merge/framework-version skew (see docs/prisma-upgrade-path.md)."
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "> ⚠️ **Rebase recommended** — ${behind} commits behind (threshold ${BEHIND_THRESHOLD})." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Branch is fresh enough (≤ ${BEHIND_THRESHOLD} behind)."
+          fi
+          # Non-blocking: always succeed.
+          exit 0
