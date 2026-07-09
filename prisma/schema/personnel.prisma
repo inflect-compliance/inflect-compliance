@@ -1,0 +1,163 @@
+// personnel.prisma — People hub (Employee) — devices, training, background checks, directory identity accounts.
+// Split from compliance.prisma (2026-07-10) — pure reorg, no datamodel change.
+// Enums live in enums.prisma; relations resolve across the schema folder.
+
+/// A user account discovered in a connected directory / identity provider
+/// (Okta, Google Workspace — PR-2). Synced idempotently by the
+/// `identity-sync` job and joined against Personnel (PR-4) for
+/// offboarded-access checks. `groupsJson` is a string[] of group names.
+/// Not encrypted — directory metadata (email + status flags), not content.
+model ConnectedIdentityAccount {
+  id             String                 @id @default(cuid())
+  tenantId       String
+  /// Provider prefix — 'okta' | 'google-workspace'. Matches the
+  /// ScheduledCheckProvider id so `{provider}.{check}` routing lines up.
+  provider       String
+  /// Stable id of the user in the provider's directory.
+  externalUserId String
+  email          String
+  displayName    String?
+  status         ConnectedAccountStatus @default(ACTIVE)
+  isAdmin        Boolean                @default(false)
+  mfaEnrolled    Boolean                @default(false)
+  /// string[] of group / role names the account belongs to.
+  groupsJson     Json                   @default("[]")
+  lastActiveAt   DateTime?
+  syncedAt       DateTime
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  tenant           Tenant                          @relation(fields: [tenantId], references: [id])
+  reviewDecisions  AccessReviewConnectedDecision[]
+
+  @@unique([tenantId, provider, externalUserId])
+  @@index([tenantId, provider])
+  @@index([tenantId, status])
+}
+
+/// A security-awareness training course (PR-6). Provider-synced (KnowBe4) or
+/// manual. `cadenceDays` drives the annual-completion check.
+model TrainingCourse {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  provider    String?
+  cadenceDays Int?     @default(365)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant               @relation(fields: [tenantId], references: [id])
+  assignments TrainingAssignment[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+/// A training assignment to an employee (PR-6).
+model TrainingAssignment {
+  id          String         @id @default(cuid())
+  tenantId    String
+  employeeId  String
+  courseId    String
+  status      TrainingStatus @default(ASSIGNED)
+  assignedAt  DateTime       @default(now())
+  dueAt       DateTime?
+  completedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  tenant   Tenant         @relation(fields: [tenantId], references: [id])
+  employee Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  course   TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, employeeId])
+  @@index([tenantId, status])
+  @@index([tenantId, courseId])
+}
+
+/// A background check for an employee (PR-6). `resultSummary` is encrypted at
+/// rest (Epic B manifest) — it can quote adverse-action detail.
+model BackgroundCheck {
+  id            String                @id @default(cuid())
+  tenantId      String
+  employeeId    String
+  provider      String?
+  status        BackgroundCheckStatus @default(PENDING)
+  requestedAt   DateTime?
+  completedAt   DateTime?
+  resultSummary String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, employeeId])
+  @@index([tenantId, status])
+}
+
+/// A managed endpoint / device (PR-5). Reported by an MDM or a per-tenant
+/// device agent (token-authed) or entered manually. Optionally linked to an
+/// Employee. The boolean posture fields are THREE-STATE: true (pass), false
+/// (fail), null (NOT_APPLICABLE — e.g. LINUX has no screen-lock check). Never
+/// treat null as fail.
+model Device {
+  id                    String         @id @default(cuid())
+  tenantId              String
+  employeeId            String?
+  serialNumber          String?
+  hostname              String?
+  platform              DevicePlatform
+  /// 'MDM' | 'AGENT' | 'MANUAL'.
+  source                String         @default("MANUAL")
+  diskEncrypted         Boolean?
+  screenLockEnabled     Boolean?
+  antivirusRunning      Boolean?
+  passwordManagerPresent Boolean?
+  lastCheckIn           DateTime?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, serialNumber])
+  @@index([tenantId, employeeId])
+  @@index([tenantId, platform])
+}
+
+/// A personnel record (PR-4). The people-layer hub — PR-5 devices + PR-6
+/// training/background attach here. Synced from an HRIS or entered manually;
+/// idempotent by (tenantId, workEmail). TERMINATED employees whose identity
+/// account is still ACTIVE are the offboarded_access_removed gap signal.
+model Employee {
+  id                String           @id @default(cuid())
+  tenantId          String
+  /// Stable id in the source HRIS (null for manual records).
+  externalId        String?
+  fullName          String
+  workEmail         String
+  status            EmploymentStatus @default(ACTIVE)
+  department        String?
+  jobTitle          String?
+  /// Self-reference to the manager's Employee row.
+  managerEmployeeId String?
+  startDate         DateTime?
+  endDate           DateTime?
+  /// 'HRIS' | 'MANUAL'.
+  source            String           @default("MANUAL")
+  syncedAt          DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  tenant   Tenant     @relation(fields: [tenantId], references: [id])
+  manager  Employee?  @relation("EmployeeManager", fields: [managerEmployeeId], references: [id], onDelete: SetNull)
+  reports  Employee[] @relation("EmployeeManager")
+  devices  Device[]
+  trainingAssignments TrainingAssignment[]
+  backgroundChecks    BackgroundCheck[]
+
+  @@unique([tenantId, workEmail])
+  @@index([tenantId, status])
+  @@index([tenantId, managerEmployeeId])
+}

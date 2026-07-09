@@ -25,12 +25,13 @@ import {
     parseReviewCadenceDays,
     parseEvidenceToRetain,
 } from '@/lib/policy/template-skeleton';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
 describe('policy review workflow — schema', () => {
-    const schema = read('prisma/schema/compliance.prisma');
+    const schema = readPrismaSchema();
 
     it('Policy carries the four review fields', () => {
         const model = schema.slice(schema.indexOf('model Policy {'), schema.indexOf('model PolicyApproval'));

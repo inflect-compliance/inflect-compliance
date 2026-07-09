@@ -1,0 +1,231 @@
+// frameworks.prisma — Framework/requirement reference structure, mapping sets, per-tenant overlays, ISO clauses.
+// Split from compliance.prisma (2026-07-10) — pure reorg, no datamodel change.
+// Enums live in enums.prisma; relations resolve across the schema folder.
+
+model Clause {
+  id          String           @id @default(cuid())
+  number      String           @unique
+  title       String
+  description String?
+  artifacts   String?
+  sortOrder   Int              @default(0)
+  progress    ClauseProgress[]
+}
+
+model ClauseProgress {
+  id        String       @id @default(cuid())
+  tenantId  String
+  clauseId  String
+  status    ClauseStatus @default(NOT_STARTED)
+  notes     String?
+  updatedAt DateTime     @updatedAt
+  clause    Clause       @relation(fields: [clauseId], references: [id])
+  tenant    Tenant       @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, clauseId])
+}
+
+/// Epic Regwatch 2A — the computed diff between two versions of a framework's
+/// requirement set (ADDED / CHANGED / REMOVED requirement codes + a
+/// human-readable changelog). GLOBAL (framework structure is the same for every
+/// tenant — no tenantId, no RLS). Computed from the existing version-history
+/// (Framework.metadataJson) via `computeRequirementDiff`; the per-tenant impact
+/// is `TenantFrameworkDelta`.
+model FrameworkVersionDiff {
+  id             String                @id @default(cuid())
+  frameworkKey   String
+  fromVersion    String
+  toVersion      String
+  addedCodesJson String                @default("[]")
+  changedCodesJson String              @default("[]")
+  removedCodesJson String              @default("[]")
+  changelog      String?
+  createdAt      DateTime              @default(now())
+  tenantDeltas   TenantFrameworkDelta[]
+
+  @@unique([frameworkKey, fromVersion, toVersion])
+  @@index([frameworkKey, createdAt])
+}
+
+/// Epic Regwatch 2A — what a framework-version update means for ONE tenant: the
+/// new uncovered gaps (added requirements the tenant has no control for) and the
+/// tenant's controls flagged for re-review (mapped to a changed requirement).
+/// Tenant-scoped (RLS). References the global `FrameworkVersionDiff`.
+model TenantFrameworkDelta {
+  id                   String               @id @default(cuid())
+  tenantId             String
+  diffId               String
+  frameworkKey         String
+  fromVersion          String
+  toVersion            String
+  newGapCodesJson      String               @default("[]")
+  flaggedControlIdsJson String              @default("[]")
+  newGapCount          Int                  @default(0)
+  flaggedControlCount  Int                  @default(0)
+  status               FrameworkDeltaStatus @default(NEW)
+  reviewedByUserId     String?
+  reviewedAt           DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  tenant               Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  diff                 FrameworkVersionDiff @relation(fields: [diffId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, diffId])
+  @@index([tenantId, status, createdAt])
+  @@index([diffId])
+}
+
+model Framework {
+  id                  String                  @id @default(cuid())
+  key                 String                  @unique
+  description         String?
+  name                String
+  version             String?
+  metadataJson        String?
+  contentHash         String?
+  sourceUrn           String?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @default(now()) @updatedAt
+  kind                FrameworkKind           @default(ISO_STANDARD)
+  packs               FrameworkPack[]
+  requirements        FrameworkRequirement[]
+  mappingSetsAsSource RequirementMappingSet[] @relation("MappingSetSource")
+  mappingSetsAsTarget RequirementMappingSet[] @relation("MappingSetTarget")
+
+  @@unique([key, version])
+}
+
+model FrameworkRequirement {
+  id                      String                           @id @default(cuid())
+  frameworkId             String
+  code                    String
+  title                   String
+  description             String?
+  category                String?
+  sortOrder               Int                              @default(0)
+  theme                   String?
+  themeNumber             Int?
+  section                 String?
+  deprecatedAt            DateTime?
+  controlLinks            ControlRequirementLink[]
+  templateLinks           ControlTemplateRequirementLink[]
+  aiSystemLinks           AiSystemRequirementLink[]
+  mappingsFrom            FrameworkMapping[]               @relation("MappingFrom")
+  mappingsTo              FrameworkMapping[]               @relation("MappingTo")
+  requirementMappingsFrom RequirementMapping[]             @relation("ReqMappingSource")
+  requirementMappingsTo   RequirementMapping[]             @relation("ReqMappingTarget")
+  framework               Framework                        @relation(fields: [frameworkId], references: [id])
+  tenantOrders            FrameworkRequirementOrder[]
+
+  @@unique([frameworkId, code])
+}
+
+// Epic 46.4 — per-tenant ordering overlay for the framework
+// builder. Frameworks themselves are global rows shared across
+// every tenant; this table lets a tenant reorder requirements (and
+// implicitly sections) without ever mutating the global
+// `FrameworkRequirement.sortOrder`. The tree usecase merges these
+// values BEFORE grouping, so a tenant override always wins.
+//
+// RLS: canonical Class-A shape (direct tenantId column). Migration
+// `20260501104500_framework_requirement_order_overlay` applies the
+// `tenant_isolation` + `superuser_bypass` policies.
+model FrameworkRequirementOrder {
+  id            String               @id @default(cuid())
+  tenantId      String
+  requirementId String
+  sortOrder     Int
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  tenant        Tenant               @relation(fields: [tenantId], references: [id])
+  requirement   FrameworkRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, requirementId])
+  @@index([tenantId])
+}
+
+model FrameworkPack {
+  id            String             @id @default(cuid())
+  key           String             @unique
+  name          String
+  frameworkId   String
+  version       String?
+  description   String?
+  createdAt     DateTime           @default(now())
+  framework     Framework          @relation(fields: [frameworkId], references: [id])
+  templateLinks PackTemplateLink[]
+}
+
+model PackTemplateLink {
+  id         String          @id @default(cuid())
+  packId     String
+  templateId String
+  pack       FrameworkPack   @relation(fields: [packId], references: [id], onDelete: Cascade)
+  template   ControlTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([packId, templateId])
+}
+
+model FrameworkMapping {
+  id                String                @id @default(cuid())
+  fromRequirementId String
+  toRequirementId   String?
+  toControlId       String?
+  rationale         String?
+  fromRequirement   FrameworkRequirement  @relation("MappingFrom", fields: [fromRequirementId], references: [id])
+  toControl         Control?              @relation(fields: [toControlId], references: [id])
+  toRequirement     FrameworkRequirement? @relation("MappingTo", fields: [toRequirementId], references: [id])
+
+  @@unique([fromRequirementId, toControlId])
+}
+
+model RequirementMappingSet {
+  id                String               @id @default(cuid())
+  sourceFrameworkId String
+  targetFrameworkId String
+  name              String
+  description       String?
+  version           Int                  @default(1)
+  sourceUrn         String? // Provenance URN from library system
+  contentHash       String? // Deduplication hash
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @default(now()) @updatedAt
+  sourceFramework   Framework            @relation("MappingSetSource", fields: [sourceFrameworkId], references: [id])
+  targetFramework   Framework            @relation("MappingSetTarget", fields: [targetFrameworkId], references: [id])
+  mappings          RequirementMapping[]
+
+  @@unique([sourceFrameworkId, targetFrameworkId])
+  @@index([sourceFrameworkId])
+  @@index([targetFrameworkId])
+}
+
+model RequirementMapping {
+  id                  String                @id @default(cuid())
+  mappingSetId        String
+  sourceRequirementId String
+  targetRequirementId String
+  strength            MappingStrength       @default(RELATED)
+  rationale           String?
+  metadataJson        String? // Provenance, ingestion source, extra context
+  /// Audit Coherence S9 (2026-05-24) — temporal validity window.
+  /// `validFrom` defaults to creation time; `validTo` is null for
+  /// "currently active" mappings. The traceability resolver
+  /// excludes mappings where `validTo < now()` so historical /
+  /// superseded mappings don't pollute current gap-analysis
+  /// reports. Auditors can still query the row for the historical
+  /// trail.
+  validFrom           DateTime              @default(now())
+  validTo             DateTime?
+  createdAt           DateTime              @default(now())
+  mappingSet          RequirementMappingSet @relation(fields: [mappingSetId], references: [id], onDelete: Cascade)
+  sourceRequirement   FrameworkRequirement  @relation("ReqMappingSource", fields: [sourceRequirementId], references: [id])
+  targetRequirement   FrameworkRequirement  @relation("ReqMappingTarget", fields: [targetRequirementId], references: [id])
+
+  @@unique([mappingSetId, sourceRequirementId, targetRequirementId])
+  @@index([sourceRequirementId])
+  @@index([targetRequirementId])
+  @@index([mappingSetId])
+  // Audit Coherence S9 — covers the "active mappings" hot path
+  // (`validTo IS NULL OR validTo > now()` filter).
+  @@index([validTo])
+}

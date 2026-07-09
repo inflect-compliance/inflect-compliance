@@ -19,13 +19,14 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
 describe('Asset Code column + Asset/Control code generation', () => {
     describe('Asset key field + AssetKeySequence schema', () => {
-        const schema = read('prisma/schema/compliance.prisma');
+        const schema = readPrismaSchema();
 
         it('Asset declares the key field + @@unique([tenantId, key])', () => {
             // Anchor on the Asset block bounded by its closing brace
@@ -53,7 +54,7 @@ describe('Asset Code column + Asset/Control code generation', () => {
     });
 
     describe('Control key sequence schema', () => {
-        const schema = read('prisma/schema/compliance.prisma');
+        const schema = readPrismaSchema();
 
         it('ControlKeySequence model exists', () => {
             expect(schema).toMatch(/model ControlKeySequence/);

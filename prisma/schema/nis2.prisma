@@ -1,0 +1,135 @@
+// nis2.prisma — NIS2 gap self-assessment (global question set + tenant runs/answers/delegation).
+// Split from compliance.prisma (2026-07-10) — pure reorg, no datamodel change.
+// Enums live in enums.prisma; relations resolve across the schema folder.
+
+/// Global reference: one of the 15 NIS2 gap-assessment domains.
+/// Not tenant-scoped (shared library content, no RLS).
+model Nis2GapDomain {
+  /// Upstream domain id (0–14) — stable natural key from the source.
+  id          Int    @id
+  /// Short stable code, e.g. "SCOPE" (upstream `code`).
+  code        String @unique
+  /// Bilingual { en, de } — stored verbatim from upstream.
+  name        Json
+  description Json
+  /// Suggested assessment "day" bucket (1–5) from upstream.
+  day         Int
+
+  questions Nis2GapQuestion[]
+}
+
+/// Global reference: one NIS2 gap-assessment question.
+/// Not tenant-scoped (shared library content, no RLS).
+model Nis2GapQuestion {
+  /// Upstream question id, e.g. "gap-0-01" (globally unique).
+  id           String  @id
+  /// FK → Nis2GapDomain.id (upstream `domain` integer).
+  domainId     Int
+  /// Bilingual { en, de } legalese question text.
+  text         Json
+  /// Bilingual { en, de } plain-language restatement.
+  plainText    Json
+  /// Statutory anchor, e.g. "§28 BSIG" or "Art 21(2)(a)". German-law
+  /// citations are PRESERVED and tagged here, never dropped.
+  legalBasis   String
+  /// String enums — validated at ingest. See NIS2_* in the Zod schema.
+  criticality  String
+  respondent   String
+  consequence  String
+  fineExposure Boolean
+  timeToFix    String
+  day          Int
+  /// Upstream question ids this question depends on (gating order).
+  dependsOn    String[]
+
+  domain  Nis2GapDomain              @relation(fields: [domainId], references: [id])
+  answers Nis2SelfAssessmentAnswer[]
+
+  @@index([domainId])
+}
+
+/// Tenant-scoped: one tenant's run through the NIS2 gap assessment.
+model Nis2SelfAssessment {
+  id          String    @id @default(cuid())
+  tenantId    String
+  title       String?
+  /// Lifecycle: DRAFT | IN_PROGRESS | COMPLETED | ARCHIVED (String, not a
+  /// Prisma enum, to mirror the source's string-enum convention).
+  status      String    @default("DRAFT")
+  /// Provenance of the run — WIZARD_BASELINE (the one-time onboarding-wizard
+  /// gap run, assessment #1) or STANDALONE (a later re-assessment started from
+  /// the Audits lifecycle surface). String enum, same convention as `status`.
+  /// Never delegated when WIZARD_BASELINE (see gap-assessment-assignment).
+  source      String    @default("STANDALONE")
+  /// Opaque actor ids — plain String (no User FK) so the assessment is
+  /// independent of user-lifecycle cascades.
+  createdById String?
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant      Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  answers     Nis2SelfAssessmentAnswer[]
+  assignments Nis2GapAssignment[]
+
+  @@index([tenantId, updatedAt])
+  @@index([tenantId, createdAt])
+}
+
+/// Tenant-scoped: one answer within a self-assessment.
+/// `note` is encrypted at rest (Epic B manifest).
+model Nis2SelfAssessmentAnswer {
+  id           String   @id @default(cuid())
+  tenantId     String
+  assessmentId String
+  questionId   String
+  /// String enum: NA | NO | PARTIALLY | YES (validated at the usecase).
+  answer       String
+  /// Free-text rationale — ENCRYPTED at rest (see encrypted-fields.ts).
+  note         String?
+  answeredById String?
+  answeredAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant     Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assessment Nis2SelfAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  question   Nis2GapQuestion    @relation(fields: [questionId], references: [id])
+
+  @@unique([assessmentId, questionId])
+  @@index([tenantId, assessmentId])
+  @@index([questionId])
+}
+
+/// Multi-respondent delegation of a STANDALONE re-assessment: one row per
+/// respondent role, partitioning the 116 questions into DISJOINT buckets so
+/// each member answers only their own. Answers are NOT copied here — they live
+/// on the parent `Nis2SelfAssessmentAnswer` (single source, no merge); an
+/// assignment only records WHICH questionIds a member owns. Never dispatched
+/// for a WIZARD_BASELINE run (the admin answers the baseline once at onboarding).
+model Nis2GapAssignment {
+  id             String    @id @default(cuid())
+  tenantId       String
+  assessmentId   String
+  /// String enum: CEO | IT | HR | PROCUREMENT | ANYONE (the bank's respondent).
+  respondentRole String
+  /// Opaque user id (no FK — mirrors the assessment's actor-id convention);
+  /// null for an unclaimed ANYONE bucket.
+  assigneeUserId String?
+  /// String enum: PENDING | IN_PROGRESS | SUBMITTED.
+  status         String    @default("PENDING")
+  /// The disjoint subset of question ids this assignment owns.
+  questionIds    String[]
+  submittedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tenant     Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assessment Nis2SelfAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  /// One assignment per role per run — makes dispatch idempotent (upsert).
+  @@unique([assessmentId, respondentRole])
+  @@index([tenantId, assessmentId])
+  @@index([tenantId, assigneeUserId])
+}

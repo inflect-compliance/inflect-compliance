@@ -19,6 +19,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
@@ -27,7 +28,7 @@ const pure = read('src/lib/control-roi.ts');
 const usecase = read('src/app-layer/usecases/control-roi.ts');
 const roiRoute = read('src/app/api/t/[tenantSlug]/controls/[controlId]/roi/route.ts');
 const bestValueRoute = read('src/app/api/t/[tenantSlug]/controls/best-value/route.ts');
-const schema = read('prisma/schema/compliance.prisma');
+const schema = readPrismaSchema();
 const updateSchema = read('src/lib/schemas/index.ts');
 const card = read('src/app/t/[tenantSlug]/(app)/controls/[controlId]/_components/ControlRoiCard.tsx');
 const leaderboard = read('src/app/t/[tenantSlug]/(app)/controls/_components/BestValueControls.tsx');

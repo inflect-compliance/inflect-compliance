@@ -116,15 +116,36 @@ prisma/schema/         → Multi-file Prisma schema (GAP-09):
                             base.prisma         — generator + datasource (sole owners)
                             enums.prisma        — every shared enum
                             auth.prisma         — Tenant/User/Membership/Session/SSO/Billing
-                            compliance.prisma   — Control/Risk/Evidence/Framework/Policy/Asset/etc.
                             vendor.prisma       — Vendor + assessment graph
                             audit.prisma        — AuditCycle/Pack/Auditor + AuditLog
                             automation.prisma   — AutomationRule/Execution + Notification + Integration
+                            processes.prisma    — Business-process canvas graph
+                          compliance.prisma was split (2026-07-10) into domain-cohesive
+                          files — pick the one matching the new model's cluster:
+                            controls.prisma     — Control + coverage joins/tasks/templates/tests/exceptions
+                            evidence.prisma     — Evidence + FileRecord + reviews
+                            risk.prisma         — Risk + quant/analytics/reporting/treatment
+                            frameworks.prisma   — Framework/Requirement refs, mappings, ISO clauses
+                            policy.prisma       — Policy + versions/approvals/acks + links
+                            tasks.prisma        — Task + its owned children
+                            assets.prisma       — Asset + vuln/scanner chain + Asset↔Risk
+                            personnel.prisma    — Employee/Device/Training/BackgroundCheck/identity
+                            findings.prisma     — Finding + risk/evidence junctions
+                            incidents.prisma    — Incident (NIS2 Art.23) + BIA
+                            questionnaire.prisma— Inbound questionnaires + answer library
+                            nis2.prisma         — NIS2 gap self-assessment
+                            ai-governance.prisma— AI-gov self-assessment + EU AI Act registry
+                            trust-center.prisma — Public trust-center projection + gated docs
+                            agentic.prisma      — Agent-proposal queue + workflow engine
+                            analytics.prisma    — Denormalised dashboard snapshots
+                            compliance.prisma   — now an empty stub (do NOT add models here)
                             schema.prisma       — transitional sediment file (currently empty)
-                          See prisma/schema/README.md for the full layout + conventions.
-                          Adding a new model: pick the matching domain file. Generator
-                          and datasource ONLY live in base.prisma — Prisma rejects
-                          duplicates across the folder.
+                          See prisma/schema/README.md and
+                          docs/implementation-notes/2026-07-10-compliance-schema-split.md
+                          for the seam rationale. Adding a new model: pick the matching
+                          domain file (keep files ≤~30 models). Generator and datasource
+                          ONLY live in base.prisma — Prisma rejects duplicates across the
+                          folder. Enums ONLY in enums.prisma.
 ```
 
 ### Request Context (`RequestContext`)

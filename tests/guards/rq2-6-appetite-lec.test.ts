@@ -20,6 +20,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
@@ -33,7 +34,7 @@ const enMessages = JSON.parse(read('messages/en.json')) as {
     risks: { monteCarlo: Record<string, string> };
 };
 const adminPage = read('src/app/t/[tenantSlug]/(app)/admin/risk-appetite/page.tsx');
-const schema = read('prisma/schema/compliance.prisma');
+const schema = readPrismaSchema();
 const migration = read('prisma/migrations/20260611120000_rq2_6_breach_remediation_task/migration.sql');
 
 describe('RQ2-6 — appetite thresholds on the LEC', () => {

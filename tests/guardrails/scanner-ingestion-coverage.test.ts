@@ -18,11 +18,12 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (p: string) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
-const COMPLIANCE_SCHEMA = read('prisma/schema/compliance.prisma');
+const COMPLIANCE_SCHEMA = readPrismaSchema();
 const MIGRATION = read('prisma/migrations/20260701120000_scanner_ingestion/migration.sql');
 const ENCRYPTED_FIELDS = read('src/lib/security/encrypted-fields.ts');
 const SARIF = read('src/app-layer/services/sarif.ts');

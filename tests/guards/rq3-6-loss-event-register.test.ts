@@ -19,11 +19,12 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 
-const schema = read('prisma/schema/compliance.prisma');
+const schema = readPrismaSchema();
 const enums = read('prisma/schema/enums.prisma');
 const migration = read('prisma/migrations/20260612040000_rq3_6_loss_event_register/migration.sql');
 const usecase = read('src/app-layer/usecases/loss-event.ts');

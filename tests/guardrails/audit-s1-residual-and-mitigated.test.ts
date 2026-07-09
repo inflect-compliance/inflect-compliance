@@ -9,6 +9,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) =>
@@ -17,7 +18,7 @@ const read = (rel: string) =>
 describe('Audit S1 — Risk lifecycle & treatment plans', () => {
     describe('schema', () => {
         const enums = read('prisma/schema/enums.prisma');
-        const compliance = read('prisma/schema/compliance.prisma');
+        const compliance = readPrismaSchema();
 
         it('RiskStatus enum carries MITIGATED', () => {
             // Match the enum block + the literal value inside.

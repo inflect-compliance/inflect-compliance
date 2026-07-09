@@ -22,6 +22,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -84,7 +85,7 @@ function transitiveGraph(entry: string): Set<string> {
 }
 
 describe('Trust Center — model + publish defaults', () => {
-    const schema = read('prisma/schema/compliance.prisma');
+    const schema = readPrismaSchema();
     it('defines TrustCenter with enabled defaulting to false (off by default)', () => {
         expect(schema).toMatch(/model TrustCenter \{/);
         expect(schema).toMatch(/enabled\s+Boolean\s+@default\(false\)/);

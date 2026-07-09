@@ -5,6 +5,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -30,7 +31,7 @@ describe('training / background — registration + wiring', () => {
     });
 
     it('three models carry RLS + tenant indexes', () => {
-        const schema = read('prisma/schema/compliance.prisma');
+        const schema = readPrismaSchema();
         for (const m of ['TrainingCourse', 'TrainingAssignment', 'BackgroundCheck']) {
             expect(schema).toMatch(new RegExp(`model ${m} \\{`));
         }

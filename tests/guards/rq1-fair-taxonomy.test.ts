@@ -5,6 +5,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (p: string) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -19,7 +20,7 @@ describe('RQ-1 FAIR taxonomy', () => {
     });
 
     it('Risk schema carries the FAIR columns + FairConfidence enum + migration', () => {
-        const schema = read('prisma/schema/compliance.prisma');
+        const schema = readPrismaSchema();
         for (const col of ['threatEventFrequency', 'vulnerabilityProbability', 'primaryLossMagnitude', 'secondaryLossMagnitude', 'lossEventFrequency', 'fairAle', 'fairInputsJson']) {
             expect(schema).toMatch(new RegExp(col));
         }

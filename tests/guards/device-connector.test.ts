@@ -4,6 +4,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -36,7 +37,7 @@ describe('device monitoring — registration + wiring', () => {
     });
 
     it('Device + TenantDeviceToken carry RLS + tenant indexes', () => {
-        const compliance = read('prisma/schema/compliance.prisma');
+        const compliance = readPrismaSchema();
         expect(compliance).toMatch(/model Device \{/);
         expect(compliance).toMatch(/@@unique\(\[tenantId, serialNumber\]\)/);
         const auth = read('prisma/schema/auth.prisma');

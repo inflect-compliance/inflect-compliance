@@ -4,6 +4,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -33,7 +34,7 @@ describe('personnel / HRIS — registration + wiring', () => {
     });
 
     it('Employee carries RLS + tenant indexes + self-FK', () => {
-        const schema = read('prisma/schema/compliance.prisma');
+        const schema = readPrismaSchema();
         expect(schema).toMatch(/model Employee \{/);
         expect(schema).toMatch(/@@unique\(\[tenantId, workEmail\]\)/);
         expect(schema).toMatch(/@@index\(\[tenantId, status\]\)/);

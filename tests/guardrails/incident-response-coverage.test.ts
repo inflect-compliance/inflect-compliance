@@ -18,6 +18,7 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 import { ENCRYPTED_FIELDS } from '@/lib/security/encrypted-fields';
 import { computeDeadlines, PHASE_ORDER, suggestsReportable } from '@/lib/incidents/deadlines';
 
@@ -26,7 +27,9 @@ const read = (rel: string) => fs.readFileSync(path.join(REPO_ROOT, rel), 'utf8')
 const exists = (rel: string) => fs.existsSync(path.join(REPO_ROOT, rel));
 
 const SCHEMA_DIR = 'prisma/schema';
-const compliance = () => read(`${SCHEMA_DIR}/compliance.prisma`);
+// Incident/BIA models moved to incidents.prisma (2026-07-10 schema split);
+// read the whole-folder concatenation so they're found wherever they live.
+const compliance = () => readPrismaSchema();
 const enums = () => read(`${SCHEMA_DIR}/enums.prisma`);
 const usecase = () => read('src/app-layer/usecases/incident.ts');
 

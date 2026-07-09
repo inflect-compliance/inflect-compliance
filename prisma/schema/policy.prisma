@@ -1,0 +1,186 @@
+// policy.prisma — Policy with versions/approvals/acknowledgements + control/evidence junctions + template.
+// Split from compliance.prisma (2026-07-10) — pure reorg, no datamodel change.
+// Enums live in enums.prisma; relations resolve across the schema folder.
+
+model Policy {
+  id                   String              @id @default(cuid())
+  tenantId             String
+  slug                 String
+  title                String
+  description          String?
+  category             String?
+  status               PolicyStatus        @default(DRAFT)
+  currentVersionId     String?             @unique
+  ownerUserId          String?
+  reviewFrequencyDays  Int?
+  nextReviewAt         DateTime?
+  /// Last time the policy was marked reviewed (periodic re-validation).
+  /// Distinct from PolicyApproval (initial sign-off): markPolicyReviewed
+  /// stamps this + recomputes nextReviewAt = now + reviewFrequencyDays.
+  lastReviewedAt       DateTime?
+  language             String?             @default("en")
+  /// Lifecycle version counter (matches CISO-Assistant editing_version).
+  /// 1 = initial content, 2+ = published. Incremented only on publish.
+  lifecycleVersion     Int                 @default(1)
+  /// Persisted history of prior published snapshots as JSON array.
+  /// Matches CISO-Assistant editing_history. Entries have fields:
+  /// version, payload, publishedAt, publishedBy, changeSummary (optional)
+  lifecycleHistoryJson Json?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  deletedAt            DateTime?
+  deletedByUserId      String?
+  retentionUntil       DateTime?
+  /// SP-4 — SharePoint document link (bidirectional policy sync).
+  spDriveId            String?
+  spItemId             String?
+  /// Last known SharePoint eTag — drives conflict detection on push/pull.
+  spItemETag           String?
+  spWebUrl             String?
+  /// Active Graph change-notification subscription id (null when unlinked).
+  spSubscriptionId     String?
+  /// SP-F1 — the IntegrationConnection backing this link (multi-connection
+  /// tenants). Null on pre-SP-F1 links → resolve the tenant's first connection.
+  spConnectionId       String?
+  currentVersion       PolicyVersion?      @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+  owner                User?               @relation("PolicyOwner", fields: [ownerUserId], references: [id])
+  tenant               Tenant              @relation(fields: [tenantId], references: [id])
+  approvals            PolicyApproval[]
+  controlLinks         PolicyControlLink[]
+  evidenceItems        PolicyEvidenceItem[]
+  versions             PolicyVersion[]     @relation("PolicyVersions")
+
+  @@unique([id, tenantId])
+  @@index([tenantId, slug])
+  @@index([tenantId])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, updatedAt])
+  @@index([tenantId, status])
+  @@index([tenantId, category])
+  @@index([nextReviewAt])
+  @@index([tenantId, deletedAt])
+}
+
+model PolicyVersion {
+  id               String                  @id @default(cuid())
+  policyId         String
+  versionNumber    Int
+  contentType      PolicyContentType       @default(MARKDOWN)
+  contentText      String?
+  externalUrl      String?
+  changeSummary    String?
+  createdById      String
+  createdAt        DateTime                @default(now())
+  tenantId         String
+  currentOfPolicy  Policy?                 @relation("CurrentVersion")
+  acknowledgements PolicyAcknowledgement[]
+  approvals        PolicyApproval[]
+  createdBy        User                    @relation("PolicyVersionCreator", fields: [createdById], references: [id])
+  policy           Policy                  @relation("PolicyVersions", fields: [policyId], references: [id], onDelete: Cascade)
+  tenant           Tenant                  @relation(fields: [tenantId], references: [id])
+
+  @@unique([policyId, versionNumber])
+  @@index([tenantId])
+}
+
+model PolicyApproval {
+  id                String               @id @default(cuid())
+  tenantId          String
+  policyId          String
+  policyVersionId   String
+  requestedByUserId String
+  approvedByUserId  String?
+  status            PolicyApprovalStatus @default(PENDING)
+  decidedAt         DateTime?
+  comment           String?
+  createdAt         DateTime             @default(now())
+  approvedBy        User?                @relation("PolicyApprover", fields: [approvedByUserId], references: [id])
+  policy            Policy               @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  policyVersion     PolicyVersion        @relation(fields: [policyVersionId], references: [id], onDelete: Cascade)
+  requestedBy       User                 @relation("PolicyApprovalRequester", fields: [requestedByUserId], references: [id])
+  tenant            Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // FK reverse-lookup indexes. PolicyApproval is now first-class
+  // tenant-scoped (carries its own tenantId — direct RLS, not
+  // ownership-chained), so the FK reverse lookups ride tenant-leading
+  // composites. tenantId leads both, so no separate @@index([tenantId]).
+  @@index([tenantId, policyId])
+  @@index([tenantId, policyVersionId])
+}
+
+model PolicyAcknowledgement {
+  id              String        @id @default(cuid())
+  policyVersionId String
+  userId          String
+  acknowledgedAt  DateTime      @default(now())
+  policyVersion   PolicyVersion @relation(fields: [policyVersionId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id])
+
+  @@unique([policyVersionId, userId])
+}
+
+model PolicyControlLink {
+  // denorm-tenantId — direct tenantId + composite parent FK on the
+  // Policy side. The Control side stays single-column because
+  // Control.tenantId is intentionally nullable (library-derived
+  // controls are global). The pre-denorm chained RLS only walked
+  // via Policy too, so this matches the existing protection model
+  // and additionally lifts read perf into the trivial RLS path.
+  id        String  @id @default(cuid())
+  tenantId  String
+  policyId  String
+  controlId String
+  control   Control @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  policy    Policy  @relation(fields: [policyId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  tenant    Tenant  @relation(fields: [tenantId], references: [id])
+
+  @@unique([policyId, controlId])
+  @@index([tenantId])
+  @@index([tenantId, policyId])
+  @@index([tenantId, controlId])
+}
+
+/// Evidence-to-Retain checklist for a policy. Items are parsed
+/// best-effort from the template's "Evidence to Retain" section on
+/// creation (label only); the tenant then links each to a real
+/// Evidence record. The link makes a policy's operational proof
+/// navigable instead of just prose. evidenceId is nullable (SetNull on
+/// evidence delete) — an unlinked item is a still-open checklist entry.
+model PolicyEvidenceItem {
+  id         String    @id @default(cuid())
+  tenantId   String
+  policyId   String
+  /// Free-text checklist label (e.g. "Risk register: 7 years").
+  label      String
+  sortOrder  Int       @default(0)
+  evidenceId String?
+  createdAt  DateTime  @default(now())
+  policy     Policy    @relation(fields: [policyId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  evidence   Evidence? @relation(fields: [evidenceId], references: [id], onDelete: SetNull)
+  tenant     Tenant    @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, policyId])
+  @@index([evidenceId])
+}
+
+model PolicyTemplate {
+  id          String            @id @default(cuid())
+  title       String
+  category    String?
+  language    String?           @default("en")
+  contentType PolicyContentType @default(MARKDOWN)
+  contentText String
+  tags        String?
+  isGlobal    Boolean           @default(true)
+  /// Provenance for imported templates (e.g. 'ciso-toolkit'). NULL for
+  /// hand-written templates. Gates the "Adapted from …" attribution
+  /// credit in the template picker — a licensing obligation for
+  /// third-party content (MIT etc.).
+  source      String?
+  /// Stable upstream id for imported templates (e.g. 'POL-02'). Lets the
+  /// seed/sync upsert idempotently without relying on title.
+  externalRef String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}

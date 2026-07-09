@@ -22,6 +22,7 @@ import {
     FORENSIC_EVIDENCE_CHECKLIST,
     containmentRunbookFor,
 } from '@/data/incident-containment';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(REPO_ROOT, rel), 'utf8');
@@ -79,7 +80,7 @@ describe('forensic evidence checklist (P3)', () => {
 });
 
 describe('IncidentEvidence junction (P3 schema)', () => {
-    const compliance = () => read('prisma/schema/compliance.prisma');
+    const compliance = () => readPrismaSchema();
 
     it('declares the IncidentEvidence model with composite parent FKs', () => {
         const src = compliance();

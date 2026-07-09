@@ -15,10 +15,28 @@ current Prisma 5.22.0 it is opt-in.
 | `base.prisma` | `generator client` + `datasource db` (the only ones — Prisma rejects duplicates across the folder) |
 | `enums.prisma` | All shared enum declarations |
 | `auth.prisma` | Tenant, Organization, User, Account, Session, UserSession, TenantMembership, OrgMembership, TenantCustomRole, TenantInviteToken, TenantSecuritySettings, SsoConnection, ScimToken |
-| `compliance.prisma` | Control, Risk, Evidence, Framework, Clause, Policy, Asset, Issue, Finding, Task (work-item), TraceabilityLink and their satellites |
 | `vendor.prisma` | Vendor, VendorAssessment + template/section/question/response models |
 | `audit.prisma` | AuditCycle, AuditPack, AuditorAccess, AuditLog (hash-chained), AuditStreamConfig |
 | `automation.prisma` | AutomationRule/Execution/Event, IntegrationConnection/Credential, SyncMapping, Webhook, Notification |
+| `processes.prisma` | Business-process canvas graph |
+| **compliance domain split** (2026-07-10) | `compliance.prisma` held ~111 models and was split into the domain files below — see `docs/implementation-notes/2026-07-10-compliance-schema-split.md`. Keep each ≤~30 models. |
+| `controls.prisma` | Control + coverage joins (RiskControl/ControlAsset), tasks, evidence link, templates, test plans/runs/steps, exceptions, requirement links |
+| `evidence.prisma` | Evidence, FileRecord, EvidenceReview |
+| `risk.prisma` | Risk + quant/analytics (KRI, simulation, appetite, correlation, snapshots), reporting, suggestions, treatment |
+| `frameworks.prisma` | Framework, FrameworkRequirement, mapping sets, per-tenant overlays, ISO Clause/ClauseProgress |
+| `policy.prisma` | Policy + versions/approvals/acknowledgements + control/evidence junctions + template |
+| `tasks.prisma` | Task (work-item) + TaskLink/Comment/Watcher + key sequence |
+| `assets.prisma` | Asset + Cve/AssetVulnerability/Scanner chain + AssetRiskLink |
+| `personnel.prisma` | Employee, Device, Training, BackgroundCheck, ConnectedIdentityAccount |
+| `findings.prisma` | Finding + FindingRisk/FindingEvidence |
+| `incidents.prisma` | Incident (NIS2 Art.23) + BusinessImpactAnalysis/BiaDependency |
+| `questionnaire.prisma` | Inbound questionnaires + answer library |
+| `nis2.prisma` | NIS2 gap self-assessment (domains/questions/assessments/answers/assignments) |
+| `ai-governance.prisma` | AI-gov self-assessment + EU AI Act AiSystem registry |
+| `trust-center.prisma` | TrustCenter + TrustCenterDocument + access requests |
+| `agentic.prisma` | AgentProposal + WorkflowRun/WorkflowStep |
+| `analytics.prisma` | ComplianceSnapshot + CompliancePostureSummary |
+| `compliance.prisma` | **Empty stub.** Kept so path references resolve; do NOT add models here — use the matching domain file above. |
 | `schema.prisma` | **Transitional**. Holds models not yet relocated to a domain file. Shrinks toward empty as splits land in follow-up PRs. |
 
 ## Conventions

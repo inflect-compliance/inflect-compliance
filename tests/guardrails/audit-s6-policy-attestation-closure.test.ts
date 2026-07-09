@@ -26,13 +26,14 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, "../..");
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), "utf8");
 
 describe("Audit S6 — policy attestation tracking (closure lock)", () => {
     describe("Schema", () => {
-        const src = () => read("prisma/schema/compliance.prisma");
+        const src = () => readPrismaSchema();
 
         it("PolicyAcknowledgement model exists with canonical fields", () => {
             const s = src();

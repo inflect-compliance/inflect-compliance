@@ -5,6 +5,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (p: string) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -12,7 +13,7 @@ const exists = (p: string) => fs.existsSync(path.join(ROOT, p));
 
 describe('RQ-10 reporting & BIA', () => {
     it('BIA fields on Risk + three report models + migration with RLS', () => {
-        const schema = read('prisma/schema/compliance.prisma');
+        const schema = readPrismaSchema();
         expect(schema).toMatch(/rtoHours\s+Int\?/);
         expect(schema).toMatch(/revenueAtRisk\s+Float\?/);
         for (const m of ['model ReportTemplate', 'model ReportRun', 'model ReportSchedule']) expect(schema).toMatch(new RegExp(m));
@@ -54,7 +55,7 @@ describe('RQ-10 reporting & BIA', () => {
     });
 
     it('the delivery cron pushes to SharePoint via the SP-3 Graph client (RQ-10 follow-up)', () => {
-        expect(read('prisma/schema/compliance.prisma')).toMatch(/sharePointDriveId\s+String\?/);
+        expect(readPrismaSchema()).toMatch(/sharePointDriveId\s+String\?/);
         const s = read('src/app-layer/usecases/risk-report.ts');
         expect(s).toMatch(/export async function deliverReportToSharePoint/);
         expect(s).toMatch(/uploadNewFile/);

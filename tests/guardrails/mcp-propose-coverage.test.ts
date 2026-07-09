@@ -23,6 +23,7 @@ import * as path from 'node:path';
 
 import { VALID_SCOPES } from '@/lib/auth/api-key-auth';
 import { ENCRYPTED_FIELDS } from '@/lib/security/encrypted-fields';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -92,7 +93,7 @@ describe('MCP propose — AgentProposal model hardening', () => {
     });
 
     it('AgentProposal is index-covered on (tenantId, status, createdAt)', () => {
-        const schema = read('prisma/schema/compliance.prisma');
+        const schema = readPrismaSchema();
         const block = schema.slice(schema.indexOf('model AgentProposal'));
         expect(block).toMatch(/@@index\(\[tenantId, status, createdAt\]\)/);
     });

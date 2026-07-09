@@ -16,6 +16,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -73,7 +74,7 @@ describe('PR-B — table & button hygiene', () => {
     });
 
     describe('Risk Code column + RSK-N key generation', () => {
-        const schema = read('prisma/schema/compliance.prisma');
+        const schema = readPrismaSchema();
         const migration = read(
             'prisma/migrations/20260524200000_pr_b_risk_key/migration.sql',
         );

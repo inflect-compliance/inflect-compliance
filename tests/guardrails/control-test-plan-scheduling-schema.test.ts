@@ -22,10 +22,10 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const ENUMS_FILE = path.join(REPO_ROOT, 'prisma/schema/enums.prisma');
-const COMPLIANCE_FILE = path.join(REPO_ROOT, 'prisma/schema/compliance.prisma');
 
 function readEnums(): string {
     return fs.readFileSync(ENUMS_FILE, 'utf8');
@@ -49,7 +49,9 @@ function readControlTestPlanModel(complianceText: string): string {
 
 describe('Epic G-2 — ControlTestPlan scheduling schema', () => {
     const enumsText = readEnums();
-    const complianceText = fs.readFileSync(COMPLIANCE_FILE, 'utf8');
+    // ControlTestPlan moved to controls.prisma (2026-07-10 schema split);
+    // read the whole-folder concatenation so the model is found wherever it lives.
+    const complianceText = readPrismaSchema();
     const planBody = readControlTestPlanModel(complianceText);
 
     test('AutomationType enum is declared with exactly MANUAL | SCRIPT | INTEGRATION', () => {
