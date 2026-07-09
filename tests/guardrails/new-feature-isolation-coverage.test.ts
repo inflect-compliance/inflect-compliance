@@ -21,6 +21,10 @@ const exists = (rel: string) => fs.existsSync(path.join(ROOT, rel));
 const ISOLATION_TESTED: Readonly<Record<string, string>> = {
     // The connected access-review graph shares AccessReview's live RLS suite.
     AccessReviewConnectedDecision: 'tests/integration/access-review-rls.test.ts',
+    // GAP-1 — two-tenant behavioural isolation over the real usecases.
+    InboundQuestionnaire: 'tests/integration/wave-features-rls.test.ts',
+    Device: 'tests/integration/wave-features-rls.test.ts',
+    Employee: 'tests/integration/wave-features-rls.test.ts',
 };
 
 /**
@@ -30,15 +34,12 @@ const ISOLATION_TESTED: Readonly<Record<string, string>> = {
  * behaviourally enforced today. Each carries a reason.
  */
 const ISOLATION_INTERIM: Readonly<Record<string, string>> = {
-    Device: 'rls-coverage DB-backed policy triple; reportDevice + device checks are tenant-scoped (unit-tested).',
     ConnectedIdentityAccount: 'rls-coverage DB-backed policy triple; identity-sync unit tests cover the tenantId-scoped writes.',
     QuestionnaireAnswerLibrary: 'rls-coverage DB-backed policy triple; questionnaire usecases run in runInTenantContext.',
-    InboundQuestionnaire: 'rls-coverage DB-backed policy triple; questionnaire usecases run in runInTenantContext.',
     InboundQuestionnaireItem: 'rls-coverage DB-backed policy triple; questionnaire usecases run in runInTenantContext.',
     TrainingCourse: 'rls-coverage DB-backed policy triple; training checks are tenant-scoped.',
     TrainingAssignment: 'rls-coverage DB-backed policy triple; training checks are tenant-scoped.',
     BackgroundCheck: 'rls-coverage DB-backed policy triple; resultSummary field-encrypted.',
-    Employee: 'rls-coverage DB-backed policy triple; hris-sync runs in runInTenantContext.',
     TenantDeviceToken: 'rls-coverage DB-backed policy triple; token verify is hash-lookup + tenant-bound.',
     TrustCenter: 'rls-coverage DB-backed policy triple; public read is import-isolated (trust-center-coverage).',
     TrustCenterDocument: 'rls-coverage DB-backed policy triple; public projection never selects fileRecordId.',
