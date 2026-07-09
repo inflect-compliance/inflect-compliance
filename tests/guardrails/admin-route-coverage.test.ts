@@ -38,6 +38,7 @@ const ADMIN_ONLY_ROUTES = [
     'admin/scim/route.ts',
     'admin/integrations/route.ts',
     'admin/integrations/diagnostics/route.ts',
+    'admin/integrations/health/route.ts',
     // SP-1 — SharePoint connection management (delegated-consent OAuth)
     'admin/integrations/sharepoint/route.ts',
     'admin/integrations/sharepoint/connect/route.ts',

@@ -9,7 +9,7 @@ import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { Loader2 } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/icons/loading-spinner';
 
 interface HealthRow {
     connectionId: string;
@@ -99,7 +99,7 @@ export function ConnectionHealthPanel() {
             <p className="text-sm text-content-subtle mb-3">{t('integrations.health.description')}</p>
             {loading ? (
                 <div className="p-8 text-center text-content-subtle">
-                    <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
+                    <LoadingSpinner className="mx-auto mb-2" />
                     <span className="sr-only">{t('integrations.fetching')}</span>
                 </div>
             ) : (
