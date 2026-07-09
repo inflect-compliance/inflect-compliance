@@ -99,7 +99,7 @@ beforeEach(() => {
     jest.clearAllMocks();
     // Default to feature-gate + rate-limit pass.
     mockEnforceGate.mockImplementation(() => undefined);
-    mockCheckRateLimit.mockImplementation(() => undefined);
+    mockCheckRateLimit.mockResolvedValue(undefined);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockSanitiseInput.mockImplementation((x: any) => x);
 });
