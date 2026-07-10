@@ -49,10 +49,15 @@ jobs:
           SKIP_ENV_VALIDATION: '1'
           NEXT_TELEMETRY_DISABLED: '1'
           # The bundle-analyzer plugin holds the full module graph + stats in
-          # memory on top of the Next build, which OOMs at Node's default heap.
-          # Raise the old-space ceiling (fits the large runner; safe on a 7GB
-          # standard runner too).
-          NODE_OPTIONS: '--max-old-space-size=6144'
+          # memory ON TOP of the Next build, so it needs more heap than the
+          # plain Build job (which runs fine at 6144). As the app grew, the
+          # analyzer started hitting the V8 heap ceiling at ~6083 MB (exit 134,
+          # "Reached heap limit"), so it OOM'd every main run. Raise the ceiling
+          # to 8192 (the repo's standard heavy-build bump, matching the
+          # heap-bumped tsc) — V8 grows lazily, so this only lets the analyzer
+          # climb past the 6144 wall to the ~6.5 GB it actually needs; it fits a
+          # 16 GB large runner comfortably and the standard runner's RAM too.
+          NODE_OPTIONS: '--max-old-space-size=8192'
           # `npm run analyze` → `npm run build`, which runs
           # `scripts/validate-env.ts` before `next build`. That script hard-
           # checks `DATABASE_URL` (it predates SKIP_ENV_VALIDATION and does not
