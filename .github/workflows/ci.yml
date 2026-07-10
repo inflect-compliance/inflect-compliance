@@ -846,16 +846,21 @@ jobs:
     name: "CodeQL SAST"
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Code Scanning is enabled on this repo (public + Advanced
-    # Security free). The `continue-on-error: true` guard was added
-    # as a workaround pre-enablement; it's no longer needed and was
-    # also responsible for the "Code scanning configuration error"
-    # banner on the Security tab — failed uploads emitted warnings
-    # that the UI surfaced as configuration errors even though the
-    # workflow itself succeeded. With the guard removed, SARIF
-    # upload failures (which should not happen) will fail the job
-    # loudly and we'll see them as actual CI failures, not silent
-    # Security-tab warnings.
+    # CodeQL's `analyze` step uploads SARIF to GitHub code scanning,
+    # which requires code scanning to be ENABLED for the repository
+    # (needs GitHub Advanced Security on a private repo). Gate the whole
+    # job on the `CODE_SCANNING_ENABLED` repository variable so it runs
+    # only when the upload can succeed:
+    #   • public repo, or private repo WITH Advanced Security → set the
+    #     variable to 'true' (Settings → Secrets and variables →
+    #     Actions → Variables).
+    #   • private repo WITHOUT code scanning → leave it unset; the job
+    #     SKIPS cleanly instead of failing the run on a 403 SARIF upload.
+    # Unset ⇒ `'' == 'true'` ⇒ false ⇒ skip (safe default). This
+    # replaces the old `continue-on-error: true` workaround: when the
+    # variable says scanning is on, a real upload failure is still a hard
+    # failure (loud, not a silent Security-tab warning).
+    if: ${{ vars.CODE_SCANNING_ENABLED == 'true' }}
 
     permissions:
       security-events: write
@@ -1077,8 +1082,15 @@ jobs:
       # high, so cleanup-7 (2026-06-14) aligned SARIF with the gate.
       # Re-adding MEDIUM here is fine in a future diff that also
       # wires actionable triage for it.
+      # The SARIF report + its upload feed the GitHub Security tab, which
+      # needs code scanning enabled — gate both on CODE_SCANNING_ENABLED
+      # (unset ⇒ skip) so a private repo without scanning doesn't fail the
+      # job on a 403 upload. `always()` is preserved so the SARIF still
+      # ships when the BLOCKING gate scan above found CRITICAL/HIGH. The
+      # gate scan itself (which fails the job on findings) is NOT gated —
+      # container-vuln enforcement keeps working regardless of scanning.
       - name: "Trivy SARIF report (gate severities)"
-        if: always()
+        if: ${{ always() && vars.CODE_SCANNING_ENABLED == 'true' }}
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: "inflect-compliance:ci-${{ github.sha }}"
@@ -1089,7 +1101,7 @@ jobs:
           vuln-type: "os,library"
 
       - name: Upload Trivy SARIF to GitHub Security
-        if: always()
+        if: ${{ always() && vars.CODE_SCANNING_ENABLED == 'true' }}
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: "trivy-results.sarif"
