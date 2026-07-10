@@ -4,6 +4,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (p: string) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -11,7 +12,7 @@ const exists = (p: string) => fs.existsSync(path.join(ROOT, p));
 
 describe('RQ-6 KRI', () => {
     it('schema declares both models + migration with RLS', () => {
-        const schema = read('prisma/schema/compliance.prisma');
+        const schema = readPrismaSchema();
         expect(schema).toMatch(/model KeyRiskIndicator/);
         expect(schema).toMatch(/model KriReading/);
         const mig = 'prisma/migrations/20260610220000_rq6_kri/migration.sql';

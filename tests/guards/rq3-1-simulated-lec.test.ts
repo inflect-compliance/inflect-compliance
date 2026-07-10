@@ -21,6 +21,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
@@ -29,7 +30,7 @@ const dashboard = read('src/app/t/[tenantSlug]/(app)/risks/dashboard/page.tsx');
 const mcPanel = read('src/app/t/[tenantSlug]/(app)/risks/dashboard/MonteCarloPanel.tsx');
 const analytics = read('src/app-layer/usecases/risk-analytics.ts');
 const engine = read('src/app-layer/usecases/monte-carlo.ts');
-const schema = read('prisma/schema/compliance.prisma');
+const schema = readPrismaSchema();
 const migration = read('prisma/migrations/20260612000000_rq3_1_simulation_p80/migration.sql');
 
 describe('RQ3-1 — the simulated curve is the only dashboard LEC', () => {

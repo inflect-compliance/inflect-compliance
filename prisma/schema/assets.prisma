@@ -1,0 +1,228 @@
+// assets.prisma — Asset register + the vulnerability/scanner security-signal chain + Asset↔Risk join.
+// Split from compliance.prisma (2026-07-10) — pure reorg, no datamodel change.
+// Enums live in enums.prisma; relations resolve across the schema folder.
+
+model Asset {
+  id                  String               @id @default(cuid())
+  tenantId            String
+  /// Generated per-tenant short key (`AST-1`, `AST-2`, …) so the
+  /// Assets list page can lead with a scannable Code column.
+  /// Mints atomically via `AssetKeySequence.upsert` (same race-
+  /// free pattern Task / Risk use). Nullable to keep historic
+  /// rows renderable; the create-path generates a key for every
+  /// new row.
+  key                 String?
+  name                String
+  type                AssetType
+  classification      String?
+  owner               String?
+  location            String?
+  confidentiality     Int?                 @default(3)
+  integrity           Int?                 @default(3)
+  availability        Int?                 @default(3)
+  dependencies        String?
+  businessProcesses   String?
+  dataResidency       String?
+  retention           String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  ownerUserId         String?
+  criticality         Criticality?
+  status              AssetStatus          @default(ACTIVE)
+  externalRef         String?
+  tags                String?
+  /// Structured product identity for CVE matching (vuln integration).
+  /// Optional + best-effort: tenants populate these to turn the global
+  /// CVE catalog into a targeted "you are affected" signal. Without
+  /// them, CVE→asset matching degrades to manual linking. `cpe` is a
+  /// CPE 2.3 string (e.g. cpe:2.3:a:openssl:openssl:3.0.0:*:*:*:*:*:*:*);
+  /// vendor/product/version are the human-friendly fallback used when
+  /// no full CPE is recorded.
+  cpe                 String?
+  vendor              String?
+  product             String?
+  version             String?
+  deletedAt           DateTime?
+  deletedByUserId     String?
+  retentionUntil      DateTime?
+  ownerUser           User?                @relation("AssetOwner", fields: [ownerUserId], references: [id])
+  tenant              Tenant               @relation(fields: [tenantId], references: [id])
+  risks               AssetRiskLink[]
+  controls            ControlAsset[]
+  vulnerabilities     AssetVulnerability[]
+  riskSuggestionItems RiskSuggestionItem[]
+  // Evidence attached directly to this asset (Evidence Library tag +
+  // the asset Evidence tab). Mirrors Control/Task.
+  evidence            Evidence[]
+
+  /// Unique within a tenant — `AST-N` collisions are race-free
+  /// via the AssetKeySequence counter.
+  @@unique([tenantId, key])
+  @@index([tenantId, name])
+  @@index([tenantId])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, type])
+  @@index([tenantId, criticality])
+  @@index([tenantId, status])
+  @@index([tenantId, deletedAt])
+}
+
+/// Per-tenant monotonic counter for minting `AST-N` asset keys.
+/// Mirrors `TaskKeySequence` / `RiskKeySequence` — `upsert` with
+/// an atomic `increment` is race-free under concurrent imports.
+model AssetKeySequence {
+  tenantId  String @id
+  lastValue Int    @default(0)
+}
+
+/// Global CVE catalog — shared reference data, NOT tenant-scoped (like
+/// the framework/clause reference tables). Has no `tenantId`, so it is
+/// RLS-exempt by construction: `TENANT_SCOPED_MODELS` is DMMF-derived
+/// from the presence of a `tenantId` field, and the rls-coverage
+/// guardrail only enforces RLS on that set. Populated by the daily
+/// `nvd-cve-sync` job from the NIST NVD 2.0 API. Read-only to tenants.
+model Cve {
+  /// The CVE id itself, e.g. `CVE-2026-1234`.
+  id             String   @id
+  publishedAt    DateTime
+  lastModifiedAt DateTime
+  /// CVSS v3.1 base score (0.0–10.0) when NVD provides one.
+  cvssScore      Float?
+  /// LOW | MEDIUM | HIGH | CRITICAL (CVSS v3.1 base severity).
+  cvssSeverity   String?
+  summary        String
+  /// Affected CPE 2.3 match strings extracted from the NVD configurations.
+  cpeMatches     String[]
+  references     String[]
+  fetchedAt      DateTime @default(now())
+
+  vulnerabilities AssetVulnerability[]
+
+  // Backs the catalog list + the incremental-sync cursor
+  // (max(lastModifiedAt)) and the severity-filtered surfacing.
+  @@index([cvssSeverity, publishedAt])
+  @@index([lastModifiedAt])
+}
+
+/// Tenant-scoped: a CVE matched (or manually linked) to one of the
+/// tenant's assets. Full RLS + Epic B encryption (`note`) + Epic D
+/// sanitisation + index coverage (it carries a `tenantId`, so the
+/// rls-coverage / schema-index guardrails enforce all three).
+model AssetVulnerability {
+  id         String   @id @default(cuid())
+  tenantId   String
+  assetId    String
+  cveId      String
+  /// OPEN | MITIGATING | MITIGATED | ACCEPTED | FALSE_POSITIVE
+  status     String   @default("OPEN")
+  matchedAt  DateTime @default(now())
+  /// How the link was made: 'CPE' (automatic) | 'MANUAL' (tenant-linked).
+  matchedVia String
+  /// Free-text analyst note — encrypted at rest (Epic B manifest) and
+  /// sanitised on write (Epic D).
+  note       String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  asset  Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  cve    Cve    @relation(fields: [cveId], references: [id], onDelete: Cascade)
+
+  /// One link per (asset, cve) within a tenant — re-matching is idempotent.
+  @@unique([tenantId, assetId, cveId])
+  @@index([tenantId, status])
+  @@index([tenantId, assetId])
+  @@index([tenantId, cveId])
+  @@index([cveId])
+  @@index([assetId])
+}
+
+/// Tenant-scoped: one DevSecOps scanner execution (SAST/SCA/DAST/SECRETS/
+/// IAC) ingested into IC. The FIRST connector of the "external security
+/// signal → compliance graph" subsystem — a sibling to Cve /
+/// AssetVulnerability, NOT a parallel path. A PASSING run is materialised
+/// as automated control evidence (ControlEvidenceLink, kind
+/// INTEGRATION_RESULT); FAILING findings reconcile into `Finding` rows
+/// (sourceKind='SCANNER'). Full RLS + index coverage (tenantId present).
+model ScannerRun {
+  id           String           @id @default(cuid())
+  tenantId     String
+  /// 'SEMGREP'|'TRIVY'|'ZAP'|'GITLEAKS'|'CHECKOV'|'CODEQL'|'OTHER'.
+  source       String
+  /// 'SAST'|'SCA'|'DAST'|'SECRETS'|'IAC'.
+  scanType     String
+  ranAt        DateTime
+  /// 'PASS'|'FAIL'|'ERROR' — the gate outcome (reported by CI or derived
+  /// from the max finding severity vs the configured threshold).
+  outcome      String
+  /// Repo / project the scan ran against (free-text ref, e.g.
+  /// `owner/repo@<sha>`). NOT encrypted — a project identifier, not content.
+  repoRef      String?
+  findingCount Int              @default(0)
+  /// 'API'|'WEBHOOK'|'UPLOAD' — how the SARIF reached IC.
+  ingestedVia  String
+  createdAt    DateTime         @default(now())
+
+  tenant   Tenant           @relation(fields: [tenantId], references: [id])
+  findings ScannerFinding[]
+
+  @@index([tenantId, source, ranAt])
+  @@index([tenantId, scanType, ranAt])
+  @@index([tenantId])
+}
+
+/// Tenant-scoped normalised finding from a ScannerRun. Deduped across
+/// re-scans by `fingerprint` (SHA-256 of ruleId+location+message), so a
+/// recurring finding stays one row (the unique constraint makes ingest
+/// idempotent). `description` is Epic B-encrypted + Epic D-sanitised —
+/// scanner messages can quote source snippets / secrets.
+model ScannerFinding {
+  id           String     @id @default(cuid())
+  scannerRunId String
+  tenantId     String
+  /// SHA-256 fingerprint of (ruleId, location, message). Re-scans upsert
+  /// on (tenantId, fingerprint) — one row per distinct finding per tenant.
+  fingerprint  String
+  ruleId       String
+  /// 'LOW'|'MEDIUM'|'HIGH'|'CRITICAL' — mapped from SARIF `level` + the
+  /// tool's own severity via the documented matrix (sarif.ts).
+  severity     String
+  title        String
+  /// Encrypted at rest (Epic B manifest) + sanitised on write (Epic D).
+  description  String?
+  /// 'file:line' the finding points at.
+  location     String?
+  /// CWE refs (e.g. 'CWE-79') from the SARIF rule metadata — drive the
+  /// CWE → OWASP/SSDF framework cross-walk.
+  cweIds       String[]   @default([])
+  /// OPEN|TRIAGED|FIXED|FALSE_POSITIVE|ACCEPTED — triage lifecycle.
+  status       String     @default("OPEN")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  scannerRun ScannerRun @relation(fields: [scannerRunId], references: [id], onDelete: Cascade)
+
+  /// Idempotent ingest: re-scanning the same issue updates this one row.
+  @@unique([tenantId, fingerprint])
+  @@index([tenantId, scannerRunId, status])
+  @@index([tenantId, status, severity])
+  @@index([scannerRunId])
+}
+
+model AssetRiskLink {
+  id              String        @id @default(cuid())
+  tenantId        String
+  assetId         String
+  riskId          String
+  exposureLevel   ExposureLevel @default(MEDIUM)
+  rationale       String?
+  createdByUserId String?
+  createdAt       DateTime      @default(now())
+  asset           Asset         @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  createdBy       User?         @relation("AssetRiskCreator", fields: [createdByUserId], references: [id])
+  risk            Risk          @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  tenant          Tenant        @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, assetId, riskId])
+  @@index([tenantId, riskId])
+  @@index([tenantId])
+}

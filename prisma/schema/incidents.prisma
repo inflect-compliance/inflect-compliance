@@ -1,0 +1,196 @@
+// incidents.prisma — NIS2 Art.23 incident response + Business Impact Analysis (operational-resilience sibling).
+// Split from compliance.prisma (2026-07-10) — pure reorg, no datamodel change.
+// Enums live in enums.prisma; relations resolve across the schema folder.
+
+// ─── NIS2 Article 23 incident response ──────────────────────────────
+// A live security incident (distinct from Finding, which is an AUDIT
+// observation). The detectedAt clock drives the Article 23 regulatory
+// notification deadlines (24h / 72h / 1 month). Methodology adapted
+// (CC BY 4.0) from Kshreenath/NIS2-Checklist — Paolo Carner / BARE
+// Consulting. See docs/implementation-notes/2026-06-28-incident-response.md.
+model Incident {
+  id              String                  @id @default(cuid())
+  tenantId        String
+  // Tenant-scoped human reference, e.g. INC-2026-001.
+  reference       String
+  title           String
+  // Free-text incident description. Encrypted at rest (Epic B) +
+  // sanitized on write (Epic D).
+  description     String
+  severity        IncidentSeverity
+  phase           IncidentPhase           @default(DETECTION)
+  // 'RANSOMWARE' | 'DATA_BREACH' | 'DDOS' | 'UNAUTHORIZED_ACCESS' | 'OTHER'
+  incidentType    String
+  // The clock starts here — drives the 24h/72h/1-month deadlines.
+  detectedAt      DateTime
+  // Whether NIS2 Article 23 notification is required. SUGGESTED from
+  // severity (HIGH/CRITICAL) but never auto-asserted — a human confirms
+  // (the tenant's DPO/legal owns the legal determination).
+  reportable      Boolean                 @default(false)
+  reportedAt      DateTime?
+  containedAt     DateTime?
+  resolvedAt      DateTime?
+  // Incident commander (a tenant member). Plain userId — no FK relation,
+  // mirroring Finding.verifiedBy / deletedByUserId.
+  ownerUserId     String?
+  // Art.21(2) controls implicated by this incident.
+  linkedControlIds String[]
+  // Keys of completed containment-runbook steps (per-incidentType
+  // checklist in src/data/incident-containment.ts). Checking a step also
+  // appends an IncidentTimelineEntry — this array is the persisted
+  // checkbox state. Reference guidance, not enforced.
+  completedContainmentSteps String[] @default([])
+  createdByUserId String
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  tenant          Tenant                  @relation(fields: [tenantId], references: [id])
+  notifications   IncidentNotification[]
+  timeline        IncidentTimelineEntry[]
+  evidenceLinks   IncidentEvidence[]
+
+  @@unique([id, tenantId])
+  @@unique([tenantId, reference])
+  @@index([tenantId])
+  @@index([tenantId, phase])
+  @@index([tenantId, severity, detectedAt])
+  @@index([tenantId, ownerUserId])
+}
+
+// Junction linking an incident to forensic Evidence records (logs, disk
+// images, memory/network captures). Mirrors FindingEvidence: two composite
+// parent FKs to (id, tenantId) guarantee both parents share this row's
+// tenant. RLS + indexes mirror that junction.
+model IncidentEvidence {
+  id         String   @id @default(cuid())
+  tenantId   String
+  incidentId String
+  evidenceId String
+  // Optional forensic-checklist category this evidence satisfies (e.g.
+  // 'SYSTEM_LOGS', 'MEMORY_CAPTURE') — a key from the forensic checklist
+  // in src/data/incident-containment.ts. NULL for ad-hoc links.
+  forensicCategory String?
+  createdAt  DateTime @default(now())
+  evidence   Evidence @relation(fields: [evidenceId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  incident   Incident @relation(fields: [incidentId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([incidentId, evidenceId])
+  @@index([tenantId])
+  @@index([tenantId, incidentId])
+  @@index([tenantId, evidenceId])
+}
+
+// The Article 23 notification clock — one row per required notification
+// kind. Auto-created (3 rows) when an incident is marked reportable; the
+// deadline derives from the incident's detectedAt.
+model IncidentNotification {
+  id            String                     @id @default(cuid())
+  tenantId      String
+  incidentId    String
+  kind          IncidentNotificationKind
+  // detectedAt + 24h / +72h / +1 month.
+  dueAt         DateTime
+  status        IncidentNotificationStatus @default(PENDING)
+  submittedAt   DateTime?
+  // Authority case ref returned on submission (plaintext — load-bearing).
+  submissionRef String?
+  // What was submitted (the report text). Encrypted at rest (Epic B) +
+  // sanitized on write (Epic D).
+  submissionNote String?
+  createdAt     DateTime                   @default(now())
+  updatedAt     DateTime                   @updatedAt
+  incident      Incident                   @relation(fields: [incidentId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  tenant        Tenant                     @relation(fields: [tenantId], references: [id])
+
+  @@unique([incidentId, kind])
+  @@index([tenantId])
+  @@index([tenantId, incidentId])
+  @@index([tenantId, status, dueAt])
+}
+
+// Append-only incident timeline (who did what, when) — the forensic +
+// narrative record. Distinct from AuditLog (this is incident-narrative,
+// not the hash-chained system audit).
+model IncidentTimelineEntry {
+  id          String        @id @default(cuid())
+  tenantId    String
+  incidentId  String
+  at          DateTime      @default(now())
+  // Plain userId of the actor — no FK relation.
+  actorUserId String?
+  // Free-text narrative entry. Encrypted at rest (Epic B) + sanitized
+  // on write (Epic D).
+  entry       String
+  phaseAtTime IncidentPhase
+  incident    Incident      @relation(fields: [incidentId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  tenant      Tenant        @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, incidentId, at])
+}
+
+/// Business Impact Analysis (ISO 22301 / NIS2 Art.21(2)(c) / DORA
+/// operational resilience). Clean-room from the recognised BIA
+/// methodology — the operational artifact that satisfies the NIS2
+/// business-continuity requirement IC previously only seeded. Attaches
+/// to a modeled ProcessNode (preferred) or stands free. Sits beside
+/// Incidents as a sibling operational-resilience obligation. Tenant-
+/// scoped: RLS + Epic B (`notes`) + Epic D + indexes.
+model BusinessImpactAnalysis {
+  id            String  @id @default(cuid())
+  tenantId      String
+  /// Attach to a modeled process node (preferred). Null = free-standing
+  /// service not yet on a process map.
+  processNodeId String?
+  name          String
+  /// CRITICAL | HIGH | MEDIUM | LOW.
+  criticality   String
+  /// Recovery Time Objective — hours to restore after disruption.
+  rtoHours      Int?
+  /// Recovery Point Objective — tolerable data-loss window (hours).
+  rpoHours      Int?
+  /// Max Tolerable Period of Disruption — hours before the impact is
+  /// existential. The primary driver of recovery-priority ranking.
+  mtpdHours     Int?
+  /// Structured impact ramp: [{ atHours, financial, operational,
+  /// reputational, legal }] — powers the impact-over-time surface.
+  impactProfile Json?
+  /// Free-text analyst notes — encrypted at rest (Epic B) + sanitized
+  /// on write (Epic D).
+  notes         String?
+  ownerUserId   String?
+  reviewedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant                @relation(fields: [tenantId], references: [id])
+  processNode   ProcessNode?          @relation(fields: [processNodeId], references: [id])
+  ownerUser     User?                 @relation("BiaOwner", fields: [ownerUserId], references: [id])
+  dependencies  BiaDependency[]
+  /// BIA-as-evidence: the continuity control (NIS2 Art.21(2)(c)) links
+  /// this BIA via a ControlEvidenceLink (kind BIA).
+  evidenceLinks ControlEvidenceLink[]
+
+  @@index([tenantId, criticality])
+  @@index([tenantId, processNodeId])
+  @@index([tenantId, ownerUserId])
+}
+
+/// A dependency a BIA'd process relies on — a polymorphic pointer
+/// (process/asset/vendor) so the recovery sequence can account for what
+/// must be up first. Polymorphic by design (dependsOnType + dependsOnId),
+/// so no FK to the three target tables.
+model BiaDependency {
+  id            String   @id @default(cuid())
+  biaId         String
+  tenantId      String
+  /// 'PROCESS' | 'ASSET' | 'VENDOR'.
+  dependsOnType String
+  dependsOnId   String
+  createdAt     DateTime @default(now())
+
+  bia    BusinessImpactAnalysis @relation(fields: [biaId], references: [id], onDelete: Cascade)
+  tenant Tenant                 @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, biaId])
+}

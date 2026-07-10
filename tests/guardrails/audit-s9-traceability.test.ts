@@ -18,6 +18,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) =>
@@ -25,17 +26,18 @@ const read = (rel: string) =>
 
 describe('Audit S9 — Cross-Framework Traceability', () => {
     describe('Gap A — temporal validity window', () => {
-        const schema = read('prisma/schema/compliance.prisma');
+        const schema = readPrismaSchema();
         const repo = read(
             'src/app-layer/repositories/RequirementMappingRepository.ts',
         );
 
         it('schema declares validFrom (default now) and nullable validTo', () => {
-            // Pull the model block out.
-            const block = schema.slice(
-                schema.indexOf('model RequirementMapping'),
-                schema.indexOf('model ControlRequirementLink'),
-            );
+            // Pull the RequirementMapping model block out. The models moved to
+            // separate files (2026-07-10 schema split) so the old
+            // slice-between-two-models approach no longer works on the
+            // whole-folder concatenation — match the single model block instead.
+            // The trailing space before `{` avoids matching `RequirementMappingSet`.
+            const block = schema.match(/model RequirementMapping \{[\s\S]*?\n\}/)?.[0] ?? '';
             expect(block).toMatch(
                 /validFrom\s+DateTime\s+@default\(now\(\)\)/,
             );

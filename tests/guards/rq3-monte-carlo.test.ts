@@ -5,6 +5,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (p: string) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -12,7 +13,7 @@ const exists = (p: string) => fs.existsSync(path.join(ROOT, p));
 
 describe('RQ-3 Monte Carlo', () => {
     it('RiskSimulationRun schema + migration with RLS', () => {
-        expect(read('prisma/schema/compliance.prisma')).toMatch(/model RiskSimulationRun/);
+        expect(readPrismaSchema()).toMatch(/model RiskSimulationRun/);
         const mig = 'prisma/migrations/20260610160000_rq3_monte_carlo/migration.sql';
         expect(exists(mig)).toBe(true);
         expect(read(mig)).toMatch(/CREATE POLICY tenant_isolation ON "RiskSimulationRun"/);

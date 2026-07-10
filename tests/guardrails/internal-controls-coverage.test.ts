@@ -22,6 +22,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -63,7 +64,7 @@ describe('Internal Controls fixture', () => {
 });
 
 describe('Internal Controls wiring', () => {
-    const schema = read('prisma/schema/compliance.prisma');
+    const schema = readPrismaSchema();
     const seed = read('prisma/seed.ts');
     const install = read('src/app-layer/usecases/framework/install.ts');
     const dto = read('src/lib/dto/control.dto.ts');

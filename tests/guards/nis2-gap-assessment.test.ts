@@ -10,6 +10,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -102,7 +103,7 @@ describe('NIS2 gap — Audits-page conditional home', () => {
 });
 
 describe('NIS2 gap — run store + provenance', () => {
-    const schema = read('prisma/schema/compliance.prisma');
+    const schema = readPrismaSchema();
     const block = schema.slice(schema.indexOf('model Nis2SelfAssessment'), schema.indexOf('model Nis2SelfAssessmentAnswer'));
 
     it('Nis2SelfAssessment carries a source column + tenantId-leading index', () => {

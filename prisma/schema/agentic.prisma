@@ -1,0 +1,76 @@
+// agentic.prisma — Propose-not-commit agent queue + the durable workflow engine.
+// Split from compliance.prisma (2026-07-10) — pure reorg, no datamodel change.
+// Enums live in enums.prisma; relations resolve across the schema folder.
+
+/// Epic MCP Phase 3 — the propose-not-commit queue. An external agent (via the
+/// MCP server, `mcp:propose` scope) can PROPOSE a risk/control/policy/finding;
+/// the proposal lands here as PENDING and a human approves it before the REAL
+/// create-usecase runs. An agent never mutates a record directly. `payloadJson`
+/// (the proposed content, validated + Epic-D sanitised at the propose boundary)
+/// and `rationale` are encrypted at rest (Epic B — see encrypted-fields.ts).
+model AgentProposal {
+  id                   String               @id @default(cuid())
+  tenantId             String
+  kind                 AgentProposalKind
+  status               SuggestionItemStatus @default(PENDING)
+  payloadJson          String
+  rationale            String?
+  proposedViaKeyId     String?
+  proposedBySessionRef String?
+  reviewedByUserId     String?
+  reviewedAt           DateTime?
+  createdEntityId      String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  tenant               Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status, createdAt])
+}
+
+/// Epic Agentic 1A — a durable, audited, human-gated agentic workflow run. The
+/// engine composes the existing MCP read/propose tools under this run model; it
+/// adds orchestration + checkpoints, NOT new authority. Every write a workflow
+/// makes routes through the propose-not-commit approval queue (AgentProposal) —
+/// the engine can commit nothing a single MCP tool couldn't. `contextJson`
+/// (accumulated state) and `summary` (the output artifact) are encrypted at rest
+/// (Epic B — see encrypted-fields.ts).
+model WorkflowRun {
+  id                String            @id @default(cuid())
+  tenantId          String
+  workflowKey       String
+  status            WorkflowRunStatus @default(RUNNING)
+  startedByUserId   String?
+  triggeredViaKeyId String?
+  startedAt         DateTime          @default(now())
+  completedAt       DateTime?
+  contextJson       String?
+  summary           String?
+  stepCount         Int               @default(0)
+  costTokens        Int               @default(0)
+  errorMessage      String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  tenant            Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  steps             WorkflowStep[]
+
+  @@index([tenantId, status, startedAt])
+}
+
+/// An append-only record of one workflow step — the run's audit narrative.
+model WorkflowStep {
+  id          String             @id @default(cuid())
+  runId       String
+  tenantId    String
+  seq         Int
+  kind        WorkflowStepKind
+  toolCalled  String?
+  inputJson   String?
+  outputJson  String?
+  status      WorkflowStepStatus @default(PENDING)
+  at          DateTime           @default(now())
+  actorUserId String?
+  run         WorkflowRun        @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId, seq])
+  @@index([tenantId, runId])
+}

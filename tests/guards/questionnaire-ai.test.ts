@@ -5,6 +5,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -45,7 +46,7 @@ describe('questionnaire AI — governance + wiring', () => {
     });
 
     it('the three models carry RLS + tenant indexes', () => {
-        const schema = read('prisma/schema/compliance.prisma');
+        const schema = readPrismaSchema();
         for (const m of ['QuestionnaireAnswerLibrary', 'InboundQuestionnaire', 'InboundQuestionnaireItem']) {
             expect(schema).toMatch(new RegExp(`model ${m} \\{`));
         }

@@ -5,6 +5,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (p: string) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -20,7 +21,7 @@ describe('RQ-7 bow-tie', () => {
         expect(src).toMatch(/PREVENTIVE/);
         expect(src).toMatch(/DETECTIVE/);
         // RQ-7 adds NO new model — it's a read projection.
-        expect(read('prisma/schema/compliance.prisma')).not.toMatch(/model BowTie/);
+        expect(readPrismaSchema()).not.toMatch(/model BowTie/);
     });
 
     it('the route + panel + tab exist', () => {

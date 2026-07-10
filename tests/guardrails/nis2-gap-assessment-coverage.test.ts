@@ -18,6 +18,7 @@ import * as path from 'node:path';
 
 import { Nis2GapAssessmentSchema } from '@/lib/schemas/nis2-gap-assessment';
 import { ENCRYPTED_FIELDS } from '@/lib/security/encrypted-fields';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -77,7 +78,7 @@ describe('NIS2 gap-assessment — data integrity', () => {
 });
 
 describe('NIS2 gap-assessment — schema + RLS + encryption wiring', () => {
-    const compliance = read('prisma/schema/compliance.prisma');
+    const compliance = readPrismaSchema();
     const migration = read(MIGRATION_PATH);
 
     it('defines the four models (2 global reference, 2 tenant-scoped)', () => {

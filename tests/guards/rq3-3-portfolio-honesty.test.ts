@@ -18,6 +18,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
@@ -27,7 +28,7 @@ const appetite = read('src/app-layer/usecases/risk-appetite.ts');
 const engine = read('src/app-layer/usecases/monte-carlo.ts');
 const route = read('src/app/api/t/[tenantSlug]/risk-appetite/route.ts');
 const adminPage = read('src/app/t/[tenantSlug]/(app)/admin/risk-appetite/page.tsx');
-const schema = read('prisma/schema/compliance.prisma');
+const schema = readPrismaSchema();
 const migration = read('prisma/migrations/20260612020000_rq3_3_tested_percentile/migration.sql');
 
 describe('RQ3-3 — the headline is a distribution, not a sum', () => {

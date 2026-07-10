@@ -23,13 +23,14 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
 describe('B10 — advanced analytics', () => {
     describe('Schema + migration', () => {
-        const compliance = read('prisma/schema/compliance.prisma');
+        const compliance = readPrismaSchema();
         const migration = read(
             'prisma/migrations/20260524180000_b10_risk_quantitative/migration.sql',
         );

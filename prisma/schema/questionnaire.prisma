@@ -1,0 +1,64 @@
+// questionnaire.prisma — Inbound security questionnaires + the reusable answer library.
+// Split from compliance.prisma (2026-07-10) — pure reorg, no datamodel change.
+// Enums live in enums.prisma; relations resolve across the schema folder.
+
+/// PR-9 — a reusable Q&A pair for inbound security questionnaires. Accepted
+/// answers feed back here so the library improves over time.
+model QuestionnaireAnswerLibrary {
+  id            String    @id @default(cuid())
+  tenantId      String
+  questionText  String
+  answerText    String
+  /// Source citations backing the answer: [{ kind, id, label }].
+  sourceRefsJson Json     @default("[]")
+  confidence    Float?
+  useCount      Int       @default(0)
+  lastUsedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+}
+
+/// PR-9 — an uploaded inbound security questionnaire.
+model InboundQuestionnaire {
+  id              String                     @id @default(cuid())
+  tenantId        String
+  name            String
+  source          String?
+  status          InboundQuestionnaireStatus @default(UPLOADED)
+  itemCount       Int                        @default(0)
+  createdByUserId String
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+
+  tenant Tenant                     @relation(fields: [tenantId], references: [id])
+  items  InboundQuestionnaireItem[]
+
+  @@index([tenantId, status])
+}
+
+/// PR-9 — one parsed question + its AI-drafted / accepted answer.
+model InboundQuestionnaireItem {
+  id              String                  @id @default(cuid())
+  tenantId        String
+  questionnaireId String
+  order           Int                     @default(0)
+  questionText    String
+  draftAnswer     String?
+  confidence      Float?
+  /// Human-readable citation of the control/policy/evidence the draft drew from.
+  sourceCitation  String?
+  status          QuestionnaireItemStatus @default(PENDING)
+  acceptedAnswer  String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  tenant        Tenant               @relation(fields: [tenantId], references: [id])
+  questionnaire InboundQuestionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, questionnaireId])
+  @@index([tenantId, status])
+}

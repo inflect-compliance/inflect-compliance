@@ -3,6 +3,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (p: string) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -10,7 +11,7 @@ const exists = (p: string) => fs.existsSync(path.join(ROOT, p));
 
 describe('SP-F1 connection + folder targeting', () => {
     it('Policy carries spConnectionId (+ migration)', () => {
-        expect(read('prisma/schema/compliance.prisma')).toMatch(/spConnectionId\s+String\?/);
+        expect(readPrismaSchema()).toMatch(/spConnectionId\s+String\?/);
         expect(exists('prisma/migrations/20260609180000_policy_sp_connection_id/migration.sql')).toBe(true);
     });
 

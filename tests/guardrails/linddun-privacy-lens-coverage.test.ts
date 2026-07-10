@@ -22,6 +22,7 @@ import {
     petHintsForCodes,
     normalizeLinddunCodes,
 } from '@/lib/privacy/linddun';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -69,7 +70,7 @@ describe('PET treatment hints — advisory, not auto-applied', () => {
 });
 
 describe('risks carry a LINDDUN classification (lens over existing machinery)', () => {
-    const schema = read('prisma/schema/compliance.prisma');
+    const schema = readPrismaSchema();
 
     it('Risk + RiskTemplate have a linddunCategories field (not a new model)', () => {
         const modelBlock = (name: string): string => {

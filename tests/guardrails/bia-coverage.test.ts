@@ -19,11 +19,12 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (p: string) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
-const COMPLIANCE_SCHEMA = read('prisma/schema/compliance.prisma');
+const COMPLIANCE_SCHEMA = readPrismaSchema();
 const ENUMS = read('prisma/schema/enums.prisma');
 const PROCESSES_SCHEMA = read('prisma/schema/processes.prisma');
 const MIGRATION = read('prisma/migrations/20260701130000_bia_module/migration.sql');

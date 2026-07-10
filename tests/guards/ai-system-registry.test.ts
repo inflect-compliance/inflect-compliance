@@ -21,6 +21,7 @@ import {
     ART50_TRANSPARENCY_CASES,
 } from '@/lib/eu-ai-act/classification';
 import { TIER_OBLIGATIONS, allObligationRefs } from '@/lib/eu-ai-act/obligations';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -123,7 +124,7 @@ describe('propose-not-commit — conformity generator', () => {
 });
 
 describe('schema + security wiring', () => {
-    const schema = read('prisma/schema/compliance.prisma');
+    const schema = readPrismaSchema();
     const manifest = read('src/lib/security/encrypted-fields.ts');
     const usecase = read('src/app-layer/usecases/ai-system.ts');
 

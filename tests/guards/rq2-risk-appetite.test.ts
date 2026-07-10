@@ -5,6 +5,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (p: string) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -12,7 +13,7 @@ const exists = (p: string) => fs.existsSync(path.join(ROOT, p));
 
 describe('RQ-2 risk appetite', () => {
     it('schema declares both models + migration', () => {
-        const schema = read('prisma/schema/compliance.prisma');
+        const schema = readPrismaSchema();
         expect(schema).toMatch(/model RiskAppetiteConfig/);
         expect(schema).toMatch(/model RiskAppetiteBreach/);
         expect(exists('prisma/migrations/20260610140000_rq2_risk_appetite/migration.sql')).toBe(true);

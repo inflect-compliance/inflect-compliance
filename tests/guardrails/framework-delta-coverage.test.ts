@@ -17,6 +17,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import { computeRequirementDiff } from '@/app-layer/services/library-updater';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -96,7 +97,7 @@ describe('Framework delta — model hardening', () => {
         expect(mig).toMatch(/ALTER TABLE "TenantFrameworkDelta" FORCE ROW LEVEL SECURITY/);
         expect(mig).toMatch(/CREATE POLICY tenant_isolation ON "TenantFrameworkDelta"/);
         expect(mig).toMatch(/CREATE POLICY superuser_bypass ON "TenantFrameworkDelta"/);
-        const schema = read('prisma/schema/compliance.prisma');
+        const schema = readPrismaSchema();
         const block = schema.slice(schema.indexOf('model TenantFrameworkDelta'));
         expect(block).toMatch(/@@index\(\[tenantId, status, createdAt\]\)/);
     });

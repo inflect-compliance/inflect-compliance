@@ -6,6 +6,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readPrismaSchema } from '../helpers/prisma-schema';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -41,7 +42,7 @@ describe('identity providers — registration + wiring', () => {
     });
 
     it('ConnectedIdentityAccount carries RLS + tenant indexes', () => {
-        const schema = read('prisma/schema/compliance.prisma');
+        const schema = readPrismaSchema();
         expect(schema).toMatch(/model ConnectedIdentityAccount \{/);
         expect(schema).toMatch(/@@unique\(\[tenantId, provider, externalUserId\]\)/);
         expect(schema).toMatch(/@@index\(\[tenantId, provider\]\)/);
