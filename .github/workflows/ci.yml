@@ -21,10 +21,29 @@
 name: CI
 
 on:
+  # Docs-only changes skip CI entirely — nothing under these paths can
+  # affect build/test/e2e output, so running the ~2-hour full pipeline
+  # (billed per parallel job-minute) on an impl-note or doc-classification
+  # edit is pure waste. Keep this list to TRULY inert paths: `messages/**`
+  # (i18n catalogs) and `src/**` DO affect the app + e2e and are NOT here.
+  # Note: if a required-status-check ruleset is ever enabled, a docs-only
+  # PR won't produce the "CI" check — use a skipped→success shim then.
   push:
     branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - ".github/ISSUE_TEMPLATE/**"
+      - "LICENSE"
+      - ".gitignore"
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - ".github/ISSUE_TEMPLATE/**"
+      - "LICENSE"
+      - ".gitignore"
   # Weekly scheduled scan — GitHub's Code Scanning UI expects a
   # periodic refresh of CodeQL + Trivy results on the default branch,
   # independent of PR cadence. Without this the Security tab can
@@ -97,6 +116,39 @@ env:
   FILE_STORAGE_ROOT: /tmp/ci-uploads
 
 jobs:
+  # ═══════════════════════════════════════════════════════════════
+  #  Job 0: Detect changes — gates the heavy container jobs
+  #  Cheap (~30s): checkout + path filter. Its `container` output lets
+  #  `docker` + `trivy` skip on PRs that don't touch the image, deps,
+  #  or deploy config — the container's OS/library CVE surface only
+  #  changes when those do, so per-PR image build + scan is otherwise
+  #  redundant. On push/schedule the container jobs run unconditionally
+  #  (deploy-image validation + code-scanning SARIF refresh), so this
+  #  output only affects pull_request runs.
+  # ═══════════════════════════════════════════════════════════════
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      container: ${{ steps.filter.outputs.container }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            container:
+              - 'Dockerfile'
+              - 'Dockerfile.*'
+              - '.dockerignore'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'next.config.*'
+              - 'deploy/**'
+              - 'prisma/**'
+              - '.github/workflows/ci.yml'
+
   # ═══════════════════════════════════════════════════════════════
   #  Job 1: Lint — ESLint + Next.js lint rules
   #  Fast, no DB needed. Fails immediately on lint errors.
@@ -629,6 +681,10 @@ jobs:
   load-smoke:
     name: "Load Smoke (k6)"
     needs: [build]
+    # Load smoke is a trend/perf signal, not a per-PR correctness gate —
+    # run it on push-to-main + the weekly schedule, not on every PR. (Same
+    # push/schedule-only pattern as the `coverage` job.)
+    if: github.event_name == 'push' || github.event_name == 'schedule'
     runs-on: ${{ vars.LARGE_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 12
 
@@ -899,12 +955,18 @@ jobs:
           category: "/language:${{ matrix.language }}"
 
   # ═══════════════════════════════════════════════════════════════
-  #  Job 9: Docker — verify Dockerfile builds correctly
-  #  Needs: build (no point testing Docker if app doesn't compile)
+  #  Job 9: Docker — verify the deploy image builds + Trivy-scans it.
+  #  Needs: build (no point testing Docker if the app doesn't compile).
+  #  Gated: always on push/schedule (deploy-image validation + Trivy
+  #  SARIF refresh); on PRs only when container/deps/deploy/prisma paths
+  #  changed (see the `changes` job) — a pure app-source PR can't move the
+  #  image's CVE surface, so the ~40-min build + scan is redundant there.
+  #  `trivy` (needs: docker) skips in lockstep; nothing else needs docker.
   # ═══════════════════════════════════════════════════════════════
   docker:
     name: Docker Build
-    needs: [build]
+    needs: [build, changes]
+    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.container == 'true' }}
     runs-on: ${{ vars.LARGE_RUNNER || 'ubuntu-latest' }}
     # Roadmap-27 CI hardening — bumped 15 → 25, then 25 → 40 (2026-06-18)
     # after a job was observed hitting the 25 min limit exactly and being
