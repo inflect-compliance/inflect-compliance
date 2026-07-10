@@ -848,8 +848,13 @@ jobs:
       - uses: actions/checkout@v7
 
       # ── Dependency review (PR only) ──
+      # Needs GitHub Advanced Security (Dependency graph + GHAS), the same
+      # feature CodeQL uploads require — so gate it on CODE_SCANNING_ENABLED
+      # too. With GHAS off it errors "Dependency review is not supported";
+      # unset/false ⇒ skip. The npm-audit gate below is independent and
+      # always runs, so dependency enforcement isn't lost.
       - name: Dependency review
-        if: github.event_name == 'pull_request'
+        if: ${{ github.event_name == 'pull_request' && vars.CODE_SCANNING_ENABLED == 'true' }}
         uses: actions/dependency-review-action@v5
         with:
           fail-on-severity: high
