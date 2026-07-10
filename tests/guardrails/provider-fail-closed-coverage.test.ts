@@ -1,0 +1,91 @@
+/**
+ * Provider fail-closed coverage FORWARD-LOCK (extends H2).
+ *
+ * A monitoring product must NEVER manufacture a passing signal it hasn't
+ * earned. H2 proved the invariant for each check ENGINE; this ratchet closes
+ * the loop at the REGISTRY: it auto-enumerates every registered
+ * `ScheduledCheckProvider` and asserts each has a fail-closed test — one that
+ * proves the provider's check surface returns ERROR / NOT_APPLICABLE (never
+ * PASSED) on a broken collector, empty output, or a zero-applicable population.
+ *
+ * The forward-lock: a NEWLY-REGISTERED provider is not in the coverage map, so
+ * CI FAILS until a fail-closed test is added and mapped. Structural certifies
+ * shape; behavioural certifies conduct — a new provider inherits the
+ * fail-closed contract by construction. See docs/new-subsystem-checklist.md.
+ */
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import '@/app-layer/integrations/bootstrap';
+import { registry } from '@/app-layer/integrations/registry';
+import { isScheduledCheckProvider } from '@/app-layer/integrations/types';
+
+const ROOT = path.resolve(__dirname, '../..');
+const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+const exists = (rel: string) => fs.existsSync(path.join(ROOT, rel));
+
+/**
+ * providerId → { test, needle }. `test` is a fail-closed test file that MUST
+ * exist; `needle` is a string that file MUST contain to prove it exercises
+ * THIS provider's check surface reaching ERROR / NOT_APPLICABLE (so the map
+ * can't point a provider at an unrelated test). Every test also has to carry a
+ * literal ERROR / NOT_APPLICABLE expectation (checked generically below).
+ */
+const FAIL_CLOSED_COVERAGE: Readonly<Record<string, { test: string; needle: string }>> = {
+    // Cloud posture — all three share the Powerpipe collector; H2 proves a
+    // non-zero exit / empty output / missing CLI → ERROR.
+    'aws-posture': { test: 'tests/unit/h2-fail-closed.test.ts', needle: 'runPowerpipeBenchmark' },
+    'azure-posture': { test: 'tests/unit/h2-fail-closed.test.ts', needle: 'runPowerpipeBenchmark' },
+    'gcp-posture': { test: 'tests/unit/h2-fail-closed.test.ts', needle: 'runPowerpipeBenchmark' },
+    // Identity — provider-level runCheck returns ERROR when the directory fetch
+    // throws; the engine returns NOT_APPLICABLE on an all-unknown population.
+    okta: { test: 'tests/unit/identity-providers.test.ts', needle: 'runCheck returns ERROR' },
+    'google-workspace': { test: 'tests/unit/identity-providers.test.ts', needle: 'runCheck' },
+    // Personnel + HRIS feed the personnel roster checks (empty roster → NA).
+    personnel: { test: 'tests/unit/h2-fail-closed.test.ts', needle: 'runPersonnelCheck' },
+    bamboohr: { test: 'tests/unit/h2-fail-closed.test.ts', needle: 'runPersonnelCheck' },
+    // Device posture — no devices → NOT_APPLICABLE.
+    device: { test: 'tests/unit/h2-fail-closed.test.ts', needle: 'runDeviceCheck' },
+    // Training — no assignments → NOT_APPLICABLE; open-no-due does not silently PASS.
+    training: { test: 'tests/unit/h2-fail-closed.test.ts', needle: 'runTrainingCheck' },
+    // GitHub — runCheck returns ERROR when the API call fails.
+    github: { test: 'tests/unit/github-integration.test.ts', needle: 'ERROR' },
+};
+
+const FAIL_CLOSED_MARKER = /'(ERROR|NOT_APPLICABLE)'/;
+
+describe('Provider fail-closed coverage forward-lock', () => {
+    const scheduled = registry
+        .listProviders()
+        .filter((p) => isScheduledCheckProvider(p))
+        .map((p) => p.id)
+        .sort();
+
+    it('at least the known provider fleet is registered (sanity — bootstrap ran)', () => {
+        expect(scheduled.length).toBeGreaterThanOrEqual(10);
+    });
+
+    it('every registered ScheduledCheckProvider has a fail-closed test mapped — new providers fail here', () => {
+        const uncovered = scheduled.filter((id) => !(id in FAIL_CLOSED_COVERAGE));
+        // A newly-registered provider trips this. Fix: write a test proving its
+        // runCheck returns ERROR/NOT_APPLICABLE on client-error / empty /
+        // zero-applicable input, then map it in FAIL_CLOSED_COVERAGE.
+        expect(uncovered).toEqual([]);
+    });
+
+    it('each mapped fail-closed test exists, references the provider surface, and asserts ERROR/NOT_APPLICABLE', () => {
+        const problems: string[] = [];
+        for (const [id, { test, needle }] of Object.entries(FAIL_CLOSED_COVERAGE)) {
+            if (!exists(test)) { problems.push(`${id}: missing test ${test}`); continue; }
+            const src = read(test);
+            if (!src.includes(needle)) problems.push(`${id}: ${test} does not exercise "${needle}"`);
+            if (!FAIL_CLOSED_MARKER.test(src)) problems.push(`${id}: ${test} has no ERROR/NOT_APPLICABLE expectation`);
+        }
+        expect(problems).toEqual([]);
+    });
+
+    it('no stale coverage entries — every mapped provider is still registered', () => {
+        const live = new Set(scheduled);
+        const stale = Object.keys(FAIL_CLOSED_COVERAGE).filter((id) => !live.has(id));
+        expect(stale).toEqual([]);
+    });
+});

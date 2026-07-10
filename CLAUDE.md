@@ -7,6 +7,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 > onboarding path. `CONTRIBUTING.md` is the day-one guide; come back here for the
 > deep dive.
 
+> **Adding a new provider, tenant-scoped model, or background job?** Follow
+> **[docs/new-subsystem-checklist.md](docs/new-subsystem-checklist.md)** — each
+> item (fail-closed check semantics · two-tenant behavioural test · runtime
+> wiring · outcome metric · authz gate) is backed by a structural ratchet that
+> fails CI until satisfied. Structural ratchets certify *shape*; behavioural
+> ratchets certify *conduct* — the platform enforces both.
+
 ## Commands
 
 ```bash
