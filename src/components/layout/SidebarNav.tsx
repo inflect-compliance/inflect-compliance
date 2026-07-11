@@ -57,6 +57,10 @@ export function useNavSections(): NavSectionDef[] {
     const tenantHref = useTenantHref();
     const perms = usePermissions();
     const tenant = useTenantContext();
+    // Nav labels + section eyebrows are localised via the `nav` catalog
+    // (messages/{en,bg}.json). Hrefs — and therefore `data-testid="nav-<slug>"`
+    // selectors used by E2E / the onboarding tour — stay stable.
+    const t = useTranslations('nav');
     // Live badge — fetched lazily; undefined when count is 0 or load fails.
     const calendarBadge = useCalendarBadge(tenant.tenantSlug);
 
@@ -77,7 +81,7 @@ export function useNavSections(): NavSectionDef[] {
             // "home" item pattern in Linear / Stripe / Vercel
             // sidebars.
             items: [
-                { href: tenantHref('/dashboard'), label: 'Board', icon: LayoutDashboard },
+                { href: tenantHref('/dashboard'), label: t('dashboard'), icon: LayoutDashboard },
             ],
         },
         {
@@ -86,51 +90,51 @@ export function useNavSections(): NavSectionDef[] {
             // risks, controls) as the surfaces compliance teams
             // govern day-to-day, distinct from the daily-cadence
             // work that sits under "Comply".
-            title: 'Govern',
+            title: t('govern'),
             items: [
-                { href: tenantHref('/assets'), label: 'Asset', icon: Building2 },
-                { href: tenantHref('/risks'), label: 'Risk', icon: AlertTriangle },
-                { href: tenantHref('/controls'), label: 'Control', icon: ShieldCheck },
+                { href: tenantHref('/assets'), label: t('assets'), icon: Building2 },
+                { href: tenantHref('/risks'), label: t('risks'), icon: AlertTriangle },
+                { href: tenantHref('/controls'), label: t('controls'), icon: ShieldCheck },
             ],
         },
         {
-            title: 'Comply',
+            title: t('comply'),
             items: [
                 // R13-PR16 — Audit moved from "Manage" to the top of
                 // "Comply" because audits are a daily-cadence
                 // workflow (Plan / Schedule / Review / Docs), not
                 // ongoing governance configuration.
-                { href: tenantHref('/audits'), label: 'Audit', icon: ClipboardCheck },
-                { href: tenantHref('/tasks'), label: 'Plan', icon: ClipboardList },
+                { href: tenantHref('/audits'), label: t('audits'), icon: ClipboardCheck },
+                { href: tenantHref('/tasks'), label: t('tasks'), icon: ClipboardList },
                 {
                     href: tenantHref('/calendar'),
-                    label: 'Time',
+                    label: t('calendar'),
                     icon: CalendarIcon,
                     badge: calendarBadge,
                 },
-                { href: tenantHref('/tests'), label: 'Review', icon: FlaskConical },
+                { href: tenantHref('/tests'), label: t('tests'), icon: FlaskConical },
                 // Scans (security-testing) moved off the sidebar onto the
                 // Internal Audit page — scan findings are audit evidence.
-                { href: tenantHref('/evidence'), label: 'Docs', icon: Paperclip },
+                { href: tenantHref('/evidence'), label: t('evidence'), icon: Paperclip },
             ],
         },
         {
-            title: 'Manage',
+            title: t('manage'),
             items: [
                 // R13-PR12 — Frameworks dropped from the sidebar.
                 // The page stays reachable via the Frameworks pill on
                 // the Audits page header (R13-PR9) and via the command
                 // palette (⌘K → "Frameworks").
                 // R13-PR16 — Audit moved up to Comply (see above).
-                { href: tenantHref('/policies'), label: 'Policy', icon: FileText },
-                { href: tenantHref('/vendors'), label: 'Vendor', icon: Truck },
+                { href: tenantHref('/policies'), label: t('policies'), icon: FileText },
+                { href: tenantHref('/vendors'), label: t('vendors'), icon: Truck },
                 // R25-PR-A — Processes canvas. Visual mapping of
                 // business + IT processes with controls placed on
                 // the connections between steps. Sits under Manage
                 // alongside Policy + Vendor — same governance-tool
                 // tier.
-                { href: tenantHref('/processes'), label: 'Process', icon: Workflow },
-                { href: tenantHref('/reports'), label: 'Report', icon: BarChart3, visible: perms.reports.view },
+                { href: tenantHref('/processes'), label: t('processes'), icon: Workflow },
+                { href: tenantHref('/reports'), label: t('reports'), icon: BarChart3, visible: perms.reports.view },
             ].filter(item => {
                 // DEFENSE-IN-DEPTH (Layer 2 of 2):
                 // Layer 1: Server layout uses noStore() to ensure fresh permissions per request.
@@ -156,6 +160,7 @@ interface SidebarContentProps {
 export function SidebarContent({ user, onLogout, onNavClick, onToggleCollapse }: SidebarContentProps) {
     const pathname = usePathname();
     const tc = useTranslations('common');
+    const tn = useTranslations('nav');
     const tenant = useTenantContext();
     const tenantHref = useTenantHref();
     const perms = usePermissions();
@@ -276,7 +281,7 @@ export function SidebarContent({ user, onLogout, onNavClick, onToggleCollapse }:
                     <circle cx="7" cy="7" r="5" />
                     <path d="M11 11l3 3" />
                 </svg>
-                {!collapsed && <span className="flex-1 text-left">Search</span>}
+                {!collapsed && <span className="flex-1 text-left">{tc('search')}</span>}
                 {!collapsed && (
                     <span
                         className="hidden items-center gap-[2px] rounded border border-border-subtle bg-bg-muted px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-content-subtle md:flex"
@@ -311,10 +316,10 @@ export function SidebarContent({ user, onLogout, onNavClick, onToggleCollapse }:
                     )}
                     <div className={cn('flex gap-tight', collapsed ? 'flex-col items-center' : 'items-center')}>
                         {perms.admin.view && (
-                            <Tooltip content="Admin" side={collapsed ? 'right' : 'top'}>
+                            <Tooltip content={tn('admin')} side={collapsed ? 'right' : 'top'}>
                                 <Link
                                     href={tenantHref('/admin')}
-                                    aria-label="Admin"
+                                    aria-label={tn('admin')}
                                     id="admin-icon-link-desktop"
                                     data-testid="nav-admin-icon"
                                     className="icon-btn icon-btn-sm"

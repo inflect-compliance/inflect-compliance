@@ -78,13 +78,12 @@ describe('Epic 49 — calendar feature wiring', () => {
     it('the sidebar Calendar nav item is registered with a live badge', () => {
         const src = read('src/components/layout/SidebarNav.tsx');
         expect(src).toMatch(/useCalendarBadge/);
-        // R13-PR7 — sidebar nav labels were de-i18n-ed for the four-
-        // section restructure (Board / Workspace / Comply / Manage).
-        // The Calendar entry now lives in the Comply group with the
-        // hard-coded label "Time". The load-bearing structural
-        // anchors are unchanged: same `/calendar` href, same
-        // `useCalendarBadge` wiring, same badge prop on the nav item.
-        expect(src).toMatch(/label:\s*['"]Time['"]/);
+        // Sidebar nav labels are localised via the `nav` catalog
+        // (`t('calendar')` → messages/{en,bg}.json) — the Calendar entry
+        // lives in the Comply group. The load-bearing structural anchors
+        // are unchanged: same `/calendar` href, same `useCalendarBadge`
+        // wiring, same badge prop on the nav item.
+        expect(src).toMatch(/label:\s*t\(['"]calendar['"]\)/);
         expect(src).toMatch(/tenantHref\(['"]\/calendar['"]\)/);
         // The badge from `useCalendarBadge` must still be threaded
         // onto the Schedule nav entry — that's the load-bearing

@@ -124,7 +124,8 @@ describe("R25-PR-A — Processes route + shell + nav", () => {
             // `Report` (singular, no plural — distinct from the
             // /policies URL plural). New entry follows the same
             // pattern.
-            expect(src).toMatch(/label:\s*['"]Process['"]/);
+            // Label is localised via the nav catalog: t('processes') → 'Process'.
+            expect(src).toMatch(/label:\s*t\(['"]processes['"]\)/);
         });
 
         it("uses the Workflow lucide icon", () => {
