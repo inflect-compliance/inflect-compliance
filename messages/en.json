@@ -237,7 +237,12 @@
         "mapping": "Framework Map",
         "reports": "Report",
         "notifications": "Notify",
-        "admin": "Admin"
+        "admin": "Admin",
+        "vendors": "Vendor",
+        "processes": "Process",
+        "govern": "Govern",
+        "comply": "Comply",
+        "manage": "Manage"
     },
     "dashboard": {
         "title": "Compliance Dashboard",
