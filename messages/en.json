@@ -242,7 +242,13 @@
         "processes": "Process",
         "govern": "Govern",
         "comply": "Comply",
-        "manage": "Manage"
+        "manage": "Manage",
+        "expandSidebar": "Expand sidebar",
+        "collapseSidebar": "Collapse sidebar",
+        "mainNavigation": "Main navigation",
+        "openCommandPalette": "Open command palette",
+        "navigationMenu": "Navigation menu",
+        "closeNavigation": "Close navigation"
     },
     "dashboard": {
         "title": "Compliance Dashboard",
