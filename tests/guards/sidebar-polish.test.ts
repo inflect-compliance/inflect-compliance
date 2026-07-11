@@ -55,13 +55,13 @@ describe('Sidebar polish discipline (Roadmap-2 PR-3)', () => {
         );
         expect(fnMatch).not.toBeNull();
         const sections = fnMatch![1]!;
-        // Govern is the canonical primary group — assert it
-        // explicitly so a future restructure that drops the title
-        // still trips the ratchet.
-        expect(sections).toMatch(/title:\s*['"]Govern['"]/);
+        // Govern is the canonical primary group — assert it explicitly
+        // (now localised via the nav catalog: t('govern') → 'Govern') so a
+        // future restructure that drops the title still trips the ratchet.
+        expect(sections).toMatch(/title:\s*t\(['"]govern['"]\)/);
         // And at least 3 titled sections in total (Govern +
         // Comply + Manage, after R13-PR7 / R13-PR11).
-        const titleCount = (sections.match(/\btitle:\s*['"]/g) ?? []).length;
+        const titleCount = (sections.match(/\btitle:\s*t\(/g) ?? []).length;
         expect(titleCount).toBeGreaterThanOrEqual(3);
     });
 
