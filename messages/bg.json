@@ -242,7 +242,13 @@
         "processes": "Процес",
         "govern": "Ръководене",
         "comply": "Съответствие",
-        "manage": "Управление"
+        "manage": "Управление",
+        "expandSidebar": "Разгъни страничната лента",
+        "collapseSidebar": "Свий страничната лента",
+        "mainNavigation": "Основна навигация",
+        "openCommandPalette": "Отвори командната палитра",
+        "navigationMenu": "Навигационно меню",
+        "closeNavigation": "Затвори навигацията"
     },
     "dashboard": {
         "title": "Табло за съответствие",

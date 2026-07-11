@@ -181,7 +181,7 @@ export function SidebarContent({ user, onLogout, onNavClick, onToggleCollapse }:
                     <button
                         type="button"
                         onClick={onToggleCollapse}
-                        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        aria-label={collapsed ? tn('expandSidebar') : tn('collapseSidebar')}
                         aria-pressed={collapsed}
                         data-testid="sidebar-collapse-toggle"
                         className={cn(
@@ -209,7 +209,7 @@ export function SidebarContent({ user, onLogout, onNavClick, onToggleCollapse }:
             </div>
 
             {/* Nav */}
-            <nav className="flex-1 p-2 overflow-y-auto" aria-label="Main navigation">
+            <nav className="flex-1 p-2 overflow-y-auto" aria-label={tn('mainNavigation')}>
                 {sections.map((section, idx) => (
                     <NavSection
                         key={idx}
@@ -265,7 +265,7 @@ export function SidebarContent({ user, onLogout, onNavClick, onToggleCollapse }:
                     'mx-2 mb-2 flex items-center rounded-lg border border-border-subtle bg-bg-default px-3 py-2 text-xs text-content-muted transition-colors hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]',
                     collapsed ? 'justify-center' : 'gap-tight',
                 )}
-                aria-label="Open command palette"
+                aria-label={tn('openCommandPalette')}
                 data-testid="sidebar-search-anchor"
             >
                 <svg
@@ -356,6 +356,7 @@ interface MobileDrawerProps {
 
 export function MobileDrawer({ open, onClose, children }: MobileDrawerProps) {
     const pathname = usePathname();
+    const tn = useTranslations('nav');
 
     // Close on route change (always close to avoid stale open state)
     useEffect(() => {
@@ -421,7 +422,7 @@ export function MobileDrawer({ open, onClose, children }: MobileDrawerProps) {
                 `}
                 role="dialog"
                 aria-modal="true"
-                aria-label="Navigation menu"
+                aria-label={tn('navigationMenu')}
                 data-testid="nav-drawer"
                 data-open={open ? 'true' : 'false'}
             >
@@ -432,7 +433,7 @@ export function MobileDrawer({ open, onClose, children }: MobileDrawerProps) {
                     type="button"
                     className="absolute top-3 right-3 p-2 rounded-lg text-content-muted hover:text-content-emphasis hover:bg-bg-muted transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                     onClick={onClose}
-                    aria-label="Close navigation"
+                    aria-label={tn('closeNavigation')}
                     data-testid="nav-drawer-close"
                 >
                     <X className="w-5 h-5" />
