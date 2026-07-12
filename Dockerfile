@@ -29,6 +29,12 @@ RUN npx prisma generate
 # blocked by script-src-elem. See docs/implementation-notes/2026-06-05-csp-webpack-bundler.md.
 ENV SKIP_ENV_VALIDATION=1
 ENV NEXT_TELEMETRY_DISABLED=1
+# The in-container `next build` OOM'd (JS heap) once the app grew — the PR
+# CI Build job already runs with --max-old-space-size=6144, but the
+# Dockerfile build had no heap bump, so the GHCR image publish (main-only)
+# started failing and prod stopped receiving new images. Match CI headroom
+# (runners have 16 GB) for both the Next build and the worker bundle.
+ENV NODE_OPTIONS="--max-old-space-size=8192"
 RUN npx next build --webpack
 
 # Build the standalone BullMQ worker + scheduler bundles. esbuild is
