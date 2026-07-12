@@ -428,13 +428,16 @@ jobs:
           npx jest --coverage --forceExit --runInBand \
             --coverageThreshold "$(cat jest.thresholds.json)"
 
+      # Only kept for post-mortem on a RED run — the threshold gate above
+      # already ran inline, so a green run's coverage HTML is never read.
+      # Gating on failure (was `always`) stops per-PR storage creep.
       - name: Upload coverage report
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: coverage/
-          retention-days: 14
+          retention-days: 7
         continue-on-error: true
 
   # ═══════════════════════════════════════════════════════════════
@@ -828,15 +831,16 @@ jobs:
             kill "$(cat /tmp/app.pid)" 2>/dev/null || true
           fi
 
+      # Post-mortem only — a passing smoke run's logs are never read.
       - name: Upload k6 + app logs
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: load-smoke-results-${{ github.run_id }}
           path: |
             tests/load/results/*.json
             /tmp/app.log
-          retention-days: 14
+          retention-days: 7
         continue-on-error: true
 
   # ═══════════════════════════════════════════════════════════════

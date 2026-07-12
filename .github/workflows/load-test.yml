@@ -196,4 +196,4 @@ jobs:
           path: |
             tests/load/results/*.json
             /tmp/app.log
-          retention-days: 30
+          retention-days: 7
