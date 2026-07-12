@@ -1,19 +1,22 @@
 'use client';
 
 /* RQ-5 — Risk hierarchy: org trees with recursive ALE roll-up + treemap. */
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { InfoTooltip } from '@/components/ui/tooltip';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useMoneyFormatter } from '@/lib/tenant-context-provider';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTranslations } from 'next-intl';
 import { RiskPicker } from '../_shared/RiskPicker';
+import { AnalyticsState } from '../_shared/AnalyticsState';
 
 interface Agg { nodeId: string; nodeName: string; riskCount: number; totalAle: number; children: Agg[] }
 
@@ -57,7 +60,8 @@ export default function RiskHierarchyPage() {
     const money = useMoneyFormatter();
     const tenantHref = useTenantHref();
     const [type, setType] = useState('BUSINESS_UNIT');
-    const [treemap, setTreemap] = useState<Agg[]>([]);
+    const treeQuery = useTenantSWR<{ treemap: Agg[] }>(`/risks/hierarchy?type=${type}`);
+    const treemap = treeQuery.data?.treemap ?? [];
     const [name, setName] = useState('');
     const [busy, setBusy] = useState(false);
     // P2 — build a real tree (parentId) and attach risks to nodes so the
@@ -68,10 +72,7 @@ export default function RiskHierarchyPage() {
     const [linkBusy, setLinkBusy] = useState(false);
     const [linkMsg, setLinkMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
-    const load = useCallback(async () => {
-        try { const r = await fetch(apiUrl(`/risks/hierarchy?type=${type}`)); if (r.ok) setTreemap((await r.json()).treemap); } catch { /* ignore */ }
-    }, [apiUrl, type]);
-    useEffect(() => { void load(); }, [load]);
+    const load = () => treeQuery.mutate();
 
     const nodeOptions = flattenNodes(treemap);
 
@@ -147,19 +148,26 @@ export default function RiskHierarchyPage() {
 
             <Card className="space-y-default p-6">
                 <div className="flex items-center justify-between">
-                    <Heading level={2}>{t('hierarchy.rollup')}</Heading>
+                    <div className="flex items-center gap-tight">
+                        <Heading level={2}>{t('hierarchy.rollup')}</Heading>
+                        <InfoTooltip title={t('hierarchy.conceptTitle')} content={t('hierarchy.conceptHelp')} />
+                    </div>
                     <span className="text-sm text-content-muted">{t('hierarchy.totalAleYr', { money: money(total) })}</span>
                 </div>
-                {treemap.length === 0 ? (
-                    <p className="text-sm text-content-muted">{t('hierarchy.empty')}</p>
-                ) : (
+                <AnalyticsState
+                    isLoading={treeQuery.isLoading}
+                    error={treeQuery.error}
+                    isEmpty={treemap.length === 0}
+                    emptyText={t('hierarchy.empty')}
+                    errorText={t('hierarchy.loadError')}
+                >
                     <div>
                         <div className="flex items-center gap-default border-b border-border-subtle pb-tight text-xs text-content-subtle">
                             <span className="w-full sm:w-48">{t('hierarchy.colNode')}</span><span className="flex-1">{t('hierarchy.colAleShare')}</span><span className="w-24 sm:w-28 text-right">{t('hierarchy.colTotalAle')}</span><span className="w-16 text-right">{t('hierarchy.colRisks')}</span>
                         </div>
                         {treemap.map((n) => <TreeRow key={n.nodeId} node={n} depth={0} max={max} />)}
                     </div>
-                )}
+                </AnalyticsState>
             </Card>
         </div>
     );

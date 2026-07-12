@@ -1,19 +1,22 @@
 'use client';
 
 /* RQ-6 — Key Risk Indicators: RAG cards + sparkline + record reading. */
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { InfoTooltip } from '@/components/ui/tooltip';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTranslations } from 'next-intl';
 import { RiskPicker } from '../_shared/RiskPicker';
+import { AnalyticsState } from '../_shared/AnalyticsState';
 
 interface Kri {
     id: string; name: string; unit: string | null; direction: string; greenMax: number | null; amberMax: number | null;
@@ -34,7 +37,8 @@ export default function KriPage() {
     const t = useTranslations('risks');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
-    const [kris, setKris] = useState<Kri[]>([]);
+    const kriQuery = useTenantSWR<{ kris: Kri[] }>('/risks/kri');
+    const kris = kriQuery.data?.kris ?? [];
     const [name, setName] = useState('');
     const [greenMax, setGreenMax] = useState('');
     const [amberMax, setAmberMax] = useState('');
@@ -49,11 +53,6 @@ export default function KriPage() {
         { value: 'LOWER_IS_WORSE', label: t('kri.dirLowerWorse') },
     ];
 
-    const load = useCallback(async () => {
-        try { const r = await fetch(apiUrl('/risks/kri')); if (r.ok) setKris((await r.json()).kris); } catch { /* ignore */ }
-    }, [apiUrl]);
-    useEffect(() => { void load(); }, [load]);
-
     const create = async () => {
         if (!name.trim()) return;
         setBusy(true);
@@ -62,7 +61,7 @@ export default function KriPage() {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name: name.trim(), greenMax: greenMax.trim() ? Number(greenMax) : null, amberMax: amberMax.trim() ? Number(amberMax) : null, riskId, direction }),
             });
-            setName(''); setGreenMax(''); setAmberMax(''); setRiskId(null); setDirection('HIGHER_IS_WORSE'); await load();
+            setName(''); setGreenMax(''); setAmberMax(''); setRiskId(null); setDirection('HIGHER_IS_WORSE'); await kriQuery.mutate();
         } finally { setBusy(false); }
     };
 
@@ -70,14 +69,17 @@ export default function KriPage() {
         const value = Number(raw);
         if (!isFinite(value)) return;
         await fetch(apiUrl(`/risks/kri/${kriId}/readings`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value }) });
-        await load();
+        await kriQuery.mutate();
     };
 
     return (
         <div className="space-y-section">
             <BackAffordance />
             <PageBreadcrumbs items={[{ label: t('breadcrumbRoot'), href: tenantHref('/risks') }, { label: t('kri.breadcrumb') }]} />
-            <Heading level={1}>{t('kri.title')}</Heading>
+            <div className="flex items-center gap-tight">
+                <Heading level={1}>{t('kri.title')}</Heading>
+                <InfoTooltip title={t('kri.conceptTitle')} content={t('kri.conceptHelp')} side="right" />
+            </div>
 
             <Card className="space-y-default p-6">
                 <Heading level={2}>{t('kri.newKri')}</Heading>
@@ -97,9 +99,13 @@ export default function KriPage() {
                 </div>
             </Card>
 
-            {kris.length === 0 ? (
-                <Card className="p-6"><p className="text-sm text-content-muted">{t('kri.empty')}</p></Card>
-            ) : (
+            <AnalyticsState
+                isLoading={kriQuery.isLoading}
+                error={kriQuery.error}
+                isEmpty={kris.length === 0}
+                emptyText={t('kri.empty')}
+                errorText={t('kri.loadError')}
+            >
                 <div className="grid grid-cols-1 gap-default md:grid-cols-2">
                     {kris.map((k) => (
                         <Card key={k.id} className="space-y-tight p-6" data-testid="kri-card">
@@ -132,7 +138,7 @@ export default function KriPage() {
                         </Card>
                     ))}
                 </div>
-            )}
+            </AnalyticsState>
         </div>
     );
 }
