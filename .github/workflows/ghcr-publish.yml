@@ -30,12 +30,23 @@ env:
 
 jobs:
     build-push:
-        runs-on: ubuntu-latest
-        timeout-minutes: 20
+        # Match the CI "Docker Build" job's robustness — the image build
+        # (npm ci + next build + worker bundle + layers) outgrew a plain
+        # ubuntu-latest with a 20-minute budget once the app grew.
+        runs-on: ${{ vars.LARGE_RUNNER || 'ubuntu-latest' }}
+        timeout-minutes: 40
 
         steps:
             - name: Checkout
               uses: actions/checkout@v7
+
+            # Reclaim ~25-30 GB of preinstalled toolchains so the container
+            # build has disk headroom (mirrors the CI Docker Build job).
+            - name: Free runner disk space (issue #1005)
+              run: |
+                  sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+                  sudo docker image prune --all --force 2>/dev/null || true
+                  df -h /
 
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v4
@@ -60,13 +71,38 @@ jobs:
                   flavor: |
                       latest=false
 
+            # The GHA buildx cache backend (type=gha) intermittently 404s on
+            # IMPORT — Azure GC's a layer blob the manifest still references,
+            # so buildkit aborts with "BlobNotFound" even though the image is
+            # fine. Same two-layer hardening as the CI Docker Build job:
+            #   - `cache-to: …,ignore-error=true` — a failed EXPORT never fails.
+            #   - `continue-on-error` here + the cacheless retry below — if the
+            #     cache IMPORT 404s, rebuild without cache-from. A genuine
+            #     build error still fails (the retry fails too).
             - name: Build and push
+              id: build
               uses: docker/build-push-action@v7
+              continue-on-error: true
               with:
                   context: .
                   push: true
                   tags: ${{ steps.meta.outputs.tags }}
                   labels: ${{ steps.meta.outputs.labels }}
                   cache-from: type=gha
-                  cache-to: type=gha,mode=max
+                  cache-to: type=gha,mode=max,ignore-error=true
+                  platforms: linux/amd64
+
+            # Cacheless retry — only when the cached build above failed (cache
+            # 404 or any other error). No cache-from, so a stale cache
+            # reference can't abort it; if THIS fails too it's a real build
+            # error and the job fails as it should.
+            - name: Build and push (cacheless retry on cache flake)
+              if: steps.build.outcome == 'failure'
+              uses: docker/build-push-action@v7
+              with:
+                  context: .
+                  push: true
+                  tags: ${{ steps.meta.outputs.tags }}
+                  labels: ${{ steps.meta.outputs.labels }}
+                  cache-to: type=gha,mode=max,ignore-error=true
                   platforms: linux/amd64
