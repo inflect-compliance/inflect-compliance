@@ -140,7 +140,7 @@ export default function RiskDetailPage() {
     // so the required Owner combobox was unfillable and no plan could be
     // created. The roster is already loaded here — map it through.
     const treatmentOwnerChoices = useMemo(
-        () => (riskMembers ?? []).map((m) => ({ userId: m.id, label: m.name ?? m.email })),
+        () => (riskMembers ?? []).map((m) => ({ userId: m.id, label: m.name ?? m.email ?? m.id })),
         [riskMembers],
     );
 
