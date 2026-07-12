@@ -6,12 +6,14 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { useTranslations } from 'next-intl';
+import { RiskPicker } from '../_shared/RiskPicker';
 
 interface Kri {
     id: string; name: string; unit: string | null; direction: string; greenMax: number | null; amberMax: number | null;
@@ -36,7 +38,16 @@ export default function KriPage() {
     const [name, setName] = useState('');
     const [greenMax, setGreenMax] = useState('');
     const [amberMax, setAmberMax] = useState('');
+    // P2 — link the KRI to a Risk (unlocks the breach→re-assess loop) and
+    // declare which direction is bad; the backend already accepts both.
+    const [riskId, setRiskId] = useState<string | null>(null);
+    const [direction, setDirection] = useState<'HIGHER_IS_WORSE' | 'LOWER_IS_WORSE'>('HIGHER_IS_WORSE');
     const [busy, setBusy] = useState(false);
+
+    const DIRECTION_OPTIONS: ComboboxOption[] = [
+        { value: 'HIGHER_IS_WORSE', label: t('kri.dirHigherWorse') },
+        { value: 'LOWER_IS_WORSE', label: t('kri.dirLowerWorse') },
+    ];
 
     const load = useCallback(async () => {
         try { const r = await fetch(apiUrl('/risks/kri')); if (r.ok) setKris((await r.json()).kris); } catch { /* ignore */ }
@@ -49,9 +60,9 @@ export default function KriPage() {
         try {
             await fetch(apiUrl('/risks/kri'), {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name.trim(), greenMax: greenMax.trim() ? Number(greenMax) : null, amberMax: amberMax.trim() ? Number(amberMax) : null }),
+                body: JSON.stringify({ name: name.trim(), greenMax: greenMax.trim() ? Number(greenMax) : null, amberMax: amberMax.trim() ? Number(amberMax) : null, riskId, direction }),
             });
-            setName(''); setGreenMax(''); setAmberMax(''); await load();
+            setName(''); setGreenMax(''); setAmberMax(''); setRiskId(null); setDirection('HIGHER_IS_WORSE'); await load();
         } finally { setBusy(false); }
     };
 
@@ -74,6 +85,14 @@ export default function KriPage() {
                     <label className="block flex-1"><span className="text-xs text-content-muted">{t('kri.name')}</span><Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('kri.namePlaceholder')} /></label>
                     <label className="block w-24 sm:w-32"><span className="text-xs text-content-muted">{t('kri.greenMax')}</span><Input type="text" inputMode="decimal" value={greenMax} onChange={(e) => setGreenMax(e.target.value)} /></label>
                     <label className="block w-24 sm:w-32"><span className="text-xs text-content-muted">{t('kri.amberMax')}</span><Input type="text" inputMode="decimal" value={amberMax} onChange={(e) => setAmberMax(e.target.value)} /></label>
+                </div>
+                <div className="flex flex-wrap items-end gap-default">
+                    <label className="block flex-1"><span className="text-xs text-content-muted">{t('kri.riskLabel')}</span>
+                        <RiskPicker id="kri-risk-picker" value={riskId} onChange={setRiskId} allowNone noneLabel={t('kri.riskNone')} placeholder={t('kri.riskPlaceholder')} />
+                    </label>
+                    <label className="block w-full sm:w-48"><span className="text-xs text-content-muted">{t('kri.directionLabel')}</span>
+                        <Combobox id="kri-direction" options={DIRECTION_OPTIONS} selected={DIRECTION_OPTIONS.find((o) => o.value === direction) ?? null} setSelected={(opt) => { if (opt) setDirection(opt.value as 'HIGHER_IS_WORSE' | 'LOWER_IS_WORSE'); }} />
+                    </label>
                     <Button variant="primary" onClick={create} disabled={busy || !name.trim()}>{t('kri.create')}</Button>
                 </div>
             </Card>

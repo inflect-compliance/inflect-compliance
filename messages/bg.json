@@ -1027,7 +1027,16 @@
             "colAleShare": "Дял от ALE",
             "colTotalAle": "Общо ALE",
             "colRisks": "Рискове",
-            "aleShareAria": "Дял от ALE на {name}"
+            "aleShareAria": "Дял от ALE на {name}",
+            "parentLabel": "Родителски възел",
+            "parentNone": "Корен (без родител)",
+            "linkRiskLabel": "Прикачи риск",
+            "linkRiskPlaceholder": "Изберете риск…",
+            "linkNodeLabel": "Към възел",
+            "linkNodePlaceholder": "Изберете възел…",
+            "linkRisk": "Прикачи",
+            "linkOk": "Рискът е прикачен към възела.",
+            "linkFailed": "Неуспешно прикачване на риска."
         },
         "kri": {
             "breadcrumb": "KRI",
@@ -1046,7 +1055,13 @@
             "reassess": "Преоцени свързания риск →",
             "recordReading": "Запиши отчитане",
             "valuePlaceholder": "стойност",
-            "add": "Добави"
+            "add": "Добави",
+            "riskLabel": "Свързан риск",
+            "riskNone": "Без свързан риск",
+            "riskPlaceholder": "Прикачи към риск…",
+            "directionLabel": "Посока",
+            "dirHigherWorse": "По-високо е по-лошо",
+            "dirLowerWorse": "По-ниско е по-лошо"
         },
         "lossEvents": {
             "breadcrumb": "Събития на загуба",
@@ -1074,7 +1089,10 @@
             "saveFailed": "Записването е неуспешно.",
             "register": "Регистър",
             "emptyRegister": "Все още няма събития на загуба.",
-            "remove": "Премахни"
+            "remove": "Премахни",
+            "riskLabel": "Отнеси към риск",
+            "riskNone": "Портфолио (без риск)",
+            "riskPlaceholder": "Отнеси към риск…"
         },
         "reports": {
             "breadcrumb": "Отчети",
@@ -1109,7 +1127,27 @@
             "var95": "VaR-95",
             "var99": "VaR-99",
             "roiLabel": "ROI",
-            "perRiskImpact": "Влияние по риск"
+            "perRiskImpact": "Влияние по риск",
+            "overridesTitle": "Промени по риск (какво-ако)",
+            "overrideRisk": "Риск",
+            "overrideRiskPlaceholder": "Изберете риск…",
+            "overrideField": "FAIR поле",
+            "overrideValue": "Нова стойност",
+            "overrideValuePlaceholder": "напр. 50000",
+            "addOverride": "Добави промяна",
+            "removeOverride": "Премахни",
+            "field_threatEventFrequency": "Честота на заплахи (/год)",
+            "field_contactFrequency": "Честота на контакт (/год)",
+            "field_probabilityOfAction": "Вероятност за действие",
+            "field_vulnerabilityProbability": "Вероятност за уязвимост",
+            "field_threatCapability": "Способност на заплахата",
+            "field_controlStrength": "Сила на контрола",
+            "field_primaryLossMagnitude": "Първична загуба ($)",
+            "field_productivityLoss": "Загуба на продуктивност ($)",
+            "field_responseCost": "Разходи за реакция ($)",
+            "field_replacementCost": "Разходи за замяна ($)",
+            "field_secondaryLossEventFrequency": "Честота на вторични загуби",
+            "field_secondaryLossMagnitude": "Вторична загуба ($)"
         },
         "breadcrumbRoot": "Рискове",
         "filters": {

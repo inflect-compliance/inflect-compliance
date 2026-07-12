@@ -9,6 +9,7 @@ import { DB_URL, DB_AVAILABLE } from './db-helper';
 import { hashForLookup } from '@/lib/security/encryption';
 import { makeRequestContext } from '../helpers/make-context';
 import { createScenario, simulateScenario, archiveScenario } from '@/app-layer/usecases/risk-scenario';
+import { runSimulation, getLatestSimulation } from '@/app-layer/usecases/monte-carlo';
 
 const globalPrisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: DB_URL }) });
 const describeFn = DB_AVAILABLE ? describe : describe.skip;
@@ -66,6 +67,30 @@ describeFn('RQ-4 — scenario simulation (integration)', () => {
         const run = await globalPrisma.riskSimulationRun.findUniqueOrThrow({ where: { id: reloaded.resultRunId! } });
         expect(run.triggeredBy).toBe('scenario');
         expect(run.status).toBe('COMPLETED');
+    });
+
+    it('P2 — a scenario run never becomes the portfolio latest simulation', async () => {
+        // Baseline (manual) run first, then a NEWER scenario run.
+        const baseline = await runSimulation(ctx, { iterations: 500 });
+        const scenario = await createScenario(ctx, {
+            name: 'Scope', overrides: [{ riskId, field: 'primaryLossMagnitude', newValue: 10_000 }],
+        });
+        await simulateScenario(ctx, scenario.id);
+
+        // The dashboard's latest simulation must be the BASELINE, never the
+        // (newer) scenario run — running a what-if can't move the dashboard.
+        const latest = await getLatestSimulation(ctx);
+        expect(latest).not.toBeNull();
+        expect(latest!.triggeredBy).not.toBe('scenario');
+        expect(latest!.id).toBe(baseline.runId);
+        expect(latest!.portfolioP80).not.toBeNull();
+
+        // And the scenario run itself now persists P80 (belt-and-braces).
+        const scnRun = await globalPrisma.riskSimulationRun.findFirstOrThrow({
+            where: { tenantId: TENANT_ID, triggeredBy: 'scenario' },
+            orderBy: { createdAt: 'desc' },
+        });
+        expect(scnRun.portfolioP80).not.toBeNull();
     });
 
     it('an archived scenario cannot be re-simulated', async () => {

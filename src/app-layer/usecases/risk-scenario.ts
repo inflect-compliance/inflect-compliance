@@ -231,6 +231,10 @@ export async function simulateScenario(ctx: RequestContext, scenarioId: string):
             data: {
                 tenantId: ctx.tenantId, triggeredBy: 'scenario', createdByUserId: ctx.userId, iterations: scenarioResult.iterationsRun, seed,
                 portfolioMean: scenarioResult.portfolioAle.mean, portfolioP50: scenarioResult.portfolioAle.median,
+                // P2 — persist P80 like the baseline path (was omitted, which
+                // is what blanked the dashboard when a scenario run leaked in
+                // as "latest"; now belt-and-braces with the scope fix).
+                portfolioP80: scenarioResult.portfolioAle.p80,
                 portfolioP90: scenarioResult.portfolioAle.p90, portfolioP95: scenarioResult.portfolioAle.p95,
                 portfolioP99: scenarioResult.portfolioAle.p99, portfolioStdDev: scenarioResult.portfolioAle.stdDev,
                 lecPointsJson: scenarioResult.lossExceedanceCurve as unknown as Prisma.InputJsonValue,

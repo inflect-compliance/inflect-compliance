@@ -1027,7 +1027,16 @@
             "colAleShare": "ALE share",
             "colTotalAle": "Total ALE",
             "colRisks": "Risks",
-            "aleShareAria": "{name} ALE share"
+            "aleShareAria": "{name} ALE share",
+            "parentLabel": "Parent node",
+            "parentNone": "Root (no parent)",
+            "linkRiskLabel": "Attach risk",
+            "linkRiskPlaceholder": "Pick a risk…",
+            "linkNodeLabel": "To node",
+            "linkNodePlaceholder": "Pick a node…",
+            "linkRisk": "Attach",
+            "linkOk": "Risk attached to node.",
+            "linkFailed": "Could not attach the risk."
         },
         "kri": {
             "breadcrumb": "KRIs",
@@ -1046,7 +1055,13 @@
             "reassess": "Re-assess the linked risk →",
             "recordReading": "Record reading",
             "valuePlaceholder": "value",
-            "add": "Add"
+            "add": "Add",
+            "riskLabel": "Linked risk",
+            "riskNone": "No linked risk",
+            "riskPlaceholder": "Attach to a risk…",
+            "directionLabel": "Direction",
+            "dirHigherWorse": "Higher is worse",
+            "dirLowerWorse": "Lower is worse"
         },
         "lossEvents": {
             "breadcrumb": "Loss events",
@@ -1074,7 +1089,10 @@
             "saveFailed": "Save failed.",
             "register": "Register",
             "emptyRegister": "No loss events yet.",
-            "remove": "Remove"
+            "remove": "Remove",
+            "riskLabel": "Attribute to risk",
+            "riskNone": "Portfolio (no risk)",
+            "riskPlaceholder": "Attribute to a risk…"
         },
         "reports": {
             "breadcrumb": "Reports",
@@ -1109,7 +1127,27 @@
             "var95": "VaR-95",
             "var99": "VaR-99",
             "roiLabel": "ROI",
-            "perRiskImpact": "Per-risk impact"
+            "perRiskImpact": "Per-risk impact",
+            "overridesTitle": "Per-risk overrides (what-if)",
+            "overrideRisk": "Risk",
+            "overrideRiskPlaceholder": "Pick a risk…",
+            "overrideField": "FAIR field",
+            "overrideValue": "New value",
+            "overrideValuePlaceholder": "e.g. 50000",
+            "addOverride": "Add override",
+            "removeOverride": "Remove",
+            "field_threatEventFrequency": "Threat event frequency (/yr)",
+            "field_contactFrequency": "Contact frequency (/yr)",
+            "field_probabilityOfAction": "Probability of action",
+            "field_vulnerabilityProbability": "Vulnerability probability",
+            "field_threatCapability": "Threat capability",
+            "field_controlStrength": "Control strength",
+            "field_primaryLossMagnitude": "Primary loss ($)",
+            "field_productivityLoss": "Productivity loss ($)",
+            "field_responseCost": "Response cost ($)",
+            "field_replacementCost": "Replacement cost ($)",
+            "field_secondaryLossEventFrequency": "Secondary loss frequency",
+            "field_secondaryLossMagnitude": "Secondary loss ($)"
         },
         "breadcrumbRoot": "Risks",
         "filters": {

@@ -29,6 +29,7 @@ import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useMoneyFormatter } from '@/lib/tenant-context-provider';
 import { formatDate } from '@/lib/format-date';
 import { useTranslations } from 'next-intl';
+import { RiskPicker } from '../_shared/RiskPicker';
 
 type Source = 'USER' | 'FINDING' | 'INCIDENT';
 interface Row {
@@ -82,6 +83,11 @@ export default function LossEventsPage() {
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [source, setSource] = useState<Source>('USER');
+    // P2 — attribute the loss to a Risk so byRisk aggregation is real
+    // (null = portfolio-attributed). Note: actuals remain a SCOREBOARD —
+    // they are deliberately NOT written back to calibrate the FAIR ALE
+    // (predictions live with the simulation; see loss-event.ts header).
+    const [riskId, setRiskId] = useState<string | null>(null);
 
     const load = useCallback(async () => {
         try {
@@ -110,11 +116,12 @@ export default function LossEventsPage() {
                     amount: amt,
                     description: description.trim() || null,
                     source,
+                    riskId,
                 }),
             });
             if (res.ok) {
                 setMsg(t('lossEvents.lossRecorded')); setMsgOk(true);
-                setAmount(''); setDescription('');
+                setAmount(''); setDescription(''); setRiskId(null);
                 await load();
             } else {
                 setMsg(t('lossEvents.saveFailed')); setMsgOk(false);
@@ -226,6 +233,10 @@ export default function LossEventsPage() {
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder={t('lossEvents.whatHappenedPlaceholder')}
                         />
+                    </label>
+                    <label className="block w-full sm:w-48">
+                        <span className="text-xs text-content-muted">{t('lossEvents.riskLabel')}</span>
+                        <RiskPicker id="loss-event-risk-picker" value={riskId} onChange={setRiskId} allowNone noneLabel={t('lossEvents.riskNone')} placeholder={t('lossEvents.riskPlaceholder')} />
                     </label>
                     <div className="flex gap-tight">
                         {(['USER', 'FINDING', 'INCIDENT'] as Source[]).map((s) => (
