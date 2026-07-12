@@ -72,11 +72,14 @@ jobs:
         # budget gate is live here (it skips in the no-build jest job).
         run: npx jest tests/guardrails/bundle-size-budget.test.ts --no-coverage
 
+      # Only needed to inspect what grew when a budget FAILS — the
+      # per-route budget gate above already runs inline, so the HTML is
+      # never read on a green run. Gate on failure to stop storage creep.
       - name: Upload bundle report
         uses: actions/upload-artifact@v7
-        if: always()
+        if: failure()
         with:
           name: bundle-analysis
           path: .next/analyze/*.html
           if-no-files-found: warn
-          retention-days: 30
+          retention-days: 7
