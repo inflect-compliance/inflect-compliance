@@ -27,8 +27,11 @@ describe('Epic G-7 — treatment-plan API + UI wiring', () => {
         'src/app/api/t/[tenantSlug]/risks/[id]/treatment-plans/[planId]/complete/route.ts',
     );
     const card = read('src/components/RiskTreatmentPlanCard.tsx');
-    const detailPage = read(
-        'src/app/t/[tenantSlug]/(app)/risks/[riskId]/page.tsx',
+    // P1 — the treatment plan card moved from the detail page (Overview) into
+    // the guided assessment panel (Step 4), so the whole lifecycle lives in
+    // one narrated path.
+    const assessmentPanel = read(
+        'src/app/t/[tenantSlug]/(app)/risks/[riskId]/RiskAssessmentPanel.tsx',
     );
 
     // ── Route delegates ─────────────────────────────────────────────
@@ -105,12 +108,14 @@ describe('Epic G-7 — treatment-plan API + UI wiring', () => {
         expect(card).toContain('/complete');
     });
 
-    // ── Risk detail page mounts the card ───────────────────────────
+    // ── Guided assessment (Step 4) mounts the card ─────────────────
 
-    it('risk detail page imports and mounts the card with permissions', () => {
-        expect(detailPage).toContain('RiskTreatmentPlanCard');
-        expect(detailPage).toMatch(/canWrite=\{canWrite\}/);
-        expect(detailPage).toMatch(/canAdmin=\{tenant\.permissions\.canAdmin\}/);
-        expect(detailPage).toMatch(/tenantSlug=\{tenant\.tenantSlug\}/);
+    it('the assessment panel imports and mounts the card with permissions + a real owner roster', () => {
+        expect(assessmentPanel).toContain('RiskTreatmentPlanCard');
+        expect(assessmentPanel).toMatch(/canWrite=\{canWrite\}/);
+        expect(assessmentPanel).toMatch(/canAdmin=\{canAdmin\}/);
+        expect(assessmentPanel).toMatch(/tenantSlug=\{tenantSlug\}/);
+        // P1 — the owner CTA is now fillable (was ownerChoices={[]}).
+        expect(assessmentPanel).toMatch(/ownerChoices=\{ownerChoices\}/);
     });
 });

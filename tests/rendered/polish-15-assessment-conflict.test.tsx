@@ -52,12 +52,16 @@ const SUGGESTION = {
 const BASE: AssessmentRisk = {
     likelihood: 4, impact: 5, inherentScore: 20,
     residualLikelihood: null, residualImpact: null, residualScore: null,
+    treatment: null, nextReviewAt: null, status: 'OPEN',
 };
 
 function mockFetch() {
     return jest.fn(async (url: string, init?: RequestInit) => {
         if (url.includes('/risk-matrix-config')) return { ok: true, json: async () => MATRIX };
         if (url.includes('/residual-suggestion')) return { ok: true, json: async () => SUGGESTION };
+        if (url.includes('/kri-breaches')) return { ok: true, json: async () => ({ breaches: [] }) };
+        // P1 — Step 4 mounts the treatment-plan card, which lists plans.
+        if (url.includes('/treatment-plans')) return { ok: true, json: async () => ({ rows: [] }) };
         if (init?.method === 'PUT') return { ok: true, json: async () => ({ success: true }) };
         throw new Error(`Unexpected fetch: ${url}`);
     });
@@ -68,12 +72,16 @@ describe('assessment panel — save-conflict warning', () => {
         global.fetch = mockFetch() as unknown as typeof fetch;
         render(
             <RiskAssessmentPanel
+                tenantSlug="t-1"
                 riskId="r-1"
                 risk={BASE}
                 canWrite
+                canAdmin={false}
+                ownerChoices={[]}
                 onRiskUpdated={() => {}}
                 onQuantify={() => {}}
                 onLinkControls={() => {}}
+                onStatusChange={() => {}}
             />,
         );
         await waitFor(() =>
@@ -105,12 +113,16 @@ describe('assessment panel — save-conflict warning', () => {
         global.fetch = mockFetch() as unknown as typeof fetch;
         render(
             <RiskAssessmentPanel
+                tenantSlug="t-1"
                 riskId="r-1"
                 risk={BASE}
                 canWrite
+                canAdmin={false}
+                ownerChoices={[]}
                 onRiskUpdated={() => {}}
                 onQuantify={() => {}}
                 onLinkControls={() => {}}
+                onStatusChange={() => {}}
             />,
         );
         await waitFor(() =>

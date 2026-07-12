@@ -24,6 +24,7 @@ import { TruncationBanner } from '@/components/ui/TruncationBanner';
 // import — modal is small, the page bundle cost is negligible, and the
 // E2E suite becomes deterministic.
 import { NewRiskModal } from './NewRiskModal';
+import { canonicalTreatmentLabel } from './_shared/risk-options';
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
@@ -438,10 +439,13 @@ function RisksPageInner({
             asset: (r) => r.asset?.name || '—',
             inherentScore: (r) => r.inherentScore || 0,
             ale: (r) => riskAle(r) ?? null,
-            treatment: (r) => r.treatment || t.untreated,
+            // P1 — canonical treatment vocabulary (Mitigate/Accept/…) so the
+            // list reads the same as the detail page + reports.
+            treatment: (r) =>
+                canonicalTreatmentLabel((k) => tx(k as Parameters<typeof tx>[0]), r.treatment) ?? t.untreated,
             status: (r) => r.status ?? 'OPEN',
         }),
-        [t],
+        [t, tx],
     );
     const risks = useMemo(
         () => sortRowsByDisplay(rawRisks, sortAccessors, sortBy, sortOrder),
