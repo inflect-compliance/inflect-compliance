@@ -4,6 +4,7 @@ import { assertCanRead } from '../policies/common';
 import { runInTenantContext } from '@/lib/db-context';
 import { logger } from '@/lib/observability/logger';
 import { traceUsecase } from '@/lib/observability/tracing';
+import { canonicalTreatmentLabelEN } from '@/lib/risk-treatment-vocabulary';
 
 export async function getReports(ctx: RequestContext) {
     assertCanRead(ctx);
@@ -35,7 +36,7 @@ export async function getReports(ctx: RequestContext) {
             likelihood: r.likelihood,
             impact: r.impact,
             score: r.inherentScore,
-            treatment: r.treatment || 'Untreated',
+            treatment: canonicalTreatmentLabelEN(r.treatment) || 'Untreated',
             owner: r.treatmentOwner || 'Unassigned',
             targetDate: r.targetDate,
             controls: r.controls.map((rc: { control: { annexId: string | null; name: string } }) => rc.control.annexId || rc.control.name).join(', '),

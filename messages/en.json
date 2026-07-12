@@ -657,7 +657,22 @@
             "failedSave": "Failed to save",
             "failedAccept": "Failed to accept",
             "controlsUnlinked": "No controls linked yet.",
-            "residualNotDerivable": "No derivable residual — link controls with an effectiveness signal."
+            "residualNotDerivable": "No derivable residual — link controls with an effectiveness signal.",
+            "step4": "Step 4 — Treat & monitor",
+            "treatMonitorIntro": "Decide how to treat the residual risk, set a review cadence, and track the plan — without leaving the assessment.",
+            "treatDecisionLabel": "Treatment decision",
+            "treatDecisionHelp": "How you'll handle the residual risk. Seeds the strategy for the treatment plan below.",
+            "reviewCadenceLabel": "Review cadence",
+            "reviewCadenceHelp": "When this risk is next reviewed. Overdue reviews surface on the dashboard.",
+            "saveReviewDate": "Save review date",
+            "guidedStatusTitle": "Workflow status",
+            "currentStatus": "Current: {status}",
+            "applyStatus": "Set {status}",
+            "recommendAccepted": "Recommended: mark this risk Accepted.",
+            "recommendMitigating": "Recommended: mark this risk Mitigating while treatment is in flight.",
+            "recommendAssessFirst": "Assess the residual risk to advance the workflow status.",
+            "recommendDecideFirst": "Choose a treatment decision to advance the workflow status.",
+            "statusAutoNote": "Status finalizes automatically when the treatment plan completes."
         },
         "searchPlaceholder": "Search risks…",
         "aleTitle": "Annualised loss expectancy",
@@ -806,7 +821,9 @@
             "treatmentNotes": "Treatment Notes",
             "created": "Created",
             "saveFailed": "Failed to save ({status})",
-            "statusChangeFailed": "Failed to change status ({status})"
+            "statusChangeFailed": "Failed to change status ({status})",
+            "treatmentMovedHint": "Treatment planning now lives in the guided assessment.",
+            "goToTreatMonitor": "Treat & monitor"
         },
         "edit": {
             "title": "Edit Risk",
@@ -1106,7 +1123,11 @@
             "score": "Risk score",
             "scoreDesc": "Inherent risk score range (0–25 by default).",
             "scorePill": "Score {min}–{max}"
-        }
+        },
+        "treatmentMitigate": "Mitigate",
+        "treatmentAccept": "Accept",
+        "treatmentTransfer": "Transfer",
+        "treatmentAvoid": "Avoid"
     },
     "controls": {
         "title": "Controls Library",

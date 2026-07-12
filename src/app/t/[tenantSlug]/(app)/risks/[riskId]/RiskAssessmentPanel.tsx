@@ -23,13 +23,16 @@
  * narrative, two depths; nothing here duplicates the quant inputs.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { useToast } from '@/components/ui/hooks';
 import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { DatePicker } from '@/components/ui/date-picker';
 import { NumberStepper } from '@/components/ui/number-stepper';
 import { Eyebrow, Heading } from '@/components/ui/typography';
 import { SkeletonCard } from '@/components/ui/skeleton';
@@ -37,8 +40,23 @@ import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 import { calculateRiskScore } from '@/lib/risk-scoring';
 import { resolveBandForScore } from '@/lib/risk-matrix/scoring';
+import {
+    buildRiskTreatmentOptions,
+    type TreatmentDecisionValue,
+} from '../_shared/risk-options';
 import type { RiskMatrixConfigShape } from '@/lib/risk-matrix/types';
 import type { ResidualSuggestionPayload } from '@/app-layer/usecases/risk-residual-suggestion';
+
+// Epic G-7 — the structured treatment plan now lives INSIDE the guided
+// assessment (Step 4), not scattered on the Overview tab. Dynamic-imported
+// so its modal machinery only loads when the assessment tab is opened.
+const RiskTreatmentPlanCard = dynamic(
+    () =>
+        import('@/components/RiskTreatmentPlanCard').then(
+            (m) => m.RiskTreatmentPlanCard,
+        ),
+    { loading: () => <SkeletonCard lines={2} />, ssr: false },
+);
 
 export interface AssessmentRisk {
     likelihood: number;
@@ -54,6 +72,16 @@ export interface AssessmentRisk {
      * FAIR analysis →". Null/undefined → not yet quantified.
      */
     fairAle?: number | null;
+    // P1 — Step 4 (treat & monitor) reads the workflow state so the
+    // guided flow continues directly from residual.
+    treatment: string | null;
+    nextReviewAt: string | null;
+    status: string;
+}
+
+interface OwnerChoice {
+    userId: string;
+    label: string;
 }
 
 function BandChip({ score, config }: { score: number; config: RiskMatrixConfigShape }) {
@@ -80,22 +108,32 @@ function levelLabel(config: RiskMatrixConfigShape, axis: 'likelihood' | 'impact'
 }
 
 export function RiskAssessmentPanel({
+    tenantSlug,
     riskId,
     risk,
     canWrite,
+    canAdmin,
+    ownerChoices,
     onRiskUpdated,
     onQuantify,
     onLinkControls,
+    onStatusChange,
 }: {
+    tenantSlug: string;
     riskId: string;
     risk: AssessmentRisk;
     canWrite: boolean;
+    canAdmin: boolean;
+    /** Tenant roster for the treatment-plan owner picker (Step 4). */
+    ownerChoices: readonly OwnerChoice[];
     /** Parent refetches the risk after any save here. */
     onRiskUpdated: () => void;
     /** Bridge to the Quantification (FAIR) tab. */
     onQuantify: () => void;
     /** Bridge to the Traceability tab (where controls are linked). */
     onLinkControls: () => void;
+    /** Advance the workflow status (PATCH /status), shared with the header. */
+    onStatusChange: (status: string) => void | Promise<void>;
 }) {
     const t = useTranslations('risks');
     const apiUrl = useTenantApiUrl();
@@ -128,6 +166,17 @@ export function RiskAssessmentPanel({
     // conclusion. State lives above the early-returns to keep the
     // hook order stable across loading/loaded transitions.
     const [residualBaselineDirty, setResidualBaselineDirty] = useState(false);
+
+    // Step 4 — treat & monitor draft state.
+    const treatmentOptions: ComboboxOption[] = useMemo(
+        () => buildRiskTreatmentOptions((k) => t(k as Parameters<typeof t>[0])),
+        [t],
+    );
+    const [savingTreatment, setSavingTreatment] = useState(false);
+    const [reviewDate, setReviewDate] = useState<Date | null>(
+        risk.nextReviewAt ? new Date(risk.nextReviewAt) : null,
+    );
+    const [savingReview, setSavingReview] = useState(false);
 
     const loadSuggestion = useCallback(async () => {
         const res = await fetch(apiUrl(`/risks/${riskId}/residual-suggestion`));
@@ -250,6 +299,65 @@ export function RiskAssessmentPanel({
             setSavingResidual(false);
         }
     };
+
+    // Step 4 — persist the treatment decision (writes the enum-valid
+    // TreatmentDecision value; the canonical vocabulary is a label-only
+    // concern). A PUT that carries just `treatment` leaves the score alone.
+    const saveTreatment = async (decision: string) => {
+        setSavingTreatment(true);
+        setError(null);
+        try {
+            const res = await fetch(apiUrl(`/risks/${riskId}`), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ treatment: decision || null }),
+            });
+            if (!res.ok) throw new Error(`Failed to save treatment (${res.status})`);
+            onRiskUpdated();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : t('assessment.failedSave'));
+        } finally {
+            setSavingTreatment(false);
+        }
+    };
+
+    const saveReviewDate = async () => {
+        setSavingReview(true);
+        setError(null);
+        try {
+            const res = await fetch(apiUrl(`/risks/${riskId}`), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nextReviewAt: reviewDate ? reviewDate.toISOString() : null,
+                }),
+            });
+            if (!res.ok) throw new Error(`Failed to save review date (${res.status})`);
+            toast.success(t('assessment.saveReviewDate'));
+            onRiskUpdated();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : t('assessment.failedSave'));
+        } finally {
+            setSavingReview(false);
+        }
+    };
+
+    // Guided status (item 4) — recommend the next workflow status from the
+    // assessment + treatment state, rather than letting the header combobox
+    // float free. Plan COMPLETION still finalizes status server-side
+    // (MITIGATE→MITIGATED, ACCEPT→ACCEPTED, TRANSFER/AVOID→CLOSED); this
+    // covers the in-flight transitions the backend can't infer.
+    const recommendedStatus: { status: string; messageKey: string } | null = (() => {
+        if (risk.residualScore === null) return { status: '', messageKey: 'assessment.recommendAssessFirst' };
+        if (!risk.treatment) return { status: '', messageKey: 'assessment.recommendDecideFirst' };
+        const decision = risk.treatment as TreatmentDecisionValue;
+        if (decision === 'TOLERATE') {
+            return risk.status === 'ACCEPTED' ? null : { status: 'ACCEPTED', messageKey: 'assessment.recommendAccepted' };
+        }
+        // TREAT / TRANSFER / AVOID are in-flight until their plan completes.
+        const inFlight = risk.status === 'MITIGATING' || risk.status === 'MITIGATED' || risk.status === 'CLOSED';
+        return inFlight ? null : { status: 'MITIGATING', messageKey: 'assessment.recommendMitigating' };
+    })();
 
     const participating = suggestion.combined.contributions.filter((c) => c.affects !== null);
     const excluded = suggestion.combined.contributions.filter((c) => c.affects === null);
@@ -507,6 +615,89 @@ export function RiskAssessmentPanel({
                         </div>
                     </div>
                 )}
+            </div>
+
+            {/* ── Step 4 — Treat & monitor ──────────────────────── */}
+            {/* P1 — the lifecycle used to scatter across tabs (treatment
+                decision in the Edit modal, plan on Overview, review date
+                buried). Step 4 continues the narrated path directly from
+                residual: decide → plan → cadence → status, all here. */}
+            <div className={cn(cardVariants(), 'space-y-default')} id="assessment-treat-monitor">
+                <Heading level={3}>{t('assessment.step4')}</Heading>
+                <p className="text-sm text-content-muted">{t('assessment.treatMonitorIntro')}</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-default">
+                    <FormField
+                        label={t('assessment.treatDecisionLabel')}
+                        hint={t('assessment.treatDecisionHelp')}
+                    >
+                        <Combobox
+                            id="treatment-decision-select"
+                            options={treatmentOptions}
+                            selected={treatmentOptions.find((o) => o.value === risk.treatment) ?? null}
+                            setSelected={(opt) => { if (opt) void saveTreatment(opt.value); }}
+                            placeholder={t('assessment.treatDecisionLabel')}
+                            disabled={!canWrite || savingTreatment}
+                        />
+                    </FormField>
+                    <FormField
+                        label={t('assessment.reviewCadenceLabel')}
+                        hint={t('assessment.reviewCadenceHelp')}
+                    >
+                        <div className="flex items-center gap-tight">
+                            <DatePicker value={reviewDate} onChange={setReviewDate} disabled={!canWrite} />
+                            {canWrite && (
+                                <Button
+                                    variant="secondary"
+                                    id="save-review-date-btn"
+                                    onClick={saveReviewDate}
+                                    disabled={savingReview}
+                                >
+                                    {savingReview ? t('saving') : t('assessment.saveReviewDate')}
+                                </Button>
+                            )}
+                        </div>
+                    </FormField>
+                </div>
+
+                {/* Guided workflow status */}
+                <div className="space-y-tight border-t border-border-subtle pt-default" data-testid="guided-status">
+                    <div className="flex items-center justify-between gap-tight">
+                        <Eyebrow>{t('assessment.guidedStatusTitle')}</Eyebrow>
+                        <span className="text-xs text-content-muted">
+                            {t('assessment.currentStatus', { status: risk.status })}
+                        </span>
+                    </div>
+                    {recommendedStatus && (
+                        <div className="flex items-center justify-between gap-tight text-sm">
+                            <p className="text-content-muted">
+                                {t(recommendedStatus.messageKey as Parameters<typeof t>[0])}
+                            </p>
+                            {canWrite && recommendedStatus.status && (
+                                <Button
+                                    variant="secondary"
+                                    id="apply-status-btn"
+                                    onClick={() => onStatusChange(recommendedStatus.status)}
+                                >
+                                    {t('assessment.applyStatus', { status: recommendedStatus.status })}
+                                </Button>
+                            )}
+                        </div>
+                    )}
+                    <p className="text-xs text-content-muted">{t('assessment.statusAutoNote')}</p>
+                </div>
+
+                {/* Structured treatment plan — relocated from Overview so the
+                    entire treatment lifecycle lives in one narrated path. */}
+                <div className="border-t border-border-subtle pt-default">
+                    <RiskTreatmentPlanCard
+                        tenantSlug={tenantSlug}
+                        riskId={riskId}
+                        ownerChoices={ownerChoices}
+                        canWrite={canWrite}
+                        canAdmin={canAdmin}
+                    />
+                </div>
             </div>
 
             {/* ── Quantify bridge ───────────────────────────────── */}

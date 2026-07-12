@@ -22,26 +22,12 @@ import {
     getRiskScoreBand,
 } from '@/app-layer/domain/entity-status-mapping';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
-// Epic G-7 — treatment plan card. Dynamic-imported so the modal +
-// react-query machinery only loads on risks the user actually opens.
-const RiskTreatmentPlanCard = dynamic(
-    () =>
-        import('@/components/RiskTreatmentPlanCard').then(
-            (m) => m.RiskTreatmentPlanCard,
-        ),
-    {
-        loading: () => (
-            <SkeletonCard lines={2} />
-        ),
-        ssr: false,
-    },
-);
 import { Button } from '@/components/ui/button';
 import { Pen2 } from '@/components/ui/icons/nucleo';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { useTenantMembers } from '@/components/ui/user-combobox';
-import { buildRiskTreatmentOptions } from '../_shared/risk-options';
+import { buildRiskTreatmentOptions, canonicalTreatmentLabel } from '../_shared/risk-options';
 import { cn } from '@/lib/cn';
 import { cardVariants } from '@/components/ui/card';
 import { EditRiskModal, type EditRiskForm } from './_modals/EditRiskModal';
@@ -150,6 +136,13 @@ export default function RiskDetailPage() {
     const href = useTenantHref();
     const canWrite = tenant.permissions.canWrite;
     const { data: riskMembers } = useTenantMembers(tenant.tenantSlug);
+    // P1 item 3 — the treatment-plan owner picker was dead (empty roster),
+    // so the required Owner combobox was unfillable and no plan could be
+    // created. The roster is already loaded here — map it through.
+    const treatmentOwnerChoices = useMemo(
+        () => (riskMembers ?? []).map((m) => ({ userId: m.id, label: m.name ?? m.email })),
+        [riskMembers],
+    );
 
     const riskQuery = useTenantSWR<Risk>(`/risks/${riskId}`);
     const risk = riskQuery.data ?? null;
@@ -513,6 +506,7 @@ export default function RiskDetailPage() {
             )}
             {activeTab === 'assessment' && (
                 <RiskAssessmentPanel
+                    tenantSlug={tenant.tenantSlug}
                     riskId={riskId}
                     risk={{
                         likelihood: risk.likelihood,
@@ -523,11 +517,18 @@ export default function RiskDetailPage() {
                         residualScore: risk.residualScore,
                         // RQ3-OB-D — drives the adaptive bridge copy.
                         fairAle: risk.fairAle,
+                        // P1 — Step 4 (treat & monitor) inputs.
+                        treatment: risk.treatment,
+                        nextReviewAt: risk.nextReviewAt,
+                        status: risk.status,
                     }}
                     canWrite={canWrite}
+                    canAdmin={tenant.permissions.canAdmin}
+                    ownerChoices={treatmentOwnerChoices}
                     onRiskUpdated={() => riskQuery.mutate()}
                     onQuantify={() => setActiveTab('quantification')}
                     onLinkControls={() => setActiveTab('traceability')}
+                    onStatusChange={handleStatusChange}
                 />
             )}
             {activeTab === 'quantification' && risk && (
@@ -596,7 +597,10 @@ export default function RiskDetailPage() {
                     </div>
                     <div>
                         <Eyebrow>{t('detail.treatment')}</Eyebrow>
-                        <p className="text-sm">{risk.treatment || t('detail.untreated')}</p>
+                        <p className="text-sm">
+                            {canonicalTreatmentLabel((k) => t(k as Parameters<typeof t>[0]), risk.treatment)
+                                ?? t('detail.untreated')}
+                        </p>
                     </div>
                     <div>
                         <Eyebrow>{t('detail.targetDate')}</Eyebrow>
@@ -667,20 +671,22 @@ export default function RiskDetailPage() {
                 </div>
             </div>
 
-            {/* Epic G-7 — Risk Treatment Plan card. Owner-choices left
-              * empty here (panel falls back to the current user as
-              * the typed-in owner via the Combobox); the eventual
-              * tenant-roster fetch is a bounded follow-up that will
-              * wire admin/editor members through. */}
-            <div className={cardVariants()}>
-                <RiskTreatmentPlanCard
-                    tenantSlug={tenant.tenantSlug}
-                    riskId={riskId}
-                    ownerChoices={[]}
-                    canWrite={canWrite}
-                    canAdmin={tenant.permissions.canAdmin}
-                />
-            </div>
+            {/* P1 — the Risk Treatment Plan card moved into the guided
+                assessment (Step 4). Overview keeps the read-only treatment
+                summary above; the plan itself is managed in one place. A
+                pointer sends the user to the narrated flow. */}
+            {canWrite && (
+                <div className={cn(cardVariants({ density: 'compact' }), 'flex items-center justify-between')}>
+                    <p className="text-sm text-content-muted">{t('detail.treatmentMovedHint')}</p>
+                    <Button
+                        variant="secondary"
+                        id="goto-treat-monitor-btn"
+                        onClick={() => setActiveTab('assessment')}
+                    >
+                        {t('detail.goToTreatMonitor')}
+                    </Button>
+                </div>
+            )}
                 </>
             )}
 

@@ -45,6 +45,10 @@ jest.mock('@/lib/tenant-context-provider', () => ({
 // RQ3-OB-D — capture the accept-toast content.
 const toastSuccess = jest.fn();
 jest.mock('@/components/ui/hooks', () => ({
+    // P1 — Step 4 renders <Combobox>/<DatePicker>, which pull real hooks
+    // (useMediaQuery, etc.) from this barrel. Spread the real module so only
+    // useToast is stubbed.
+    ...jest.requireActual('@/components/ui/hooks'),
     useToast: () => ({ success: toastSuccess, error: jest.fn(), info: jest.fn(), warning: jest.fn(), dismiss: jest.fn() }),
 }));
 
@@ -109,6 +113,10 @@ const BASE_RISK: AssessmentRisk = {
     residualLikelihood: null,
     residualImpact: null,
     residualScore: null,
+    // P1 — Step 4 (treat & monitor) inputs.
+    treatment: null,
+    nextReviewAt: null,
+    status: 'OPEN',
 };
 
 let fetchMock: jest.Mock;
@@ -139,6 +147,10 @@ function mockFetchRoutes(over: { suggestion?: unknown; kriBreaches?: unknown[] }
         if (url.includes('/kri-breaches')) {
             return { ok: true, json: async () => ({ breaches: over.kriBreaches ?? [] }) };
         }
+        // P1 — Step 4 mounts the treatment-plan card, which lists plans.
+        if (url.includes('/treatment-plans')) {
+            return { ok: true, json: async () => ({ rows: [] }) };
+        }
         if (init?.method === 'PUT') {
             return { ok: true, json: async () => ({ success: true }) };
         }
@@ -152,12 +164,16 @@ const noop = () => {};
 async function renderPanel(props: Partial<React.ComponentProps<typeof RiskAssessmentPanel>> = {}) {
     render(
         <RiskAssessmentPanel
+            tenantSlug="t-1"
             riskId="r-1"
             risk={BASE_RISK}
             canWrite
+            canAdmin={false}
+            ownerChoices={[]}
             onRiskUpdated={noop}
             onQuantify={noop}
             onLinkControls={noop}
+            onStatusChange={noop}
             {...props}
         />,
     );
