@@ -377,12 +377,26 @@ export async function runSimulation(
     return { ...result, runId: run.id };
 }
 
-/** Most recent COMPLETED simulation for the dashboard. */
+/**
+ * Most recent COMPLETED *baseline* simulation for the dashboard.
+ *
+ * P2 — scenario runs (`triggeredBy: 'scenario'`) are what-if projections,
+ * NOT the portfolio's live position. They were leaking in here: a scenario
+ * run is COMPLETED and newer, so it became "the latest simulation" and
+ * blanked the Dashboard MonteCarloPanel + the Board P80 headline (scenario
+ * runs historically omitted `portfolioP80`). Scope this to baseline runs
+ * (`manual` / `scheduled`) so running a what-if can never alter the
+ * executive dashboard.
+ */
 export async function getLatestSimulation(ctx: RequestContext) {
     assertCanRead(ctx);
     return runInTenantContext(ctx, (db) =>
         db.riskSimulationRun.findFirst({
-            where: { tenantId: ctx.tenantId, status: 'COMPLETED' },
+            where: {
+                tenantId: ctx.tenantId,
+                status: 'COMPLETED',
+                triggeredBy: { not: 'scenario' },
+            },
             orderBy: { createdAt: 'desc' },
         }),
     );

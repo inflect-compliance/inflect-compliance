@@ -1507,6 +1507,9 @@
         },
         "docs/implementation-notes/2026-07-12-risk-lifecycle-treat-monitor.md": {
             "class": "historical"
+        },
+        "docs/implementation-notes/2026-07-12-risk-analytics-wiring.md": {
+            "class": "historical"
         }
     }
 }

@@ -5,14 +5,26 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useMoneyFormatter } from '@/lib/tenant-context-provider';
 import { useTranslations } from 'next-intl';
+import { RiskPicker } from '../_shared/RiskPicker';
 
 interface Scenario { id: string; name: string; status: string; investmentCost: number | null; computedRoi: number | null; createdAt: string }
+
+// P2 — a per-risk override the engine can act on: patch one FAIR field of
+// one risk, re-run, compare. Without these the what-if had nothing to model.
+interface OverrideDraft { riskId: string; field: string; newValue: number; label: string }
+const FAIR_FIELDS = [
+    'threatEventFrequency', 'contactFrequency', 'probabilityOfAction',
+    'vulnerabilityProbability', 'threatCapability', 'controlStrength',
+    'primaryLossMagnitude', 'productivityLoss', 'responseCost', 'replacementCost',
+    'secondaryLossEventFrequency', 'secondaryLossMagnitude',
+] as const;
 interface Comparison {
     baseline: { portfolioAle: { mean: number; p95: number; p99: number } };
     scenario: { portfolioAle: { mean: number; p95: number; p99: number } };
@@ -32,6 +44,26 @@ export default function RiskScenariosPage() {
     const [investment, setInvestment] = useState('');
     const [cmp, setCmp] = useState<Comparison | null>(null);
     const [busy, setBusy] = useState(false);
+    // Override builder.
+    const [overrides, setOverrides] = useState<OverrideDraft[]>([]);
+    const [ovRiskId, setOvRiskId] = useState<string | null>(null);
+    const [ovRiskLabel, setOvRiskLabel] = useState<string>('');
+    const [ovField, setOvField] = useState<string>('primaryLossMagnitude');
+    const [ovValue, setOvValue] = useState<string>('');
+
+    const fieldOptions: ComboboxOption[] = FAIR_FIELDS.map((f) => ({ value: f, label: t(`scenarios.field_${f}` as Parameters<typeof t>[0]) }));
+    const fieldLabel = (f: string) => t(`scenarios.field_${f}` as Parameters<typeof t>[0]);
+
+    const addOverride = () => {
+        const v = Number(ovValue);
+        if (!ovRiskId || !Number.isFinite(v)) return;
+        setOverrides((prev) => [
+            ...prev.filter((o) => !(o.riskId === ovRiskId && o.field === ovField)),
+            { riskId: ovRiskId, field: ovField, newValue: v, label: ovRiskLabel },
+        ]);
+        setOvValue('');
+    };
+    const removeOverride = (i: number) => setOverrides((prev) => prev.filter((_, idx) => idx !== i));
 
     const load = useCallback(async () => {
         try { const r = await fetch(apiUrl('/risks/scenarios')); if (r.ok) setScenarios((await r.json()).scenarios); } catch { /* ignore */ }
@@ -44,9 +76,13 @@ export default function RiskScenariosPage() {
         try {
             await fetch(apiUrl('/risks/scenarios'), {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name.trim(), investmentCost: investment.trim() ? Number(investment) : null }),
+                body: JSON.stringify({
+                    name: name.trim(),
+                    investmentCost: investment.trim() ? Number(investment) : null,
+                    overrides: overrides.map((o) => ({ riskId: o.riskId, field: o.field, newValue: o.newValue })),
+                }),
             });
-            setName(''); setInvestment(''); await load();
+            setName(''); setInvestment(''); setOverrides([]); await load();
         } finally { setBusy(false); }
     };
 
@@ -72,6 +108,38 @@ export default function RiskScenariosPage() {
                 <div className="flex flex-wrap items-end gap-default">
                     <label className="block flex-1"><span className="text-xs text-content-muted">{t('scenarios.name')}</span><Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('scenarios.namePlaceholder')} /></label>
                     <label className="block"><span className="text-xs text-content-muted">{t('scenarios.investment')}</span><Input type="text" inputMode="decimal" value={investment} onChange={(e) => setInvestment(e.target.value)} placeholder={t('scenarios.investmentPlaceholder')} /></label>
+                </div>
+
+                {/* P2 — per-risk override builder. Each override patches one FAIR
+                    field of one risk; the engine re-runs and compares. */}
+                <div className="space-y-tight border-t border-border-subtle pt-default">
+                    <span className="text-xs font-medium text-content-muted">{t('scenarios.overridesTitle')}</span>
+                    <div className="flex flex-wrap items-end gap-default">
+                        <label className="block flex-1"><span className="text-xs text-content-muted">{t('scenarios.overrideRisk')}</span>
+                            <RiskPicker id="scenario-override-risk" value={ovRiskId} onChange={(id, label) => { setOvRiskId(id); setOvRiskLabel(label ?? ''); }} placeholder={t('scenarios.overrideRiskPlaceholder')} />
+                        </label>
+                        <label className="block w-full sm:w-48"><span className="text-xs text-content-muted">{t('scenarios.overrideField')}</span>
+                            <Combobox id="scenario-override-field" options={fieldOptions} selected={fieldOptions.find((o) => o.value === ovField) ?? null} setSelected={(opt) => { if (opt) setOvField(String(opt.value)); }} />
+                        </label>
+                        <label className="block w-full sm:w-32"><span className="text-xs text-content-muted">{t('scenarios.overrideValue')}</span>
+                            <Input type="text" inputMode="decimal" value={ovValue} onChange={(e) => setOvValue(e.target.value)} placeholder={t('scenarios.overrideValuePlaceholder')} />
+                        </label>
+                        <Button variant="secondary" onClick={addOverride} disabled={!ovRiskId || !ovValue.trim()}>{t('scenarios.addOverride')}</Button>
+                    </div>
+                    {overrides.length > 0 && (
+                        <ul className="space-y-tight" data-testid="scenario-overrides">
+                            {overrides.map((o, i) => (
+                                <li key={`${o.riskId}-${o.field}`} className="flex items-center justify-between gap-default rounded-md border border-border-subtle px-3 py-1.5 text-sm">
+                                    <span className="truncate text-content-emphasis">{o.label || o.riskId}</span>
+                                    <span className="tabular-nums text-content-muted">{fieldLabel(o.field)} → {o.newValue}</span>
+                                    <Button size="sm" variant="ghost" onClick={() => removeOverride(i)}>{t('scenarios.removeOverride')}</Button>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+
+                <div className="flex justify-end">
                     <Button variant="primary" onClick={create} disabled={busy || !name.trim()}>{t('scenarios.create')}</Button>
                 </div>
             </Card>

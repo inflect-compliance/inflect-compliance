@@ -5,14 +5,26 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { InlineNotice } from '@/components/ui/inline-notice';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useMoneyFormatter } from '@/lib/tenant-context-provider';
 import { useTranslations } from 'next-intl';
+import { RiskPicker } from '../_shared/RiskPicker';
 
 interface Agg { nodeId: string; nodeName: string; riskCount: number; totalAle: number; children: Agg[] }
+
+/** Flatten the roll-up tree into node options for the parent + link pickers. */
+function flattenNodes(nodes: Agg[], depth = 0, out: ComboboxOption[] = []): ComboboxOption[] {
+    for (const n of nodes) {
+        out.push({ value: n.nodeId, label: `${'— '.repeat(depth)}${n.nodeName}` });
+        if (n.children.length) flattenNodes(n.children, depth + 1, out);
+    }
+    return out;
+}
 const TYPES = [
     { value: 'BUSINESS_UNIT', labelKey: 'hierarchy.typeBusinessUnit' },
     { value: 'GEOGRAPHY', labelKey: 'hierarchy.typeGeography' },
@@ -48,17 +60,39 @@ export default function RiskHierarchyPage() {
     const [treemap, setTreemap] = useState<Agg[]>([]);
     const [name, setName] = useState('');
     const [busy, setBusy] = useState(false);
+    // P2 — build a real tree (parentId) and attach risks to nodes so the
+    // roll-up is non-empty.
+    const [parentId, setParentId] = useState<string | null>(null);
+    const [linkNodeId, setLinkNodeId] = useState<string | null>(null);
+    const [linkRiskId, setLinkRiskId] = useState<string | null>(null);
+    const [linkBusy, setLinkBusy] = useState(false);
+    const [linkMsg, setLinkMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
     const load = useCallback(async () => {
         try { const r = await fetch(apiUrl(`/risks/hierarchy?type=${type}`)); if (r.ok) setTreemap((await r.json()).treemap); } catch { /* ignore */ }
     }, [apiUrl, type]);
     useEffect(() => { void load(); }, [load]);
 
+    const nodeOptions = flattenNodes(treemap);
+
     const addNode = async () => {
         if (!name.trim()) return;
         setBusy(true);
-        try { await fetch(apiUrl('/risks/hierarchy'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name.trim(), type }) }); setName(''); await load(); }
+        try { await fetch(apiUrl('/risks/hierarchy'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name.trim(), type, parentId }) }); setName(''); setParentId(null); await load(); }
         finally { setBusy(false); }
+    };
+
+    const linkRisk = async () => {
+        if (!linkNodeId || !linkRiskId) return;
+        setLinkBusy(true); setLinkMsg(null);
+        try {
+            const res = await fetch(apiUrl(`/risks/hierarchy/${linkNodeId}/links`), {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ riskId: linkRiskId }),
+            });
+            if (res.ok) { setLinkMsg({ text: t('hierarchy.linkOk'), ok: true }); setLinkRiskId(null); await load(); }
+            else { setLinkMsg({ text: t('hierarchy.linkFailed'), ok: false }); }
+        } catch { setLinkMsg({ text: t('hierarchy.linkFailed'), ok: false }); }
+        finally { setLinkBusy(false); }
     };
 
     const max = treemap.reduce((m, n) => Math.max(m, n.totalAle), 0);
@@ -80,8 +114,35 @@ export default function RiskHierarchyPage() {
                     <label className="block flex-1"><span className="text-xs text-content-muted">{t('hierarchy.newNodeName')}</span>
                         <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('hierarchy.newNodePlaceholder')} />
                     </label>
+                    <label className="block w-full sm:w-48"><span className="text-xs text-content-muted">{t('hierarchy.parentLabel')}</span>
+                        <Combobox
+                            id="hierarchy-parent"
+                            options={[{ value: '', label: t('hierarchy.parentNone') }, ...nodeOptions]}
+                            selected={nodeOptions.find((o) => o.value === parentId) ?? { value: '', label: t('hierarchy.parentNone') }}
+                            setSelected={(opt) => setParentId(opt && opt.value !== '' ? String(opt.value) : null)}
+                            placeholder={t('hierarchy.parentNone')}
+                        />
+                    </label>
                     <Button variant="primary" onClick={addNode} disabled={busy || !name.trim()}>{t('hierarchy.addNode')}</Button>
                 </div>
+
+                {/* P2 — attach a risk to a node so the roll-up is non-empty. */}
+                <div className="flex flex-wrap items-end gap-default border-t border-border-subtle pt-default">
+                    <label className="block flex-1"><span className="text-xs text-content-muted">{t('hierarchy.linkRiskLabel')}</span>
+                        <RiskPicker id="hierarchy-link-risk" value={linkRiskId} onChange={setLinkRiskId} placeholder={t('hierarchy.linkRiskPlaceholder')} />
+                    </label>
+                    <label className="block w-full sm:w-48"><span className="text-xs text-content-muted">{t('hierarchy.linkNodeLabel')}</span>
+                        <Combobox
+                            id="hierarchy-link-node"
+                            options={nodeOptions}
+                            selected={nodeOptions.find((o) => o.value === linkNodeId) ?? null}
+                            setSelected={(opt) => setLinkNodeId(opt ? String(opt.value) : null)}
+                            placeholder={t('hierarchy.linkNodePlaceholder')}
+                        />
+                    </label>
+                    <Button variant="secondary" onClick={linkRisk} disabled={linkBusy || !linkNodeId || !linkRiskId}>{t('hierarchy.linkRisk')}</Button>
+                </div>
+                {linkMsg && <InlineNotice variant={linkMsg.ok ? 'success' : 'error'}>{linkMsg.text}</InlineNotice>}
             </Card>
 
             <Card className="space-y-default p-6">
