@@ -1,18 +1,21 @@
 'use client';
 
 /* RQ-4 — Risk scenarios: list, create, simulate, compare baseline vs scenario. */
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { InfoTooltip } from '@/components/ui/tooltip';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useMoneyFormatter } from '@/lib/tenant-context-provider';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTranslations } from 'next-intl';
 import { RiskPicker } from '../_shared/RiskPicker';
+import { AnalyticsState } from '../_shared/AnalyticsState';
 
 interface Scenario { id: string; name: string; status: string; investmentCost: number | null; computedRoi: number | null; createdAt: string }
 
@@ -39,7 +42,8 @@ export default function RiskScenariosPage() {
     const money = useMoneyFormatter();
     const signed = (n: number) => `${n < 0 ? '−' : '+'}${money(Math.abs(n))}`;
     const tenantHref = useTenantHref();
-    const [scenarios, setScenarios] = useState<Scenario[]>([]);
+    const scenariosQuery = useTenantSWR<{ scenarios: Scenario[] }>('/risks/scenarios');
+    const scenarios = scenariosQuery.data?.scenarios ?? [];
     const [name, setName] = useState('');
     const [investment, setInvestment] = useState('');
     const [cmp, setCmp] = useState<Comparison | null>(null);
@@ -65,10 +69,7 @@ export default function RiskScenariosPage() {
     };
     const removeOverride = (i: number) => setOverrides((prev) => prev.filter((_, idx) => idx !== i));
 
-    const load = useCallback(async () => {
-        try { const r = await fetch(apiUrl('/risks/scenarios')); if (r.ok) setScenarios((await r.json()).scenarios); } catch { /* ignore */ }
-    }, [apiUrl]);
-    useEffect(() => { void load(); }, [load]);
+    const load = () => scenariosQuery.mutate();
 
     const create = async () => {
         if (!name.trim()) return;
@@ -113,7 +114,10 @@ export default function RiskScenariosPage() {
                 {/* P2 — per-risk override builder. Each override patches one FAIR
                     field of one risk; the engine re-runs and compares. */}
                 <div className="space-y-tight border-t border-border-subtle pt-default">
-                    <span className="text-xs font-medium text-content-muted">{t('scenarios.overridesTitle')}</span>
+                    <span className="inline-flex items-center gap-tight text-xs font-medium text-content-muted">
+                        {t('scenarios.overridesTitle')}
+                        <InfoTooltip title={t('scenarios.conceptTitle')} content={t('scenarios.conceptHelp')} />
+                    </span>
                     <div className="flex flex-wrap items-end gap-default">
                         <label className="block flex-1"><span className="text-xs text-content-muted">{t('scenarios.overrideRisk')}</span>
                             <RiskPicker id="scenario-override-risk" value={ovRiskId} onChange={(id, label) => { setOvRiskId(id); setOvRiskLabel(label ?? ''); }} placeholder={t('scenarios.overrideRiskPlaceholder')} />
@@ -146,9 +150,13 @@ export default function RiskScenariosPage() {
 
             <Card className="space-y-default p-6">
                 <Heading level={2}>{t('scenarios.breadcrumb')}</Heading>
-                {scenarios.length === 0 ? (
-                    <p className="text-sm text-content-muted">{t('scenarios.empty')}</p>
-                ) : (
+                <AnalyticsState
+                    isLoading={scenariosQuery.isLoading}
+                    error={scenariosQuery.error}
+                    isEmpty={scenarios.length === 0}
+                    emptyText={t('scenarios.empty')}
+                    errorText={t('scenarios.loadError')}
+                >
                     <ul className="divide-y divide-border-subtle">
                         {scenarios.map((s) => (
                             <li key={s.id} className="flex flex-wrap items-center gap-default py-default text-sm">
@@ -163,7 +171,7 @@ export default function RiskScenariosPage() {
                             </li>
                         ))}
                     </ul>
-                )}
+                </AnalyticsState>
             </Card>
 
             {cmp && (

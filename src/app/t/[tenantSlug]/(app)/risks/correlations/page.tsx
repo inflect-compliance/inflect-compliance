@@ -1,18 +1,19 @@
 'use client';
 
 /* RQ-8 — Risk correlation matrix editor + PSD validation + auto-suggest. */
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { Tooltip } from '@/components/ui/tooltip';
-import { SkeletonCard } from '@/components/ui/skeleton';
+import { Tooltip, InfoTooltip } from '@/components/ui/tooltip';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTranslations } from 'next-intl';
+import { AnalyticsState } from '../_shared/AnalyticsState';
 
 interface Matrix { riskIds: string[]; riskTitles: string[]; matrix: number[][]; isPositiveSemiDefinite: boolean }
 interface Suggestion { riskAId: string; riskBId: string; suggestedCoefficient: number; reason: string }
@@ -31,15 +32,12 @@ export default function CorrelationMatrixPage() {
     const t = useTranslations('risks');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
-    const [m, setM] = useState<Matrix | null>(null);
+    const matrixQuery = useTenantSWR<{ matrix: Matrix }>('/risks/correlations');
+    const m = matrixQuery.data?.matrix ?? null;
     const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+    const [suggestError, setSuggestError] = useState(false);
     const [sel, setSel] = useState<{ i: number; j: number } | null>(null);
     const [coef, setCoef] = useState('');
-
-    const load = useCallback(async () => {
-        try { const r = await fetch(apiUrl('/risks/correlations')); if (r.ok) setM((await r.json()).matrix); } catch { /* ignore */ }
-    }, [apiUrl]);
-    useEffect(() => { void load(); }, [load]);
 
     const save = async () => {
         if (!m || !sel) return;
@@ -47,11 +45,18 @@ export default function CorrelationMatrixPage() {
             method: 'PUT', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ riskAId: m.riskIds[sel.i], riskBId: m.riskIds[sel.j], coefficient: Number(coef) }),
         });
-        setSel(null); setCoef(''); await load();
+        setSel(null); setCoef(''); await matrixQuery.mutate();
     };
 
     const autoSuggest = async () => {
-        try { const r = await fetch(apiUrl('/risks/correlations/suggest')); if (r.ok) setSuggestions((await r.json()).suggestions); } catch { /* ignore */ }
+        setSuggestError(false);
+        try {
+            const r = await fetch(apiUrl('/risks/correlations/suggest'));
+            if (r.ok) setSuggestions((await r.json()).suggestions);
+            else setSuggestError(true);
+        } catch {
+            setSuggestError(true);
+        }
     };
     const applySuggestion = async (s: Suggestion) => {
         await fetch(apiUrl('/risks/correlations'), {
@@ -59,7 +64,7 @@ export default function CorrelationMatrixPage() {
             body: JSON.stringify({ riskAId: s.riskAId, riskBId: s.riskBId, coefficient: s.suggestedCoefficient, rationale: s.reason }),
         });
         setSuggestions((prev) => prev.filter((x) => !(x.riskAId === s.riskAId && x.riskBId === s.riskBId)));
-        await load();
+        await matrixQuery.mutate();
     };
 
     return (
@@ -67,20 +72,31 @@ export default function CorrelationMatrixPage() {
             <BackAffordance />
             <PageBreadcrumbs items={[{ label: t('breadcrumbRoot'), href: tenantHref('/risks') }, { label: t('correlations.breadcrumb') }]} />
             <div className="flex items-center justify-between">
-                <Heading level={1}>{t('correlations.title')}</Heading>
-                <Button variant="secondary" size="sm" onClick={autoSuggest}>{t('correlations.autoSuggest')}</Button>
+                <div className="flex items-center gap-tight">
+                    <Heading level={1}>{t('correlations.title')}</Heading>
+                    <InfoTooltip title={t('correlations.conceptTitle')} content={t('correlations.conceptHelp')} side="right" />
+                </div>
+                <div className="flex items-center gap-tight">
+                    {suggestError && <span className="text-xs text-content-error" role="alert">{t('correlations.suggestError')}</span>}
+                    <Button variant="secondary" size="sm" onClick={autoSuggest}>{t('correlations.autoSuggest')}</Button>
+                </div>
             </div>
 
-            {!m ? (
-                <SkeletonCard lines={4} />
-            ) : m.riskIds.length === 0 ? (
-                <Card className="p-6"><p className="text-sm text-content-muted">{t('correlations.emptyMatrix')}</p></Card>
-            ) : (
-                <Card className="space-y-default p-6">
+            <Card className="space-y-default p-6">
+                <AnalyticsState
+                    isLoading={matrixQuery.isLoading}
+                    error={matrixQuery.error}
+                    isEmpty={!!m && m.riskIds.length === 0}
+                    emptyText={t('correlations.emptyMatrix')}
+                    errorText={t('correlations.loadError')}
+                >
+                    {m && (
+                    <>
                     <div className="flex items-center gap-default">
                         <StatusBadge variant={m.isPositiveSemiDefinite ? 'success' : 'error'}>
                             {m.isPositiveSemiDefinite ? t('correlations.isPsd') : t('correlations.notPsd')}
                         </StatusBadge>
+                        <InfoTooltip title={t('correlations.psdTitle')} content={t('correlations.psdHelp')} />
                         <span className="text-xs text-content-subtle">{t('correlations.clickHint')}</span>
                     </div>
                     <div className="overflow-auto">
@@ -88,9 +104,9 @@ export default function CorrelationMatrixPage() {
                             <thead>
                                 <tr>
                                     <th className="p-1" />
-                                    {m.riskTitles.map((t, j) => (
-                                        <th key={j} className="max-w-16 p-1 text-content-subtle">
-                                            <Tooltip content={t}><span className="block max-w-16 truncate">{t.slice(0, 8)}</span></Tooltip>
+                                    {m.riskTitles.map((title, j) => (
+                                        <th key={j} className="p-1 text-content-subtle">
+                                            <Tooltip content={title}><span className="block max-w-24 truncate">{title}</span></Tooltip>
                                         </th>
                                     ))}
                                 </tr>
@@ -98,8 +114,8 @@ export default function CorrelationMatrixPage() {
                             <tbody>
                                 {m.matrix.map((row, i) => (
                                     <tr key={i}>
-                                        <td className="max-w-24 p-1 text-content-subtle">
-                                            <Tooltip content={m.riskTitles[i]}><span className="block max-w-24 truncate">{m.riskTitles[i].slice(0, 12)}</span></Tooltip>
+                                        <td className="p-1 text-content-subtle">
+                                            <Tooltip content={m.riskTitles[i]}><span className="block max-w-24 truncate">{m.riskTitles[i]}</span></Tooltip>
                                         </td>
                                         {row.map((v, j) => (
                                             <td
@@ -126,8 +142,10 @@ export default function CorrelationMatrixPage() {
                             <Button variant="ghost" size="sm" onClick={() => setSel(null)}>{t('edit.cancel')}</Button>
                         </div>
                     )}
-                </Card>
-            )}
+                    </>
+                    )}
+                </AnalyticsState>
+            </Card>
 
             {suggestions.length > 0 && (
                 <Card className="space-y-default p-6">

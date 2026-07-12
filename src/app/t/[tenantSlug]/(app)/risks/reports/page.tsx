@@ -1,7 +1,7 @@
 'use client';
 
 /* RQ-10 — Risk reports: templates → generate, recent runs → download. */
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -9,8 +9,10 @@ import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { formatDateTime } from '@/lib/format-date';
 import { useTranslations } from 'next-intl';
+import { AnalyticsState } from '../_shared/AnalyticsState';
 
 interface Template { id: string; name: string; description: string | null; type: string }
 interface Run { id: string; format: string; status: string; createdAt: string; templateId: string }
@@ -19,20 +21,16 @@ export default function RiskReportsPage() {
     const t = useTranslations('risks');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
-    const [templates, setTemplates] = useState<Template[]>([]);
-    const [reports, setReports] = useState<Run[]>([]);
+    const reportsQuery = useTenantSWR<{ templates: Template[]; reports: Run[] }>('/risks/reports');
+    const templates = reportsQuery.data?.templates ?? [];
+    const reports = reportsQuery.data?.reports ?? [];
     const [busy, setBusy] = useState(false);
-
-    const load = useCallback(async () => {
-        try { const r = await fetch(apiUrl('/risks/reports')); if (r.ok) { const d = await r.json(); setTemplates(d.templates); setReports(d.reports); } } catch { /* ignore */ }
-    }, [apiUrl]);
-    useEffect(() => { void load(); }, [load]);
 
     const generate = async (templateId: string, format: 'PDF' | 'CSV' | 'PPTX') => {
         setBusy(true);
         try {
             await fetch(apiUrl('/risks/reports'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ templateId, format }) });
-            await load();
+            await reportsQuery.mutate();
         } finally { setBusy(false); }
     };
 
@@ -64,9 +62,13 @@ export default function RiskReportsPage() {
 
             <Card className="space-y-default p-6">
                 <Heading level={2}>{t('reports.recent')}</Heading>
-                {reports.length === 0 ? (
-                    <p className="text-sm text-content-muted">{t('reports.empty')}</p>
-                ) : (
+                <AnalyticsState
+                    isLoading={reportsQuery.isLoading}
+                    error={reportsQuery.error}
+                    isEmpty={reports.length === 0}
+                    emptyText={t('reports.empty')}
+                    errorText={t('reports.loadError')}
+                >
                     <ul className="divide-y divide-border-subtle">
                         {reports.map((r) => (
                             <li key={r.id} className="flex flex-wrap items-center gap-default py-default text-sm">
@@ -82,7 +84,7 @@ export default function RiskReportsPage() {
                             </li>
                         ))}
                     </ul>
-                )}
+                </AnalyticsState>
             </Card>
         </div>
     );

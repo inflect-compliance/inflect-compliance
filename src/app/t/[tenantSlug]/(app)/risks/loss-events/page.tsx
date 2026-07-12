@@ -13,11 +13,12 @@
  *   3. The recent register — descending occurredAt, with the loss
  *      narrative, the source chip, and an ADMIN remove affordance.
  */
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { InlineNotice } from '@/components/ui/inline-notice';
+import { InfoTooltip } from '@/components/ui/tooltip';
 import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -27,9 +28,11 @@ import { type DateValue } from '@/components/ui/date-picker/types';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useMoneyFormatter } from '@/lib/tenant-context-provider';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { formatDate } from '@/lib/format-date';
 import { useTranslations } from 'next-intl';
 import { RiskPicker } from '../_shared/RiskPicker';
+import { AnalyticsState } from '../_shared/AnalyticsState';
 
 type Source = 'USER' | 'FINDING' | 'INCIDENT';
 interface Row {
@@ -66,9 +69,12 @@ export default function LossEventsPage() {
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const money = useMoneyFormatter();
-    const [rows, setRows] = useState<Row[]>([]);
-    const [agg, setAgg] = useState<Aggregate | null>(null);
-    const [run, setRun] = useState<Run | null>(null);
+    const listQuery = useTenantSWR<{ events: Row[] }>('/loss-events?take=50');
+    const aggQuery = useTenantSWR<Aggregate>('/loss-events/aggregate');
+    const runQuery = useTenantSWR<{ run: Run | null }>('/risks/simulate');
+    const rows = listQuery.data?.events ?? [];
+    const agg = aggQuery.data ?? null;
+    const run = runQuery.data?.run ?? null;
     const [busy, setBusy] = useState(false);
     const [msg, setMsg] = useState<string | null>(null);
     // Track success independently of the message text (i18n-safe — a
@@ -89,19 +95,7 @@ export default function LossEventsPage() {
     // (predictions live with the simulation; see loss-event.ts header).
     const [riskId, setRiskId] = useState<string | null>(null);
 
-    const load = useCallback(async () => {
-        try {
-            const [list, aggr, sim] = await Promise.all([
-                fetch(apiUrl('/loss-events?take=50')).then((r) => (r.ok ? r.json() : null)),
-                fetch(apiUrl('/loss-events/aggregate')).then((r) => (r.ok ? r.json() : null)),
-                fetch(apiUrl('/risks/simulate')).then((r) => (r.ok ? r.json() : null)),
-            ]);
-            setRows(list?.events ?? []);
-            setAgg(aggr ?? null);
-            setRun(sim?.run ?? null);
-        } catch { /* failure-soft */ }
-    }, [apiUrl]);
-    useEffect(() => { void load(); }, [load]);
+    const load = () => Promise.all([listQuery.mutate(), aggQuery.mutate(), runQuery.mutate()]);
 
     const record = async () => {
         const amt = Number(amount);
@@ -149,7 +143,10 @@ export default function LossEventsPage() {
                     { label: t('lossEvents.breadcrumb') },
                 ]}
             />
-            <Heading level={1}>{t('lossEvents.title')}</Heading>
+            <div className="flex items-center gap-tight">
+                <Heading level={1}>{t('lossEvents.title')}</Heading>
+                <InfoTooltip title={t('lossEvents.conceptTitle')} content={t('lossEvents.conceptHelp')} side="right" />
+            </div>
             <p className="text-sm text-content-muted">
                 {t('lossEvents.intro')}
             </p>
@@ -260,9 +257,13 @@ export default function LossEventsPage() {
             {/* Register */}
             <Card className="space-y-default p-6" data-testid="loss-events-list">
                 <Heading level={2}>{t('lossEvents.register')}</Heading>
-                {rows.length === 0 ? (
-                    <p className="text-sm text-content-muted">{t('lossEvents.emptyRegister')}</p>
-                ) : (
+                <AnalyticsState
+                    isLoading={listQuery.isLoading}
+                    error={listQuery.error}
+                    isEmpty={rows.length === 0}
+                    emptyText={t('lossEvents.emptyRegister')}
+                    errorText={t('lossEvents.loadError')}
+                >
                     <ul className="divide-y divide-border-subtle">
                         {rows.map((r) => (
                             <li
@@ -284,7 +285,7 @@ export default function LossEventsPage() {
                             </li>
                         ))}
                     </ul>
-                )}
+                </AnalyticsState>
             </Card>
         </div>
     );

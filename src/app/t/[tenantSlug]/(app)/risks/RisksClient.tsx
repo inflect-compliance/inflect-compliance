@@ -30,6 +30,7 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { Popover } from '@/components/ui/popover';
 import { EmptyState } from '@/components/ui/empty-state';
 import { RiskFirstRunEmpty } from '@/components/risks/RiskFirstRunEmpty';
 import {
@@ -237,6 +238,9 @@ function RisksPageInner({
     translations: t,
 }: RisksClientProps) {
     const tx = useTranslations('risks');
+    // P3 — the analytical views were ~8 tooltip-only icon buttons (undiscoverable).
+    // They now live behind a labeled "Views ▾" menu.
+    const [viewsOpen, setViewsOpen] = useState(false);
     const apiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
     const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
     const router = useRouter();
@@ -1104,20 +1108,57 @@ function RisksPageInner({
                                     <AppIcon name="shield" size={16} />
                                 </Link>
                             </Tooltip>
-                            {RISK_VIEW_LINKS.map((v) => {
-                                const label = tx(v.labelKey);
-                                return (
-                                    <Tooltip key={v.href} content={label}>
+                            {/* P3 — labeled "Views ▾" menu (was tooltip-only icon
+                                buttons). The analytical views are grouped under
+                                "Analytics"; AI-Systems is re-shelved into its own
+                                "Registry" section since it's an EU AI Act registry,
+                                not a risk-analytics view over the register. */}
+                            <Popover
+                                openPopover={viewsOpen}
+                                setOpenPopover={setViewsOpen}
+                                align="end"
+                                side="bottom"
+                                sideOffset={6}
+                                popoverContentClassName="w-full sm:w-56 p-1"
+                                content={
+                                    <Popover.Menu aria-label={tx('viewsMenuAria')}>
+                                        <p className="px-2.5 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-widest text-content-subtle">
+                                            {tx('viewsAnalytics')}
+                                        </p>
+                                        {RISK_VIEW_LINKS.map((v) => (
+                                            <Link
+                                                key={v.href}
+                                                href={tenantHref(v.href)}
+                                                role="menuitem"
+                                                onClick={() => setViewsOpen(false)}
+                                                className="flex items-center gap-tight rounded-md px-2.5 py-1.5 text-sm text-content-default hover:bg-bg-muted"
+                                            >
+                                                <AppIcon name={v.icon} size={16} />
+                                                <span className="flex-1">{tx(v.labelKey)}</span>
+                                            </Link>
+                                        ))}
+                                        <Popover.Separator />
+                                        <p className="px-2.5 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-widest text-content-subtle">
+                                            {tx('viewsRegistry')}
+                                        </p>
                                         <Link
-                                            href={tenantHref(v.href)}
-                                            aria-label={label}
-                                            className={buttonVariants({ variant: 'secondary', size: 'icon' })}
+                                            href={tenantHref('/risks/ai-systems')}
+                                            role="menuitem"
+                                            onClick={() => setViewsOpen(false)}
+                                            className="flex items-center gap-tight rounded-md px-2.5 py-1.5 text-sm text-content-default hover:bg-bg-muted"
+                                            data-testid="views-menu-ai-systems"
                                         >
-                                            <AppIcon name={v.icon} size={16} />
+                                            <AppIcon name="frameworks" size={16} />
+                                            <span className="flex-1">{tx('viewLinks.aiSystems')}</span>
                                         </Link>
-                                    </Tooltip>
-                                );
-                            })}
+                                    </Popover.Menu>
+                                }
+                            >
+                                <Button variant="secondary" size="sm" id="risks-views-menu">
+                                    {tx('viewsMenu')}
+                                    <span aria-hidden="true" className="ml-1 -mr-0.5 opacity-60">▾</span>
+                                </Button>
+                            </Popover>
                             {permissions.canWrite && (
                                 <Tooltip content={tx('importRisks')}>
                                     <Link href={tenantHref('/risks/import')} aria-label={tx('importRisks')} className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="risk-import-btn">

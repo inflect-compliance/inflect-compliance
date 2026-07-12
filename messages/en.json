@@ -725,7 +725,8 @@
             "kri": "Key risk indicators",
             "correlations": "Correlations",
             "lossEvents": "Loss events",
-            "reports": "Reports"
+            "reports": "Reports",
+            "aiSystems": "AI Systems (EU AI Act)"
         },
         "histogramView": {
             "title": "ALE histogram",
@@ -1008,7 +1009,13 @@
             "coefficient": "Coefficient (−1..1)",
             "apply": "Apply",
             "suggested": "Suggested correlations",
-            "emptyMatrix": "No risks to correlate."
+            "emptyMatrix": "No risks to correlate.",
+            "conceptTitle": "Correlation matrix",
+            "conceptHelp": "How much two risks move together. Positive means they rise and fall together, amplifying tail losses; negative means one offsets the other. The Monte Carlo simulation samples correlated draws so portfolio VaR reflects this.",
+            "psdTitle": "Positive semi-definite",
+            "psdHelp": "A valid correlation matrix must be positive semi-definite — otherwise the coefficients are mutually contradictory and the simulation cannot sample from them. Auto-suggest keeps it valid.",
+            "loadError": "Couldn't load the correlation matrix.",
+            "suggestError": "Couldn't suggest correlations."
         },
         "hierarchy": {
             "breadcrumb": "Hierarchy",
@@ -1036,7 +1043,10 @@
             "linkNodePlaceholder": "Pick a node…",
             "linkRisk": "Attach",
             "linkOk": "Risk attached to node.",
-            "linkFailed": "Could not attach the risk."
+            "linkFailed": "Could not attach the risk.",
+            "conceptTitle": "Hierarchy node",
+            "conceptHelp": "A branch of your org tree (business unit, geography, asset class). Attach risks to nodes and their ALE rolls up the tree, so you can see which part of the organisation carries the most quantified loss.",
+            "loadError": "Couldn't load the hierarchy."
         },
         "kri": {
             "breadcrumb": "KRIs",
@@ -1061,7 +1071,10 @@
             "riskPlaceholder": "Attach to a risk…",
             "directionLabel": "Direction",
             "dirHigherWorse": "Higher is worse",
-            "dirLowerWorse": "Lower is worse"
+            "dirLowerWorse": "Lower is worse",
+            "conceptTitle": "Key Risk Indicator",
+            "conceptHelp": "A measurable signal that a risk is worsening (e.g. failed-login rate). Set green/amber thresholds; a reading past them turns the KRI red. Direction says which way is bad — 'higher is worse' for most metrics, 'lower is worse' for e.g. patch coverage. A red KRI on a linked risk prompts re-assessment.",
+            "loadError": "Couldn't load the KRIs."
         },
         "lossEvents": {
             "breadcrumb": "Loss events",
@@ -1092,7 +1105,10 @@
             "remove": "Remove",
             "riskLabel": "Attribute to risk",
             "riskNone": "Portfolio (no risk)",
-            "riskPlaceholder": "Attribute to a risk…"
+            "riskPlaceholder": "Attribute to a risk…",
+            "conceptTitle": "Loss event",
+            "conceptHelp": "A real loss that actually occurred (from a user entry, a finding, or an incident), with its date and amount. Recorded actuals are a scoreboard against the simulator’s predictions — they are not fed back into the FAIR model.",
+            "loadError": "Couldn't load the loss events."
         },
         "reports": {
             "breadcrumb": "Reports",
@@ -1101,7 +1117,8 @@
             "generatePdf": "Generate PDF",
             "recent": "Recent reports",
             "empty": "No reports generated yet.",
-            "download": "Download"
+            "download": "Download",
+            "loadError": "Couldn't load the reports."
         },
         "scenarios": {
             "breadcrumb": "Scenarios",
@@ -1147,7 +1164,10 @@
             "field_responseCost": "Response cost ($)",
             "field_replacementCost": "Replacement cost ($)",
             "field_secondaryLossEventFrequency": "Secondary loss frequency",
-            "field_secondaryLossMagnitude": "Secondary loss ($)"
+            "field_secondaryLossMagnitude": "Secondary loss ($)",
+            "conceptTitle": "What-if scenario",
+            "conceptHelp": "A set of per-risk overrides (e.g. a WAF cuts one risk's vulnerability from 0.6 to 0.1). The engine re-runs the Monte Carlo with the overrides applied and compares the resulting portfolio loss against the current baseline — the ROI of a control investment.",
+            "loadError": "Couldn't load the scenarios."
         },
         "breadcrumbRoot": "Risks",
         "filters": {
@@ -1165,7 +1185,11 @@
         "treatmentMitigate": "Mitigate",
         "treatmentAccept": "Accept",
         "treatmentTransfer": "Transfer",
-        "treatmentAvoid": "Avoid"
+        "treatmentAvoid": "Avoid",
+        "viewsMenu": "Views",
+        "viewsMenuAria": "Analytical views",
+        "viewsAnalytics": "Analytics",
+        "viewsRegistry": "Registry"
     },
     "controls": {
         "title": "Controls Library",
