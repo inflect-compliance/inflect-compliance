@@ -32,10 +32,14 @@ export {
     generateShareLink,
     revokeShare,
     getPackByShareToken,
+    addShareComment,
+    listShareComments,
+    resolveShareComment,
     inviteAuditor,
     grantAuditorAccess,
     revokeAuditorAccess,
 } from './sharing';
+export type { AddShareCommentInput, ShareCommentRow, AuditShareCommentKind } from './sharing';
 
 // Page-data orchestration (collapses 1+N waterfall on the overview page)
 export { getReadinessOverview, type ReadinessOverviewPayload } from './overview';

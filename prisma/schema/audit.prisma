@@ -199,28 +199,29 @@ model AuditCycle {
 }
 
 model AuditPack {
-  id              String              @id @default(cuid())
+  id              String                  @id @default(cuid())
   tenantId        String
   auditCycleId    String
   name            String
-  status          AuditPackStatus     @default(DRAFT)
+  status          AuditPackStatus         @default(DRAFT)
   frozenAt        DateTime?
   frozenByUserId  String?
   notes           String?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
   deletedAt       DateTime?
   deletedByUserId String?
   /// SP-5 — last SharePoint export of this (frozen) pack.
   spExportItemId  String?
   spExportWebUrl  String?
   spExportedAt    DateTime?
-  cycle           AuditCycle          @relation(fields: [auditCycleId], references: [id])
-  frozenBy        User?               @relation("AuditPackFrozenBy", fields: [frozenByUserId], references: [id])
-  tenant          Tenant              @relation(fields: [tenantId], references: [id])
+  cycle           AuditCycle              @relation(fields: [auditCycleId], references: [id])
+  frozenBy        User?                   @relation("AuditPackFrozenBy", fields: [frozenByUserId], references: [id])
+  tenant          Tenant                  @relation(fields: [tenantId], references: [id])
   items           AuditPackItem[]
   shares          AuditPackShare[]
   auditorAccess   AuditorPackAccess[]
+  shareComments   AuditPackShareComment[]
 
   @@unique([id, tenantId])
   @@index([tenantId, auditCycleId])
@@ -228,36 +229,83 @@ model AuditPack {
 }
 
 model AuditPackItem {
-  id           String                  @id @default(cuid())
-  tenantId     String
-  auditPackId  String
-  entityType   AuditPackItemEntityType
-  entityId     String
-  snapshotJson String
-  sortOrder    Int                     @default(0)
-  createdAt    DateTime                @default(now())
-  pack         AuditPack               @relation(fields: [auditPackId], references: [id], onDelete: Cascade)
-  tenant       Tenant                  @relation(fields: [tenantId], references: [id])
+  id            String                  @id @default(cuid())
+  tenantId      String
+  auditPackId   String
+  entityType    AuditPackItemEntityType
+  entityId      String
+  snapshotJson  String
+  sortOrder     Int                     @default(0)
+  createdAt     DateTime                @default(now())
+  pack          AuditPack               @relation(fields: [auditPackId], references: [id], onDelete: Cascade)
+  tenant        Tenant                  @relation(fields: [tenantId], references: [id])
+  shareComments AuditPackShareComment[]
 
   @@unique([auditPackId, entityType, entityId])
   @@index([tenantId, auditPackId])
 }
 
 model AuditPackShare {
-  id              String    @id @default(cuid())
+  id              String                  @id @default(cuid())
   tenantId        String
   auditPackId     String
   tokenHash       String
   expiresAt       DateTime?
   createdByUserId String
   revokedAt       DateTime?
-  createdAt       DateTime  @default(now())
-  pack            AuditPack @relation(fields: [auditPackId], references: [id])
-  createdBy       User      @relation(fields: [createdByUserId], references: [id])
-  tenant          Tenant    @relation(fields: [tenantId], references: [id])
+  createdAt       DateTime                @default(now())
+  pack            AuditPack               @relation(fields: [auditPackId], references: [id])
+  createdBy       User                    @relation(fields: [createdByUserId], references: [id])
+  tenant          Tenant                  @relation(fields: [tenantId], references: [id])
+  comments        AuditPackShareComment[]
 
   @@index([tokenHash])
   @@index([tenantId, auditPackId])
+}
+
+// feat/auditor-return-channel — the RETURN CHANNEL that closes the
+// audit-pack sharing loop. Today an external auditor opens a shared
+// pack read-only via a token; this table lets them send messages BACK
+// to the tenant (comment / request more evidence / raise a finding or
+// question). A single table with a `kind` discriminator serves all four.
+//
+//   • `body` is auditor-authored FREE TEXT → encrypted at rest via the
+//     Epic B manifest (`src/lib/security/encrypted-fields.ts`) and
+//     sanitised on write via `sanitizePlainText`.
+//   • `authorLabel` is the external auditor's self-supplied display
+//     name/email captured from the share session — NOT a User FK
+//     (the auditor has no platform account).
+//   • `auditPackShareId` records WHICH share session produced the row.
+//   • `auditPackItemId` is optional — set when the auditor comments on a
+//     specific pack item rather than the pack as a whole.
+//   • `status` is OPEN until a tenant user resolves an actionable row
+//     (EVIDENCE_REQUEST / FINDING / QUESTION); `resolvedByUserId` is the
+//     tenant user who did so.
+model AuditPackShareComment {
+  id               String                  @id @default(cuid())
+  tenantId         String
+  auditPackId      String
+  auditPackShareId String
+  auditPackItemId  String?
+  kind             AuditShareCommentKind   @default(COMMENT)
+  body             String
+  authorLabel      String
+  status           AuditShareCommentStatus @default(OPEN)
+  createdAt        DateTime                @default(now())
+  resolvedAt       DateTime?
+  resolvedByUserId String?
+
+  tenant     Tenant         @relation(fields: [tenantId], references: [id])
+  pack       AuditPack      @relation(fields: [auditPackId], references: [id], onDelete: Cascade)
+  share      AuditPackShare @relation(fields: [auditPackShareId], references: [id], onDelete: Cascade)
+  item       AuditPackItem? @relation(fields: [auditPackItemId], references: [id], onDelete: SetNull)
+  resolvedBy User?          @relation("AuditPackShareCommentResolvedBy", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, auditPackId])
+  @@index([auditPackId])
+  @@index([auditPackShareId])
+  @@index([auditPackItemId])
 }
 
 model AuditorAccount {

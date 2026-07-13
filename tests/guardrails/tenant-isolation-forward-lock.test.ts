@@ -62,6 +62,7 @@ const ISOLATION_BASELINE: readonly string[] = [
     "AuditPack",
     "AuditPackItem",
     "AuditPackShare",
+    "AuditPackShareComment",
     "AuditorAccount",
     "AuditorPackAccess",
     "AutomationExecution",

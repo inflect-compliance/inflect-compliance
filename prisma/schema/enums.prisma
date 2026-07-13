@@ -793,6 +793,25 @@ enum AuditorStatus {
   REVOKED
 }
 
+// feat/auditor-return-channel — discriminator on AuditPackShareComment.
+// A single table serves the auditor→tenant return channel; `kind`
+// distinguishes a plain comment from a request-more-evidence, a raised
+// finding, or an open question.
+enum AuditShareCommentKind {
+  COMMENT
+  EVIDENCE_REQUEST
+  FINDING
+  QUESTION
+}
+
+// feat/auditor-return-channel — lifecycle for actionable return-channel
+// rows (EVIDENCE_REQUEST / FINDING / QUESTION). A COMMENT is created
+// OPEN but is not something the tenant "resolves"; requests/findings are.
+enum AuditShareCommentStatus {
+  OPEN
+  RESOLVED
+}
+
 enum AuditPackItemEntityType {
   CONTROL
   POLICY

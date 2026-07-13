@@ -142,6 +142,7 @@ model Tenant {
   auditPackItems                    AuditPackItem[]
   readinessSnapshots                ReadinessSnapshot[]
   auditPackShares                   AuditPackShare[]
+  auditPackShareComments            AuditPackShareComment[]
   auditorAccounts                   AuditorAccount[]
   billingAccount                    BillingAccount?
   billingEvents                     BillingEvent[]
@@ -886,6 +887,7 @@ model User {
   auditLogs                     AuditLog[]
   auditPacksFrozen              AuditPack[]                     @relation("AuditPackFrozenBy")
   auditSharesCreated            AuditPackShare[]
+  auditShareCommentsResolved    AuditPackShareComment[]         @relation("AuditPackShareCommentResolvedBy")
   controlApplicabilityDecisions Control[]                       @relation("ControlApplicabilityDecider")
   createdControls               Control[]                       @relation("ControlCreator")
   ownedControls                 Control[]                       @relation("ControlOwner")

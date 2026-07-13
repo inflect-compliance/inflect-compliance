@@ -2629,7 +2629,26 @@
             "evidence": "Evidence: {count}",
             "exports": "Exports",
             "exportJson": "Export JSON",
-            "exportCsv": "Export CSV"
+            "exportCsv": "Export CSV",
+            "auditorActivity": {
+                "title": "Auditor activity",
+                "desc": "Comments, evidence requests, and findings sent back by the auditor.",
+                "empty": "No auditor activity yet",
+                "emptyDesc": "When an auditor comments or raises a request on the shared pack, it appears here.",
+                "openBadge": "{count} open",
+                "onItem": "on item {item}",
+                "resolve": "Resolve",
+                "resolving": "Resolving…",
+                "resolveError": "Could not resolve. Please try again.",
+                "kind": {
+                    "COMMENT": "Comment",
+                    "EVIDENCE_REQUEST": "Evidence request",
+                    "FINDING": "Finding",
+                    "QUESTION": "Question"
+                },
+                "statusOPEN": "Open",
+                "statusRESOLVED": "Resolved"
+            }
         },
         "auditor": {
             "portalCrumb": "Auditor Portal",
@@ -7485,6 +7504,28 @@
                 "ISSUE": "Issue",
                 "READINESS_REPORT": "Readiness Report",
                 "FRAMEWORK_COVERAGE": "Framework Coverage"
+            },
+            "returnChannel": {
+                "title": "Send feedback to the team",
+                "subtitle": "Comment, request more evidence, or raise a finding or question. The team is notified.",
+                "kindLabel": "Type",
+                "kind": {
+                    "COMMENT": "Comment",
+                    "EVIDENCE_REQUEST": "Request evidence",
+                    "FINDING": "Raise finding",
+                    "QUESTION": "Ask question"
+                },
+                "nameLabel": "Your name or email",
+                "namePlaceholder": "e.g. jane@auditco.com",
+                "messageLabel": "Message",
+                "messagePlaceholder": "Write your message…",
+                "attachLabel": "About",
+                "attachWholePack": "The whole pack",
+                "submit": "Send",
+                "submitting": "Sending…",
+                "submitError": "Could not send. Please try again.",
+                "submittedTitle": "Your submissions",
+                "submittedEmpty": "No submissions yet in this session."
             }
         }
     }

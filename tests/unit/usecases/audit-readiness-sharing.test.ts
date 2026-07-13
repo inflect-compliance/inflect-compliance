@@ -22,9 +22,12 @@
 const policyCalls: string[] = [];
 const auditCalls: any[] = [];
 
+const appendCalls: any[] = [];
+
 jest.mock('@/app-layer/policies/audit-readiness.policies', () => ({
     assertCanSharePack: jest.fn(() => policyCalls.push('share')),
     assertCanManageAuditors: jest.fn(() => policyCalls.push('manage')),
+    assertCanViewPack: jest.fn(() => policyCalls.push('view')),
 }));
 
 jest.mock('@/app-layer/events/audit', () => ({
@@ -37,9 +40,20 @@ jest.mock('@/lib/security/encryption', () => ({
     hashForLookup: jest.fn((s: string) => `hash(${s})`),
 }));
 
+jest.mock('@/lib/security/sanitize', () => ({
+    // Strip a naive <script> tag so the "sanitised on write" assertion is real.
+    sanitizePlainText: jest.fn((s: any) => (s == null ? '' : String(s).replace(/<[^>]*>/g, ''))),
+}));
+
+jest.mock('@/lib/audit', () => ({
+    appendAuditEntry: jest.fn(async (entry: any) => { appendCalls.push(entry); }),
+}));
+
 const tenantDb: any = {
     auditPack: { findFirst: jest.fn() },
     auditPackShare: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
+    auditPackItem: { findFirst: jest.fn() },
+    auditPackShareComment: { create: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
     auditorAccount: { upsert: jest.fn(), findFirst: jest.fn() },
     auditorPackAccess: { create: jest.fn(), deleteMany: jest.fn() },
 };
@@ -53,6 +67,7 @@ jest.mock('@/lib/db-context', () => {
         ...actual,
         runInTenantContext: jest.fn(async (_ctx: any, callback: any) => callback(tenantDb)),
         runInGlobalContext: jest.fn(async (callback: any) => callback(globalDb)),
+        withTenantDb: jest.fn(async (_tenantId: any, callback: any) => callback(tenantDb)),
     };
 });
 
@@ -62,6 +77,9 @@ import {
     generateShareLink,
     revokeShare,
     getPackByShareToken,
+    addShareComment,
+    listShareComments,
+    resolveShareComment,
     inviteAuditor,
     grantAuditorAccess,
     revokeAuditorAccess,
@@ -75,9 +93,13 @@ import { makeRequestContext } from '../../helpers/make-context';
 beforeEach(() => {
     policyCalls.length = 0;
     auditCalls.length = 0;
+    appendCalls.length = 0;
     [
         tenantDb.auditPack.findFirst,
         tenantDb.auditPackShare.create, tenantDb.auditPackShare.findFirst, tenantDb.auditPackShare.update,
+        tenantDb.auditPackItem.findFirst,
+        tenantDb.auditPackShareComment.create, tenantDb.auditPackShareComment.findFirst,
+        tenantDb.auditPackShareComment.findMany, tenantDb.auditPackShareComment.update,
         tenantDb.auditorAccount.upsert, tenantDb.auditorAccount.findFirst,
         tenantDb.auditorPackAccess.create, tenantDb.auditorPackAccess.deleteMany,
         globalDb.auditPackShare.findFirst,
@@ -331,5 +353,151 @@ describe('revokeAuditorAccess', () => {
         await revokeAuditorAccess(ctx, 'a-1', 'p-1');
 
         expect(auditCalls).toHaveLength(1);
+    });
+});
+
+// ──────────────────────────────────────────────────────────────────────
+// Return channel — addShareComment (public, token-authenticated)
+// ──────────────────────────────────────────────────────────────────────
+describe('addShareComment', () => {
+    it('throws notFound when the token matches no live share', async () => {
+        globalDb.auditPackShare.findFirst.mockResolvedValueOnce(null);
+        await expect(addShareComment('bogus', { kind: 'COMMENT', body: 'hi' }))
+            .rejects.toThrow(/invalid or expired/i);
+        expect(tenantDb.auditPackShareComment.create).not.toHaveBeenCalled();
+    });
+
+    it('throws forbidden when the share has expired', async () => {
+        globalDb.auditPackShare.findFirst.mockResolvedValueOnce({
+            id: 's-1', tenantId: 't-1', auditPackId: 'p-1',
+            expiresAt: new Date('2020-01-01T00:00:00Z'),
+        });
+        await expect(addShareComment('stale', { kind: 'COMMENT', body: 'hi' }))
+            .rejects.toThrow(/expired/i);
+        expect(tenantDb.auditPackShareComment.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects an empty body (after sanitisation)', async () => {
+        globalDb.auditPackShare.findFirst.mockResolvedValueOnce({
+            id: 's-1', tenantId: 't-1', auditPackId: 'p-1', expiresAt: null,
+        });
+        await expect(addShareComment('ok', { kind: 'COMMENT', body: '   ' }))
+            .rejects.toThrow(/body is required/i);
+    });
+
+    it('resolves the share cross-tenant, sanitises body, writes the row + audits as AUDITOR', async () => {
+        globalDb.auditPackShare.findFirst.mockResolvedValueOnce({
+            id: 's-1', tenantId: 't-1', auditPackId: 'p-1', expiresAt: null,
+        });
+        tenantDb.auditPackShareComment.create.mockResolvedValueOnce({
+            id: 'c-1', kind: 'FINDING', status: 'OPEN', createdAt: new Date(),
+        });
+
+        const result = await addShareComment('legit', {
+            kind: 'FINDING',
+            body: 'Control gap<script>alert(1)</script>',
+            authorLabel: 'jane@auditco.com',
+        });
+
+        expect(result.id).toBe('c-1');
+        // Resolved cross-tenant on tokenHash + revokedAt null.
+        const where = globalDb.auditPackShare.findFirst.mock.calls[0][0].where;
+        expect(where.tokenHash).toBe(hashToken('legit'));
+        expect(where.revokedAt).toBeNull();
+        // Row written into the resolved tenant + sanitised body (no <script>).
+        const createArg = tenantDb.auditPackShareComment.create.mock.calls[0][0];
+        expect(createArg.data.tenantId).toBe('t-1');
+        expect(createArg.data.auditPackId).toBe('p-1');
+        expect(createArg.data.auditPackShareId).toBe('s-1');
+        expect(createArg.data.kind).toBe('FINDING');
+        expect(createArg.data.body).not.toMatch(/<script>/);
+        expect(createArg.data.authorLabel).toBe('jane@auditco.com');
+        // External actor — audit row carries no platform userId.
+        expect(appendCalls).toHaveLength(1);
+        expect(appendCalls[0].actorType).toBe('AUDITOR');
+        expect(appendCalls[0].userId).toBeNull();
+        expect(appendCalls[0].action).toBe('AUDIT_SHARE_COMMENT_ADDED');
+    });
+
+    it('falls back to a generic authorLabel when none is supplied', async () => {
+        globalDb.auditPackShare.findFirst.mockResolvedValueOnce({
+            id: 's-1', tenantId: 't-1', auditPackId: 'p-1', expiresAt: null,
+        });
+        tenantDb.auditPackShareComment.create.mockResolvedValueOnce({ id: 'c-2', kind: 'COMMENT', status: 'OPEN', createdAt: new Date() });
+
+        await addShareComment('legit', { kind: 'COMMENT', body: 'nice pack' });
+
+        const createArg = tenantDb.auditPackShareComment.create.mock.calls[0][0];
+        expect(createArg.data.authorLabel).toBe('External auditor');
+    });
+
+    it('rejects an item that does not belong to the resolved pack', async () => {
+        globalDb.auditPackShare.findFirst.mockResolvedValueOnce({
+            id: 's-1', tenantId: 't-1', auditPackId: 'p-1', expiresAt: null,
+        });
+        tenantDb.auditPackItem.findFirst.mockResolvedValueOnce(null);
+        await expect(addShareComment('legit', { kind: 'COMMENT', body: 'x', auditPackItemId: 'i-foreign' }))
+            .rejects.toThrow(/does not belong/i);
+        expect(tenantDb.auditPackShareComment.create).not.toHaveBeenCalled();
+    });
+});
+
+// ──────────────────────────────────────────────────────────────────────
+// Return channel — listShareComments / resolveShareComment (tenant)
+// ──────────────────────────────────────────────────────────────────────
+describe('listShareComments', () => {
+    it('throws notFound when the pack is foreign to the tenant', async () => {
+        tenantDb.auditPack.findFirst.mockResolvedValueOnce(null);
+        await expect(listShareComments(ctx, 'p-foreign')).rejects.toThrow(/pack not found/i);
+    });
+
+    it('returns comments + openCount (COMMENT rows are NOT counted as open)', async () => {
+        tenantDb.auditPack.findFirst.mockResolvedValueOnce({ id: 'p-1' });
+        tenantDb.auditPackShareComment.findMany.mockResolvedValueOnce([
+            { id: 'c-1', kind: 'FINDING', status: 'OPEN' },
+            { id: 'c-2', kind: 'EVIDENCE_REQUEST', status: 'RESOLVED' },
+            { id: 'c-3', kind: 'COMMENT', status: 'OPEN' },
+            { id: 'c-4', kind: 'QUESTION', status: 'OPEN' },
+        ]);
+
+        const result = await listShareComments(ctx, 'p-1');
+
+        expect(result.comments).toHaveLength(4);
+        // Two OPEN actionable rows (FINDING + QUESTION); the OPEN COMMENT
+        // and the RESOLVED request are excluded from the badge count.
+        expect(result.openCount).toBe(2);
+        expect(policyCalls).toContain('view');
+    });
+});
+
+describe('resolveShareComment', () => {
+    it('throws notFound when the entry is foreign to the tenant/pack', async () => {
+        tenantDb.auditPackShareComment.findFirst.mockResolvedValueOnce(null);
+        await expect(resolveShareComment(ctx, 'p-1', 'c-x')).rejects.toThrow(/not found/i);
+    });
+
+    it('refuses to resolve a plain COMMENT', async () => {
+        tenantDb.auditPackShareComment.findFirst.mockResolvedValueOnce({ id: 'c-1', kind: 'COMMENT', status: 'OPEN' });
+        await expect(resolveShareComment(ctx, 'p-1', 'c-1')).rejects.toThrow(/cannot be resolved/i);
+        expect(tenantDb.auditPackShareComment.update).not.toHaveBeenCalled();
+    });
+
+    it('is idempotent-rejecting: already-resolved throws badRequest', async () => {
+        tenantDb.auditPackShareComment.findFirst.mockResolvedValueOnce({ id: 'c-1', kind: 'FINDING', status: 'RESOLVED' });
+        await expect(resolveShareComment(ctx, 'p-1', 'c-1')).rejects.toThrow(/already resolved/i);
+        expect(tenantDb.auditPackShareComment.update).not.toHaveBeenCalled();
+    });
+
+    it('stamps RESOLVED + resolvedByUserId and fires AUDIT_SHARE_COMMENT_RESOLVED', async () => {
+        tenantDb.auditPackShareComment.findFirst.mockResolvedValueOnce({ id: 'c-1', kind: 'EVIDENCE_REQUEST', status: 'OPEN' });
+        tenantDb.auditPackShareComment.update.mockResolvedValueOnce({ id: 'c-1', status: 'RESOLVED', resolvedAt: new Date() });
+
+        const result = await resolveShareComment(ctx, 'p-1', 'c-1');
+
+        expect(result.status).toBe('RESOLVED');
+        const updateArg = tenantDb.auditPackShareComment.update.mock.calls[0][0];
+        expect(updateArg.data.status).toBe('RESOLVED');
+        expect(updateArg.data.resolvedByUserId).toBe(ctx.userId);
+        expect(auditCalls[0].action).toBe('AUDIT_SHARE_COMMENT_RESOLVED');
     });
 });

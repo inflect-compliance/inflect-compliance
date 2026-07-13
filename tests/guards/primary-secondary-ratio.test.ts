@@ -201,7 +201,14 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // secondary, so the secondary:primary ratio still rises). +1.
 // 2026-07-13 — +1 more (145) when BIA landed on top of feat/audit-cycle-unify:
 // both PRs each added one earned modal-confirm primary.
-const MAX_PRIMARY_COUNT = 145;
+// 2026-07-14 — bumped 144 → 145 for feat/auditor-return-channel: the public
+// shared-pack page's "Send" submit is the earned primary CTA of the auditor
+// return-channel form (the only primary on that standalone page; kind/item
+// selectors are ghost toggles), so the secondary:primary ratio still rises. +1.
+// 2026-07-14 — +1 (146) for feat/auditor-return-channel's shared-pack "Send"
+// submit (the return-channel form's only primary), on top of the BIA + audit
+// modal primaries already counted.
+const MAX_PRIMARY_COUNT = 146;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {
