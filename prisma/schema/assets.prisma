@@ -121,18 +121,31 @@ model AssetVulnerability {
   /// Free-text analyst note — encrypted at rest (Epic B manifest) and
   /// sanitised on write (Epic D).
   note       String?
+  /// Triage: the tenant member accountable for remediation. Nullable
+  /// (unassigned). NOT encrypted — it is an FK id, not content.
+  ownerUserId      String?
+  /// Triage: optional remediation SLA / due date.
+  remediationDueAt DateTime?
+  /// Triage: the Task spawned to drive remediation. `onDelete: SetNull`
+  /// so deleting the task only clears the link — it never cascade-
+  /// deletes the vulnerability row.
+  remediationTaskId String?
 
-  tenant Tenant @relation(fields: [tenantId], references: [id])
-  asset  Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  cve    Cve    @relation(fields: [cveId], references: [id], onDelete: Cascade)
+  tenant          Tenant @relation(fields: [tenantId], references: [id])
+  asset           Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  cve             Cve    @relation(fields: [cveId], references: [id], onDelete: Cascade)
+  ownerUser       User?  @relation("AssetVulnerabilityOwner", fields: [ownerUserId], references: [id])
+  remediationTask Task?  @relation("VulnerabilityRemediation", fields: [remediationTaskId], references: [id], onDelete: SetNull)
 
   /// One link per (asset, cve) within a tenant — re-matching is idempotent.
   @@unique([tenantId, assetId, cveId])
   @@index([tenantId, status])
   @@index([tenantId, assetId])
   @@index([tenantId, cveId])
+  @@index([tenantId, ownerUserId])
   @@index([cveId])
   @@index([assetId])
+  @@index([remediationTaskId])
 }
 
 /// Tenant-scoped: one DevSecOps scanner execution (SAST/SCA/DAST/SECRETS/

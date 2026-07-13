@@ -878,6 +878,7 @@ model User {
   accounts                      Account[]
   ownedKris                     KeyRiskIndicator[]           @relation("KriOwner")
   ownedAssets                   Asset[]                      @relation("AssetOwner")
+  ownedAssetVulnerabilities     AssetVulnerability[]         @relation("AssetVulnerabilityOwner")
   assetRiskLinksCreated         AssetRiskLink[]              @relation("AssetRiskCreator")
   auditCyclesCreated            AuditCycle[]
   auditLogs                     AuditLog[]

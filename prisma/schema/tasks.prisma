@@ -34,6 +34,9 @@ model Task {
   comments        TaskComment[]
   links           TaskLink[]
   watchers        TaskWatcher[]
+  // Vulnerabilities whose remediation this task drives (triage flow).
+  // `AssetVulnerability.remediationTaskId` → SetNull on task delete.
+  remediatedVulnerabilities AssetVulnerability[] @relation("VulnerabilityRemediation")
   // Evidence attached directly to this task — the task Evidence tab
   // mirrors the control Evidence tab. `Evidence.taskId` is the source
   // pointer that also powers the "uploaded from" back-reference on the

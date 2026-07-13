@@ -4,13 +4,16 @@
  * Vulnerabilities list — matched CVEs across the tenant's assets.
  *
  * Reads SSR-fetched rows, filters client-side by status / severity, and
- * exposes the compliance-graph bridge: convert a vulnerability into a Risk or
- * a Finding (explicit, opt-in) via the existing usecases. Built on the shared
- * EntityListPage + FilterToolbar + DataTable primitives.
+ * exposes both the compliance-graph bridge (convert a vulnerability into a
+ * Risk or a Finding) and the in-row triage workflow: change status, assign an
+ * owner, set a remediation due date, and spawn a remediation Task — all with
+ * optimistic updates over the existing PATCH / remediation-task endpoints.
+ * Built on the shared EntityListPage + FilterToolbar + DataTable primitives.
  */
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { ShieldAlert } from '@/components/ui/icons/nucleo/shield-alert';
 import { ArrowUpRight } from '@/components/ui/icons/nucleo/arrow-up-right';
 import { EntityListPage } from '@/components/layout/EntityListPage';
@@ -18,15 +21,27 @@ import { FilterProvider, useFilterContext, useFilters } from '@/components/ui/fi
 import { createColumns } from '@/components/ui/table';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { UserCombobox, type Member } from '@/components/ui/user-combobox';
+import { DatePicker } from '@/components/ui/date-picker/date-picker';
+import { startOfUtcDay, toYMD } from '@/components/ui/date-picker/date-utils';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/hooks';
+import { formatDate } from '@/lib/format-date';
 import { buildVulnFilters, VULN_FILTER_KEYS, buildVulnStatusLabels } from './filter-defs';
+
+const VULN_STATUS_ORDER = ['OPEN', 'MITIGATING', 'MITIGATED', 'ACCEPTED', 'FALSE_POSITIVE'] as const;
 
 export interface VulnRow {
     id: string;
     status: string;
     matchedVia: string;
     cveId: string;
+    ownerUserId: string | null;
+    ownerUser: { id: string; name: string | null; email: string | null } | null;
+    remediationDueAt: string | Date | null;
+    remediationTaskId: string | null;
+    remediationTask: { id: string; key: string | null } | null;
     cve: {
         id: string;
         cvssScore: number | null;
@@ -91,18 +106,93 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
     const toast = useToast();
     const { state, hasActive } = useFilters();
     const [pendingId, setPendingId] = useState<string | null>(null);
+    // Optimistic overlay of triage edits on top of the SSR rows, keyed by id.
+    // Whenever a router.refresh() delivers fresh server rows (new `initialRows`
+    // identity) the overlay resets to server truth — React's "adjust state
+    // during render" pattern, no effect required.
+    const [overrides, setOverrides] = useState<Record<string, Partial<VulnRow>>>({});
+    const [prevInitial, setPrevInitial] = useState(initialRows);
+    if (prevInitial !== initialRows) {
+        setPrevInitial(initialRows);
+        setOverrides({});
+    }
 
     const apiUrl = useCallback((path: string) => `/api/t/${tenantSlug}${path}`, [tenantSlug]);
+
+    const rowData = useMemo(
+        () => initialRows.map((r) => (overrides[r.id] ? { ...r, ...overrides[r.id] } : r)),
+        [initialRows, overrides],
+    );
 
     const rows = useMemo(() => {
         const statuses = (state.status ?? []) as string[];
         const severities = (state.severity ?? []) as string[];
-        return initialRows.filter((r) => {
+        return rowData.filter((r) => {
             if (statuses.length && !statuses.includes(r.status)) return false;
             if (severities.length && !severities.includes((r.cve.cvssSeverity ?? '').toUpperCase())) return false;
             return true;
         });
-    }, [initialRows, state.status, state.severity]);
+    }, [rowData, state.status, state.severity]);
+
+    const applyOverride = useCallback(
+        (id: string, patch: Partial<VulnRow>) =>
+            setOverrides((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } })),
+        [],
+    );
+    const clearOverride = useCallback(
+        (id: string) => setOverrides((prev) => {
+            const next = { ...prev };
+            delete next[id];
+            return next;
+        }),
+        [],
+    );
+
+    // ─── Optimistic PATCH over the existing /vulnerabilities/[id] endpoint ───
+    const patchVuln = useCallback(
+        async (id: string, body: Record<string, unknown>, optimistic: Partial<VulnRow>) => {
+            applyOverride(id, optimistic);
+            try {
+                const res = await fetch(apiUrl(`/vulnerabilities/${id}`), {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            } catch {
+                clearOverride(id);
+                toast.error(t('updateFailed'));
+                router.refresh();
+            }
+        },
+        [apiUrl, applyOverride, clearOverride, router, toast, t],
+    );
+
+    const patchStatus = useCallback(
+        (id: string, status: string) => patchVuln(id, { status }, { status }),
+        [patchVuln],
+    );
+
+    const patchOwner = useCallback(
+        (id: string, userId: string | null, member: Member | null) =>
+            patchVuln(
+                id,
+                { ownerUserId: userId },
+                {
+                    ownerUserId: userId,
+                    ownerUser: userId && member ? { id: member.id, name: member.name, email: member.email } : null,
+                },
+            ),
+        [patchVuln],
+    );
+
+    const patchDue = useCallback(
+        (id: string, next: Date | null) => {
+            const ymd = toYMD(next);
+            return patchVuln(id, { remediationDueAt: ymd }, { remediationDueAt: ymd ?? null });
+        },
+        [patchVuln],
+    );
 
     const convert = useCallback(
         async (row: VulnRow, target: 'risk' | 'finding') => {
@@ -119,6 +209,33 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
             }
         },
         [apiUrl, router, toast, t],
+    );
+
+    const createRemediationTask = useCallback(
+        async (row: VulnRow) => {
+            setPendingId(row.id);
+            try {
+                const res = await fetch(apiUrl(`/vulnerabilities/${row.id}/remediation-task`), { method: 'POST' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const task = (await res.json()) as { id: string; key: string | null };
+                applyOverride(row.id, {
+                    remediationTaskId: task.id,
+                    remediationTask: { id: task.id, key: task.key },
+                });
+                toast.success(t('taskCreated'));
+                router.refresh();
+            } catch {
+                toast.error(t('taskCreateFailed'));
+            } finally {
+                setPendingId(null);
+            }
+        },
+        [apiUrl, applyOverride, router, toast, t],
+    );
+
+    const statusOptions = useMemo<ComboboxOption[]>(
+        () => VULN_STATUS_ORDER.map((s) => ({ value: s, label: statusLabels[s] ?? s })),
+        [statusLabels],
     );
 
     const columns = useMemo(() => createColumns<VulnRow>([
@@ -184,11 +301,106 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
             id: 'status',
             header: t('colStatus'),
             accessorFn: (r) => r.status,
-            cell: ({ row }) => (
-                <StatusBadge variant={STATUS_VARIANT[row.original.status] ?? 'neutral'}>
-                    {statusLabels[row.original.status] ?? row.original.status}
-                </StatusBadge>
-            ),
+            cell: ({ row }) => {
+                const r = row.original;
+                if (!canWrite) {
+                    return (
+                        <StatusBadge variant={STATUS_VARIANT[r.status] ?? 'neutral'}>
+                            {statusLabels[r.status] ?? r.status}
+                        </StatusBadge>
+                    );
+                }
+                return (
+                    <Combobox
+                        options={statusOptions}
+                        selected={statusOptions.find((o) => o.value === r.status) ?? null}
+                        setSelected={(opt) => opt && patchStatus(r.id, opt.value)}
+                        hideSearch
+                        matchTriggerWidth
+                        buttonProps={{ size: 'sm', 'aria-label': t('colStatus') }}
+                    />
+                );
+            },
+        },
+        {
+            id: 'owner',
+            header: t('colOwner'),
+            accessorFn: (r) => r.ownerUser?.name ?? r.ownerUser?.email ?? '',
+            cell: ({ row }) => {
+                const r = row.original;
+                if (!canWrite) {
+                    const label = r.ownerUser?.name ?? r.ownerUser?.email;
+                    return label ? (
+                        <span className="text-content-default">{label}</span>
+                    ) : (
+                        <span className="text-content-muted">{t('unassigned')}</span>
+                    );
+                }
+                return (
+                    <UserCombobox
+                        tenantSlug={tenantSlug}
+                        size="sm"
+                        matchTriggerWidth
+                        selectedId={r.ownerUserId}
+                        onChange={(userId, member) => patchOwner(r.id, userId, member)}
+                        placeholder={t('assignOwner')}
+                    />
+                );
+            },
+        },
+        {
+            id: 'due',
+            header: t('colDue'),
+            accessorFn: (r) => (r.remediationDueAt ? new Date(r.remediationDueAt).getTime() : -1),
+            cell: ({ row }) => {
+                const r = row.original;
+                if (!canWrite) {
+                    return r.remediationDueAt ? (
+                        <span className="tabular-nums text-content-default">{formatDate(r.remediationDueAt)}</span>
+                    ) : (
+                        <span className="text-content-muted">—</span>
+                    );
+                }
+                return (
+                    <DatePicker
+                        clearable
+                        align="start"
+                        placeholder={t('setDue')}
+                        value={r.remediationDueAt ? new Date(r.remediationDueAt) : null}
+                        onChange={(next) => patchDue(r.id, next)}
+                        aria-label={t('colDue')}
+                    />
+                );
+            },
+        },
+        {
+            id: 'remediation',
+            header: t('colRemediation'),
+            cell: ({ row }) => {
+                const r = row.original;
+                if (r.remediationTaskId) {
+                    return (
+                        <Link
+                            href={`/t/${tenantSlug}/tasks/${r.remediationTaskId}`}
+                            className="inline-flex items-center gap-1 font-medium text-content-link hover:underline"
+                        >
+                            {r.remediationTask?.key ?? t('viewTask')}
+                            <ArrowUpRight className="h-3 w-3 shrink-0" />
+                        </Link>
+                    );
+                }
+                if (!canWrite) return <span className="text-content-muted">—</span>;
+                return (
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        disabled={pendingId === r.id}
+                        onClick={() => createRemediationTask(r)}
+                    >
+                        {t('createTask')}
+                    </Button>
+                );
+            },
         },
         ...(canWrite
             ? [{
@@ -216,7 +428,19 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
                 ),
             }]
             : []),
-    ]), [canWrite, convert, pendingId, t]);
+    ]), [
+        canWrite,
+        convert,
+        createRemediationTask,
+        patchStatus,
+        patchOwner,
+        patchDue,
+        pendingId,
+        statusOptions,
+        statusLabels,
+        tenantSlug,
+        t,
+    ]);
 
     return (
         <EntityListPage<VulnRow>
