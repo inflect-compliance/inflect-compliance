@@ -2717,7 +2717,11 @@
             "assignPlaceholder": "Възложете на член",
             "assignStatus": "{status} · {count} въпр.",
             "createSelectedZero": "Създай избраните",
-            "createSelectedN": "Създай {count} избрани"
+            "createSelectedN": "Създай {count} избрани",
+            "baselineDelegateTitle": "Делегиране на тази оценка",
+            "baselineDelegateBody": "Това е базово изпълнение от въвеждането, което не може да бъде делегирано. Стартирайте самостоятелна повторна оценка, за да насочите всяка част към човека, който може да отговори.",
+            "baselineDelegateAction": "Стартиране на повторна оценка",
+            "viewCoverage": "Преглед на покритието по NIS2"
         },
         "respond": {
             "loadFailed": "Неуспешно зареждане на вашето възлагане.",
