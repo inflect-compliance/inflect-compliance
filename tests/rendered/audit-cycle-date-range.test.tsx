@@ -67,6 +67,7 @@ jest.mock('next-auth/react', () => ({
 import AuditCyclesPage from '@/app/t/[tenantSlug]/(app)/audits/cycles/page';
 
 import { DEFAULT_DATE_RANGE_PRESETS } from '@/components/ui/date-picker/presets-catalogue';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 // ─── Fetch stub ──────────────────────────────────────────────────────
 
@@ -107,7 +108,14 @@ afterEach(() => {
 });
 
 async function mountAndOpenForm() {
-    const utils = render(<AuditCyclesPage />);
+    // The cycles page now renders the readiness-legend <Tooltip> (PR-1b),
+    // which requires a TooltipProvider — the real app supplies one at the
+    // layout level; the test harness must too.
+    const utils = render(
+        <TooltipProvider>
+            <AuditCyclesPage />
+        </TooltipProvider>,
+    );
     // Wait for the initial cycles fetch to resolve → component exits the loading state.
     await waitFor(() => {
         expect(utils.container.querySelector('#create-cycle-btn')).not.toBeNull();

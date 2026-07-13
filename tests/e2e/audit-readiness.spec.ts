@@ -43,9 +43,16 @@ test.describe('Audit Readiness', () => {
                 if (attempt < 2) await page.waitForTimeout(5000);
             }
             await page.waitForLoadState('networkidle').catch(() => {});
-            await expect(page.locator('text=Audit Readiness')).toBeVisible({
-                timeout: 60000,
-            });
+            // Scope to the page's <h1> — "Audit Cycles" also appears in the
+            // breadcrumb + canonical-parent crumb, so a bare text= locator
+            // trips Playwright strict mode (3 matches). first() guards the
+            // Next streaming duplicate.
+            await expect(
+                page
+                    .getByRole('main')
+                    .getByRole('heading', { level: 1, name: 'Audit Cycles' })
+                    .first(),
+            ).toBeVisible({ timeout: 60000 });
         });
 
         await test.step('create ISO27001 cycle', async () => {

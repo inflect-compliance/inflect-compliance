@@ -9,6 +9,7 @@ import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { ClipboardCheck } from 'lucide-react';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button-variants';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FormField } from '@/components/ui/form-field';
@@ -19,10 +20,13 @@ import { selectDateRangePresets } from '@/components/ui/date-picker/presets-cata
 import type { DateRangeValue } from '@/components/ui/date-picker/types';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { InfoTooltip } from '@/components/ui/tooltip';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { cardVariants } from '@/components/ui/card';
+import { useToast } from '@/components/ui/hooks';
 import { cn } from '@/lib/cn';
+import { ReadinessScoreRing, ReadinessLegend } from './ReadinessScoreRing';
 
 // Epic 58 — audit periods are reporting windows. The curated preset
 // subset favours periods auditors actually request ("the most recent
@@ -63,15 +67,35 @@ const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     PLANNING: 'neutral', IN_PROGRESS: 'info', READY: 'success', COMPLETE: 'warning',
 };
 
+// The readiness overview endpoint returns the cycle list joined with a
+// per-cycle readiness score (`scoresByCycleId`). One call gives the
+// unified list everything it needs: framework meta, pack counts, AND
+// the score ring — collapsing what used to be two near-duplicate pages
+// (/audits/cycles + /audits/readiness) into this single surface.
+interface CycleRow {
+    id: string;
+    name: string;
+    frameworkKey: string;
+    frameworkVersion: string;
+    status: string;
+    createdAt: string;
+    packs?: { id: string }[];
+}
+interface ScoreEntry {
+    score: number;
+    recommendations?: string[];
+}
+
 export default function AuditCyclesPage() {
     const tx = useTranslations('audits');
+    const toast = useToast();
     const params = useParams();
     const router = useRouter();
     const tenantSlug = params.tenantSlug as string;
     const apiUrl = useCallback((path: string) => `/api/t/${tenantSlug}${path}`, [tenantSlug]);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [cycles, setCycles] = useState<any[]>([]);
+    const [cycles, setCycles] = useState<CycleRow[]>([]);
+    const [scores, setScores] = useState<Record<string, ScoreEntry>>({});
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState({ frameworkKey: 'ISO27001', frameworkVersion: '2022', name: '' });
@@ -82,10 +106,23 @@ export default function AuditCyclesPage() {
     const [period, setPeriod] = useState<DateRangeValue>({ from: null, to: null });
 
     useEffect(() => {
-        fetch(apiUrl('/audits/cycles'))
-            .then(r => r.ok ? r.json() : [])
-            .then(setCycles)
+        // Single call: the overview orchestrator fans out per-cycle
+        // readiness server-side (no 1+N waterfall) and returns the
+        // cycle list joined with `scoresByCycleId`.
+        fetch(apiUrl('/audits/readiness/overview'))
+            .then(r => r.ok ? r.json() : null)
+            .then((data) => {
+                if (!data) {
+                    toast.error(tx('cycles.loadError'));
+                    return;
+                }
+                setCycles(data.cycles ?? []);
+                setScores(data.scoresByCycleId ?? {});
+            })
+            .catch(() => toast.error(tx('cycles.loadError')))
             .finally(() => setLoading(false));
+        // First-mount fetch only — apiUrl is stable per tenant.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [apiUrl]);
 
     const create = async (e: React.FormEvent) => {
@@ -108,6 +145,10 @@ export default function AuditCyclesPage() {
         if (res.ok) {
             const cycle = await res.json();
             router.push(`/t/${tenantSlug}/audits/cycles/${cycle.id}`);
+        } else {
+            // Previously a silent no-op — a failed create left the form
+            // untouched with no signal. Surface the failure.
+            toast.error(tx('cycles.createError'));
         }
     };
 
@@ -132,7 +173,18 @@ export default function AuditCyclesPage() {
                         ]}
                         className="mb-1"
                     />
-                    <Heading level={1}>{tx('cycles.title')}</Heading>
+                    <div className="flex items-center gap-tight">
+                        <Heading level={1}>{tx('cycles.title')}</Heading>
+                        <InfoTooltip
+                            aria-label={tx('readinessLegend.aria')}
+                            content={<ReadinessLegend labels={{
+                                title: tx('readinessLegend.title'),
+                                green: tx('readinessLegend.green'),
+                                amber: tx('readinessLegend.amber'),
+                                red: tx('readinessLegend.red'),
+                            }} />}
+                        />
+                    </div>
                     <p className="text-content-muted text-sm">{tx('cycles.cycleCount', { count: cycles.length })}</p>
                 </div>
                 <Button variant="primary" icon={showForm ? undefined : <Plus className="-ml-0.5 -mr-2.5" />} onClick={() => setShowForm(!showForm)} id="create-cycle-btn">
@@ -230,23 +282,46 @@ export default function AuditCyclesPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-default">
                     {cycles.map(c => {
                         const meta = FW_META[c.frameworkKey] || { icon: 'shield' as AppIconName, label: c.frameworkKey, color: 'from-gray-500 to-gray-600' };
+                        const sc = scores[c.id];
                         return (
-                            <Link key={c.id} href={`/t/${tenantSlug}/audits/cycles/${c.id}`} id={`cycle-link-${c.id}`}
-                                className={cn(cardVariants(), 'hover:bg-bg-muted/50 transition group')}>
-                                <div className="flex items-start justify-between mb-3">
-                                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${meta.color} flex items-center justify-center text-lg`}>
-                                        <AppIcon name={meta.icon} size={20} />
+                            <div key={c.id} className={cardVariants()} id={`cycle-card-${c.id}`}>
+                                <div className="flex items-start gap-default">
+                                    <div className="flex-shrink-0">
+                                        <ReadinessScoreRing score={sc?.score} noScoreLabel={tx('cycles.noScore')} ariaLabel={sc ? tx('cycles.scoreAria', { score: sc.score }) : tx('cycles.noScore')} />
                                     </div>
-                                    <StatusBadge variant={STATUS_BADGE[c.status] || 'neutral'}>{c.status}</StatusBadge>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-start justify-between gap-tight mb-1">
+                                            <span className={`w-10 h-10 rounded-lg bg-gradient-to-br ${meta.color} flex items-center justify-center text-lg flex-shrink-0`}>
+                                                <AppIcon name={meta.icon} size={20} />
+                                            </span>
+                                            <StatusBadge variant={STATUS_BADGE[c.status] || 'neutral'}>{c.status}</StatusBadge>
+                                        </div>
+                                        <Heading level={3} className="truncate">{c.name}</Heading>
+                                        <p className="text-xs text-content-muted mt-1">{meta.label} · v{c.frameworkVersion}</p>
+                                        <div className="flex items-center gap-tight mt-1 text-xs text-content-subtle">
+                                            <span>{tx('cycles.packCount', { count: c.packs?.length || 0 })}</span>
+                                            <span>·</span>
+                                            <span>{formatDate(c.createdAt)}</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <Heading level={3} className="group-hover:text-content-emphasis transition">{c.name}</Heading>
-                                <p className="text-xs text-content-muted mt-1">{meta.label} · v{c.frameworkVersion}</p>
-                                <div className="flex items-center gap-tight mt-3 text-xs text-content-subtle">
-                                    <span>{tx('cycles.packCount', { count: c.packs?.length || 0 })}</span>
-                                    <span>·</span>
-                                    <span>{formatDate(c.createdAt)}</span>
+                                <div className="mt-3 flex flex-wrap gap-tight">
+                                    <Link
+                                        href={`/t/${tenantSlug}/audits/cycles/${c.id}`}
+                                        className={buttonVariants({ variant: 'secondary', size: 'sm' })}
+                                        id={`cycle-link-${c.id}`}
+                                    >
+                                        {tx('cycles.openCycle')}
+                                    </Link>
+                                    <Link
+                                        href={`/t/${tenantSlug}/audits/cycles/${c.id}/readiness`}
+                                        className={buttonVariants({ variant: 'secondary', size: 'sm' })}
+                                        id={`readiness-link-${c.id}`}
+                                    >
+                                        {tx('cycles.viewReadiness')}
+                                    </Link>
                                 </div>
-                            </Link>
+                            </div>
                         );
                     })}
                 </div>

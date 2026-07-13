@@ -254,6 +254,69 @@ export function AuditsClient({ initialAudits, tenantSlug, hasNis2, canWrite, tra
 
             <TruncationBanner truncated={truncated} />
 
+            {/* Audit lifecycle — the PRIMARY path into the cycle → pack →
+                readiness → share → findings → remediate flow. The pills in
+                the header (Frameworks / Scans / Incidents / NIS2 / BCM) are
+                tangential entry points; this band is where an audit starts. */}
+            <section className={cn(cardVariants(), 'space-y-default')} aria-labelledby="audit-lifecycle-heading" id="audit-lifecycle">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-compact">
+                    <div>
+                        <Heading level={2} id="audit-lifecycle-heading">{tx('hub.lifecycleTitle')}</Heading>
+                        <p className="text-sm text-content-muted">{tx('hub.lifecycleSubtitle')}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-tight">
+                        <Link href={`/t/${tenantSlug}/audits/cycles`} className={cn(buttonVariants({ variant: 'secondary' }))} id="audits-cycles-link">
+                            {tx('hub.cycles')}
+                        </Link>
+                        <Link href={`/t/${tenantSlug}/audits/readiness`} className={cn(buttonVariants({ variant: 'secondary' }))} id="audits-readiness-link">
+                            {tx('hub.readiness')}
+                        </Link>
+                        <Link href={`/t/${tenantSlug}/audits/auditor`} className={cn(buttonVariants({ variant: 'secondary' }))} id="audits-auditor-link">
+                            {tx('hub.auditorPortal')}
+                        </Link>
+                    </div>
+                </div>
+
+                <div className="space-y-tight">
+                    <div>
+                        <Heading level={3}>{tx('hub.startTitle')}</Heading>
+                        <p className="text-sm text-content-muted">{tx('hub.startSubtitle')}</p>
+                    </div>
+                    <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-tight">
+                        {[
+                            { title: tx('hub.step1Title'), desc: tx('hub.step1Desc'), href: `/t/${tenantSlug}/audits/cycles` },
+                            { title: tx('hub.step2Title'), desc: tx('hub.step2Desc'), href: `/t/${tenantSlug}/audits/cycles` },
+                            { title: tx('hub.step3Title'), desc: tx('hub.step3Desc'), href: `/t/${tenantSlug}/audits/cycles` },
+                            { title: tx('hub.step4Title'), desc: tx('hub.step4Desc'), href: `/t/${tenantSlug}/audits/cycles` },
+                            { title: tx('hub.step5Title'), desc: tx('hub.step5Desc'), href: `/t/${tenantSlug}/findings` },
+                            { title: tx('hub.step6Title'), desc: tx('hub.step6Desc'), href: `/t/${tenantSlug}/tasks` },
+                        ].map((step, i) => (
+                            <li key={i}>
+                                <Link
+                                    href={step.href}
+                                    id={`audit-step-${i + 1}`}
+                                    className={cn(
+                                        cardVariants({ density: 'compact' }),
+                                        'flex items-start gap-compact hover:bg-bg-muted/50 hover:border-border-emphasis transition h-full',
+                                    )}
+                                >
+                                    <span
+                                        className="flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-full border border-border-subtle bg-bg-elevated text-sm font-semibold text-content-default"
+                                        aria-label={tx('hub.stepLabel', { n: i + 1 })}
+                                    >
+                                        {i + 1}
+                                    </span>
+                                    <span className="min-w-0">
+                                        <span className="block text-sm font-medium text-content-default">{step.title}</span>
+                                        <span className="block text-xs text-content-subtle mt-0.5">{step.desc}</span>
+                                    </span>
+                                </Link>
+                            </li>
+                        ))}
+                    </ol>
+                </div>
+            </section>
+
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-default">
                 <div className="space-y-tight">

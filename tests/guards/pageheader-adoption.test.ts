@@ -79,7 +79,7 @@ const PAGES: PageEntry[] = [
     {
         file: "src/app/t/[tenantSlug]/(app)/audits/readiness/page.tsx",
         adopted: false,
-        note: "Readiness landing page (Server Component). Pending migration; needs ratchet-aware handling of server-component composition.",
+        note: "Readiness route is now a redirect shim → /audits/cycles (the unified cycle+readiness list). No PageHeader by design; nothing to migrate.",
     },
     {
         file: "src/app/t/[tenantSlug]/(app)/risks/RisksClient.tsx",
