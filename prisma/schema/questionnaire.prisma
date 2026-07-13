@@ -5,17 +5,17 @@
 /// PR-9 — a reusable Q&A pair for inbound security questionnaires. Accepted
 /// answers feed back here so the library improves over time.
 model QuestionnaireAnswerLibrary {
-  id            String    @id @default(cuid())
-  tenantId      String
-  questionText  String
-  answerText    String
+  id             String    @id @default(cuid())
+  tenantId       String
+  questionText   String
+  answerText     String
   /// Source citations backing the answer: [{ kind, id, label }].
-  sourceRefsJson Json     @default("[]")
-  confidence    Float?
-  useCount      Int       @default(0)
-  lastUsedAt    DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  sourceRefsJson Json      @default("[]")
+  confidence     Float?
+  useCount       Int       @default(0)
+  lastUsedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
 

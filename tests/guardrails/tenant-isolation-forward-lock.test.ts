@@ -90,6 +90,7 @@ const ISOLATION_BASELINE: readonly string[] = [
     "EvidenceReview",
     "FileRecord",
     "Finding",
+    "FindingAsset",
     "FindingEvidence",
     "FindingRisk",
     "FrameworkRequirementOrder",

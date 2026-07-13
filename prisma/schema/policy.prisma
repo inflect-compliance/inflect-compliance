@@ -3,14 +3,14 @@
 // Enums live in enums.prisma; relations resolve across the schema folder.
 
 model Policy {
-  id                   String              @id @default(cuid())
+  id                   String               @id @default(cuid())
   tenantId             String
   slug                 String
   title                String
   description          String?
   category             String?
-  status               PolicyStatus        @default(DRAFT)
-  currentVersionId     String?             @unique
+  status               PolicyStatus         @default(DRAFT)
+  currentVersionId     String?              @unique
   ownerUserId          String?
   reviewFrequencyDays  Int?
   nextReviewAt         DateTime?
@@ -18,16 +18,16 @@ model Policy {
   /// Distinct from PolicyApproval (initial sign-off): markPolicyReviewed
   /// stamps this + recomputes nextReviewAt = now + reviewFrequencyDays.
   lastReviewedAt       DateTime?
-  language             String?             @default("en")
+  language             String?              @default("en")
   /// Lifecycle version counter (matches CISO-Assistant editing_version).
   /// 1 = initial content, 2+ = published. Incremented only on publish.
-  lifecycleVersion     Int                 @default(1)
+  lifecycleVersion     Int                  @default(1)
   /// Persisted history of prior published snapshots as JSON array.
   /// Matches CISO-Assistant editing_history. Entries have fields:
   /// version, payload, publishedAt, publishedBy, changeSummary (optional)
   lifecycleHistoryJson Json?
-  createdAt            DateTime            @default(now())
-  updatedAt            DateTime            @updatedAt
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
   deletedAt            DateTime?
   deletedByUserId      String?
   retentionUntil       DateTime?
@@ -42,13 +42,13 @@ model Policy {
   /// SP-F1 — the IntegrationConnection backing this link (multi-connection
   /// tenants). Null on pre-SP-F1 links → resolve the tenant's first connection.
   spConnectionId       String?
-  currentVersion       PolicyVersion?      @relation("CurrentVersion", fields: [currentVersionId], references: [id])
-  owner                User?               @relation("PolicyOwner", fields: [ownerUserId], references: [id])
-  tenant               Tenant              @relation(fields: [tenantId], references: [id])
+  currentVersion       PolicyVersion?       @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+  owner                User?                @relation("PolicyOwner", fields: [ownerUserId], references: [id])
+  tenant               Tenant               @relation(fields: [tenantId], references: [id])
   approvals            PolicyApproval[]
   controlLinks         PolicyControlLink[]
   evidenceItems        PolicyEvidenceItem[]
-  versions             PolicyVersion[]     @relation("PolicyVersions")
+  versions             PolicyVersion[]      @relation("PolicyVersions")
 
   @@unique([id, tenantId])
   @@index([tenantId, slug])

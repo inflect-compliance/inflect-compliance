@@ -194,21 +194,46 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
         [patchVuln],
     );
 
-    const convert = useCallback(
-        async (row: VulnRow, target: 'risk' | 'finding') => {
+    const convertToRisk = useCallback(
+        async (row: VulnRow) => {
             setPendingId(row.id);
             try {
-                const res = await fetch(apiUrl(`/vulnerabilities/${row.id}/convert-to-${target}`), { method: 'POST' });
+                const res = await fetch(apiUrl(`/vulnerabilities/${row.id}/convert-to-risk`), { method: 'POST' });
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                toast.success(target === 'risk' ? t('riskCreated') : t('findingCreated'));
+                toast.success(t('riskCreated'));
                 router.refresh();
             } catch {
-                toast.error(t('convertFailed', { target }));
+                toast.error(t('convertFailed', { target: 'risk' }));
             } finally {
                 setPendingId(null);
             }
         },
         [apiUrl, router, toast, t],
+    );
+
+    const convert = useCallback(
+        async (row: VulnRow, target: 'risk' | 'finding') => {
+            if (target === 'risk') return convertToRisk(row);
+            setPendingId(row.id);
+            try {
+                const res = await fetch(apiUrl(`/vulnerabilities/${row.id}/convert-to-finding`), { method: 'POST' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const body = (await res.json().catch(() => null)) as { nudge?: { suggestElevateToRisk?: boolean } } | null;
+                if (body?.nudge?.suggestElevateToRisk) {
+                    // Finding may under-capture a HIGH/CRITICAL vuln — offer to
+                    // also elevate to a Risk (opt-in, never automatic).
+                    toast.info(t('elevateNudge'), { action: { label: t('elevateAction'), onClick: () => void convertToRisk(row) } });
+                } else {
+                    toast.success(t('findingCreated'));
+                }
+                router.refresh();
+            } catch {
+                toast.error(t('convertFailed', { target: 'finding' }));
+            } finally {
+                setPendingId(null);
+            }
+        },
+        [apiUrl, convertToRisk, router, toast, t],
     );
 
     const createRemediationTask = useCallback(

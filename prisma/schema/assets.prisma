@@ -48,6 +48,7 @@ model Asset {
   ownerUser           User?                @relation("AssetOwner", fields: [ownerUserId], references: [id])
   tenant              Tenant               @relation(fields: [tenantId], references: [id])
   risks               AssetRiskLink[]
+  findingLinks        FindingAsset[]
   controls            ControlAsset[]
   vulnerabilities     AssetVulnerability[]
   riskSuggestionItems RiskSuggestionItem[]
@@ -109,23 +110,23 @@ model Cve {
 /// sanitisation + index coverage (it carries a `tenantId`, so the
 /// rls-coverage / schema-index guardrails enforce all three).
 model AssetVulnerability {
-  id         String   @id @default(cuid())
-  tenantId   String
-  assetId    String
-  cveId      String
+  id                String    @id @default(cuid())
+  tenantId          String
+  assetId           String
+  cveId             String
   /// OPEN | MITIGATING | MITIGATED | ACCEPTED | FALSE_POSITIVE
-  status     String   @default("OPEN")
-  matchedAt  DateTime @default(now())
+  status            String    @default("OPEN")
+  matchedAt         DateTime  @default(now())
   /// How the link was made: 'CPE' (automatic) | 'MANUAL' (tenant-linked).
-  matchedVia String
+  matchedVia        String
   /// Free-text analyst note — encrypted at rest (Epic B manifest) and
   /// sanitised on write (Epic D).
-  note       String?
+  note              String?
   /// Triage: the tenant member accountable for remediation. Nullable
   /// (unassigned). NOT encrypted — it is an FK id, not content.
-  ownerUserId      String?
+  ownerUserId       String?
   /// Triage: optional remediation SLA / due date.
-  remediationDueAt DateTime?
+  remediationDueAt  DateTime?
   /// Triage: the Task spawned to drive remediation. `onDelete: SetNull`
   /// so deleting the task only clears the link — it never cascade-
   /// deletes the vulnerability row.
@@ -156,7 +157,7 @@ model AssetVulnerability {
 /// INTEGRATION_RESULT); FAILING findings reconcile into `Finding` rows
 /// (sourceKind='SCANNER'). Full RLS + index coverage (tenantId present).
 model ScannerRun {
-  id           String           @id @default(cuid())
+  id           String   @id @default(cuid())
   tenantId     String
   /// 'SEMGREP'|'TRIVY'|'ZAP'|'GITLEAKS'|'CHECKOV'|'CODEQL'|'OTHER'.
   source       String
@@ -169,10 +170,10 @@ model ScannerRun {
   /// Repo / project the scan ran against (free-text ref, e.g.
   /// `owner/repo@<sha>`). NOT encrypted — a project identifier, not content.
   repoRef      String?
-  findingCount Int              @default(0)
+  findingCount Int      @default(0)
   /// 'API'|'WEBHOOK'|'UPLOAD' — how the SARIF reached IC.
   ingestedVia  String
-  createdAt    DateTime         @default(now())
+  createdAt    DateTime @default(now())
 
   tenant   Tenant           @relation(fields: [tenantId], references: [id])
   findings ScannerFinding[]
@@ -188,7 +189,7 @@ model ScannerRun {
 /// idempotent). `description` is Epic B-encrypted + Epic D-sanitised —
 /// scanner messages can quote source snippets / secrets.
 model ScannerFinding {
-  id           String     @id @default(cuid())
+  id           String   @id @default(cuid())
   scannerRunId String
   tenantId     String
   /// SHA-256 fingerprint of (ruleId, location, message). Re-scans upsert
@@ -205,11 +206,11 @@ model ScannerFinding {
   location     String?
   /// CWE refs (e.g. 'CWE-79') from the SARIF rule metadata — drive the
   /// CWE → OWASP/SSDF framework cross-walk.
-  cweIds       String[]   @default([])
+  cweIds       String[] @default([])
   /// OPEN|TRIAGED|FIXED|FALSE_POSITIVE|ACCEPTED — triage lifecycle.
-  status       String     @default("OPEN")
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  status       String   @default("OPEN")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   tenant     Tenant     @relation(fields: [tenantId], references: [id])
   scannerRun ScannerRun @relation(fields: [scannerRunId], references: [id], onDelete: Cascade)
@@ -238,4 +239,27 @@ model AssetRiskLink {
   @@unique([tenantId, assetId, riskId])
   @@index([tenantId, riskId])
   @@index([tenantId])
+}
+
+// Finding <-> Asset junction — mirrors AssetRiskLink so converting a
+// vulnerability into a Finding keeps the asset↔finding graph connected
+// (parity with convert-to-Risk). Composite FK to Finding(id, tenantId)
+// guarantees both sides share this row's tenant.
+model FindingAsset {
+  id              String   @id @default(cuid())
+  tenantId        String
+  findingId       String
+  assetId         String
+  rationale       String?
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+  finding         Finding  @relation(fields: [findingId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  asset           Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  createdBy       User?    @relation("FindingAssetCreator", fields: [createdByUserId], references: [id])
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, assetId, findingId])
+  @@index([tenantId])
+  @@index([tenantId, findingId])
+  @@index([tenantId, assetId])
 }

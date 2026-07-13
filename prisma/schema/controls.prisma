@@ -181,7 +181,7 @@ model ControlTask {
 }
 
 model ControlEvidenceLink {
-  id                  String           @id @default(cuid())
+  id                  String                  @id @default(cuid())
   tenantId            String
   controlId           String
   kind                EvidenceLinkKind
@@ -194,12 +194,12 @@ model ControlEvidenceLink {
   biaId               String?
   note                String?
   createdByUserId     String?
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  control             Control          @relation(fields: [controlId], references: [id], onDelete: Cascade)
-  createdBy           User?            @relation("ControlEvidenceCreator", fields: [createdByUserId], references: [id])
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  control             Control                 @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  createdBy           User?                   @relation("ControlEvidenceCreator", fields: [createdByUserId], references: [id])
   bia                 BusinessImpactAnalysis? @relation(fields: [biaId], references: [id], onDelete: Cascade)
-  tenant              Tenant           @relation(fields: [tenantId], references: [id])
+  tenant              Tenant                  @relation(fields: [tenantId], references: [id])
 
   @@unique([controlId, kind, fileId])
   @@unique([controlId, kind, url])
@@ -210,13 +210,13 @@ model ControlEvidenceLink {
 }
 
 model ControlTemplate {
-  id               String                           @id @default(cuid())
-  code             String                           @unique
-  title            String
-  description      String?
-  category         String?
-  defaultFrequency ControlFrequency?
-  defaultOwnerHint String?
+  id                 String                           @id @default(cuid())
+  code               String                           @unique
+  title              String
+  description        String?
+  category           String?
+  defaultFrequency   ControlFrequency?
+  defaultOwnerHint   String?
   // Internal-controls import (customer GRC export): the control's objective
   // (what it achieves), success criteria (what "passing" looks like), and
   // testing/audit methodology. Copied onto the Control on install.
@@ -226,12 +226,12 @@ model ControlTemplate {
   // Pipe-separated policy names this control relates to (from the source
   // export); resolved to PolicyControlLink per-tenant on install where a
   // matching policy exists. Framework mapping deferred (source Tags empty).
-  relatedPolicies  String?
-  isGlobal         Boolean                          @default(true)
-  createdAt        DateTime                         @default(now())
-  requirementLinks ControlTemplateRequirementLink[]
-  tasks            ControlTemplateTask[]
-  packLinks        PackTemplateLink[]
+  relatedPolicies    String?
+  isGlobal           Boolean                          @default(true)
+  createdAt          DateTime                         @default(now())
+  requirementLinks   ControlTemplateRequirementLink[]
+  tasks              ControlTemplateTask[]
+  packLinks          PackTemplateLink[]
 }
 
 model ControlTemplateTask {

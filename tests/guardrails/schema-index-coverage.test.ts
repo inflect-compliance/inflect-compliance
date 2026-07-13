@@ -184,6 +184,7 @@ const FK_INDEX_EXEMPT: Record<string, string> = {
     'RiskControl.createdByUserId': R_ACTOR,
     'ControlAsset.createdByUserId': R_ACTOR,
     'AssetRiskLink.createdByUserId': R_ACTOR,
+    'FindingAsset.createdByUserId': R_ACTOR,
     'ControlContributor.userId': R_ACTOR,
     'ControlTask.assigneeUserId': R_ACTOR,
     'ControlEvidenceLink.createdByUserId': R_ACTOR,

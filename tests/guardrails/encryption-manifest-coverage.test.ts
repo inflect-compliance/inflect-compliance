@@ -81,6 +81,8 @@ const NOT_SENSITIVE: Readonly<Record<string, string>> = {
         'FK — Finding id, not content (heuristic matched "finding").',
     'FindingRisk.findingId':
         'FK — Finding id, not content (heuristic matched "finding").',
+    'FindingAsset.findingId':
+        'FK — Finding id, not content (heuristic matched "finding").',
     'VendorPostureEvent.createdFindingId':
         'FK — created-Finding id, not content (heuristic matched "finding").',
     'VendorAnswerProposal.createdAnswerId':
