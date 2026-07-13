@@ -17,6 +17,7 @@ jest.mock('../../src/app-layer/services/bia-recovery-priority', () => ({
 import {
     createBia, listBias, getBia, updateBia, deleteBia, linkBiaToControl,
     getControlBiaSurface, getBiasForProcessNode, getBiasForProcessNodeKey, getIncidentBiaContext,
+    listBiaDependencyOptions, addBiaDependency, removeBiaDependency,
 } from '@/app-layer/usecases/business-impact-analysis';
 import { runInTenantContext } from '@/lib/db-context';
 
@@ -31,7 +32,10 @@ beforeEach(() => jest.clearAllMocks());
 describe('createBia', () => {
     function db(over: Record<string, unknown> = {}) {
         return {
-            processNode: { findFirst: jest.fn().mockResolvedValue({ id: 'n1' }) },
+            processNode: { findFirst: jest.fn().mockResolvedValue({ id: 'n1' }), findMany: jest.fn().mockResolvedValue([]) },
+            asset: { findMany: jest.fn().mockResolvedValue([]) },
+            vendor: { findMany: jest.fn().mockResolvedValue([{ id: 'v1' }]) },
+            risk: { findMany: jest.fn().mockResolvedValue([]) },
             businessImpactAnalysis: { create: jest.fn().mockResolvedValue({ id: 'b1', name: 'Payroll' }) },
             biaDependency: { createMany: jest.fn().mockResolvedValue({ count: 1 }) },
             ...over,
@@ -53,6 +57,21 @@ describe('createBia', () => {
         await createBia(ctx(), { name: 'Simple', criticality: 'LOW' });
         expect(d.biaDependency.createMany).not.toHaveBeenCalled();
         expect(d.processNode.findFirst).not.toHaveBeenCalled();
+    });
+    it('accepts a RISK dependency (new type, no migration)', async () => {
+        const d = db({ risk: { findMany: jest.fn().mockResolvedValue([{ id: 'r1' }]) } });
+        withDb(d);
+        await createBia(ctx(), {
+            name: 'Payroll', criticality: 'HIGH',
+            dependencies: [{ dependsOnType: 'RISK', dependsOnId: 'r1' }],
+        });
+        expect(d.biaDependency.createMany).toHaveBeenCalled();
+    });
+    it('rejects a dependency whose target is not in the tenant', async () => {
+        withDb(db({ vendor: { findMany: jest.fn().mockResolvedValue([]) } }));
+        await expect(
+            createBia(ctx(), { name: 'X', criticality: 'HIGH', dependencies: [{ dependsOnType: 'VENDOR', dependsOnId: 'gone' }] }),
+        ).rejects.toThrow(/INVALID_DEPENDENCY_TARGET/);
     });
     it('rejects an invalid process node', async () => {
         withDb(db({ processNode: { findFirst: jest.fn().mockResolvedValue(null) } }));
@@ -82,12 +101,76 @@ describe('getBia', () => {
         withDb({ businessImpactAnalysis: { findFirst: jest.fn().mockResolvedValue(null) } });
         await expect(getBia(ctx(), 'x')).rejects.toThrow(/not found/i);
     });
-    it('returns the BIA with a recovery rank', async () => {
+    it('returns the BIA with a recovery rank and enriched (empty) links', async () => {
         withDb({ businessImpactAnalysis: {
-            findFirst: jest.fn().mockResolvedValue({ id: 'b1', name: 'P' }),
+            findFirst: jest.fn().mockResolvedValue({ id: 'b1', name: 'P', dependencies: [], evidenceLinks: [] }),
             findMany: jest.fn().mockResolvedValue([{ id: 'b1', criticality: 'HIGH', mtpdHours: 1, rtoHours: 1 }]),
         } });
-        await expect(getBia(ctx(), 'b1')).resolves.toMatchObject({ id: 'b1', recovery: { rank: 1 } });
+        await expect(getBia(ctx(), 'b1')).resolves.toMatchObject({ id: 'b1', recovery: { rank: 1 }, dependencies: [], linkedControls: [] });
+    });
+    it('resolves dependency targets + linked-control frameworks', async () => {
+        withDb({
+            businessImpactAnalysis: {
+                findFirst: jest.fn().mockResolvedValue({
+                    id: 'b1', name: 'P',
+                    dependencies: [{ id: 'd1', dependsOnType: 'ASSET', dependsOnId: 'a1' }],
+                    evidenceLinks: [{ id: 'e1', controlId: 'c1' }],
+                }),
+                findMany: jest.fn().mockResolvedValue([{ id: 'b1', criticality: 'HIGH', mtpdHours: 1, rtoHours: 1 }]),
+            },
+            processNode: { findMany: jest.fn().mockResolvedValue([]) },
+            asset: { findMany: jest.fn().mockResolvedValue([{ id: 'a1', name: 'DB server' }]) },
+            vendor: { findMany: jest.fn().mockResolvedValue([]) },
+            risk: { findMany: jest.fn().mockResolvedValue([]) },
+            control: { findMany: jest.fn().mockResolvedValue([{ id: 'c1', name: 'Continuity', code: 'A.5.29' }]) },
+            controlRequirementLink: { findMany: jest.fn().mockResolvedValue([
+                { controlId: 'c1', requirement: { code: 'Art.21(2)(c)', title: 'BCM', framework: { key: 'NIS2', name: 'NIS2' } } },
+            ]) },
+        });
+        const res = await getBia(ctx(), 'b1');
+        expect(res.dependencies[0]).toMatchObject({ targetName: 'DB server', targetPath: '/assets/a1' });
+        expect(res.linkedControls[0]).toMatchObject({ id: 'c1', code: 'A.5.29', requirements: [{ frameworkName: 'NIS2', code: 'Art.21(2)(c)' }] });
+    });
+});
+
+describe('listBiaDependencyOptions', () => {
+    it('returns { id, label } for assets', async () => {
+        withDb({ asset: { findMany: jest.fn().mockResolvedValue([{ id: 'a1', name: 'DB' }]) } });
+        await expect(listBiaDependencyOptions(ctx(), 'ASSET')).resolves.toEqual([{ id: 'a1', label: 'DB' }]);
+    });
+    it('returns { id, label } for risks (title → label)', async () => {
+        withDb({ risk: { findMany: jest.fn().mockResolvedValue([{ id: 'r1', title: 'Outage' }]) } });
+        await expect(listBiaDependencyOptions(ctx(), 'RISK')).resolves.toEqual([{ id: 'r1', label: 'Outage' }]);
+    });
+});
+
+describe('addBiaDependency / removeBiaDependency', () => {
+    it('adds a validated dependency', async () => {
+        const create = jest.fn().mockResolvedValue({ id: 'd1' });
+        withDb({
+            businessImpactAnalysis: { findFirst: jest.fn().mockResolvedValue({ id: 'b1' }) },
+            asset: { findMany: jest.fn().mockResolvedValue([{ id: 'a1' }]) },
+            processNode: { findMany: jest.fn().mockResolvedValue([]) },
+            vendor: { findMany: jest.fn().mockResolvedValue([]) },
+            risk: { findMany: jest.fn().mockResolvedValue([]) },
+            biaDependency: { create },
+        });
+        await expect(addBiaDependency(ctx(), 'b1', { dependsOnType: 'ASSET', dependsOnId: 'a1' })).resolves.toEqual({ id: 'd1' });
+        expect(create).toHaveBeenCalled();
+    });
+    it('rejects adding to a missing BIA', async () => {
+        withDb({ businessImpactAnalysis: { findFirst: jest.fn().mockResolvedValue(null) } });
+        await expect(addBiaDependency(ctx(), 'x', { dependsOnType: 'ASSET', dependsOnId: 'a1' })).rejects.toThrow(/not found/i);
+    });
+    it('removes an existing dependency', async () => {
+        const del = jest.fn().mockResolvedValue({});
+        withDb({ biaDependency: { findFirst: jest.fn().mockResolvedValue({ id: 'd1' }), delete: del } });
+        await expect(removeBiaDependency(ctx(), 'b1', 'd1')).resolves.toEqual({ id: 'd1' });
+        expect(del).toHaveBeenCalled();
+    });
+    it('throws when removing a missing dependency', async () => {
+        withDb({ biaDependency: { findFirst: jest.fn().mockResolvedValue(null) } });
+        await expect(removeBiaDependency(ctx(), 'b1', 'gone')).rejects.toThrow(/not found/i);
     });
 });
 

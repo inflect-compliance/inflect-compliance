@@ -35,7 +35,13 @@ import { deriveRecoveryPriority, rankFor } from '../services/bia-recovery-priori
 export const CONTINUITY_REQUIREMENT_CODES = ['Art.21(2)(c)', 'A.5.29', 'A.5.30'] as const;
 
 const CriticalityEnum = z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']);
-const DependencyTypeEnum = z.enum(['PROCESS', 'ASSET', 'VENDOR']);
+/**
+ * A BIA dependency can point at a modeled process node, an asset, a
+ * vendor, or a risk. `dependsOnType` is a plain string column, so RISK
+ * joined the set with no schema migration.
+ */
+const DependencyTypeEnum = z.enum(['PROCESS', 'ASSET', 'VENDOR', 'RISK']);
+export type BiaDependencyType = z.infer<typeof DependencyTypeEnum>;
 
 const DependencyInput = z.object({
     dependsOnType: DependencyTypeEnum,
@@ -85,11 +91,214 @@ async function assertProcessNode(
     if (!node) throw badRequest('INVALID_PROCESS_NODE', 'Process node not found in this tenant');
 }
 
+type Db = Parameters<Parameters<typeof runInTenantContext>[1]>[0];
+
+/** The client-side route segment each dependency type links out to. */
+const DEP_PATH: Record<BiaDependencyType, (id: string, extra?: string) => string> = {
+    PROCESS: (_id, processMapId) => `/processes/${processMapId ?? ''}`,
+    ASSET: (id) => `/assets/${id}`,
+    VENDOR: (id) => `/vendors/${id}`,
+    RISK: (id) => `/risks/${id}`,
+};
+
+interface ResolvedDependency {
+    id: string;
+    dependsOnType: string;
+    dependsOnId: string;
+    /** Human name of the target, or null if it no longer exists. */
+    targetName: string | null;
+    /** Tenant-relative path to the target detail page, or null. */
+    targetPath: string | null;
+}
+
+/**
+ * Batch-resolve every dependency's target name + link path in ONE query
+ * per type (no N+1). An unresolved target (deleted entity) renders as a
+ * plain, non-navigable label.
+ */
+async function resolveDependencies(
+    db: Db,
+    ctx: RequestContext,
+    deps: { id: string; dependsOnType: string; dependsOnId: string }[],
+): Promise<ResolvedDependency[]> {
+    const byType = (t: BiaDependencyType) =>
+        deps.filter((d) => d.dependsOnType === t).map((d) => d.dependsOnId);
+    const [processIds, assetIds, vendorIds, riskIds] = [
+        byType('PROCESS'),
+        byType('ASSET'),
+        byType('VENDOR'),
+        byType('RISK'),
+    ];
+    const [processes, assets, vendors, risks] = await Promise.all([
+        processIds.length
+            ? db.processNode.findMany({
+                  where: { tenantId: ctx.tenantId, id: { in: processIds } },
+                  select: { id: true, label: true, processMapId: true },
+                  take: 200,
+              })
+            : Promise.resolve([]),
+        assetIds.length
+            ? db.asset.findMany({
+                  where: { tenantId: ctx.tenantId, id: { in: assetIds } },
+                  select: { id: true, name: true },
+                  take: 200,
+              })
+            : Promise.resolve([]),
+        vendorIds.length
+            ? db.vendor.findMany({
+                  where: { tenantId: ctx.tenantId, id: { in: vendorIds } },
+                  select: { id: true, name: true },
+                  take: 200,
+              })
+            : Promise.resolve([]),
+        riskIds.length
+            ? db.risk.findMany({
+                  where: { tenantId: ctx.tenantId, id: { in: riskIds } },
+                  select: { id: true, title: true },
+                  take: 200,
+              })
+            : Promise.resolve([]),
+    ]);
+    const processMap = new Map(processes.map((p) => [p.id, p]));
+    const assetMap = new Map(assets.map((a) => [a.id, a.name]));
+    const vendorMap = new Map(vendors.map((v) => [v.id, v.name]));
+    const riskMap = new Map(risks.map((r) => [r.id, r.title]));
+
+    return deps.map((d) => {
+        let targetName: string | null = null;
+        let targetPath: string | null = null;
+        switch (d.dependsOnType) {
+            case 'PROCESS': {
+                const node = processMap.get(d.dependsOnId);
+                if (node) {
+                    targetName = node.label;
+                    targetPath = DEP_PATH.PROCESS(d.dependsOnId, node.processMapId);
+                }
+                break;
+            }
+            case 'ASSET': {
+                const name = assetMap.get(d.dependsOnId);
+                if (name != null) {
+                    targetName = name;
+                    targetPath = DEP_PATH.ASSET(d.dependsOnId);
+                }
+                break;
+            }
+            case 'VENDOR': {
+                const name = vendorMap.get(d.dependsOnId);
+                if (name != null) {
+                    targetName = name;
+                    targetPath = DEP_PATH.VENDOR(d.dependsOnId);
+                }
+                break;
+            }
+            case 'RISK': {
+                const title = riskMap.get(d.dependsOnId);
+                if (title != null) {
+                    targetName = title;
+                    targetPath = DEP_PATH.RISK(d.dependsOnId);
+                }
+                break;
+            }
+        }
+        return { id: d.id, dependsOnType: d.dependsOnType, dependsOnId: d.dependsOnId, targetName, targetPath };
+    });
+}
+
+export interface LinkedControl {
+    id: string;
+    name: string;
+    code: string | null;
+    /** The framework requirements this control maps to — the REAL signal. */
+    requirements: { code: string; title: string; frameworkKey: string; frameworkName: string }[];
+}
+
+/**
+ * Resolve the controls this BIA is linked to (as evidence) plus each
+ * control's framework-requirement mappings. This is the truthful
+ * framework signal that replaces the old hardcoded "Satisfies NIS2"
+ * badge: a control only shows a NIS2/ISO mapping when it genuinely
+ * carries one. Two batched queries, both bounded — no N+1.
+ */
+async function resolveLinkedControls(db: Db, ctx: RequestContext, controlIds: string[]): Promise<LinkedControl[]> {
+    if (controlIds.length === 0) return [];
+    const uniqueIds = [...new Set(controlIds)];
+    const [controls, reqLinks] = await Promise.all([
+        db.control.findMany({
+            where: { tenantId: ctx.tenantId, id: { in: uniqueIds } },
+            select: { id: true, name: true, code: true },
+            take: 100,
+        }),
+        db.controlRequirementLink.findMany({
+            where: { tenantId: ctx.tenantId, controlId: { in: uniqueIds } },
+            select: {
+                controlId: true,
+                requirement: {
+                    select: { code: true, title: true, framework: { select: { key: true, name: true } } },
+                },
+            },
+            take: 500,
+        }),
+    ]);
+    const reqsByControl = new Map<string, LinkedControl['requirements']>();
+    for (const link of reqLinks) {
+        const list = reqsByControl.get(link.controlId) ?? [];
+        list.push({
+            code: link.requirement.code,
+            title: link.requirement.title,
+            frameworkKey: link.requirement.framework.key,
+            frameworkName: link.requirement.framework.name,
+        });
+        reqsByControl.set(link.controlId, list);
+    }
+    return controls.map((c) => ({
+        id: c.id,
+        name: c.name,
+        code: c.code,
+        requirements: reqsByControl.get(c.id) ?? [],
+    }));
+}
+
+/** Validate a single dependency target exists in this tenant (attach path). */
+async function assertDependencyTarget(db: Db, ctx: RequestContext, type: BiaDependencyType, id: string) {
+    await assertDependencyTargets(db, ctx, [{ dependsOnType: type, dependsOnId: id }]);
+}
+
+/**
+ * Validate every dependency target exists in this tenant — ONE query per
+ * distinct type (no N+1). Throws on the first type with a missing id.
+ */
+async function assertDependencyTargets(
+    db: Db,
+    ctx: RequestContext,
+    deps: { dependsOnType: BiaDependencyType; dependsOnId: string }[],
+) {
+    if (deps.length === 0) return;
+    const idsFor = (t: BiaDependencyType) => [
+        ...new Set(deps.filter((d) => d.dependsOnType === t).map((d) => d.dependsOnId)),
+    ];
+    const [processIds, assetIds, vendorIds, riskIds] = [idsFor('PROCESS'), idsFor('ASSET'), idsFor('VENDOR'), idsFor('RISK')];
+    const [processes, assets, vendors, risks] = await Promise.all([
+        processIds.length ? db.processNode.findMany({ where: { tenantId: ctx.tenantId, id: { in: processIds } }, select: { id: true }, take: 500 }) : Promise.resolve([]),
+        assetIds.length ? db.asset.findMany({ where: { tenantId: ctx.tenantId, id: { in: assetIds } }, select: { id: true }, take: 500 }) : Promise.resolve([]),
+        vendorIds.length ? db.vendor.findMany({ where: { tenantId: ctx.tenantId, id: { in: vendorIds } }, select: { id: true }, take: 500 }) : Promise.resolve([]),
+        riskIds.length ? db.risk.findMany({ where: { tenantId: ctx.tenantId, id: { in: riskIds } }, select: { id: true }, take: 500 }) : Promise.resolve([]),
+    ]);
+    const found = new Set<string>([...processes, ...assets, ...vendors, ...risks].map((r) => r.id));
+    for (const d of deps) {
+        if (!found.has(d.dependsOnId)) {
+            throw badRequest('INVALID_DEPENDENCY_TARGET', `${d.dependsOnType} not found in this tenant`);
+        }
+    }
+}
+
 export async function createBia(ctx: RequestContext, rawInput: CreateBiaInput) {
     assertCanWrite(ctx);
     const data = CreateBiaSchema.parse(rawInput);
     return runInTenantContext(ctx, async (db) => {
         await assertProcessNode(db, ctx, data.processNodeId);
+        // Validate every dependency target exists in this tenant (no dangling refs).
+        await assertDependencyTargets(db, ctx, data.dependencies ?? []);
         const bia = await db.businessImpactAnalysis.create({
             data: {
                 tenantId: ctx.tenantId,
@@ -170,7 +379,106 @@ export async function getBia(ctx: RequestContext, id: string) {
             take: 500,
         });
         const recovery = rankFor(id, deriveRecoveryPriority(all));
-        return { ...bia, recovery };
+        const [dependencies, linkedControls] = await Promise.all([
+            resolveDependencies(db, ctx, bia.dependencies),
+            resolveLinkedControls(db, ctx, bia.evidenceLinks.map((e) => e.controlId)),
+        ]);
+        return { ...bia, dependencies, linkedControls, recovery };
+    });
+}
+
+/**
+ * Lightweight `{ id, label }` option list for the BIA dependency picker,
+ * scoped to one target type. Bounded; tenant-scoped.
+ */
+export async function listBiaDependencyOptions(
+    ctx: RequestContext,
+    type: BiaDependencyType,
+): Promise<{ id: string; label: string }[]> {
+    assertCanRead(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const take = 500;
+        switch (type) {
+            case 'PROCESS': {
+                const rows = await db.processNode.findMany({
+                    where: { tenantId: ctx.tenantId },
+                    select: { id: true, label: true },
+                    orderBy: { label: 'asc' },
+                    take,
+                });
+                return rows.map((r) => ({ id: r.id, label: r.label }));
+            }
+            case 'ASSET': {
+                const rows = await db.asset.findMany({
+                    where: { tenantId: ctx.tenantId },
+                    select: { id: true, name: true },
+                    orderBy: { name: 'asc' },
+                    take,
+                });
+                return rows.map((r) => ({ id: r.id, label: r.name }));
+            }
+            case 'VENDOR': {
+                const rows = await db.vendor.findMany({
+                    where: { tenantId: ctx.tenantId },
+                    select: { id: true, name: true },
+                    orderBy: { name: 'asc' },
+                    take,
+                });
+                return rows.map((r) => ({ id: r.id, label: r.name }));
+            }
+            case 'RISK': {
+                const rows = await db.risk.findMany({
+                    where: { tenantId: ctx.tenantId },
+                    select: { id: true, title: true },
+                    orderBy: { title: 'asc' },
+                    take,
+                });
+                return rows.map((r) => ({ id: r.id, label: r.title }));
+            }
+        }
+    });
+}
+
+/** Attach a dependency to an existing BIA (detail-page add affordance). */
+export async function addBiaDependency(ctx: RequestContext, biaId: string, input: z.input<typeof DependencyInput>) {
+    assertCanWrite(ctx);
+    const data = DependencyInput.parse(input);
+    return runInTenantContext(ctx, async (db) => {
+        const bia = await db.businessImpactAnalysis.findFirst({ where: { id: biaId, tenantId: ctx.tenantId }, select: { id: true } });
+        if (!bia) throw notFound('BIA not found');
+        await assertDependencyTarget(db, ctx, data.dependsOnType, data.dependsOnId);
+        const dep = await db.biaDependency.create({
+            data: { tenantId: ctx.tenantId, biaId, dependsOnType: data.dependsOnType, dependsOnId: data.dependsOnId },
+        });
+        await logEvent(db, ctx, {
+            action: 'UPDATE',
+            entityType: 'BusinessImpactAnalysis',
+            entityId: biaId,
+            details: `Added ${data.dependsOnType} dependency to BIA`,
+            detailsJson: { category: 'entity_lifecycle', entityName: 'BusinessImpactAnalysis', operation: 'updated' },
+        });
+        return dep;
+    });
+}
+
+/** Remove a dependency from a BIA (detail-page remove affordance). */
+export async function removeBiaDependency(ctx: RequestContext, biaId: string, dependencyId: string) {
+    assertCanWrite(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const dep = await db.biaDependency.findFirst({
+            where: { id: dependencyId, biaId, tenantId: ctx.tenantId },
+            select: { id: true },
+        });
+        if (!dep) throw notFound('Dependency not found');
+        await db.biaDependency.delete({ where: { id: dependencyId } });
+        await logEvent(db, ctx, {
+            action: 'UPDATE',
+            entityType: 'BusinessImpactAnalysis',
+            entityId: biaId,
+            details: 'Removed dependency from BIA',
+            detailsJson: { category: 'entity_lifecycle', entityName: 'BusinessImpactAnalysis', operation: 'updated' },
+        });
+        return { id: dependencyId };
     });
 }
 

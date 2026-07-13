@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/cn';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
@@ -9,6 +11,11 @@ import { cardVariants } from '@/components/ui/card';
 import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { useToastWithUndo } from '@/components/ui/hooks';
+import { DependencyPickerRow, useDepTypeLabel } from '../BiaDependencyControls';
+import { BiaLinkControlModal } from './BiaLinkControlModal';
 
 interface ImpactPoint {
     atHours: number;
@@ -16,6 +23,21 @@ interface ImpactPoint {
     operational?: number;
     reputational?: number;
     legal?: number;
+}
+
+interface ResolvedDependency {
+    id: string;
+    dependsOnType: string;
+    dependsOnId: string;
+    targetName: string | null;
+    targetPath: string | null;
+}
+
+interface LinkedControl {
+    id: string;
+    name: string;
+    code: string | null;
+    requirements: { code: string; title: string; frameworkKey: string; frameworkName: string }[];
 }
 
 export interface BiaDetail {
@@ -30,7 +52,8 @@ export interface BiaDetail {
     reviewedAt: string | null;
     processNode: { id: string; label: string; processMapId: string } | null;
     ownerUser: { id: string; name: string | null; email: string } | null;
-    dependencies: { id: string; dependsOnType: string; dependsOnId: string }[];
+    dependencies: ResolvedDependency[];
+    linkedControls: LinkedControl[];
     evidenceLinks: { id: string; controlId: string }[];
     recovery: { rank: number; rationale: string } | null;
 }
@@ -55,6 +78,43 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export function BiaDetailClient({ bia, tenantSlug }: { bia: BiaDetail; tenantSlug: string }) {
     const tx = useTranslations('audits');
+    const router = useRouter();
+    const depTypeLabel = useDepTypeLabel();
+    const triggerUndoToast = useToastWithUndo();
+    const [showLinkControl, setShowLinkControl] = useState(false);
+    const [depError, setDepError] = useState<string | null>(null);
+
+    const addDependency = async (draft: { dependsOnType: string; dependsOnId: string }) => {
+        setDepError(null);
+        try {
+            const res = await fetch(`/api/t/${tenantSlug}/business-continuity/${bia.id}/dependencies`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(draft),
+            });
+            if (!res.ok) throw new Error(tx('biaDetail.addDependencyFailed'));
+            router.refresh();
+        } catch (e) {
+            setDepError(e instanceof Error ? e.message : tx('biaDetail.addDependencyFailed'));
+        }
+    };
+
+    const removeDependency = (dep: ResolvedDependency) => {
+        triggerUndoToast({
+            message: tx('biaDetail.dependencyRemoved'),
+            undoMessage: tx('biaDetail.undo'),
+            action: async () => {
+                const res = await fetch(
+                    `/api/t/${tenantSlug}/business-continuity/${bia.id}/dependencies/${dep.id}`,
+                    { method: 'DELETE' },
+                );
+                if (!res.ok) throw new Error('remove');
+                router.refresh();
+            },
+            onError: () => router.refresh(),
+        });
+    };
+
     const metaItems: MetaItem[] = [
         { kind: 'status', label: tx('biaDetail.metaCriticality'), value: bia.criticality, variant: CRITICALITY_VARIANT[bia.criticality] ?? 'neutral' },
     ];
@@ -126,12 +186,41 @@ export function BiaDetailClient({ bia, tenantSlug }: { bia: BiaDetail; tenantSlu
                     ) : (
                         <ul className="space-y-tight">
                             {bia.dependencies.map((d) => (
-                                <li key={d.id} className="text-sm text-content-default">
-                                    <span className="text-content-subtle">{d.dependsOnType}</span> · {d.dependsOnId}
+                                <li
+                                    key={d.id}
+                                    className="flex items-center justify-between rounded-lg border border-border-subtle px-3 py-1.5 text-sm"
+                                >
+                                    <span className="text-content-default">
+                                        <span className="text-content-subtle">{depTypeLabel(d.dependsOnType)}</span>{' '}
+                                        ·{' '}
+                                        {d.targetPath ? (
+                                            <Link href={`/t/${tenantSlug}${d.targetPath}`} className="text-content-link hover:underline">
+                                                {d.targetName}
+                                            </Link>
+                                        ) : (
+                                            <span className="text-content-muted">{d.targetName ?? tx('biaDetail.depMissing')}</span>
+                                        )}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeDependency(d)}
+                                        className="text-content-muted hover:text-content-error"
+                                        aria-label={tx('biaDetail.depRemove')}
+                                    >
+                                        {tx('biaDetail.depRemove')}
+                                    </button>
                                 </li>
                             ))}
                         </ul>
                     )}
+                    <div className="space-y-tight">
+                        <DependencyPickerRow
+                            tenantSlug={tenantSlug}
+                            excludeIds={bia.dependencies.map((d) => d.dependsOnId)}
+                            onAdd={addDependency}
+                        />
+                        {depError && <p className="text-sm text-content-error">{depError}</p>}
+                    </div>
                 </Section>
 
                 <Section title={tx('biaDetail.secLinked')}>
@@ -148,16 +237,46 @@ export function BiaDetailClient({ bia, tenantSlug }: { bia: BiaDetail; tenantSlu
                     ) : (
                         <p className="text-sm text-content-subtle">{tx('biaDetail.notAttached')}</p>
                     )}
-                    <p className="text-sm text-content-muted">
-                        {tx('biaDetail.controlsLink', { count: bia.evidenceLinks.length })}
-                    </p>
                 </Section>
 
                 <Section title={tx('biaDetail.secFramework')}>
-                    <StatusBadge variant="success">{tx('biaDetail.satisfiesNis2')}</StatusBadge>
-                    <p className="text-sm text-content-muted">
-                        {tx('biaDetail.frameworkDesc')}
-                    </p>
+                    <p className="text-sm text-content-muted">{tx('biaDetail.secFrameworkDesc')}</p>
+                    {bia.linkedControls.length === 0 ? (
+                        <EmptyState
+                            size="sm"
+                            variant="missing-prereqs"
+                            title={tx('biaDetail.noControlsTitle')}
+                            description={tx('biaDetail.linkControlPrompt')}
+                            primaryAction={{ label: tx('biaDetail.linkControlAction'), onClick: () => setShowLinkControl(true) }}
+                        />
+                    ) : (
+                        <div className="space-y-default">
+                            {bia.linkedControls.map((c) => (
+                                <div key={c.id} className="rounded-lg border border-border-subtle p-3 space-y-tight">
+                                    <Link
+                                        href={`/t/${tenantSlug}/controls/${c.id}`}
+                                        className="text-sm font-medium text-content-link hover:underline"
+                                    >
+                                        {c.code ? `${c.code} · ${c.name}` : c.name}
+                                    </Link>
+                                    {c.requirements.length === 0 ? (
+                                        <p className="text-sm text-content-subtle">{tx('biaDetail.controlNoMappings')}</p>
+                                    ) : (
+                                        <div className="flex flex-wrap gap-tight">
+                                            {c.requirements.map((r, i) => (
+                                                <StatusBadge key={`${r.frameworkKey}:${r.code}:${i}`} variant="info">
+                                                    {r.frameworkName} · {r.code}
+                                                </StatusBadge>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                            <Button variant="secondary" onClick={() => setShowLinkControl(true)}>
+                                {tx('biaDetail.linkControlAction')}
+                            </Button>
+                        </div>
+                    )}
                 </Section>
 
                 {bia.notes && (
@@ -166,6 +285,19 @@ export function BiaDetailClient({ bia, tenantSlug }: { bia: BiaDetail; tenantSlu
                     </Section>
                 )}
             </div>
+
+            {showLinkControl && (
+                <BiaLinkControlModal
+                    tenantSlug={tenantSlug}
+                    biaId={bia.id}
+                    linkedControlIds={bia.linkedControls.map((c) => c.id)}
+                    onClose={() => setShowLinkControl(false)}
+                    onLinked={() => {
+                        setShowLinkControl(false);
+                        router.refresh();
+                    }}
+                />
+            )}
         </EntityDetailLayout>
     );
 }
