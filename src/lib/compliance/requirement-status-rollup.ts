@@ -75,3 +75,60 @@ export function worstStatus(statuses: string[]): string | null {
 export function isImplemented(status: string | null | undefined): boolean {
     return status === IMPLEMENTED_STATUS;
 }
+
+// ─── Per-requirement verdict (R2-P5 — the shared rollup + EXCEPTED) ───
+
+/**
+ * The verdict for a requirement, computed from the controls mapped to it.
+ * This is the SINGLE per-requirement rollup used by BOTH the ISO SoA and
+ * every framework's coverage/readiness, so the verdict is identical
+ * everywhere — including the EXCEPTED state, which therefore flows to all
+ * frameworks, not just the ISO SoA.
+ */
+export type RequirementVerdict =
+    | 'unmapped' // no controls mapped
+    | 'not-applicable' // only NOT_APPLICABLE controls mapped
+    | 'implemented' // worst applicable control is IMPLEMENTED
+    | 'excepted' // otherwise a gap, but every gapping applicable control is covered by an in-force exception
+    | 'gap';
+
+export interface RollupControl {
+    status: string;
+    applicability: string; // 'APPLICABLE' | 'NOT_APPLICABLE'
+    /**
+     * True when this control has an in-force exception: a ControlException
+     * with status APPROVED AND expiresAt > now. The caller resolves this from
+     * live status so reversion on expiry is automatic (no scheduling).
+     */
+    hasInForceException: boolean;
+}
+
+/**
+ * Roll a requirement's mapped controls up to a single verdict.
+ *
+ * Rules (in order):
+ *  - no controls           → unmapped
+ *  - no APPLICABLE controls → not-applicable
+ *  - worst applicable is IMPLEMENTED → implemented
+ *  - otherwise it's a gap, UNLESS every applicable control that is NOT
+ *    implemented is covered by an in-force exception → excepted. A single
+ *    un-excepted gapping control keeps the whole requirement a gap
+ *    (exceptions never paper over an un-excepted gap). EXCEPTED can never
+ *    read as implemented/covered.
+ */
+export function rollUpRequirementVerdict(
+    controls: RollupControl[],
+): { verdict: RequirementVerdict; worst: string | null } {
+    if (controls.length === 0) return { verdict: 'unmapped', worst: null };
+    const applicable = controls.filter((c) => c.applicability === 'APPLICABLE');
+    if (applicable.length === 0) return { verdict: 'not-applicable', worst: null };
+
+    const worst = worstStatus(applicable.map((c) => c.status));
+    if (worst === null) return { verdict: 'not-applicable', worst: null };
+    if (isImplemented(worst)) return { verdict: 'implemented', worst };
+
+    const gapping = applicable.filter((c) => !isImplemented(c.status));
+    const allGappingExcepted =
+        gapping.length > 0 && gapping.every((c) => c.hasInForceException);
+    return { verdict: allGappingExcepted ? 'excepted' : 'gap', worst };
+}

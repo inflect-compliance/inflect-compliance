@@ -285,12 +285,20 @@ export function ControlExceptionHeaderBadge({
 function ExceptionHeaderBadge({ ex }: { ex?: ExceptionSummary }) {
     const t = useTranslations('panels.exceptions');
     if (!ex) return null;
+    // R2-P5 — an in-force exception (APPROVED + not yet expired) reads
+    // "Excepted until <date>"; a pending/other one keeps the status label.
+    const inForce =
+        ex.status === 'APPROVED' &&
+        ex.expiresAt != null &&
+        new Date(ex.expiresAt).getTime() > Date.now();
     return (
         <StatusBadge
             variant={STATUS_VARIANT[ex.status]}
             data-testid="control-exception-header-badge"
         >
-            {t('exceptionLabel')}: {ex.status}
+            {inForce
+                ? t('exceptedUntil', { date: formatDate(ex.expiresAt!) })
+                : `${t('exceptionLabel')}: ${ex.status}`}
         </StatusBadge>
     );
 }

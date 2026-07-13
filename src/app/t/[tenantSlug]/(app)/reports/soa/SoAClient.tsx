@@ -57,6 +57,19 @@ function StatusBadge({ value }: { value: string | null }) {
     return <StatusBadgePrimitive variant={cls[value] || 'neutral'}>{value.replace(/_/g, ' ')}</StatusBadgePrimitive>;
 }
 
+// R2-P5 — the EXCEPTED verdict: risk-accepted via an in-force exception,
+// visually distinct from Covered and Gap, always time-boxed. Never reads as
+// implemented.
+function ExceptedBadge({ until, t }: { until: string | null; t: (k: string, v?: Record<string, string>) => string }) {
+    return (
+        <StatusBadgePrimitive variant="warning" data-testid="soa-excepted-badge">
+            {until
+                ? t('soaView.exceptedUntil', { date: new Date(until).toISOString().slice(0, 10) })
+                : t('soaView.excepted')}
+        </StatusBadgePrimitive>
+    );
+}
+
 function GapBadges({ entry }: { entry: SoAEntryDTO }) {
     // Roadmap-2 PR-7 — gap badges flow through the canonical
     // `<StatusBadgePrimitive>` so the pill shape, size, and tone-
@@ -228,12 +241,13 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
             )}
 
             {/* Summary cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-compact">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-compact">
                 <SummaryCard label={t('soaView.total')} value={summary.total} icon={<FileText className="w-4 h-4 text-content-muted" />} />
                 <SummaryCard label={t('soaView.applicable')} value={summary.applicable} icon={<CheckCircle2 className="w-4 h-4 text-content-success" />} />
                 <SummaryCard label={t('soaView.notApplicable')} value={summary.notApplicable} icon={<XCircle className="w-4 h-4 text-content-muted" />} />
                 <SummaryCard label={t('soaView.unmapped')} value={summary.unmapped} icon={<HelpCircle className="w-4 h-4 text-content-error" />} accent={summary.unmapped > 0 ? 'danger' : undefined} />
                 <SummaryCard label={t('soaView.implemented')} value={summary.implemented} icon={<CheckCircle2 className="w-4 h-4 text-content-success" />} />
+                <SummaryCard label={t('soaView.excepted')} value={summary.excepted} icon={<AlertTriangle className="w-4 h-4 text-content-warning" />} accent={summary.excepted > 0 ? 'warning' : undefined} />
                 <SummaryCard label={t('soaView.missingJustification')} value={summary.missingJustification} icon={<AlertTriangle className="w-4 h-4 text-content-warning" />} accent={summary.missingJustification > 0 ? 'warning' : undefined} />
             </div>
 
@@ -499,7 +513,11 @@ function SoARow({
                     {entry.section && <div className="text-[10px] text-content-subtle">{entry.section}</div>}
                 </td>
                 <td><ApplicabilityBadge value={entry.applicable} /></td>
-                <td><StatusBadge value={entry.implementationStatus} /></td>
+                <td>
+                    {entry.verdict === 'excepted'
+                        ? <ExceptedBadge until={entry.exceptedUntil} t={t} />
+                        : <StatusBadge value={entry.implementationStatus} />}
+                </td>
                 <td className="text-xs text-content-muted">
                     {entry.mappedControls.length > 0 ? (
                         <span className="inline-flex items-center gap-1">

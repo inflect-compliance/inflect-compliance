@@ -4,7 +4,7 @@ import { assertCanViewFrameworks } from '../../policies/framework.policies';
 import { runInTenantContext } from '@/lib/db-context';
 import { notFound } from '@/lib/errors/types';
 import { prisma } from '@/lib/prisma';
-import { worstStatus, isImplemented } from '@/lib/compliance/requirement-status-rollup';
+import { rollUpRequirementVerdict } from '@/lib/compliance/requirement-status-rollup';
 
 // в”Ђв”Ђв”Ђ Coverage Computation в”Ђв”Ђв”Ђ
 
@@ -187,6 +187,10 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
         orderBy: { sortOrder: 'asc' },
     });
 
+    // R2-P5 — resolve in-force exceptions relative to now (auto-reverts on
+    // expiry). Shared by the exception filter below and the overdue-task check.
+    const now = new Date();
+
     // Get tenant control-requirement mappings
     const links = await runInTenantContext(ctx, (tdb) =>
         tdb.controlRequirementLink.findMany({
@@ -196,6 +200,11 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
                     include: {
                         tasks: { select: { id: true, status: true, dueAt: true, title: true } },
                         evidence: { select: { id: true, status: true, title: true } },
+                        // In-force exceptions: APPROVED and not yet expired.
+                        exceptions: {
+                            where: { status: 'APPROVED', expiresAt: { gt: now } },
+                            select: { id: true },
+                        },
                     },
                 },
             },
@@ -224,20 +233,25 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
     // the ISO SoA. Mirrors SoA semantics: only APPLICABLE mapped controls
     // count; a requirement is "implemented" iff its worst applicable control
     // is IMPLEMENTED, else it's a gap. (P5 layers EXCEPTED on this seam.)
-    const applicableStatusesByReq = new Map<string, string[]>();
+    const rollupControlsByReq = new Map<string, { status: string; applicability: string; hasInForceException: boolean }[]>();
     for (const l of links) {
-        if (l.control.applicability !== 'APPLICABLE') continue;
-        const arr = applicableStatusesByReq.get(l.requirementId) || [];
-        arr.push(l.control.status);
-        applicableStatusesByReq.set(l.requirementId, arr);
+        const arr = rollupControlsByReq.get(l.requirementId) || [];
+        arr.push({
+            status: l.control.status,
+            applicability: l.control.applicability,
+            hasInForceException: (l.control.exceptions ?? []).length > 0,
+        });
+        rollupControlsByReq.set(l.requirementId, arr);
     }
     let implementedRequirements = 0;
     let gapRequirements = 0;
+    let exceptedRequirements = 0; // R2-P5 — risk-accepted via in-force exception
     for (const reqId of mappedReqIds) {
-        const rolled = worstStatus(applicableStatusesByReq.get(reqId) || []);
-        if (rolled === null) continue; // only NOT_APPLICABLE controls → not a gap
-        if (isImplemented(rolled)) implementedRequirements++;
-        else gapRequirements++;
+        const { verdict } = rollUpRequirementVerdict(rollupControlsByReq.get(reqId) || []);
+        if (verdict === 'implemented') implementedRequirements++;
+        else if (verdict === 'excepted') exceptedRequirements++;
+        else if (verdict === 'gap') gapRequirements++;
+        // 'not-applicable' / 'unmapped' → neither implemented nor a gap
     }
 
     // NOT_APPLICABLE controls
@@ -252,8 +266,7 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
         c.status !== 'NOT_APPLICABLE' && (!c.evidence || c.evidence.length === 0)
     ).map((c) => ({ code: c.code, name: c.name, status: c.status }));
 
-    // Overdue tasks
-    const now = new Date();
+    // Overdue tasks (reuses `now` defined above for the exception filter)
     const overdueTasks: Array<{ taskTitle: string; taskStatus: string; dueDate: Date; controlCode: string | null; controlName: string }> = [];
     for (const ctrl of controls) {
         for (const task of (ctrl.tasks || [])) {
@@ -301,6 +314,9 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
             // (recognises every control status; identical to the ISO SoA).
             implementedRequirements,
             gapRequirements,
+            // R2-P5 — risk-accepted via an in-force exception (flows to every
+            // framework's readiness, not just the ISO SoA).
+            exceptedRequirements,
             notApplicableCount: notApplicable.length,
             missingEvidenceCount: missingEvidence.length,
             overdueTaskCount: overdueTasks.length,

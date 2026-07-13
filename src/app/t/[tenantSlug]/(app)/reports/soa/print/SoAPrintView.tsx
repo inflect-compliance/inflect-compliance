@@ -78,6 +78,7 @@ export function SoAPrintView({ report, tenantName }: SoAPrintViewProps) {
                     <SummaryBox label={t('soaPrint.notApplicable')} value={summary.notApplicable} total={summary.total} color="gray" />
                     <SummaryBox label={t('soaPrint.unmapped')} value={summary.unmapped} total={summary.total} color="red" />
                     <SummaryBox label={t('soaPrint.implemented')} value={summary.implemented} total={summary.total} color="green" />
+                    <SummaryBox label={t('soaPrint.excepted')} value={summary.excepted} total={summary.total} color="amber" />
                     <SummaryBox label={t('soaPrint.missingJustification')} value={summary.missingJustification} total={summary.total} color="amber" />
                 </div>
             </div>
@@ -139,7 +140,15 @@ function PrintRow({ entry }: { entry: SoAEntryDTO }) {
             <td className="border border-border-default px-2 py-1.5 font-mono text-xs">{entry.requirementCode}</td>
             <td className="border border-border-default px-2 py-1.5">{entry.requirementTitle}</td>
             <td className={`border border-border-default px-2 py-1.5 font-medium ${applicableClass}`}>{applicable}</td>
-            <td className="border border-border-default px-2 py-1.5">{entry.implementationStatus?.replace(/_/g, ' ') || '—'}</td>
+            <td className="border border-border-default px-2 py-1.5">
+                {/* R2-P5 — an excepted requirement is labelled as excepted (with
+                    the expiry) on the auditor artifact, never as implemented. */}
+                {entry.verdict === 'excepted'
+                    ? (entry.exceptedUntil
+                        ? t('soaPrint.exceptedUntil', { date: new Date(entry.exceptedUntil).toISOString().slice(0, 10) })
+                        : t('soaPrint.excepted'))
+                    : (entry.implementationStatus?.replace(/_/g, ' ') || '—')}
+            </td>
             <td className="border border-border-default px-2 py-1.5 whitespace-pre-line">{controlRefs || '—'}</td>
             <td className="border border-border-default px-2 py-1.5 text-content-muted">{entry.justification || '—'}</td>
         </tr>

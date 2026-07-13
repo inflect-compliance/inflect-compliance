@@ -121,12 +121,13 @@ describe('ControlExceptionsPanel', () => {
         await screen.findByTestId('control-exception-row-cex_b');
     });
 
-    it('header badge surfaces APPROVED state', async () => {
+    it('header badge surfaces an in-force exception as "Excepted until <date>"', async () => {
         installFetch([
             makeExceptionRow({
                 status: 'APPROVED',
                 approvedAt: new Date().toISOString(),
-                expiresAt: new Date('2026-12-31').toISOString(),
+                // Far-future so the exception is always in-force for this test.
+                expiresAt: new Date('2099-12-31').toISOString(),
             }),
         ]);
         render(
@@ -144,7 +145,12 @@ describe('ControlExceptionsPanel', () => {
         const badge = await screen.findByTestId(
             'control-exception-header-badge',
         );
-        expect(badge.textContent).toMatch(/APPROVED/);
+        // R2-P5 — an APPROVED + unexpired exception reads via the
+        // `exceptedUntil` label (not the raw status). The test i18n returns the
+        // key path, so match either the key or the resolved copy, and assert
+        // the raw status label is NOT shown.
+        expect(badge.textContent).toMatch(/exceptedUntil|Excepted until/i);
+        expect(badge.textContent).not.toMatch(/exceptionLabel/);
     });
 
     it('non-write actor cannot see the Request button', async () => {
