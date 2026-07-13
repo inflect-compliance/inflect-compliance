@@ -12,6 +12,7 @@ import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { buildBiaCriticalityLabels } from './filter-defs';
+import { DependencyPickerRow, useDepTypeLabel, type DependencyDraft } from './BiaDependencyControls';
 
 
 const optionalHours = z.number().int().min(0).max(100_000).optional();
@@ -46,7 +47,9 @@ export function NewBiaModal({ tenantSlug, processNodeId, onClose, onCreated }: P
             ).map(([value, label]) => ({ value, label })),
         [tx],
     );
+    const depTypeLabel = useDepTypeLabel();
     const [apiError, setApiError] = useState<string | null>(null);
+    const [dependencies, setDependencies] = useState<DependencyDraft[]>([]);
     const {
         register,
         handleSubmit,
@@ -72,6 +75,7 @@ export function NewBiaModal({ tenantSlug, processNodeId, onClose, onCreated }: P
                     mtpdHours: values.mtpdHours,
                     notes: values.notes || undefined,
                     processNodeId: processNodeId || undefined,
+                    dependencies: dependencies.map((d) => ({ dependsOnType: d.dependsOnType, dependsOnId: d.dependsOnId })),
                 }),
             });
             if (!res.ok) throw new Error(tx('bia.createFailed'));
@@ -139,6 +143,39 @@ export function NewBiaModal({ tenantSlug, processNodeId, onClose, onCreated }: P
                         </div>
                         <FormField label={tx('bia.fieldNotes')} error={errors.notes?.message}>
                             <Textarea id="bia-notes-input" rows={3} placeholder={tx('bia.phNotes')} {...register('notes')} />
+                        </FormField>
+                        <FormField label={tx('bia.fieldDependencies')} hint={tx('bia.hintDependencies')}>
+                            <div className="space-y-tight">
+                                <DependencyPickerRow
+                                    tenantSlug={tenantSlug}
+                                    excludeIds={dependencies.map((d) => d.dependsOnId)}
+                                    onAdd={(d) => setDependencies((prev) => [...prev, d])}
+                                />
+                                {dependencies.length === 0 ? (
+                                    <p className="text-sm text-content-subtle">{tx('bia.depEmpty')}</p>
+                                ) : (
+                                    <ul className="space-y-tight">
+                                        {dependencies.map((d) => (
+                                            <li
+                                                key={`${d.dependsOnType}:${d.dependsOnId}`}
+                                                className="flex items-center justify-between rounded-lg border border-border-subtle px-3 py-1.5 text-sm"
+                                            >
+                                                <span className="text-content-default">
+                                                    <span className="text-content-subtle">{depTypeLabel(d.dependsOnType)}</span> · {d.label}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setDependencies((prev) => prev.filter((x) => x.dependsOnId !== d.dependsOnId))}
+                                                    className="text-content-muted hover:text-content-error"
+                                                    aria-label={tx('bia.depRemove')}
+                                                >
+                                                    {tx('bia.depRemove')}
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
                         </FormField>
                     </div>
                 </Modal.Body>

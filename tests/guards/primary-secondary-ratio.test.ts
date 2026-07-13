@@ -195,7 +195,13 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // "New finding" modal's "Create finding" confirm is the earned create primary,
 // paired with a secondary Cancel + the secondary "Finding" trigger button on the
 // detail pane, so the secondary:primary ratio still rises. +1.
-const MAX_PRIMARY_COUNT = 144;
+// 2026-07-13 — bumped 143 → 144 for the BIA "Link a control" modal confirm: the
+// earned primary on the BIA detail control-linkage confirmation surface (the
+// dependency-picker Add, framework "Link control", and modal cancel are all
+// secondary, so the secondary:primary ratio still rises). +1.
+// 2026-07-13 — +1 more (145) when BIA landed on top of feat/audit-cycle-unify:
+// both PRs each added one earned modal-confirm primary.
+const MAX_PRIMARY_COUNT = 145;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {
