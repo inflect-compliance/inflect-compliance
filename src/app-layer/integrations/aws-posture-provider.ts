@@ -215,6 +215,10 @@ export class AwsPostureProvider implements ScheduledCheckProvider {
     readonly description =
         'AWS configuration-compliance evidence via the Powerpipe steampipe-mod-aws-compliance benchmark (read-only).';
     readonly supportedChecks = ['soc2', 'cis'];
+    // P2 — validateConnection shells `aws sts get-caller-identity` (real probe).
+    readonly liveValidation = true;
+    readonly setupGuide =
+        'Runs Powerpipe + the AWS CLI on the collector host — both must be installed there, with `aws configure` set to a read-only role. Pick the benchmark (SOC 2 or CIS) to select which Powerpipe checks run. Test connection performs a live `aws sts get-caller-identity`.';
 
     readonly configSchema: ConnectionConfigSchema = {
         configFields: [

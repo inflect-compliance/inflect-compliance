@@ -7,11 +7,13 @@
 import { formatDate } from '@/lib/format-date';
 import { useEffect, useState, useCallback } from 'react';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
-import { Trash2, CheckCircle, XCircle, Loader2, Link2, Eye, EyeOff, RefreshCw, Activity } from 'lucide-react';
+import { Trash2, CheckCircle, XCircle, Loader2, Link2, Eye, EyeOff, RefreshCw, Activity, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Plus } from '@/components/ui/icons/nucleo';
-import { Combobox } from '@/components/ui/combobox';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import { RequiredMarker } from '@/components/ui/required-marker';
 import { Tooltip } from '@/components/ui/tooltip';
 import { DataTable, createColumns } from '@/components/ui/table';
@@ -41,15 +43,20 @@ interface ConnectionDTO {
     _count?: { executions: number };
 }
 
+type FieldType = 'string' | 'number' | 'boolean' | 'select' | 'textarea';
+interface ConfigFieldInfo { key: string; label: string; type: FieldType; required: boolean; placeholder?: string; description?: string; options?: string[] }
 interface ProviderInfo {
     id: string;
     displayName: string;
     description: string;
     supportedChecks: string[];
     configSchema: {
-        configFields: { key: string; label: string; type: string; required: boolean; placeholder?: string; description?: string }[];
-        secretFields: { key: string; label: string; type: string; required: boolean; placeholder?: string; description?: string }[];
+        configFields: ConfigFieldInfo[];
+        secretFields: ConfigFieldInfo[];
     };
+    // P2 — setup guidance + honest test-validation kind.
+    setupGuide?: string;
+    liveValidation?: boolean;
 }
 
 export default function AdminIntegrationsPage() {
@@ -173,6 +180,19 @@ export default function AdminIntegrationsPage() {
         setSaving(false);
     };
 
+    /** P2 — open the form to edit an existing connection (edit was unreachable). */
+    const handleEdit = (conn: ConnectionDTO) => {
+        setEditingId(conn.id);
+        setFormProvider(conn.provider);
+        setFormName(conn.name);
+        setFormConfig(Object.fromEntries(Object.entries(conn.configJson ?? {}).map(([k, v]) => [k, v == null ? '' : String(v)])));
+        setFormSecrets({});
+        setShowSecrets(false);
+        setMessage(null);
+        setShowForm(true);
+        setTimeout(() => document.getElementById('save-integration-btn')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+    };
+
     const handleTest = async (conn: ConnectionDTO) => {
         setTesting(conn.id);
         setMessage(null);
@@ -187,9 +207,14 @@ export default function AdminIntegrationsPage() {
                 }),
             });
             const data = await res.json();
+            // P2 — honest labelling: a green check on a shape-only provider means
+            // "config looks valid", NOT "connectivity verified".
+            const isLive = providers.find(p => p.id === conn.provider)?.liveValidation ?? false;
             setMessage({
                 type: data.valid ? 'success' : 'error',
-                text: data.valid ? t('integrations.testPassed') : t('integrations.testFailed', { error: data.error || t('integrations.unknownError') }),
+                text: data.valid
+                    ? (isLive ? t('integrations.testVerified') : t('integrations.testShapeOnly'))
+                    : t('integrations.testFailed', { error: data.error || t('integrations.unknownError') }),
             });
             await fetchConnections();
         } catch {
@@ -226,6 +251,35 @@ export default function AdminIntegrationsPage() {
         }
     };
 
+    /**
+     * P2 — internal check providers (personnel/device/training) take no
+     * credentials but still need an IntegrationConnection row to run. Rather
+     * than a confusing free-form Add entry, auto-provision them in one click.
+     */
+    const internalProviders = providers.filter(
+        (p) => p.configSchema.configFields.length + p.configSchema.secretFields.length === 0,
+    );
+    const allInternalEnabled = internalProviders.length > 0 &&
+        internalProviders.every((ip) => connections.some((c) => c.provider === ip.id && c.isEnabled));
+
+    const handleEnableInternal = async () => {
+        setMessage(null);
+        try {
+            for (const ip of internalProviders) {
+                if (connections.some((c) => c.provider === ip.id)) continue;
+                await fetch(apiUrl('/admin/integrations'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider: ip.id, name: ip.displayName, configJson: {} }),
+                });
+            }
+            setMessage({ type: 'success', text: t('integrations.internalEnabled') });
+            await fetchConnections();
+        } catch {
+            setMessage({ type: 'error', text: t('integrations.internalEnableFailed') });
+        }
+    };
+
     const handleDisable = async (connectionId: string) => {
         setMessage(null);
         try {
@@ -242,6 +296,39 @@ export default function AdminIntegrationsPage() {
     };
 
     const selectedProvider = providers.find(p => p.id === formProvider);
+
+    /**
+     * P2 — render a config/secret field as its DECLARED type (was text-for-
+     * everything): select → dropdown from options; number → numeric input;
+     * boolean → checkbox; textarea → multi-line (service-account JSON blobs);
+     * string → text/masked input.
+     */
+    const renderField = (field: ConfigFieldInfo, isSecret: boolean) => {
+        const value = (isSecret ? formSecrets : formConfig)[field.key] ?? '';
+        const setValue = (v: string) => (isSecret ? setFormSecrets : setFormConfig)(prev => ({ ...prev, [field.key]: v }));
+        const fid = `field-${field.key}`;
+        switch (field.type) {
+            case 'select': {
+                const opts: ComboboxOption[] = (field.options ?? []).map(o => ({ value: o, label: o }));
+                return <Combobox id={fid} options={opts} selected={opts.find(o => o.value === value) ?? null} setSelected={(o) => o && setValue(String(o.value))} placeholder={field.placeholder} />;
+            }
+            case 'boolean':
+                return (
+                    <label className="flex items-center gap-tight text-sm text-content-default">
+                        <Checkbox id={fid} checked={value === 'true'} onCheckedChange={(c) => setValue(c ? 'true' : 'false')} />
+                        {field.placeholder ?? field.label}
+                    </label>
+                );
+            case 'number':
+                return <input id={fid} type="text" inputMode="decimal" value={value} onChange={e => setValue(e.target.value)} className="input w-full" placeholder={field.placeholder} />;
+            case 'textarea':
+                return <Textarea id={fid} value={value} onChange={e => setValue(e.target.value)} placeholder={field.placeholder} rows={6} className={cn('w-full', isSecret && 'font-mono')} />;
+            default:
+                return isSecret
+                    ? <input id={fid} type={showSecrets ? 'text' : 'password'} value={value} onChange={e => setValue(e.target.value)} className="input w-full font-mono" placeholder={field.placeholder ?? '••••••••'} autoComplete="off" />
+                    : <input id={fid} type="text" value={value} onChange={e => setValue(e.target.value)} className="input w-full" placeholder={field.placeholder} />;
+        }
+    };
 
     return (
             <div className="space-y-section animate-fadeIn">
@@ -333,6 +420,11 @@ export default function AdminIntegrationsPage() {
                     <div className="flex justify-between items-center mb-3">
                         <Heading level={2}>{t('integrations.configuredConnections')}</Heading>
                         <div className="flex items-center gap-tight">
+                            {internalProviders.length > 0 && !allInternalEnabled && (
+                                <Button variant="secondary" size="sm" onClick={handleEnableInternal} id="enable-internal-checks-btn">
+                                    {t('integrations.enableInternal')}
+                                </Button>
+                            )}
                             <Link href={tenantHref('/admin/integrations/identity-accounts')} className={buttonVariants({ variant: 'secondary', size: 'sm' })} id="identity-accounts-link">
                                 {t('identityAccounts.linkLabel')}
                             </Link>
@@ -395,6 +487,11 @@ export default function AdminIntegrationsPage() {
                                                     {testing === row.original.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Link2 className="w-3.5 h-3.5" />}
                                                 </Button>
                                             </Tooltip>
+                                            <Tooltip content={t('integrations.editConnection')}>
+                                                <Button variant="secondary" size="xs" onClick={() => handleEdit(row.original)} aria-label={t('integrations.editConnection')}>
+                                                    <Pencil className="w-3.5 h-3.5" />
+                                                </Button>
+                                            </Tooltip>
                                             <Tooltip content={t('integrations.disableIntegration')}>
                                                 <Button variant="destructive-outline" size="xs" onClick={() => handleDisable(row.original.id)} aria-label={t('integrations.disableIntegration')}>
                                                     <Trash2 className="w-3.5 h-3.5" />
@@ -434,9 +531,12 @@ export default function AdminIntegrationsPage() {
                             <label className="block text-sm text-content-muted mb-1">{t('integrations.provider')}</label>
                             <Combobox
                                 id="integration-provider-select"
-                                selected={providers.map(p => ({ value: p.id, label: p.displayName })).find(o => o.value === formProvider) ?? null}
+                                selected={connectableProviders.map(p => ({ value: p.id, label: p.displayName })).find(o => o.value === formProvider) ?? null}
                                 setSelected={(opt) => { setFormProvider(opt?.value ?? ''); setFormConfig({}); setFormSecrets({}); }}
-                                options={providers.map(p => ({ value: p.id, label: p.displayName }))}
+                                // P2 — only credential-taking providers are selectable here; the
+                                // internal (personnel/device/training) check providers are enabled
+                                // via the "Enable internal checks" button, not this free-form form.
+                                options={connectableProviders.map(p => ({ value: p.id, label: p.displayName }))}
                                 placeholder={t('integrations.selectProvider')}
                                 disabled={!!editingId}
                                 matchTriggerWidth
@@ -459,11 +559,10 @@ export default function AdminIntegrationsPage() {
                             />
                         </div>
 
-                        {/* Internal-provider note — no credentials to enter; the
-                            provider evaluates data already in Inflect. */}
-                        {selectedProvider && selectedProvider.configSchema.configFields.length === 0 && selectedProvider.configSchema.secretFields.length === 0 && (
-                            <div className="p-3 rounded-lg border border-border-info bg-bg-info text-sm text-content-info">
-                                {t('integrations.internalProviderNote')}
+                        {/* P2 — per-provider setup guidance (what it needs + where to get it). */}
+                        {selectedProvider?.setupGuide && (
+                            <div className="p-3 rounded-lg border border-border-info bg-bg-info text-sm text-content-info" data-testid="provider-setup-guide">
+                                {selectedProvider.setupGuide}
                             </div>
                         )}
 
@@ -476,13 +575,7 @@ export default function AdminIntegrationsPage() {
                                         <label className="block text-xs text-content-muted mb-1">
                                             {field.label} {field.required && <RequiredMarker />}
                                         </label>
-                                        <input
-                                            type="text"
-                                            value={formConfig[field.key] ?? ''}
-                                            onChange={e => setFormConfig(prev => ({ ...prev, [field.key]: e.target.value }))}
-                                            className="input w-full"
-                                            placeholder={field.placeholder}
-                                        />
+                                        {renderField(field, false)}
                                         {field.description && (
                                             <p className="text-xs text-content-subtle mt-0.5">{field.description}</p>
                                         )}
@@ -515,14 +608,14 @@ export default function AdminIntegrationsPage() {
                                         <label className="block text-xs text-content-muted mb-1">
                                             {field.label} {field.required && <RequiredMarker />}
                                         </label>
-                                        <input
-                                            type={showSecrets ? 'text' : 'password'}
-                                            value={formSecrets[field.key] ?? ''}
-                                            onChange={e => setFormSecrets(prev => ({ ...prev, [field.key]: e.target.value }))}
-                                            className="input w-full font-mono"
-                                            placeholder={field.placeholder ?? '••••••••'}
-                                            autoComplete="off"
-                                        />
+                                        {renderField(field, true)}
+                                        {field.description && (
+                                            <p className="text-xs text-content-subtle mt-0.5">{field.description}</p>
+                                        )}
+                                        {/* P2 — edit mode: blank keeps the stored secret. */}
+                                        {editingId && (
+                                            <p className="text-xs text-content-subtle mt-0.5">{t('integrations.leaveBlankHint')}</p>
+                                        )}
                                     </div>
                                 ))}
                             </div>

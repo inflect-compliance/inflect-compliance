@@ -89,6 +89,10 @@ export class BambooHrProvider implements ScheduledCheckProvider, HrisSyncProvide
     readonly displayName = 'BambooHR';
     readonly description = 'Sync the employee roster from BambooHR into the personnel hub.';
     readonly supportedChecks: string[] = [];
+    // P2 — validateConnection only checks field presence (no live BambooHR call).
+    readonly liveValidation = false;
+    readonly setupGuide =
+        'Generate a BambooHR API key (your profile → API Keys) and provide it with your company subdomain (the part before .bamboohr.com). Test connection validates field shape only — it does not call BambooHR live.';
 
     readonly configSchema: ConnectionConfigSchema = {
         configFields: [

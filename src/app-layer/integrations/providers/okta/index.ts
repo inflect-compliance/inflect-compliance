@@ -116,6 +116,10 @@ export class OktaProvider implements ScheduledCheckProvider, IdentitySyncProvide
     readonly description =
         'Sync the Okta directory and verify MFA enrolment, dormant admins, admin count, and SSO federation.';
     readonly supportedChecks = [...IDENTITY_CHECKS];
+    // P2 — validateConnection pings the Okta users API (real probe).
+    readonly liveValidation = true;
+    readonly setupGuide =
+        'Create an API token in Okta (Security → API → Tokens) scoped to a read-only admin, and paste it below with your org URL (https://your-org.okta.com). Test connection performs a live directory ping. This connector runs directory/posture checks — it is separate from Okta SSO login.';
 
     readonly configSchema: ConnectionConfigSchema = {
         configFields: [

@@ -51,6 +51,10 @@ export class AzurePostureProvider implements ScheduledCheckProvider {
     readonly displayName = 'Azure Cloud Posture';
     readonly description = 'Run a CIS / SOC 2 benchmark against an Azure subscription (read-only) and collect per-control evidence.';
     readonly supportedChecks = ['soc2', 'cis'];
+    // P2 — validateConnection only checks field presence (no live Azure call).
+    readonly liveValidation = false;
+    readonly setupGuide =
+        'Runs Powerpipe on the collector host against an Azure subscription. Register an app (service principal) with the Reader role on the subscription, and provide its tenant id, subscription id, client id + secret. Test connection validates field shape only — it does not call Azure live.';
 
     readonly configSchema: ConnectionConfigSchema = {
         configFields: [

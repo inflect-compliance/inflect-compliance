@@ -95,6 +95,10 @@ export class GoogleWorkspaceProvider implements ScheduledCheckProvider, Identity
     readonly description =
         'Sync the Google Workspace directory and verify 2-Step Verification, dormant admins, admin count, and SSO.';
     readonly supportedChecks = [...IDENTITY_CHECKS];
+    // P2 — validateConnection only parses the SA JSON shape (no live token exchange).
+    readonly liveValidation = false;
+    readonly setupGuide =
+        'Create a service account, enable domain-wide delegation, and authorise its client ID in the Admin console for the Directory + (optional) inbound-SSO read-only scopes. Paste the whole service-account key JSON below and the super-admin it impersonates above. Test connection validates the JSON shape only — it does not verify the delegation live.';
 
     readonly configSchema: ConnectionConfigSchema = {
         configFields: [
@@ -105,7 +109,7 @@ export class GoogleWorkspaceProvider implements ScheduledCheckProvider, Identity
             { key: 'enrichSso', label: 'SAML SSO enrichment', type: 'boolean', required: false, description: 'Read inbound SAML assignments so the SSO check reflects real coverage (default on; needs the cloud-identity.inboundsso.readonly scope).' },
         ],
         secretFields: [
-            { key: 'serviceAccountJson', label: 'Service-account JSON', type: 'string', required: true, description: 'A domain-wide-delegated service-account key (JSON).' },
+            { key: 'serviceAccountJson', label: 'Service-account JSON', type: 'textarea', required: true, description: 'A domain-wide-delegated service-account key (JSON) — paste the whole file.' },
         ],
     };
 
