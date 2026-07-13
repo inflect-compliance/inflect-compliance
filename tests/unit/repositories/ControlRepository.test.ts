@@ -29,7 +29,7 @@ function freshDb() {
             update: jest.fn().mockResolvedValue({ id: 'ctrl-1' }),
             updateMany: jest.fn().mockResolvedValue({ count: 3 }),
         },
-        frameworkMapping: {
+        controlRequirementLink: {
             findMany: jest.fn().mockResolvedValue([]),
         },
         controlContributor: {
@@ -195,11 +195,11 @@ describe('read helpers', () => {
         expect(arg.include._count).toBeTruthy();
     });
 
-    it('listFrameworkMappings filters by toControlId and tenant', async () => {
+    it('listFrameworkMappings reads canonical controlRequirementLink scoped to control + tenant', async () => {
         await ControlRepository.listFrameworkMappings(db as any, ctx, 'ctrl-9');
-        const arg = (db.frameworkMapping.findMany.mock.calls[0] as any[])[0];
-        expect(arg.where.toControlId).toBe('ctrl-9');
-        expect(arg.where.toControl).toEqual({ tenantId: 'tenant-1' });
+        const arg = (db.controlRequirementLink.findMany.mock.calls[0] as any[])[0];
+        expect(arg.where.controlId).toBe('ctrl-9');
+        expect(arg.where.tenantId).toBe('tenant-1');
     });
 });
 

@@ -94,7 +94,9 @@ function buildDb(opts: {
         evidence: {
             groupBy: jest.fn().mockResolvedValue(opts.evidence ?? []),
         },
-        controlTask: {
+        // SoA open-task rollup now reads the unified Task model (not the
+        // legacy controlTask) — the discoverable install paths write Task.
+        task: {
             groupBy: jest.fn().mockResolvedValue(opts.controlTasks ?? []),
         },
         controlTestRun: {
@@ -311,7 +313,7 @@ describe('getSoA — rollups and field defaults', () => {
         mockDbHolder.db = db;
         const out = await getSoA(ctx, { framework: 'ISO27001' });
         expect(db.evidence.groupBy).not.toHaveBeenCalled();
-        expect(db.controlTask.groupBy).not.toHaveBeenCalled();
+        expect(db.task.groupBy).not.toHaveBeenCalled();
         expect(db.controlTestRun.findMany).not.toHaveBeenCalled();
         expect(out.entries[0].evidenceCount).toBe(0);
         expect(out.entries[0].openTaskCount).toBe(0);
@@ -333,7 +335,7 @@ describe('getSoA — rollups and field defaults', () => {
             includeTests: true,
         });
         expect(db.evidence.groupBy).not.toHaveBeenCalled();
-        expect(db.controlTask.groupBy).not.toHaveBeenCalled();
+        expect(db.task.groupBy).not.toHaveBeenCalled();
         expect(db.controlTestRun.findMany).not.toHaveBeenCalled();
     });
 

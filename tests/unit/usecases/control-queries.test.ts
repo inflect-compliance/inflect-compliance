@@ -194,7 +194,9 @@ describe('getControlHeader', () => {
         (ControlRepository.getHeaderById as jest.Mock).mockResolvedValueOnce({
             id: 'c-1',
             code: 'CC1',
-            _count: { controlTasks: 0, evidenceLinks: 1, evidence: 2, frameworkMappings: 3 },
+            // getHeaderById now counts the canonical requirementLinks
+            // (not the legacy frameworkMappings relation).
+            _count: { controlTasks: 0, evidenceLinks: 1, evidence: 2, requirementLinks: 3 },
         });
         (WorkItemRepository.countLinkedToControl as jest.Mock).mockResolvedValueOnce({
             total: 5,
@@ -203,13 +205,14 @@ describe('getControlHeader', () => {
 
         const result = await getControlHeader(ctx, 'c-1');
 
-        // Tab badge reads `_count.controlTasks` — overridden to the
-        // unified total (5), NOT the stale legacy relation count (0).
-        // Other `_count` entries are preserved. Progress = done (2).
+        // Tab badge reads `_count.controlTasks` — overridden to the unified
+        // total (5), NOT the stale legacy relation count (0). The Mappings
+        // badge (`_count.frameworkMappings`) is mapped from the canonical
+        // requirementLinks count (3). Other `_count` entries are preserved.
         expect(result).toEqual({
             id: 'c-1',
             code: 'CC1',
-            _count: { controlTasks: 5, evidenceLinks: 1, evidence: 2, frameworkMappings: 3 },
+            _count: { controlTasks: 5, evidenceLinks: 1, evidence: 2, requirementLinks: 3, frameworkMappings: 3 },
             doneControlTasks: 2,
         });
         expect(WorkItemRepository.countLinkedToControl).toHaveBeenCalledWith(

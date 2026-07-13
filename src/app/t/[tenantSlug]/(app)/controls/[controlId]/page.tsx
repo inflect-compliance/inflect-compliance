@@ -76,14 +76,18 @@ import type {
     ControlDetailDTO, EvidenceLinkDTO,
     ContributorDTO, AuditLogEntry,
 } from '@/lib/dto';
+import { buildControlStatusLabels } from '../filter-defs';
 
-// Polish PR-1 — STATUS_BADGE moved to shared domain mapping as
-// CONTROL_STATUS_VARIANT in @/app-layer/domain/entity-status-mapping.
-// Labels stay local because they're presentation copy.
-const buildStatusLabels = (t: (k: string) => string): Record<string, string> => ({
-    NOT_STARTED: t('statusLabels.NOT_STARTED'), IN_PROGRESS: t('statusLabels.IN_PROGRESS'), IMPLEMENTED: t('statusLabels.IMPLEMENTED'),
-    NEEDS_REVIEW: t('statusLabels.NEEDS_REVIEW'),
-});
+// The detail status dropdown reuses the CANONICAL status vocabulary
+// (buildControlStatusLabels — the same i18n source the list badges + filter
+// use) so no status is un-selectable on detail. NOT_APPLICABLE is omitted
+// because it is set via the separate applicability action, not the status
+// dropdown; the other six (NOT_STARTED / PLANNED / IN_PROGRESS /
+// IMPLEMENTING / IMPLEMENTED / NEEDS_REVIEW) are all selectable here.
+const buildStatusLabels = (t: (k: string) => string): Record<string, string> => {
+    const { NOT_APPLICABLE: _omitNa, ...selectable } = buildControlStatusLabels(t);
+    return selectable;
+};
 const buildFreqLabels = (t: (k: string) => string): Record<string, string> => ({
     AD_HOC: t('freq.adHoc'), DAILY: t('freq.daily'), WEEKLY: t('freq.weekly'),
     MONTHLY: t('freq.monthly'), QUARTERLY: t('freq.quarterly'), ANNUALLY: t('freq.annually'),

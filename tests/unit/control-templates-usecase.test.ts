@@ -24,8 +24,10 @@
 
 const mockDb = {
     control: { findFirst: jest.fn(), create: jest.fn() },
-    controlTask: { create: jest.fn() },
-    frameworkMapping: { create: jest.fn(), findFirst: jest.fn(), delete: jest.fn() },
+    // Unified Task + canonical controlRequirementLink — the tables the
+    // install / map / unmap paths write after the R2-P1 link unification.
+    task: { create: jest.fn() },
+    controlRequirementLink: { upsert: jest.fn(), findFirst: jest.fn(), delete: jest.fn() },
 } as any;
 
 jest.mock('@/lib/db-context', () => ({
@@ -159,8 +161,8 @@ describe('installControlsFromTemplate', () => {
         expect(res).toEqual([{
             templateCode: 'A.5', controlId: 'c-new', tasksCreated: 2, requirementsLinked: 2,
         }]);
-        expect(mockDb.controlTask.create).toHaveBeenCalledTimes(2);
-        expect(mockDb.frameworkMapping.create).toHaveBeenCalledTimes(2);
+        expect(mockDb.task.create).toHaveBeenCalledTimes(2);
+        expect(mockDb.controlRequirementLink.upsert).toHaveBeenCalledTimes(2);
 
         const payload = (logEvent as jest.Mock).mock.calls[0][2];
         expect(payload.action).toBe('CONTROL_INSTALLED_FROM_TEMPLATE');
@@ -191,35 +193,36 @@ describe('installControlsFromTemplate', () => {
 // ─── mapRequirementToControl / unmapRequirementFromControl ─────────
 
 describe('mapRequirementToControl', () => {
-    it('creates the mapping when the control exists', async () => {
+    it('upserts a canonical controlRequirementLink when the control exists', async () => {
         (mockDb.control.findFirst as jest.Mock).mockResolvedValue({ id: 'c-1' });
-        (mockDb.frameworkMapping.create as jest.Mock).mockResolvedValue({ id: 'm-1' });
+        (mockDb.controlRequirementLink.upsert as jest.Mock).mockResolvedValue({ id: 'link-1' });
 
         const res = await mapRequirementToControl(editorCtx, 'c-1', 'req-1');
 
-        expect(res).toEqual({ id: 'm-1' });
-        const createArgs = (mockDb.frameworkMapping.create as jest.Mock).mock.calls[0][0];
-        expect(createArgs.data).toEqual({ fromRequirementId: 'req-1', toControlId: 'c-1' });
+        expect(res).toEqual({ id: 'link-1' });
+        const upsertArgs = (mockDb.controlRequirementLink.upsert as jest.Mock).mock.calls[0][0];
+        expect(upsertArgs.where.controlId_requirementId).toEqual({ controlId: 'c-1', requirementId: 'req-1' });
+        expect(upsertArgs.create).toMatchObject({ controlId: 'c-1', requirementId: 'req-1' });
     });
 
     it('throws notFound when control does not exist', async () => {
         (mockDb.control.findFirst as jest.Mock).mockResolvedValue(null);
         await expect(mapRequirementToControl(editorCtx, 'missing', 'req-1'))
             .rejects.toThrow(/Control not found/i);
-        expect(mockDb.frameworkMapping.create).not.toHaveBeenCalled();
+        expect(mockDb.controlRequirementLink.upsert).not.toHaveBeenCalled();
     });
 });
 
 describe('unmapRequirementFromControl', () => {
-    it('deletes the mapping when both control and mapping exist', async () => {
+    it('deletes the canonical link when both control and link exist', async () => {
         (mockDb.control.findFirst as jest.Mock).mockResolvedValue({ id: 'c-1' });
-        (mockDb.frameworkMapping.findFirst as jest.Mock).mockResolvedValue({ id: 'm-1' });
+        (mockDb.controlRequirementLink.findFirst as jest.Mock).mockResolvedValue({ id: 'link-1' });
 
         const res = await unmapRequirementFromControl(editorCtx, 'c-1', 'req-1');
 
         expect(res).toEqual({ success: true });
-        const deleteArgs = (mockDb.frameworkMapping.delete as jest.Mock).mock.calls[0][0];
-        expect(deleteArgs.where.id).toBe('m-1');
+        const deleteArgs = (mockDb.controlRequirementLink.delete as jest.Mock).mock.calls[0][0];
+        expect(deleteArgs.where.id).toBe('link-1');
     });
 
     it('throws notFound on missing control', async () => {
@@ -230,7 +233,7 @@ describe('unmapRequirementFromControl', () => {
 
     it('throws notFound on missing mapping', async () => {
         (mockDb.control.findFirst as jest.Mock).mockResolvedValue({ id: 'c-1' });
-        (mockDb.frameworkMapping.findFirst as jest.Mock).mockResolvedValue(null);
+        (mockDb.controlRequirementLink.findFirst as jest.Mock).mockResolvedValue(null);
         await expect(unmapRequirementFromControl(editorCtx, 'c-1', 'req-orphan'))
             .rejects.toThrow(/Mapping not found/i);
     });

@@ -57,28 +57,46 @@ export async function installControlsFromTemplate(ctx: RequestContext, templateI
                 },
             });
 
-            // Create tasks from template
+            // Create unified Task rows (NOT legacy controlTask) so template
+            // controls show real task counts in the list and roll up into
+            // readiness — matching the framework install wizard.
             let tasksCreated = 0;
             for (const tplTask of template.tasks) {
-                await db.controlTask.create({
+                await db.task.create({
                     data: {
                         tenantId: ctx.tenantId,
                         controlId: control.id,
                         title: tplTask.title,
                         description: tplTask.description,
+                        status: 'OPEN',
+                        type: 'TASK',
+                        createdByUserId: ctx.userId,
+                        assigneeUserId: ctx.userId,
                     },
                 });
                 tasksCreated++;
             }
 
-            // Create framework mapping links
+            // Create control↔requirement links in the CANONICAL table
+            // (controlRequirementLink) — the one SoA, per-framework coverage,
+            // readiness and every posture surface read. The framework install
+            // wizard writes the same table; template-installed controls now
+            // count toward posture instead of rendering as unmapped.
             let requirementsLinked = 0;
             for (const rl of template.requirementLinks) {
-                await db.frameworkMapping.create({
-                    data: {
-                        fromRequirementId: rl.requirementId,
-                        toControlId: control.id,
+                await db.controlRequirementLink.upsert({
+                    where: {
+                        controlId_requirementId: {
+                            controlId: control.id,
+                            requirementId: rl.requirementId,
+                        },
                     },
+                    create: {
+                        tenantId: ctx.tenantId,
+                        controlId: control.id,
+                        requirementId: rl.requirementId,
+                    },
+                    update: {},
                 });
                 requirementsLinked++;
             }
@@ -130,11 +148,18 @@ export async function mapRequirementToControl(ctx: RequestContext, controlId: st
         const control = await db.control.findFirst({ where: { id: controlId, tenantId: ctx.tenantId } });
         if (!control) throw notFound('Control not found');
 
-        const mapping = await db.frameworkMapping.create({
-            data: { fromRequirementId: requirementId, toControlId: controlId },
-            include: { fromRequirement: { include: { framework: { select: { name: true } } } } },
+        // Canonical control↔requirement table — the same one SoA / coverage /
+        // readiness read. Upsert keeps the action idempotent (re-mapping an
+        // existing link is a no-op rather than a unique-constraint error).
+        const link = await db.controlRequirementLink.upsert({
+            where: {
+                controlId_requirementId: { controlId, requirementId },
+            },
+            create: { tenantId: ctx.tenantId, controlId, requirementId },
+            update: {},
+            include: { requirement: { include: { framework: { select: { name: true } } } } },
         });
-        return mapping;
+        return link;
     });
 }
 
@@ -144,12 +169,12 @@ export async function unmapRequirementFromControl(ctx: RequestContext, controlId
         const control = await db.control.findFirst({ where: { id: controlId, tenantId: ctx.tenantId } });
         if (!control) throw notFound('Control not found');
 
-        const mapping = await db.frameworkMapping.findFirst({
-            where: { fromRequirementId: requirementId, toControlId: controlId },
+        const link = await db.controlRequirementLink.findFirst({
+            where: { tenantId: ctx.tenantId, controlId, requirementId },
         });
-        if (!mapping) throw notFound('Mapping not found');
+        if (!link) throw notFound('Mapping not found');
 
-        await db.frameworkMapping.delete({ where: { id: mapping.id } });
+        await db.controlRequirementLink.delete({ where: { id: link.id } });
         return { success: true };
     });
 }

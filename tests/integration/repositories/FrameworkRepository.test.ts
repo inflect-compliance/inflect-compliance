@@ -88,13 +88,14 @@ describeFn('FrameworkRepository (integration — real DB, global catalog)', () =
             data: { tenantId: TENANT_A, code: TPL_CODE, name: 'Implemented Control' },
         });
         controlAId = ctrl.id;
-        await prisma.frameworkMapping.create({
-            data: { fromRequirementId: req1Id, toControlId: controlAId },
+        // getCoverage reads the canonical controlRequirementLink table.
+        await prisma.controlRequirementLink.create({
+            data: { tenantId: TENANT_A, controlId: controlAId, requirementId: req1Id },
         });
     });
 
     afterAll(async () => {
-        await prisma.frameworkMapping.deleteMany({ where: { fromRequirementId: { in: [req1Id, req2Id] } } });
+        await prisma.controlRequirementLink.deleteMany({ where: { requirementId: { in: [req1Id, req2Id] } } });
         await prisma.control.deleteMany({ where: { tenantId: { in: [TENANT_A, TENANT_B] } } });
         await prisma.packTemplateLink.deleteMany({ where: { pack: { frameworkId } } });
         await prisma.frameworkPack.deleteMany({ where: { frameworkId } });

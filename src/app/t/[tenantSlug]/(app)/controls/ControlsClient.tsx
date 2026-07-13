@@ -1369,12 +1369,17 @@ function ControlsPageInner({
                         title={t('empty.noRecordsTitle')}
                         description={t('empty.recordsDesc')}
                         primaryAction={{
-                            label: t('empty.installTemplates'),
-                            href: tenantHref('/controls/templates'),
+                            // Steer to the posture-feeding path: installing a
+                            // framework writes controlRequirementLink and
+                            // counts toward every framework's coverage/
+                            // readiness. The raw template library (which the
+                            // secondary points at) is the escape hatch.
+                            label: t('empty.installFramework'),
+                            href: tenantHref('/frameworks'),
                         }}
                         secondaryAction={{
-                            label: t('empty.createControl'),
-                            onClick: () => setIsCreateOpen(true),
+                            label: t('empty.installTemplates'),
+                            href: tenantHref('/controls/templates'),
                         }}
                     />
                 ),

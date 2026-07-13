@@ -10,9 +10,11 @@
  *     - All mapped controls NOT_APPLICABLE   → false
  *     - No mapped controls                   → null (unmapped)
  *
- *   Implementation status (worst-status rollup):
- *     NOT_STARTED < IN_PROGRESS < NEEDS_REVIEW < IMPLEMENTED
- *     Reports the lowest status among mapped applicable controls.
+ *   Implementation status (worst-status rollup — shared helper):
+ *     NOT_STARTED < PLANNED < IN_PROGRESS < IMPLEMENTING < NEEDS_REVIEW < IMPLEMENTED
+ *     Reports the lowest status among mapped applicable controls. The order
+ *     and status set are owned by @/lib/compliance/requirement-status-rollup
+ *     so the ISO SoA and per-framework readiness never diverge.
  *
  *   Justification (when applicable === false):
  *     Concatenates applicabilityJustification from NOT_APPLICABLE controls.
@@ -22,6 +24,9 @@ import { RequestContext } from '../types';
 import { assertCanRead } from '../policies/common';
 import { runInTenantContext } from '@/lib/db-context';
 import { notFound } from '@/lib/errors/types';
+import { WorkItemStatus } from '@prisma/client';
+import { worstStatus, isImplemented } from '@/lib/compliance/requirement-status-rollup';
+import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
 import type {
     SoAReportDTO,
     SoAEntryDTO,
@@ -29,22 +34,10 @@ import type {
     SoASummaryDTO,
 } from '@/lib/dto/soa';
 
-// ─── Status ordering (lower index = worse) ───
-
-const STATUS_ORDER: Record<string, number> = {
-    NOT_STARTED: 0,
-    IN_PROGRESS: 1,
-    NEEDS_REVIEW: 2,
-    IMPLEMENTED: 3,
-    NOT_APPLICABLE: -1, // excluded from rollup
-};
-
-function worstStatus(statuses: string[]): string | null {
-    const applicable = statuses.filter(s => STATUS_ORDER[s] !== undefined && STATUS_ORDER[s] >= 0);
-    if (applicable.length === 0) return null;
-    applicable.sort((a, b) => STATUS_ORDER[a] - STATUS_ORDER[b]);
-    return applicable[0];
-}
+// The per-requirement worst-status rollup + canonical status vocabulary now
+// live in the shared helper (@/lib/compliance/requirement-status-rollup), so
+// the ISO SoA and every framework's coverage/readiness compute the identical
+// verdict and no status (PLANNED / IMPLEMENTING) is silently dropped.
 
 // ─── Options ───
 
@@ -249,7 +242,7 @@ export async function getSoA(ctx: RequestContext, options: SoAOptions = {}): Pro
                 .filter(c => c.applicability === 'APPLICABLE')
                 .map(c => c.status);
             implementationStatus = worstStatus(applicableStatuses);
-            if (implementationStatus === 'IMPLEMENTED') {
+            if (isImplemented(implementationStatus)) {
                 summary.implemented++;
             }
         }
@@ -321,19 +314,24 @@ async function loadEvidenceCounts(ctx: RequestContext, controlIds: string[]): Pr
 
 async function loadOpenTaskCounts(ctx: RequestContext, controlIds: string[]): Promise<Map<string, number>> {
     const result = new Map<string, number>();
+    // Unified Task model (not legacy controlTask) — the discoverable install
+    // paths now write Task rows, so the SoA open-task rollup must read them.
+    // "Open" = every non-terminal WorkItemStatus (notIn the shared terminal
+    // set) so TRIAGED / BLOCKED tasks are counted too — a positive
+    // [OPEN, IN_PROGRESS] allowlist would silently miss them.
     const counts = await runInTenantContext(ctx, (db) =>
-        db.controlTask.groupBy({
+        db.task.groupBy({
             by: ['controlId'],
             where: {
                 tenantId: ctx.tenantId,
                 controlId: { in: controlIds },
-                status: { in: ['OPEN', 'IN_PROGRESS'] },
+                status: { notIn: [...TERMINAL_WORK_ITEM_STATUSES] as WorkItemStatus[] },
             },
             _count: { id: true },
         })
     );
     for (const row of counts) {
-        result.set(row.controlId, row._count.id);
+        if (row.controlId) result.set(row.controlId, row._count.id);
     }
     return result;
 }
