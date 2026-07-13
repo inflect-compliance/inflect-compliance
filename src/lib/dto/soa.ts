@@ -29,6 +29,14 @@ export interface SoAEntryDTO {
     justification: string | null;
     /** Worst-status rollup across mapped applicable controls */
     implementationStatus: string | null;
+    /**
+     * R2-P5 — the shared requirement verdict: 'implemented' | 'excepted' |
+     * 'gap' (only set when applicable). 'excepted' = otherwise a gap, but
+     * every gapping applicable control is covered by an in-force exception.
+     */
+    verdict: string | null;
+    /** When verdict === 'excepted', the date the exception cover lapses. */
+    exceptedUntil: string | null;
     mappedControls: SoAMappedControlDTO[];
     /** Rollup counts (populated when include* flags are set) */
     evidenceCount: number;
@@ -44,6 +52,8 @@ export interface SoASummaryDTO {
     notApplicable: number;
     unmapped: number;
     implemented: number;
+    /** R2-P5 — requirements risk-accepted via an in-force exception. */
+    excepted: number;
     missingJustification: number;
 }
 

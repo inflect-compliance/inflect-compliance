@@ -39,6 +39,8 @@ function ctrl(over: Partial<any> = {}): any {
         ownerUserId: 'owner-1',
         frequency: 'ANNUAL',
         deletedAt: null,
+        // R2-P5 — soa.ts reads control.exceptions for the EXCEPTED verdict.
+        exceptions: over.exceptions ?? [],
         ...over,
     };
 }

@@ -25,7 +25,7 @@ import { assertCanRead } from '../policies/common';
 import { runInTenantContext } from '@/lib/db-context';
 import { notFound } from '@/lib/errors/types';
 import { WorkItemStatus } from '@prisma/client';
-import { worstStatus, isImplemented } from '@/lib/compliance/requirement-status-rollup';
+import { worstStatus, isImplemented, rollUpRequirementVerdict } from '@/lib/compliance/requirement-status-rollup';
 import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
 import type {
     SoAReportDTO,
@@ -120,8 +120,13 @@ export async function getSoA(ctx: RequestContext, options: SoAOptions = {}): Pro
             ownerUserId: string | null;
             frequency: string | null;
             deletedAt: Date | null;
+            exceptions: { expiresAt: Date | null }[];
         };
     }
+    // R2-P5 — resolve in-force exceptions relative to now so reversion on
+    // expiry is automatic (the exception-expiry-monitor also flips
+    // APPROVED→EXPIRED, but keying on live status here needs no scheduling).
+    const now = new Date();
     const links: ControlLinkRow[] = await runInTenantContext(ctx, (db) =>
         db.controlRequirementLink.findMany({
             where: {
@@ -140,6 +145,12 @@ export async function getSoA(ctx: RequestContext, options: SoAOptions = {}): Pro
                         ownerUserId: true,
                         frequency: true,
                         deletedAt: true,
+                        // In-force exceptions: APPROVED and not yet expired.
+                        exceptions: {
+                            where: { status: 'APPROVED', expiresAt: { gt: now } },
+                            select: { expiresAt: true },
+                            orderBy: { expiresAt: 'asc' },
+                        },
                     },
                 },
             },
@@ -182,6 +193,7 @@ export async function getSoA(ctx: RequestContext, options: SoAOptions = {}): Pro
         notApplicable: 0,
         unmapped: 0,
         implemented: 0,
+        excepted: 0,
         missingJustification: 0,
     };
 
@@ -235,15 +247,34 @@ export async function getSoA(ctx: RequestContext, options: SoAOptions = {}): Pro
             }
         }
 
-        // Derive implementation status (worst among applicable controls)
+        // Derive implementation verdict (shared rollup — adds EXCEPTED).
         let implementationStatus: string | null = null;
+        let verdict: string | null = null;
+        let exceptedUntil: string | null = null;
         if (applicable === true) {
-            const applicableStatuses = mappedControls
-                .filter(c => c.applicability === 'APPLICABLE')
-                .map(c => c.status);
-            implementationStatus = worstStatus(applicableStatuses);
-            if (isImplemented(implementationStatus)) {
+            const rollupControls = reqLinks
+                .filter((l) => l.control.applicability === 'APPLICABLE')
+                .map((l) => ({
+                    status: l.control.status,
+                    applicability: l.control.applicability,
+                    hasInForceException: l.control.exceptions.length > 0,
+                }));
+            const rolled = rollUpRequirementVerdict(rollupControls);
+            implementationStatus = rolled.worst;
+            verdict = rolled.verdict;
+            if (rolled.verdict === 'implemented') {
                 summary.implemented++;
+            } else if (rolled.verdict === 'excepted') {
+                summary.excepted++;
+                // Excepted until the EARLIEST gapping exception expires — after
+                // that date a control reverts to a real gap.
+                const gapDates = reqLinks
+                    .filter((l) => l.control.applicability === 'APPLICABLE' && !isImplemented(l.control.status))
+                    .flatMap((l) => l.control.exceptions.map((e) => e.expiresAt))
+                    .filter((d): d is Date => d != null);
+                if (gapDates.length > 0) {
+                    exceptedUntil = new Date(Math.min(...gapDates.map((d) => d.getTime()))).toISOString();
+                }
             }
         }
 
@@ -267,6 +298,8 @@ export async function getSoA(ctx: RequestContext, options: SoAOptions = {}): Pro
             applicable,
             justification,
             implementationStatus,
+            verdict,
+            exceptedUntil,
             mappedControls,
             evidenceCount,
             openTaskCount,

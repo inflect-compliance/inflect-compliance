@@ -58,6 +58,8 @@ describe('SoA DTOs (type-conformance contracts)', () => {
             applicable: true,
             justification: null,
             implementationStatus: 'IMPLEMENTED',
+            verdict: null,
+            exceptedUntil: null,
             mappedControls: [
                 {
                     controlId: 'ctrl-1',
@@ -90,6 +92,8 @@ describe('SoA DTOs (type-conformance contracts)', () => {
             applicable: false,
             justification: 'No physical premises in scope',
             implementationStatus: null,
+            verdict: null,
+            exceptedUntil: null,
             mappedControls: [],
             evidenceCount: 0,
             openTaskCount: 0,
@@ -110,6 +114,8 @@ describe('SoA DTOs (type-conformance contracts)', () => {
             applicable: null,
             justification: null,
             implementationStatus: null,
+            verdict: null,
+            exceptedUntil: null,
             mappedControls: [],
             evidenceCount: 0,
             openTaskCount: 0,
@@ -127,6 +133,7 @@ describe('SoA DTOs (type-conformance contracts)', () => {
             notApplicable: 10,
             unmapped: 3,
             implemented: 55,
+            excepted: 0,
             missingJustification: 2,
         };
 
@@ -143,6 +150,7 @@ describe('SoA DTOs (type-conformance contracts)', () => {
             notApplicable: 0,
             unmapped: 0,
             implemented: 1,
+            excepted: 0,
             missingJustification: 0,
         };
         const report: SoAReportDTO = {
@@ -161,6 +169,8 @@ describe('SoA DTOs (type-conformance contracts)', () => {
                     applicable: true,
                     justification: null,
                     implementationStatus: 'IMPLEMENTED',
+                    verdict: null,
+                    exceptedUntil: null,
                     mappedControls: [],
                     evidenceCount: 0,
                     openTaskCount: 0,
