@@ -163,6 +163,8 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
 
     // Security (self-service)
     '/security/mfa': { href: '/dashboard', label: 'Dashboard' },
+    '/security-testing': { href: '/audits', label: 'Internal Audit' },
+    '/vulnerabilities': { href: '/risks', label: 'Risk Register' },
 
     // Tasks
     '/tasks/[taskId]': { href: '/tasks', label: 'Tasks' },

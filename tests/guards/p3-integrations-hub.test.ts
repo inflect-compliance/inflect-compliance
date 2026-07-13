@@ -3,7 +3,11 @@
  *
  * Locks the wiring introduced by the integrations-hub PR so a later refactor
  * can't silently unravel the consolidation story:
- *   1. The Integrations hub has a sidebar nav entry (it had none).
+ *   1. (removed 2026-07-13) The sidebar nav entry was dropped per product
+ *      directive — the Integrations hub is reached via the admin gear
+ *      (`integrations-pill-btn`) + the IdentityCrossLinks strip, not the
+ *      sidebar. The admin-index + cross-link assertions below still lock
+ *      its reachability.
  *   2. The connector catalog is grouped by provider category.
  *   3. `PROVIDER_CATEGORY` + a `category` projection back the grouping.
  *   4. The admin index renders labelled sections, not one flat pill list.
@@ -24,11 +28,10 @@ const INTEGRATIONS_PAGE = `${APP}/admin/integrations/page.tsx`;
 const USECASE = 'src/app-layer/usecases/integrations.ts';
 const CROSS_LINKS = 'src/components/admin/IdentityCrossLinks.tsx';
 
-describe('P3 — integrations hub sidebar entry', () => {
-    it('SidebarNav links to the /admin/integrations hub with the Plug icon', () => {
+describe('P3 — integrations hub reached via admin gear, not the sidebar', () => {
+    it('SidebarNav does NOT carry an /admin/integrations entry (removed 2026-07-13)', () => {
         const src = read(SIDEBAR);
-        expect(src).toMatch(/Plug/);
-        expect(src).toMatch(/tenantHref\('\/admin\/integrations'\)/);
+        expect(src).not.toMatch(/tenantHref\('\/admin\/integrations'\)/);
     });
 });
 
