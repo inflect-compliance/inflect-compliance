@@ -252,7 +252,10 @@
         "closeNavigation": "Close navigation",
         "integrations": "Integrations",
         "vulnerabilities": "Vulnerabilities",
-        "securityTesting": "Security Testing"
+        "securityTesting": "Security Testing",
+        "compliance": "Compliance",
+        "frameworks": "Frameworks",
+        "coverage": "Coverage map"
     },
     "dashboard": {
         "title": "Compliance Dashboard",
@@ -1679,7 +1682,8 @@
             "consistencyResults": "Consistency Check Results",
             "missingCode": "Missing Code",
             "duplicateCodes": "Duplicate Codes",
-            "allPassed": "All checks passed — no issues found"
+            "allPassed": "All checks passed — no issues found",
+            "bestValueTitle": "Best-value controls"
         },
         "templates": {
             "title": "Control Templates",
@@ -2904,7 +2908,12 @@
             "justify": "Justify",
             "evidenceItems": "Evidence: {count} items",
             "openTasks": "Open tasks: {count}",
-            "lastTest": "Last test:"
+            "lastTest": "Last test:",
+            "mapFailed": "Could not map the control. Please try again.",
+            "justificationFailed": "Could not save the justification. Please try again.",
+            "mapSearchPlaceholder": "Search controls…",
+            "nonIsoNotice": "The Statement of Applicability is an ISO 27001 Annex A artifact. {framework} is not an ISO-family framework —",
+            "nonIsoLink": "view its coverage & readiness instead"
         },
         "soaPrint": {
             "printPreview": "SoA Print Preview",
@@ -4403,7 +4412,9 @@
             "customDescription": "Where customisation lives today, and what's coming.",
             "customToday": "<b>Today</b> — the canonical path is to import a catalogue framework (ISO27001, NIS2, …) and then customise per requirement on the framework's <em>Customize</em> tab. Reorder requirements, link controls, and add per-tenant metadata — every change is tenant-scoped.",
             "customComingSoon": "<b>Coming soon</b> — tenant-scoped frameworks built from scratch. The current Framework model is global (one Framework row shared across every tenant); fully bespoke frameworks need a tenantId column + matching RLS policies. Queued behind the larger framework-lifecycle epic so the migration lands with the rest of the customisation surface.",
-            "close": "Close"
+            "close": "Close",
+            "coverageError": "Coverage couldn't be computed for this framework",
+            "coverageUnknownShort": "—"
         },
         "detail": {
             "notFound": "Framework not found",
@@ -5429,7 +5440,7 @@
     "coverage": {
         "crumbDashboard": "Dashboard",
         "crumbCoverage": "Coverage",
-        "title": "Coverage Dashboard",
+        "title": "Control coverage map",
         "description": "How your assets are protected by controls and what risks remain unmitigated",
         "backAssets": "Assets",
         "kpiAssets": "Assets Protected",

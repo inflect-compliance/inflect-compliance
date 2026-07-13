@@ -150,6 +150,7 @@ describe('SoA DTOs (type-conformance contracts)', () => {
             tenantSlug: 'acme',
             framework: 'ISO27001',
             frameworkName: 'ISO 27001:2022',
+            isIsoFamily: true,
             generatedAt: '2026-06-28T00:00:00.000Z',
             entries: [
                 {

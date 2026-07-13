@@ -109,14 +109,19 @@ export function ClausesBrowser({ clauses: initialClauses, tenantSlug }: ClausesB
                         </div>
                         <div>
                             <Eyebrow className="mb-2">{t('checklist')}</Eyebrow>
-                            <div className="space-y-tight">
+                            {/* R2-P3 — was an interactive checkbox input with no
+                                state/handler, so ticks were silently lost on
+                                every re-render. Rendered as a static reference
+                                list until real per-clause progress is modelled
+                                (there is no persistence for it today). */}
+                            <ul className="space-y-tight">
                                 {selected.checklist?.map((item: string, i: number) => (
-                                    <label key={i} className="flex items-start gap-tight text-sm text-content-default cursor-pointer group">
-                                        <input type="checkbox" className="mt-1 accent-[var(--brand-default)]" />
-                                        <span className="group-hover:text-content-emphasis transition">{item}</span>
-                                    </label>
+                                    <li key={i} className="flex items-start gap-tight text-sm text-content-default">
+                                        <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-content-subtle" aria-hidden />
+                                        <span>{item}</span>
+                                    </li>
                                 ))}
-                            </div>
+                            </ul>
                         </div>
                     </div>
                 ) : (
