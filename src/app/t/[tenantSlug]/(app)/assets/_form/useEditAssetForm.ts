@@ -33,6 +33,10 @@ export interface EditAssetFormFields {
     confidentiality: number;
     integrity: number;
     availability: number;
+    cpe: string;
+    vendor: string;
+    product: string;
+    version: string;
 }
 
 export interface EditAssetFormReturn {
@@ -68,6 +72,10 @@ const DEFAULTS: EditAssetFormFields = {
     confidentiality: 3,
     integrity: 3,
     availability: 3,
+    cpe: '',
+    vendor: '',
+    product: '',
+    version: '',
 };
 
 export function useEditAssetForm({

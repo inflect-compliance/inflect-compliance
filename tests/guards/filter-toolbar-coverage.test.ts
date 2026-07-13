@@ -140,6 +140,8 @@ const EXEMPTIONS: Record<string, string> = {
     // ── Wizards / multi-step flows ──
     "src/app/t/[tenantSlug]/(app)/risks/import/page.tsx":
         "Risk import wizard — staged workflow, each step has its own controls; not an ongoing browse surface.",
+    "src/app/t/[tenantSlug]/(app)/assets/import/page.tsx":
+        "Asset import wizard — staged workflow, each step has its own controls; not an ongoing browse surface.",
 
     // ── Templates / sub-resource lists ──
     "src/app/t/[tenantSlug]/(app)/controls/templates/page.tsx":

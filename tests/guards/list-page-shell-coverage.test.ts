@@ -153,6 +153,11 @@ const EXEMPTIONS: Record<string, string> = {
     'risks/import/page.tsx':
         'import wizard flow',
 
+    // Asset import wizard. Result table appears mid-flow inside a
+    // wizard step; not a primary list-page experience.
+    'assets/import/page.tsx':
+        'import wizard flow',
+
     // Epic 66 — frameworks client island that owns the table/cards
     // view toggle. Cards mode is a responsive grid (no clamping
     // needed); table mode delegates fillBody to the inner

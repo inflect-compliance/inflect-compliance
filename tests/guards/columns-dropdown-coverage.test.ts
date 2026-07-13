@@ -100,6 +100,8 @@ const EXEMPTIONS: Record<string, string> = {
         '(b) control-template catalogue — small fixed catalogue browsed by section.',
     'risks/import/page.tsx':
         '(b) risk import wizard — staged workflow, each step has its own controls.',
+    'assets/import/page.tsx':
+        '(b) asset import wizard — staged workflow, each step has its own controls.',
 
     // ─── (c) Toolbar pending ────────────────────────────────────────
     // (none today — Findings got the gear in R10-PR11 mounted

@@ -13,6 +13,7 @@ import { useTranslations } from 'next-intl';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { AssetCriticalityFields } from './AssetCriticalityFields';
+import { AssetIdentityFields } from './AssetIdentityFields';
 import {
     buildAssetClassificationOptions,
     buildAssetDataResidencyOptions,
@@ -162,6 +163,17 @@ export function EditAssetFields({
             confidentiality={form.fields.confidentiality}
             integrity={form.fields.integrity}
             availability={form.fields.availability}
+            onChange={(key, value) => form.setField(key, value)}
+        />
+        {/* Product identity → CVE→asset matching. */}
+        <AssetIdentityFields
+            idPrefix="asset-edit"
+            values={{
+                cpe: form.fields.cpe ?? '',
+                vendor: form.fields.vendor ?? '',
+                product: form.fields.product ?? '',
+                version: form.fields.version ?? '',
+            }}
             onChange={(key, value) => form.setField(key, value)}
         />
         </>

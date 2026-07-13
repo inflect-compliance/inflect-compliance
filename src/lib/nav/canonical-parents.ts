@@ -68,6 +68,7 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
 
     // Assets
     '/assets/[id]': { href: '/assets', label: 'Assets' },
+    '/assets/import': { href: '/assets', label: 'Assets' },
     '/assets/new': { href: '/assets', label: 'Assets' },
 
     // Audits
