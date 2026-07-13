@@ -43,6 +43,7 @@ export default async function AuditsPage({
                 initialAudits={JSON.parse(JSON.stringify(audits))}
                 tenantSlug={tenantSlug}
                 hasNis2={hasNis2}
+                canWrite={ctx.permissions.canWrite}
                 translations={{
                     title: t('title'),
                 listDescription: t('listDescription'),

@@ -381,6 +381,7 @@ const LIST_QUERY_INDEXES: readonly CompositeIndex[] = [
 // curated composite index is needed."
 
 const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
+    AuditChecklistItem: 'updateAudit prefetches the touched checklist rows by (id IN […], tenantId) for FAIL-transition detection — a PK IN lookup + RLS-bound tenantId; @@index([tenantId, auditId]) is more than sufficient; bounded by the request payload size.',
     Employee: 'listEmployees filters by tenantId (+status) — covered by @@index([tenantId, status]); bounded take ≤500.',
     ConnectedIdentityAccount: 'personnel provider reads all accounts for a tenant (offboarded-access join) — covered by @@index([tenantId, status]); bounded take ≤10000.',
     Device: 'listDevices + device provider read by tenantId (+platform) — covered by @@index([tenantId, platform]); bounded take ≤10000.',

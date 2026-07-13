@@ -16,10 +16,15 @@ export class AuditRepository {
     static async list(
         db: PrismaTx,
         ctx: RequestContext,
-        options: { take?: number } = {},
+        options: { take?: number; auditCycleId?: string } = {},
     ) {
         return db.audit.findMany({
-            where: { tenantId: ctx.tenantId },
+            where: {
+                tenantId: ctx.tenantId,
+                // feat/audit-cycle-unify — optional filter to the audits
+                // that are fieldwork within a given cycle.
+                ...(options.auditCycleId ? { auditCycleId: options.auditCycleId } : {}),
+            },
             orderBy: { createdAt: 'desc' },
             select: auditListSelect,
             ...(options.take ? { take: options.take } : {}),

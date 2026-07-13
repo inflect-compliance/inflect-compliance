@@ -2476,6 +2476,32 @@
             "framework": "Framework",
             "noFramework": "No framework"
         },
+        "findingModal": {
+            "trigger": "Finding",
+            "title": "New finding",
+            "description": "Raise a finding against this audit.",
+            "labelTitle": "Title",
+            "labelType": "Type",
+            "labelSeverity": "Severity",
+            "labelDescription": "Description",
+            "placeholderTitle": "Short summary of the finding",
+            "placeholderDescription": "What was observed and why it is a finding",
+            "cancel": "Cancel",
+            "submit": "Create finding",
+            "creating": "Creating…",
+            "createFailed": "Failed to create finding",
+            "typeOptions": {
+                "NONCONFORMITY": "Nonconformity",
+                "OBSERVATION": "Observation",
+                "OPPORTUNITY": "Opportunity"
+            },
+            "severityOptions": {
+                "LOW": "Low",
+                "MEDIUM": "Medium",
+                "HIGH": "High",
+                "CRITICAL": "Critical"
+            }
+        },
         "cycles": {
             "title": "Audit Readiness",
             "cycleCount": "{count, plural, one {# audit cycle} other {# audit cycles}}",

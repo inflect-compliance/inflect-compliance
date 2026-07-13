@@ -11,8 +11,11 @@ import { recordListPageRowCount } from '@/lib/observability/list-page-metrics';
 export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
     const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
+    // feat/audit-cycle-unify — optional filter to the fieldwork audits
+    // that belong to a given AuditCycle.
+    const cycleId = req.nextUrl.searchParams.get('cycleId') || undefined;
     // PR-5 — backfill cap.
-    const audits = await listAudits(ctx, { take: LIST_BACKFILL_CAP + 1 });
+    const audits = await listAudits(ctx, { take: LIST_BACKFILL_CAP + 1, auditCycleId: cycleId });
     const result = applyBackfillCap(audits);
     // PR-6 — row-count observability.
     recordListPageRowCount({

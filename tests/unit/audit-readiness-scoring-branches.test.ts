@@ -73,6 +73,7 @@ function buildDb(opts: {
     overdueTasks?: any[];                 // ISO overdue task.findMany
     openTasks?: any[];                    // ISO/NIS2 open-issue task.findMany
     taskCount?: number;                   // GENERIC task.count
+    openFindingCount?: number;            // feat/audit-cycle-unify — finding.count on cycle audits
     snapshotThrows?: boolean;             // readinessSnapshot.create rejects
 }) {
     // control.findMany is called for several distinct shapes. We
@@ -106,6 +107,10 @@ function buildDb(opts: {
         controlRequirementLink: { findMany: jest.fn().mockResolvedValue(opts.mappedLinks ?? []) },
         control: { findMany: controlFindMany },
         evidence: { findMany: jest.fn().mockResolvedValue(opts.genericEvidence ?? []) },
+        // feat/audit-cycle-unify — open findings raised on the cycle's
+        // audits fold into the issue count. Defaults to 0 so the
+        // no-findings scores every test asserts stay unchanged.
+        finding: { count: jest.fn().mockResolvedValue(opts.openFindingCount ?? 0) },
         policy: { findMany: jest.fn().mockResolvedValue(opts.policies ?? []) },
         task: {
             findMany: jest.fn(async (args: any) => {

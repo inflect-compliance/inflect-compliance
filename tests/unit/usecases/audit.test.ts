@@ -52,12 +52,24 @@ jest.mock('../../../src/app-layer/events/audit', () => ({
     logEvent: jest.fn().mockResolvedValue(undefined),
 }));
 
+// feat/audit-cycle-unify — the FAIL → Finding + remediation-Task cascade
+// delegates to the canonical createFinding / createTask usecases. Mock
+// them so the cascade can be asserted without their full dependency trees.
+jest.mock('@/app-layer/usecases/finding', () => ({
+    createFinding: jest.fn().mockResolvedValue({ id: 'f1' }),
+}));
+jest.mock('@/app-layer/usecases/task', () => ({
+    createTask: jest.fn().mockResolvedValue({ id: 't1', key: 'TASK-1' }),
+}));
+
 import {
     createAudit,
     updateAudit,
 } from '@/app-layer/usecases/audit';
 import { runInTenantContext } from '@/lib/db-context';
 import { AuditRepository } from '@/app-layer/repositories/AuditRepository';
+import { createFinding } from '@/app-layer/usecases/finding';
+import { createTask } from '@/app-layer/usecases/task';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { logEvent } from '@/app-layer/events/audit';
 import { makeRequestContext } from '../../helpers/make-context';
@@ -67,6 +79,8 @@ const mockCreate = AuditRepository.create as jest.MockedFunction<typeof AuditRep
 const mockUpdate = AuditRepository.update as jest.MockedFunction<typeof AuditRepository.update>;
 const mockCreateItem = AuditRepository.createChecklistItem as jest.MockedFunction<typeof AuditRepository.createChecklistItem>;
 const mockUpdateItem = AuditRepository.updateChecklistItem as jest.MockedFunction<typeof AuditRepository.updateChecklistItem>;
+const mockCreateFinding = createFinding as jest.MockedFunction<typeof createFinding>;
+const mockCreateTask = createTask as jest.MockedFunction<typeof createTask>;
 const mockSanitize = sanitizePlainText as jest.MockedFunction<typeof sanitizePlainText>;
 const mockLog = logEvent as jest.MockedFunction<typeof logEvent>;
 
@@ -75,7 +89,28 @@ beforeEach(() => {
     mockSanitize.mockImplementation((s: string | null | undefined) => `SANITISED(${s})`);
     mockCreate.mockResolvedValue({ id: 'a1', title: 'SANITISED(Q4 audit)' } as never);
     mockUpdate.mockResolvedValue({ id: 'a1' } as never);
+    mockCreateFinding.mockResolvedValue({ id: 'f1' } as never);
+    mockCreateTask.mockResolvedValue({ id: 't1', key: 'TASK-1' } as never);
 });
+
+// feat/audit-cycle-unify — update-path fake db carrying the checklist
+// prefetch (transition detection) + the finding idempotency lookup.
+function fakeUpdateDb(opts: {
+    priorItems?: { id: string; prompt: string; result: string }[];
+    existingFinding?: { id: string } | null;
+} = {}) {
+    return {
+        auditChecklistItem: {
+            findMany: jest.fn().mockResolvedValue(opts.priorItems ?? []),
+        },
+        finding: {
+            findFirst: jest.fn().mockResolvedValue(opts.existingFinding ?? null),
+        },
+        auditCycle: {
+            findFirst: jest.fn().mockResolvedValue({ id: 'cyc1' }),
+        },
+    };
+}
 
 function fakeDbWithControls(controls: { id: string; name: string; annexId?: string }[] = []) {
     return {
@@ -237,7 +272,16 @@ describe('updateAudit', () => {
     });
 
     it('sanitises notes per checklistUpdates element (encrypted column)', async () => {
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
+        // Prior state: neither item was FAIL, and i2's FAIL transition
+        // finds no existing finding — but we only assert sanitisation here.
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn(fakeUpdateDb({
+                priorItems: [
+                    { id: 'i1', prompt: 'P1', result: 'NOT_TESTED' },
+                    { id: 'i2', prompt: 'P2', result: 'NOT_TESTED' },
+                ],
+            }) as never),
+        );
 
         await updateAudit(makeRequestContext('EDITOR'), 'a1', {
             title: 'x',
@@ -271,5 +315,105 @@ describe('updateAudit', () => {
                 entityType: 'Audit',
             }),
         );
+    });
+
+    // ── feat/audit-cycle-unify — checklist FAIL → Finding + Task cascade ──
+    describe('checklist FAIL cascade', () => {
+        it('a NOT_TESTED → FAIL transition spawns one Finding + one remediation Task', async () => {
+            mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+                fn(fakeUpdateDb({
+                    priorItems: [{ id: 'i1', prompt: 'Verify A.5.1 access policy', result: 'NOT_TESTED' }],
+                    existingFinding: null,
+                }) as never),
+            );
+
+            await updateAudit(makeRequestContext('EDITOR'), 'a1', {
+                checklistUpdates: [{ id: 'i1', result: 'FAIL', notes: 'no policy on file' }],
+            });
+
+            expect(mockCreateFinding).toHaveBeenCalledTimes(1);
+            const findingArg = mockCreateFinding.mock.calls[0][1];
+            expect(findingArg).toMatchObject({
+                auditId: 'a1',
+                type: 'NONCONFORMITY',
+                severity: 'MEDIUM',
+                sourceKind: 'AUDIT_CHECKLIST',
+                sourceRef: 'i1',
+            });
+
+            expect(mockCreateTask).toHaveBeenCalledTimes(1);
+            const taskArg = mockCreateTask.mock.calls[0][1];
+            expect(taskArg).toMatchObject({ type: 'AUDIT_FINDING' });
+            expect((taskArg.metadataJson as Record<string, unknown>).findingId).toBe('f1');
+        });
+
+        it('is idempotent — no duplicate Finding when one already exists for the item (PASS→FAIL re-toggle)', async () => {
+            mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+                fn(fakeUpdateDb({
+                    priorItems: [{ id: 'i1', prompt: 'P', result: 'PASS' }],
+                    existingFinding: { id: 'existing-f' },
+                }) as never),
+            );
+
+            await updateAudit(makeRequestContext('EDITOR'), 'a1', {
+                checklistUpdates: [{ id: 'i1', result: 'FAIL' }],
+            });
+
+            expect(mockCreateFinding).not.toHaveBeenCalled();
+            expect(mockCreateTask).not.toHaveBeenCalled();
+        });
+
+        it('does NOT cascade when the item was already FAIL (no real transition)', async () => {
+            mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+                fn(fakeUpdateDb({
+                    priorItems: [{ id: 'i1', prompt: 'P', result: 'FAIL' }],
+                    existingFinding: null,
+                }) as never),
+            );
+
+            await updateAudit(makeRequestContext('EDITOR'), 'a1', {
+                checklistUpdates: [{ id: 'i1', result: 'FAIL', notes: 're-saved' }],
+            });
+
+            expect(mockCreateFinding).not.toHaveBeenCalled();
+            expect(mockCreateTask).not.toHaveBeenCalled();
+        });
+    });
+});
+
+// ── feat/audit-cycle-unify — createAudit accepts an optional AuditCycle ──
+describe('createAudit — auditCycleId association', () => {
+    it('rejects an auditCycleId that does not belong to the tenant', async () => {
+        const db = {
+            ...fakeDbWithControls(),
+            auditCycle: { findFirst: jest.fn().mockResolvedValue(null) },
+        };
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn(db as never));
+
+        await expect(
+            createAudit(makeRequestContext('EDITOR'), { title: 'Q4', auditCycleId: 'foreign-cycle' }),
+        ).rejects.toThrow();
+        // The cycle miss short-circuits before the create write.
+        expect(mockCreate).not.toHaveBeenCalled();
+    });
+
+    it('persists a valid auditCycleId', async () => {
+        const db = {
+            ...fakeDbWithControls(),
+            auditCycle: { findFirst: jest.fn().mockResolvedValue({ id: 'cyc1' }) },
+        };
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn(db as never));
+
+        await createAudit(makeRequestContext('EDITOR'), { title: 'Q4', auditCycleId: 'cyc1' });
+
+        expect(mockCreate.mock.calls[0][2].auditCycleId).toBe('cyc1');
+    });
+
+    it('defaults auditCycleId to null for a standalone audit', async () => {
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn(fakeDbWithControls() as never));
+
+        await createAudit(makeRequestContext('EDITOR'), { title: 'Q4' });
+
+        expect(mockCreate.mock.calls[0][2].auditCycleId).toBeNull();
     });
 });

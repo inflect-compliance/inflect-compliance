@@ -120,6 +120,7 @@ describe('computeReadiness — gate + framework dispatch', () => {
                 control: { findMany: jest.fn().mockResolvedValue([]) },
                 evidence: { findMany: jest.fn().mockResolvedValue([]) },
                 task: { count: jest.fn().mockResolvedValue(0) },
+                finding: { count: jest.fn().mockResolvedValue(0) },
                 readinessSnapshot: { create: jest.fn().mockResolvedValue({}) },
             } as never);
         });
@@ -200,6 +201,10 @@ describe('computeReadiness — evidence query excludes archived/deleted', () => 
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ task: { findMany: jest.fn().mockResolvedValue([]) } } as never),
         );
+        // 8b. countOpenCycleFindings (feat/audit-cycle-unify) — 0 findings.
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({ finding: { count: jest.fn().mockResolvedValue(0) } } as never),
+        );
         // 9. logEvent
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
 
@@ -271,6 +276,10 @@ describe('CSV export — RFC 4180 escaping + audit emit', () => {
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ task: { findMany: jest.fn().mockResolvedValue([]) } } as never),
         );
+        // countOpenCycleFindings (feat/audit-cycle-unify) — 0 findings.
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({ finding: { count: jest.fn().mockResolvedValue(0) } } as never),
+        );
         // Audit S5 — readinessSnapshot.create best-effort write.
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ readinessSnapshot: { create: jest.fn().mockResolvedValue({}) } } as never),
@@ -328,6 +337,10 @@ describe('CSV export — RFC 4180 escaping + audit emit', () => {
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ task: { findMany: jest.fn().mockResolvedValue([]) } } as never),
         );
+        // countOpenCycleFindings (feat/audit-cycle-unify) — 0 findings.
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({ finding: { count: jest.fn().mockResolvedValue(0) } } as never),
+        );
         // Audit S5 — readinessSnapshot.create best-effort write.
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ readinessSnapshot: { create: jest.fn().mockResolvedValue({}) } } as never),
@@ -373,6 +386,10 @@ describe('exportReadinessJson — audit emit', () => {
         );
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ task: { findMany: jest.fn().mockResolvedValue([]) } } as never),
+        );
+        // countOpenCycleFindings (feat/audit-cycle-unify) — 0 findings.
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({ finding: { count: jest.fn().mockResolvedValue(0) } } as never),
         );
         // Audit S5 — readinessSnapshot.create best-effort write.
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>

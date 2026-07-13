@@ -191,7 +191,11 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // 2026-07-03 — bumped 141 → 142 for the EU AI Act AI-System Registry: the list
 // "System" create button and the "Register & classify" modal confirm are both
 // earned primaries (the detail conformity/regenerate actions stay secondary). +1.
-const MAX_PRIMARY_COUNT = 143;
+// 2026-07-13 — bumped 143 → 144 for feat/audit-cycle-unify: the audit-surface
+// "New finding" modal's "Create finding" confirm is the earned create primary,
+// paired with a secondary Cancel + the secondary "Finding" trigger button on the
+// detail pane, so the secondary:primary ratio still rises. +1.
+const MAX_PRIMARY_COUNT = 144;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

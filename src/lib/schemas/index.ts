@@ -439,9 +439,13 @@ export const CreateAuditSchema = z.object({
     // B8 — optional Framework.key the audit assesses. Capped at 60
     // chars to match the canonical Framework.key length budget.
     frameworkKey: z.string().max(60).optional().nullable(),
+    // feat/audit-cycle-unify — optional AuditCycle this fieldwork audit
+    // belongs to (validated against the tenant server-side). NULL =
+    // standalone audit with no cycle.
+    auditCycleId: z.string().optional().nullable(),
     generateChecklist: z.boolean().optional(),
 }).strip().openapi('AuditCreateRequest', {
-    description: 'Create an audit cycle. frameworkKey links the audit to a compliance framework. generateChecklist=true seeds the audit with checklist items derived from the in-scope frameworks.',
+    description: 'Create an audit cycle. frameworkKey links the audit to a compliance framework. auditCycleId attaches the audit as fieldwork within an existing AuditCycle (optional). generateChecklist=true seeds the audit with checklist items derived from the in-scope frameworks.',
 });
 
 export const UpdateAuditSchema = z.object({

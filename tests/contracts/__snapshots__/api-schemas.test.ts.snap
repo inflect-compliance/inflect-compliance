@@ -609,6 +609,12 @@ exports[`API contract — per-schema snapshots schema: AuditCreateRequest 1`] = 
       ],
       "maxLength": 60
     },
+    "auditCycleId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "generateChecklist": {
       "type": "boolean"
     }
@@ -616,7 +622,7 @@ exports[`API contract — per-schema snapshots schema: AuditCreateRequest 1`] = 
   "required": [
     "title"
   ],
-  "description": "Create an audit cycle. frameworkKey links the audit to a compliance framework. generateChecklist=true seeds the audit with checklist items derived from the in-scope frameworks."
+  "description": "Create an audit cycle. frameworkKey links the audit to a compliance framework. auditCycleId attaches the audit as fieldwork within an existing AuditCycle (optional). generateChecklist=true seeds the audit with checklist items derived from the in-scope frameworks."
 }"
 `;
 

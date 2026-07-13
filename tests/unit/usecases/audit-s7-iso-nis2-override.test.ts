@@ -123,6 +123,10 @@ describe("Audit S7 — computeISO27001Readiness honours the override", () => {
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ task: { findMany: jest.fn().mockResolvedValue([]) } } as never),
         );
+        // 7b. feat/audit-cycle-unify — countOpenCycleFindings (0 findings).
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({ finding: { count: jest.fn().mockResolvedValue(0) } } as never),
+        );
         // 8. snapshot create (best-effort)
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({
@@ -195,6 +199,10 @@ describe("Audit S7 — computeISO27001Readiness honours the override", () => {
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ task: { findMany: jest.fn().mockResolvedValue([]) } } as never),
         );
+        // feat/audit-cycle-unify — countOpenCycleFindings (0 findings).
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({ finding: { count: jest.fn().mockResolvedValue(0) } } as never),
+        );
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({
                 readinessSnapshot: { create: jest.fn().mockResolvedValue({}) },
@@ -262,6 +270,10 @@ describe("Audit S7 — computeNIS2Readiness honours the override", () => {
         // open issues
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ task: { findMany: jest.fn().mockResolvedValue([]) } } as never),
+        );
+        // feat/audit-cycle-unify — countOpenCycleFindings (0 findings).
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({ finding: { count: jest.fn().mockResolvedValue(0) } } as never),
         );
         // snapshot create
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
