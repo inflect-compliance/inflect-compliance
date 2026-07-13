@@ -354,7 +354,7 @@
         "kpi": {
             "total": "Total assets",
             "active": "Active",
-            "highCriticality": "High criticality",
+            "highCriticality": "High/Critical",
             "retired": "Retired"
         },
         "colHeaders": {
@@ -490,7 +490,8 @@
             "criticality": {
                 "LOW": "Low",
                 "MEDIUM": "Medium",
-                "HIGH": "High"
+                "HIGH": "High",
+                "CRITICAL": "Critical"
             }
         },
         "formOptions": {

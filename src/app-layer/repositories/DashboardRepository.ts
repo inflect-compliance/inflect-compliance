@@ -138,14 +138,14 @@ export interface VendorSummary {
 
 /**
  * Asset summary — the counts that back the Assets-page KPI cards.
- * Mirrors the KPI tiles: Total / Active / High criticality / Retired.
+ * Mirrors the KPI tiles: Total / Active / High/Critical / Retired.
  */
 export interface AssetSummary {
     /** Non-deleted assets. */
     total: number;
     /** status = ACTIVE. */
     active: number;
-    /** criticality = HIGH. */
+    /** criticality IN (HIGH, CRITICAL). */
     highCriticality: number;
     /** status = RETIRED. */
     retired: number;
@@ -596,7 +596,7 @@ export class DashboardRepository {
         const [total, active, highCriticality, retired] = await Promise.all([
             db.asset.count({ where: { tenantId, deletedAt: null } }),
             db.asset.count({ where: { tenantId, deletedAt: null, status: 'ACTIVE' } }),
-            db.asset.count({ where: { tenantId, deletedAt: null, criticality: 'HIGH' } }),
+            db.asset.count({ where: { tenantId, deletedAt: null, criticality: { in: ['HIGH', 'CRITICAL'] } } }),
             db.asset.count({ where: { tenantId, deletedAt: null, status: 'RETIRED' } }),
         ]);
 

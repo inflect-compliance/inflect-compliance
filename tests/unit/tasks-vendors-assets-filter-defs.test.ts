@@ -63,7 +63,7 @@ const TASK_TYPE = ['TASK', 'AUDIT_FINDING', 'CONTROL_GAP', 'INCIDENT', 'IMPROVEM
 const TASK_SEVERITY = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 const ASSET_TYPE = ['INFORMATION', 'SYSTEM', 'SERVICE', 'DATA_STORE', 'VENDOR', 'PEOPLE_PROCESS', 'APPLICATION', 'INFRASTRUCTURE', 'PROCESS', 'OTHER'];
 const ASSET_STATUS = ['ACTIVE', 'RETIRED'];
-const ASSET_CRITICALITY = ['LOW', 'MEDIUM', 'HIGH'];
+const ASSET_CRITICALITY = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 
 // ─── Tasks ───────────────────────────────────────────────────────────
 

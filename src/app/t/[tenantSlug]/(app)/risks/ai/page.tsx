@@ -330,7 +330,7 @@ export default function AIRiskAssessmentPage() {
                                         />
                                         <span className="text-content-emphasis">{a.name}</span>
                                         <span className="text-xs text-content-muted">{a.type.replace(/_/g, ' ')}</span>
-                                        {a.criticality && <StatusBadge variant={a.criticality === 'HIGH' ? 'error' : a.criticality === 'MEDIUM' ? 'warning' : 'success'}>{a.criticality}</StatusBadge>}
+                                        {a.criticality && <StatusBadge variant={a.criticality === 'HIGH' || a.criticality === 'CRITICAL' ? 'error' : a.criticality === 'MEDIUM' ? 'warning' : 'success'}>{a.criticality}</StatusBadge>}
                                     </label>
                                 ))}
                             </div>

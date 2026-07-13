@@ -54,6 +54,7 @@ function assetCriticalityLabels(t: T): Record<string, string> {
         LOW: t('filterEnums.criticality.LOW'),
         MEDIUM: t('filterEnums.criticality.MEDIUM'),
         HIGH: t('filterEnums.criticality.HIGH'),
+        CRITICAL: t('filterEnums.criticality.CRITICAL'),
     };
 }
 

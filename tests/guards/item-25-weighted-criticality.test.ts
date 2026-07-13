@@ -27,11 +27,14 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { getAssetCriticality } from '@/app/t/[tenantSlug]/(app)/assets/_form/asset-criticality';
+import { getAssetCriticality } from '@/lib/asset-criticality';
 
+// The pure derivation now lives in `src/lib/asset-criticality.ts` (shared by
+// the client form + the server create/update usecase). The client
+// `_form/asset-criticality.ts` re-exports it.
 const SOURCE = path.resolve(
     __dirname,
-    '../../src/app/t/[tenantSlug]/(app)/assets/_form/asset-criticality.ts',
+    '../../src/lib/asset-criticality.ts',
 );
 
 describe('item 25 — weighted asset criticality', () => {

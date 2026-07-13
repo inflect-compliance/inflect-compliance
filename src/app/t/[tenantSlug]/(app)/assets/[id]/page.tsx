@@ -46,7 +46,7 @@ export interface AssetDetail {
     owner: string | null;
     ownerUserId: string | null;
     location: string | null;
-    criticality: 'LOW' | 'MEDIUM' | 'HIGH' | null;
+    criticality: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | null;
     status: 'ACTIVE' | 'RETIRED';
     dataResidency: string | null;
     externalRef: string | null;
@@ -172,7 +172,10 @@ export default function AssetDetailPage() {
         }
     };
 
-    const critColor = (c: string): StatusBadgeVariant => c === 'HIGH' ? 'error' : c === 'MEDIUM' ? 'warning' : 'success';
+    // CRITICAL + HIGH both render as the error (red) badge — the StatusBadge
+    // palette has no distinct orange between amber (warning) and red (error);
+    // MEDIUM stays amber, LOW green.
+    const critColor = (c: string): StatusBadgeVariant => c === 'CRITICAL' || c === 'HIGH' ? 'error' : c === 'MEDIUM' ? 'warning' : 'success';
 
     const breadcrumbs = [
         { label: t('detail.crumbDashboard'), href: tenantHref('/dashboard') },

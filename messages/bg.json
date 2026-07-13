@@ -354,7 +354,7 @@
         "kpi": {
             "total": "Общо активи",
             "active": "Активни",
-            "highCriticality": "Висока критичност",
+            "highCriticality": "Висока/критична",
             "retired": "Извадени от употреба"
         },
         "colHeaders": {
@@ -490,7 +490,8 @@
             "criticality": {
                 "LOW": "Ниска",
                 "MEDIUM": "Средна",
-                "HIGH": "Висока"
+                "HIGH": "Висока",
+                "CRITICAL": "Критична"
             }
         },
         "formOptions": {
