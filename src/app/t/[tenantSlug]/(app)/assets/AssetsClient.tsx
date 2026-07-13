@@ -400,8 +400,10 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     const totalAssets = assets.length;
     // guardrail-ignore: KPI count, not a refilter.
     const activeAssets = assets.filter((a) => a.status === 'ACTIVE').length;
+    // "High/Critical" — count both the stored HIGH and CRITICAL enum bands so
+    // a 5/5/5 asset (→ CRITICAL) is included alongside HIGH ones.
     // guardrail-ignore: KPI count, not a refilter.
-    const criticalAssets = assets.filter((a) => a.criticality === 'HIGH').length;
+    const criticalAssets = assets.filter((a) => a.criticality === 'HIGH' || a.criticality === 'CRITICAL').length;
     // guardrail-ignore: KPI count, not a refilter.
     const retiredAssets = assets.filter((a) => a.status === 'RETIRED').length;
 
@@ -444,9 +446,18 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                 clear: (ctx) => ctx.removeAll('status'),
             },
             {
+                // "High/Critical" — the KPI counts both stored bands, so the
+                // click-to-filter sets both values (5/5/5 → CRITICAL is
+                // included alongside HIGH). Active when both are present.
                 id: 'critical',
-                apply: (ctx) => ctx.set('criticality', 'HIGH'),
-                isActive: (s) => (s.criticality ?? []).includes('HIGH'),
+                apply: (ctx) => {
+                    ctx.set('criticality', 'HIGH');
+                    ctx.add('criticality', 'CRITICAL');
+                },
+                isActive: (s) => {
+                    const v = s.criticality ?? [];
+                    return v.includes('HIGH') && v.includes('CRITICAL');
+                },
                 clear: (ctx) => ctx.removeAll('criticality'),
             },
             {

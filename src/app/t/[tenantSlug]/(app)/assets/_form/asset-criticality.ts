@@ -1,58 +1,16 @@
 /**
- * Asset-criticality scoring — derives a single criticality level from the
- * Confidentiality / Integrity / Availability triad. Shared by the
- * create/edit modals (slider box), the detail Overview (single score),
- * and the assets table Criticality column, so the colour + label stay in
- * sync everywhere.
+ * Asset-criticality scoring — thin re-export of the server-safe pure module
+ * at `src/lib/asset-criticality.ts`. Kept here so existing client-form import
+ * paths (`./asset-criticality`) stay stable while the derivation logic lives
+ * in a place BOTH the client form and the server usecase can import.
  *
- * Aggregation model (item 25, 2026-06-14):
- *   - **Critical override.** If ANY single dimension is at the ceiling
- *     (5), the asset is Critical regardless of the other two — a 5/1/1
- *     asset is still Critical. This is the one case where the old
- *     "high-water-mark" behaviour is intentionally preserved.
- *   - **Top-two mean otherwise.** Below the ceiling, the level is banded
- *     from the mean of the two HIGHEST dimensions. A single elevated
- *     dimension no longer drags the whole asset up: 4/1/1 reads Medium,
- *     not High — it takes two elevated dimensions to raise the band.
- *
- * The previous rule was `Math.max(C, I, A)`, which let a lone high
- * dimension dominate (4/1/1 → High). See
- * `tests/guards/item-25-weighted-criticality.test.ts` for the ratchet
- * that locks the new behaviour in.
+ * See `@/lib/asset-criticality` for the aggregation model + the item-25
+ * ratchet reference.
  */
-export type AssetCriticalityTone = 'success' | 'warning' | 'danger' | 'critical';
-
-/** The dimension value (on the 1–5 scale) that counts as "Critical". */
-export const CRITICALITY_CEILING = 5;
-
-export function getAssetCriticality(
-    confidentiality: number,
-    integrity: number,
-    availability: number,
-): { score: number; label: string; tone: AssetCriticalityTone } {
-    const dims = [confidentiality, integrity, availability];
-    const peak = Math.max(...dims);
-
-    // Critical override — a single ceiling dimension keeps the asset
-    // Critical even when the other two are minimal.
-    if (peak >= CRITICALITY_CEILING) {
-        return { score: CRITICALITY_CEILING, label: 'Critical', tone: 'critical' };
-    }
-
-    // Otherwise band from the mean of the two highest dimensions, rounded
-    // to a single integer so the displayed number always matches the
-    // label (no fractional 2.5-vs-Medium mismatch).
-    const [hi, mid] = [...dims].sort((x, y) => y - x);
-    const score = Math.round((hi + mid) / 2);
-
-    if (score >= 4) return { score, label: 'High', tone: 'danger' };
-    if (score >= 3) return { score, label: 'Medium', tone: 'warning' };
-    return { score, label: 'Low', tone: 'success' };
-}
-
-export const ASSET_CRITICALITY_TONE_CLASSES: Record<AssetCriticalityTone, string> = {
-    success: 'border-border-success bg-bg-success text-content-success',
-    warning: 'border-border-warning bg-bg-warning text-content-warning',
-    danger: 'border-border-warning bg-bg-warning text-content-warning',
-    critical: 'border-border-error bg-bg-error text-content-error',
-};
+export {
+    getAssetCriticality,
+    criticalityToEnum,
+    CRITICALITY_CEILING,
+    ASSET_CRITICALITY_TONE_CLASSES,
+} from '@/lib/asset-criticality';
+export type { AssetCriticalityTone, CriticalityEnum } from '@/lib/asset-criticality';

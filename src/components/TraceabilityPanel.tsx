@@ -483,7 +483,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                                             <tr key={l.id} className={l.id?.startsWith('temp:') ? 'opacity-50 animate-pulse' : ''}>
                                                 <td className="text-sm text-content-default">{a?.name || '—'}</td>
                                                 <td className="text-xs"><StatusBadge variant="info">{a?.type ? (ASSET_TYPE_LABELS[a.type] ?? a.type.replace(/_/g, ' ')) : '—'}</StatusBadge></td>
-                                                <td className="text-xs">{a?.criticality ? <StatusBadge variant={a.criticality === 'HIGH' ? 'error' : a.criticality === 'MEDIUM' ? 'warning' : 'neutral'}>{CRIT_LABELS[a.criticality] ?? a.criticality}</StatusBadge> : '—'}</td>
+                                                <td className="text-xs">{a?.criticality ? <StatusBadge variant={a.criticality === 'HIGH' || a.criticality === 'CRITICAL' ? 'error' : a.criticality === 'MEDIUM' ? 'warning' : 'neutral'}>{CRIT_LABELS[a.criticality] ?? a.criticality}</StatusBadge> : '—'}</td>
                                                 <td className="text-xs text-content-muted">{l.rationale || '—'}</td>
                                                 {canWrite && (
                                                     <td>

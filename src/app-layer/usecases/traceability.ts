@@ -257,10 +257,11 @@ export async function coverageSummary(ctx: RequestContext) {
             take: 10,
         });
 
-        // Critical assets with no controls
+        // Critical assets with no controls — HIGH + CRITICAL bands (the
+        // stored `Asset.criticality` now carries a CRITICAL tier).
         const mappedAssetIds = new Set(assetsWithControls.map(a => a.assetId));
         const uncoveredCriticalAssets = await db.asset.findMany({
-            where: { tenantId: t, status: 'ACTIVE', criticality: 'HIGH', id: { notIn: Array.from(mappedAssetIds) } },
+            where: { tenantId: t, status: 'ACTIVE', criticality: { in: ['HIGH', 'CRITICAL'] }, id: { notIn: Array.from(mappedAssetIds) } },
             select: { id: true, name: true, type: true, criticality: true },
             take: 10,
         });

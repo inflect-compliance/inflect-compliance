@@ -167,6 +167,7 @@ enum Criticality {
   LOW
   MEDIUM
   HIGH
+  CRITICAL
 }
 
 enum AssetStatus {

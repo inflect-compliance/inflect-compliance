@@ -10,6 +10,7 @@ import { sanitizePlainText } from '@/lib/security/sanitize';
 import { bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 import { createAssignmentNotification } from '../notifications/assignment';
 import { logger } from '@/lib/observability';
+import { criticalityToEnum } from '@/lib/asset-criticality';
 
 export async function listAssets(ctx: RequestContext, filters?: AssetFilters) {
     assertCanRead(ctx);
@@ -72,6 +73,14 @@ type UpdateAssetInput = Partial<CreateAssetInput>;
 export async function createAsset(ctx: RequestContext, data: CreateAssetInput) {
     assertCanWrite(ctx);
 
+    // Derive-on-write — the stored `Asset.criticality` enum is the single
+    // source of truth read by the KPI, the filter, and the detail chip. Any
+    // undefined C/I/A dimension defaults to 3 (the column default), so the
+    // persisted level matches the badge the UI derives from the same triad.
+    const createC = data.confidentiality ?? 3;
+    const createI = data.integrity ?? 3;
+    const createA = data.availability ?? 3;
+
     return runInTenantContext(ctx, async (db) => {
         const asset = await AssetRepository.create(db, ctx, {
             name: data.name,
@@ -84,6 +93,7 @@ export async function createAsset(ctx: RequestContext, data: CreateAssetInput) {
             confidentiality: data.confidentiality,
             integrity: data.integrity,
             availability: data.availability,
+            criticality: criticalityToEnum(createC, createI, createA),
             dependencies: data.dependencies,
             businessProcesses: data.businessProcesses,
             dataResidency: data.dataResidency,
@@ -117,6 +127,14 @@ export async function updateAsset(ctx: RequestContext, id: string, data: UpdateA
         const before = await AssetRepository.getById(db, ctx, id);
         const previousOwnerId = before?.ownerUserId ?? null;
 
+        // Re-derive the stored criticality from the effective C/I/A triad
+        // (this-edit value ?? prior value ?? default 3). Always recomputing
+        // — even on a status-only PATCH — self-heals rows whose stored enum
+        // predates derive-on-write, and keeps it agreeing with the badge.
+        const updC = data.confidentiality ?? before?.confidentiality ?? 3;
+        const updI = data.integrity ?? before?.integrity ?? 3;
+        const updA = data.availability ?? before?.availability ?? 3;
+
         const asset = await AssetRepository.update(db, ctx, id, {
             name: data.name,
             type: data.type as AssetType | undefined,
@@ -132,6 +150,7 @@ export async function updateAsset(ctx: RequestContext, id: string, data: UpdateA
             confidentiality: data.confidentiality,
             integrity: data.integrity,
             availability: data.availability,
+            criticality: criticalityToEnum(updC, updI, updA),
             dependencies: data.dependencies,
             businessProcesses: data.businessProcesses,
             dataResidency: data.dataResidency,
