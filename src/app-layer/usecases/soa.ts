@@ -25,6 +25,7 @@ import { assertCanRead } from '../policies/common';
 import { runInTenantContext } from '@/lib/db-context';
 import { notFound } from '@/lib/errors/types';
 import { worstStatus, isImplemented } from '@/lib/compliance/requirement-status-rollup';
+import { ACTIVE_STATUS_FILTER } from '../domain/work-item-status';
 import type {
     SoAReportDTO,
     SoAEntryDTO,
@@ -314,13 +315,16 @@ async function loadOpenTaskCounts(ctx: RequestContext, controlIds: string[]): Pr
     const result = new Map<string, number>();
     // Unified Task model (not legacy controlTask) — the discoverable install
     // paths now write Task rows, so the SoA open-task rollup must read them.
+    // "Open" = every non-terminal WorkItemStatus via the shared
+    // ACTIVE_STATUS_FILTER (notIn terminal), so TRIAGED / BLOCKED tasks are
+    // counted too — a positive [OPEN, IN_PROGRESS] allowlist would miss them.
     const counts = await runInTenantContext(ctx, (db) =>
         db.task.groupBy({
             by: ['controlId'],
             where: {
                 tenantId: ctx.tenantId,
                 controlId: { in: controlIds },
-                status: { in: ['OPEN', 'IN_PROGRESS'] },
+                status: ACTIVE_STATUS_FILTER,
             },
             _count: { id: true },
         })
