@@ -86,6 +86,9 @@ const STATUS_BADGE_BUDGET: Record<string, number> = {
     "src/app/t/[tenantSlug]/(app)/reports/soa/SoAClient.tsx": 11,
     "src/app/t/[tenantSlug]/(app)/controls/[controlId]/page.tsx": 10,
     "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx": 9,
+    // P1 — synced-identity roster: provider / status / admin / MFA are each a
+    // distinct, decision-relevant security signal (one per column, not stacked).
+    "src/app/t/[tenantSlug]/(app)/admin/integrations/identity-accounts/page.tsx": 5,
     "src/app/t/[tenantSlug]/(app)/tasks/dashboard/page.tsx": 5,
     "src/app/t/[tenantSlug]/(app)/coverage/CoverageClient.tsx": 5,
     // NIS2 gap-lifecycle surface: distinct badges across three sections —

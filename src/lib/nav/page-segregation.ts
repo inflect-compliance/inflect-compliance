@@ -145,6 +145,8 @@ export const SUBPAGES: readonly string[] = [
     '/admin/entra',
     '/admin/integrations',
     '/admin/integrations/sharepoint-health',
+    '/admin/integrations/[connectionId]',
+    '/admin/integrations/identity-accounts',
     '/admin/mcp',
     '/admin/mcp/agent-receipts',
     '/admin/members',

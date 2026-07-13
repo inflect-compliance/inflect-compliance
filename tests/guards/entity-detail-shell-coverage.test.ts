@@ -76,6 +76,12 @@ const WAVE_2_DEFERRED: ReadonlyArray<{ page: string; entity: string; reason: str
         reason:
             'EU AI Act AI-system detail is a lightweight read-only classification view (PageHeader + back={smart} + a few cards + conformity-draft actions), not a tabbed entity-detail surface. Graduate to EntityDetailLayout if/when it grows tabs (evidence, activity).',
     },
+    {
+        page: 'src/app/t/[tenantSlug]/(app)/admin/integrations/[connectionId]/page.tsx',
+        entity: 'IntegrationConnection',
+        reason:
+            'Admin per-connection outcome view — a header + Sync-now action + a single check-run table, not a tabbed entity-detail surface. It emulates the SharePoint health dashboard, not an EntityDetailLayout page.',
+    },
 ];
 
 function read(rel: string): string | null {

@@ -19,6 +19,12 @@ interface HealthRow {
     secondsSinceLastSuccess: number | null;
     hasEverSucceeded: boolean;
     isStale: boolean;
+    // P1 — the nuanced signal: activity is a run of ANY status OR a successful
+    // connection test, so a freshly-connected+tested connection reads healthy.
+    lastActivityAt: string | null;
+    secondsSinceActivity: number | null;
+    lastTestStatus: string | null;
+    lastTestedAt: string | null;
 }
 
 interface HealthResponse {
@@ -73,12 +79,16 @@ export function ConnectionHealthPanel() {
             id: 'lastSuccess', header: t('integrations.health.colLastSuccess'), accessorKey: 'lastSuccessAt',
             cell: ({ row }) => row.original.lastSuccessAt
                 ? <span className="text-content-muted">{formatDate(row.original.lastSuccessAt)}</span>
-                : <span className="text-content-subtle">{t('integrations.health.neverSucceeded')}</span>,
+                // P1 — a never-run-but-tested-OK connection now reads "Tested OK",
+                // not "Never succeeded".
+                : row.original.lastTestStatus === 'ok'
+                    ? <span className="text-content-muted">{t('integrations.health.testedOk')}</span>
+                    : <span className="text-content-subtle">{t('integrations.health.neverSucceeded')}</span>,
         },
         {
             id: 'freshness', header: t('integrations.health.colFreshness'),
-            accessorFn: (r: HealthRow) => r.secondsSinceLastSuccess ?? Number.MAX_SAFE_INTEGER,
-            cell: ({ row }) => <span className="tabular-nums text-content-muted">{humanizeAge(row.original.secondsSinceLastSuccess)}</span>,
+            accessorFn: (r: HealthRow) => r.secondsSinceActivity ?? Number.MAX_SAFE_INTEGER,
+            cell: ({ row }) => <span className="tabular-nums text-content-muted">{humanizeAge(row.original.secondsSinceActivity)}</span>,
         },
         {
             id: 'status', header: t('integrations.colStatus'), accessorKey: 'isStale',

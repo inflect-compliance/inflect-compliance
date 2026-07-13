@@ -27,6 +27,10 @@ import { logEvent } from '../events/audit';
 import { notFound, badRequest, forbidden } from '@/lib/errors/types';
 import { logger } from '@/lib/observability/logger';
 import { CONNECTION_STALE_AFTER_SECONDS } from '@/lib/observability/connection-freshness';
+import { runIdentitySync } from './identity-sync';
+
+/** Providers whose connection-level sync runs a directory/account sync. */
+const IDENTITY_SYNC_PROVIDERS = new Set(['okta', 'google-workspace']);
 
 // ─── Connection Management ───────────────────────────────────────────
 
@@ -388,6 +392,70 @@ export async function runAutomationForControl(
     });
 }
 
+/**
+ * P1 — run everything a CONNECTION can produce, on demand.
+ *
+ * The only run path today is `runAutomationForControl` (buried on control
+ * pages). This surfaces a connection-level trigger: for identity providers it
+ * runs the directory/account sync; for every provider it runs each control
+ * wired to that provider's automation keys. Used by the "Sync now" action and
+ * fired once on connect so a fresh connection produces a visible first result.
+ */
+export async function syncConnection(
+    ctx: RequestContext,
+    connectionId: string,
+    options: { triggeredBy?: 'manual' | 'scheduled' } = {}
+) {
+    const triggeredBy = options.triggeredBy ?? 'manual';
+    const connection = await runInTenantContext(ctx, (db) =>
+        db.integrationConnection.findFirst({
+            where: { id: connectionId, tenantId: ctx.tenantId, isEnabled: true },
+            select: { id: true, provider: true, name: true },
+        })
+    );
+    if (!connection) throw notFound('Connection not found or disabled');
+
+    // Identity providers: run the directory sync (populates ConnectedIdentityAccount).
+    let identity: { status: string; upserted: number; deprovisioned: number } | null = null;
+    if (IDENTITY_SYNC_PROVIDERS.has(connection.provider)) {
+        const res = await runIdentitySync({ tenantId: ctx.tenantId, connectionId: connection.id });
+        identity = { status: res.status, upserted: res.upserted, deprovisioned: res.deprovisioned };
+    }
+
+    // Run every control wired to this provider's automation keys (`provider.check`).
+    const controls = await runInTenantContext(ctx, (db) =>
+        db.control.findMany({
+            where: { tenantId: ctx.tenantId, deletedAt: null, automationKey: { startsWith: `${connection.provider}.` } },
+            select: { id: true },
+            take: 200,
+        })
+    );
+    const checks: Array<{ controlId: string; status: string }> = [];
+    for (const c of controls) {
+        // guardrail-allow: n+1 — one bounded check run per wired control; each is
+        // an independent execution with its own IntegrationExecution row.
+        try {
+            const r = await runAutomationForControl(ctx, c.id, { triggeredBy });
+            checks.push({ controlId: c.id, status: r.execution?.status ?? 'ERROR' });
+        } catch {
+            checks.push({ controlId: c.id, status: 'ERROR' });
+        }
+    }
+
+    return {
+        connectionId: connection.id,
+        provider: connection.provider,
+        identity,
+        checks,
+        counts: {
+            total: checks.length,
+            passed: checks.filter((c) => c.status === 'PASSED').length,
+            failed: checks.filter((c) => c.status === 'FAILED').length,
+            error: checks.filter((c) => c.status === 'ERROR').length,
+        },
+    };
+}
+
 // ─── Webhook Handling ────────────────────────────────────────────────
 
 /**
@@ -474,6 +542,72 @@ export async function listExecutionsForControl(
             },
             orderBy: { executedAt: 'desc' },
             take: options.limit ?? 20,
+        })
+    );
+}
+
+/**
+ * P1 — list a CONNECTION's check executions (independent of any control).
+ * Powers the per-connection outcome view so a connector's value doesn't
+ * depend on which controls happen to be wired to it.
+ */
+export async function listExecutionsForConnection(
+    ctx: RequestContext,
+    connectionId: string,
+    options: { limit?: number } = {}
+) {
+    return runInTenantContext(ctx, (db) =>
+        db.integrationExecution.findMany({
+            where: { tenantId: ctx.tenantId, connectionId },
+            select: {
+                id: true,
+                provider: true,
+                automationKey: true,
+                controlId: true,
+                status: true,
+                resultJson: true,
+                evidenceId: true,
+                durationMs: true,
+                triggeredBy: true,
+                errorMessage: true,
+                executedAt: true,
+                completedAt: true,
+            },
+            orderBy: { executedAt: 'desc' },
+            take: options.limit ?? 50,
+        })
+    );
+}
+
+/**
+ * P1 — browse the identity accounts synced from Okta / Google Workspace.
+ * Gives ConnectedIdentityAccount a roster surface (like Personnel/Devices) so
+ * a directory sync produces something visible + the CONNECTED_APP access
+ * review can be pre-checked instead of throwing on empty.
+ */
+export async function listConnectedAccounts(
+    ctx: RequestContext,
+    options: { provider?: string; limit?: number } = {}
+) {
+    return runInTenantContext(ctx, (db) =>
+        db.connectedIdentityAccount.findMany({
+            where: {
+                tenantId: ctx.tenantId,
+                ...(options.provider ? { provider: options.provider } : {}),
+            },
+            select: {
+                id: true,
+                provider: true,
+                email: true,
+                displayName: true,
+                status: true,
+                isAdmin: true,
+                mfaEnrolled: true,
+                lastActiveAt: true,
+                syncedAt: true,
+            },
+            orderBy: [{ provider: 'asc' }, { email: 'asc' }],
+            take: options.limit ?? 500,
         })
     );
 }
@@ -607,30 +741,57 @@ export async function getConnectionsHealth(ctx: RequestContext) {
             return { connections: [], staleThresholdSeconds: CONNECTION_STALE_AFTER_SECONDS, generatedAt: new Date(now).toISOString() };
         }
 
-        const grouped = await db.integrationExecution.groupBy({
+        const connIds = connections.map((c) => c.id);
+        // Latest SUCCESSFUL (PASSED) run — the "last success" signal.
+        const groupedPassed = await db.integrationExecution.groupBy({
             by: ['connectionId'],
-            where: { tenantId: ctx.tenantId, status: 'PASSED', connectionId: { in: connections.map((c) => c.id) } },
+            where: { tenantId: ctx.tenantId, status: 'PASSED', connectionId: { in: connIds } },
             _max: { completedAt: true, executedAt: true },
         });
-        const lastByConn = new Map<string, Date>();
-        for (const g of grouped) {
+        // P1 — latest run of ANY status. Freshness must reflect activity, not
+        // only success, and a connection that's been tested OK but not yet run
+        // a check should read healthy — not "Never succeeded / Stale".
+        const groupedAny = await db.integrationExecution.groupBy({
+            by: ['connectionId'],
+            where: { tenantId: ctx.tenantId, connectionId: { in: connIds } },
+            _max: { completedAt: true, executedAt: true },
+        });
+        const lastSuccessByConn = new Map<string, Date>();
+        for (const g of groupedPassed) {
             if (!g.connectionId) continue;
             const ts = g._max.completedAt ?? g._max.executedAt;
-            if (ts) lastByConn.set(g.connectionId, ts);
+            if (ts) lastSuccessByConn.set(g.connectionId, ts);
+        }
+        const lastRunByConn = new Map<string, Date>();
+        for (const g of groupedAny) {
+            if (!g.connectionId) continue;
+            const ts = g._max.completedAt ?? g._max.executedAt;
+            if (ts) lastRunByConn.set(g.connectionId, ts);
         }
 
         const rows = connections.map((c) => {
-            const last = lastByConn.get(c.id) ?? null;
-            const secondsSinceLastSuccess = last ? Math.max(0, Math.round((now - last.getTime()) / 1000)) : null;
-            const isStale = secondsSinceLastSuccess == null || secondsSinceLastSuccess > CONNECTION_STALE_AFTER_SECONDS;
+            const lastSuccess = lastSuccessByConn.get(c.id) ?? null;
+            // "Activity" = the most recent of any run OR a successful connection
+            // test. Either is proof the connection is live.
+            const lastRun = lastRunByConn.get(c.id) ?? null;
+            const testOk = c.lastTestStatus === 'ok' ? c.lastTestedAt ?? null : null;
+            const lastActivity = [lastRun, testOk].filter((d): d is Date => d != null)
+                .sort((a, b) => b.getTime() - a.getTime())[0] ?? null;
+            const secondsSinceLastSuccess = lastSuccess ? Math.max(0, Math.round((now - lastSuccess.getTime()) / 1000)) : null;
+            const secondsSinceActivity = lastActivity ? Math.max(0, Math.round((now - lastActivity.getTime()) / 1000)) : null;
+            const isStale = secondsSinceActivity == null || secondsSinceActivity > CONNECTION_STALE_AFTER_SECONDS;
             return {
                 connectionId: c.id,
                 provider: c.provider,
                 name: c.name,
-                lastSuccessAt: last ? last.toISOString() : null,
+                lastSuccessAt: lastSuccess ? lastSuccess.toISOString() : null,
                 secondsSinceLastSuccess,
-                hasEverSucceeded: last != null,
+                hasEverSucceeded: lastSuccess != null,
                 isStale,
+                // P1 — the nuanced signal the panel now renders.
+                lastRunAt: lastRun ? lastRun.toISOString() : null,
+                lastActivityAt: lastActivity ? lastActivity.toISOString() : null,
+                secondsSinceActivity,
                 lastTestedAt: c.lastTestedAt ? c.lastTestedAt.toISOString() : null,
                 lastTestStatus: c.lastTestStatus,
             };

@@ -7,7 +7,8 @@
 import { formatDate } from '@/lib/format-date';
 import { useEffect, useState, useCallback } from 'react';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
-import { Trash2, CheckCircle, XCircle, Loader2, Link2, Eye, EyeOff } from 'lucide-react';
+import { Trash2, CheckCircle, XCircle, Loader2, Link2, Eye, EyeOff, RefreshCw, Activity } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { Combobox } from '@/components/ui/combobox';
@@ -19,6 +20,7 @@ import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { cardVariants } from '@/components/ui/card';
+import { buttonVariants } from '@/components/ui/button-variants';
 import { cn } from '@/lib/cn';
 import { useTranslations } from 'next-intl';
 import { SharePointCard } from './SharePointCard';
@@ -68,6 +70,7 @@ export default function AdminIntegrationsPage() {
     const [showSecrets, setShowSecrets] = useState(false);
     const [saving, setSaving] = useState(false);
     const [testing, setTesting] = useState<string | null>(null);
+    const [syncingId, setSyncingId] = useState<string | null>(null);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     const fetchConnections = useCallback(async () => {
@@ -158,6 +161,11 @@ export default function AdminIntegrationsPage() {
                 });
                 resetForm();
                 await fetchConnections();
+                // P1 — kick off an initial sync + check so a fresh connection
+                // produces a visible first result (not just a silent row).
+                if (!editingId && data.id) {
+                    void handleSyncNow(data.id as string);
+                }
             }
         } catch {
             setMessage({ type: 'error', text: t('integrations.networkError') });
@@ -188,6 +196,34 @@ export default function AdminIntegrationsPage() {
             setMessage({ type: 'error', text: t('integrations.testFailedNetwork') });
         }
         setTesting(null);
+    };
+
+    /** P1 — connection-level "Sync now / run checks now". */
+    const handleSyncNow = async (connectionId: string) => {
+        setSyncingId(connectionId);
+        setMessage({ type: 'success', text: t('integrations.syncRunning') });
+        try {
+            const res = await fetch(apiUrl(`/admin/integrations/${connectionId}/sync`), { method: 'POST' });
+            if (!res.ok) {
+                setMessage({ type: 'error', text: t('integrations.syncFailed') });
+                return;
+            }
+            const data = await res.json() as { counts?: { total: number; passed: number; failed: number; error: number }; identity?: { upserted: number } | null };
+            setMessage({
+                type: (data.counts?.error ?? 0) > 0 ? 'error' : 'success',
+                text: t('integrations.syncDone', {
+                    total: data.counts?.total ?? 0,
+                    passed: data.counts?.passed ?? 0,
+                    failed: data.counts?.failed ?? 0,
+                    accounts: data.identity?.upserted ?? 0,
+                }),
+            });
+            await fetchConnections();
+        } catch {
+            setMessage({ type: 'error', text: t('integrations.syncFailed') });
+        } finally {
+            setSyncingId(null);
+        }
     };
 
     const handleDisable = async (connectionId: string) => {
@@ -296,14 +332,19 @@ export default function AdminIntegrationsPage() {
                 <div>
                     <div className="flex justify-between items-center mb-3">
                         <Heading level={2}>{t('integrations.configuredConnections')}</Heading>
-                        <Button
-                            variant="primary"
-                            icon={<Plus className="-ml-0.5 -mr-2.5" />}
-                            onClick={() => { resetForm(); setShowForm(true); }}
-                            id="add-integration-btn"
-                        >
-                            {t('integrations.addButton')}
-                        </Button>
+                        <div className="flex items-center gap-tight">
+                            <Link href={tenantHref('/admin/integrations/identity-accounts')} className={buttonVariants({ variant: 'secondary', size: 'sm' })} id="identity-accounts-link">
+                                {t('identityAccounts.linkLabel')}
+                            </Link>
+                            <Button
+                                variant="primary"
+                                icon={<Plus className="-ml-0.5 -mr-2.5" />}
+                                onClick={() => { resetForm(); setShowForm(true); }}
+                                id="add-integration-btn"
+                            >
+                                {t('integrations.addButton')}
+                            </Button>
+                        </div>
                     </div>
 
                     {loading ? (
@@ -339,6 +380,16 @@ export default function AdminIntegrationsPage() {
                                     id: 'actions', header: t('integrations.colActions'),
                                     cell: ({ row }) => (
                                         <div className="flex gap-1">
+                                            <Tooltip content={t('integrations.syncNow')}>
+                                                <Button variant="secondary" size="xs" onClick={() => handleSyncNow(row.original.id)} disabled={syncingId === row.original.id} aria-label={t('integrations.syncNow')} id={`sync-${row.original.id}-btn`}>
+                                                    <RefreshCw className={cn('w-3.5 h-3.5', syncingId === row.original.id && 'animate-spin')} />
+                                                </Button>
+                                            </Tooltip>
+                                            <Tooltip content={t('integrations.viewOutcomes')}>
+                                                <Link href={tenantHref(`/admin/integrations/${row.original.id}`)} aria-label={t('integrations.viewOutcomes')} className={buttonVariants({ variant: 'secondary', size: 'xs' })}>
+                                                    <Activity className="w-3.5 h-3.5" />
+                                                </Link>
+                                            </Tooltip>
                                             <Tooltip content={t('integrations.testConnection')}>
                                                 <Button variant="secondary" size="xs" onClick={() => handleTest(row.original)} disabled={testing === row.original.id} aria-label={t('integrations.testConnection')}>
                                                     {testing === row.original.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Link2 className="w-3.5 h-3.5" />}

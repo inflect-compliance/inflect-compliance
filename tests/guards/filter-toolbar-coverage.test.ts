@@ -109,6 +109,10 @@ const EXEMPTIONS: Record<string, string> = {
         "Detail-page links sub-table (R11-PR8) — fixed scope (cross-links from this one task); not a faceted-filter surface.",
     "src/app/t/[tenantSlug]/(app)/admin/integrations/page.tsx":
         "Integrations admin — small fixed catalogue with inline toggle controls.",
+    "src/app/t/[tenantSlug]/(app)/admin/integrations/[connectionId]/page.tsx":
+        "Integrations admin sub-page — one connection's check-run history with an inline Sync-now control; not a faceted surface.",
+    "src/app/t/[tenantSlug]/(app)/admin/integrations/identity-accounts/page.tsx":
+        "Integrations admin sub-page — synced-identity roster (bounded per-tenant); no faceting needed.",
     "src/app/t/[tenantSlug]/(app)/admin/members/page.tsx":
         "Members admin — single tenant's roster with inline role + invite controls; faceting belongs to the org-level view.",
     "src/app/t/[tenantSlug]/(app)/admin/notifications/page.tsx":

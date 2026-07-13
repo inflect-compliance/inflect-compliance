@@ -80,6 +80,10 @@ const EXEMPTIONS: Record<string, string> = {
         '(b) tabbed admin settings page — small fixed table + a form tab; column visibility isn\'t the user need.',
     'admin/integrations/page.tsx':
         '(b) multi-section admin page — small fixed catalogue with inline controls.',
+    'admin/integrations/[connectionId]/page.tsx':
+        '(b) admin sub-page — one connection’s check-run history; fixed columns, no need for a column gear.',
+    'admin/integrations/identity-accounts/page.tsx':
+        '(b) admin sub-page — synced-identity roster; fixed columns, no need for a column gear.',
     'admin/roles/page.tsx':
         '(b) custom roles admin — small fixed list with inline create + permission controls.',
     'coverage/CoverageClient.tsx':
