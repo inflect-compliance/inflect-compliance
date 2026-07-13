@@ -248,7 +248,8 @@
         "mainNavigation": "Основна навигация",
         "openCommandPalette": "Отвори командната палитра",
         "navigationMenu": "Навигационно меню",
-        "closeNavigation": "Затвори навигацията"
+        "closeNavigation": "Затвори навигацията",
+        "integrations": "Интеграции"
     },
     "dashboard": {
         "title": "Табло за съответствие",
@@ -3311,7 +3312,15 @@
             "enableInternal": "Активирай вътрешни проверки",
             "internalEnabled": "Вътрешните доставчици на проверки са активирани.",
             "internalEnableFailed": "Вътрешните проверки не можаха да се активират.",
-            "editConnection": "Редактирай връзката"
+            "editConnection": "Редактирай връзката",
+            "category": {
+                "identity": "Самоличност",
+                "cloud": "Облак",
+                "scm": "Контрол на кода",
+                "hris": "ЧР",
+                "document": "Документи",
+                "other": "Друго"
+            }
         },
         "forbidden": {
             "title": "Изисква се администраторски достъп",
@@ -3688,6 +3697,21 @@
             "mfaOff": "Изкл",
             "empty": "Все още няма синхронизирани акаунти. Свържете и синхронизирайте Okta или Google Workspace.",
             "loadError": "Акаунтите за самоличност не можаха да се заредят."
+        },
+        "section": {
+            "identity": "Идентичност и достъп",
+            "integrations": "Интеграции",
+            "people": "Хора",
+            "organization": "Организация",
+            "security": "Сигурност и управление",
+            "risk": "Конфигурация на риска"
+        },
+        "identityNav": {
+            "label": "Идентичност и достъп:",
+            "sso": "SSO вход",
+            "scim": "SCIM осигуряване",
+            "entra": "Entra ID",
+            "integrations": "Конектори за данни"
         }
     },
     "riskManager": {

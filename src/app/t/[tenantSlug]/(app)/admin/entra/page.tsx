@@ -15,6 +15,7 @@ import { InlineNotice } from '@/components/ui/inline-notice';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
+import { IdentityCrossLinks } from '@/components/admin/IdentityCrossLinks';
 import { GroupMappingsSection } from './GroupMappingsSection';
 
 interface EntraConfig {
@@ -97,6 +98,7 @@ export default function EntraProviderWizard() {
                     </span>
                 )}
             </div>
+            <IdentityCrossLinks current="entra" />
 
             {/* Step 1 + 2 — setup instructions the tenant admin performs in Entra */}
             <Card className="space-y-default p-6">

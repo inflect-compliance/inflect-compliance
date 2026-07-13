@@ -18,9 +18,10 @@ import { RequiredMarker } from '@/components/ui/required-marker';
 import { Tooltip } from '@/components/ui/tooltip';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { Heading } from '@/components/ui/typography';
+import { Heading, Eyebrow } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
+import { IdentityCrossLinks } from '@/components/admin/IdentityCrossLinks';
 import { cardVariants } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { cn } from '@/lib/cn';
@@ -57,7 +58,12 @@ interface ProviderInfo {
     // P2 — setup guidance + honest test-validation kind.
     setupGuide?: string;
     liveValidation?: boolean;
+    // P3 — hub category (identity / cloud / scm / hris / document / …).
+    category?: string;
 }
+
+/** P3 — connector category order + i18n label keys for the grouped hub. */
+const CATEGORY_ORDER = ['identity', 'cloud', 'scm', 'hris', 'document', 'other'] as const;
 
 export default function AdminIntegrationsPage() {
     const apiUrl = useTenantApiUrl();
@@ -343,6 +349,9 @@ export default function AdminIntegrationsPage() {
                         className="mb-1"
                     />
                     <Heading level={1}>{t('integrations.title')}</Heading>
+                    <div className="mt-3">
+                        <IdentityCrossLinks current="integrations" />
+                    </div>
                 </div>
 
                 {/* SP-1 — SharePoint connection (delegated consent, separate
@@ -356,8 +365,17 @@ export default function AdminIntegrationsPage() {
                     <div>
                         <Heading level={2} className="mb-1">{t('integrations.availableTitle')}</Heading>
                         <p className="text-sm text-content-muted mb-3">{t('integrations.availableSubtitle')}</p>
-                        <div className="grid gap-default sm:grid-cols-2 lg:grid-cols-3">
-                            {connectableProviders.map((p) => (
+                        {/* P3 — connectors grouped by category (Identity / Cloud / SCM /
+                            HRIS / Document) instead of one flat grid. */}
+                        <div className="space-y-section">
+                        {CATEGORY_ORDER.map((cat) => {
+                            const inCat = connectableProviders.filter((p) => (p.category ?? 'other') === cat);
+                            if (inCat.length === 0) return null;
+                            return (
+                            <div key={cat}>
+                                <Eyebrow>{t(`integrations.category.${cat}` as Parameters<typeof t>[0])}</Eyebrow>
+                                <div className="grid gap-default sm:grid-cols-2 lg:grid-cols-3 mt-1">
+                                {inCat.map((p) => (
                                 <div key={p.id} className={cn(cardVariants(), 'flex flex-col gap-compact')}>
                                     <div>
                                         <Heading level={3}>{p.displayName}</Heading>
@@ -385,7 +403,11 @@ export default function AdminIntegrationsPage() {
                                         </Button>
                                     </div>
                                 </div>
-                            ))}
+                                ))}
+                                </div>
+                            </div>
+                            );
+                        })}
                         </div>
                     </div>
                 )}

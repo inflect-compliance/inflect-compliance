@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Eyebrow } from '@/components/ui/typography';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,62 @@ export default async function AdminPage({
 
     const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
 
+    const iconCls = 'w-3.5 h-3.5';
+    const sections: {
+        title: string;
+        pills: { href: string; id: string; icon: React.ReactNode; label: string }[];
+    }[] = [
+        {
+            title: t('section.identity'),
+            pills: [
+                { href: '/admin/sso', id: 'sso-pill-btn', icon: <KeyRound className={iconCls} />, label: t('nav.sso') },
+                { href: '/admin/scim', id: 'scim-pill-btn', icon: <CloudCog className={iconCls} />, label: t('nav.scim') },
+                { href: '/admin/entra', id: 'entra-pill-btn', icon: <UserCog className={iconCls} />, label: t('nav.entra') },
+            ],
+        },
+        {
+            title: t('section.integrations'),
+            pills: [
+                { href: '/admin/integrations', id: 'integrations-pill-btn', icon: <Plug className={iconCls} />, label: t('nav.integrations') },
+            ],
+        },
+        {
+            title: t('section.people'),
+            pills: [
+                { href: '/admin/members', id: 'members-pill-btn', icon: <Users className={iconCls} />, label: t('nav.members') },
+                { href: '/admin/rbac', id: 'rbac-pill-btn', icon: <Shield className={iconCls} />, label: t('nav.rbac') },
+                { href: '/admin/roles', id: 'custom-roles-pill-btn', icon: <ShieldPlus className={iconCls} />, label: t('nav.roles') },
+                { href: '/admin/personnel', id: 'personnel-pill-btn', icon: <Users className={iconCls} />, label: t('nav.personnel') },
+                { href: '/admin/devices', id: 'devices-pill-btn', icon: <Laptop className={iconCls} />, label: t('nav.devices') },
+                { href: '/admin/training', id: 'training-pill-btn', icon: <GraduationCap className={iconCls} />, label: t('nav.training') },
+            ],
+        },
+        {
+            title: t('section.organization'),
+            pills: [
+                { href: '/admin/api-keys', id: 'api-keys-pill-btn', icon: <KeyRound className={iconCls} />, label: t('nav.apiKeys') },
+                { href: '/admin/billing', id: 'billing-pill-btn', icon: <CreditCard className={iconCls} />, label: t('nav.billing') },
+                { href: '/admin/notifications', id: 'notifications-pill-btn', icon: <Bell className={iconCls} />, label: t('nav.notifications') },
+            ],
+        },
+        {
+            title: t('section.security'),
+            pills: [
+                { href: '/admin/security', id: 'security-pill-btn', icon: <ShieldCheck className={iconCls} />, label: t('nav.security') },
+                { href: '/admin/trust-center', id: 'trust-center-pill-btn', icon: <Globe className={iconCls} />, label: t('nav.trustCenter') },
+                { href: '/admin/audit-log', id: 'audit-log-pill-btn', icon: <ScrollText className={iconCls} />, label: t('auditLog') },
+                { href: '/admin/mcp', id: 'mcp-pill-btn', icon: <Robot className={iconCls} />, label: 'MCP' },
+            ],
+        },
+        {
+            title: t('section.risk'),
+            pills: [
+                { href: '/admin/risk-matrix', id: 'risk-matrix-pill-btn', icon: <Grid3x3 className={iconCls} />, label: t('nav.riskMatrix') },
+                { href: '/admin/risk-appetite', id: 'risk-appetite-pill-btn', icon: <Gauge className={iconCls} />, label: t('nav.riskAppetite') },
+            ],
+        },
+    ];
+
     return (
         <div className="space-y-section animate-fadeIn">
             <PageHeader
@@ -48,161 +105,25 @@ export default async function AdminPage({
                 }
             />
 
-            {/* Navigation pills — pure server-rendered links. */}
-            <div className="flex gap-tight flex-wrap">
-                <Link
-                    href={tenantHref('/admin/members')}
-                    className={buttonVariants({ variant: 'secondary' })}
-                    id="members-pill-btn"
-                >
-                    <Users className="w-3.5 h-3.5" />
-                    {t('nav.members')}
-                </Link>
-                <Link
-                    href={tenantHref('/admin/rbac')}
-                    className={buttonVariants({ variant: 'secondary' })}
-                    id="rbac-pill-btn"
-                >
-                    <Shield className="w-3.5 h-3.5" />
-                    {t('nav.rbac')}
-                </Link>
-                <Link
-                    href={tenantHref('/admin/roles')}
-                    className={buttonVariants({ variant: 'secondary' })}
-                    id="custom-roles-pill-btn"
-                >
-                    <ShieldPlus className="w-3.5 h-3.5" />
-                    {t('nav.roles')}
-                </Link>
-                <Link
-                    href={tenantHref('/admin/api-keys')}
-                    className={buttonVariants({ variant: 'secondary' })}
-                    id="api-keys-pill-btn"
-                >
-                    <KeyRound className="w-3.5 h-3.5" />
-                    {t('nav.apiKeys')}
-                </Link>
-                <Link
-                    href={tenantHref('/admin/billing')}
-                    className={buttonVariants({ variant: 'secondary' })}
-                    id="billing-pill-btn"
-                >
-                    <CreditCard className="w-3.5 h-3.5" />
-                    {t('nav.billing')}
-                </Link>
-                <Link
-                    href={tenantHref('/admin/sso')}
-                    className={buttonVariants({ variant: 'secondary' })}
-                    id="sso-pill-btn"
-                >
-                    <KeyRound className="w-3.5 h-3.5" />
-                    {t('nav.sso')}
-                </Link>
-                <Link
-                    href={tenantHref('/admin/scim')}
-                    className={buttonVariants({ variant: 'secondary' })}
-                    id="scim-pill-btn"
-                >
-                    <CloudCog className="w-3.5 h-3.5" />
-                    {t('nav.scim')}
-                </Link>
-                <Link
-                    href={tenantHref('/admin/entra')}
-                    className={buttonVariants({ variant: 'secondary' })}
-                    id="entra-pill-btn"
-                >
-                    <UserCog className="w-3.5 h-3.5" />
-                    {t('nav.entra')}
-                </Link>
-                <Link
-                    href={tenantHref('/admin/personnel')}
-                    className={buttonVariants({ variant: 'secondary' })}
-                    id="personnel-pill-btn"
-                >
-                    <Users className="w-3.5 h-3.5" />
-                    {t('nav.personnel')}
-                </Link>
-                <Link
-                    href={tenantHref('/admin/devices')}
-                    className={buttonVariants({ variant: 'secondary' })}
-                    id="devices-pill-btn"
-                >
-                    <Laptop className="w-3.5 h-3.5" />
-                    {t('nav.devices')}
-                </Link>
-                <Link
-                    href={tenantHref('/admin/training')}
-                    className={buttonVariants({ variant: 'secondary' })}
-                    id="training-pill-btn"
-                >
-                    <GraduationCap className="w-3.5 h-3.5" />
-                    {t('nav.training')}
-                </Link>
-                <Link
-                    href={tenantHref('/admin/integrations')}
-                    className={buttonVariants({ variant: 'secondary' })}
-                    id="integrations-pill-btn"
-                >
-                    <Plug className="w-3.5 h-3.5" />
-                    {t('nav.integrations')}
-                </Link>
-                <Link
-                    href={tenantHref('/admin/security')}
-                    className={buttonVariants({ variant: 'secondary' })}
-                    id="security-pill-btn"
-                >
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    {t('nav.security')}
-                </Link>
-                <Link
-                    href={tenantHref('/admin/trust-center')}
-                    className={buttonVariants({ variant: 'secondary' })}
-                    id="trust-center-pill-btn"
-                >
-                    <Globe className="w-3.5 h-3.5" />
-                    {t('nav.trustCenter')}
-                </Link>
-                <Link
-                    href={tenantHref('/admin/risk-matrix')}
-                    className={buttonVariants({ variant: 'secondary' })}
-                    id="risk-matrix-pill-btn"
-                >
-                    <Grid3x3 className="w-3.5 h-3.5" />
-                    {t('nav.riskMatrix')}
-                </Link>
-                <Link
-                    href={tenantHref('/admin/risk-appetite')}
-                    className={buttonVariants({ variant: 'secondary' })}
-                    id="risk-appetite-pill-btn"
-                >
-                    <Gauge className="w-3.5 h-3.5" />
-                    {t('nav.riskAppetite')}
-                </Link>
-                <Link
-                    href={tenantHref('/admin/notifications')}
-                    className={buttonVariants({ variant: 'secondary' })}
-                    id="notifications-pill-btn"
-                >
-                    <Bell className="w-3.5 h-3.5" />
-                    {t('nav.notifications')}
-                </Link>
-                <Link
-                    href={tenantHref('/admin/audit-log')}
-                    className={buttonVariants({ variant: 'secondary' })}
-                    id="audit-log-pill-btn"
-                >
-                    <ScrollText className="w-3.5 h-3.5" />
-                    {t('auditLog')}
-                </Link>
-                <Link
-                    href={tenantHref('/admin/mcp')}
-                    className={buttonVariants({ variant: 'secondary' })}
-                    id="mcp-pill-btn"
-                >
-                    <Robot className="w-3.5 h-3.5" />
-                    MCP
-                </Link>
-            </div>
+            {/* Navigation pills — grouped by admin domain (P3). */}
+            {sections.map((section) => (
+                <section key={section.title} className="space-y-default" aria-label={section.title}>
+                    <Eyebrow>{section.title}</Eyebrow>
+                    <div className="flex gap-tight flex-wrap">
+                        {section.pills.map((pill) => (
+                            <Link
+                                key={pill.id}
+                                href={tenantHref(pill.href)}
+                                className={buttonVariants({ variant: 'secondary' })}
+                                id={pill.id}
+                            >
+                                {pill.icon}
+                                {pill.label}
+                            </Link>
+                        ))}
+                    </div>
+                </section>
+            ))}
         </div>
     );
 }
