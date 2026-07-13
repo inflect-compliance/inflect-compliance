@@ -17,6 +17,7 @@ import { InlineEmptyState } from '@/components/ui/inline-empty-state';
 import { KPIStat } from '@/components/ui/metric';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SkeletonDashboard } from '@/components/ui/skeleton';
+import { BestValueControls } from '../_components/BestValueControls';
 
 const buildStatusLabels = (t: (k: string) => string): Record<string, string> => ({
     NOT_STARTED: t('statusLabels.NOT_STARTED'), IN_PROGRESS: t('statusLabels.IN_PROGRESS'), IMPLEMENTED: t('statusLabels.IMPLEMENTED'), NEEDS_REVIEW: t('statusLabels.NEEDS_REVIEW'),
@@ -218,6 +219,14 @@ export default function ControlsDashboard() {
                     )}
                 </Card>
             )}
+
+            {/* R2-P3 — the Best-value controls leaderboard (RQ3-8, mitigation
+                ROI) was a well-built component mounted nowhere. It belongs on
+                the controls dashboard beside the KPIs. */}
+            <Card>
+                <Heading level={3} className="mb-3">{t('dashboard.bestValueTitle')}</Heading>
+                <BestValueControls limit={10} />
+            </Card>
         </DashboardLayout>
     );
 }

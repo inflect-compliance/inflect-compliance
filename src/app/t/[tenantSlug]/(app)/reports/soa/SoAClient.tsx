@@ -12,10 +12,13 @@ import type { SoAReportDTO, SoAEntryDTO } from '@/lib/dto/soa';
 import { Modal } from '@/components/ui/modal';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/components/ui/hooks/use-toast';
 import { textLinkVariants } from '@/components/ui/typography';
 import { StatusBadge as StatusBadgePrimitive, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { cardVariants } from '@/components/ui/card';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
+import { InlineNotice } from '@/components/ui/inline-notice';
 import { cn } from '@/lib/cn';
 
 // ─── Types ───
@@ -103,6 +106,9 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
     // ⌘K palette (which navigates) or scroll the list.
     const [justText, setJustText] = useState('');
     const [saving, setSaving] = useState(false);
+    // R2-P3 — restored searchable picker for the map-control modal.
+    const [mapSearch, setMapSearch] = useState('');
+    const toast = useToast();
 
     const apiUrl = useCallback((path: string) => `/api/t/${tenantSlug}${path}`, [tenantSlug]);
 
@@ -137,7 +143,11 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
             });
             if (!res.ok) throw new Error('Failed to map');
             setMapModal(null);
+            setMapSearch('');
             router.refresh();
+        } catch {
+            // Surface the failure instead of silently leaving the modal open.
+            toast.error(t('soaView.mapFailed'));
         } finally {
             setSaving(false);
         }
@@ -159,13 +169,28 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
             setJustModal(null);
             setJustText('');
             router.refresh();
+        } catch {
+            toast.error(t('soaView.justificationFailed'));
         } finally {
             setSaving(false);
         }
     };
 
-    // Modal control list — searchbar retired; full list shown.
-    const mapFilteredControls = controls;
+    // R2-P3 — restored searchable picker, pre-filtered to controls NOT already
+    // mapped to this requirement (an unfiltered 90+ control list was unusable).
+    const mapFilteredControls = useMemo(() => {
+        if (!mapModal) return controls;
+        const alreadyMapped = new Set(
+            (report.entries.find((e) => e.requirementId === mapModal.requirementId)?.mappedControls ?? [])
+                .map((c) => c.controlId),
+        );
+        const q = mapSearch.trim().toLowerCase();
+        return controls.filter((c) => {
+            if (alreadyMapped.has(c.id)) return false;
+            if (!q) return true;
+            return (c.code ?? '').toLowerCase().includes(q) || c.name.toLowerCase().includes(q);
+        });
+    }, [controls, mapModal, report.entries, mapSearch]);
 
     const { summary } = report;
 
@@ -185,6 +210,22 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
                     {report.frameworkName} — {t('soaView.requirementsCount', { count: summary.total })}
                 </p>
             </div>
+
+            {/* R2-P3 — the Statement of Applicability is an ISO-27001-Annex-A
+                artifact. For a non-ISO framework, say so and point at that
+                framework's coverage/readiness rather than passing this off as
+                a native SoA. */}
+            {!report.isIsoFamily && (
+                <InlineNotice variant="info">
+                    {t('soaView.nonIsoNotice', { framework: report.frameworkName })}{' '}
+                    <a
+                        href={`/t/${tenantSlug}/frameworks/${report.framework}`}
+                        className={textLinkVariants({ tone: 'link' })}
+                    >
+                        {t('soaView.nonIsoLink')}
+                    </a>
+                </InlineNotice>
+            )}
 
             {/* Summary cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-compact">
@@ -321,6 +362,13 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
                     description={t('soaView.mapModalHeaderDesc')}
                 />
                 <Modal.Body>
+                    <Input
+                        id="soa-map-search"
+                        value={mapSearch}
+                        onChange={(e) => setMapSearch(e.target.value)}
+                        placeholder={t('soaView.mapSearchPlaceholder')}
+                        className="mb-2"
+                    />
                     <div className="max-h-60 space-y-1 overflow-y-auto">
                         {mapFilteredControls.map((c) => (
                             <button

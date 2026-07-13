@@ -55,6 +55,15 @@ export interface SoAReportDTO {
      *  "ISO 27001:2022". Resolved from the installed framework so the
      *  report header isn't hard-coded to ISO 27001. */
     frameworkName: string;
+    /**
+     * R2-P3 — whether the resolved framework is ISO-family (kind ===
+     * ISO_STANDARD). The Statement of Applicability is an ISO-27001-Annex-A
+     * artifact (ISO 27001/27701/42001 have applicability statements; SOC 2,
+     * NIST, PCI, CIS, DORA, NIS2, GDPR do NOT). When false, the SoA view
+     * points the user at that framework's coverage/readiness instead of
+     * rendering a mislabeled "SoA".
+     */
+    isIsoFamily: boolean;
     generatedAt: string;             // ISO 8601
     entries: SoAEntryDTO[];
     summary: SoASummaryDTO;

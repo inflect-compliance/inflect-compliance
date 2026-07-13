@@ -289,6 +289,10 @@ export async function getSoA(ctx: RequestContext, options: SoAOptions = {}): Pro
         // Display name for the report header — resolved from the
         // installed framework so it isn't hard-coded to ISO 27001.
         frameworkName: fw.version ? `${fw.name}:${fw.version}` : fw.name,
+        // ISO-family gate — the SoA is an ISO-27001-Annex-A artifact; for a
+        // non-ISO pack (SOC 2 / NIS2 / …) the consumer shows coverage/readiness
+        // instead of a mislabeled applicability statement.
+        isIsoFamily: fw.kind === 'ISO_STANDARD',
         generatedAt: new Date().toISOString(),
         entries,
         summary,

@@ -1298,19 +1298,21 @@ function ControlsPageInner({
                                 <AppIcon name="share" size={16} />
                             </Link>
                         </Tooltip>
+                        {/* R2-P3 — the controls dashboard is a read-only KPI
+                            view; ungate it from controls.create so READERs
+                            (who can't create) can still see posture. Only the
+                            template-install action stays create-gated. */}
+                        <Tooltip content={t('list.controlsDashboard')}>
+                            <Link href={tenantHref('/controls/dashboard')} aria-label={t('list.controlsDashboard')} className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="controls-dashboard-btn">
+                                <AppIcon name="dashboard" size={16} />
+                            </Link>
+                        </Tooltip>
                         {appPermissions.controls.create && (
-                            <>
-                                <Tooltip content={t('list.controlsDashboard')}>
-                                    <Link href={tenantHref('/controls/dashboard')} aria-label={t('list.controlsDashboard')} className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="controls-dashboard-btn">
-                                        <AppIcon name="dashboard" size={16} />
-                                    </Link>
-                                </Tooltip>
-                                <Tooltip content={t('list.installTemplates')}>
-                                    <Link href={tenantHref('/controls/templates')} aria-label={t('list.installTemplates')} className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="install-templates-btn">
-                                        <AppIcon name="templates" size={16} />
-                                    </Link>
-                                </Tooltip>
-                            </>
+                            <Tooltip content={t('list.installTemplates')}>
+                                <Link href={tenantHref('/controls/templates')} aria-label={t('list.installTemplates')} className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="install-templates-btn">
+                                    <AppIcon name="templates" size={16} />
+                                </Link>
+                            </Tooltip>
                         )}
                         {columnsDropdown}
                         {filtersDropdown}

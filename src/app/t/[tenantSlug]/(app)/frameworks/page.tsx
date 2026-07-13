@@ -17,12 +17,16 @@ export default async function FrameworksPage({
 
     // Fetch coverage for each framework in parallel.
     const coverages: Record<string, Awaited<ReturnType<typeof computeCoverage>>> = {};
+    // R2-P3 — track which frameworks FAILED to compute so the UI can show an
+    // honest "couldn't load" instead of a fabricated 0% that reads identical
+    // to a genuinely-uncovered framework.
+    const coverageErrors: string[] = [];
     await Promise.all(
         frameworks.map(async (fw) => {
             try {
                 coverages[fw.key] = await computeCoverage(ctx, fw.key);
             } catch {
-                /* framework may not have requirements */
+                coverageErrors.push(fw.key);
             }
         }),
     );
@@ -31,6 +35,7 @@ export default async function FrameworksPage({
         <FrameworksClient
             frameworks={frameworks}
             coverages={coverages}
+            coverageErrors={coverageErrors}
             tenantSlug={tenantSlug}
         />
     );

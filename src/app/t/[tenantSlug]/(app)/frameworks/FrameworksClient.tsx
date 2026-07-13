@@ -36,6 +36,7 @@ import { CardList } from '@/components/ui/card-list';
 import { Modal } from '@/components/ui/modal';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Tooltip } from '@/components/ui/tooltip';
 import { DataTable, createColumns, useColumnsDropdown } from '@/components/ui/table';
 import { ViewToggle } from '@/components/ui/view-toggle';
 import { useViewMode } from '@/components/ui/hooks';
@@ -57,6 +58,8 @@ const FW_DEFAULT: { icon: LucideIcon; color: string } = {
 export interface FrameworksClientProps {
     frameworks: FrameworkListItem[];
     coverages: Record<string, { coveragePercent: number; mapped: number; total: number }>;
+    /** R2-P3 — framework keys whose coverage failed to compute (≠ genuine 0%). */
+    coverageErrors?: string[];
     tenantSlug: string;
 }
 
@@ -118,6 +121,7 @@ interface FwRow {
     requirementCount: number;
     packCount: number;
     coveragePercent: number;
+    coverageError: boolean;
     mapped: number;
     total: number;
     isInstalled: boolean;
@@ -129,6 +133,7 @@ interface FwRow {
 export function FrameworksClient({
     frameworks,
     coverages,
+    coverageErrors = [],
     tenantSlug,
 }: FrameworksClientProps) {
     const t = useTranslations('frameworks');
@@ -172,7 +177,7 @@ export function FrameworksClient({
         const target = uninstalled ?? frameworks[0];
         return target ? href(`/frameworks/${target.key}/install`) : null;
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [frameworks, coverages]);
+    }, [frameworks, coverages, coverageErrors]);
 
     const rows: FwRow[] = useMemo(
         () =>
@@ -180,6 +185,7 @@ export function FrameworksClient({
                 const cov = coverages[fw.key];
                 const coveragePercent = cov?.coveragePercent ?? 0;
                 return {
+                    coverageError: coverageErrors.includes(fw.key),
                     id: fw.id,
                     key: fw.key,
                     name: fw.name,
@@ -198,7 +204,7 @@ export function FrameworksClient({
                 };
             }),
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [frameworks, coverages],
+        [frameworks, coverages, coverageErrors],
     );
 
     return (
@@ -394,9 +400,17 @@ export function FrameworksClient({
                             id: 'coverage',
                             header: t('list.coverage'),
                             cell: ({ row }) => (
-                                <span className="tabular-nums text-xs text-content-default">
-                                    {row.original.coveragePercent}%
-                                </span>
+                                row.original.coverageError ? (
+                                    <Tooltip content={t('list.coverageError')}>
+                                        <span className="text-xs text-content-subtle underline decoration-dotted">
+                                            {t('list.coverageUnknownShort')}
+                                        </span>
+                                    </Tooltip>
+                                ) : (
+                                    <span className="tabular-nums text-xs text-content-default">
+                                        {row.original.coveragePercent}%
+                                    </span>
+                                )
                             ),
                         },
                         {
