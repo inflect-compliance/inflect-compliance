@@ -117,6 +117,11 @@ const EXEMPTIONS: Record<string, string> = {
     'vendors/[vendorId]/page.tsx':
         'detail page — DataTable is the inner documents sub-table (R11-PR7)',
 
+    // Asset 360° detail page mounts DataTable for the Vulnerabilities
+    // sub-tab. Detail page (EntityDetailLayout), not a list page.
+    'assets/[id]/page.tsx':
+        'detail page — DataTable is the inner Vulnerabilities sub-table',
+
     // R11-PR6 — control detail page now mounts DataTable for the
     // tasks sub-table. Detail page (EntityDetailLayout), not a list
     // page.

@@ -19,6 +19,7 @@ import { Tooltip, InfoTooltip } from '@/components/ui/tooltip';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { DataTable, type ColumnDef } from '@/components/ui/table';
 import { Eyebrow } from '@/components/ui/typography';
+import { KPIStat } from '@/components/ui/metric';
 import type { AuditLogEntry } from '@/lib/dto';
 import { AssetCriticalityBadge } from '../_form/AssetCriticalityFields';
 import { MetaStrip } from '@/components/ui/meta-strip';
@@ -569,41 +570,39 @@ export default function AssetDetailPage() {
                     <button
                         type="button"
                         onClick={() => setActiveTab('traceability')}
-                        className={cn(cardVariants({ density: 'compact' }), 'text-left space-y-tight hover:border-border-emphasis transition-colors')}
+                        className={cn(cardVariants({ density: 'compact' }), 'text-left hover:border-border-emphasis transition-colors')}
                     >
-                        <Eyebrow>{t('detail.rollups.risks')}</Eyebrow>
-                        <p className="text-2xl font-semibold tabular-nums text-content-default">{asset.rollups.risks.count}</p>
+                        <KPIStat label={t('detail.rollups.risks')} value={asset.rollups.risks.count} />
                     </button>
                     <button
                         type="button"
                         onClick={() => setActiveTab('traceability')}
-                        className={cn(cardVariants({ density: 'compact' }), 'text-left space-y-tight hover:border-border-emphasis transition-colors')}
+                        className={cn(cardVariants({ density: 'compact' }), 'text-left hover:border-border-emphasis transition-colors')}
                     >
-                        <Eyebrow>{t('detail.rollups.controls')}</Eyebrow>
-                        <p className="text-2xl font-semibold tabular-nums text-content-default">{asset.rollups.controls.count}</p>
+                        <KPIStat label={t('detail.rollups.controls')} value={asset.rollups.controls.count} />
                     </button>
                     <button
                         type="button"
                         onClick={() => setActiveTab('vulnerabilities')}
-                        className={cn(cardVariants({ density: 'compact' }), 'text-left space-y-tight hover:border-border-emphasis transition-colors')}
+                        className={cn(cardVariants({ density: 'compact' }), 'text-left hover:border-border-emphasis transition-colors')}
                     >
-                        <Eyebrow>{t('detail.rollups.vulnerabilities')}</Eyebrow>
-                        <div className="flex items-center gap-2">
-                            <p className="text-2xl font-semibold tabular-nums text-content-default">{asset.rollups.vulnerabilities.openCount}</p>
-                            {asset.rollups.vulnerabilities.maxSeverity && (
+                        <KPIStat
+                            label={t('detail.rollups.vulnerabilities')}
+                            value={asset.rollups.vulnerabilities.openCount}
+                            tone={asset.rollups.vulnerabilities.openCount > 0 ? 'attention' : 'default'}
+                            description={asset.rollups.vulnerabilities.maxSeverity ? (
                                 <StatusBadge variant={severityVariant(asset.rollups.vulnerabilities.maxSeverity)} size="sm">
                                     {asset.rollups.vulnerabilities.maxSeverity}
                                 </StatusBadge>
-                            )}
-                        </div>
+                            ) : undefined}
+                        />
                     </button>
                     <button
                         type="button"
                         onClick={() => setActiveTab('tasks')}
-                        className={cn(cardVariants({ density: 'compact' }), 'text-left space-y-tight hover:border-border-emphasis transition-colors')}
+                        className={cn(cardVariants({ density: 'compact' }), 'text-left hover:border-border-emphasis transition-colors')}
                     >
-                        <Eyebrow>{t('detail.rollups.tasks')}</Eyebrow>
-                        <p className="text-2xl font-semibold tabular-nums text-content-default">{asset.rollups.tasks.openCount}</p>
+                        <KPIStat label={t('detail.rollups.tasks')} value={asset.rollups.tasks.openCount} />
                     </button>
                 </div>
             )}
