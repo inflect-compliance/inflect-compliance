@@ -195,7 +195,10 @@ export function EvidenceSubTable({
                         return (
                             <span className="text-sm">
                                 <Link
-                                    href={tenantHref(`/evidence`)}
+                                    // Deep-link to the specific evidence record
+                                    // (opens its detail sheet) instead of the
+                                    // whole library.
+                                    href={tenantHref(r.evidenceId ? `/evidence?ev=${r.evidenceId}` : `/evidence`)}
                                     className={textLinkVariants({ tone: 'link' })}
                                 >
                                     {r.titleText}
@@ -205,23 +208,28 @@ export function EvidenceSubTable({
                     },
                 },
                 {
+                    // R2-P2 — "Added by" (provenance) split out of the
+                    // overloaded Status column so creator ≠ approval-status.
+                    id: 'addedBy',
+                    header: t('evidenceTab.colAddedBy'),
+                    cell: ({ row }) => (
+                        <span className="text-xs text-content-muted">
+                            {row.original.createdByName || '—'}
+                        </span>
+                    ),
+                },
+                {
                     id: 'status',
                     header: t('evidenceTab.colStatus'),
                     cell: ({ row }) => {
+                        // Approval status only — never the creator name.
                         const r = row.original;
-                        if (r.statusCell === 'createdBy') {
-                            return (
-                                <span className="text-xs text-content-muted">
-                                    {r.createdByName || '—'}
-                                </span>
-                            );
-                        }
                         return r.statusBadge ? (
                             <StatusBadge variant={r.statusBadge.variant}>
                                 {r.statusBadge.label}
                             </StatusBadge>
                         ) : (
-                            <span>—</span>
+                            <span className="text-content-subtle">—</span>
                         );
                     },
                 },

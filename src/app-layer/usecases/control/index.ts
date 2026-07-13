@@ -61,3 +61,6 @@ export {
 
 // Page-data orchestration (collapses control + sync waterfall on detail page)
 export { getControlPageData, type ControlPageDataPayload, type SyncStatusPayload } from './page-data';
+
+// Control health synthesis (R2-P2 — one "is it implemented and operating?" payload)
+export { getControlHealth, type ControlHealthDTO } from './health';

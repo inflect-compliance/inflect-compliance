@@ -23,7 +23,7 @@ import {
 } from '../events/test.events';
 import { logEvent } from '../events/audit';
 import { notFound, badRequest } from '@/lib/errors/types';
-import { runInTenantContext } from '@/lib/db-context';
+import { runInTenantContext, type PrismaTx } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { computeNextDueAt } from '../utils/cadence';
 import { createTask } from './task';
@@ -138,6 +138,33 @@ export async function getControlEffectiveness(
             inconclusive,
             windowDays,
         };
+    });
+}
+
+/**
+ * Attest that a control was exercised by a completed test/check run —
+ * stamps `Control.lastTested = now` and rolls the control's own cadence
+ * (`nextDueAt`). This is the control-state write that the previously
+ * un-triggered `markControlTestCompleted` performed; wiring it into run
+ * completion means testing a control via the UI (manual OR automated check)
+ * finally advances the control's tested-state and feeds the health summary.
+ * Skips NOT_APPLICABLE controls and global-library rows (no tenantId match).
+ */
+async function attestControlTested(
+    db: PrismaTx,
+    ctx: RequestContext,
+    controlId: string | null | undefined,
+): Promise<void> {
+    if (!controlId) return;
+    const control = await db.control.findFirst({
+        where: { id: controlId, tenantId: ctx.tenantId },
+        select: { id: true, frequency: true, applicability: true },
+    });
+    if (!control || control.applicability === 'NOT_APPLICABLE') return;
+    const now = new Date();
+    await db.control.update({
+        where: { id: control.id },
+        data: { lastTested: now, nextDueAt: computeNextDueAt(control.frequency, now) },
     });
 }
 
@@ -300,6 +327,13 @@ export async function completeTestRun(ctx: RequestContext, runId: string, input:
 
         // 1. Complete the run
         const completedRun = await TestRunRepository.complete(db, ctx, runId, sanitisedInput);
+
+        // 1b. Attest the control was exercised — completing a run now writes
+        // back to Control.lastTested (+ rolls the control's own cadence), the
+        // state the (previously un-triggered) markControlTestCompleted set.
+        // Without this, a control tested via the UI never showed lastTested
+        // and the health summary/readiness couldn't tell it had been tested.
+        await attestControlTested(db, ctx, run.controlId);
 
         // 2. Update the plan's nextDueAt based on frequency
         const plan = run.testPlan;
@@ -490,6 +524,9 @@ export async function createAutomatedTestRun(
             notes: input.notes || `Automated run from integration`,
             findingSummary: input.result === 'FAIL' ? (input.notes || 'Automated check failed') : undefined,
         });
+
+        // Attest the control was exercised by this automated check.
+        await attestControlTested(db, ctx, plan.controlId);
 
         // Advance cadence
         const nextDue = computeNextDueAt(plan.frequency, new Date());

@@ -241,7 +241,14 @@ describe('createTestRun — gating', () => {
 
 describe('completeTestRun — sanitisation + FAIL fan-out', () => {
     function setupRun(status: string, planFreq = 'MONTHLY') {
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
+        // R2-P2 — completeTestRun now attests the control (db.control
+        // findFirst + update) on completion, so the fake db must carry it.
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({
+            control: {
+                findFirst: jest.fn().mockResolvedValue({ id: 'c1', frequency: 'MONTHLY', applicability: 'APPLICABLE' }),
+                update: jest.fn().mockResolvedValue({ id: 'c1' }),
+            },
+        } as never));
         mockRunGetById.mockResolvedValueOnce({
             id: 'run-1',
             testPlanId: 'plan-1',
@@ -403,7 +410,13 @@ describe('unlinkEvidenceFromRun — tenant-scoped lookup', () => {
 
 describe('createAutomatedTestRun', () => {
     it('on FAIL: creates the same CONTROL_GAP task as the manual path', async () => {
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
+        // Fake db carries `control` for the R2-P2 attest-on-completion write.
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({
+            control: {
+                findFirst: jest.fn().mockResolvedValue({ id: 'c1', frequency: 'WEEKLY', applicability: 'APPLICABLE' }),
+                update: jest.fn().mockResolvedValue({ id: 'c1' }),
+            },
+        } as never));
         mockPlanGetById.mockResolvedValueOnce({
             id: 'plan-1',
             name: 'Auto Plan',

@@ -7,6 +7,7 @@
 import { formatDate } from '@/lib/format-date';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { Button } from '@/components/ui/button';
@@ -44,6 +45,7 @@ const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
 export default function TestPlansPanel({ controlId }: { controlId: string }) {
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
+    const router = useRouter();
     const { permissions } = useTenantContext();
     const t = useTranslations('panels.testPlans');
     const tc = useTranslations('common');
@@ -100,7 +102,9 @@ export default function TestPlansPanel({ controlId }: { controlId: string }) {
             const res = await fetch(apiUrl(`/tests/plans/${planId}/runs`), { method: 'POST' });
             if (res.ok) {
                 const run = await res.json();
-                window.location.href = tenantHref(`/tests/runs/${run.id}`);
+                // Client navigation (not a full page reload) for parity with
+                // the rest of the app.
+                router.push(tenantHref(`/tests/runs/${run.id}`));
             }
         } finally {
             setCreatingRunFor(null);

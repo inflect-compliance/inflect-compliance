@@ -174,6 +174,11 @@ jest.mock('@/lib/db-context', () => ({
             tenant: { findUnique: (...a: unknown[]) => mockTenantFindUnique(...a) },
             // RQ2-1 — score writes append a ledger event on the same tx.
             riskScoreEvent: { create: async () => ({ id: 'evt-1' }) },
+            // R2-P2 — completeTestRun attests the control on completion.
+            control: {
+                findFirst: async () => ({ id: 'c1', frequency: 'MONTHLY', applicability: 'APPLICABLE' }),
+                update: async () => ({ id: 'c1' }),
+            },
         }),
     ),
 }));
