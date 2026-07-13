@@ -2750,7 +2750,11 @@
             "assignPlaceholder": "Assign a member",
             "assignStatus": "{status} · {count} Qs",
             "createSelectedZero": "Create selected",
-            "createSelectedN": "Create {count} selected"
+            "createSelectedN": "Create {count} selected",
+            "baselineDelegateTitle": "Delegate this assessment",
+            "baselineDelegateBody": "This is an onboarding baseline run, which can't be delegated. Start a standalone re-assessment to route each part to the person who can answer it.",
+            "baselineDelegateAction": "Start re-assessment",
+            "viewCoverage": "View NIS2 coverage"
         },
         "respond": {
             "loadFailed": "Failed to load your assignment.",

@@ -3,11 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
 
 import { DataTable, createColumns } from '@/components/ui/table';
 import { KPIStat } from '@/components/ui/metric';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button-variants';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Heading } from '@/components/ui/typography';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { InlineNotice } from '@/components/ui/inline-notice';
@@ -206,12 +209,21 @@ export function Nis2GapLifecycleClient({ tenantSlug, canWrite }: { tenantSlug: s
                 title={tx('nav.nis2Gap')}
                 description={tx('nis2Gap.description')}
                 actions={
-                    canWrite ? (
-                        <Button variant="secondary" onClick={handleRerun} disabled={rerunning} id="nis2-gap-rerun-btn">
-                            {rerunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                            {tx('nis2Gap.rerun')}
-                        </Button>
-                    ) : undefined
+                    <div className="flex items-center gap-tight">
+                        <Link
+                            href={`/t/${tenantSlug}/frameworks/NIS2/readiness`}
+                            className={cn(buttonVariants({ variant: 'secondary' }))}
+                            id="nis2-gap-coverage-link"
+                        >
+                            {tx('nis2Gap.viewCoverage')}
+                        </Link>
+                        {canWrite ? (
+                            <Button variant="secondary" onClick={handleRerun} disabled={rerunning} id="nis2-gap-rerun-btn">
+                                {rerunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                                {tx('nis2Gap.rerun')}
+                            </Button>
+                        ) : null}
+                    </div>
                 }
             />
 
@@ -281,12 +293,36 @@ export function Nis2GapLifecycleClient({ tenantSlug, canWrite }: { tenantSlug: s
                         <DataTable data={data.history} columns={historyColumns} getRowId={(r) => r.id} data-testid="nis2-gap-history-table" />
                     </div>
 
-                    {canWrite && data.history[0]?.source === 'STANDALONE' && data.history[0].status !== 'COMPLETED' && (
-                        <Nis2AssignmentsPanel
-                            tenantSlug={tenantSlug}
-                            assessmentId={data.history[0].id}
-                            onChanged={() => { void load(); }}
-                        />
+                    {/* Delegation. The assign→respond→review backend
+                        (dispatchAssignments) hard-rejects a WIZARD_BASELINE run —
+                        the onboarding baseline is never delegated. Rather than
+                        silently hide the panel on a baseline (which reads as the
+                        feature vanishing), explain WHY and offer the standalone
+                        re-assessment that CAN be delegated. STANDALONE runs get the
+                        real panel. */}
+                    {canWrite && data.history[0]?.status !== 'COMPLETED' && (
+                        data.history[0]?.source === 'STANDALONE' ? (
+                            <Nis2AssignmentsPanel
+                                tenantSlug={tenantSlug}
+                                assessmentId={data.history[0].id}
+                                onChanged={() => { void load(); }}
+                            />
+                        ) : data.history[0]?.source === 'WIZARD_BASELINE' ? (
+                            <div className={cn(cardVariants({ density: 'comfortable' }))}>
+                                <EmptyState
+                                    variant="missing-prereqs"
+                                    size="sm"
+                                    title={tx('nis2Gap.baselineDelegateTitle')}
+                                    description={tx('nis2Gap.baselineDelegateBody')}
+                                    primaryAction={{
+                                        label: tx('nis2Gap.baselineDelegateAction'),
+                                        onClick: () => { void handleRerun(); },
+                                        disabled: rerunning,
+                                        'data-testid': 'nis2-gap-baseline-delegate-cta',
+                                    }}
+                                />
+                            </div>
+                        ) : null
                     )}
 
                     <div className="space-y-tight">
