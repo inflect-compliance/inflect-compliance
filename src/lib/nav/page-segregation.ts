@@ -173,6 +173,7 @@ export const SUBPAGES: readonly string[] = [
 
     // Assets
     '/assets/[id]',
+    '/assets/import',
     '/assets/new',
 
     // Audits

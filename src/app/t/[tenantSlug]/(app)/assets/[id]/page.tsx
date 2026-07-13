@@ -56,6 +56,11 @@ export interface AssetDetail {
     confidentiality: number | null;
     integrity: number | null;
     availability: number | null;
+    // Product-identity fields — power CVE→asset matching.
+    cpe: string | null;
+    vendor: string | null;
+    product: string | null;
+    version: string | null;
     createdAt: string;
     updatedAt: string;
     rollups?: AssetRollups;
@@ -209,8 +214,19 @@ export default function AssetDetailPage() {
               confidentiality: asset.confidentiality ?? 3,
               integrity: asset.integrity ?? 3,
               availability: asset.availability ?? 3,
+              cpe: asset.cpe || '',
+              vendor: asset.vendor || '',
+              product: asset.product || '',
+              version: asset.version || '',
           }
         : {};
+
+    // Item — surface a "add product identity" hint when the asset lacks
+    // ALL machine-readable identity fields (no cpe AND no vendor AND no
+    // product). Without any of these the CVE feed can never match the
+    // asset, so nudge the user to add them.
+    const missingIdentity =
+        !!asset && !asset.cpe && !asset.vendor && !asset.product;
 
     // B5 — ordered asset-id list for the prev/next nav beside the name.
     // The default list order so the up/down buttons walk the same sequence
@@ -607,6 +623,34 @@ export default function AssetDetailPage() {
                 </div>
             )}
 
+            {/* "Add product identity" hint — CVE→asset matching needs at
+                least one of cpe / vendor / product. Lightweight inline
+                callout; opens the edit modal so the user can add them. */}
+            {missingIdentity && (
+                <div
+                    className={cn(
+                        cardVariants({ density: 'compact' }),
+                        'flex flex-col gap-compact border-border-emphasis/50 sm:flex-row sm:items-center sm:justify-between',
+                    )}
+                    id="asset-identity-hint"
+                >
+                    <div className="space-y-tight">
+                        <p className="text-sm font-medium text-content-default">{t('detail.identityHintTitle')}</p>
+                        <p className="text-xs text-content-muted">{t('detail.identityHintBody')}</p>
+                    </div>
+                    {permissions.canWrite && (
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setEditing(true)}
+                            id="asset-identity-hint-btn"
+                        >
+                            {t('detail.identityHintAction')}
+                        </Button>
+                    )}
+                </div>
+            )}
+
             {/* Detail card — read-only view; edits flow through EditAssetModal. */}
             <div className={cn(cardVariants(), 'space-y-default')} id="asset-detail">
                 {permissions.canWrite && (
@@ -648,6 +692,17 @@ export default function AssetDetailPage() {
                                 )}
                             </div>
                             <div><Eyebrow>{t('detail.dataResidency')}</Eyebrow><p className="text-sm">{asset.dataResidency || '—'}</p></div>
+                        </div>
+                        {/* Product identity — the CVE→asset matching keys. */}
+                        <div className="flex items-center gap-1.5 border-t border-border-default/50 pt-4">
+                            <Heading level={3}>{t('detail.identityHeading')}</Heading>
+                            <InfoTooltip content={t('form.identityTooltip')} aria-label={t('detail.identityHeading')} />
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
+                            <div className="col-span-2 md:col-span-4"><Eyebrow>{t('detail.cpe')}</Eyebrow><p className="text-sm break-all">{asset.cpe || '—'}</p></div>
+                            <div><Eyebrow>{t('detail.vendor')}</Eyebrow><p className="text-sm">{asset.vendor || '—'}</p></div>
+                            <div><Eyebrow>{t('detail.product')}</Eyebrow><p className="text-sm">{asset.product || '—'}</p></div>
+                            <div><Eyebrow>{t('detail.version')}</Eyebrow><p className="text-sm">{asset.version || '—'}</p></div>
                         </div>
                         <div className="flex items-center gap-1.5">
                             <Heading level={3}>{t('detail.criticalityHeading')}</Heading>

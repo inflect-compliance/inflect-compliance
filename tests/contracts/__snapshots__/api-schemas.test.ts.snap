@@ -75,6 +75,30 @@ exports[`API contract — per-schema snapshots schema: AssetCreateRequest 1`] = 
         "string",
         "null"
       ]
+    },
+    "cpe": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "vendor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "product": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "version": {
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
   "required": [
@@ -426,6 +450,30 @@ exports[`API contract — per-schema snapshots schema: AssetUpdateRequest 1`] = 
       ]
     },
     "retention": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cpe": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "vendor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "product": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "version": {
       "type": [
         "string",
         "null"

@@ -401,7 +401,14 @@
             "statusPlaceholder": "Select status…",
             "nameRequired": "Name *",
             "selectClassification": "Select classification…",
-            "selectResidency": "Select residency…"
+            "selectResidency": "Select residency…",
+            "identityHeading": "Product identity",
+            "identityTooltip": "CPE, vendor, product, and version identify the software running on this asset. They power automatic CVE-to-asset matching so new vulnerabilities are linked to the assets they affect.",
+            "cpe": "CPE 2.3",
+            "cpePlaceholder": "cpe:2.3:a:vendor:product:version",
+            "vendor": "Vendor",
+            "product": "Product",
+            "version": "Version"
         },
         "crit": {
             "heading": "Asset Criticality",
@@ -506,7 +513,15 @@
             },
             "traceabilityHeading": "Traceability",
             "traceabilitySubtitle": "See how this asset links to risks, controls, and other entities across the compliance graph.",
-            "ciaLegendBody": "Confidentiality, Integrity, and Availability are each rated 1–5. Criticality is derived from the two highest dimensions (their rounded mean), with any single dimension at 5 forcing Critical."
+            "ciaLegendBody": "Confidentiality, Integrity, and Availability are each rated 1–5. Criticality is derived from the two highest dimensions (their rounded mean), with any single dimension at 5 forcing Critical.",
+            "identityHeading": "Product identity",
+            "cpe": "CPE 2.3",
+            "vendor": "Vendor",
+            "product": "Product",
+            "version": "Version",
+            "identityHintTitle": "Add product identity",
+            "identityHintBody": "This asset has no CPE, vendor, or product set, so new CVEs can't be matched to it. Add product identity to enable automatic vulnerability matching.",
+            "identityHintAction": "Add identity"
         },
         "filters": {
             "type": "Type",
@@ -570,7 +585,40 @@
             "PEOPLE_PROCESS": "PEOPLE PROCESS",
             "OTHER": "OTHER"
         },
-        "rowInteractionHint": "Click to preview · double-click the row to open the full page"
+        "rowInteractionHint": "Click to preview · double-click the row to open the full page",
+        "importAssets": "Import assets",
+        "import": {
+            "title": "Import assets from CSV",
+            "csvFormat": "CSV format",
+            "csvDesc": "Upload a CSV file with at minimum a Name column. Optional columns: Type, Status, Owner, Classification, Confidentiality, Integrity, Availability (1-5), Criticality, CPE, Vendor, Product, Version.",
+            "chooseFile": "Choose CSV file",
+            "assetsToImport": "{count} asset(s) to import",
+            "importing": "Importing… ({count})",
+            "confirmImport": "Import {count} assets",
+            "colName": "Name",
+            "colType": "Type",
+            "colCriticality": "Criticality",
+            "colOwner": "Owner",
+            "colStatus": "Row status",
+            "rowOk": "Valid",
+            "previewEmpty": "No rows to preview",
+            "rowsWord": "rows",
+            "rowWord": "row",
+            "moreRows": "+{count} more…",
+            "invalidCsv": "No valid rows found. Ensure the CSV has a \"Name\" column header.",
+            "importComplete": "Import complete — {created} of {total} assets created",
+            "errors": "Errors",
+            "viewRegister": "View asset register →",
+            "importMore": "Import more",
+            "forbidden": "You don't have permission to import assets.",
+            "backToAssets": "Back to assets",
+            "rowLabel": "Row {num} \"{name}\"",
+            "errNameRequired": "Name is required",
+            "errType": "Invalid type: {value}",
+            "errStatus": "Invalid status: {value}",
+            "errCriticality": "Invalid criticality: {value}",
+            "errCia": "CIA values must be between 1 and 5"
+        }
     },
     "risks": {
         "title": "Risk Register",

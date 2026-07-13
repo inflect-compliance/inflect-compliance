@@ -120,6 +120,30 @@
               "string",
               "null"
             ]
+          },
+          "cpe": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vendor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "product": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -456,6 +480,30 @@
             ]
           },
           "retention": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cpe": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vendor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "product": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
             "type": [
               "string",
               "null"

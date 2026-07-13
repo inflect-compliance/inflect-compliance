@@ -709,6 +709,13 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                             <Tooltip content={tx('coverageTooltip')}>
                                 <Link href={tenantHref('/coverage')} aria-label={tx('coverageTooltip')} className={buttonVariants({ variant: 'secondary', size: 'icon' })}><AppIcon name="shield" size={16} /></Link>
                             </Tooltip>
+                            {permissions.canWrite && (
+                                <Tooltip content={tx('importAssets')}>
+                                    <Link href={tenantHref('/assets/import')} aria-label={tx('importAssets')} className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="asset-import-btn">
+                                        <AppIcon name="upload" size={16} />
+                                    </Link>
+                                </Tooltip>
+                            )}
                             {columnsDropdown}
                             {filtersDropdown}
                         </>

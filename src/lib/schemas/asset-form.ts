@@ -42,6 +42,11 @@ export const NewAssetFormSchema = z.object({
     confidentiality: cia,
     integrity: cia,
     availability: cia,
+    // Product-identity fields — power CVE→asset matching. All optional.
+    cpe: z.string().trim().max(255).default(''),
+    vendor: z.string().trim().max(255).default(''),
+    product: z.string().trim().max(255).default(''),
+    version: z.string().trim().max(255).default(''),
 });
 
 export type NewAssetFormValues = z.input<typeof NewAssetFormSchema>;

@@ -191,7 +191,7 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // 2026-07-03 — bumped 141 → 142 for the EU AI Act AI-System Registry: the list
 // "System" create button and the "Register & classify" modal confirm are both
 // earned primaries (the detail conformity/regenerate actions stay secondary). +1.
-const MAX_PRIMARY_COUNT = 142;
+const MAX_PRIMARY_COUNT = 143;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

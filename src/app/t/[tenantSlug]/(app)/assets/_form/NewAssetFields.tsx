@@ -11,6 +11,7 @@ import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { AssetCriticalityFields } from './AssetCriticalityFields';
+import { AssetIdentityFields } from './AssetIdentityFields';
 import {
     buildAssetClassificationOptions,
     buildAssetDataResidencyOptions,
@@ -196,6 +197,18 @@ export function NewAssetFields({
                 confidentiality={form.fields.confidentiality}
                 integrity={form.fields.integrity}
                 availability={form.fields.availability}
+                onChange={(key, value) => form.setField(key, value)}
+            />
+
+            {/* Product identity → CVE→asset matching. */}
+            <AssetIdentityFields
+                idPrefix="asset-new"
+                values={{
+                    cpe: form.fields.cpe ?? '',
+                    vendor: form.fields.vendor ?? '',
+                    product: form.fields.product ?? '',
+                    version: form.fields.version ?? '',
+                }}
                 onChange={(key, value) => form.setField(key, value)}
             />
         </>

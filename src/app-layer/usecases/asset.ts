@@ -131,6 +131,11 @@ interface CreateAssetInput {
     businessProcesses?: string | null;
     dataResidency?: string | null;
     retention?: string | null;
+    // Product-identity fields — power CVE→asset matching.
+    cpe?: string | null;
+    vendor?: string | null;
+    product?: string | null;
+    version?: string | null;
 }
 type UpdateAssetInput = Partial<CreateAssetInput>;
 
@@ -162,6 +167,10 @@ export async function createAsset(ctx: RequestContext, data: CreateAssetInput) {
             businessProcesses: data.businessProcesses,
             dataResidency: data.dataResidency,
             retention: data.retention,
+            cpe: data.cpe,
+            vendor: data.vendor,
+            product: data.product,
+            version: data.version,
         });
 
         await logEvent(db, ctx, {
@@ -219,6 +228,10 @@ export async function updateAsset(ctx: RequestContext, id: string, data: UpdateA
             businessProcesses: data.businessProcesses,
             dataResidency: data.dataResidency,
             retention: data.retention,
+            cpe: data.cpe,
+            vendor: data.vendor,
+            product: data.product,
+            version: data.version,
         });
 
         if (!asset) throw notFound('Asset not found');

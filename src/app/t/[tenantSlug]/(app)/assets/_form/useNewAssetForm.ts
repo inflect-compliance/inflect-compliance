@@ -53,6 +53,10 @@ const INITIAL: NewAssetFormFields = {
     confidentiality: 3,
     integrity: 3,
     availability: 3,
+    cpe: '',
+    vendor: '',
+    product: '',
+    version: '',
 };
 
 export function useNewAssetForm({
@@ -63,7 +67,7 @@ export function useNewAssetForm({
         schema: NewAssetFormSchema,
         initial: INITIAL,
         onSubmit: async (payload) => {
-            const body: { name: string; type: string; status: string; confidentiality: number; integrity: number; availability: number; classification?: string; ownerUserId?: string; location?: string; dataResidency?: string } = {
+            const body: { name: string; type: string; status: string; confidentiality: number; integrity: number; availability: number; classification?: string; ownerUserId?: string; location?: string; dataResidency?: string; cpe?: string; vendor?: string; product?: string; version?: string } = {
                 name: payload.name,
                 type: payload.type,
                 status: payload.status,
@@ -75,6 +79,10 @@ export function useNewAssetForm({
             if (payload.ownerUserId) body.ownerUserId = payload.ownerUserId;
             if (payload.location) body.location = payload.location;
             if (payload.dataResidency) body.dataResidency = payload.dataResidency;
+            if (payload.cpe) body.cpe = payload.cpe;
+            if (payload.vendor) body.vendor = payload.vendor;
+            if (payload.product) body.product = payload.product;
+            if (payload.version) body.version = payload.version;
 
             const res = await fetch(apiUrl('/assets'), {
                 method: 'POST',
