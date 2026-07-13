@@ -85,9 +85,12 @@ describe('ControlRepository list `_count` projection', () => {
     // constant referenced by both functions, so the literal now
     // appears once at module scope rather than twice in line. The
     // anti-bloat invariant (only the two consumed keys) is unchanged.
-    const ALLOWED = /_count:\s*\{\s*select:\s*\{\s*controlTasks:\s*true,\s*evidenceLinks:\s*true\s*\}\s*\}/g;
+    // R2-P4 — the list Evidence column now sums links + direct Evidence
+    // (to agree with the detail badge), so `evidence` is a CONSUMED key, not
+    // dropped bloat. The invariant is still "only the consumed keys".
+    const ALLOWED = /_count:\s*\{\s*select:\s*\{\s*controlTasks:\s*true,\s*evidenceLinks:\s*true,\s*evidence:\s*true\s*\}\s*\}/g;
 
-    test('list-shape exposes only the consumed _count keys (controlTasks + evidenceLinks)', () => {
+    test('list-shape exposes only the consumed _count keys (controlTasks + evidenceLinks + evidence)', () => {
         const matches = repo.match(ALLOWED) ?? [];
         // One declaration in the shared `controlListSelect` constant.
         expect(matches.length).toBeGreaterThanOrEqual(1);

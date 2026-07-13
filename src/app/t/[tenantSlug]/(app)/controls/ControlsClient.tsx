@@ -112,11 +112,13 @@ interface ControlListItem {
     name: string;
     status: string;
     applicability: string;
+    /** R2-P4 — null when applicable-but-never-assessed (distinct from decided). */
+    applicabilityDecidedAt?: string | null;
     category: string | null;
     frequency: string | null;
     /** Widened to include id/email so the owner filter can resolve + display. */
     owner: { id: string; name: string | null; email: string | null } | null;
-    _count?: { controlTasks?: number; evidenceLinks?: number };
+    _count?: { controlTasks?: number; evidenceLinks?: number; evidence?: number };
     controlTasks?: Array<{ status: string }>;
     /**
      * Unified linked-task counts (TaskLink CONTROL link OR the
@@ -796,13 +798,24 @@ function ControlsPageInner({
                 // route through the per-control detail page; the
                 // justification modal is preserved there. Selector
                 // id `#applicability-pill-{id}` kept for E2E parity.
+                // R2-P4 — three states, not two. The enum only holds
+                // APPLICABLE / NOT_APPLICABLE, but a control that was never
+                // assessed (applicabilityDecidedAt == null) is stored as
+                // APPLICABLE and must read distinctly from a deliberately
+                // decided one — else "assessed" and "unassessed" look alike.
+                const applicabilityCell: { variant: StatusBadgeVariant; label: string } =
+                    c.applicability === 'NOT_APPLICABLE'
+                        ? { variant: 'warning', label: t('list.na') }
+                        : c.applicabilityDecidedAt
+                          ? { variant: 'success', label: t('list.yes') }
+                          : { variant: 'neutral', label: t('list.notAssessed') };
                 return (
                     <StatusBadge
                         id={`applicability-pill-${c.id}`}
-                        variant={c.applicability === 'NOT_APPLICABLE' ? 'warning' : 'success'}
+                        variant={applicabilityCell.variant}
                         size="sm"
                     >
-                        {c.applicability === 'NOT_APPLICABLE' ? t('list.na') : t('list.yes')}
+                        {applicabilityCell.label}
                     </StatusBadge>
                 );
             },
@@ -867,7 +880,9 @@ function ControlsPageInner({
         {
             id: 'evidence',
             header: t('colHeaders.evidence'),
-            accessorFn: (c) => c._count?.evidenceLinks ?? 0,
+            // R2-P4 — links + direct Evidence, matching the detail Evidence
+            // tab badge (was evidenceLinks alone → the two diverged).
+            accessorFn: (c) => (c._count?.evidenceLinks ?? 0) + (c._count?.evidence ?? 0),
             cell: ({ getValue, row }) => {
                 const n = getValue<number>();
                 return (
