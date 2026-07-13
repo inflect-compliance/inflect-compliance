@@ -282,8 +282,9 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug, canWrite }: P
     return (
         <EntityListPage<ScannerFindingRow>
             header={{
-                // Top-level "Security" sidebar destination — no back
-                // affordance (see MAIN_PAGES in lib/nav/page-segregation).
+                // Reached from the Internal Audit "Scans" link, not the
+                // sidebar. Smart back resolves "Back to Internal Audit".
+                back: { smart: true },
                 title: (
                     <>
                         <ShieldAlert className="inline-block mr-2 h-5 w-5 align-text-bottom" />

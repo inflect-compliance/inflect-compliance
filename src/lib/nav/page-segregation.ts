@@ -120,11 +120,9 @@ export const MAIN_PAGES: readonly string[] = [
     '/processes',
     '/reports',
     '/risks',
-    '/security-testing',
     '/tasks',
     '/tests',
     '/vendors',
-    '/vulnerabilities',
 ] as const;
 
 /**
@@ -252,6 +250,12 @@ export const SUBPAGES: readonly string[] = [
 
     // Security (self-service)
     '/security/mfa',
+
+    // Security posture — reached from Risks (vulnerabilities) / the
+    // Internal Audit "Scans" link (security-testing) + entity detail
+    // surfaces, not the sidebar.
+    '/security-testing',
+    '/vulnerabilities',
 
     // Tasks
     '/tasks/[taskId]',

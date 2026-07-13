@@ -519,8 +519,9 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
     return (
         <EntityListPage<VulnRow>
             header={{
-                // Top-level "Security" sidebar destination — no back
-                // affordance (see MAIN_PAGES in lib/nav/page-segregation).
+                // Reached from the Risk register / asset detail, not the
+                // sidebar. Smart back resolves "Back to Risk Register".
+                back: { smart: true },
                 breadcrumbs: [
                     { label: t('crumbDashboard'), href: `/t/${tenantSlug}/dashboard` },
                     { label: t('crumbRisk'), href: `/t/${tenantSlug}/risks` },

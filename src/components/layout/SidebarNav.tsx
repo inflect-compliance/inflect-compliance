@@ -15,8 +15,6 @@ import {
     Building2,
     AlertTriangle,
     ShieldCheck,
-    ShieldAlert,
-    ScanLine,
     Paperclip,
     FileText,
     ClipboardList,
@@ -28,7 +26,6 @@ import {
     LogOut,
     Calendar as CalendarIcon,
     Workflow,
-    Plug,
     Menu,
     type LucideIcon,
 } from 'lucide-react';
@@ -101,20 +98,6 @@ export function useNavSections(): NavSectionDef[] {
             ],
         },
         {
-            // Security — surfaces the vulnerability register (CVE
-            // matches across the tenant's assets) and Security
-            // Testing (scanner findings) as first-class destinations.
-            // Both were previously reachable only via an unlabeled
-            // shield icon on the Risk register / the Internal Audit
-            // page; grouping them here makes them discoverable like
-            // every other section.
-            title: t('security'),
-            items: [
-                { href: tenantHref('/vulnerabilities'), label: t('vulnerabilities'), icon: ShieldAlert },
-                { href: tenantHref('/security-testing'), label: t('securityTesting'), icon: ScanLine },
-            ],
-        },
-        {
             title: t('comply'),
             items: [
                 // R13-PR16 — Audit moved from "Manage" to the top of
@@ -150,9 +133,6 @@ export function useNavSections(): NavSectionDef[] {
                 // tier.
                 { href: tenantHref('/processes'), label: t('processes'), icon: Workflow },
                 { href: tenantHref('/reports'), label: t('reports'), icon: BarChart3, visible: perms.reports.view },
-                // P3 — Integrations hub gets a first-class nav entry (was only
-                // reachable via the admin gear). Gated on admin.view like /admin.
-                { href: tenantHref('/admin/integrations'), label: t('integrations'), icon: Plug, visible: perms.admin.view },
             ].filter(item => {
                 // DEFENSE-IN-DEPTH (Layer 2 of 2):
                 // Layer 1: Server layout uses noStore() to ensure fresh permissions per request.
