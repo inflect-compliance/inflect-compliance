@@ -26,6 +26,7 @@ import {
     LogOut,
     Calendar as CalendarIcon,
     Workflow,
+    Plug,
     Menu,
     type LucideIcon,
 } from 'lucide-react';
@@ -135,6 +136,9 @@ export function useNavSections(): NavSectionDef[] {
                 // tier.
                 { href: tenantHref('/processes'), label: t('processes'), icon: Workflow },
                 { href: tenantHref('/reports'), label: t('reports'), icon: BarChart3, visible: perms.reports.view },
+                // P3 — Integrations hub gets a first-class nav entry (was only
+                // reachable via the admin gear). Gated on admin.view like /admin.
+                { href: tenantHref('/admin/integrations'), label: t('integrations'), icon: Plug, visible: perms.admin.view },
             ].filter(item => {
                 // DEFENSE-IN-DEPTH (Layer 2 of 2):
                 // Layer 1: Server layout uses noStore() to ensure fresh permissions per request.

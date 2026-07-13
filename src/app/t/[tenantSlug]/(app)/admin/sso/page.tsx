@@ -21,6 +21,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
+import { IdentityCrossLinks } from '@/components/admin/IdentityCrossLinks';
 import { cn } from '@/lib/cn';
 
 interface SsoProvider {
@@ -284,6 +285,9 @@ export default function SsoAdminPage() {
                 <p className="text-sm text-content-muted mt-1">
                     {t('sso.subtitle')}
                 </p>
+                <div className="mt-3">
+                    <IdentityCrossLinks current="sso" />
+                </div>
             </div>
 
             {/* Protocol tabs — Epic 60 ToggleGroup. `id` on each option

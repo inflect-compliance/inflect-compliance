@@ -248,7 +248,8 @@
         "mainNavigation": "Main navigation",
         "openCommandPalette": "Open command palette",
         "navigationMenu": "Navigation menu",
-        "closeNavigation": "Close navigation"
+        "closeNavigation": "Close navigation",
+        "integrations": "Integrations"
     },
     "dashboard": {
         "title": "Compliance Dashboard",
@@ -3311,7 +3312,15 @@
             "enableInternal": "Enable internal checks",
             "internalEnabled": "Internal check providers enabled.",
             "internalEnableFailed": "Could not enable internal checks.",
-            "editConnection": "Edit connection"
+            "editConnection": "Edit connection",
+            "category": {
+                "identity": "Identity",
+                "cloud": "Cloud",
+                "scm": "Source control",
+                "hris": "HR",
+                "document": "Document",
+                "other": "Other"
+            }
         },
         "forbidden": {
             "title": "Admin Access Required",
@@ -3688,6 +3697,21 @@
             "mfaOff": "Off",
             "empty": "No synced accounts yet. Connect and sync Okta or Google Workspace.",
             "loadError": "Couldn't load identity accounts."
+        },
+        "section": {
+            "identity": "Identity & access",
+            "integrations": "Integrations",
+            "people": "People",
+            "organization": "Organization",
+            "security": "Security & governance",
+            "risk": "Risk configuration"
+        },
+        "identityNav": {
+            "label": "Identity & access:",
+            "sso": "SSO sign-in",
+            "scim": "SCIM provisioning",
+            "entra": "Entra ID",
+            "integrations": "Data connectors"
         }
     },
     "riskManager": {

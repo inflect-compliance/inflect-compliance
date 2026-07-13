@@ -624,6 +624,23 @@ export function listAvailableAutomationKeys(): string[] {
  * List all registered integration providers with their metadata.
  * Used by the admin UI to show available integrations.
  */
+// P3 — connector categories for the grouped Integrations hub. Central map so
+// the grouping lives in one place (the OTHER `IntegrationBundle.type` taxonomy
+// isn't exposed to this registry).
+const PROVIDER_CATEGORY: Record<string, string> = {
+    okta: 'identity',
+    'google-workspace': 'identity',
+    'aws-posture': 'cloud',
+    'azure-posture': 'cloud',
+    'gcp-posture': 'cloud',
+    github: 'scm',
+    bamboohr: 'hris',
+    sharepoint: 'document',
+    personnel: 'internal',
+    device: 'internal',
+    training: 'internal',
+};
+
 export function listAvailableProviders() {
     return registry.listProviders().map(p => ({
         id: p.id,
@@ -634,6 +651,8 @@ export function listAvailableProviders() {
         // P2 — setup guidance + honest test-validation kind.
         setupGuide: p.setupGuide,
         liveValidation: p.liveValidation ?? false,
+        // P3 — hub category (identity / cloud / scm / hris / document / internal).
+        category: PROVIDER_CATEGORY[p.id] ?? 'other',
     }));
 }
 

@@ -22,6 +22,7 @@ import { Heading } from '@/components/ui/typography';
 import { Card, cardVariants } from '@/components/ui/card';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { BackAffordance } from '@/components/nav/BackAffordance';
+import { IdentityCrossLinks } from '@/components/admin/IdentityCrossLinks';
 
 interface ScimToken {
     id: string;
@@ -141,6 +142,9 @@ export default function ScimAdminPage() {
                     <p className="text-sm text-content-muted mt-1">
                         {t('scim.subtitle')}
                     </p>
+                    <div className="mt-3">
+                        <IdentityCrossLinks current="scim" />
+                    </div>
                 </div>
                 <div className={`px-3 py-1 rounded-full text-xs font-medium ${
                     activeTokens.length > 0
