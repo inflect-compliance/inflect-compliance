@@ -30,6 +30,9 @@ const controlListSelect = {
     name: true,
     status: true,
     applicability: true,
+    // R2-P4 — distinguishes an assessed-applicable control from a
+    // never-assessed one (both stored as APPLICABLE) in the list column.
+    applicabilityDecidedAt: true,
     // Framework-native category (SOC 2 TSC, NIS2 / ISO section, …).
     // The Browse rail's category grouping (`categorizeControl`) uses it
     // as the cross-framework fallback — ISO 27001 derives its granular
@@ -41,7 +44,9 @@ const controlListSelect = {
     // (`computePageInfo`) — it's not rendered in the table.
     createdAt: true,
     owner: { select: { id: true, name: true, email: true } },
-    _count: { select: { controlTasks: true, evidenceLinks: true } },
+    // R2-P4 — count links + direct Evidence so the list Evidence column
+    // agrees with the detail Evidence tab badge (which counts both).
+    _count: { select: { controlTasks: true, evidenceLinks: true, evidence: true } },
 } as const;
 
 export class ControlRepository {

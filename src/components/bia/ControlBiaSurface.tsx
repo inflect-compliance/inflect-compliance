@@ -41,7 +41,22 @@ export function ControlBiaSurface({ controlId }: { controlId: string }) {
         LOW: tr('panels.criticalityLabels.LOW'), MEDIUM: tr('panels.criticalityLabels.MEDIUM'),
         HIGH: tr('panels.criticalityLabels.HIGH'), CRITICAL: tr('panels.criticalityLabels.CRITICAL'),
     };
-    const { data } = useTenantSWR<Surface>(`/controls/${controlId}/bia-surface`);
+    const { data, error, mutate } = useTenantSWR<Surface>(`/controls/${controlId}/bia-surface`);
+
+    // R2-P4 — a load failure was previously swallowed (error not even read),
+    // so the surface vanished silently. Show a small recoverable notice.
+    if (error && !data) {
+        return (
+            <button
+                type="button"
+                onClick={() => void mutate()}
+                className="inline-flex items-center gap-tight rounded-md border border-border-subtle bg-bg-default/50 px-2 py-1 text-xs text-content-muted hover:border-border-emphasis"
+                data-testid="control-bia-error"
+            >
+                {t('loadError')}
+            </button>
+        );
+    }
 
     if (!data || data.kind === 'none') return null;
 

@@ -13,7 +13,7 @@
  * Self-fetching (mirrors TestPlansPanel) via the per-tab lazy SWR key, so
  * nothing loads until the user opens the tab.
  */
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
@@ -52,6 +52,13 @@ function statusVariant(status: ExecutionRow['status']): StatusBadgeVariant {
     }
 }
 
+// R2-P4 — humanize the raw check-status enum. Reuses the localized labels
+// P2 added under controls.health.checkStatus.*; unknown statuses fall back to
+// the raw value so a new enum member never crashes the render.
+const HUMANIZED_CHECK_STATUSES = new Set([
+    'PASSED', 'FAILED', 'ERROR', 'NOT_APPLICABLE', 'PENDING', 'RUNNING',
+]);
+
 /** Compact one-line summary of a run's structured result. */
 function resultSummary(row: ExecutionRow): string {
     if (row.status === 'ERROR') return row.errorMessage || '—';
@@ -70,6 +77,13 @@ function resultSummary(row: ExecutionRow): string {
 
 export function ControlChecksTab({ controlId }: { controlId: string }) {
     const t = useTranslations('controls');
+    const humanizeStatus = useCallback(
+        (s: string) =>
+            HUMANIZED_CHECK_STATUSES.has(s)
+                ? t(`health.checkStatus.${s}` as Parameters<typeof t>[0])
+                : s,
+        [t],
+    );
     const { data, isLoading } = useTenantSWR<{ executions: ExecutionRow[] }>(
         CACHE_KEYS.controls.executions(controlId),
     );
@@ -93,7 +107,7 @@ export function ControlChecksTab({ controlId }: { controlId: string }) {
                     header: t('checksTab.colStatus'),
                     cell: ({ row }) => (
                         <StatusBadge variant={statusVariant(row.original.status)}>
-                            {row.original.status}
+                            {humanizeStatus(row.original.status)}
                         </StatusBadge>
                     ),
                 },
@@ -121,7 +135,7 @@ export function ControlChecksTab({ controlId }: { controlId: string }) {
                     ),
                 },
             ]),
-        [t],
+        [t, humanizeStatus],
     );
 
     if (!isLoading && rows.length === 0) {
@@ -146,7 +160,7 @@ export function ControlChecksTab({ controlId }: { controlId: string }) {
                             </span>
                             <div className="mt-1 flex items-center gap-tight">
                                 <StatusBadge variant={statusVariant(latest.status)}>
-                                    {latest.status}
+                                    {humanizeStatus(latest.status)}
                                 </StatusBadge>
                                 <span className="text-xs font-mono text-content-muted">
                                     {latest.automationKey}

@@ -24,6 +24,7 @@ import { describeRoiGap, type ControlRoiVerdict } from '@/lib/control-roi';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 import { SkeletonCard } from '@/components/ui/skeleton';
+import { InlineNotice } from '@/components/ui/inline-notice';
 
 interface RoiPayload {
     controlId: string;
@@ -38,10 +39,22 @@ export function ControlRoiCard({ controlId }: { controlId: string }) {
     const tx = useTranslations('controls');
     const { currencySymbol } = useTenantContext();
     const sym = currencySymbol ?? '€';
-    const { data, error, isLoading } = useTenantSWR<RoiPayload>(`/controls/${controlId}/roi`);
+    const { data, error, isLoading, mutate } = useTenantSWR<RoiPayload>(`/controls/${controlId}/roi`);
+
+    // R2-P4 — surface a load failure with a retry instead of returning null
+    // (a silent disappearance the user can't recover from).
+    if (error && !data) {
+        return (
+            <InlineNotice variant="error" data-testid="control-roi-card-error">
+                {tx('roi.loadError')}{' '}
+                <button type="button" className="underline hover:no-underline" onClick={() => void mutate()}>
+                    {tx('roi.retry')}
+                </button>
+            </InlineNotice>
+        );
+    }
 
     if (isLoading || !data) {
-        if (error) return null;
         return (
             <div className={cn(cardVariants(), 'space-y-default')} data-testid="control-roi-card-loading">
                 <SkeletonCard lines={2} />

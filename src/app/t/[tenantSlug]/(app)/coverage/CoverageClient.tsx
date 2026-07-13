@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { ShieldCheck, AlertTriangle, Cpu, Flame } from 'lucide-react';
 import DonutChart from '@/components/ui/DonutChart';
@@ -83,6 +84,7 @@ function critBadge(crit: string): StatusBadgeVariant {
 export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
     const t = useTranslations('coverage');
     const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
+    const router = useRouter();
 
     // ── Column definitions ────────────────────────────────────────
 
@@ -230,7 +232,7 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
                         data={data.uncoveredCriticalAssets}
                         columns={uncoveredAssetCols}
                         getRowId={(a) => a.id}
-                        onRowClick={(row) => window.location.href = tenantHref(`/assets/${row.original.id}`)}
+                        onRowClick={(row) => router.push(tenantHref(`/assets/${row.original.id}`))}
                         emptyState={t('emptyAssets')}
                         resourceName={(p) => p ? 'assets' : 'asset'}
                         data-testid="uncovered-assets-table"
@@ -254,7 +256,7 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
                         data={data.unmappedRisks}
                         columns={unmappedRiskCols}
                         getRowId={(r) => r.id}
-                        onRowClick={(row) => window.location.href = tenantHref(`/risks/${row.original.id}`)}
+                        onRowClick={(row) => router.push(tenantHref(`/risks/${row.original.id}`))}
                         emptyState={t('emptyRisks')}
                         resourceName={(p) => p ? 'risks' : 'risk'}
                         data-testid="unmapped-risks-table"

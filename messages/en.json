@@ -1390,7 +1390,8 @@
             "installTemplates": "Install from templates",
             "na": "N/A",
             "yes": "Yes",
-            "categorisedEmpty": "No categorised controls yet."
+            "categorisedEmpty": "No categorised controls yet.",
+            "notAssessed": "Not assessed"
         },
         "empty": {
             "filterTitle": "No controls match your filters",
@@ -1609,7 +1610,9 @@
             "headline": "Reduces expected loss by <b>{ale}</b> on <b>{cost}</b> spend — <m>{roi}×</m> ROI.",
             "gapSubline": "ROI is null on purpose — the model never invents a number from missing inputs.",
             "sublineOne": "Across {quantified} of {linked} linked risk with a quantified ALE, priced at {effectiveness}% declared effectiveness.",
-            "sublineOther": "Across {quantified} of {linked} linked risks with a quantified ALE, priced at {effectiveness}% declared effectiveness."
+            "sublineOther": "Across {quantified} of {linked} linked risks with a quantified ALE, priced at {effectiveness}% declared effectiveness.",
+            "loadError": "Couldn't load ROI.",
+            "retry": "Retry"
         },
         "mappingsTab": {
             "unmapped": "Requirement unmapped",
@@ -6226,7 +6229,8 @@
             "addBia": "Add BIA",
             "addAnotherBia": "Add another BIA",
             "biaLinkedEmpty": "No BIA linked yet — attach one from a Business Continuity analysis.",
-            "biaProcessEmpty": "No BIA for this process yet."
+            "biaProcessEmpty": "No BIA for this process yet.",
+            "loadError": "Couldn't load continuity info — tap to retry"
         },
         "bell": {
             "notifications": "Notifications",
