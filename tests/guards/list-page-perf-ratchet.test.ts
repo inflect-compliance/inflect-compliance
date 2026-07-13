@@ -95,9 +95,11 @@ describe('PR-7 — list-page perf anti-bloat ratchet', () => {
         for (const { entity, repo } of LIST_PAGE_ENTITIES) {
             test(`${repo}.list() accepts options.take and spreads it into findMany`, () => {
                 const src = readFile(`src/app-layer/repositories/${repo}.ts`);
-                // The signature carries `options: { take?: number } = {}`.
+                // The signature carries `options: { take?: number … } = {}`.
+                // Extra optional filter fields (e.g. AuditRepository's
+                // `auditCycleId?`) are allowed after `take?: number`.
                 expect(src).toMatch(
-                    /options\s*:\s*\{\s*take\?:\s*number\s*\}\s*=\s*\{\s*\}/,
+                    /options\s*:\s*\{\s*take\?:\s*number\b[\s\S]*?\}\s*=\s*\{\s*\}/,
                 );
                 // The conditional spread guards against zero — only
                 // emit `take` when the caller actually asked for one.

@@ -2,12 +2,14 @@ import { RequestContext } from '../types';
 import { AuditRepository } from '../repositories/AuditRepository';
 import { assertCanRead, assertCanWrite } from '../policies/common';
 import { logEvent } from '../events/audit';
-import { notFound } from '@/lib/errors/types';
-import { runInTenantContext } from '@/lib/db-context';
+import { notFound, badRequest } from '@/lib/errors/types';
+import { runInTenantContext, type PrismaTx } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import type { AuditStatus } from '@prisma/client';
 import { z } from 'zod';
 import { UpdateAuditSchema } from '@/lib/schemas';
+import { createFinding } from './finding';
+import { createTask } from './task';
 
 // Epic D.2 — preserve the three-state contract on update paths.
 function sanitizeOptional(v: string | null | undefined): string | null | undefined {
@@ -16,9 +18,79 @@ function sanitizeOptional(v: string | null | undefined): string | null | undefin
     return sanitizePlainText(v);
 }
 
+// feat/audit-cycle-unify — provenance tag so a FAIL-raised finding is
+// idempotent: the (sourceKind, sourceRef=checklistItemId) pair lets a
+// FAIL → PASS → FAIL toggle reconcile to a single finding instead of
+// spawning a duplicate on every re-transition.
+const CHECKLIST_FINDING_SOURCE = 'AUDIT_CHECKLIST';
+
+/**
+ * feat/audit-cycle-unify — cascade a checklist item transitioning to
+ * FAIL into a real connected lifecycle: a `Finding` (via the canonical
+ * `createFinding` usecase) plus a remediation `Task` (via `createTask`).
+ *
+ * Idempotency is critical: a FAIL → PASS → FAIL toggle must NOT spawn a
+ * second finding. We guard on the existing
+ * (sourceKind='AUDIT_CHECKLIST', sourceRef=itemId) finding before
+ * creating. `createFinding` / `createTask` open their own nested tenant
+ * transactions (same pattern as control-test.ts's FAIL → task cascade);
+ * `db` here is only used for the pre-flight idempotency read.
+ */
+async function cascadeChecklistFailure(
+    db: PrismaTx,
+    ctx: RequestContext,
+    params: { auditId: string; checklistItemId: string; prompt: string; notes: string | null | undefined },
+): Promise<void> {
+    const existing = await db.finding.findFirst({
+        where: {
+            tenantId: ctx.tenantId,
+            sourceKind: CHECKLIST_FINDING_SOURCE,
+            sourceRef: params.checklistItemId,
+            deletedAt: null,
+        },
+        select: { id: true },
+    });
+    // Already materialised for this checklist item — a re-FAIL is a no-op.
+    if (existing) return;
+
+    // Truncate the prompt sensibly for the finding/task title.
+    const shortPrompt = params.prompt.length > 120 ? `${params.prompt.slice(0, 117)}…` : params.prompt;
+    const description = (params.notes && params.notes.trim())
+        ? params.notes
+        : `Audit checklist item failed: ${params.prompt}`;
+
+    const finding = await createFinding(ctx, {
+        auditId: params.auditId,
+        severity: 'MEDIUM',
+        type: 'NONCONFORMITY',
+        title: shortPrompt,
+        description,
+        sourceKind: CHECKLIST_FINDING_SOURCE,
+        sourceRef: params.checklistItemId,
+    });
+
+    // Remediation task — mirrors the vulnerability / control-test FAIL →
+    // task pattern. The finding id rides metadataJson (there is no
+    // FINDING TaskLinkEntityType). type=AUDIT_FINDING per the lifecycle;
+    // validateTypeRelevance defers the control-link requirement to a
+    // later status transition, so creation is unblocked here.
+    await createTask(ctx, {
+        title: `Remediate finding: ${shortPrompt}`,
+        type: 'AUDIT_FINDING',
+        description,
+        severity: 'MEDIUM',
+        source: 'AUDIT',
+        metadataJson: {
+            findingId: finding.id,
+            auditId: params.auditId,
+            checklistItemId: params.checklistItemId,
+        },
+    });
+}
+
 export async function listAudits(
     ctx: RequestContext,
-    options: { take?: number } = {},
+    options: { take?: number; auditCycleId?: string } = {},
 ) {
     assertCanRead(ctx);
     return runInTenantContext(ctx, (db) =>
@@ -46,12 +118,30 @@ export async function createAudit(ctx: RequestContext, data: {
     /** B8 — optional `Framework.key` the audit assesses. Nullable for
      *  ad-hoc audits that span multiple frameworks. */
     frameworkKey?: string | null;
+    /** feat/audit-cycle-unify — optional AuditCycle this fieldwork audit
+     *  belongs to. Validated against the tenant. NULL = standalone audit. */
+    auditCycleId?: string | null;
     generateChecklist?: boolean;
 }) {
     assertCanWrite(ctx);
 
     return runInTenantContext(ctx, async (db) => {
+        // feat/audit-cycle-unify — validate the cycle ref belongs to the
+        // tenant (mirrors the finding/task ref-validation pattern). RLS
+        // already blocks cross-tenant writes; this turns a silent no-op
+        // into a clear 400 and stops an audit pointing at a foreign cycle.
+        if (data.auditCycleId) {
+            const cycle = await db.auditCycle.findFirst({
+                where: { id: data.auditCycleId, tenantId: ctx.tenantId },
+                select: { id: true },
+            });
+            if (!cycle) {
+                throw badRequest('INVALID_AUDIT_CYCLE', 'Audit cycle not found or belongs to a different tenant');
+            }
+        }
+
         const audit = await AuditRepository.create(db, ctx, {
+            auditCycleId: data.auditCycleId || null,
             // Epic D.2 — sanitise free-text before persistence.
             // `auditScope`, `criteria`, `auditors`, `auditees`,
             // `departments` are all encrypted in the manifest and
@@ -151,7 +241,19 @@ export async function updateAudit(ctx: RequestContext, id: string, data: z.infer
         if (!audit) throw notFound('Audit not found');
 
         if (data.checklistUpdates) {
+            // feat/audit-cycle-unify — read the PRIOR result of every
+            // item being touched so we can detect a genuine transition
+            // INTO FAIL (was-not-FAIL → FAIL). A row already FAIL that is
+            // re-saved must not re-cascade.
+            const itemIds = data.checklistUpdates.map((u) => u.id);
+            const priorItems = await db.auditChecklistItem.findMany({
+                where: { id: { in: itemIds }, tenantId: ctx.tenantId },
+                select: { id: true, prompt: true, result: true },
+            });
+            const priorMap = new Map(priorItems.map((p) => [p.id, p]));
+
             for (const item of data.checklistUpdates) {
+                const prior = priorMap.get(item.id);
                 await AuditRepository.updateChecklistItem(db, ctx, item.id, {
                     // `result` is enum-shaped; do NOT sanitise.
                     result: item.result,
@@ -161,6 +263,20 @@ export async function updateAudit(ctx: RequestContext, id: string, data: z.infer
                         ? sanitizePlainText(item.notes)
                         : item.notes,
                 });
+
+                // FAIL cascade: only on a real transition INTO FAIL.
+                if (
+                    item.result === 'FAIL' &&
+                    prior &&
+                    prior.result !== 'FAIL'
+                ) {
+                    await cascadeChecklistFailure(db, ctx, {
+                        auditId: id,
+                        checklistItemId: item.id,
+                        prompt: prior.prompt,
+                        notes: typeof item.notes === 'string' ? sanitizePlainText(item.notes) : item.notes,
+                    });
+                }
             }
         }
 

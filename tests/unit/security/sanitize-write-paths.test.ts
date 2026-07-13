@@ -179,6 +179,19 @@ jest.mock('@/lib/db-context', () => ({
                 findFirst: async () => ({ id: 'c1', frequency: 'MONTHLY', applicability: 'APPLICABLE' }),
                 update: async () => ({ id: 'c1' }),
             },
+            // feat/audit-cycle-unify — updateAudit reads prior checklist
+            // results to detect a genuine transition INTO FAIL. Return
+            // ci-2 as already FAIL so the incidental FAIL in the
+            // sanitisation test does NOT trigger the finding cascade
+            // (the cascade is covered by audit.test.ts + readiness-finding-fold).
+            auditChecklistItem: {
+                findMany: async () => [
+                    { id: 'ci-1', prompt: 'Item 1', result: 'PASS' },
+                    { id: 'ci-2', prompt: 'Item 2', result: 'FAIL' },
+                ],
+            },
+            // Defensive stub for the FAIL-cascade idempotency read.
+            finding: { findFirst: async () => null, count: async () => 0 },
         }),
     ),
 }));

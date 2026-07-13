@@ -109,6 +109,29 @@ async function loadEffectiveWeights<T extends Record<string, number>>(
     return merged;
 }
 
+/**
+ * feat/audit-cycle-unify — count OPEN `Finding` rows raised on a
+ * fieldwork audit that belongs to this cycle (Audit.auditCycleId =
+ * cycleId, now linkable via the Part-1 FK). "Open" = any status that is
+ * not CLOSED. Folded into the issue count of every scoring profile so a
+ * real, unresolved finding lowers the cycle's readiness — not just the
+ * legacy Task-based CONTROL_GAP/AUDIT_FINDING proxy.
+ *
+ * Bounded (a single `count`, no row materialisation, no N+1).
+ */
+async function countOpenCycleFindings(ctx: RequestContext, cycleId: string): Promise<number> {
+    return runInTenantContext(ctx, (tdb) =>
+        tdb.finding.count({
+            where: {
+                tenantId: ctx.tenantId,
+                deletedAt: null,
+                status: { not: 'CLOSED' },
+                audit: { auditCycleId: cycleId },
+            },
+        }),
+    );
+}
+
 export async function computeReadiness(ctx: RequestContext, cycleId: string): Promise<ReadinessResult> {
     assertCanViewPack(ctx);
 
@@ -309,7 +332,11 @@ async function computeGenericReadiness(
             },
         }),
     );
-    const issuesScore = Math.max(0, 100 - openIssues * 5);
+    // feat/audit-cycle-unify — add real open findings on the cycle's
+    // audits to the open-issue penalty.
+    const openFindingCount = await countOpenCycleFindings(ctx, cycle.id);
+    const totalOpenIssues = openIssues + openFindingCount;
+    const issuesScore = Math.max(0, 100 - totalOpenIssues * 5);
 
     const finalScore = Math.round(
         coverageScore * weights.coverage +
@@ -323,7 +350,7 @@ async function computeGenericReadiness(
         breakdown: {
             coverage: { score: coverageScore, weight: weights.coverage, mapped: mappedReqs, total: totalReqs },
             evidence: { score: evidenceScore, weight: weights.evidence, withEvidence, total: mappedControls.length },
-            issues: { score: issuesScore, weight: weights.issues, open: openIssues },
+            issues: { score: issuesScore, weight: weights.issues, open: totalOpenIssues },
         },
         gaps,
         recommendations: [
@@ -442,13 +469,23 @@ async function computeISO27001Readiness(ctx: RequestContext, cycle: AuditCycle):
             select: { id: true, title: true, severity: true },
             take: 20,
         }));
-    const issueCount = openIssues.length;
+    // feat/audit-cycle-unify — real open findings on the cycle's audits
+    // count as issues alongside the legacy Task-based proxy.
+    const openFindingCount = await countOpenCycleFindings(ctx, cycle.id);
+    const issueCount = openIssues.length + openFindingCount;
     const issueScore = Math.max(0, 100 - (issueCount * 15));
 
     openIssues.slice(0, 5).forEach((i) => gaps.push({
         type: 'OPEN_ISSUE', severity: i.severity === 'CRITICAL' ? 'HIGH' : 'MEDIUM',
         title: i.title, details: `Severity: ${i.severity}`, entityId: i.id,
     }));
+    if (openFindingCount > 0) {
+        gaps.push({
+            type: 'OPEN_ISSUE', severity: 'MEDIUM',
+            title: `${openFindingCount} open audit finding(s)`,
+            details: 'Findings raised on this cycle’s audits are still open',
+        });
+    }
 
     // Weighted score — Audit S7 reads `weights` instead of the
     // raw `ISO_WEIGHTS` constant so a per-tenant override applies.
@@ -587,13 +624,23 @@ async function computeNIS2Readiness(ctx: RequestContext, cycle: AuditCycle): Pro
             select: { id: true, title: true, severity: true, type: true },
             take: 20,
         }));
-    const issueCount = openIssues.length;
+    // feat/audit-cycle-unify — fold real open findings on this cycle's
+    // audits into the issue count.
+    const openFindingCount = await countOpenCycleFindings(ctx, cycle.id);
+    const issueCount = openIssues.length + openFindingCount;
     const issueScore = Math.max(0, 100 - (issueCount * 10));
 
     openIssues.slice(0, 5).forEach((i) => gaps.push({
         type: 'OPEN_ISSUE', severity: i.severity === 'CRITICAL' ? 'HIGH' : 'MEDIUM',
         title: i.title, details: `${i.type} · Severity: ${i.severity}`, entityId: i.id,
     }));
+    if (openFindingCount > 0) {
+        gaps.push({
+            type: 'OPEN_ISSUE', severity: 'MEDIUM',
+            title: `${openFindingCount} open audit finding(s)`,
+            details: 'Findings raised on this cycle’s audits are still open',
+        });
+    }
 
     const score = Math.round(
         coverageScore * weights.coverage +

@@ -2480,6 +2480,32 @@
             "framework": "Рамка",
             "noFramework": "Без рамка"
         },
+        "findingModal": {
+            "trigger": "Констатация",
+            "title": "Нова констатация",
+            "description": "Регистрирайте констатация към този одит.",
+            "labelTitle": "Заглавие",
+            "labelType": "Тип",
+            "labelSeverity": "Сериозност",
+            "labelDescription": "Описание",
+            "placeholderTitle": "Кратко обобщение на констатацията",
+            "placeholderDescription": "Какво е наблюдавано и защо е констатация",
+            "cancel": "Отказ",
+            "submit": "Създай констатация",
+            "creating": "Създаване…",
+            "createFailed": "Неуспешно създаване на констатация",
+            "typeOptions": {
+                "NONCONFORMITY": "Несъответствие",
+                "OBSERVATION": "Наблюдение",
+                "OPPORTUNITY": "Възможност"
+            },
+            "severityOptions": {
+                "LOW": "Ниска",
+                "MEDIUM": "Средна",
+                "HIGH": "Висока",
+                "CRITICAL": "Критична"
+            }
+        },
         "cycles": {
             "title": "Готовност за одит",
             "cycleCount": "{count, plural, one {# одитен цикъл} other {# одитни цикъла}}",

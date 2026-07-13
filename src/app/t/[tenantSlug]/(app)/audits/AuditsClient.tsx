@@ -18,6 +18,7 @@ import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { NewAuditModal } from './NewAuditModal';
+import { NewFindingModal } from './NewFindingModal';
 
 const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     PLANNED: 'neutral', IN_PROGRESS: 'info', COMPLETED: 'success', CANCELLED: 'warning',
@@ -41,6 +42,8 @@ interface AuditsClientProps {
     /** True when NIS2 is an installed framework — gates the NIS2 Gap Assessment
      *  entry button (absent, not disabled, when false). */
     hasNis2: boolean;
+    /** Gates the "New finding" affordance on the audit detail pane. */
+    canWrite: boolean;
     translations: {
         title: string;
         listDescription: string;
@@ -89,11 +92,12 @@ interface AuditDetail {
  * Client island for audits — handles master/detail, create form, checklist interactions.
  * Data is pre-fetched server-side and passed via props.
  */
-export function AuditsClient({ initialAudits, tenantSlug, hasNis2, translations: t }: AuditsClientProps) {
+export function AuditsClient({ initialAudits, tenantSlug, hasNis2, canWrite, translations: t }: AuditsClientProps) {
     // `tx` covers strings not threaded through the server `translations` prop
     // (nav links, list counters) — mirrors the assets/risks island pattern.
     const tx = useTranslations('audits');
     const [selected, setSelected] = useState<AuditDetail | null>(null);
+    const [isFindingOpen, setIsFindingOpen] = useState(false);
 
     // Modal-form follow-up — create-audit modal mounted off the list,
     // auto-opening on `?create=1` (the redirect target from
@@ -303,19 +307,30 @@ export function AuditsClient({ initialAudits, tenantSlug, hasNis2, translations:
                                 </div>
                             </div>
 
-                            {selected.findings?.length > 0 && (
-                                <div>
-                                    <Heading level={3} className="mb-2">{t.findingsTab} ({selected.findings.length})</Heading>
-                                    {selected.findings.map((f) => (
-                                        <div key={f.id} className="p-3 border border-border-default/50 rounded-lg mb-2">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm font-medium">{f.title}</span>
-                                                <StatusBadge variant={f.severity === 'CRITICAL' ? 'error' : f.severity === 'HIGH' ? 'warning' : 'info'}>{f.severity}</StatusBadge>
-                                            </div>
-                                        </div>
-                                    ))}
+                            <div>
+                                <div className="mb-2 flex items-center justify-between gap-compact">
+                                    <Heading level={3}>{t.findingsTab} ({selected.findings?.length || 0})</Heading>
+                                    {canWrite && (
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            icon={<Plus className="-ml-0.5 -mr-2.5" />}
+                                            onClick={() => setIsFindingOpen(true)}
+                                            id="new-audit-finding-btn"
+                                        >
+                                            {tx('findingModal.trigger')}
+                                        </Button>
+                                    )}
                                 </div>
-                            )}
+                                {selected.findings?.length > 0 && selected.findings.map((f) => (
+                                    <div key={f.id} className="p-3 border border-border-default/50 rounded-lg mb-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-medium">{f.title}</span>
+                                            <StatusBadge variant={f.severity === 'CRITICAL' ? 'error' : f.severity === 'HIGH' ? 'warning' : 'info'}>{f.severity}</StatusBadge>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     ) : (
                         <div className={cn(cardVariants({ density: 'spacious' }), 'text-center text-content-subtle')}>{t.selectAudit}</div>
@@ -337,6 +352,16 @@ export function AuditsClient({ initialAudits, tenantSlug, hasNis2, translations:
                     newAudit: t.newAudit,
                 }}
             />
+
+            {selected && (
+                <NewFindingModal
+                    open={isFindingOpen}
+                    setOpen={setIsFindingOpen}
+                    auditId={selected.id}
+                    apiUrl={apiUrl}
+                    onCreated={() => loadAudit(selected.id)}
+                />
+            )}
         </>
     );
 }
