@@ -26,9 +26,19 @@ import { UserCombobox, type Member } from '@/components/ui/user-combobox';
 import { DatePicker } from '@/components/ui/date-picker/date-picker';
 import { startOfUtcDay, toYMD } from '@/components/ui/date-picker/date-utils';
 import { EmptyState } from '@/components/ui/empty-state';
+import { InfoTooltip } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/hooks';
+import { useTenantSWR } from '@/lib/hooks';
 import { formatDate } from '@/lib/format-date';
 import { buildVulnFilters, VULN_FILTER_KEYS, buildVulnStatusLabels } from './filter-defs';
+
+/** CVE-sync freshness + reach, lazy-fetched from /vulnerabilities/status. */
+interface CveSyncStatus {
+    syncEnabled: boolean;
+    lastSyncedAt: string | null;
+    assetsTotal: number;
+    assetsWithIdentity: number;
+}
 
 const VULN_STATUS_ORDER = ['OPEN', 'MITIGATING', 'MITIGATED', 'ACCEPTED', 'FALSE_POSITIVE'] as const;
 
@@ -105,6 +115,8 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
     const router = useRouter();
     const toast = useToast();
     const { state, hasActive } = useFilters();
+    // Lazy CVE-sync status — powers the header strip + the honest empty state.
+    const { data: syncStatus } = useTenantSWR<CveSyncStatus>('/vulnerabilities/status');
     const [pendingId, setPendingId] = useState<string | null>(null);
     // Optimistic overlay of triage edits on top of the SSR rows, keyed by id.
     // Whenever a router.refresh() delivers fresh server rows (new `initialRows`
@@ -467,6 +479,43 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
         t,
     ]);
 
+    // Compact CVE-sync status strip — "CVE sync: on · last updated {date}"
+    // or "CVE sync: disabled". Rendered in the header actions slot; only
+    // appears once the lazy status has resolved.
+    const syncStrip = syncStatus ? (
+        <div className="flex items-center gap-tight text-xs text-content-muted">
+            <span className="text-content-subtle">{t('cveSyncLabel')}</span>
+            {syncStatus.syncEnabled ? (
+                <StatusBadge variant="success">{t('cveSyncOn')}</StatusBadge>
+            ) : (
+                <StatusBadge variant="neutral">{t('cveSyncDisabled')}</StatusBadge>
+            )}
+            {syncStatus.syncEnabled && syncStatus.lastSyncedAt && (
+                <span className="tabular-nums text-content-muted">
+                    {t('cveSyncUpdated', { date: formatDate(syncStatus.lastSyncedAt) })}
+                </span>
+            )}
+            <InfoTooltip content={t('cveSyncHelp')} aria-label={t('cveSyncLabel')} />
+        </div>
+    ) : undefined;
+
+    // Honest empty state — distinguish filtered-out from three list-empty
+    // cases (sync off → no asset identity → genuinely clean), checked in order.
+    const emptyState = hasActive ? (
+        <EmptyState icon={ShieldAlert} title={t('emptyFilteredTitle')} description={t('emptyFilteredDesc')} />
+    ) : syncStatus && !syncStatus.syncEnabled ? (
+        <EmptyState icon={ShieldAlert} title={t('emptyDisabledTitle')} description={t('emptyDisabledDesc')} />
+    ) : syncStatus && syncStatus.assetsWithIdentity === 0 ? (
+        <EmptyState
+            icon={ShieldAlert}
+            title={t('emptyNoIdentityTitle')}
+            description={t('emptyNoIdentityDesc')}
+            primaryAction={{ label: t('emptyNoIdentityAction'), href: `/t/${tenantSlug}/assets` }}
+        />
+    ) : (
+        <EmptyState icon={ShieldAlert} title={t('emptyCleanTitle')} description={t('emptyCleanDesc')} />
+    );
+
     return (
         <EntityListPage<VulnRow>
             header={{
@@ -484,6 +533,7 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
                     </>
                 ),
                 description: t('description'),
+                actions: syncStrip,
             }}
             filters={{ defs: filterDefs }}
             table={{
@@ -491,13 +541,7 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
                 columns,
                 getRowId: (r) => r.id,
                 resourceName: (plural) => (plural ? t('resourcePlural') : t('resourceSingular')),
-                emptyState: (
-                    <EmptyState
-                        icon={ShieldAlert}
-                        title={hasActive ? t('emptyFilteredTitle') : t('emptyTitle')}
-                        description={hasActive ? t('emptyFilteredDesc') : t('emptyDesc')}
-                    />
-                ),
+                emptyState,
             }}
         />
     );

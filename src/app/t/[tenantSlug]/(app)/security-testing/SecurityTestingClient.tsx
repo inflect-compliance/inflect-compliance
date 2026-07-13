@@ -11,14 +11,18 @@
  * Read-only v1 — findings auto-materialise into the Findings register (the
  * triage surface) on ingest; per-row triage status edits are a follow-up.
  */
-import { useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { ShieldAlert } from '@/components/ui/icons/nucleo/shield-alert';
+import { CloudUpload } from '@/components/ui/icons/nucleo/cloud-upload';
 import { EntityListPage } from '@/components/layout/EntityListPage';
 import { FilterProvider, useFilterContext, useFilters } from '@/components/ui/filter';
 import { createColumns } from '@/components/ui/table';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useToast } from '@/components/ui/hooks';
 import {
     buildScannerFilters,
     SCANNER_FILTER_KEYS,
@@ -55,6 +59,7 @@ interface Props {
     initialFindings: ScannerFindingRow[];
     runs: ScannerRunRow[];
     tenantSlug: string;
+    canWrite: boolean;
 }
 
 const SEVERITY_VARIANT: Record<string, StatusBadgeVariant> = {
@@ -91,9 +96,69 @@ export function SecurityTestingClient(props: Props) {
     );
 }
 
-function SecurityTestingInner({ initialFindings, runs, tenantSlug }: Props) {
+function SecurityTestingInner({ initialFindings, runs, tenantSlug, canWrite }: Props) {
     const t = useTranslations('securityTesting');
     const tGroup = useTranslations('common.filterGroups');
+    const router = useRouter();
+    const toast = useToast();
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [uploading, setUploading] = useState(false);
+
+    // ─── SARIF scan upload — read + parse client-side, POST to the ingest
+    //     route, then refresh the SSR list with the newly-materialised rows. ──
+    const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        // Reset the input so re-selecting the same file re-fires onChange.
+        event.target.value = '';
+        if (!file) return;
+
+        let sarif: unknown;
+        try {
+            sarif = JSON.parse(await file.text());
+        } catch {
+            toast.error(t('uploadParseError'));
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const res = await fetch(`/api/t/${tenantSlug}/security-testing/ingest`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sarif, ingestedVia: 'UPLOAD' }),
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const result = (await res.json()) as { findingsIngested?: number };
+            toast.success(t('uploadSuccess', { count: result.findingsIngested ?? 0 }));
+            router.refresh();
+        } catch {
+            toast.error(t('uploadError'));
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const uploadAction = canWrite ? (
+        <>
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept=".sarif,.json"
+                className="hidden"
+                onChange={handleFileSelected}
+                aria-hidden="true"
+                tabIndex={-1}
+            />
+            <Button
+                variant="secondary"
+                icon={<CloudUpload />}
+                loading={uploading}
+                onClick={() => fileInputRef.current?.click()}
+            >
+                {t('uploadScan')}
+            </Button>
+        </>
+    ) : undefined;
     const tAdapt = (k: string, v?: Record<string, unknown>) =>
         t(k as Parameters<typeof t>[0], v as Parameters<typeof t>[1]);
     const sourceLabels = useMemo(() => buildScannerSourceLabels(tAdapt), [t]);
@@ -226,6 +291,7 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug }: Props) {
                     </>
                 ),
                 description,
+                actions: uploadAction,
             }}
             filters={{ defs: filterDefs }}
             table={{
