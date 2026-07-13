@@ -631,6 +631,9 @@ export function listAvailableProviders() {
         description: p.description,
         supportedChecks: p.supportedChecks,
         configSchema: p.configSchema,
+        // P2 — setup guidance + honest test-validation kind.
+        setupGuide: p.setupGuide,
+        liveValidation: p.liveValidation ?? false,
     }));
 }
 

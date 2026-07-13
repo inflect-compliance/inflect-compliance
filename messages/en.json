@@ -3304,7 +3304,14 @@
                 "unmapped": "Not mapped",
                 "empty": "No check runs yet. Use \"Sync now\" to run this connection’s checks.",
                 "loadError": "Couldn't load check runs."
-            }
+            },
+            "leaveBlankHint": "Leave blank to keep the stored secret.",
+            "testVerified": "Connection verified — live check passed.",
+            "testShapeOnly": "Configuration looks valid (shape only — connectivity was not verified live).",
+            "enableInternal": "Enable internal checks",
+            "internalEnabled": "Internal check providers enabled.",
+            "internalEnableFailed": "Could not enable internal checks.",
+            "editConnection": "Edit connection"
         },
         "forbidden": {
             "title": "Admin Access Required",

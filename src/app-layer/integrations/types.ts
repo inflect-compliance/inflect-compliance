@@ -164,7 +164,8 @@ export interface ConnectionConfigSchema {
 export interface ConfigField {
     key: string;
     label: string;
-    type: 'string' | 'number' | 'boolean' | 'select';
+    // P2 — 'textarea' for multi-line secrets (service-account JSON blobs).
+    type: 'string' | 'number' | 'boolean' | 'select' | 'textarea';
     required: boolean;
     description?: string;
     options?: string[]; // for 'select' type
@@ -196,6 +197,18 @@ export interface IntegrationProvider {
     readonly supportedChecks: string[];
     /** Connection configuration schema */
     readonly configSchema: ConnectionConfigSchema;
+    /**
+     * P2 — plain-language setup guidance: what the integration needs and where
+     * to get it (token scopes, service-account delegation, collector-host CLI
+     * prereqs). Rendered above the connect form.
+     */
+    readonly setupGuide?: string;
+    /**
+     * P2 — does `validateConnection` perform a REAL third-party probe (true) or
+     * only check field shape (false/undefined)? Drives honest test-connection
+     * labelling so a green check doesn't imply verified connectivity.
+     */
+    readonly liveValidation?: boolean;
 
     /**
      * Validate that a connection config is correct and credentials work.

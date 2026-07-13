@@ -44,6 +44,10 @@ export class GcpPostureProvider implements ScheduledCheckProvider {
     readonly displayName = 'GCP Cloud Posture';
     readonly description = 'Run a CIS / SOC 2 benchmark against a GCP project (read-only) and collect per-control evidence.';
     readonly supportedChecks = ['soc2', 'cis'];
+    // P2 — validateConnection only parses the SA JSON shape (no live API call).
+    readonly liveValidation = false;
+    readonly setupGuide =
+        'Runs Powerpipe on the collector host against a GCP project. Create a read-only service account, grant it the security-reviewer role on the project, and paste its key JSON below. Test connection validates the JSON shape only — it does not call GCP live.';
 
     readonly configSchema: ConnectionConfigSchema = {
         configFields: [
@@ -51,7 +55,7 @@ export class GcpPostureProvider implements ScheduledCheckProvider {
             { key: 'projectId', label: 'GCP project id', type: 'string', required: true },
         ],
         secretFields: [
-            { key: 'serviceAccountJson', label: 'Service-account JSON', type: 'string', required: true, description: 'A read-only service-account key (JSON).' },
+            { key: 'serviceAccountJson', label: 'Service-account JSON', type: 'textarea', required: true, description: 'A read-only service-account key (JSON) — paste the whole file.' },
         ],
     };
 
