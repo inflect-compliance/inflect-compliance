@@ -15,6 +15,8 @@ import {
     Building2,
     AlertTriangle,
     ShieldCheck,
+    ShieldAlert,
+    ScanLine,
     Paperclip,
     FileText,
     ClipboardList,
@@ -99,6 +101,20 @@ export function useNavSections(): NavSectionDef[] {
             ],
         },
         {
+            // Security — surfaces the vulnerability register (CVE
+            // matches across the tenant's assets) and Security
+            // Testing (scanner findings) as first-class destinations.
+            // Both were previously reachable only via an unlabeled
+            // shield icon on the Risk register / the Internal Audit
+            // page; grouping them here makes them discoverable like
+            // every other section.
+            title: t('security'),
+            items: [
+                { href: tenantHref('/vulnerabilities'), label: t('vulnerabilities'), icon: ShieldAlert },
+                { href: tenantHref('/security-testing'), label: t('securityTesting'), icon: ScanLine },
+            ],
+        },
+        {
             title: t('comply'),
             items: [
                 // R13-PR16 — Audit moved from "Manage" to the top of
@@ -114,8 +130,6 @@ export function useNavSections(): NavSectionDef[] {
                     badge: calendarBadge,
                 },
                 { href: tenantHref('/tests'), label: t('tests'), icon: FlaskConical },
-                // Scans (security-testing) moved off the sidebar onto the
-                // Internal Audit page — scan findings are audit evidence.
                 { href: tenantHref('/evidence'), label: t('evidence'), icon: Paperclip },
             ],
         },

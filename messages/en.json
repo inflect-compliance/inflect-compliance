@@ -241,6 +241,7 @@
         "vendors": "Vendor",
         "processes": "Process",
         "govern": "Govern",
+        "security": "Security",
         "comply": "Comply",
         "manage": "Manage",
         "expandSidebar": "Expand sidebar",
@@ -249,7 +250,9 @@
         "openCommandPalette": "Open command palette",
         "navigationMenu": "Navigation menu",
         "closeNavigation": "Close navigation",
-        "integrations": "Integrations"
+        "integrations": "Integrations",
+        "vulnerabilities": "Vulnerabilities",
+        "securityTesting": "Security Testing"
     },
     "dashboard": {
         "title": "Compliance Dashboard",

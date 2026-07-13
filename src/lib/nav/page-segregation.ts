@@ -120,9 +120,11 @@ export const MAIN_PAGES: readonly string[] = [
     '/processes',
     '/reports',
     '/risks',
+    '/security-testing',
     '/tasks',
     '/tests',
     '/vendors',
+    '/vulnerabilities',
 ] as const;
 
 /**
@@ -211,9 +213,6 @@ export const SUBPAGES: readonly string[] = [
     '/frameworks/[frameworkKey]/install',
     '/frameworks/[frameworkKey]/templates',
 
-    // Security testing (scans) — subpage of Internal Audit
-    '/security-testing',
-
     // Issues
     '/issues/[issueId]',
     '/issues/dashboard',
@@ -268,9 +267,6 @@ export const SUBPAGES: readonly string[] = [
     '/vendors/[vendorId]/assessment/[assessmentId]',
     '/vendors/dashboard',
     '/vendors/new',
-
-    // Vulnerabilities — subpage of the Risk Register
-    '/vulnerabilities',
 ] as const;
 
 /**

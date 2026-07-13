@@ -241,6 +241,7 @@
         "vendors": "Доставчик",
         "processes": "Процес",
         "govern": "Ръководене",
+        "security": "Сигурност",
         "comply": "Съответствие",
         "manage": "Управление",
         "expandSidebar": "Разгъни страничната лента",
@@ -249,7 +250,9 @@
         "openCommandPalette": "Отвори командната палитра",
         "navigationMenu": "Навигационно меню",
         "closeNavigation": "Затвори навигацията",
-        "integrations": "Интеграции"
+        "integrations": "Интеграции",
+        "vulnerabilities": "Уязвимости",
+        "securityTesting": "Тестове за сигурност"
     },
     "dashboard": {
         "title": "Табло за съответствие",
