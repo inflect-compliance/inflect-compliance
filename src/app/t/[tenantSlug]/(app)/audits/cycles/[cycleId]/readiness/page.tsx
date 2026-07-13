@@ -7,9 +7,11 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { InfoTooltip } from '@/components/ui/tooltip';
 import { cardVariants } from '@/components/ui/card';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { cn } from '@/lib/cn';
+import { ReadinessLegend } from '../../ReadinessScoreRing';
 import type { ReadinessResult } from '@/app-layer/usecases/audit-readiness-scoring';
 
 function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
@@ -60,7 +62,7 @@ export default function CycleReadinessPage() {
     const breadcrumbs = [
         { label: tx('crumb.dashboard'), href: `/t/${tenantSlug}/dashboard` },
         { label: tx('crumb.audits'), href: `/t/${tenantSlug}/audits` },
-        { label: tx('crumb.readiness'), href: `/t/${tenantSlug}/audits/readiness` },
+        { label: tx('crumb.cycles'), href: `/t/${tenantSlug}/audits/cycles` },
         { label: cycle?.name || tx('readiness.cycleFallback'), href: `/t/${tenantSlug}/audits/cycles/${cycleId}` },
         { label: tx('readiness.readinessReportCrumb') },
     ];
@@ -103,7 +105,18 @@ export default function CycleReadinessPage() {
                 <div className="flex items-start gap-page">
                     <div className="flex-shrink-0 text-center">
                         <ScoreRing score={result.score} />
-                        <p className="text-xs text-content-muted mt-2">{tx('readiness.frameworkReadiness', { framework: result.frameworkKey })}</p>
+                        <p className="text-xs text-content-muted mt-2 inline-flex items-center gap-tight">
+                            {tx('readiness.frameworkReadiness', { framework: result.frameworkKey })}
+                            <InfoTooltip
+                                aria-label={tx('readinessLegend.aria')}
+                                content={<ReadinessLegend labels={{
+                                    title: tx('readinessLegend.title'),
+                                    green: tx('readinessLegend.green'),
+                                    amber: tx('readinessLegend.amber'),
+                                    red: tx('readinessLegend.red'),
+                                }} />}
+                            />
+                        </p>
                     </div>
                     <div className="flex-1 space-y-compact" id="readiness-breakdown">
                         {bd.coverage && (

@@ -81,7 +81,6 @@ const LEGACY_LUCIDE_USERS = new Set<string>([
     'src/app/t/[tenantSlug]/(app)/audits/nis2-gap/Nis2GapLifecycleClient.tsx',
     'src/app/t/[tenantSlug]/(app)/audits/nis2-gap/respond/[assignmentId]/RespondClient.tsx',
     'src/app/t/[tenantSlug]/(app)/audits/packs/[packId]/page.tsx',
-    'src/app/t/[tenantSlug]/(app)/audits/readiness/page.tsx',
     'src/app/t/[tenantSlug]/(app)/auth/mfa/page.tsx',
     'src/app/t/[tenantSlug]/(app)/calendar/CalendarClient.tsx',
     'src/app/t/[tenantSlug]/(app)/controls/ControlsClient.tsx',

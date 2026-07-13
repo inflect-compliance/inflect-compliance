@@ -58,6 +58,7 @@ export const REFERRER_ONLY_BACK_MAIN_PAGES: readonly string[] = [
 export const BACK_AFFORDANCE_EXEMPT_SUBPAGES: readonly string[] = [
     '/assets/new',            // redirect shim → /assets?create=1
     '/audits/new',            // redirect shim → /audits?create=1
+    '/audits/readiness',      // redirect shim → /audits/cycles (unified list)
     '/auth/mfa',              // auth flow — back would bypass MFA challenge
     '/controls/new',          // redirect shim → /controls?create=1
     '/issues/[issueId]',      // legacy redirect → /tasks/[taskId]

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
@@ -145,6 +146,15 @@ export default function CycleDetailPage() {
                         { label: tx('cycleDetail.status'), value: cycle.status },
                     ]}
                 />
+            }
+            actions={
+                <Link
+                    href={`/t/${tenantSlug}/audits/cycles/${cycleId}/readiness`}
+                    className={buttonVariants({ variant: 'secondary', size: 'sm' })}
+                    id="cycle-readiness-link"
+                >
+                    {tx('cycles.viewReadiness')}
+                </Link>
             }
         >
             {/* Default Pack Preview */}

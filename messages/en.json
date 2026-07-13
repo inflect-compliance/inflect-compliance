@@ -2428,7 +2428,7 @@
         }
     },
     "audits": {
-        "title": "Internal Audits",
+        "title": "Internal Audit",
         "listDescription": "Cycles, packs, and findings — the audit trail your assessors will see.",
         "auditsCount": "{count} audits",
         "newAudit": "Audit",
@@ -2464,10 +2464,38 @@
             "dashboard": "Dashboard",
             "audits": "Audits",
             "cycles": "Cycles",
-            "readiness": "Readiness",
             "internalAudit": "Internal Audit",
             "businessContinuity": "Business Continuity",
             "respond": "Respond"
+        },
+        "hub": {
+            "lifecycleTitle": "Audit lifecycle",
+            "lifecycleSubtitle": "Plan, build, measure, and share an audit from end to end.",
+            "cycles": "Cycles",
+            "readiness": "Readiness",
+            "auditorPortal": "Auditor portal",
+            "startTitle": "Start an audit",
+            "startSubtitle": "Follow the sequence — each step opens the surface where it happens.",
+            "stepLabel": "Step {n}",
+            "step1Title": "Plan the cycle",
+            "step1Desc": "Create an audit cycle for a framework.",
+            "step2Title": "Build the pack",
+            "step2Desc": "Open the cycle and assemble its evidence pack.",
+            "step3Title": "Measure readiness",
+            "step3Desc": "Check the readiness score and close the gaps.",
+            "step4Title": "Share with the auditor",
+            "step4Desc": "Freeze the pack and send a share link.",
+            "step5Title": "Track findings",
+            "step5Desc": "Record and triage what the audit surfaces.",
+            "step6Title": "Remediate",
+            "step6Desc": "Assign tasks and close out the actions."
+        },
+        "readinessLegend": {
+            "aria": "How the readiness score works",
+            "title": "How the readiness score works",
+            "green": "80 and above — ready",
+            "amber": "50 to 79 — nearly there",
+            "red": "Below 50 — at risk"
         },
         "list": {
             "itemsCount": "{count} items",
@@ -2507,7 +2535,8 @@
             }
         },
         "cycles": {
-            "title": "Audit Readiness",
+            "title": "Audit Cycles",
+            "subtitle": "Each cycle carries its own evidence pack and readiness score.",
             "cycleCount": "{count, plural, one {# audit cycle} other {# audit cycles}}",
             "cancel": "Cancel",
             "cycle": "Cycle",
@@ -2523,7 +2552,13 @@
             "emptyTitle": "No audit cycles yet",
             "emptyDesc": "Create your first audit cycle for ISO 27001 or NIS2.",
             "addCycle": "Add Audit Cycle",
-            "packCount": "{count, plural, one {# pack} other {# packs}}"
+            "packCount": "{count, plural, one {# pack} other {# packs}}",
+            "openCycle": "Open cycle",
+            "viewReadiness": "View readiness",
+            "scoreAria": "Readiness score {score} of 100",
+            "noScore": "Not scored yet",
+            "loadError": "Could not load audit cycles.",
+            "createError": "Could not create the audit cycle. Please try again."
         },
         "cycleDetail": {
             "cycleFallback": "Cycle",
@@ -2602,14 +2637,6 @@
             "items": "{count} items",
             "frozenPrefix": "Frozen: {date}",
             "selectPack": "Select a pack to review"
-        },
-        "readinessOverview": {
-            "title": "Audit Readiness",
-            "subtitle": "Framework readiness scores across all audit cycles",
-            "viewCycles": "View Cycles →",
-            "cyclesEmptyTitle": "No audit cycles yet",
-            "cyclesEmptyDesc": "Create an audit cycle to see readiness scores.",
-            "auditCycleBtn": "Audit Cycle"
         },
         "sharepoint": {
             "exporting": "Exporting…",
