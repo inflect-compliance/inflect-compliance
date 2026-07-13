@@ -27,6 +27,7 @@ export default async function SecurityTestingPage({
             initialFindings={findings}
             runs={runs}
             tenantSlug={resolved.tenantSlug}
+            canWrite={ctx.permissions.canWrite}
         />
     );
 }
