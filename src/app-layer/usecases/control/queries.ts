@@ -113,9 +113,16 @@ export async function getControlHeader(ctx: RequestContext, id: string) {
         );
         return {
             ...control,
-            // Override the legacy relation count so the badge matches
-            // the table without churning the page's read path.
-            _count: { ...control._count, controlTasks: linkedTasks.total },
+            // Override the legacy relation counts so the badges match the
+            // tables the tabs render, without churning the page's read path:
+            //  • controlTasks  → unified linked-Task total
+            //  • frameworkMappings → canonical controlRequirementLink count
+            //    (the Mappings tab now reads controlRequirementLink)
+            _count: {
+                ...control._count,
+                controlTasks: linkedTasks.total,
+                frameworkMappings: control._count.requirementLinks,
+            },
             doneControlTasks: linkedTasks.done,
         };
     });

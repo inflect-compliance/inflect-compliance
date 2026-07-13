@@ -1300,6 +1300,7 @@
             "filterDesc": "Try widening your search or clearing one of the active filters.",
             "clearFilters": "Clear filters",
             "noRecordsTitle": "No controls yet",
+            "installFramework": "Install a framework",
             "installTemplates": "Install templates",
             "createControl": "Create control",
             "recordsDesc": "Start with a pre-built framework or define your own control."

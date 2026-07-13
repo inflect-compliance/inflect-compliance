@@ -169,7 +169,11 @@ export class ControlRepository {
                             controlTasks: true,
                             evidenceLinks: true,
                             evidence: true,
-                            frameworkMappings: true,
+                            // Canonical control↔requirement links (not the
+                            // legacy frameworkMapping island) back the
+                            // Mappings tab badge — mapped to the
+                            // `frameworkMappings` key in getControlHeader.
+                            requirementLinks: true,
                         },
                     },
                 },
@@ -178,15 +182,39 @@ export class ControlRepository {
     }
 
     /**
-     * Framework mappings for one control — the per-tab fetch that
-     * replaces the eager `frameworkMappings` array on `getById`
-     * (#102 item 1). Same `include` shape the page already renders.
+     * Framework mappings for one control — the per-tab fetch that backs the
+     * control detail Mappings tab (#102 item 1).
+     *
+     * Reads the CANONICAL `controlRequirementLink` table (not the legacy
+     * `frameworkMapping` island) so the tab shows the same links that SoA /
+     * coverage / readiness read — including links created by the framework
+     * install wizard, not just the old template path. The row is mapped back
+     * to the `FrameworkMappingDTO` shape the tab already renders
+     * (`fromRequirement` + `framework.name`).
      */
     static async listFrameworkMappings(db: PrismaTx, ctx: RequestContext, controlId: string) {
-        return db.frameworkMapping.findMany({
-            where: { toControlId: controlId, toControl: { tenantId: ctx.tenantId } },
-            include: { fromRequirement: { include: { framework: { select: { name: true } } } } },
+        const links = await db.controlRequirementLink.findMany({
+            where: { controlId, tenantId: ctx.tenantId },
+            include: {
+                requirement: {
+                    include: { framework: { select: { name: true } } },
+                },
+            },
         });
+        return links.map((l) => ({
+            id: l.id,
+            fromRequirementId: l.requirementId,
+            toControlId: l.controlId,
+            fromRequirement: {
+                id: l.requirement.id,
+                code: l.requirement.code,
+                title: l.requirement.title,
+                description: l.requirement.description,
+                section: l.requirement.section,
+                category: l.requirement.category,
+                framework: { name: l.requirement.framework.name },
+            },
+        }));
     }
 
     static async create(db: PrismaTx, ctx: RequestContext, data: Omit<Prisma.ControlUncheckedCreateInput, 'tenantId'>) {

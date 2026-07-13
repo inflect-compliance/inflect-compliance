@@ -4,6 +4,7 @@ import { assertCanViewFrameworks } from '../../policies/framework.policies';
 import { runInTenantContext } from '@/lib/db-context';
 import { notFound } from '@/lib/errors/types';
 import { prisma } from '@/lib/prisma';
+import { worstStatus, isImplemented } from '@/lib/compliance/requirement-status-rollup';
 
 // в”Ђв”Ђв”Ђ Coverage Computation в”Ђв”Ђв”Ђ
 
@@ -217,6 +218,28 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
     }
     const controls = Array.from(controlsMap.values());
 
+    // Per-requirement implementation verdict — via the SHARED rollup helper
+    // so this per-framework readiness recognises the full status vocabulary
+    // (PLANNED / IMPLEMENTING included) and produces the identical verdict as
+    // the ISO SoA. Mirrors SoA semantics: only APPLICABLE mapped controls
+    // count; a requirement is "implemented" iff its worst applicable control
+    // is IMPLEMENTED, else it's a gap. (P5 layers EXCEPTED on this seam.)
+    const applicableStatusesByReq = new Map<string, string[]>();
+    for (const l of links) {
+        if (l.control.applicability !== 'APPLICABLE') continue;
+        const arr = applicableStatusesByReq.get(l.requirementId) || [];
+        arr.push(l.control.status);
+        applicableStatusesByReq.set(l.requirementId, arr);
+    }
+    let implementedRequirements = 0;
+    let gapRequirements = 0;
+    for (const reqId of mappedReqIds) {
+        const rolled = worstStatus(applicableStatusesByReq.get(reqId) || []);
+        if (rolled === null) continue; // only NOT_APPLICABLE controls → not a gap
+        if (isImplemented(rolled)) implementedRequirements++;
+        else gapRequirements++;
+    }
+
     // NOT_APPLICABLE controls
     const notApplicable = controls.filter((c) => c.status === 'NOT_APPLICABLE').map((c) => ({
         code: c.code,
@@ -274,6 +297,10 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
             totalRequirements: total,
             mappedRequirements: mapped.length,
             coveragePercent,
+            // Per-requirement implementation verdict from the shared rollup
+            // (recognises every control status; identical to the ISO SoA).
+            implementedRequirements,
+            gapRequirements,
             notApplicableCount: notApplicable.length,
             missingEvidenceCount: missingEvidence.length,
             overdueTaskCount: overdueTasks.length,

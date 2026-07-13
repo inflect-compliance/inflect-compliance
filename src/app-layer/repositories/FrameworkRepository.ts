@@ -64,16 +64,18 @@ export class FrameworkRepository {
             select: { id: true, code: true, title: true, theme: true, themeNumber: true },
         });
 
-        // Find which requirements have mapped controls for this tenant
-        const mappings = await db.frameworkMapping.findMany({
+        // Find which requirements have mapped controls for this tenant.
+        // Reads the canonical controlRequirementLink table (the framework
+        // mapping island is retired) so coverage matches SoA/readiness.
+        const mappings = await db.controlRequirementLink.findMany({
             where: {
-                fromRequirement: { frameworkId: framework.id },
-                toControl: { tenantId },
+                tenantId,
+                requirement: { frameworkId: framework.id },
             },
-            select: { fromRequirementId: true, toControlId: true },
+            select: { requirementId: true, controlId: true },
         });
 
-        const mappedReqIds = new Set(mappings.map(m => m.fromRequirementId));
+        const mappedReqIds = new Set(mappings.map(m => m.requirementId));
 
         const mapped = requirements.filter(r => mappedReqIds.has(r.id));
         const unmapped = requirements.filter(r => !mappedReqIds.has(r.id));

@@ -54,8 +54,9 @@ jest.mock('@/app-layer/repositories/FrameworkRepository', () => ({
 
 const mockDb: any = {
     control: { findFirst: jest.fn(), create: jest.fn() },
-    controlTask: { create: jest.fn() },
-    frameworkMapping: { create: jest.fn(), findFirst: jest.fn(), delete: jest.fn() },
+    // Unified Task + canonical controlRequirementLink (R2-P1 link unification).
+    task: { create: jest.fn() },
+    controlRequirementLink: { upsert: jest.fn(), findFirst: jest.fn(), delete: jest.fn() },
 };
 
 jest.mock('@/lib/db-context', () => {
@@ -96,8 +97,8 @@ beforeEach(() => {
     auditCalls.length = 0;
     [
         mockDb.control.findFirst, mockDb.control.create,
-        mockDb.controlTask.create,
-        mockDb.frameworkMapping.create, mockDb.frameworkMapping.findFirst, mockDb.frameworkMapping.delete,
+        mockDb.task.create,
+        mockDb.controlRequirementLink.upsert, mockDb.controlRequirementLink.findFirst, mockDb.controlRequirementLink.delete,
         mockTplList, mockTplGetById,
         mockListFw, mockListReqs, mockListMappings,
         assertCanReadControls as jest.Mock,
@@ -197,8 +198,8 @@ describe('installControlsFromTemplate', () => {
         expect(result).toEqual([
             { templateCode: 'CC1', controlId: 'ctrl-new', tasksCreated: 2, requirementsLinked: 3 },
         ]);
-        expect(mockDb.controlTask.create).toHaveBeenCalledTimes(2);
-        expect(mockDb.frameworkMapping.create).toHaveBeenCalledTimes(3);
+        expect(mockDb.task.create).toHaveBeenCalledTimes(2);
+        expect(mockDb.controlRequirementLink.upsert).toHaveBeenCalledTimes(3);
         expect(auditCalls).toHaveLength(1);
         expect(auditCalls[0].action).toBe('CONTROL_INSTALLED_FROM_TEMPLATE');
         expect(auditCalls[0].metadata).toMatchObject({
@@ -267,7 +268,7 @@ describe('framework reads', () => {
 describe('mapRequirementToControl', () => {
     it('asserts MAP permission BEFORE any DB lookup', async () => {
         mockDb.control.findFirst.mockResolvedValueOnce({ id: 'c-1' });
-        mockDb.frameworkMapping.create.mockResolvedValueOnce({ id: 'm-1' });
+        mockDb.controlRequirementLink.upsert.mockResolvedValueOnce({ id: 'm-1' });
 
         await mapRequirementToControl(ctx, 'c-1', 'r-1');
 
@@ -282,7 +283,7 @@ describe('mapRequirementToControl', () => {
             mapRequirementToControl(ctx, 'c-foreign', 'r-1'),
         ).rejects.toThrow(/control not found/i);
         // Critical: the cross-tenant id MUST NOT result in a create.
-        expect(mockDb.frameworkMapping.create).not.toHaveBeenCalled();
+        expect(mockDb.controlRequirementLink.upsert).not.toHaveBeenCalled();
     });
 });
 
@@ -292,28 +293,28 @@ describe('unmapRequirementFromControl', () => {
         await expect(
             unmapRequirementFromControl(ctx, 'c-foreign', 'r-1'),
         ).rejects.toThrow(/control not found/i);
-        expect(mockDb.frameworkMapping.delete).not.toHaveBeenCalled();
+        expect(mockDb.controlRequirementLink.delete).not.toHaveBeenCalled();
     });
 
     it('throws notFound when the mapping itself does not exist (control was found)', async () => {
         mockDb.control.findFirst.mockResolvedValueOnce({ id: 'c-1' });
-        mockDb.frameworkMapping.findFirst.mockResolvedValueOnce(null);
+        mockDb.controlRequirementLink.findFirst.mockResolvedValueOnce(null);
 
         await expect(
             unmapRequirementFromControl(ctx, 'c-1', 'r-1'),
         ).rejects.toThrow(/mapping not found/i);
-        expect(mockDb.frameworkMapping.delete).not.toHaveBeenCalled();
+        expect(mockDb.controlRequirementLink.delete).not.toHaveBeenCalled();
     });
 
     it('deletes the mapping row on the happy-path and returns {success: true}', async () => {
         mockDb.control.findFirst.mockResolvedValueOnce({ id: 'c-1' });
-        mockDb.frameworkMapping.findFirst.mockResolvedValueOnce({ id: 'm-1' });
-        mockDb.frameworkMapping.delete.mockResolvedValueOnce({ id: 'm-1' });
+        mockDb.controlRequirementLink.findFirst.mockResolvedValueOnce({ id: 'm-1' });
+        mockDb.controlRequirementLink.delete.mockResolvedValueOnce({ id: 'm-1' });
 
         const result = await unmapRequirementFromControl(ctx, 'c-1', 'r-1');
 
         expect(result).toEqual({ success: true });
-        expect(mockDb.frameworkMapping.delete).toHaveBeenCalledWith({ where: { id: 'm-1' } });
+        expect(mockDb.controlRequirementLink.delete).toHaveBeenCalledWith({ where: { id: 'm-1' } });
     });
 });
 
