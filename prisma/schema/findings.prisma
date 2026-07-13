@@ -46,6 +46,7 @@ model Finding {
   compensatingControl   Control?          @relation("FindingCompensatingControl", fields: [compensatingControlId], references: [id], onDelete: SetNull)
   evidenceLinks         FindingEvidence[]
   riskLinks             FindingRisk[]
+  assetLinks            FindingAsset[]
 
   @@unique([id, tenantId])
   @@index([tenantId])

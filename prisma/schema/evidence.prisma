@@ -3,61 +3,61 @@
 // Enums live in enums.prisma; relations resolve across the schema folder.
 
 model Evidence {
-  id                String                    @id @default(cuid())
-  tenantId          String
-  controlId         String?
+  id                  String                    @id @default(cuid())
+  tenantId            String
+  controlId           String?
   // Source task — set when this evidence was uploaded/linked from a
   // task's Evidence tab. Powers the task Evidence tab AND the
   // "uploaded from" back-reference on the evidence detail surface.
-  taskId            String?
+  taskId              String?
   // Source risk / asset — same pattern as taskId: set when uploaded
   // from that entity's Evidence tab; powers the attached-evidence tab
   // + the "uploaded from" back-reference.
-  riskId            String?
-  assetId           String?
-  type              EvidenceType
-  title             String
-  content           String?
-  fileName          String?
-  fileSize          Int?
-  category          String?
-  dateCollected     DateTime                  @default(now())
-  owner             String? // Legacy free-text — kept for backward compat
-  ownerUserId       String? // Real user FK — used for due-item routing & notifications
-  reviewCycle       ReviewCadence?
-  nextReviewDate    DateTime?
-  status            EvidenceStatus            @default(DRAFT)
-  createdAt         DateTime                  @default(now())
-  updatedAt         DateTime                  @updatedAt
-  deletedAt         DateTime?
-  deletedByUserId   String?
-  fileRecordId      String?
-  expiredAt         DateTime?
-  isArchived        Boolean                   @default(false)
-  retentionDays     Int?
-  retentionPolicy   RetentionPolicy           @default(NONE)
-  retentionUntil    DateTime?
+  riskId              String?
+  assetId             String?
+  type                EvidenceType
+  title               String
+  content             String?
+  fileName            String?
+  fileSize            Int?
+  category            String?
+  dateCollected       DateTime                  @default(now())
+  owner               String? // Legacy free-text — kept for backward compat
+  ownerUserId         String? // Real user FK — used for due-item routing & notifications
+  reviewCycle         ReviewCadence?
+  nextReviewDate      DateTime?
+  status              EvidenceStatus            @default(DRAFT)
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  deletedAt           DateTime?
+  deletedByUserId     String?
+  fileRecordId        String?
+  expiredAt           DateTime?
+  isArchived          Boolean                   @default(false)
+  retentionDays       Int?
+  retentionPolicy     RetentionPolicy           @default(NONE)
+  retentionUntil      DateTime?
   /// B8 follow-up — free-text folder label (e.g. "SOC2/2026" or
   /// "Quarterly access reviews"). Mirrors the `VendorDocument.folder`
   /// pattern. Nullable; null/empty maps to "no folder" in the UI.
   /// Sanitised + trimmed at the usecase boundary.
-  folder            String?
-  testEvidenceLinks ControlTestEvidenceLink[]
+  folder              String?
+  testEvidenceLinks   ControlTestEvidenceLink[]
   policyEvidenceItems PolicyEvidenceItem[]
   // Epic G-3 — vendor questionnaire FILE_UPLOAD answers attach
   // their proof here.
-  vendorAnswers     VendorAssessmentAnswer[]  @relation("VendorAnswerEvidence")
-  control           Control?                  @relation(fields: [controlId], references: [id])
-  task              Task?                     @relation(fields: [taskId], references: [id])
-  risk              Risk?                     @relation(fields: [riskId], references: [id])
-  asset             Asset?                    @relation(fields: [assetId], references: [id])
-  fileRecord        FileRecord?               @relation(fields: [fileRecordId], references: [id])
-  ownerUser         User?                     @relation("EvidenceOwner", fields: [ownerUserId], references: [id])
-  tenant            Tenant                    @relation(fields: [tenantId], references: [id])
-  reviews           EvidenceReview[]
-  findingLinks      FindingEvidence[]
-  incidentLinks     IncidentEvidence[]
-  reminderHistories ReminderHistory[]
+  vendorAnswers       VendorAssessmentAnswer[]  @relation("VendorAnswerEvidence")
+  control             Control?                  @relation(fields: [controlId], references: [id])
+  task                Task?                     @relation(fields: [taskId], references: [id])
+  risk                Risk?                     @relation(fields: [riskId], references: [id])
+  asset               Asset?                    @relation(fields: [assetId], references: [id])
+  fileRecord          FileRecord?               @relation(fields: [fileRecordId], references: [id])
+  ownerUser           User?                     @relation("EvidenceOwner", fields: [ownerUserId], references: [id])
+  tenant              Tenant                    @relation(fields: [tenantId], references: [id])
+  reviews             EvidenceReview[]
+  findingLinks        FindingEvidence[]
+  incidentLinks       IncidentEvidence[]
+  reminderHistories   ReminderHistory[]
 
   @@unique([id, tenantId])
   @@index([tenantId])

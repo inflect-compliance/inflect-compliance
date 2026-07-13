@@ -9,44 +9,44 @@
 // (CC BY 4.0) from Kshreenath/NIS2-Checklist — Paolo Carner / BARE
 // Consulting. See docs/implementation-notes/2026-06-28-incident-response.md.
 model Incident {
-  id              String                  @id @default(cuid())
-  tenantId        String
+  id                        String                  @id @default(cuid())
+  tenantId                  String
   // Tenant-scoped human reference, e.g. INC-2026-001.
-  reference       String
-  title           String
+  reference                 String
+  title                     String
   // Free-text incident description. Encrypted at rest (Epic B) +
   // sanitized on write (Epic D).
-  description     String
-  severity        IncidentSeverity
-  phase           IncidentPhase           @default(DETECTION)
+  description               String
+  severity                  IncidentSeverity
+  phase                     IncidentPhase           @default(DETECTION)
   // 'RANSOMWARE' | 'DATA_BREACH' | 'DDOS' | 'UNAUTHORIZED_ACCESS' | 'OTHER'
-  incidentType    String
+  incidentType              String
   // The clock starts here — drives the 24h/72h/1-month deadlines.
-  detectedAt      DateTime
+  detectedAt                DateTime
   // Whether NIS2 Article 23 notification is required. SUGGESTED from
   // severity (HIGH/CRITICAL) but never auto-asserted — a human confirms
   // (the tenant's DPO/legal owns the legal determination).
-  reportable      Boolean                 @default(false)
-  reportedAt      DateTime?
-  containedAt     DateTime?
-  resolvedAt      DateTime?
+  reportable                Boolean                 @default(false)
+  reportedAt                DateTime?
+  containedAt               DateTime?
+  resolvedAt                DateTime?
   // Incident commander (a tenant member). Plain userId — no FK relation,
   // mirroring Finding.verifiedBy / deletedByUserId.
-  ownerUserId     String?
+  ownerUserId               String?
   // Art.21(2) controls implicated by this incident.
-  linkedControlIds String[]
+  linkedControlIds          String[]
   // Keys of completed containment-runbook steps (per-incidentType
   // checklist in src/data/incident-containment.ts). Checking a step also
   // appends an IncidentTimelineEntry — this array is the persisted
   // checkbox state. Reference guidance, not enforced.
-  completedContainmentSteps String[] @default([])
-  createdByUserId String
-  createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @updatedAt
-  tenant          Tenant                  @relation(fields: [tenantId], references: [id])
-  notifications   IncidentNotification[]
-  timeline        IncidentTimelineEntry[]
-  evidenceLinks   IncidentEvidence[]
+  completedContainmentSteps String[]                @default([])
+  createdByUserId           String
+  createdAt                 DateTime                @default(now())
+  updatedAt                 DateTime                @updatedAt
+  tenant                    Tenant                  @relation(fields: [tenantId], references: [id])
+  notifications             IncidentNotification[]
+  timeline                  IncidentTimelineEntry[]
+  evidenceLinks             IncidentEvidence[]
 
   @@unique([id, tenantId])
   @@unique([tenantId, reference])
@@ -61,18 +61,18 @@ model Incident {
 // parent FKs to (id, tenantId) guarantee both parents share this row's
 // tenant. RLS + indexes mirror that junction.
 model IncidentEvidence {
-  id         String   @id @default(cuid())
-  tenantId   String
-  incidentId String
-  evidenceId String
+  id               String   @id @default(cuid())
+  tenantId         String
+  incidentId       String
+  evidenceId       String
   // Optional forensic-checklist category this evidence satisfies (e.g.
   // 'SYSTEM_LOGS', 'MEMORY_CAPTURE') — a key from the forensic checklist
   // in src/data/incident-containment.ts. NULL for ad-hoc links.
   forensicCategory String?
-  createdAt  DateTime @default(now())
-  evidence   Evidence @relation(fields: [evidenceId, tenantId], references: [id, tenantId], onDelete: Cascade)
-  incident   Incident @relation(fields: [incidentId, tenantId], references: [id, tenantId], onDelete: Cascade)
-  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt        DateTime @default(now())
+  evidence         Evidence @relation(fields: [evidenceId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  incident         Incident @relation(fields: [incidentId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  tenant           Tenant   @relation(fields: [tenantId], references: [id])
 
   @@unique([incidentId, evidenceId])
   @@index([tenantId])
@@ -84,23 +84,23 @@ model IncidentEvidence {
 // kind. Auto-created (3 rows) when an incident is marked reportable; the
 // deadline derives from the incident's detectedAt.
 model IncidentNotification {
-  id            String                     @id @default(cuid())
-  tenantId      String
-  incidentId    String
-  kind          IncidentNotificationKind
+  id             String                     @id @default(cuid())
+  tenantId       String
+  incidentId     String
+  kind           IncidentNotificationKind
   // detectedAt + 24h / +72h / +1 month.
-  dueAt         DateTime
-  status        IncidentNotificationStatus @default(PENDING)
-  submittedAt   DateTime?
+  dueAt          DateTime
+  status         IncidentNotificationStatus @default(PENDING)
+  submittedAt    DateTime?
   // Authority case ref returned on submission (plaintext — load-bearing).
-  submissionRef String?
+  submissionRef  String?
   // What was submitted (the report text). Encrypted at rest (Epic B) +
   // sanitized on write (Epic D).
   submissionNote String?
-  createdAt     DateTime                   @default(now())
-  updatedAt     DateTime                   @updatedAt
-  incident      Incident                   @relation(fields: [incidentId, tenantId], references: [id, tenantId], onDelete: Cascade)
-  tenant        Tenant                     @relation(fields: [tenantId], references: [id])
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  incident       Incident                   @relation(fields: [incidentId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  tenant         Tenant                     @relation(fields: [tenantId], references: [id])
 
   @@unique([incidentId, kind])
   @@index([tenantId])
@@ -137,7 +137,7 @@ model IncidentTimelineEntry {
 /// Incidents as a sibling operational-resilience obligation. Tenant-
 /// scoped: RLS + Epic B (`notes`) + Epic D + indexes.
 model BusinessImpactAnalysis {
-  id            String  @id @default(cuid())
+  id            String    @id @default(cuid())
   tenantId      String
   /// Attach to a modeled process node (preferred). Null = free-standing
   /// service not yet on a process map.
@@ -160,8 +160,8 @@ model BusinessImpactAnalysis {
   notes         String?
   ownerUserId   String?
   reviewedAt    DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   tenant        Tenant                @relation(fields: [tenantId], references: [id])
   processNode   ProcessNode?          @relation(fields: [processNodeId], references: [id])

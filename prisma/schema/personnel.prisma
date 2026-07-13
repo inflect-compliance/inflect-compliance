@@ -27,8 +27,8 @@ model ConnectedIdentityAccount {
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
 
-  tenant           Tenant                          @relation(fields: [tenantId], references: [id])
-  reviewDecisions  AccessReviewConnectedDecision[]
+  tenant          Tenant                          @relation(fields: [tenantId], references: [id])
+  reviewDecisions AccessReviewConnectedDecision[]
 
   @@unique([tenantId, provider, externalUserId])
   @@index([tenantId, provider])
@@ -102,21 +102,21 @@ model BackgroundCheck {
 /// (fail), null (NOT_APPLICABLE — e.g. LINUX has no screen-lock check). Never
 /// treat null as fail.
 model Device {
-  id                    String         @id @default(cuid())
-  tenantId              String
-  employeeId            String?
-  serialNumber          String?
-  hostname              String?
-  platform              DevicePlatform
+  id                     String         @id @default(cuid())
+  tenantId               String
+  employeeId             String?
+  serialNumber           String?
+  hostname               String?
+  platform               DevicePlatform
   /// 'MDM' | 'AGENT' | 'MANUAL'.
-  source                String         @default("MANUAL")
-  diskEncrypted         Boolean?
-  screenLockEnabled     Boolean?
-  antivirusRunning      Boolean?
+  source                 String         @default("MANUAL")
+  diskEncrypted          Boolean?
+  screenLockEnabled      Boolean?
+  antivirusRunning       Boolean?
   passwordManagerPresent Boolean?
-  lastCheckIn           DateTime?
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
+  lastCheckIn            DateTime?
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
 
   tenant   Tenant    @relation(fields: [tenantId], references: [id])
   employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
@@ -150,10 +150,10 @@ model Employee {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  tenant   Tenant     @relation(fields: [tenantId], references: [id])
-  manager  Employee?  @relation("EmployeeManager", fields: [managerEmployeeId], references: [id], onDelete: SetNull)
-  reports  Employee[] @relation("EmployeeManager")
-  devices  Device[]
+  tenant              Tenant               @relation(fields: [tenantId], references: [id])
+  manager             Employee?            @relation("EmployeeManager", fields: [managerEmployeeId], references: [id], onDelete: SetNull)
+  reports             Employee[]           @relation("EmployeeManager")
+  devices             Device[]
   trainingAssignments TrainingAssignment[]
   backgroundChecks    BackgroundCheck[]
 

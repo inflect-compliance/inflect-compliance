@@ -22,15 +22,15 @@ model ComplianceSnapshot {
   controlCoverageBps  Int @default(0)
 
   // ── Risks ──
-  risksTotal      Int @default(0)
-  risksOpen       Int @default(0)
-  risksMitigating Int @default(0)
-  risksAccepted   Int @default(0)
-  risksClosed     Int @default(0)
-  risksLow        Int @default(0)
-  risksMedium     Int @default(0)
-  risksHigh       Int @default(0)
-  risksCritical   Int @default(0)
+  risksTotal         Int    @default(0)
+  risksOpen          Int    @default(0)
+  risksMitigating    Int    @default(0)
+  risksAccepted      Int    @default(0)
+  risksClosed        Int    @default(0)
+  risksLow           Int    @default(0)
+  risksMedium        Int    @default(0)
+  risksHigh          Int    @default(0)
+  risksCritical      Int    @default(0)
   // KPI-card metrics. NULLABLE (not @default) so pre-existence snapshot rows
   // read NULL ("no data, don't plot") instead of a false 0 — forward-only
   // fill, no backfill. See src/lib/charts/kpi-trends.ts.
@@ -38,45 +38,45 @@ model ComplianceSnapshot {
   risksOverdueReview Int?
 
   // ── Evidence ──
-  evidenceTotal      Int @default(0)
-  evidenceOverdue    Int @default(0)
-  evidenceDueSoon7d  Int @default(0)
-  evidenceDueSoon30d Int @default(0)
-  evidenceCurrent    Int @default(0)
+  evidenceTotal      Int  @default(0)
+  evidenceOverdue    Int  @default(0)
+  evidenceDueSoon7d  Int  @default(0)
+  evidenceDueSoon30d Int  @default(0)
+  evidenceCurrent    Int  @default(0)
   // Status-bucket counts for the KPI cards. NULLABLE (not @default(0)) so
   // pre-existence snapshot rows read NULL ("no data, don't plot") instead of a
   // false 0 — forward-only fill, no backfill. See src/lib/charts/kpi-trends.ts.
-  evidenceDraft     Int?
-  evidenceSubmitted Int?
-  evidenceApproved  Int?
+  evidenceDraft      Int?
+  evidenceSubmitted  Int?
+  evidenceApproved   Int?
 
   // ── Policies ──
-  policiesTotal         Int @default(0)
-  policiesPublished     Int @default(0)
-  policiesOverdueReview Int @default(0)
+  policiesTotal         Int  @default(0)
+  policiesPublished     Int  @default(0)
+  policiesOverdueReview Int  @default(0)
   // Status-bucket counts for the KPI cards (nullable forward-only fill).
-  policiesDraft    Int?
-  policiesInReview Int?
-  policiesApproved Int?
+  policiesDraft         Int?
+  policiesInReview      Int?
+  policiesApproved      Int?
 
   // ── Tasks ──
-  tasksTotal   Int @default(0)
-  tasksOpen    Int @default(0)
-  tasksOverdue Int @default(0)
+  tasksTotal     Int  @default(0)
+  tasksOpen      Int  @default(0)
+  tasksOverdue   Int  @default(0)
   // Due-within-7-days count for the KPI card (nullable forward-only fill).
   tasksDueSoon7d Int?
 
   // ── Vendors ──
-  vendorsTotal         Int @default(0)
-  vendorsOverdueReview Int @default(0)
+  vendorsTotal         Int  @default(0)
+  vendorsOverdueReview Int  @default(0)
   // Status/criticality counts for the KPI cards (nullable forward-only fill).
-  vendorsActive   Int?
-  vendorsCritical Int?
+  vendorsActive        Int?
+  vendorsCritical      Int?
 
   // ── Test plans ──
   // `testPlansTotal` anchors the trim (@default(0), like every other total);
   // the status buckets are nullable forward-only fill. See kpi-trends.ts.
-  testPlansTotal    Int @default(0)
+  testPlansTotal    Int  @default(0)
   testPlansActive   Int?
   testPlansPaused   Int?
   testPlansArchived Int?

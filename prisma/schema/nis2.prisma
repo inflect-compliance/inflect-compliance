@@ -22,7 +22,7 @@ model Nis2GapDomain {
 /// Not tenant-scoped (shared library content, no RLS).
 model Nis2GapQuestion {
   /// Upstream question id, e.g. "gap-0-01" (globally unique).
-  id           String  @id
+  id           String   @id
   /// FK → Nis2GapDomain.id (upstream `domain` integer).
   domainId     Int
   /// Bilingual { en, de } legalese question text.

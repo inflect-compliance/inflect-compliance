@@ -24,25 +24,25 @@
 // ─────────────────────────────────────────────────────────────────
 
 model AuditLog {
-  id           String   @id @default(cuid())
-  tenantId     String
-  userId       String?
-  entity       String
-  entityId     String
-  action       String
-  details      String?
-  createdAt    DateTime @default(now())
-  metadataJson Json?
-  recordIds    Json?
-  requestId    String?
-  diffJson     Json?
-  actorType    String   @default("USER")
-  detailsJson  Json?
-  entryHash    String?
-  previousHash String?
-  version      Int      @default(1)
-  tenant       Tenant   @relation(fields: [tenantId], references: [id])
-  user         User?    @relation(fields: [userId], references: [id])
+  id                  String               @id @default(cuid())
+  tenantId            String
+  userId              String?
+  entity              String
+  entityId            String
+  action              String
+  details             String?
+  createdAt           DateTime             @default(now())
+  metadataJson        Json?
+  recordIds           Json?
+  requestId           String?
+  diffJson            Json?
+  actorType           String               @default("USER")
+  detailsJson         Json?
+  entryHash           String?
+  previousHash        String?
+  version             Int                  @default(1)
+  tenant              Tenant               @relation(fields: [tenantId], references: [id])
+  user                User?                @relation(fields: [userId], references: [id])
   /// Verified agent-action receipts linked to this hash-chained entry (Epic:
   /// agent-action-receipts). Back-relation only — adds no column to AuditLog.
   agentActionReceipts AgentActionReceipt[]
