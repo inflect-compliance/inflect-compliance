@@ -124,10 +124,6 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
         label: 'Framework',
     },
 
-    // Security testing (scans) — a subpage of Internal Audit; scanner
-    // findings are audit evidence, so the entry point lives under Audits.
-    '/security-testing': { href: '/audits', label: 'Internal Audit' },
-
     // Issues
     '/issues/[issueId]': { href: '/issues', label: 'Issues' },
     '/issues/dashboard': { href: '/issues', label: 'Issues' },
@@ -185,9 +181,6 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
     },
     '/vendors/dashboard': { href: '/vendors', label: 'Vendors' },
     '/vendors/new': { href: '/vendors', label: 'Vendors' },
-
-    // Vulnerabilities — subpage of the Risk Register
-    '/vulnerabilities': { href: '/risks', label: 'Risk Register' },
 };
 
 /**
