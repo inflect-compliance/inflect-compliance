@@ -27,6 +27,12 @@ const mockDb = {
     // B7 — listAssets now folds in WorkItemRepository.countLinkedToEntities
     // (TaskLink count). Default to no links → taskTotal/taskDone = 0.
     taskLink: { findMany: jest.fn().mockResolvedValue([]) },
+    // 360° Overview roll-ups (getAsset) — default to zero aggregates.
+    assetRiskLink: { count: jest.fn().mockResolvedValue(0) },
+    controlAsset: { count: jest.fn().mockResolvedValue(0) },
+    assetVulnerability: { count: jest.fn().mockResolvedValue(0), findFirst: jest.fn().mockResolvedValue(null) },
+    // Asset activity feed (getAssetActivity).
+    auditLog: { findMany: jest.fn().mockResolvedValue([]) },
 } as any;
 
 jest.mock('@/lib/db-context', () => ({
@@ -82,6 +88,7 @@ import {
     listAssets,
     listAssetsPaginated,
     getAsset,
+    getAssetActivity,
     createAsset,
     updateAsset,
     deleteAsset,
@@ -119,14 +126,46 @@ describe('asset reads', () => {
         expect(AssetRepository.listPaginated).toHaveBeenCalled();
     });
 
-    it('getAsset returns the row on hit', async () => {
+    it('getAsset returns the row plus 360° roll-ups on hit', async () => {
         (AssetRepository.getById as jest.Mock).mockResolvedValue({ id: 'a-1' });
-        await expect(getAsset(readerCtx, 'a-1')).resolves.toEqual({ id: 'a-1' });
+        (mockDb.assetRiskLink.count as jest.Mock).mockResolvedValue(2);
+        (mockDb.controlAsset.count as jest.Mock).mockResolvedValue(3);
+        (mockDb.assetVulnerability.count as jest.Mock).mockResolvedValue(4);
+        (mockDb.assetVulnerability.findFirst as jest.Mock).mockResolvedValue({ cve: { cvssSeverity: 'HIGH', cvssScore: 8.1 } });
+        (mockDb.taskLink.findMany as jest.Mock).mockResolvedValue([
+            { entityId: 'a-1', taskId: 't-1', task: { status: 'OPEN' } },
+            { entityId: 'a-1', taskId: 't-2', task: { status: 'CLOSED' } },
+        ]);
+        const res: any = await getAsset(readerCtx, 'a-1');
+        expect(res.id).toBe('a-1');
+        expect(res.rollups).toEqual({
+            risks: { count: 2 },
+            controls: { count: 3 },
+            vulnerabilities: { openCount: 4, maxSeverity: 'HIGH', maxScore: 8.1 },
+            tasks: { openCount: 1, total: 2 },
+        });
     });
 
     it('getAsset throws notFound on miss', async () => {
         (AssetRepository.getById as jest.Mock).mockResolvedValue(null);
         await expect(getAsset(readerCtx, 'missing')).rejects.toThrow(/Asset not found/i);
+    });
+
+    it('getAssetActivity returns audit rows under read gate', async () => {
+        (AssetRepository.getById as jest.Mock).mockResolvedValue({ id: 'a-1' });
+        (mockDb.auditLog.findMany as jest.Mock).mockResolvedValue([{ id: 'log-1', action: 'UPDATE' }]);
+        await expect(getAssetActivity(readerCtx, 'a-1')).resolves.toEqual([{ id: 'log-1', action: 'UPDATE' }]);
+        expect(mockDb.auditLog.findMany).toHaveBeenCalledWith(
+            expect.objectContaining({
+                where: expect.objectContaining({ entity: 'Asset', entityId: 'a-1' }),
+                take: 50,
+            }),
+        );
+    });
+
+    it('getAssetActivity throws notFound on missing asset', async () => {
+        (AssetRepository.getById as jest.Mock).mockResolvedValue(null);
+        await expect(getAssetActivity(readerCtx, 'missing')).rejects.toThrow(/Asset not found/i);
     });
 });
 

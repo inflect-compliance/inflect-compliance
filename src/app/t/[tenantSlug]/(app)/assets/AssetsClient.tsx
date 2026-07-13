@@ -534,6 +534,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             // or navigates to the full page (those are the row's job:
             // single-click row = select, double-click row = full view).
             cell: ({ row, getValue }) => (
+                <Tooltip content={tx('rowInteractionHint')}>
                 <button
                     type="button"
                     onClick={(e) => {
@@ -556,6 +557,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                         matching the Controls + Risks title links. */}
                     <TableTitleCell tintOn="self">{getValue()}</TableTitleCell>
                 </button>
+                </Tooltip>
             ),
         },
         {

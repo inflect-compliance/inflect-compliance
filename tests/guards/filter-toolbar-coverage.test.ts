@@ -53,6 +53,8 @@ const EXEMPTIONS: Record<string, string> = {
         "Detail-page linked-work sub-table — not a filterable list surface; the parent detail owns the chrome.",
     "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/readiness/Nis2ReadinessClient.tsx":
         "NIS2 readiness results view — derived score + prioritized gap tables (sorted by priority); not a faceted-filter list surface.",
+    "src/app/t/[tenantSlug]/(app)/assets/[id]/page.tsx":
+        "Detail-page Vulnerabilities sub-table (asset 360° view) — the CVE list for one asset; EntityDetailLayout owns the chrome, not a faceted-filter list surface.",
     "src/app/t/[tenantSlug]/(app)/audits/nis2-gap/Nis2GapLifecycleClient.tsx":
         "NIS2 gap-lifecycle surface — run-history + prioritized-gap sub-tables on a multi-section detail view (KPIs + trend + radar + propose-not-commit review); not a faceted-filter list.",
     // ── Cross-tenant read-only aggregation views (org-level) ──

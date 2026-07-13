@@ -460,8 +460,50 @@
                 "mappings": "Mappings",
                 "traceability": "Traceability",
                 "activity": "Activity",
-                "tests": "Tests"
-            }
+                "tests": "Tests",
+                "vulnerabilities": "Vulnerabilities"
+            },
+            "rollups": {
+                "risks": "Linked risks",
+                "controls": "Linked controls",
+                "vulnerabilities": "Open vulnerabilities",
+                "tasks": "Open tasks"
+            },
+            "vuln": {
+                "loading": "Loading vulnerabilities…",
+                "emptyTitle": "No vulnerabilities",
+                "emptyDesc": "No CVEs are currently matched to this asset.",
+                "severity": "Severity",
+                "score": "CVSS",
+                "status": "Status",
+                "matchedVia": "Matched via",
+                "owner": "Owner",
+                "due": "Due",
+                "actions": "Actions",
+                "unassigned": "Unassigned",
+                "none": "—",
+                "convertToRisk": "Convert to risk",
+                "convertToFinding": "Convert to finding",
+                "convertedRisk": "Vulnerability converted to a risk",
+                "convertedFinding": "Vulnerability converted to a finding",
+                "convertFailed": "Conversion failed"
+            },
+            "activityFeed": {
+                "loading": "Loading activity…",
+                "emptyTitle": "No activity yet",
+                "emptyDesc": "Changes to this asset will appear here.",
+                "systemActor": "System"
+            },
+            "eventLabels": {
+                "CREATE": "Created",
+                "UPDATE": "Updated",
+                "SOFT_DELETE": "Deleted",
+                "ASSET_EVIDENCE_LINKED": "Evidence linked",
+                "ASSET_EVIDENCE_UNLINKED": "Evidence unlinked"
+            },
+            "traceabilityHeading": "Traceability",
+            "traceabilitySubtitle": "See how this asset links to risks, controls, and other entities across the compliance graph.",
+            "ciaLegendBody": "Confidentiality, Integrity, and Availability are each rated 1–5. Criticality is derived from the two highest dimensions (their rounded mean), with any single dimension at 5 forcing Critical."
         },
         "filters": {
             "type": "Type",
@@ -524,7 +566,8 @@
             "PROCESS": "PROCESS",
             "PEOPLE_PROCESS": "PEOPLE PROCESS",
             "OTHER": "OTHER"
-        }
+        },
+        "rowInteractionHint": "Click to preview · double-click the row to open the full page"
     },
     "risks": {
         "title": "Risk Register",
