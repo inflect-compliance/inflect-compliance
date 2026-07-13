@@ -24,8 +24,9 @@ import { RequestContext } from '../types';
 import { assertCanRead } from '../policies/common';
 import { runInTenantContext } from '@/lib/db-context';
 import { notFound } from '@/lib/errors/types';
+import { WorkItemStatus } from '@prisma/client';
 import { worstStatus, isImplemented } from '@/lib/compliance/requirement-status-rollup';
-import { ACTIVE_STATUS_FILTER } from '../domain/work-item-status';
+import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
 import type {
     SoAReportDTO,
     SoAEntryDTO,
@@ -315,16 +316,16 @@ async function loadOpenTaskCounts(ctx: RequestContext, controlIds: string[]): Pr
     const result = new Map<string, number>();
     // Unified Task model (not legacy controlTask) — the discoverable install
     // paths now write Task rows, so the SoA open-task rollup must read them.
-    // "Open" = every non-terminal WorkItemStatus via the shared
-    // ACTIVE_STATUS_FILTER (notIn terminal), so TRIAGED / BLOCKED tasks are
-    // counted too — a positive [OPEN, IN_PROGRESS] allowlist would miss them.
+    // "Open" = every non-terminal WorkItemStatus (notIn the shared terminal
+    // set) so TRIAGED / BLOCKED tasks are counted too — a positive
+    // [OPEN, IN_PROGRESS] allowlist would silently miss them.
     const counts = await runInTenantContext(ctx, (db) =>
         db.task.groupBy({
             by: ['controlId'],
             where: {
                 tenantId: ctx.tenantId,
                 controlId: { in: controlIds },
-                status: ACTIVE_STATUS_FILTER,
+                status: { notIn: [...TERMINAL_WORK_ITEM_STATUSES] as WorkItemStatus[] },
             },
             _count: { id: true },
         })
