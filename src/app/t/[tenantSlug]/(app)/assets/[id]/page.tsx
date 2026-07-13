@@ -1,6 +1,6 @@
 'use client';
 
-import { formatDate } from '@/lib/format-date';
+import { formatDate, formatDateTime } from '@/lib/format-date';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
@@ -15,9 +15,11 @@ import { CopyText } from '@/components/ui/copy-text';
 import { Button } from '@/components/ui/button';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Pen2 } from '@/components/ui/icons/nucleo';
-import { Tooltip } from '@/components/ui/tooltip';
-import { type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Tooltip, InfoTooltip } from '@/components/ui/tooltip';
+import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { DataTable, type ColumnDef } from '@/components/ui/table';
 import { Eyebrow } from '@/components/ui/typography';
+import type { AuditLogEntry } from '@/lib/dto';
 import { AssetCriticalityBadge } from '../_form/AssetCriticalityFields';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
@@ -55,6 +57,45 @@ export interface AssetDetail {
     availability: number | null;
     createdAt: string;
     updatedAt: string;
+    rollups?: AssetRollups;
+}
+
+/** 360° relationship roll-ups computed server-side by the `getAsset` usecase. */
+interface AssetRollups {
+    risks: { count: number };
+    controls: { count: number };
+    vulnerabilities: { openCount: number; maxSeverity: string | null; maxScore: number | null };
+    tasks: { openCount: number; total: number };
+}
+
+/** One matched vulnerability row (GET /vulnerabilities?assetId=…). */
+interface AssetVulnRow {
+    id: string;
+    status: string;
+    matchedVia: string;
+    remediationDueAt: string | null;
+    cve: { id: string; cvssScore: number | null; cvssSeverity: string | null; summary: string } | null;
+    ownerUser: { id: string; name: string | null; email: string | null } | null;
+}
+
+/** CVSS severity → StatusBadge variant. CRITICAL/HIGH → red, MEDIUM → amber, LOW → green. */
+function severityVariant(sev: string | null | undefined): StatusBadgeVariant {
+    const s = (sev ?? '').toUpperCase();
+    if (s === 'CRITICAL' || s === 'HIGH') return 'error';
+    if (s === 'MEDIUM') return 'warning';
+    if (s === 'LOW') return 'success';
+    return 'neutral';
+}
+
+/** Vuln remediation status → StatusBadge variant. */
+function vulnStatusVariant(status: string): StatusBadgeVariant {
+    switch (status) {
+        case 'OPEN': return 'error';
+        case 'MITIGATING': return 'warning';
+        case 'MITIGATED': return 'success';
+        case 'ACCEPTED': return 'info';
+        default: return 'neutral';
+    }
 }
 
 export default function AssetDetailPage() {
@@ -90,6 +131,7 @@ export default function AssetDetailPage() {
     // lives.
     type Tab =
         | 'overview'
+        | 'vulnerabilities'
         | 'tasks'
         | 'evidence'
         | 'mappings'
@@ -99,6 +141,7 @@ export default function AssetDetailPage() {
     const [activeTab, setActiveTab] = useState<Tab>('overview');
     const tabs: ReadonlyArray<{ key: Tab; label: string }> = [
         { key: 'overview', label: t('detail.tabs.overview') },
+        { key: 'vulnerabilities', label: t('detail.tabs.vulnerabilities') },
         { key: 'tasks', label: t('detail.tabs.tasks') },
         { key: 'evidence', label: t('detail.tabs.evidence') },
         { key: 'mappings', label: t('detail.tabs.mappings') },
@@ -106,6 +149,44 @@ export default function AssetDetailPage() {
         { key: 'activity', label: t('detail.tabs.activity') },
         { key: 'tests', label: t('detail.tabs.tests') },
     ];
+
+    // ─── Activity feed (lazy, only while the Activity tab is open) ───
+    // Asset mutations log with entity='Asset'; these are the action
+    // types surfaced with a friendly label (unknown falls back to raw).
+    const ASSET_EVENT_KEYS = ['CREATE', 'UPDATE', 'SOFT_DELETE', 'ASSET_EVIDENCE_LINKED', 'ASSET_EVIDENCE_UNLINKED'] as const;
+    const EVENT_LABELS: Record<string, string> = Object.fromEntries(
+        ASSET_EVENT_KEYS.map((k) => [k, t(`detail.eventLabels.${k}`)]),
+    );
+    const activityQuery = useTenantSWR<AuditLogEntry[]>(
+        activeTab === 'activity' ? `/assets/${assetId}/activity` : null,
+    );
+    const activity = activityQuery.data ?? [];
+    const activityLoading = activityQuery.isLoading;
+
+    // ─── Vulnerabilities feed (lazy, only while that tab is open) ───
+    const vulnQuery = useTenantSWR<{ rows: AssetVulnRow[] }>(
+        activeTab === 'vulnerabilities' ? `/vulnerabilities?assetId=${assetId}` : null,
+    );
+    const vulnRows = vulnQuery.data?.rows ?? [];
+    const vulnLoading = vulnQuery.isLoading;
+    // Per-row conversion state (id → 'risk' | 'finding' pending marker).
+    const [convertingId, setConvertingId] = useState<string | null>(null);
+    const convertVuln = async (id: string, kind: 'risk' | 'finding') => {
+        setConvertingId(id);
+        setError('');
+        try {
+            const endpoint = kind === 'risk' ? 'convert-to-risk' : 'convert-to-finding';
+            const res = await fetch(apiUrl(`/vulnerabilities/${id}/${endpoint}`), { method: 'POST' });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.message || t('detail.vuln.convertFailed'));
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : t('detail.vuln.convertFailed'));
+        } finally {
+            setConvertingId(null);
+        }
+    };
     // Modal-form P2 — the inline-edit panel is replaced by an
     // EditAssetModal launched from the detail header. The page URL
     // stays canonical; modal state is purely overlay. Seeding values
@@ -297,14 +378,117 @@ export default function AssetDetailPage() {
                     />
                 </div>
             )}
+            {activeTab === 'vulnerabilities' && (
+                <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')} id="asset-vulnerabilities-tab">
+                    <DataTable<AssetVulnRow>
+                        data={vulnRows}
+                        loading={vulnLoading}
+                        getRowId={(v) => v.id}
+                        resourceName={(plural) => (plural ? t('detail.tabs.vulnerabilities') : t('detail.tabs.vulnerabilities'))}
+                        emptyState={
+                            <EmptyState
+                                size="sm"
+                                variant="no-records"
+                                title={t('detail.vuln.emptyTitle')}
+                                description={t('detail.vuln.emptyDesc')}
+                            />
+                        }
+                        columns={[
+                            {
+                                id: 'cve',
+                                header: 'CVE',
+                                cell: ({ row }) => <span className="font-medium text-content-default">{row.original.cve?.id ?? '—'}</span>,
+                            },
+                            {
+                                id: 'severity',
+                                header: t('detail.vuln.severity'),
+                                cell: ({ row }) => (
+                                    <StatusBadge variant={severityVariant(row.original.cve?.cvssSeverity)} size="sm">
+                                        {row.original.cve?.cvssSeverity ?? t('detail.vuln.none')}
+                                    </StatusBadge>
+                                ),
+                            },
+                            {
+                                id: 'score',
+                                header: t('detail.vuln.score'),
+                                cell: ({ row }) => <span className="text-sm tabular-nums">{row.original.cve?.cvssScore ?? t('detail.vuln.none')}</span>,
+                            },
+                            {
+                                id: 'status',
+                                header: t('detail.vuln.status'),
+                                cell: ({ row }) => (
+                                    <StatusBadge variant={vulnStatusVariant(row.original.status)} size="sm">
+                                        {row.original.status}
+                                    </StatusBadge>
+                                ),
+                            },
+                            {
+                                id: 'matchedVia',
+                                header: t('detail.vuln.matchedVia'),
+                                cell: ({ row }) => <span className="text-sm text-content-muted">{row.original.matchedVia}</span>,
+                            },
+                            {
+                                id: 'owner',
+                                header: t('detail.vuln.owner'),
+                                cell: ({ row }) => (
+                                    <span className="text-sm text-content-muted">
+                                        {row.original.ownerUser?.name || row.original.ownerUser?.email || t('detail.vuln.unassigned')}
+                                    </span>
+                                ),
+                            },
+                            {
+                                id: 'due',
+                                header: t('detail.vuln.due'),
+                                cell: ({ row }) => (
+                                    <span className="text-sm text-content-muted">
+                                        {row.original.remediationDueAt ? formatDate(row.original.remediationDueAt) : t('detail.vuln.none')}
+                                    </span>
+                                ),
+                            },
+                            ...(permissions.canWrite
+                                ? [{
+                                      id: 'actions',
+                                      header: t('detail.vuln.actions'),
+                                      cell: ({ row }: { row: { original: AssetVulnRow } }) => (
+                                          <div className="flex items-center gap-compact">
+                                              <Button
+                                                  variant="secondary"
+                                                  size="sm"
+                                                  disabled={convertingId === row.original.id}
+                                                  onClick={() => convertVuln(row.original.id, 'risk')}
+                                              >
+                                                  {t('detail.vuln.convertToRisk')}
+                                              </Button>
+                                              <Button
+                                                  variant="secondary"
+                                                  size="sm"
+                                                  disabled={convertingId === row.original.id}
+                                                  onClick={() => convertVuln(row.original.id, 'finding')}
+                                              >
+                                                  {t('detail.vuln.convertToFinding')}
+                                              </Button>
+                                          </div>
+                                      ),
+                                  }]
+                                : []),
+                        ] as ColumnDef<AssetVulnRow, unknown>[]}
+                    />
+                </div>
+            )}
             {activeTab === 'traceability' && (
-                <TraceabilityPanel
-                    apiBase={apiUrl('')}
-                    entityType="asset"
-                    entityId={assetId}
-                    canWrite={permissions.canWrite}
-                    tenantHref={tenantHref}
-                />
+                <div className="space-y-default">
+                    <div className="space-y-tight">
+                        <Heading level={3}>{t('detail.traceabilityHeading')}</Heading>
+                        <p className="text-sm text-content-muted">{t('detail.traceabilitySubtitle')}</p>
+                    </div>
+                    <TraceabilityPanel
+                        apiBase={apiUrl('')}
+                        entityType="asset"
+                        entityId={assetId}
+                        canWrite={permissions.canWrite}
+                        tenantHref={tenantHref}
+                    />
+                </div>
             )}
             {activeTab === 'evidence' && (
                 <div className="space-y-section">
@@ -338,12 +522,34 @@ export default function AssetDetailPage() {
                 />
             )}
             {activeTab === 'activity' && (
-                <EmptyState
-                    size="sm"
-                    variant="no-records"
-                    title={t('detail.activityTitle')}
-                    description={t('detail.activityDesc')}
-                />
+                <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
+                    {activityLoading ? (
+                        <div className="p-8 text-center text-content-subtle animate-pulse">{t('detail.activityFeed.loading')}</div>
+                    ) : activity.length === 0 ? (
+                        <EmptyState
+                            size="sm"
+                            variant="no-records"
+                            title={t('detail.activityFeed.emptyTitle')}
+                            description={t('detail.activityFeed.emptyDesc')}
+                        />
+                    ) : (
+                        <div className="divide-y divide-border-default/50" id="asset-activity-feed">
+                            {activity.map((ev) => (
+                                <div key={ev.id} className="px-5 py-3 flex items-start gap-compact">
+                                    <div className="mt-0.5">
+                                        <StatusBadge variant="info">{EVENT_LABELS[ev.action] || ev.action}</StatusBadge>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm text-content-default">{ev.details}</p>
+                                        <p className="text-xs text-content-subtle mt-0.5">
+                                            {ev.user?.name || t('detail.activityFeed.systemActor')} · {formatDateTime(ev.createdAt)}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             )}
             {activeTab === 'tests' && (
                 <InheritedTestPlansPanel
@@ -355,6 +561,52 @@ export default function AssetDetailPage() {
 
             {activeTab === 'overview' && (
                 <>
+
+            {/* 360° relationship roll-ups — four clickable stats that jump to
+                the relevant tab. Counts come from the getAsset usecase. */}
+            {asset.rollups && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-default" id="asset-rollups">
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('traceability')}
+                        className={cn(cardVariants({ density: 'compact' }), 'text-left space-y-tight hover:border-border-emphasis transition-colors')}
+                    >
+                        <Eyebrow>{t('detail.rollups.risks')}</Eyebrow>
+                        <p className="text-2xl font-semibold tabular-nums text-content-default">{asset.rollups.risks.count}</p>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('traceability')}
+                        className={cn(cardVariants({ density: 'compact' }), 'text-left space-y-tight hover:border-border-emphasis transition-colors')}
+                    >
+                        <Eyebrow>{t('detail.rollups.controls')}</Eyebrow>
+                        <p className="text-2xl font-semibold tabular-nums text-content-default">{asset.rollups.controls.count}</p>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('vulnerabilities')}
+                        className={cn(cardVariants({ density: 'compact' }), 'text-left space-y-tight hover:border-border-emphasis transition-colors')}
+                    >
+                        <Eyebrow>{t('detail.rollups.vulnerabilities')}</Eyebrow>
+                        <div className="flex items-center gap-2">
+                            <p className="text-2xl font-semibold tabular-nums text-content-default">{asset.rollups.vulnerabilities.openCount}</p>
+                            {asset.rollups.vulnerabilities.maxSeverity && (
+                                <StatusBadge variant={severityVariant(asset.rollups.vulnerabilities.maxSeverity)} size="sm">
+                                    {asset.rollups.vulnerabilities.maxSeverity}
+                                </StatusBadge>
+                            )}
+                        </div>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('tasks')}
+                        className={cn(cardVariants({ density: 'compact' }), 'text-left space-y-tight hover:border-border-emphasis transition-colors')}
+                    >
+                        <Eyebrow>{t('detail.rollups.tasks')}</Eyebrow>
+                        <p className="text-2xl font-semibold tabular-nums text-content-default">{asset.rollups.tasks.openCount}</p>
+                    </button>
+                </div>
+            )}
 
             {/* Detail card — read-only view; edits flow through EditAssetModal. */}
             <div className={cn(cardVariants(), 'space-y-default')} id="asset-detail">
@@ -398,7 +650,10 @@ export default function AssetDetailPage() {
                             </div>
                             <div><Eyebrow>{t('detail.dataResidency')}</Eyebrow><p className="text-sm">{asset.dataResidency || '—'}</p></div>
                         </div>
-                        <Heading level={3}>{t('detail.criticalityHeading')}</Heading>
+                        <div className="flex items-center gap-1.5">
+                            <Heading level={3}>{t('detail.criticalityHeading')}</Heading>
+                            <InfoTooltip content={t('detail.ciaLegendBody')} aria-label={t('detail.criticalityHeading')} />
+                        </div>
                         <AssetCriticalityBadge
                             confidentiality={asset.confidentiality ?? 3}
                             integrity={asset.integrity ?? 3}

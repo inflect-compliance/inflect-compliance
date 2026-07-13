@@ -5,7 +5,7 @@ import type { TaskLinkEntityType, AssetType } from '@prisma/client';
 import { assertCanRead, assertCanWrite, assertCanAdmin } from '../policies/common';
 import { logEvent } from '../events/audit';
 import { notFound } from '@/lib/errors/types';
-import { runInTenantContext } from '@/lib/db-context';
+import { runInTenantContext, type PrismaTx } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 import { createAssignmentNotification } from '../notifications/assignment';
@@ -39,12 +39,76 @@ export async function listAssetsPaginated(ctx: RequestContext, params: AssetList
     );
 }
 
+export interface AssetRollups {
+    risks: { count: number };
+    controls: { count: number };
+    vulnerabilities: { openCount: number; maxSeverity: string | null; maxScore: number | null };
+    tasks: { openCount: number; total: number };
+}
+
+/**
+ * 360° relationship roll-ups for the asset-detail Overview band. Every
+ * aggregate is a bounded single query (count / findFirst) fanned out with
+ * Promise.all — no reads-in-a-loop, no unbounded findMany. The OPEN-vuln
+ * severity is the CVSS severity of the highest-scoring OPEN vulnerability.
+ */
+async function computeAssetRollups(
+    db: PrismaTx,
+    ctx: RequestContext,
+    assetId: string,
+): Promise<AssetRollups> {
+    const [riskCount, controlCount, openVulnCount, topOpenVuln, taskCounts] = await Promise.all([
+        db.assetRiskLink.count({ where: { tenantId: ctx.tenantId, assetId } }),
+        db.controlAsset.count({ where: { tenantId: ctx.tenantId, assetId } }),
+        db.assetVulnerability.count({ where: { tenantId: ctx.tenantId, assetId, status: 'OPEN' } }),
+        db.assetVulnerability.findFirst({
+            where: { tenantId: ctx.tenantId, assetId, status: 'OPEN' },
+            orderBy: [{ cve: { cvssScore: 'desc' } }],
+            select: { cve: { select: { cvssSeverity: true, cvssScore: true } } },
+        }),
+        WorkItemRepository.countLinkedToEntities(db, ctx, 'ASSET' as TaskLinkEntityType, [assetId]),
+    ]);
+    const tc = taskCounts.get(assetId) ?? { total: 0, done: 0 };
+    return {
+        risks: { count: riskCount },
+        controls: { count: controlCount },
+        vulnerabilities: {
+            openCount: openVulnCount,
+            maxSeverity: topOpenVuln?.cve?.cvssSeverity ?? null,
+            maxScore: topOpenVuln?.cve?.cvssScore ?? null,
+        },
+        tasks: { openCount: tc.total - tc.done, total: tc.total },
+    };
+}
+
 export async function getAsset(ctx: RequestContext, id: string) {
     assertCanRead(ctx);
     return runInTenantContext(ctx, async (db) => {
         const asset = await AssetRepository.getById(db, ctx, id);
         if (!asset) throw notFound('Asset not found');
-        return asset;
+        const rollups = await computeAssetRollups(db, ctx, id);
+        return { ...asset, rollups };
+    });
+}
+
+/**
+ * Asset activity trail — the tenant's audit-log entries for THIS asset,
+ * newest first. Mirrors `getControlActivity`: bounded with `take:`, joins
+ * the actor's display name, RLS-scoped via `runInTenantContext`. Asset
+ * mutations (CREATE / UPDATE / SOFT_DELETE / evidence link-unlink) log with
+ * `entity: 'Asset'`, so this feed reflects them without extra wiring.
+ */
+export async function getAssetActivity(ctx: RequestContext, assetId: string) {
+    assertCanRead(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const asset = await AssetRepository.getById(db, ctx, assetId);
+        if (!asset) throw notFound('Asset not found');
+        return db.auditLog.findMany({
+            where: { tenantId: ctx.tenantId, entity: 'Asset', entityId: assetId },
+            orderBy: { createdAt: 'desc' },
+            take: 50,
+            include: { user: { select: { id: true, name: true } } },
+        });
     });
 }
 
