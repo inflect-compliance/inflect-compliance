@@ -1514,7 +1514,9 @@
             },
             "metaApplicability": "Applicability",
             "objectiveEmpty": "No objective.",
-            "activityEmptyDesc": "Status changes, link updates, and edits show up here once anything moves."
+            "activityEmptyDesc": "Status changes, link updates, and edits show up here once anything moves.",
+            "testsVsChecks": "Tests are manual test plans you execute on a schedule. Checks are automated integration checks the platform runs for you — a failing check can feed a test run automatically.",
+            "checksVsTests": "Checks are automated integration runs (on a schedule). For manual, human-executed test plans, use the Tests tab. A failing check can create a test run automatically."
         },
         "editModal": {
             "title": "Edit Control",
@@ -1586,7 +1588,8 @@
             "colActions": "Actions",
             "remove": "× Remove",
             "emptyTitle": "No evidence linked",
-            "emptyDesc": "Link existing evidence or upload new files to satisfy this control."
+            "emptyDesc": "Link existing evidence or upload new files to satisfy this control.",
+            "colAddedBy": "Added by"
         },
         "checksTab": {
             "colCheck": "Check",
@@ -1759,6 +1762,48 @@
             "active": "Active",
             "paused": "Paused",
             "archived": "Archived"
+        },
+        "health": {
+            "title": "Control health",
+            "titleHelp": "What this summary means",
+            "titleTooltip": "A one-glance answer to \"is this control implemented and operating?\" — its status, applicability, latest manual test, latest automated check, effectiveness, and how much framework coverage it carries.",
+            "status": "Status",
+            "applicability": "Applicability",
+            "coverage": "Coverage",
+            "coverageValue": "{reqs} requirement(s) · {frameworks} framework(s)",
+            "coverageNone": "Not mapped to any requirement",
+            "latestTest": "Latest test",
+            "latestCheck": "Latest check",
+            "effectiveness": "Effectiveness",
+            "effectivenessMeta": "{passes}/{total} passed · last {days}d",
+            "never": "Never",
+            "retry": "Retry",
+            "loadError": "Couldn't load control health.",
+            "testResult": {
+                "PASS": "Passed",
+                "FAIL": "Failed",
+                "INCONCLUSIVE": "Inconclusive"
+            },
+            "checkStatus": {
+                "PASSED": "Passed",
+                "FAILED": "Failed",
+                "ERROR": "Error",
+                "NOT_APPLICABLE": "N/A",
+                "PENDING": "Pending",
+                "RUNNING": "Running"
+            }
+        },
+        "conceptHelp": {
+            "successCriteria": "What \"good\" looks like — the observable outcome that proves this control is working.",
+            "successCriteriaHelp": "About success criteria",
+            "category": "The control family (e.g. Organizational, People, Physical, Technological) used to group and report controls.",
+            "categoryHelp": "About category",
+            "frequency": "How often the control is performed or tested — drives the next-due date.",
+            "frequencyHelp": "About frequency",
+            "automationType": "Whether the control runs automatically, manually, or is a manual control that depends on IT.",
+            "automationTypeHelp": "About automation type",
+            "mitigationType": "How the control acts on risk: preventive (stops it), detective (finds it), corrective (fixes it), deterrent, or compensating.",
+            "mitigationTypeHelp": "About mitigation type"
         }
     },
     "evidence": {

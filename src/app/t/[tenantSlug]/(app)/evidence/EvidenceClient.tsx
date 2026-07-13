@@ -1,6 +1,7 @@
 'use client';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useSWRConfig } from 'swr';
 import { useTenantSWR, usePrefetchTenant } from '@/lib/hooks/use-tenant-swr';
 import { useKpiTrends, buildKpiSparklines, buildKpiSparklineNullable, centeredSparklineDomain, assignSparklineVariants } from '@/lib/charts/kpi-trends';
@@ -318,6 +319,20 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     // B5 — row-click detail sheet + edit modal.
     const [detailSheetOpen, setDetailSheetOpen] = useState(false);
     const [detailEvidenceId, setDetailEvidenceId] = useState<string | null>(null);
+
+    // R2-P2 — deep-link support: `?ev=<id>` opens that evidence record in the
+    // detail sheet. Lets other surfaces (e.g. the control detail Evidence tab)
+    // link to a specific record instead of dumping the user on the library.
+    const searchParams = useSearchParams();
+    useEffect(() => {
+        const ev = searchParams.get('ev');
+        if (ev) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setDetailEvidenceId(ev);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setDetailSheetOpen(true);
+        }
+    }, [searchParams]);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editInitial, setEditInitial] = useState<{
         id: string;

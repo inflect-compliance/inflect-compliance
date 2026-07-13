@@ -32,7 +32,7 @@ import { CACHE_KEYS } from '@/lib/swr-keys';
 import { extractMutationError } from '@/lib/mutations';
 import { useToastWithUndo } from '@/components/ui/hooks';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
-import { Tooltip } from '@/components/ui/tooltip';
+import { Tooltip, InfoTooltip } from '@/components/ui/tooltip';
 import { CopyText } from '@/components/ui/copy-text';
 import dynamic from 'next/dynamic';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
@@ -43,6 +43,7 @@ import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 
 import { ControlRoiCard } from './_components/ControlRoiCard';
+import { ControlHealthCard } from './_tabs/ControlHealthCard';
 import { ControlBiaSurface } from '@/components/bia/ControlBiaSurface';
 
 const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel'), {
@@ -107,6 +108,18 @@ const buildCategoryLabels = (t: (k: string) => string): Record<string, string> =
 });
 const buildCategoryCbOptions = (categoryLabels: Record<string, string>): ComboboxOption[] => CATEGORY_OPTIONS.filter(Boolean).map(c => ({ value: c, label: categoryLabels[c] || c }));
 const buildStatusCbOptions = (statusLabels: Record<string, string>): ComboboxOption[] => Object.entries(statusLabels).map(([val, lbl]) => ({ value: val, label: lbl }));
+
+// R2-P2 — an Overview field label that teaches its own term. Reuses the
+// NewControlModal applicability-tooltip pattern (InfoTooltip beside the label)
+// so a control detail explains its vocabulary instead of assuming it.
+function ConceptEyebrow({ label, help, helpLabel }: { label: string; help: string; helpLabel: string }) {
+    return (
+        <span className="text-xs text-content-subtle uppercase inline-flex items-center gap-1">
+            {label}
+            <InfoTooltip aria-label={helpLabel} content={help} iconClassName="h-3 w-3" />
+        </span>
+    );
+}
 
 type Tab = 'overview' | 'tasks' | 'evidence' | 'mappings' | 'traceability' | 'activity' | 'tests' | 'checks';
 
@@ -854,6 +867,10 @@ export default function ControlDetailPage() {
             )}
 
             {/* Tab content — tab bar is rendered by EntityDetailLayout */}
+            {/* R2-P2 — control health synthesis: status + applicability +
+                latest test + latest check + effectiveness + coverage, so the
+                "is it implemented and operating?" answer is in one place. */}
+            {tab === 'overview' && <ControlHealthCard controlId={controlId} />}
             {tab === 'overview' && <ControlRoiCard controlId={controlId} />}
 
             {/* Conditional BIA surface (continuity section / process-impact chip /
@@ -886,23 +903,23 @@ export default function ControlDetailPage() {
                             <p className="text-sm text-content-default mt-1 whitespace-pre-line">{control.objective || tx('detailPage.objectiveEmpty')}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">{tx('detailPage.eyebrowSuccessCriteria')}</span>
+                            <ConceptEyebrow label={tx('detailPage.eyebrowSuccessCriteria')} help={tx('conceptHelp.successCriteria')} helpLabel={tx('conceptHelp.successCriteriaHelp')} />
                             <p className="text-sm text-content-default mt-1 whitespace-pre-line">{control.successCriteria || '—'}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">{tx('editModal.categoryLabel')}</span>
+                            <ConceptEyebrow label={tx('editModal.categoryLabel')} help={tx('conceptHelp.category')} helpLabel={tx('conceptHelp.categoryHelp')} />
                             <p className="text-sm text-content-default mt-1">{control.category || '—'}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">{tx('detailPage.eyebrowFrequency')}</span>
+                            <ConceptEyebrow label={tx('detailPage.eyebrowFrequency')} help={tx('conceptHelp.frequency')} helpLabel={tx('conceptHelp.frequencyHelp')} />
                             <p className="text-sm text-content-default mt-1">{control.frequency ? FREQ_LABELS[control.frequency] || control.frequency : '—'}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">{tx('detailPage.eyebrowAutomationType')}</span>
+                            <ConceptEyebrow label={tx('detailPage.eyebrowAutomationType')} help={tx('conceptHelp.automationType')} helpLabel={tx('conceptHelp.automationTypeHelp')} />
                             <p className="text-sm text-content-default mt-1">{control.automationType ? AUTOMATION_TYPE_LABELS[control.automationType] || control.automationType : '—'}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">{tx('detailPage.eyebrowMitigationType')}</span>
+                            <ConceptEyebrow label={tx('detailPage.eyebrowMitigationType')} help={tx('conceptHelp.mitigationType')} helpLabel={tx('conceptHelp.mitigationTypeHelp')} />
                             <p className="text-sm text-content-default mt-1">{control.mitigationType ? MITIGATION_TYPE_LABELS[control.mitigationType] || control.mitigationType : '—'}</p>
                         </div>
                         <div>
@@ -1087,6 +1104,8 @@ export default function ControlDetailPage() {
 
             {tab === 'tests' && (
                 <div className="space-y-default">
+                    {/* R2-P2 — clarify Tests (manual) vs Checks (automated). */}
+                    <p className="text-sm text-content-muted">{tx('detailPage.testsVsChecks')}</p>
                     {control.testingMethodology && (
                         <div className={cardVariants({ density: 'compact' })}>
                             <span className="text-xs text-content-subtle uppercase">{tx('detailPage.eyebrowTestingMethodology')}</span>
@@ -1099,7 +1118,13 @@ export default function ControlDetailPage() {
                 </div>
             )}
 
-            {tab === 'checks' && <ControlChecksTab controlId={controlId} />}
+            {tab === 'checks' && (
+                <div className="space-y-default">
+                    {/* R2-P2 — Checks are automated; note the check→test bridge. */}
+                    <p className="text-sm text-content-muted">{tx('detailPage.checksVsTests')}</p>
+                    <ControlChecksTab controlId={controlId} />
+                </div>
+            )}
 
             {/* Epic G-5 — Control exceptions section. Scoped to the
               * Overview tab only: the request-exception workflow is

@@ -108,6 +108,8 @@ export const CACHE_KEYS = {
         mappings: (id: string) => `/controls/${id}/requirements` as const,
         // PR-1 — automated-check history for the "Checks" tab.
         executions: (id: string) => `/controls/${id}/executions` as const,
+        // R2-P2 — control health synthesis for the Overview.
+        health: (id: string) => `/controls/${id}/health` as const,
     },
     risks: makeResource('risks'),
     evidence: {
