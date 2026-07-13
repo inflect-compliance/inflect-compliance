@@ -39,6 +39,10 @@ const ADMIN_ONLY_ROUTES = [
     'admin/integrations/route.ts',
     'admin/integrations/diagnostics/route.ts',
     'admin/integrations/health/route.ts',
+    // P1 — connection-level run + per-connection outcomes + identity roster.
+    'admin/integrations/[connectionId]/sync/route.ts',
+    'admin/integrations/[connectionId]/executions/route.ts',
+    'admin/integrations/identity-accounts/route.ts',
     // SP-1 — SharePoint connection management (delegated-consent OAuth)
     'admin/integrations/sharepoint/route.ts',
     'admin/integrations/sharepoint/connect/route.ts',

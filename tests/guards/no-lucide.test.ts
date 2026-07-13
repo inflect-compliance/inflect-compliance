@@ -60,6 +60,9 @@ const LEGACY_LUCIDE_USERS = new Set<string>([
     'src/app/t/[tenantSlug]/(app)/admin/billing/BillingActions.tsx',
     'src/app/t/[tenantSlug]/(app)/admin/billing/BillingEventLog.tsx',
     'src/app/t/[tenantSlug]/(app)/admin/integrations/page.tsx',
+    // P1 — per-connection outcome page; RefreshCw sync affordance mirrors the
+    // parent integrations page (no plain Nucleo refresh/sync equivalent exists).
+    'src/app/t/[tenantSlug]/(app)/admin/integrations/[connectionId]/page.tsx',
     'src/app/t/[tenantSlug]/(app)/admin/members/page.tsx',
     'src/app/t/[tenantSlug]/(app)/admin/page.tsx',
     'src/app/t/[tenantSlug]/(app)/admin/rbac/page.tsx',

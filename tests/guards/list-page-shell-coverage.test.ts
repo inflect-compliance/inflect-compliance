@@ -84,6 +84,10 @@ const EXEMPTIONS: Record<string, string> = {
     // banner / info-card content needs.
     'admin/integrations/page.tsx':
         'multi-section admin page',
+    'admin/integrations/[connectionId]/page.tsx':
+        'admin sub-page — per-connection outcome view (header + sync action + one table), not a viewport-clamped list',
+    'admin/integrations/identity-accounts/page.tsx':
+        'admin sub-page — synced-identity roster (bounded per-tenant table), not a viewport-clamped list',
 
     // GAP-3 — freshness sub-panel embedded inside the (exempt)
     // integrations page. Parent decides layout; this file just renders

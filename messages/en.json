@@ -3283,7 +3283,27 @@
                 "neverSucceeded": "Never succeeded",
                 "stale": "Stale",
                 "fresh": "Fresh",
-                "staleSummary": "{count} stale"
+                "staleSummary": "{count} stale",
+                "testedOk": "Tested OK"
+            },
+            "syncNow": "Sync now",
+            "viewOutcomes": "View outcomes",
+            "syncRunning": "Running sync…",
+            "syncDone": "Sync complete — {total} checks ({passed} passed, {failed} failed), {accounts} accounts synced.",
+            "syncFailed": "Sync failed.",
+            "outcome": {
+                "breadcrumb": "Outcomes",
+                "title": "Connection outcomes",
+                "titleFor": "{provider} — outcomes",
+                "checkRuns": "Check runs",
+                "colCheck": "Check",
+                "colTrigger": "Trigger",
+                "colRan": "Last run",
+                "colControl": "Control",
+                "viewControl": "View control",
+                "unmapped": "Not mapped",
+                "empty": "No check runs yet. Use \"Sync now\" to run this connection’s checks.",
+                "loadError": "Couldn't load check runs."
             }
         },
         "forbidden": {
@@ -3645,6 +3665,22 @@
             "audits": "Audits",
             "reports": "Reports",
             "admin": "Admin"
+        },
+        "identityAccounts": {
+            "linkLabel": "Synced identities",
+            "breadcrumb": "Identity accounts",
+            "title": "Synced identity accounts",
+            "intro": "Accounts synced from your identity providers (Okta, Google Workspace). Use these to launch a connected-app access review.",
+            "colEmail": "Email",
+            "colName": "Name",
+            "colAdmin": "Admin",
+            "colMfa": "MFA",
+            "colSynced": "Synced",
+            "admin": "Admin",
+            "mfaOn": "On",
+            "mfaOff": "Off",
+            "empty": "No synced accounts yet. Connect and sync Okta or Google Workspace.",
+            "loadError": "Couldn't load identity accounts."
         }
     },
     "riskManager": {
