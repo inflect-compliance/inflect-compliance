@@ -47,6 +47,9 @@ model Finding {
   evidenceLinks         FindingEvidence[]
   riskLinks             FindingRisk[]
   assetLinks            FindingAsset[]
+  // TP-3 — remediation tasks auto-created from this finding (audit
+  // checklist / NIS2 gap materializers). SetNull on this side.
+  tasks                 Task[]            @relation("FindingTasks")
 
   @@unique([id, tenantId])
   @@index([tenantId])

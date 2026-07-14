@@ -80,6 +80,10 @@ async function cascadeChecklistFailure(
         description,
         severity: 'MEDIUM',
         source: 'AUDIT',
+        // TP-3 — first-class FK to the Finding (reconciliation closes
+        // it when this task terminates). metadataJson.findingId is kept
+        // for back-compat with any reader that still consumes it.
+        findingId: finding.id,
         metadataJson: {
             findingId: finding.id,
             auditId: params.auditId,

@@ -20,6 +20,13 @@ model Task {
   assigneeUserId            String?
   reviewerUserId            String?
   controlId                 String?
+  // TP-3 — first-class relation to the Finding a remediation task
+  // reflects (replaces the prior `metadataJson.findingId` string).
+  // SetNull on finding delete so closing/deleting a finding never
+  // orphans the task row. Materializers (audit checklist, NIS2 gap)
+  // set this on create; `reconcileTaskSource` reads it to close the
+  // finding when the task reaches a terminal RESOLVED/CLOSED state.
+  findingId                 String?
   metadataJson              Json?
   createdAt                 DateTime             @default(now())
   updatedAt                 DateTime             @updatedAt
@@ -28,6 +35,7 @@ model Task {
   retentionUntil            DateTime?
   assignee                  User?                @relation("TaskAssignee", fields: [assigneeUserId], references: [id])
   control                   Control?             @relation(fields: [controlId], references: [id])
+  finding                   Finding?             @relation("FindingTasks", fields: [findingId], references: [id], onDelete: SetNull)
   createdBy                 User                 @relation("TaskCreator", fields: [createdByUserId], references: [id])
   reviewer                  User?                @relation("TaskReviewer", fields: [reviewerUserId], references: [id])
   tenant                    Tenant               @relation(fields: [tenantId], references: [id])
@@ -51,6 +59,9 @@ model Task {
   @@index([tenantId, severity])
   @@index([tenantId, assigneeUserId])
   @@index([tenantId, controlId])
+  // TP-3 — FK-index for the Finding relation (Layer B) + the
+  // "tasks for this finding" lookup used by reconciliation.
+  @@index([tenantId, findingId])
   // #102 item 4 — the control-detail Tasks tab filters by both
   // controlId AND status; this composite serves that hot path.
   @@index([tenantId, controlId, status])

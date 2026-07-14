@@ -20,6 +20,7 @@ import {
     isTerminalStatus,
 } from '../domain/work-item-status';
 import { getSlaStatus } from '../services/sla';
+import { reconcileTaskSource } from './task-source-reconcile';
 
 // ─── Type-Specific Validation ───
 
@@ -130,6 +131,7 @@ export async function createTask(ctx: RequestContext, input: {
     assigneeUserId?: string | null;
     reviewerUserId?: string | null;
     controlId?: string | null;
+    findingId?: string | null;
     metadataJson?: unknown;
 }) {
     assertCanWriteTasks(ctx);
@@ -351,6 +353,11 @@ export async function setTaskStatus(ctx: RequestContext, taskId: string, status:
                 resolution: resolution ?? null,
             },
         });
+        // TP-3 — reconcile the source that raised this task once it
+        // reaches a terminal RESOLVED/CLOSED state (NOT CANCELED). Runs
+        // AFTER the task's own status write + audit, inside the SAME
+        // tenant transaction so the source mutation commits atomically.
+        await reconcileTaskSource(db, ctx, taskId, status);
         return task;
     });
     await bumpEntityCacheVersion(ctx, 'task');
@@ -855,6 +862,10 @@ export async function bulkSetTaskStatus(ctx: RequestContext, taskIds: string[], 
                 },
                 metadata: { status, resolution, bulk: true },
             });
+            // TP-3 — reconcile each task's source on terminal close
+            // (RESOLVED/CLOSED, not CANCELED). Same tenant transaction
+            // as the bulk status write + audit.
+            await reconcileTaskSource(db, ctx, id, status);
         }
         return result;
     });
