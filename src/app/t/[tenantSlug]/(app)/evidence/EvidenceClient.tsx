@@ -22,6 +22,7 @@ import { useHydratedNow } from '@/lib/hooks/use-hydrated-now';
 import { UploadEvidenceModal } from './UploadEvidenceModal';
 import { EvidenceDetailSheet } from './EvidenceDetailSheet';
 import { EditEvidenceModal } from './EditEvidenceModal';
+import { RejectReasonModal } from './RejectReasonModal';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
@@ -45,7 +46,7 @@ import {
 } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { ListPageShell } from '@/components/layout/ListPageShell';
-import { useThresholdLoadMore } from '@/components/ui/hooks';
+import { useThresholdLoadMore, useToast } from '@/components/ui/hooks';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import {
@@ -180,6 +181,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         [tenantSlug],
     );
     const { mutate: swrMutate } = useSWRConfig();
+    const toast = useToast();
 
     // Retention-tab + view-mode selectors — deliberately kept separate from filter state.
     // `tab`: active | expiring | archived. `view`: list | gallery.
@@ -258,6 +260,27 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 body: JSON.stringify(body),
             });
             if (!res.ok) throw new Error(tx('list.bulkFailed'));
+            // Bulk-approve is reviewer-gated: only SUBMITTED rows the
+            // reviewer didn't author move to APPROVED. Surface what was
+            // and wasn't touched so the reviewer isn't left guessing.
+            if (action === 'approve') {
+                const result = await res.json().catch(() => null) as
+                    | { approved?: number; skippedNotSubmitted?: number; skippedSelfReview?: number }
+                    | null;
+                const approved = result?.approved ?? 0;
+                const skippedNotSubmitted = result?.skippedNotSubmitted ?? 0;
+                const skippedSelfReview = result?.skippedSelfReview ?? 0;
+                const message = tx('list.bulkApproveResult', {
+                    approved,
+                    skippedNotSubmitted,
+                    skippedSelfReview,
+                });
+                if (skippedNotSubmitted > 0 || skippedSelfReview > 0) {
+                    toast.info(message);
+                } else {
+                    toast.success(message);
+                }
+            }
             await evidenceQuery.mutate();
             setSelected(new Set());
         } finally {
@@ -319,6 +342,10 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     // B5 — row-click detail sheet + edit modal.
     const [detailSheetOpen, setDetailSheetOpen] = useState(false);
     const [detailEvidenceId, setDetailEvidenceId] = useState<string | null>(null);
+    // ep1 review gate — the evidence id whose row-level Reject prompt is
+    // open (null = closed). The reason entered in the modal is threaded
+    // through to `submitReview(..., 'REJECTED', reason)`.
+    const [rejectRowId, setRejectRowId] = useState<string | null>(null);
 
     // R2-P2 — deep-link support: `?ev=<id>` opens that evidence record in the
     // detail sheet. Lets other surfaces (e.g. the control detail Evidence tab)
@@ -1012,7 +1039,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                                         type="button"
                                         aria-label={t.rejectEvidence}
                                         className={`${ICON_ACTION_CLASS} hover:text-content-error`}
-                                        onClick={() => submitReview(ev.id, 'REJECTED', 'Needs improvement')}
+                                        onClick={() => setRejectRowId(ev.id)}
                                     >
                                         <Xmark className="size-3.5" />
                                     </button>
@@ -1100,7 +1127,14 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                     setEditInitial(ev);
                     setEditModalOpen(true);
                 }}
-                onReview={(id, action) => submitReview(id, action)}
+                onReview={(id, action, comment) => submitReview(id, action, comment)}
+            />
+            <RejectReasonModal
+                open={rejectRowId !== null}
+                onClose={() => setRejectRowId(null)}
+                onConfirm={(reason) => {
+                    if (rejectRowId) submitReview(rejectRowId, 'REJECTED', reason);
+                }}
             />
             <EditEvidenceModal
                 open={editModalOpen}

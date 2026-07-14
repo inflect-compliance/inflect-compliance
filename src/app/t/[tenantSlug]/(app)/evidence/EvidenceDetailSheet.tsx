@@ -17,8 +17,9 @@
  * Mirrors the `<ControlDetailSheet>` shape so the surface reads as
  * a sibling of the established controls drill-down.
  */
-import { useMemo, type Dispatch, type SetStateAction } from 'react';
+import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { useTranslations } from 'next-intl';
+import { RejectReasonModal } from './RejectReasonModal';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { Sheet } from '@/components/ui/sheet';
@@ -58,8 +59,12 @@ export interface EvidenceDetailSheetProps {
         /** Retention date (ISO) — edited in the modal now. */
         retentionUntil: string | null;
     }) => void;
-    /** Existing parent review pipeline — re-uses the optimistic mutation. */
-    onReview: (id: string, action: 'SUBMITTED' | 'APPROVED' | 'REJECTED') => void;
+    /**
+     * Existing parent review pipeline — re-uses the optimistic mutation.
+     * `comment` carries a rejection reason (required for REJECTED, threaded
+     * from the reject-reason modal); omitted for SUBMITTED / APPROVED.
+     */
+    onReview: (id: string, action: 'SUBMITTED' | 'APPROVED' | 'REJECTED', comment?: string) => void;
 }
 
 interface EvidenceDetailPayload {
@@ -98,6 +103,8 @@ export function EvidenceDetailSheet({
 }: EvidenceDetailSheetProps) {
     const t = useTranslations('evidence');
     const tenantHref = useTenantHref();
+    // ep1 review gate — required-reason prompt for the sheet's Reject.
+    const [rejectOpen, setRejectOpen] = useState(false);
 
     const detailQuery = useTenantSWR<EvidenceDetailPayload>(
         open && evidenceId ? CACHE_KEYS.evidence.detail(evidenceId) : null,
@@ -356,7 +363,7 @@ export function EvidenceDetailSheet({
                                     <Button
                                         variant="secondary"
                                         size="sm"
-                                        onClick={() => onReview(evidence.id, 'REJECTED')}
+                                        onClick={() => setRejectOpen(true)}
                                         id="evidence-sheet-reject-btn"
                                     >
                                         {t('detail.reject')}
@@ -373,6 +380,11 @@ export function EvidenceDetailSheet({
                             )}
                         </div>
                     </Sheet.Footer>
+                    <RejectReasonModal
+                        open={rejectOpen}
+                        onClose={() => setRejectOpen(false)}
+                        onConfirm={(reason) => onReview(evidence.id, 'REJECTED', reason)}
+                    />
                 </>
             )}
         </Sheet>

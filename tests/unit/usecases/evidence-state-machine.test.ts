@@ -16,11 +16,14 @@ jest.mock('@/app-layer/policies/common', () => ({
 const repoUpdate = jest.fn();
 const repoAddReview = jest.fn();
 const repoGetById = jest.fn();
+// SoD source (ep1 review gate) — empty map ⇒ fall back to owner.
+const repoGetLatestSubmitters = jest.fn(async () => new Map());
 jest.mock('@/app-layer/repositories/EvidenceRepository', () => ({
     EvidenceRepository: {
         getById: repoGetById,
         update: repoUpdate,
         addReview: repoAddReview,
+        getLatestSubmitters: repoGetLatestSubmitters,
     },
 }));
 
