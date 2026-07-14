@@ -62,12 +62,13 @@ export const BACK_AFFORDANCE_EXEMPT_SUBPAGES: readonly string[] = [
     '/auth/mfa',              // auth flow — back would bypass MFA challenge
     '/controls/new',          // redirect shim → /controls?create=1
     '/issues/[issueId]',      // legacy redirect → /tasks/[taskId]
-    '/issues/dashboard',      // legacy redirect → /tasks/dashboard
+    '/issues/dashboard',      // legacy redirect → /tasks (dashboard retired, TP-7)
     '/issues/new',            // legacy redirect → /tasks/new
     '/onboarding',            // forced flow — back would skip a required step
     '/policies/new',          // redirect shim → /policies?create=1
     '/reports/soa/print',     // print view, chrome-less by design
     '/risks/new',             // redirect shim → /risks?create=1
+    '/tasks/dashboard',       // redirect shim → /tasks (dashboard merged into list, TP-7)
     '/tasks/new',             // redirect shim → /tasks?create=1
     // R3-P3 — parent navigation is PageBreadcrumbs (Dashboard › Tests › …)
     // plus the shared TestsSubNav spine, the richer form PageHeader itself

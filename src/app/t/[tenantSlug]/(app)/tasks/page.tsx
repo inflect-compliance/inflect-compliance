@@ -1,5 +1,5 @@
 import { getTenantCtx } from '@/app-layer/context';
-import { listTasks } from '@/app-layer/usecases/task';
+import { listTasks, getTaskMetrics } from '@/app-layer/usecases/task';
 import { cachedSsrPayload } from '@/lib/cache/ssr-cache';
 import { TasksClient } from './TasksClient';
 
@@ -42,14 +42,22 @@ export default async function TasksPage({
     // SSR payload cache — unfiltered load only; filtered bypasses (list-cache covers it).
     const fetchTasks = () =>
         listTasks(ctx, Object.keys(filters).length > 0 ? filters : undefined, { take: SSR_PAGE_LIMIT });
-    const tasks =
+    const [tasks, metrics] = await Promise.all([
         Object.keys(filters).length > 0
-            ? await fetchTasks()
-            : await cachedSsrPayload({ tenantId: ctx.tenantId, route: 'tasks', ttlSeconds: 30, compute: fetchTasks });
+            ? fetchTasks()
+            : cachedSsrPayload({ tenantId: ctx.tenantId, route: 'tasks', ttlSeconds: 30, compute: fetchTasks }),
+        // TP-7 — the list KPI strip is SERVER-computed (getTaskMetrics)
+        // rather than counted from the SSR row slice, so the KPI values
+        // stay correct past the 100-row SSR cap. The client feeds this
+        // as SWR fallbackData and revalidates against /tasks/metrics
+        // (which returns the SAME usecase) — the two can never diverge.
+        getTaskMetrics(ctx),
+    ]);
 
     return (
         <TasksClient
             initialTasks={JSON.parse(JSON.stringify(tasks))}
+            initialMetrics={JSON.parse(JSON.stringify(metrics))}
             initialFilters={filters}
             tenantSlug={tenantSlug}
             appPermissions={{

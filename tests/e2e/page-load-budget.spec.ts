@@ -30,7 +30,7 @@ const STATIC_ROUTES = [
     'risks/kri', 'risks/loss-events', 'risks/reports', 'risks/scenarios',
     'evidence', 'findings', 'frameworks', 'clauses', 'coverage', 'calendar',
     'policies', 'policies/templates',
-    'tasks', 'tasks/dashboard',
+    'tasks', // tasks/dashboard retired in TP-7 (redirect shim → /tasks)
     'tests', 'tests/dashboard', 'tests/due',
     'vendors', 'vendors/dashboard',
     'audits', 'audits/auditor', 'audits/cycles', 'audits/readiness',

@@ -18,19 +18,26 @@
  *     sidebar must work in any tree.
  *
  * Test-mode opt-out: SidebarContent is mounted twice (desktop +
- * mobile-drawer), so EVERY tenant page navigation fires two
- * `/calendar/upcoming-count` requests at mount, and React 18 strict
- * effects can double them again under `next dev`. On a slow CI
- * runner, that handful of in-flight requests is enough to keep
- * `page.waitForLoadState('networkidle')` from settling within the
- * 180s test timeout — observed as the 3-min control-edit-modal
- * hang. The badge is a vanity counter; it's fine to skip the fetch
- * under `NEXT_PUBLIC_TEST_MODE=1`. The flag is the same one that
- * suppresses the Driver.js onboarding tour in
+ * mobile-drawer). Under `NEXT_PUBLIC_TEST_MODE=1` the fetch is
+ * skipped entirely (SWR key = null) — the badge is a vanity counter,
+ * and even one in-flight interval request per mount was enough to
+ * keep `page.waitForLoadState('networkidle')` from settling within
+ * the 180s test timeout on a slow CI runner (the 3-min
+ * control-edit-modal hang). The flag is the same one that suppresses
+ * the Driver.js onboarding tour in
  * `src/components/layout/ClientProviders.tsx` — same rationale.
+ *
+ * Dedupe (P4.3): both SidebarContent mounts call this hook with the
+ * SAME tenant-scoped SWR key, so SWR's module-level cache collapses
+ * the two mounts (and any React strict-mode double-effect) into a
+ * SINGLE in-flight `/calendar/upcoming-count` request and a single
+ * shared 5-minute refresh timer. Plain `useSWR` (not `useTenantSWR`)
+ * is deliberate: the SidebarNav mounts inside `<AppShell>`, OUTSIDE
+ * `<ClientProviders>`, so there is no tenant-context/QueryClient in
+ * scope — SWR's default global cache needs no provider.
  */
 
-import { useEffect, useState } from 'react';
+import useSWR from 'swr';
 
 interface UpcomingCountResponse {
     count: number;
@@ -40,42 +47,38 @@ const REFRESH_MS = 5 * 60_000; // 5 minutes
 // Read at module load — NEXT_PUBLIC_* vars are inlined at build time.
 const SUPPRESS_IN_TEST = process.env.NEXT_PUBLIC_TEST_MODE === '1';
 
+async function fetchUpcomingCount(url: string): Promise<number | null> {
+    try {
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const data: UpcomingCountResponse = await res.json();
+        return data.count;
+    } catch {
+        // Network errors / aborts — leave the badge hidden, don't
+        // disrupt the nav.
+        return null;
+    }
+}
+
 export function useCalendarBadge(tenantSlug: string): string | number | undefined {
-    const [count, setCount] = useState<number | null>(null);
+    // A `null` key tells SWR not to fetch (test mode / no tenant). A
+    // string key is shared across both sidebar mounts, so SWR dedupes
+    // the request and the interval refresh to a single network call.
+    const key =
+        tenantSlug && !SUPPRESS_IN_TEST
+            ? `/api/t/${tenantSlug}/calendar/upcoming-count`
+            : null;
 
-    useEffect(() => {
-        if (!tenantSlug) return;
-        if (SUPPRESS_IN_TEST) return;
-        let cancelled = false;
-        const controller = new AbortController();
+    const { data: count } = useSWR<number | null>(key, fetchUpcomingCount, {
+        refreshInterval: REFRESH_MS,
+        // Collapse concurrent revalidations for this key (both mounts'
+        // interval timers) into one request.
+        dedupingInterval: REFRESH_MS,
+        revalidateOnFocus: false,
+        shouldRetryOnError: false,
+    });
 
-        const load = async () => {
-            try {
-                const res = await fetch(
-                    `/api/t/${tenantSlug}/calendar/upcoming-count`,
-                    { signal: controller.signal },
-                );
-                if (!res.ok) return;
-                const data: UpcomingCountResponse = await res.json();
-                if (!cancelled) setCount(data.count);
-            } catch {
-                // Network errors / aborts — leave the badge hidden,
-                // don't disrupt the nav.
-            }
-        };
-
-        // Initial fetch + interval
-        void load();
-        const interval = window.setInterval(() => void load(), REFRESH_MS);
-
-        return () => {
-            cancelled = true;
-            controller.abort();
-            window.clearInterval(interval);
-        };
-    }, [tenantSlug]);
-
-    if (count === null || count <= 0) return undefined;
+    if (count == null || count <= 0) return undefined;
     if (count > 99) return '99+';
     return count;
 }

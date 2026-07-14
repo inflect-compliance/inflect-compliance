@@ -89,7 +89,7 @@ const STATUS_BADGE_BUDGET: Record<string, number> = {
     // P1 — synced-identity roster: provider / status / admin / MFA are each a
     // distinct, decision-relevant security signal (one per column, not stacked).
     "src/app/t/[tenantSlug]/(app)/admin/integrations/identity-accounts/page.tsx": 5,
-    "src/app/t/[tenantSlug]/(app)/tasks/dashboard/page.tsx": 5,
+    // /tasks/dashboard retired in TP-7 (redirect shim, no badges).
     "src/app/t/[tenantSlug]/(app)/coverage/CoverageClient.tsx": 5,
     // Prompt 2 — the pack page's new share-links section adds a per-share
     // lifecycle badge (Active/Expired/Revoked) alongside the existing

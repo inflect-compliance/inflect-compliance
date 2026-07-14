@@ -49,7 +49,9 @@ const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 const PER_RESOURCE_DASHBOARDS = [
     'src/app/t/[tenantSlug]/(app)/risks/dashboard/page.tsx',
     'src/app/t/[tenantSlug]/(app)/controls/dashboard/page.tsx',
-    'src/app/t/[tenantSlug]/(app)/tasks/dashboard/page.tsx',
+    // /tasks/dashboard retired in TP-7 — merged into the /tasks list
+    // (server-computed KPI strip + "Assigned to me" toggle). The route
+    // is now a redirect shim, so it no longer mounts <KPIStat>.
     'src/app/t/[tenantSlug]/(app)/vendors/dashboard/page.tsx',
     'src/app/t/[tenantSlug]/(app)/tests/dashboard/page.tsx',
 ];
