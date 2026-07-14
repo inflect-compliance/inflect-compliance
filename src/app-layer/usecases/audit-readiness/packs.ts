@@ -1,7 +1,7 @@
 ﻿/**
  * Audit Readiness — Pack CRUD, Freeze, Snapshots, Export, Default Pack Preview
  */
-import { AuditPackItemEntityType, WorkItemStatus } from '@prisma/client';
+import { AuditPackItemEntityType, WorkItemStatus, ControlStatus, PolicyStatus, EvidenceStatus } from '@prisma/client';
 import { type PrismaTx } from '@/lib/db-context';
 import { RequestContext } from '../../types';
 import {
@@ -263,6 +263,35 @@ export async function freezeAuditPack(ctx: RequestContext, packId: string) {
 
 
 // РІвЂќР‚РІвЂќР‚РІвЂќР‚ Default Pack Templates (selection logic) РІвЂќР‚РІвЂќР‚РІвЂќР‚
+//
+// The default pack is a CURATED starting point, NOT a dump of the whole
+// tenant. An auditor wants the story of what is *in place and evidenced*,
+// plus the open items being worked — not every draft policy and
+// not-started control. The curation rules (shared across frameworks):
+//
+//   • Controls  — framework-mapped controls that are actually OPERATING
+//                 (IMPLEMENTED or under NEEDS_REVIEW). NOT_APPLICABLE /
+//                 not-started / in-progress controls are excluded; the
+//                 no-mapping fallback narrows to operating controls
+//                 rather than every control.
+//   • Policies  — only APPROVED / PUBLISHED policies (a draft is not an
+//                 auditable artefact), preferring the framework-relevant
+//                 ones by category/title.
+//   • Evidence  — APPROVED evidence linked to the selected controls
+//                 (the reviewed, attestation-grade artefacts).
+//   • Issues    — OPEN (non-terminal) findings/tasks, so the auditor
+//                 sees the live remediation backlog.
+
+/** Control statuses that represent a control actually in operation. */
+const OPERATING_CONTROL_STATUSES: readonly ControlStatus[] = [
+    ControlStatus.IMPLEMENTED,
+    ControlStatus.NEEDS_REVIEW,
+];
+/** Policy statuses that are auditable (issued, not draft/archived). */
+const AUDITABLE_POLICY_STATUSES: readonly PolicyStatus[] = [
+    PolicyStatus.APPROVED,
+    PolicyStatus.PUBLISHED,
+];
 
 export async function previewDefaultPack(ctx: RequestContext, cycleId: string) {
     assertCanViewPack(ctx);
@@ -273,18 +302,23 @@ export async function previewDefaultPack(ctx: RequestContext, cycleId: string) {
     if (!cycle) throw notFound('Audit cycle not found');
 
     if (cycle.frameworkKey === 'ISO27001') {
-        return previewISO27001DefaultPack(ctx);
+        return buildCuratedDefaultPack(ctx, 'ISO27001', ['security', 'information security', 'access control']);
     } else if (cycle.frameworkKey === 'NIS2') {
-        return previewNIS2DefaultPack(ctx);
+        return buildCuratedDefaultPack(ctx, 'NIS2', ['incident', 'business continuity', 'disaster recovery', 'access control', 'supplier', 'supply chain']);
     }
     throw badRequest(`No default pack template for framework: ${cycle.frameworkKey}`);
 }
 
-async function previewISO27001DefaultPack(ctx: RequestContext) {
-    const fw = await runInTenantContext(ctx, (tdb) => tdb.framework.findFirst({ where: { key: 'ISO27001' } }));
+/**
+ * Curated default-pack selection shared by every framework template.
+ * `policyKeywords` biases policy selection toward framework-relevant
+ * titles/categories among the APPROVED/PUBLISHED set.
+ */
+async function buildCuratedDefaultPack(ctx: RequestContext, frameworkKey: string, policyKeywords: string[]) {
+    const fw = await runInTenantContext(ctx, (tdb) => tdb.framework.findFirst({ where: { key: frameworkKey } }));
 
-    // Controls mapped to ISO27001 requirements
-    let controlIds: string[] = [];
+    // Controls mapped to the framework's requirements…
+    let mappedControlIds: string[] = [];
     if (fw) {
         const links = await runInTenantContext(ctx, (tdb) =>
             tdb.controlRequirementLink.findMany({
@@ -292,113 +326,54 @@ async function previewISO27001DefaultPack(ctx: RequestContext) {
                 select: { controlId: true },
             })
         );
-        controlIds = [...new Set(links.map((l) => l.controlId))];
+        mappedControlIds = [...new Set(links.map((l) => l.controlId))];
     }
 
-    // Fallback: all controls if no framework mapping
-    if (controlIds.length === 0) {
-        const controls = await runInTenantContext(ctx, (tdb) =>
-            tdb.control.findMany({ where: { tenantId: ctx.tenantId }, select: { id: true } })
-        );
-        controlIds = controls.map((c) => c.id);
-    }
-
-    // Policies with category "Security" or any policies
-    const policies = await runInTenantContext(ctx, (tdb) =>
-        tdb.policy.findMany({
-            where: { tenantId: ctx.tenantId },
-            select: { id: true, category: true },
-        })
-    );
-    const securityPolicies = policies.filter((p) => p.category === 'Security' || p.category === 'INFORMATION_SECURITY');
-    const policyIds = (securityPolicies.length > 0 ? securityPolicies : policies).map((p) => p.id);
-
-    // Evidence linked to those controls (via direct Control.evidence relation)
-    const controlsWithEvidence = await runInTenantContext(ctx, (tdb) =>
+    // …narrowed to controls that are actually operating. If there is no
+    // framework mapping, fall back to ALL operating controls (still
+    // curated by status — never a full dump of not-started controls).
+    const operatingControls = await runInTenantContext(ctx, (tdb) =>
         tdb.control.findMany({
-            where: { tenantId: ctx.tenantId, id: { in: controlIds } },
-            select: { evidence: { select: { id: true } } },
+            where: {
+                tenantId: ctx.tenantId,
+                status: { in: [...OPERATING_CONTROL_STATUSES] },
+                ...(mappedControlIds.length > 0 ? { id: { in: mappedControlIds } } : {}),
+            },
+            select: { id: true, evidence: { where: { status: EvidenceStatus.APPROVED }, select: { id: true } } },
+            take: 2000,
         })
     );
-    const evidenceIds = [...new Set(controlsWithEvidence.flatMap((c) => c.evidence.map((e) => e.id)))];
+    const controlIds = operatingControls.map((c) => c.id);
 
-    // Open issues
-    const issues = await runInTenantContext(ctx, (tdb) =>
-        tdb.task.findMany({
-            where: { tenantId: ctx.tenantId, status: { notIn: [...TERMINAL_WORK_ITEM_STATUSES] } },
-            select: { id: true },
-        })
-    );
-    const issueIds = issues.map((i) => i.id);
-
-    return {
-        frameworkKey: 'ISO27001',
-        selection: {
-            controls: { count: controlIds.length, ids: controlIds },
-            policies: { count: policyIds.length, ids: policyIds },
-            evidence: { count: evidenceIds.length, ids: evidenceIds },
-            issues: { count: issueIds.length, ids: issueIds },
-        },
-        totalItems: controlIds.length + policyIds.length + evidenceIds.length + issueIds.length,
-    };
-}
-
-async function previewNIS2DefaultPack(ctx: RequestContext) {
-    const fw = await runInTenantContext(ctx, (tdb) => tdb.framework.findFirst({ where: { key: 'NIS2' } }));
-
-    // Controls mapped to NIS2 requirements (Art.21 measures)
-    let controlIds: string[] = [];
-    if (fw) {
-        const links = await runInTenantContext(ctx, (tdb) =>
-            tdb.controlRequirementLink.findMany({
-                where: { tenantId: ctx.tenantId, requirement: { frameworkId: fw.id } },
-                select: { controlId: true },
-            })
-        );
-        controlIds = [...new Set(links.map((l) => l.controlId))];
-    }
-
-    if (controlIds.length === 0) {
-        const controls = await runInTenantContext(ctx, (tdb) =>
-            tdb.control.findMany({ where: { tenantId: ctx.tenantId }, select: { id: true } })
-        );
-        controlIds = controls.map((c) => c.id);
-    }
-
-    // NIS2-relevant policies: incident response, BC/DR, access control, supplier security
+    // APPROVED / PUBLISHED policies, preferring framework-relevant ones.
     const policies = await runInTenantContext(ctx, (tdb) =>
         tdb.policy.findMany({
-            where: { tenantId: ctx.tenantId },
+            where: { tenantId: ctx.tenantId, status: { in: [...AUDITABLE_POLICY_STATUSES] } },
             select: { id: true, title: true, category: true },
+            take: 2000,
         })
     );
-    const nis2Keywords = ['incident', 'business continuity', 'disaster recovery', 'access control', 'supplier', 'supply chain'];
-    const nis2Policies = policies.filter((p) => {
+    const relevantPolicies = policies.filter((p) => {
         const text = `${p.title} ${p.category || ''}`.toLowerCase();
-        return nis2Keywords.some(kw => text.includes(kw));
+        return policyKeywords.some((kw) => text.includes(kw));
     });
-    const policyIds = (nis2Policies.length > 0 ? nis2Policies : policies).map((p) => p.id);
+    const policyIds = (relevantPolicies.length > 0 ? relevantPolicies : policies).map((p) => p.id);
 
-    // Evidence tied to controls (via direct Control.evidence relation)
-    const controlsWithEvidence = await runInTenantContext(ctx, (tdb) =>
-        tdb.control.findMany({
-            where: { tenantId: ctx.tenantId, id: { in: controlIds } },
-            select: { evidence: { select: { id: true } } },
-        })
-    );
-    const evidenceIds = [...new Set(controlsWithEvidence.flatMap((c) => c.evidence.map((e) => e.id)))];
+    // APPROVED evidence linked to the selected operating controls.
+    const evidenceIds = [...new Set(operatingControls.flatMap((c) => c.evidence.map((e) => e.id)))];
 
-    // Issues
+    // Open (non-terminal) findings / tasks — the live remediation backlog.
     const issues = await runInTenantContext(ctx, (tdb) =>
         tdb.task.findMany({
             where: { tenantId: ctx.tenantId, status: { notIn: [...TERMINAL_WORK_ITEM_STATUSES] } },
             select: { id: true },
+            take: 2000,
         })
     );
     const issueIds = issues.map((i) => i.id);
 
     return {
-        frameworkKey: 'NIS2',
+        frameworkKey,
         selection: {
             controls: { count: controlIds.length, ids: controlIds },
             policies: { count: policyIds.length, ids: policyIds },

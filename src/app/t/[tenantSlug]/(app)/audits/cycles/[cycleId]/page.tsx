@@ -9,6 +9,7 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
+import { useToast } from '@/components/ui/hooks';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { cardVariants } from '@/components/ui/card';
@@ -56,6 +57,7 @@ export default function CycleDetailPage() {
     const tenantSlug = params.tenantSlug as string;
     const cycleId = params.cycleId as string;
     const apiUrl = useCallback((path: string) => `/api/t/${tenantSlug}${path}`, [tenantSlug]);
+    const toast = useToast();
 
     const [cycle, setCycle] = useState<AuditCycleDetail | null>(null);
     const [preview, setPreview] = useState<DefaultPackPreview | null>(null);
@@ -79,7 +81,12 @@ export default function CycleDetailPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ auditCycleId: cycleId, name: `${cycle.frameworkKey} Default Pack` }),
             });
-            if (!packRes.ok) { setCreating(false); return; }
+            if (!packRes.ok) {
+                const err = await packRes.json().catch(() => null);
+                toast.error(err?.message || tx('cycleDetail.createPackError'));
+                setCreating(false);
+                return;
+            }
             const pack = await packRes.json();
 
             // 2) Add all items from preview
@@ -92,14 +99,17 @@ export default function CycleDetailPage() {
                 sel.issues?.ids?.forEach((id: string, i: number) => items.push({ entityType: 'ISSUE', entityId: id, sortOrder: 300 + i }));
 
                 if (items.length > 0) {
-                    await fetch(apiUrl(`/audits/packs/${pack.id}?action=items`), {
+                    const itemsRes = await fetch(apiUrl(`/audits/packs/${pack.id}?action=items`), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ items }),
                     });
+                    if (!itemsRes.ok) toast.error(tx('cycleDetail.addItemsError'));
                 }
             }
             router.push(`/t/${tenantSlug}/audits/packs/${pack.id}`);
+        } catch {
+            toast.error(tx('cycleDetail.createPackError'));
         } finally { setCreating(false); }
     };
 

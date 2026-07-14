@@ -289,3 +289,73 @@ export async function revokeAuditorAccess(ctx: RequestContext, auditorId: string
         return { revoked: true };
     });
 }
+
+// ─── Auditor / Share Readers (management UI) ───
+
+export interface AuditorPackAccessRef {
+    auditPackId: string;
+    grantedAt: Date;
+}
+
+export interface AuditorSummary {
+    id: string;
+    email: string;
+    name: string | null;
+    status: 'INVITED' | 'ACTIVE' | 'REVOKED';
+    createdAt: Date;
+    packAccess: AuditorPackAccessRef[];
+}
+
+/**
+ * Tenant read — every named auditor account for the tenant plus the
+ * packs each currently has access to. `email` / `name` decrypt
+ * transparently via the Epic B middleware. Backs the auditor-management
+ * admin surface (`/audits/auditors`).
+ */
+export async function listAuditors(ctx: RequestContext): Promise<AuditorSummary[]> {
+    assertCanManageAuditors(ctx);
+    return runInTenantContext(ctx, async (tdb) => {
+        const rows = await tdb.auditorAccount.findMany({
+            where: { tenantId: ctx.tenantId },
+            orderBy: { createdAt: 'desc' },
+            include: { packAccess: { select: { auditPackId: true, grantedAt: true } } },
+            take: 500,
+        });
+        return rows.map((a) => ({
+            id: a.id,
+            email: a.email,
+            name: a.name ?? null,
+            status: a.status as AuditorSummary['status'],
+            createdAt: a.createdAt,
+            packAccess: a.packAccess.map((p) => ({ auditPackId: p.auditPackId, grantedAt: p.grantedAt })),
+        }));
+    });
+}
+
+export interface PackShareRow {
+    id: string;
+    createdAt: Date;
+    expiresAt: Date | null;
+    revokedAt: Date | null;
+    createdByUserId: string;
+}
+
+/**
+ * Tenant read — the share links minted for a pack (active + revoked),
+ * newest first. Token hashes are never returned; the raw token is only
+ * ever surfaced once, at creation time, by `generateShareLink`.
+ */
+export async function listPackShares(ctx: RequestContext, packId: string): Promise<PackShareRow[]> {
+    assertCanSharePack(ctx);
+    return runInTenantContext(ctx, async (tdb) => {
+        const pack = await tdb.auditPack.findFirst({ where: { id: packId, tenantId: ctx.tenantId }, select: { id: true } });
+        if (!pack) throw notFound('Audit pack not found');
+        const rows = await tdb.auditPackShare.findMany({
+            where: { tenantId: ctx.tenantId, auditPackId: packId },
+            orderBy: { createdAt: 'desc' },
+            select: { id: true, createdAt: true, expiresAt: true, revokedAt: true, createdByUserId: true },
+            take: 200,
+        });
+        return rows;
+    });
+}

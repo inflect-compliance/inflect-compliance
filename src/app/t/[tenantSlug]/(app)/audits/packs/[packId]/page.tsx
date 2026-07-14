@@ -12,6 +12,11 @@ import { UpgradeGate } from '@/components/UpgradeGate';
 import { CopyButton } from '@/components/ui/copy-button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
+import { Modal } from '@/components/ui/modal';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { FormField } from '@/components/ui/form-field';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { DatePicker } from '@/components/ui/date-picker/date-picker';
 import { useCelebration, useToast } from '@/components/ui/hooks';
 import { scopedMilestone } from '@/lib/celebrations';
 import { Package, MessageSquare } from 'lucide-react';
@@ -45,6 +50,16 @@ interface PackDetail {
     items: PackItem[];
 }
 
+interface PackShare {
+    id: string;
+    createdAt: string;
+    expiresAt: string | null;
+    revokedAt: string | null;
+}
+
+// The entity kinds the add-to-pack picker can source from a list API.
+type AddableType = 'CONTROL' | 'POLICY' | 'EVIDENCE';
+
 type ShareCommentKind = 'COMMENT' | 'EVIDENCE_REQUEST' | 'FINDING' | 'QUESTION';
 interface ShareComment {
     id: string;
@@ -76,6 +91,20 @@ export default function PackDetailPage() {
     const [cloning, setCloning] = useState(false);
     const router = useRouter();
 
+    // Part B — share lifecycle: shares list, expiry-picker modal, revoke.
+    const [shares, setShares] = useState<PackShare[]>([]);
+    const [shareModalOpen, setShareModalOpen] = useState(false);
+    const [shareExpiry, setShareExpiry] = useState<Date | null>(null);
+    const [revokeShareTarget, setRevokeShareTarget] = useState<string | null>(null);
+
+    // Part C — add-to-pack picker.
+    const [addModalOpen, setAddModalOpen] = useState(false);
+    const [addType, setAddType] = useState<AddableType>('CONTROL');
+    const [addOptions, setAddOptions] = useState<Array<{ id: string; label: string }>>([]);
+    const [addOptionsLoading, setAddOptionsLoading] = useState(false);
+    const [addSelected, setAddSelected] = useState('');
+    const [addBusy, setAddBusy] = useState(false);
+
     const loadPack = useCallback(() => {
         fetch(apiUrl(`/audits/packs/${packId}`))
             .then(r => r.ok ? r.json() : null)
@@ -92,8 +121,16 @@ export default function PackDetailPage() {
             .catch(() => { /* non-fatal — feed is supplementary */ });
     }, [apiUrl, packId]);
 
+    const loadShares = useCallback(() => {
+        fetch(apiUrl(`/audits/packs/${packId}/shares`))
+            .then(r => r.ok ? r.json() : null)
+            .then((d) => { if (Array.isArray(d)) setShares(d); })
+            .catch(() => { /* non-fatal — shares list is supplementary */ });
+    }, [apiUrl, packId]);
+
     useEffect(() => { loadPack(); }, [loadPack]);
     useEffect(() => { loadComments(); }, [loadComments]);
+    useEffect(() => { loadShares(); }, [loadShares]);
 
     const resolveComment = async (id: string) => {
         setResolvingId(id);
@@ -116,24 +153,121 @@ export default function PackDetailPage() {
             });
             if (res.ok) loadPack();
             else {
-                const err = await res.json();
-                alert(err.message || tx('packs.failedFreeze'));
+                const err = await res.json().catch(() => null);
+                toast.error(err?.message || tx('packs.failedFreeze'));
             }
+        } catch {
+            toast.error(tx('packs.failedFreeze'));
         } finally { setFreezing(false); }
     };
 
-    const share = async () => {
+    const submitShare = async () => {
         setSharing(true);
         try {
             const res = await fetch(apiUrl(`/audits/packs/${packId}?action=share`), {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ expiresAt: shareExpiry ? shareExpiry.toISOString() : undefined }),
             });
             if (res.ok) {
                 const data = await res.json();
                 const link = `${window.location.origin}/audit/shared/${data.token}`;
                 setShareLink(link);
+                setShareModalOpen(false);
+                setShareExpiry(null);
+                loadShares();
+                toast.success(tx('packs.shareCreated'));
+            } else {
+                const err = await res.json().catch(() => null);
+                toast.error(err?.message || tx('packs.shareError'));
             }
+        } catch {
+            toast.error(tx('packs.shareError'));
         } finally { setSharing(false); }
+    };
+
+    const revokeShareById = async (shareId: string) => {
+        const res = await fetch(apiUrl(`/audits/packs/${packId}?action=revoke-share`), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ shareId }),
+        });
+        if (res.ok) {
+            loadShares();
+            toast.success(tx('packs.shareRevoked'));
+        } else {
+            toast.error(tx('packs.shareRevokeError'));
+        }
+    };
+
+    const clone = async () => {
+        setCloning(true);
+        try {
+            const res = await fetch(apiUrl(`/audits/packs/${packId}?action=clone`), {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+            });
+            if (res.ok) {
+                const cloned = await res.json();
+                router.push(`/t/${tenantSlug}/audits/packs/${cloned.id}`);
+            } else {
+                toast.error(tx('packs.cloneError'));
+            }
+        } catch {
+            toast.error(tx('packs.cloneError'));
+        } finally { setCloning(false); }
+    };
+
+    // Part C — add-to-pack: fetch candidate entities for the chosen type.
+    const ADD_TYPE_ENDPOINT: Record<AddableType, string> = {
+        CONTROL: '/controls', POLICY: '/policies', EVIDENCE: '/evidence',
+    };
+    const loadAddOptions = useCallback((type: AddableType) => {
+        setAddOptionsLoading(true);
+        setAddOptions([]);
+        setAddSelected('');
+        fetch(apiUrl(ADD_TYPE_ENDPOINT[type]))
+            .then(r => r.ok ? r.json() : null)
+            .then((d) => {
+                const rows: Array<Record<string, unknown>> = Array.isArray(d) ? d : (d?.rows ?? []);
+                setAddOptions(rows.map((row) => ({
+                    id: String(row.id),
+                    label: String(row.code || row.title || row.name || row.id),
+                })));
+            })
+            .catch(() => toast.error(tx('packs.addPicker.loadError')))
+            .finally(() => setAddOptionsLoading(false));
+    // ADD_TYPE_ENDPOINT is a stable inline literal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [apiUrl, toast, tx]);
+
+    const openAddModal = () => {
+        setAddModalOpen(true);
+        setAddType('CONTROL');
+        loadAddOptions('CONTROL');
+    };
+
+    const submitAddItem = async () => {
+        if (!addSelected) return;
+        const label = addOptions.find((o) => o.id === addSelected)?.label ?? addSelected;
+        setAddBusy(true);
+        try {
+            const res = await fetch(apiUrl(`/audits/packs/${packId}?action=items`), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items: [{ entityType: addType, entityId: addSelected, snapshotJson: JSON.stringify({ title: label }) }] }),
+            });
+            if (res.ok) {
+                setAddModalOpen(false);
+                setAddSelected('');
+                loadPack();
+                toast.success(tx('packs.addPicker.added'));
+            } else {
+                const err = await res.json().catch(() => null);
+                toast.error(err?.message || tx('packs.addPicker.addError'));
+            }
+        } catch {
+            toast.error(tx('packs.addPicker.addError'));
+        } finally { setAddBusy(false); }
     };
 
     // Epic 62 — celebrate when the pack reaches its "complete" state
@@ -232,6 +366,11 @@ export default function PackDetailPage() {
             actions={
                 <>
                     {isDraft && (
+                        <RequirePermission resource="audits" action="manage">
+                            <IconAction variant="secondary" onClick={openAddModal} id="add-pack-items-btn" icon={<AppIcon name="package" size={16} />} label={tx('packs.addItems')} />
+                        </RequirePermission>
+                    )}
+                    {isDraft && (
                         <RequirePermission resource="audits" action="freeze">
                             <IconAction variant="primary" onClick={freeze} loading={freezing} id="freeze-pack-btn" icon={<AppIcon name="lock" size={16} />} label={tx('packs.freezePack')} />
                         </RequirePermission>
@@ -239,7 +378,7 @@ export default function PackDetailPage() {
                     {isFrozen && (
                         <RequirePermission resource="audits" action="share">
                             <UpgradeGate feature="AUDIT_PACK_SHARING">
-                                <IconAction variant="primary" onClick={share} loading={sharing} id="share-pack-btn" icon={<AppIcon name="share" size={16} />} label={tx('packs.generateShareLink')} />
+                                <IconAction variant="primary" onClick={() => setShareModalOpen(true)} loading={sharing} id="share-pack-btn" icon={<AppIcon name="share" size={16} />} label={tx('packs.generateShareLink')} />
                             </UpgradeGate>
                         </RequirePermission>
                     )}
@@ -247,18 +386,7 @@ export default function PackDetailPage() {
                         <RequirePermission resource="audits" action="manage">
                             <IconAction
                                 variant="secondary"
-                                onClick={async () => {
-                                    setCloning(true);
-                                    try {
-                                        const res = await fetch(apiUrl(`/audits/packs/${packId}?action=clone`), {
-                                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
-                                        });
-                                        if (res.ok) {
-                                            const cloned = await res.json();
-                                            router.push(`/t/${tenantSlug}/audits/packs/${cloned.id}`);
-                                        }
-                                    } finally { setCloning(false); }
-                                }}
+                                onClick={clone}
                                 loading={cloning}
                                 id="clone-pack-btn"
                                 icon={<AppIcon name="refresh" size={16} />}
@@ -292,6 +420,48 @@ export default function PackDetailPage() {
                 </div>
             )}
 
+            {/* Share links — active + revoked (Part B) */}
+            {isFrozen && (
+                <div className={cardVariants()} id="pack-shares">
+                    <Heading level={3} className="mb-1 inline-flex items-center gap-tight">
+                        <AppIcon name="share" size={16} /> {tx('packs.sharesTitle')}
+                    </Heading>
+                    <p className="text-xs text-content-subtle mb-3">{tx('packs.sharesDesc')}</p>
+                    {shares.length === 0 ? (
+                        <p className="text-sm text-content-subtle">{tx('packs.sharesEmpty')}</p>
+                    ) : (
+                        <ul className="divide-y divide-border-default/50">
+                            {shares.map((s) => {
+                                const expired = !s.revokedAt && s.expiresAt && new Date(s.expiresAt) < new Date();
+                                const active = !s.revokedAt && !expired;
+                                return (
+                                    <li key={s.id} className="py-3 flex items-center justify-between gap-compact">
+                                        <div className="min-w-0 text-sm">
+                                            <div className="flex flex-wrap items-center gap-tight">
+                                                <StatusBadge variant={s.revokedAt ? 'warning' : expired ? 'neutral' : 'success'}>
+                                                    {s.revokedAt ? tx('packs.shareStateRevoked') : expired ? tx('packs.shareStateExpired') : tx('packs.shareStateActive')}
+                                                </StatusBadge>
+                                                <span className="text-xs text-content-subtle">{tx('packs.shareCreatedOn', { date: formatDateTime(s.createdAt) })}</span>
+                                            </div>
+                                            <p className="text-xs text-content-subtle mt-1">
+                                                {s.expiresAt ? tx('packs.shareExpiresOn', { date: formatDateTime(s.expiresAt) }) : tx('packs.shareNoExpiry')}
+                                            </p>
+                                        </div>
+                                        {active && (
+                                            <RequirePermission resource="audits" action="share">
+                                                <Button variant="secondary" size="sm" onClick={() => setRevokeShareTarget(s.id)} id={`revoke-share-${s.id}`}>
+                                                    {tx('packs.revokeShare')}
+                                                </Button>
+                                            </RequirePermission>
+                                        )}
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )}
+                </div>
+            )}
+
             {/* Items grouped by type */}
             {Object.keys(grouped).length === 0 ? (
                 <div className={cardVariants({ density: 'none' })}>
@@ -299,7 +469,15 @@ export default function PackDetailPage() {
                         icon={Package}
                         title={tx('packs.itemsEmptyTitle')}
                         description={tx('packs.itemsEmptyDesc')}
-                    />
+                    >
+                        {isDraft && (
+                            <RequirePermission resource="audits" action="manage">
+                                <Button variant="secondary" size="sm" onClick={openAddModal} id="add-pack-items-empty-btn">
+                                    {tx('packs.addItems')}
+                                </Button>
+                            </RequirePermission>
+                        )}
+                    </EmptyState>
                 </div>
             ) : (
                 Object.entries(grouped).map(([type, items]) => (
@@ -429,6 +607,108 @@ export default function PackDetailPage() {
                     </div>
                 </div>
             )}
+
+            {/* Share-with-expiry modal (Part B) */}
+            <Modal showModal={shareModalOpen} setShowModal={setShareModalOpen} size="md" title={tx('packs.shareModal.title')} preventDefaultClose={sharing}>
+                <Modal.Header title={tx('packs.shareModal.title')} description={tx('packs.shareModal.desc')} />
+                <Modal.Body>
+                    <div className="space-y-default">
+                        <div className="flex flex-wrap gap-tight">
+                            {[7, 30, 90].map((days) => (
+                                <Button
+                                    key={days}
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => setShareExpiry(new Date(Date.now() + days * 86400000))}
+                                    id={`share-preset-${days}`}
+                                >
+                                    {tx('packs.shareModal.presetDays', { days })}
+                                </Button>
+                            ))}
+                            <Button variant="secondary" size="sm" onClick={() => setShareExpiry(null)} id="share-preset-none">
+                                {tx('packs.shareModal.noExpiry')}
+                            </Button>
+                        </div>
+                        <FormField label={tx('packs.shareModal.expiryLabel')}>
+                            <DatePicker
+                                id="share-expiry-date"
+                                placeholder={tx('packs.shareModal.expiryPlaceholder')}
+                                clearable
+                                align="start"
+                                value={shareExpiry}
+                                onChange={(next) => setShareExpiry(next)}
+                                disabledDays={{ before: new Date() }}
+                                aria-label={tx('packs.shareModal.expiryLabel')}
+                            />
+                        </FormField>
+                    </div>
+                </Modal.Body>
+                <Modal.Actions>
+                    <Button variant="secondary" size="sm" onClick={() => setShareModalOpen(false)} disabled={sharing} id="share-modal-cancel">
+                        {tx('packs.shareModal.cancel')}
+                    </Button>
+                    <Button variant="primary" size="sm" onClick={submitShare} loading={sharing} disabled={sharing} id="share-modal-submit">
+                        {tx('packs.shareModal.submit')}
+                    </Button>
+                </Modal.Actions>
+            </Modal>
+
+            {/* Add-to-pack modal (Part C) */}
+            <Modal showModal={addModalOpen} setShowModal={setAddModalOpen} size="md" title={tx('packs.addPicker.title')} preventDefaultClose={addBusy}>
+                <Modal.Header title={tx('packs.addPicker.title')} description={tx('packs.addPicker.desc')} />
+                <Modal.Body>
+                    <div className="space-y-default">
+                        <FormField label={tx('packs.addPicker.typeLabel')}>
+                            <Combobox
+                                options={[
+                                    { value: 'CONTROL', label: tx('packs.addPicker.typeControl') },
+                                    { value: 'POLICY', label: tx('packs.addPicker.typePolicy') },
+                                    { value: 'EVIDENCE', label: tx('packs.addPicker.typeEvidence') },
+                                ]}
+                                selected={{ value: addType, label: tx(`packs.addPicker.type${addType.charAt(0) + addType.slice(1).toLowerCase()}` as 'packs.addPicker.typeControl') }}
+                                setSelected={(opt) => { if (opt) { const t = opt.value as AddableType; setAddType(t); loadAddOptions(t); } }}
+                                hideSearch
+                                matchTriggerWidth
+                                aria-label={tx('packs.addPicker.typeLabel')}
+                            />
+                        </FormField>
+                        <FormField label={tx('packs.addPicker.itemLabel')}>
+                            <Combobox
+                                options={addOptions.map((o): ComboboxOption => ({ value: o.id, label: o.label }))}
+                                selected={addOptions.filter((o) => o.id === addSelected).map((o) => ({ value: o.id, label: o.label }))[0] ?? null}
+                                setSelected={(opt) => setAddSelected(opt?.value ?? '')}
+                                placeholder={addOptionsLoading ? tx('packs.addPicker.loading') : tx('packs.addPicker.itemPlaceholder')}
+                                disabled={addOptionsLoading || addOptions.length === 0}
+                                matchTriggerWidth
+                                aria-label={tx('packs.addPicker.itemLabel')}
+                            />
+                        </FormField>
+                    </div>
+                </Modal.Body>
+                <Modal.Actions>
+                    <Button variant="secondary" size="sm" onClick={() => setAddModalOpen(false)} disabled={addBusy} id="add-item-cancel">
+                        {tx('packs.addPicker.cancel')}
+                    </Button>
+                    <Button variant="primary" size="sm" onClick={submitAddItem} loading={addBusy} disabled={addBusy || !addSelected} id="add-item-submit">
+                        {tx('packs.addPicker.submit')}
+                    </Button>
+                </Modal.Actions>
+            </Modal>
+
+            {/* Revoke-share confirmation (Part B) */}
+            <ConfirmDialog
+                showModal={revokeShareTarget !== null}
+                setShowModal={(open) => { if (!open) setRevokeShareTarget(null); }}
+                tone="danger"
+                title={tx('packs.revokeShareModal.title')}
+                description={tx('packs.revokeShareModal.desc')}
+                confirmLabel={tx('packs.revokeShareModal.confirm')}
+                cancelLabel={tx('packs.shareModal.cancel')}
+                onConfirm={async () => {
+                    if (revokeShareTarget) await revokeShareById(revokeShareTarget);
+                    setRevokeShareTarget(null);
+                }}
+            />
         </EntityDetailLayout>
     );
 }

@@ -341,10 +341,15 @@ describe('New page token discipline', () => {
         //     (synced-identity roster). Both semantic tokens only (Card + DataTable +
         //     StatusBadge + PageBreadcrumbs primitives) in the unmigrated tally until
         //     promoted to MIGRATED_PAGES.
+        //   - 129 (+1): Auditor accounts (Prompt 2) — audits/auditors/page.tsx.
+        //     The tenant-side named-auditor management surface (semantic tokens
+        //     only; PageBreadcrumbs + cardVariants + StatusBadge + Modal +
+        //     Combobox + FormField primitives) in the unmigrated tally until
+        //     promoted to MIGRATED_PAGES.
         // Each increment names the epic + page + reason; promotion
         // to MIGRATED_PAGES is the path forward, never silent
         // floor-bumping.
-        expect(unmigrated.length).toBeLessThanOrEqual(128);
+        expect(unmigrated.length).toBeLessThanOrEqual(129);
     });
 
     it('migrated page count is at least 4', () => {

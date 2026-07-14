@@ -274,6 +274,9 @@ export function AuditsClient({ initialAudits, tenantSlug, hasNis2, canWrite, tra
                         <Link href={`/t/${tenantSlug}/audits/auditor`} className={cn(buttonVariants({ variant: 'secondary' }))} id="audits-auditor-link">
                             {tx('hub.auditorPortal')}
                         </Link>
+                        <Link href={`/t/${tenantSlug}/audits/auditors`} className={cn(buttonVariants({ variant: 'secondary' }))} id="audits-auditors-manage-link">
+                            {tx('hub.auditorManagement')}
+                        </Link>
                     </div>
                 </div>
 

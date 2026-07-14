@@ -112,6 +112,11 @@ const PRIMARY_BUDGET: Record<string, number> = {
     // / Asset evidence tabs.
     "src/components/EvidenceAddForm.tsx": 2,
 
+    // Auditor-management page — the header "Invite auditor" page CTA +
+    // the invite-modal confirm. Two distinct regions (page vs dialog),
+    // never on screen together.
+    "src/app/t/[tenantSlug]/(app)/audits/auditors/page.tsx": 2,
+
     // 2-primary tier — page CTA + inline form (R5-PR7 pattern)
     "src/components/ui/HeroMetric.tsx": 2,
     "src/components/TestPlansPanel.tsx": 2,
