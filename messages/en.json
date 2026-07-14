@@ -4779,7 +4779,8 @@
             "emptyTitle": "No tasks yet",
             "emptyDesc": "Tasks track remediation work — anything that turns a finding or open risk into a closed loop.",
             "filterEmptyTitle": "No tasks match your filters",
-            "filterEmptyDesc": "Try widening your search or clearing one of the active filters."
+            "filterEmptyDesc": "Try widening your search or clearing one of the active filters.",
+            "assignedToMe": "Assigned to me"
         },
         "kpi": {
             "total": "Total tasks",
@@ -4792,6 +4793,7 @@
             "type": "Type",
             "severity": "Severity",
             "status": "Status",
+            "source": "Source",
             "assignee": "Assignee",
             "dueAt": "Due Date",
             "updated": "Updated"
@@ -4801,6 +4803,7 @@
             "type": "Type",
             "severity": "Severity",
             "status": "Status",
+            "source": "Source",
             "assignee": "Assignee",
             "dueAt": "Due",
             "updated": "Updated"
@@ -4932,7 +4935,20 @@
             "linksEmptyDesc": "Cross-link this task to related tasks, controls, evidence, or risks via + Link.",
             "linksResourcePlural": "links",
             "linksResourceSingular": "link",
-            "assignee": "Assignee"
+            "assignee": "Assignee",
+            "assignFailed": "Failed to assign task",
+            "addLinkFailed": "Failed to add link",
+            "addCommentFailed": "Failed to add comment",
+            "reviewerLabel": "Reviewer:",
+            "noReviewer": "No reviewer",
+            "setReviewer": "Set reviewer",
+            "reviewerFailed": "Failed to set reviewer",
+            "watchersLabel": "Watchers:",
+            "noWatchers": "No watchers",
+            "watch": "Watch",
+            "unwatch": "Unwatch",
+            "watchFailed": "Failed to update watchers",
+            "removeWatcher": "Remove watcher"
         },
         "source": {
             "heading": "Source",

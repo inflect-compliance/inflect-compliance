@@ -46,6 +46,7 @@ import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import { useKpiTrends, buildKpiSparklines, buildKpiSparklineNullable, centeredSparklineDomain, assignSparklineVariants } from '@/lib/charts/kpi-trends';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { UserCombobox } from '@/components/ui/user-combobox';
+import { useCurrentUserId } from '@/lib/tenant-context-provider';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
 import { ownerDisplayName } from '@/lib/owner-display';
 import { DatePicker } from '@/components/ui/date-picker/date-picker';
@@ -74,6 +75,14 @@ const buildTypeLabels = (t: (k: string) => string): Record<string, string> => ({
     AUDIT_FINDING: t('typeLabels.AUDIT_FINDING'), CONTROL_GAP: t('typeLabels.CONTROL_GAP'),
     INCIDENT: t('typeLabels.INCIDENT'), IMPROVEMENT: t('typeLabels.IMPROVEMENT'), TASK: t('typeLabels.TASK'),
 });
+// TP-6 — provenance labels for the Source column. Mirrors the filter's
+// `taskSourceLabels` (filter-defs) but keyed off the same
+// `filterEnums.source.*` copy so the column + filter never drift.
+const buildSourceLabels = (t: (k: string) => string): Record<string, string> => ({
+    MANUAL: t('filterEnums.source.MANUAL'), TEMPLATE: t('filterEnums.source.TEMPLATE'),
+    POLICY_REVIEW: t('filterEnums.source.POLICY_REVIEW'), AUDIT: t('filterEnums.source.AUDIT'),
+    INTEGRATION: t('filterEnums.source.INTEGRATION'), EVIDENCE_EXPIRY: t('filterEnums.source.EVIDENCE_EXPIRY'),
+});
 // Bulk status only offers ACTIVE transitions. Terminal statuses
 // (CLOSED / CANCELED) require a per-task resolution note (S8), which
 // the bulk bar can't collect — closing is a deliberate single-task
@@ -87,11 +96,18 @@ interface TaskListItem {
     type: string;
     severity: string;
     status: string;
+    // TP-6 — the work source that raised the task (universal-inbox
+    // provenance column). Always present now that taskListSelect
+    // returns it.
+    source: string;
     dueAt: string | null;
     createdAt: string;
     updatedAt: string;
     assignee: { name: string } | null;
     assigneeUserId: string | null;
+    // TP-6 — the directly-linked control (FK), for the filter's
+    // runtime-derived options.
+    control: { id: string; code: string | null; name: string } | null;
 }
 
 interface TasksClientProps {
@@ -127,7 +143,10 @@ function TasksPageInner({
     const t = useTranslations('tasks');
     const STATUS_LABELS = buildStatusLabels(t);
     const TYPE_LABELS = buildTypeLabels(t);
+    const SOURCE_LABELS = buildSourceLabels(t);
     const BULK_STATUS_CB_OPTIONS = buildBulkStatusCbOptions(STATUS_LABELS);
+    // TP-6 — the signed-in user, for the "Assigned to me" quick filter.
+    const currentUserId = useCurrentUserId();
     const apiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
     const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
     const { mutate: swrMutate } = useSWRConfig();
@@ -172,6 +191,20 @@ function TasksPageInner({
 
     const filterCtx = useFilters();
     const { state, search, hasActive } = filterCtx;
+
+    // TP-6 — "Assigned to me" quick filter. A one-click toggle that
+    // pins the `assigneeUserId` filter to the current user (and clears
+    // it again). Reuses the existing filter state so it flows through
+    // the same query + URL sync as the assignee filter dropdown — no
+    // parallel state. Active when the current user's id is the selected
+    // assignee.
+    const assignedToMe =
+        !!currentUserId && (state.assigneeUserId ?? []).includes(currentUserId);
+    const toggleAssignedToMe = useCallback(() => {
+        if (!currentUserId) return;
+        if (assignedToMe) filterCtx.removeAll('assigneeUserId');
+        else filterCtx.set('assigneeUserId', currentUserId);
+    }, [assignedToMe, currentUserId, filterCtx]);
 
     // Bulk selection — the <BulkActionBar> owns the action/value form state;
     // this client only tracks which rows are selected.
@@ -248,6 +281,7 @@ function TasksPageInner({
             type: (t) => TYPE_LABELS[t.type] || t.type,
             severity: (t) => t.severity || '',
             status: (t) => STATUS_LABELS[t.status] || t.status,
+            source: (t) => SOURCE_LABELS[t.source] || t.source,
             assignee: (t) => t.assignee?.name || '—',
             dueAt: (t) => t.dueAt || '',
             updatedAt: (t) => t.updatedAt || '',
@@ -259,7 +293,7 @@ function TasksPageInner({
         [tasks, sortAccessors, sortBy, sortOrder],
     );
     const sortableColumns = useMemo(
-        () => ['title', 'type', 'severity', 'status', 'assignee', 'dueAt', 'updatedAt'],
+        () => ['title', 'type', 'severity', 'status', 'source', 'assignee', 'dueAt', 'updatedAt'],
         [],
     );
 
@@ -547,6 +581,7 @@ function TasksPageInner({
             { id: 'type', label: t('colVis.type') },
             { id: 'severity', label: t('colVis.severity') },
             { id: 'status', label: t('colVis.status') },
+            { id: 'source', label: t('colVis.source') },
             { id: 'assignee', label: t('colVis.assignee') },
             { id: 'dueAt', label: t('colVis.dueAt') },
             { id: 'updatedAt', label: t('colVis.updated'), defaultVisible: false },
@@ -623,6 +658,16 @@ function TasksPageInner({
                 cell: ({ row }) => (
                     <StatusBadge variant={taskStatusVariant(row.original.status)} size="sm">
                         {STATUS_LABELS[row.original.status] || row.original.status}
+                    </StatusBadge>
+                ),
+            },
+            {
+                id: 'source',
+                header: t('colHeaders.source'),
+                accessorFn: (task) => SOURCE_LABELS[task.source] || task.source,
+                cell: ({ row }) => (
+                    <StatusBadge variant="neutral" size="sm">
+                        {SOURCE_LABELS[row.original.source] || row.original.source}
                     </StatusBadge>
                 ),
             },
@@ -797,6 +842,17 @@ function TasksPageInner({
                     ) : undefined}
                     actions={
                         <>
+                            {/* TP-6 — "Assigned to me" quick filter. Toggles the
+                                assigneeUserId filter to the current user. */}
+                            <Button
+                                variant={assignedToMe ? 'primary' : 'secondary'}
+                                size="sm"
+                                onClick={toggleAssignedToMe}
+                                aria-pressed={assignedToMe}
+                                id="assigned-to-me-toggle"
+                            >
+                                {t('list.assignedToMe')}
+                            </Button>
                             <Tooltip content={t('list.dashboardTooltip')}>
                                 <Link href={tenantHref('/tasks/dashboard')} aria-label={t('list.dashboardAria')} className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="dashboard-btn"><AppIcon name="dashboard" size={16} /></Link>
                             </Tooltip>

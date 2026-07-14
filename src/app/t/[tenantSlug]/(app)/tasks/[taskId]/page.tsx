@@ -15,7 +15,7 @@ import {
     EntityPicker,
     type EntityPickerKind,
 } from '@/components/ui/entity-picker';
-import { useToastWithUndo } from '@/components/ui/hooks';
+import { useToastWithUndo, useToast } from '@/components/ui/hooks';
 import { SkeletonLine } from '@/components/ui/skeleton';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
 import { UserCombobox } from '@/components/ui/user-combobox';
@@ -92,9 +92,17 @@ interface TaskDetail {
     resolution: string | null;
     key: string | null;
     assigneeUserId: string | null;
+    reviewerUserId: string | null;
     metadataJson: { findingSource?: string | null; controlGapType?: string | null } | null;
     assignee: { name: string | null } | null;
     createdBy: { name: string | null } | null;
+    // TP-6 — reviewer + watchers, both returned by getById.
+    reviewer: { id: string; name: string | null; email: string | null } | null;
+    watchers: {
+        id: string;
+        userId: string;
+        user: { id: string; name: string | null; email: string | null } | null;
+    }[];
     control: { id: string; code: string | null; name: string } | null;
     // TP-4 — the originating source(s), for the provenance back-link.
     findingId: string | null;
@@ -136,9 +144,10 @@ export default function TaskDetailPage() {
     const params = useParams();
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
-    const { permissions, role, tenantSlug } = useTenantContext();
+    const { permissions, role, tenantSlug, userId } = useTenantContext();
     const taskId = params?.taskId as string;
     const triggerUndoToast = useToastWithUndo();
+    const toast = useToast();
 
     const [tab, setTab] = useState<Tab>('overview');
 
@@ -153,6 +162,12 @@ export default function TaskDetailPage() {
     // Assignee-picker draft. `undefined` = untouched (mirror the
     // task's persisted assignee); `string | null` = an explicit pick.
     const [assigneeDraft, setAssigneeDraft] = useState<string | null | undefined>(undefined);
+    // TP-6 — reviewer-picker draft (same three-state contract as the
+    // assignee draft) + in-flight flag.
+    const [reviewerDraft, setReviewerDraft] = useState<string | null | undefined>(undefined);
+    const [savingReviewer, setSavingReviewer] = useState(false);
+    // TP-6 — watch/unwatch in-flight flag (UI-disable only).
+    const [watchPending, setWatchPending] = useState(false);
 
     // Link form state.
     const [showLinkForm, setShowLinkForm] = useState(false);
@@ -292,12 +307,92 @@ export default function TaskDetailPage() {
                 (cur: TaskDetail | undefined) => (cur ? { ...cur, assigneeUserId } : cur),
                 { revalidate: false },
             );
-            await fetch(apiUrl(`/tasks/${taskId}/assign`), {
+            const res = await fetch(apiUrl(`/tasks/${taskId}/assign`), {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ assigneeUserId }),
             });
+            // TP-6 — surface the failure instead of swallowing it. The
+            // optimistic patch reverts on the reconcile mutate() below.
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(
+                    (typeof data?.error === 'string' && data.error) ||
+                        data?.message ||
+                        t('detail.assignFailed'),
+                );
+            }
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message : t('detail.assignFailed'));
         } finally {
             setAssigning(false);
+            await taskQuery.mutate();
+        }
+    };
+
+    // TP-6 — set/clear the reviewer via the shared task update path
+    // (PATCH /tasks/:id { reviewerUserId }). Surfaces failures via toast.
+    const reviewerValue: string | null =
+        reviewerDraft !== undefined
+            ? reviewerDraft
+            : (task?.reviewerUserId ?? null);
+    const handleAssignReviewer = async () => {
+        setSavingReviewer(true);
+        const reviewerUserId = reviewerValue || null;
+        try {
+            await taskQuery.mutate(
+                (cur: TaskDetail | undefined) => (cur ? { ...cur, reviewerUserId } : cur),
+                { revalidate: false },
+            );
+            const res = await fetch(apiUrl(`/tasks/${taskId}`), {
+                method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reviewerUserId }),
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(
+                    (typeof data?.error === 'string' && data.error) ||
+                        data?.message ||
+                        t('detail.reviewerFailed'),
+                );
+            }
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message : t('detail.reviewerFailed'));
+        } finally {
+            setSavingReviewer(false);
+            await taskQuery.mutate();
+        }
+    };
+
+    // TP-6 — watch/unwatch toggle for the current user, plus per-row
+    // remove. Both revalidate the task detail (its `watchers` array
+    // drives the list). Failures surface via toast; no fire-and-forget.
+    const isWatching = !!task?.watchers?.some((w) => w.userId === userId);
+    const toggleWatch = async () => {
+        setWatchPending(true);
+        try {
+            const res = isWatching
+                ? await fetch(apiUrl(`/tasks/${taskId}/watchers?userId=${encodeURIComponent(userId)}`), { method: 'DELETE' })
+                : await fetch(apiUrl(`/tasks/${taskId}/watchers`), {
+                      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+                  });
+            if (!res.ok) throw new Error(t('detail.watchFailed'));
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message : t('detail.watchFailed'));
+        } finally {
+            setWatchPending(false);
+            await taskQuery.mutate();
+        }
+    };
+    const removeWatcher = async (watcherUserId: string) => {
+        try {
+            const res = await fetch(
+                apiUrl(`/tasks/${taskId}/watchers?userId=${encodeURIComponent(watcherUserId)}`),
+                { method: 'DELETE' },
+            );
+            if (!res.ok) throw new Error(t('detail.watchFailed'));
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message : t('detail.watchFailed'));
+        } finally {
             await taskQuery.mutate();
         }
     };
@@ -307,12 +402,24 @@ export default function TaskDetailPage() {
         if (!linkEntityId.trim()) return;
         setSavingLink(true);
         try {
-            await fetch(apiUrl(`/tasks/${taskId}/links`), {
+            const res = await fetch(apiUrl(`/tasks/${taskId}/links`), {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ entityType: linkEntityType, entityId: linkEntityId, relation: linkRelation }),
             });
+            // TP-6 — a failed link add used to be swallowed, leaving the
+            // form "succeeding" with nothing linked. Surface it.
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(
+                    (typeof data?.error === 'string' && data.error) ||
+                        data?.message ||
+                        t('detail.addLinkFailed'),
+                );
+            }
             setLinkEntityId('');
             setShowLinkForm(false);
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message : t('detail.addLinkFailed'));
         } finally {
             setSavingLink(false);
             // Refresh the links list + the task (its _count.links
@@ -453,11 +560,23 @@ export default function TaskDetailPage() {
         if (!commentBody.trim()) return;
         setSavingComment(true);
         try {
-            await fetch(apiUrl(`/tasks/${taskId}/comments`), {
+            const res = await fetch(apiUrl(`/tasks/${taskId}/comments`), {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ body: commentBody }),
             });
+            // TP-6 — surface a failed comment post instead of clearing
+            // the box as if it succeeded.
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(
+                    (typeof data?.error === 'string' && data.error) ||
+                        data?.message ||
+                        t('detail.addCommentFailed'),
+                );
+            }
             setCommentBody('');
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message : t('detail.addCommentFailed'));
         } finally {
             setSavingComment(false);
             await Promise.all([commentsQuery.mutate(), taskQuery.mutate()]);
@@ -677,6 +796,86 @@ export default function TaskDetailPage() {
                     </div>
                 </div>
             )}
+
+            {/* TP-6 — Reviewer assignment. Surfaces the previously
+                dead `reviewerUserId` field: a people-picker to set the
+                reviewer + a display of the current one. Wired through the
+                shared task update path (PATCH /tasks/:id). */}
+            {permissions.canWrite && (
+                <div className={cardVariants({ density: 'compact' })}>
+                    <div className="flex items-center gap-compact">
+                        <span className="text-sm text-content-muted">{t('detail.reviewerLabel')}</span>
+                        <span className="text-sm text-content-emphasis font-medium" id="task-reviewer">
+                            {task.reviewer?.name || task.reviewerUserId || t('detail.noReviewer')}
+                        </span>
+                        <div className="w-64">
+                            <UserCombobox
+                                id="task-reviewer-input"
+                                name="reviewerUserId"
+                                tenantSlug={tenantSlug}
+                                selectedId={reviewerValue}
+                                onChange={(uid) => setReviewerDraft(uid ?? null)}
+                                placeholder={t('detail.noReviewer')}
+                                forceDropdown={false}
+                            />
+                        </div>
+                        <Button variant="secondary" onClick={handleAssignReviewer} disabled={savingReviewer} id="assign-reviewer-btn">
+                            {savingReviewer ? t('detail.saving') : t('detail.setReviewer')}
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {/* TP-6 — Watchers. Surfaces the previously dead
+                TaskWatcher model: a watch/unwatch toggle for the current
+                user + the watcher list with per-row remove (own row, or
+                any row for OWNER/ADMIN). */}
+            <div className={cardVariants({ density: 'compact' })} id="task-watchers">
+                <div className="flex items-center gap-compact flex-wrap">
+                    <span className="text-sm text-content-muted">{t('detail.watchersLabel')}</span>
+                    {(task.watchers ?? []).length === 0 ? (
+                        <span className="text-sm text-content-subtle" id="task-watchers-empty">{t('detail.noWatchers')}</span>
+                    ) : (
+                        <div className="flex items-center gap-compact flex-wrap">
+                            {(task.watchers ?? []).map((w) => {
+                                const canRemove =
+                                    !!permissions.canWrite &&
+                                    (w.userId === userId || role === 'OWNER' || role === 'ADMIN');
+                                return (
+                                    <span key={w.id} className="inline-flex items-center gap-tight">
+                                        <StatusBadge variant="neutral">
+                                            {w.user?.name || w.user?.email || t('detail.unknown')}
+                                        </StatusBadge>
+                                        {canRemove && (
+                                            <button
+                                                type="button"
+                                                aria-label={t('detail.removeWatcher')}
+                                                className="text-content-subtle hover:text-content-error"
+                                                id={`remove-watcher-${w.userId}`}
+                                                onClick={() => removeWatcher(w.userId)}
+                                            >
+                                                ×
+                                            </button>
+                                        )}
+                                    </span>
+                                );
+                            })}
+                        </div>
+                    )}
+                    {permissions.canWrite && (
+                        <Button
+                            variant={isWatching ? 'secondary' : 'primary'}
+                            size="sm"
+                            onClick={toggleWatch}
+                            disabled={watchPending}
+                            aria-pressed={isWatching}
+                            id="watch-toggle-btn"
+                        >
+                            {isWatching ? t('detail.unwatch') : t('detail.watch')}
+                        </Button>
+                    )}
+                </div>
+            </div>
 
             {/* Overview Tab */}
             {tab === 'overview' && (
