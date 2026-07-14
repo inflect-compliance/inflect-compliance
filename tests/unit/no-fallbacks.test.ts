@@ -46,6 +46,14 @@ describe('Static Analysis: No process.env fallbacks', () => {
             if (file.endsWith('encryption.ts') && file.includes('security')) continue;
             // Redis connection helper reads REDIS_URL directly (graceful null when unconfigured, pre-env-validation)
             if (file.endsWith('redis.ts') && file.includes('lib')) continue;
+            // Mailer bootstraps the SMTP transport from process.env directly:
+            // reading the validated @/env module left the mailer on the console
+            // sink in the turbopack prod bundle (a route-handler chunk surfaced
+            // no SMTP_* vars), silently dropping every invite/verification email.
+            // process.env is populated identically in every chunk. Same
+            // env.ts-snapshot-doesn't-reach-this-chunk rationale as the
+            // rate-limit / docs / health carve-outs above.
+            if (file.endsWith('mailer.ts') && file.includes('lib')) continue;
             // Edge middleware reads CSP_REPORT_ONLY before env validation (optional runtime toggle)
             if (file.endsWith('middleware.ts') && !file.includes('pii-middleware')) continue;
             // Dub-ported utility files use process.env by upstream design

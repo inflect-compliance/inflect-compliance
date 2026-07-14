@@ -35,7 +35,7 @@ export interface EmailProvider {
 
 export class ConsoleEmailProvider implements EmailProvider {
     async send(msg: EmailMessage): Promise<void> {
-        logger.debug('Email sent (dev console sink)', {
+        const fields = {
             component: 'mailer',
             to: msg.to,
             subject: msg.subject,
@@ -43,7 +43,17 @@ export class ConsoleEmailProvider implements EmailProvider {
             ...(msg.from && { from: msg.from }),
             ...(msg.bcc && { bcc: msg.bcc }),
             ...(msg.attachments?.length ? { attachments: msg.attachments.map((a) => a.filename) } : {}),
-        });
+        };
+        // In production a send hitting the console sink means the email was
+        // silently DROPPED (SMTP not configured, or the mailer never got
+        // initialised in this bundle chunk). Log at WARN so it's visible —
+        // the old debug level was suppressed by the prod `info` floor, which
+        // is exactly why dropped invite emails went unnoticed.
+        if (process.env.NODE_ENV === 'production') {
+            logger.warn('Email NOT delivered — mailer is on the console sink (SMTP unconfigured or uninitialised)', fields);
+        } else {
+            logger.debug('Email sent (dev console sink)', fields);
+        }
     }
 }
 
@@ -130,16 +140,35 @@ export async function sendEmail(msg: EmailMessage): Promise<void> {
  * Uses the validated env module (not raw env vars).
  */
 export function initMailerFromEnv(): void {
-    // Dynamic import to avoid circular deps at module parse time
-
-    const { env } = require('@/env');
-    const host = env.SMTP_HOST;
+    // Read process.env DIRECTLY — not the validated `@/env` module.
+    //
+    // In the Next/turbopack production bundle, a route-handler chunk can end up
+    // with a `@/env` copy whose server-only vars (SMTP_*) aren't surfaced, so
+    // `env.SMTP_HOST` reads undefined and the mailer silently stays on the
+    // console sink — even though `process.env.SMTP_HOST` IS present in the
+    // process. That silent no-op dropped every invite/verification/reset email
+    // in production. `process.env` is populated identically in every chunk, so
+    // bootstrapping from it is robust. (SMTP_* are registered in `env.ts`.)
+    const host = process.env.SMTP_HOST;
     if (host) {
-        const port = env.SMTP_PORT ?? 587;
-        const user = env.SMTP_USER;
-        const pass = env.SMTP_PASS;
-        const from = env.SMTP_FROM ?? 'noreply@inflect.app';
+        const port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587;
+        const user = process.env.SMTP_USER || undefined;
+        const pass = process.env.SMTP_PASS || undefined;
+        const from = process.env.SMTP_FROM || 'noreply@inflect.app';
         setEmailProvider(new NodemailerProvider({ host, port, user, pass, from }));
+        logger.info('Mailer initialised: SMTP transport', {
+            component: 'mailer',
+            host,
+            port,
+            secure: port === 465,
+            hasAuth: !!(user && pass),
+            from,
+        });
+    } else if (process.env.NODE_ENV === 'production') {
+        // Keep ConsoleEmailProvider (dev/test default). In production this is a
+        // misconfiguration — surface it loudly.
+        logger.warn('Mailer on console sink — SMTP_HOST unset; email will not be delivered', {
+            component: 'mailer',
+        });
     }
-    // Otherwise keep ConsoleEmailProvider (dev/test default)
 }
