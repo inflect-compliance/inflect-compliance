@@ -18,7 +18,7 @@ import { makeRequestContext } from '../helpers/make-context';
 import { getPermissionsForRole } from '@/lib/permissions';
 import type { PrismaClient } from '@prisma/client';
 
-import { updateTenantMemberRole, deactivateTenantMember } from '@/app-layer/usecases/tenant-admin';
+import { updateTenantMemberRole, deactivateTenantMember, removeTenantMember } from '@/app-layer/usecases/tenant-admin';
 import { createTenantWithOwner } from '@/app-layer/usecases/tenant-lifecycle';
 
 const describeFn = DB_AVAILABLE ? describe : describe.skip;
@@ -147,6 +147,22 @@ describeFn('usecase-layer last-OWNER guard', () => {
 
         await expect(
             deactivateTenantMember(admin.ctx, {
+                membershipId: ownerMembershipId,
+            }),
+        ).rejects.toThrow(/last OWNER/);
+    });
+
+    // ── 2b. Removing (hard-delete) the only OWNER ─────────────────────
+
+    it('2b. removeTenantMember: removing the only OWNER throws forbidden', async () => {
+        const { tenantId, slug, ownerMembershipId } =
+            await setupTenantWithOwner('remove-last');
+
+        // Call as a second ADMIN (self-removal guard would fire on ownerCtx).
+        const admin = await addMember(tenantId, slug, 'admin-for-remove', 'ADMIN');
+
+        await expect(
+            removeTenantMember(admin.ctx, {
                 membershipId: ownerMembershipId,
             }),
         ).rejects.toThrow(/last OWNER/);

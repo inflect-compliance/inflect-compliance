@@ -25,9 +25,11 @@ import { useTranslations } from 'next-intl';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import {
     Users, UserPlus, ChevronDown, Shield, XCircle,
-    MoreVertical, UserMinus, Mail, Monitor,
+    MoreVertical, UserMinus, Mail, Monitor, Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Popover } from '@/components/ui/popover';
+import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
 import { StatusBadge, statusBadgeVariants } from '@/components/ui/status-badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton, SkeletonButton } from '@/components/ui/skeleton';
@@ -184,6 +186,10 @@ export default function MembersAdminPage() {
     // Action menu
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
+    // Bulk selection + top action row (deactivate / remove).
+    const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
+    const [bulkApplying, setBulkApplying] = useState(false);
+
     // Epic C.3 — sessions modal
     const [sessionsModalUser, setSessionsModalUser] = useState<Member | null>(null);
     const [memberSessions, setMemberSessions] = useState<MemberSession[]>([]);
@@ -329,6 +335,88 @@ export default function MembersAdminPage() {
             setError((err as Error).message);
         }
     }
+
+    async function handleRemove(membershipId: string, email: string) {
+        if (!confirm(t('members.removeConfirm', { email }))) return;
+        setError(null);
+        setSuccess(null);
+        setOpenMenuId(null);
+
+        try {
+            const res = await fetch(apiUrl(`/admin/members/${membershipId}`), {
+                method: 'DELETE',
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({ error: t('members.removalFailed') }));
+                setError(apiErrorMessage(err, t('members.removalFailed')));
+                return;
+            }
+
+            setSuccess(t('members.removedToast', { email }));
+            await fetchMembers();
+        } catch (err) {
+            setError((err as Error).message);
+        }
+    }
+
+    // Top action row — apply deactivate/remove across the selected members.
+    // The per-member endpoints are looped client-side (no bulk endpoint); a
+    // partial failure surfaces the affected emails without blocking the rest.
+    const handleBulkApply = async (action: string) => {
+        const ids = Array.from(selectedMemberIds);
+        if (ids.length === 0) return;
+        setError(null);
+        setSuccess(null);
+        setBulkApplying(true);
+
+        let ok = 0;
+        const failures: string[] = [];
+        try {
+            for (const id of ids) {
+                const email = members.find((m) => m.id === id)?.user.email ?? id;
+                const fallback = action === 'remove'
+                    ? t('members.removalFailed')
+                    : t('members.deactivationFailed');
+                try {
+                    const res = action === 'remove'
+                        ? await fetch(apiUrl(`/admin/members/${id}`), { method: 'DELETE' })
+                        : await fetch(apiUrl(`/admin/members/${id}/deactivate`), { method: 'POST' });
+                    if (res.ok) {
+                        ok += 1;
+                    } else {
+                        const err = await res.json().catch(() => ({}));
+                        failures.push(`${email}: ${apiErrorMessage(err, fallback)}`);
+                    }
+                } catch (e) {
+                    failures.push(`${email}: ${(e as Error).message}`);
+                }
+            }
+            if (ok > 0) {
+                setSuccess(t(action === 'remove' ? 'members.bulkRemovedToast' : 'members.bulkDeactivatedToast', { count: ok }));
+            }
+            if (failures.length > 0) {
+                setError(failures.join('; '));
+            }
+            setSelectedMemberIds(new Set());
+            await fetchMembers();
+        } finally {
+            setBulkApplying(false);
+        }
+    };
+
+    const memberBulkActions: BulkActionDef[] = useMemo(() => [
+        {
+            value: 'deactivate',
+            label: t('members.deactivate'),
+            confirm: { tone: 'warning', confirmLabel: t('members.deactivate') },
+        },
+        {
+            value: 'remove',
+            label: t('members.remove'),
+            confirm: { tone: 'danger', confirmLabel: t('members.remove') },
+        },
+    ], [t]);
 
     const openSessionsModal = useCallback(async (member: Member) => {
         setSessionsModalUser(member);
@@ -556,51 +644,71 @@ export default function MembersAdminPage() {
                 header: '',
                 cell: ({ row }) => {
                     const m = row.original;
-                    if (m.status !== 'ACTIVE') return null;
+                    const isActive = m.status === 'ACTIVE';
                     return (
-                        <div className="relative inline-block text-right" onClick={(e) => e.stopPropagation()}>
-                            <Button
-                                variant="secondary"
-                                size="xs"
-                                onClick={() => setOpenMenuId(openMenuId === m.id ? null : m.id)}
-                                icon={<MoreVertical className="w-3.5 h-3.5" />}
-                                id={`member-menu-${m.id}`}
-                            />
-                            {openMenuId === m.id && (
-                                <div className="absolute right-0 top-full mt-1 bg-bg-default border border-border-default rounded-lg shadow-lg z-20 min-w-[160px]">
-                                    <button
-                                        onClick={() => {
-                                            setEditingRoleId(m.id);
-                                            setPendingRole(m.role);
-                                            setOpenMenuId(null);
-                                        }}
-                                        className="w-full text-left px-3 py-2 text-xs text-content-emphasis hover:bg-bg-muted flex items-center gap-tight"
-                                        id={`action-change-role-${m.id}`}
-                                    >
-                                        <Shield className="w-3.5 h-3.5" />
-                                        {t('members.changeRole')}
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setOpenMenuId(null);
-                                            void openSessionsModal(m);
-                                        }}
-                                        className="w-full text-left px-3 py-2 text-xs text-content-emphasis hover:bg-bg-muted flex items-center gap-tight"
-                                        id={`action-view-sessions-${m.id}`}
-                                    >
-                                        <Monitor className="w-3.5 h-3.5" />
-                                        {t('members.viewSessions')}
-                                    </button>
-                                    <button
-                                        onClick={() => handleDeactivate(m.id, m.user.email)}
-                                        className="w-full text-left px-3 py-2 text-xs text-content-error hover:bg-bg-error flex items-center gap-tight"
-                                        id={`action-deactivate-${m.id}`}
-                                    >
-                                        <UserMinus className="w-3.5 h-3.5" />
-                                        {t('members.deactivate')}
-                                    </button>
-                                </div>
-                            )}
+                        // R3 fix — the old in-cell absolute dropdown was clipped
+                        // by the DataTable's overflow container (so clicking the
+                        // three-dot appeared to do nothing). Popover portals the
+                        // menu out of the clip, and adds a Remove action.
+                        <div className="text-right" onClick={(e) => e.stopPropagation()}>
+                            <Popover
+                                align="end"
+                                openPopover={openMenuId === m.id}
+                                setOpenPopover={(open) => setOpenMenuId(open ? m.id : null)}
+                                content={
+                                    <Popover.Menu>
+                                        {isActive && (
+                                            <>
+                                                <Popover.Item
+                                                    icon={<Shield className="w-3.5 h-3.5" />}
+                                                    onClick={() => {
+                                                        setEditingRoleId(m.id);
+                                                        setPendingRole(m.role);
+                                                        setOpenMenuId(null);
+                                                    }}
+                                                    id={`action-change-role-${m.id}`}
+                                                >
+                                                    {t('members.changeRole')}
+                                                </Popover.Item>
+                                                <Popover.Item
+                                                    icon={<Monitor className="w-3.5 h-3.5" />}
+                                                    onClick={() => {
+                                                        setOpenMenuId(null);
+                                                        void openSessionsModal(m);
+                                                    }}
+                                                    id={`action-view-sessions-${m.id}`}
+                                                >
+                                                    {t('members.viewSessions')}
+                                                </Popover.Item>
+                                                <Popover.Item
+                                                    icon={<UserMinus className="w-3.5 h-3.5" />}
+                                                    destructive
+                                                    onClick={() => handleDeactivate(m.id, m.user.email)}
+                                                    id={`action-deactivate-${m.id}`}
+                                                >
+                                                    {t('members.deactivate')}
+                                                </Popover.Item>
+                                            </>
+                                        )}
+                                        <Popover.Item
+                                            icon={<Trash2 className="w-3.5 h-3.5" />}
+                                            destructive
+                                            onClick={() => handleRemove(m.id, m.user.email)}
+                                            id={`action-remove-${m.id}`}
+                                        >
+                                            {t('members.remove')}
+                                        </Popover.Item>
+                                    </Popover.Menu>
+                                }
+                            >
+                                <Button
+                                    variant="secondary"
+                                    size="xs"
+                                    icon={<MoreVertical className="w-3.5 h-3.5" />}
+                                    id={`member-menu-${m.id}`}
+                                    aria-label={t('members.memberActions')}
+                                />
+                            </Popover>
                         </div>
                     );
                 },
@@ -802,6 +910,22 @@ export default function MembersAdminPage() {
                         emptyState={t('members.emptyMembers')}
                         resourceName={(p) => (p ? t('members.resourceMembers') : t('members.resourceMember'))}
                         data-testid="members-table"
+                        selectionEnabled
+                        selectedRows={Object.fromEntries(
+                            Array.from(selectedMemberIds).map((id) => [id, true]),
+                        )}
+                        onRowSelectionChange={(rows) =>
+                            setSelectedMemberIds(new Set(rows.map((r) => r.original.id)))
+                        }
+                        selectionControls={() => (
+                            <BulkActionBar
+                                actions={memberBulkActions}
+                                onApply={handleBulkApply}
+                                applying={bulkApplying}
+                                selectedCount={selectedMemberIds.size}
+                                entityLabel={t('members.resourceMembers')}
+                            />
+                        )}
                     />
                 )}
             </div>
@@ -821,14 +945,6 @@ export default function MembersAdminPage() {
                         />
                     </div>
                 </div>
-            )}
-
-            {/* Click-away handler for action menu */}
-            {openMenuId && (
-                <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setOpenMenuId(null)}
-                />
             )}
 
             {/* Epic C.3 — sessions modal (Epic 54 Modal primitive) */}
