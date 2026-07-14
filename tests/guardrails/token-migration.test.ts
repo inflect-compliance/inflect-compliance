@@ -230,11 +230,16 @@ describe('Admin members page token migration', () => {
         expect(src).toContain("from '@/components/ui/inline-notice'");
     });
 
-    it('uses semantic tokens for dropdown menu', () => {
-        expect(src).toContain('bg-bg-default');
-        expect(src).toContain('border-border-default');
-        expect(src).toContain('hover:bg-bg-muted');
-        expect(src).toContain('hover:bg-bg-error');
+    it('uses the Popover primitive for the row action menu', () => {
+        // The hand-rolled absolute dropdown (which carried its own
+        // bg-bg-default / border-border-default / hover:bg-bg-muted /
+        // hover:bg-bg-error tokens inline) was clipped by the DataTable's
+        // overflow container. It's been migrated to the canonical <Popover>
+        // primitive, which owns those menu tokens internally — same reasoning
+        // as the InlineNotice migration above.
+        expect(src).toContain("from '@/components/ui/popover'");
+        expect(src).toContain('<Popover');
+        expect(src).toContain('Popover.Item');
     });
 
     it('uses EmptyState for empty table', () => {

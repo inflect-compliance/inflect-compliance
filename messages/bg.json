@@ -3460,7 +3460,14 @@
             "resourceMembers": "членове",
             "resourceMember": "член",
             "resourceInvites": "покани",
-            "resourceInvite": "покана"
+            "resourceInvite": "покана",
+            "remove": "Премахни",
+            "removeConfirm": "Да се премахне ли {email} от това работно пространство? Това го отделя за постоянно — използвайте Деактивиране, за да запазите записа.",
+            "removalFailed": "Премахването на член е неуспешно",
+            "removedToast": "{email} е премахнат",
+            "bulkDeactivatedToast": "Деактивирани са {count} членове",
+            "bulkRemovedToast": "Премахнати са {count} членове",
+            "memberActions": "Действия за член"
         },
         "security": {
             "crumbSelf": "Сигурност и MFA",

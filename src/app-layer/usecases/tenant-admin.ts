@@ -318,6 +318,72 @@ export async function deactivateTenantMember(
     });
 }
 
+/**
+ * Hard-remove a member from the tenant (deletes the TenantMembership row).
+ * Distinct from deactivate (soft, revocable): this fully detaches the user.
+ * Works on ACTIVE or already-DEACTIVATED members. Same guardrails as
+ * deactivate — no self-removal, no removing the last ACTIVE OWNER (the
+ * `tenant_membership_last_owner_guard` DB trigger is the fail-closed backstop).
+ */
+export async function removeTenantMember(
+    ctx: RequestContext,
+    input: { membershipId: string }
+) {
+    assertCanManageMembers(ctx);
+
+    return runInTenantContext(ctx, async (db) => {
+        const membership = await db.tenantMembership.findFirst({
+            where: {
+                id: input.membershipId,
+                tenantId: ctx.tenantId,
+            },
+            include: { user: { select: { id: true, name: true, email: true } } },
+        });
+
+        if (!membership) {
+            throw notFound('Membership not found.');
+        }
+
+        // Safety: prevent self-removal.
+        if (ctx.userId === membership.userId) {
+            throw forbidden('Cannot remove your own membership. Ask another admin.');
+        }
+
+        // Safety: last-OWNER protection — cannot remove the only ACTIVE OWNER.
+        if (membership.role === 'OWNER' && membership.status === 'ACTIVE') {
+            const ownerCount = await db.tenantMembership.count({
+                where: {
+                    tenantId: ctx.tenantId,
+                    role: 'OWNER',
+                    status: 'ACTIVE',
+                },
+            });
+            if (ownerCount <= 1) {
+                throw forbidden('Cannot remove the last OWNER. Promote another OWNER first.');
+            }
+        }
+
+        await db.tenantMembership.delete({
+            where: { id: input.membershipId },
+        });
+
+        await logEvent(db, ctx, {
+            action: 'MEMBER_REMOVED',
+            entityType: 'TenantMembership',
+            entityId: membership.id,
+            details: `Removed member: ${membership.user.email}`,
+            detailsJson: {
+                category: 'membership',
+                event: 'member_removed',
+                role: membership.role,
+                userId: membership.userId,
+            },
+        });
+
+        return { id: membership.id, userId: membership.userId };
+    });
+}
+
 // ─── Tenant Admin Settings ───
 
 export async function getTenantAdminSettings(ctx: RequestContext) {

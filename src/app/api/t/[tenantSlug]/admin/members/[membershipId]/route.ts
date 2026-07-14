@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { requirePermission } from '@/lib/security/permission-middleware';
-import { updateTenantMemberRole } from '@/app-layer/usecases/tenant-admin';
+import { updateTenantMemberRole, removeTenantMember } from '@/app-layer/usecases/tenant-admin';
 import { assignCustomRole } from '@/app-layer/usecases/custom-roles';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { z } from 'zod';
@@ -44,6 +44,19 @@ export const PATCH = withApiErrorHandling(
                 );
             }
 
+            return jsonResponse(result);
+        },
+    ),
+);
+
+// Hard-remove a member from the tenant (distinct from POST /deactivate).
+export const DELETE = withApiErrorHandling(
+    requirePermission<{ tenantSlug: string; membershipId: string }>(
+        'admin.members',
+        async (_req: NextRequest, { params }, ctx) => {
+            const result = await removeTenantMember(ctx, {
+                membershipId: params.membershipId,
+            });
             return jsonResponse(result);
         },
     ),

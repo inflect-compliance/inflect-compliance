@@ -3460,7 +3460,14 @@
             "resourceMembers": "members",
             "resourceMember": "member",
             "resourceInvites": "invites",
-            "resourceInvite": "invite"
+            "resourceInvite": "invite",
+            "remove": "Remove",
+            "removeConfirm": "Remove {email} from this workspace? This permanently detaches them — use Deactivate instead to keep the record.",
+            "removalFailed": "Failed to remove member",
+            "removedToast": "Removed {email}",
+            "bulkDeactivatedToast": "Deactivated {count} members",
+            "bulkRemovedToast": "Removed {count} members",
+            "memberActions": "Member actions"
         },
         "security": {
             "crumbSelf": "Security & MFA",
