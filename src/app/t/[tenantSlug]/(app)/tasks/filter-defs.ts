@@ -20,7 +20,7 @@ import {
     optionsFromEnum,
 } from '@/components/ui/filter/filter-definitions';
 import type { FilterOption } from '@/components/ui/filter/types';
-import { AlertCircle, CircleDot, Clock, Flag, Layers, UserCircle2 } from 'lucide-react';
+import { AlertCircle, CircleDot, Clock, Flag, Inbox, Layers, UserCircle2 } from 'lucide-react';
 
 /** Surface-namespace resolver (`useTranslations('tasks')`). */
 type T = (key: string, values?: Record<string, unknown>) => string;
@@ -50,6 +50,21 @@ function taskTypeLabels(t: T): Record<string, string> {
         CONTROL_GAP: t('filterEnums.type.CONTROL_GAP'),
         INCIDENT: t('filterEnums.type.INCIDENT'),
         IMPROVEMENT: t('filterEnums.type.IMPROVEMENT'),
+    };
+}
+
+// TP-5 — the work SOURCE that raised the task. Values are EXACTLY the
+// `WorkItemSource` enum members; the universal-inbox filter lets you slice
+// /tasks by where the work came from (manual entry vs the automated sweeps
+// that route audit findings, policy reviews, and expiring evidence in).
+function taskSourceLabels(t: T): Record<string, string> {
+    return {
+        MANUAL: t('filterEnums.source.MANUAL'),
+        TEMPLATE: t('filterEnums.source.TEMPLATE'),
+        POLICY_REVIEW: t('filterEnums.source.POLICY_REVIEW'),
+        AUDIT: t('filterEnums.source.AUDIT'),
+        INTEGRATION: t('filterEnums.source.INTEGRATION'),
+        EVIDENCE_EXPIRY: t('filterEnums.source.EVIDENCE_EXPIRY'),
     };
 }
 
@@ -95,6 +110,15 @@ function taskFilterDefsInput(t: T, tGroup: TGroup) {
             group: tGroup('quantitative'),
             icon: Flag,
             options: optionsFromEnum(taskSeverityLabels(t)),
+            multiple: true,
+            resetBehavior: 'clearable',
+        },
+        source: {
+            label: t('filters.source'),
+            description: t('filters.sourceDesc'),
+            group: tGroup('attributes'),
+            icon: Inbox,
+            options: optionsFromEnum(taskSourceLabels(t)),
             multiple: true,
             resetBehavior: 'clearable',
         },

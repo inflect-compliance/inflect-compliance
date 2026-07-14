@@ -18,8 +18,8 @@
  *     evidence has no ownerUserId.
  *   - skip-no-actor branch: no ownerUserId AND no tenant OWNER → the
  *     row is skipped (skippedNoActor) and no task is created.
- *   - idempotency: an existing non-terminal IMPROVEMENT task linked to
- *     the evidence → skippedDuplicate, no second task.
+ *   - idempotency: an existing non-terminal EVIDENCE_EXPIRY-source task
+ *     linked to the evidence → skippedDuplicate, no second task.
  *   - notifications disabled → outbox suppressed (still creates task).
  *   - already-expired evidence → EVIDENCE_EXPIRED trigger pass.
  */
@@ -118,11 +118,15 @@ describeFn('runEvidenceRetentionNotifications (real DB)', () => {
             expect(res.skippedDuplicate).toBe(0);
 
             const task = await prisma.task.findFirst({
-                where: { tenantId, type: 'IMPROVEMENT' },
+                where: { tenantId, source: 'EVIDENCE_EXPIRY' },
             });
             expect(task).not.toBeNull();
+            expect(task?.type).toBe('TASK');
+            expect(task?.source).toBe('EVIDENCE_EXPIRY');
             expect(task?.priority).toBe('P1');
             expect(task?.createdByUserId).toBe(ownerId);
+            // TP-5 — assigned to the evidence owner when present.
+            expect(task?.assigneeUserId).toBe(ownerId);
 
             const link = await prisma.taskLink.findFirst({
                 where: { tenantId, entityType: 'EVIDENCE', entityId: ev.id },
@@ -160,9 +164,12 @@ describeFn('runEvidenceRetentionNotifications (real DB)', () => {
 
             const res = await runEvidenceRetentionNotifications({ tenantId });
             expect(res.tasksCreated).toBe(1);
-            const task = await prisma.task.findFirst({ where: { tenantId, type: 'IMPROVEMENT' } });
+            const task = await prisma.task.findFirst({ where: { tenantId, source: 'EVIDENCE_EXPIRY' } });
             expect(task?.createdByUserId).toBe(ownerId);
             expect(task?.priority).toBe('P2');
+            // No evidence owner → nothing to assign (created-by still the
+            // fallback tenant OWNER).
+            expect(task?.assigneeUserId).toBeNull();
         } finally {
             await cleanup(tenantId);
         }
@@ -187,7 +194,7 @@ describeFn('runEvidenceRetentionNotifications (real DB)', () => {
         }
     });
 
-    it('is idempotent: an existing non-terminal IMPROVEMENT task linked to the evidence is skipped', async () => {
+    it('is idempotent: an existing non-terminal EVIDENCE_EXPIRY task linked to the evidence is skipped', async () => {
         const tenantId = await freshTenant();
         try {
             const ownerId = await makeUser('owner');
@@ -197,10 +204,10 @@ describeFn('runEvidenceRetentionNotifications (real DB)', () => {
                     retentionUntil: soon(5), isArchived: false, ownerUserId: ownerId,
                 },
             });
-            // Pre-existing OPEN IMPROVEMENT task linked to the evidence.
+            // Pre-existing OPEN EVIDENCE_EXPIRY task linked to the evidence.
             const existing = await prisma.task.create({
                 data: {
-                    tenantId, type: 'IMPROVEMENT', title: 'pre-existing',
+                    tenantId, type: 'TASK', source: 'EVIDENCE_EXPIRY', title: 'pre-existing',
                     status: 'OPEN', priority: 'P2', createdByUserId: ownerId,
                 },
             });
@@ -213,7 +220,7 @@ describeFn('runEvidenceRetentionNotifications (real DB)', () => {
             expect(res.skippedDuplicate).toBe(1);
             expect(res.tasksCreated).toBe(0);
             // Still only the one task.
-            const tasks = await prisma.task.findMany({ where: { tenantId, type: 'IMPROVEMENT' } });
+            const tasks = await prisma.task.findMany({ where: { tenantId, source: 'EVIDENCE_EXPIRY' } });
             expect(tasks).toHaveLength(1);
         } finally {
             await cleanup(tenantId);

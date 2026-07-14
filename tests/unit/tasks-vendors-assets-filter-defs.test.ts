@@ -63,6 +63,9 @@ const tGroup = (k: string) => resolver('common')(`filterGroups.${k}`);
 const TASK_STATUS = ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'BLOCKED', 'RESOLVED', 'CLOSED', 'CANCELED'];
 const TASK_TYPE = ['TASK', 'AUDIT_FINDING', 'CONTROL_GAP', 'INCIDENT', 'IMPROVEMENT'];
 const TASK_SEVERITY = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+// TP-5 — the universal-inbox source filter offers EXACTLY the six
+// WorkItemSource enum members.
+const TASK_SOURCE = ['MANUAL', 'TEMPLATE', 'POLICY_REVIEW', 'AUDIT', 'INTEGRATION', 'EVIDENCE_EXPIRY'];
 const ASSET_TYPE = ['INFORMATION', 'SYSTEM', 'SERVICE', 'DATA_STORE', 'VENDOR', 'PEOPLE_PROCESS', 'APPLICATION', 'INFRASTRUCTURE', 'PROCESS', 'OTHER'];
 const ASSET_STATUS = ['ACTIVE', 'RETIRED'];
 const ASSET_CRITICALITY = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
@@ -74,15 +77,16 @@ describe('Tasks filter config', () => {
 
     it('manages the documented key set', () => {
         expect([...TASK_FILTER_KEYS].sort()).toEqual(
-            ['assigneeUserId', 'controlId', 'due', 'severity', 'status', 'type'].sort(),
+            ['assigneeUserId', 'controlId', 'due', 'severity', 'source', 'status', 'type'].sort(),
         );
     });
 
-    it('status / type / severity are multi-select enums with full coverage', () => {
+    it('status / type / severity / source are multi-select enums with full coverage', () => {
         for (const [key, values] of [
             ['status', TASK_STATUS],
             ['type', TASK_TYPE],
             ['severity', TASK_SEVERITY],
+            ['source', TASK_SOURCE],
         ] as const) {
             const def = taskFilterDefs.getFilter(key);
             expect(def.multiple).toBe(true);
