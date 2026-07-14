@@ -5329,7 +5329,8 @@
             "frequency": "Frequency",
             "nextDue": "Next Due",
             "lastResult": "Last Result",
-            "runs": "Runs"
+            "runs": "Runs",
+            "method": "Method"
         },
         "kpi": {
             "total": "Total plans",
@@ -5526,6 +5527,43 @@
             "fileUpload": "Upload File",
             "link": "URL / Link",
             "evidence": "Existing Evidence Record"
+        },
+        "method": {
+            "MANUAL": "Manual",
+            "AUTOMATED": "Automated"
+        },
+        "checkStatus": {
+            "PASSED": "Passed",
+            "FAILED": "Failed",
+            "ERROR": "Error",
+            "NOT_APPLICABLE": "N/A",
+            "PENDING": "Pending",
+            "RUNNING": "Running"
+        },
+        "checksList": {
+            "colCheck": "Check",
+            "colProvider": "Provider",
+            "colExecuted": "Last run",
+            "empty": "No automated checks have run yet.",
+            "entitySingular": "check",
+            "entityPlural": "checks"
+        },
+        "unified": {
+            "explanation": "Tests are manual plans you run on a schedule; checks are automated integration checks the platform runs for you.",
+            "viewAria": "Test view",
+            "tabPlans": "Test plans",
+            "tabChecks": "Automated checks",
+            "testPlanNoun": "Test plan",
+            "createTitle": "Create test plan",
+            "createControl": "Control",
+            "createControlPlaceholder": "Pick a control to test…",
+            "createName": "Plan name",
+            "createNamePlaceholder": "e.g. Quarterly access review",
+            "createCancel": "Cancel",
+            "createConfirm": "Create test plan",
+            "creating": "Creating…",
+            "createSuccess": "Test plan created.",
+            "createFailed": "Could not create the test plan. Please try again."
         }
     },
     "agents": {
@@ -6093,7 +6131,8 @@
             "mappingsEmptyDesc": "None of the controls mapped to this {entity} are linked to a framework requirement yet.",
             "testsNotice": "Tests run on the controls mapped to this {entity}. Manage test plans on each control.",
             "testsEmpty": "No inherited tests",
-            "testsEmptyDesc": "No test plans exist on the controls mapped to this {entity} yet."
+            "testsEmptyDesc": "No test plans exist on the controls mapped to this {entity} yet.",
+            "checksNote": "Automated integration checks are per-control and are not inherited here — view them on each control."
         },
         "linkedTasks": {
             "empty": "No linked tasks",
