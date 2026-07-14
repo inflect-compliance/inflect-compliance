@@ -13,6 +13,7 @@ import { AppIcon } from '@/components/icons/AppIcon';
 import { Button } from '@/components/ui/button';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
+import { useToast } from '@/components/ui/hooks/use-toast';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { cardVariants } from '@/components/ui/card';
@@ -50,6 +51,7 @@ export default function TestPlansPanel({ controlId }: { controlId: string }) {
     const t = useTranslations('panels.testPlans');
     const tc = useTranslations('common');
     const tr = useTranslations();
+    const toast = useToast();
     const FREQ_LABELS = useMemo<Record<string, string>>(() => ({
         AD_HOC: tr('controls.freq.adHoc'), DAILY: tr('controls.freq.daily'), WEEKLY: tr('controls.freq.weekly'),
         MONTHLY: tr('controls.freq.monthly'), QUARTERLY: tr('controls.freq.quarterly'), ANNUALLY: tr('controls.freq.annually'),
@@ -86,11 +88,12 @@ export default function TestPlansPanel({ controlId }: { controlId: string }) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, frequency, method }),
             });
-            if (res.ok) {
-                setShowForm(false);
-                setName('');
-                await fetchPlans();
-            }
+            if (!res.ok) throw new Error(await res.text());
+            setShowForm(false);
+            setName('');
+            await fetchPlans();
+        } catch {
+            toast.error(t('createFailed'));
         } finally {
             setSaving(false);
         }
@@ -100,12 +103,13 @@ export default function TestPlansPanel({ controlId }: { controlId: string }) {
         setCreatingRunFor(planId);
         try {
             const res = await fetch(apiUrl(`/tests/plans/${planId}/runs`), { method: 'POST' });
-            if (res.ok) {
-                const run = await res.json();
-                // Client navigation (not a full page reload) for parity with
-                // the rest of the app.
-                router.push(tenantHref(`/tests/runs/${run.id}`));
-            }
+            if (!res.ok) throw new Error(await res.text());
+            const run = await res.json();
+            // Client navigation (not a full page reload) for parity with
+            // the rest of the app.
+            router.push(tenantHref(`/tests/runs/${run.id}`));
+        } catch {
+            toast.error(t('runFailed'));
         } finally {
             setCreatingRunFor(null);
         }

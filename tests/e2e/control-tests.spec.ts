@@ -77,6 +77,13 @@ test.describe('Control Tests (Test-of-Control)', () => {
                 'PLANNED',
                 { timeout: 10000 },
             );
+            // R3-P2 — "Run" now creates a PLANNED run; begin the guided
+            // execution (PLANNED → RUNNING) before the result form appears.
+            await page.click('#start-test-run-btn');
+            await expect(page.locator('#test-run-status')).toContainText(
+                'RUNNING',
+                { timeout: 10000 },
+            );
         });
 
         await test.step('complete the run as PASS and link evidence', async () => {
@@ -129,6 +136,13 @@ test.describe('Control Tests (Test-of-Control)', () => {
 
             await page.click('#create-test-run-btn');
             await page.waitForSelector('#test-run-title', { timeout: 10000 });
+
+            // R3-P2 — start the guided run before the result form is available.
+            await page.click('#start-test-run-btn');
+            await expect(page.locator('#test-run-status')).toContainText(
+                'RUNNING',
+                { timeout: 10000 },
+            );
 
             await page.click('#result-btn-FAIL');
             await page.waitForSelector('#test-run-finding-summary', {

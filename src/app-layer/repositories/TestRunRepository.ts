@@ -25,7 +25,17 @@ export const TestRunRepository = {
         return db.controlTestRun.findFirst({
             where: { id: runId, tenantId: ctx.tenantId },
             include: {
-                testPlan: { select: { id: true, name: true, controlId: true, frequency: true, ownerUserId: true } },
+                testPlan: {
+                    select: {
+                        id: true, name: true, controlId: true, frequency: true, ownerUserId: true,
+                        // R3-P2 — the run surface shows the plan's procedure so a
+                        // tester walks the steps during a RUNNING execution.
+                        steps: {
+                            orderBy: { sortOrder: 'asc' },
+                            select: { id: true, sortOrder: true, instruction: true, expectedOutput: true },
+                        },
+                    },
+                },
                 executedBy: { select: { id: true, name: true, email: true } },
                 createdBy: { select: { id: true, name: true, email: true } },
                 evidence: {
@@ -47,6 +57,14 @@ export const TestRunRepository = {
                 _count: { select: { evidence: true } },
             },
             orderBy: { createdAt: 'desc' },
+        });
+    },
+
+    /** R3-P2 — PLANNED → RUNNING. Marks a run as actively in progress. */
+    async start(db: PrismaTx, _ctx: RequestContext, runId: string) {
+        return db.controlTestRun.update({
+            where: { id: runId },
+            data: { status: 'RUNNING' },
         });
     },
 

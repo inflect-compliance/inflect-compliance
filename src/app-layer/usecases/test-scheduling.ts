@@ -41,6 +41,8 @@ import { notFound, badRequest } from '@/lib/errors/types';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { logEvent } from '../events/audit';
 import { computeNextRunFromCron } from '../jobs/control-test-scheduler';
+import { computeNextDueAt } from '../utils/cadence';
+import { deriveMethodFromAutomationType } from './control-test';
 import { bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 
 // ─── 1. scheduleTestPlan ───────────────────────────────────────────
@@ -127,6 +129,7 @@ export async function scheduleTestPlan(
                 schedule: true,
                 scheduleTimezone: true,
                 nextRunAt: true,
+                frequency: true,
             },
         });
         if (!plan) throw notFound('Test plan not found');
@@ -137,10 +140,22 @@ export async function scheduleTestPlan(
             ? computeNextRunFromCron(input.schedule, tz, new Date())
             : null;
 
+        // R3-P2 — reconcile the two overlapping models into one coherent
+        // "next":
+        //   • `method` is derived from `automationType` so the auditor-facing
+        //     flag can never disagree with how execution actually runs.
+        //   • `nextDueAt` (the soft "due-by" the /tests + /tests/due views
+        //     show) tracks the ACTUAL cadence: for a scheduled plan that's
+        //     the cron's next fire (nextRunAt); reverting to MANUAL falls
+        //     back to the frequency-driven due date.
+        const method = deriveMethodFromAutomationType(input.automationType);
+        const nextDueAt = nextRunAt ?? computeNextDueAt(plan.frequency, new Date());
+
         const updated = await db.controlTestPlan.update({
             where: { id: planId },
             data: {
                 automationType: input.automationType,
+                method,
                 schedule: input.schedule
                     ? sanitizePlainText(input.schedule)
                     : null,
@@ -155,6 +170,7 @@ export async function scheduleTestPlan(
                         ? undefined
                         : (input.automationConfig as never),
                 nextRunAt,
+                nextDueAt,
                 // Schedule context shifted — prior tick bookkeeping
                 // is meaningless under the new cron.
                 lastScheduledRunAt: null,

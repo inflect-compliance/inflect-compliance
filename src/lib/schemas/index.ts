@@ -811,6 +811,12 @@ export const UpdateTestPlanSchema = z.object({
     ownerUserId: z.string().nullable().optional(),
     expectedEvidence: z.any().nullable().optional(),
     status: z.enum(['ACTIVE', 'PAUSED']).optional(),
+    // R3-P2 — steps are now editable after creation. When present, the
+    // array REPLACES the plan's existing procedure (empty array clears it).
+    steps: z.array(z.object({
+        instruction: z.string().min(1).max(10000),
+        expectedOutput: z.string().max(10000).nullable().optional(),
+    })).optional(),
 }).strip();
 
 export const CompleteTestRunSchema = z.object({

@@ -1735,7 +1735,9 @@
             "evidenceCount": "{count} evidence",
             "createdBy": "Created {date} by {name}",
             "unknown": "Unknown",
-            "owner": "Owner: {name}"
+            "owner": "Owner: {name}",
+            "saveFailed": "Couldn't save the test plan. Try again.",
+            "runFailed": "Couldn't start the run. Try again."
         },
         "filters": {
             "status": "Status",
@@ -5381,7 +5383,8 @@
             "runPending": "Run Pending",
             "needsRun": "Needs Run",
             "runNow": "Run Now",
-            "empty": "No tests are due! All plans are on schedule."
+            "empty": "No tests are due! All plans are on schedule.",
+            "runFailed": "Couldn't start the run. Try again."
         },
         "dashboard": {
             "title": "Test Dashboard",
@@ -5432,7 +5435,9 @@
                 "uploadFailed": "Upload failed",
                 "createLinkFailed": "Failed to create link evidence",
                 "linkFailed": "Failed to link evidence to the run",
-                "addFailed": "Failed to add evidence"
+                "addFailed": "Failed to add evidence",
+                "startFailed": "Couldn't start the run. Try again.",
+                "completeFailed": "Couldn't record the result. Try again."
             },
             "run": "Run",
             "controls": "Controls",
@@ -5479,7 +5484,17 @@
             "unlinkAria": "Unlink evidence",
             "createdBy": "Created {date} by {name}",
             "unknown": "Unknown",
-            "evidenceEmpty": "No evidence linked yet."
+            "evidenceEmpty": "No evidence linked yet.",
+            "procedureHeading": "Test procedure",
+            "stepExpected": "Expected: {output}",
+            "stepsProgress": "{done} of {total} steps done",
+            "startHeading": "Start this run",
+            "startHint": "Begin the guided execution — walk the procedure, then record the result.",
+            "starting": "Starting…",
+            "startTest": "Start test",
+            "completedToast": "Test run recorded",
+            "evidenceRecord": "Evidence record",
+            "evidenceRecordPlaceholder": "Select evidence…"
         },
         "filters": {
             "status": "Status",
@@ -5564,6 +5579,17 @@
             "creating": "Creating…",
             "createSuccess": "Test plan created.",
             "createFailed": "Could not create the test plan. Please try again."
+        },
+        "steps": {
+            "label": "Test procedure",
+            "hint": "Steps a tester walks during a run. Optional.",
+            "empty": "No steps yet — add the procedure a tester should follow.",
+            "instructionPlaceholder": "What the tester does",
+            "expectedPlaceholder": "Expected result (optional)",
+            "moveUp": "Move step up",
+            "moveDown": "Move step down",
+            "remove": "Remove step",
+            "add": "Add step"
         }
     },
     "agents": {
@@ -6287,7 +6313,9 @@
             "empty": "No test plans configured for this control.",
             "due": "Due: {date}",
             "runs": "{count} runs",
-            "run": "Run"
+            "run": "Run",
+            "createFailed": "Couldn't create the test plan. Try again.",
+            "runFailed": "Couldn't start the run. Try again."
         },
         "schedule": {
             "title": "Schedule",

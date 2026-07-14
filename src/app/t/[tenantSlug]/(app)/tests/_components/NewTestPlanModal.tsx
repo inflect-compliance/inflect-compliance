@@ -18,6 +18,7 @@ import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { ToggleGroup } from '@/components/ui/toggle-group';
+import { TestStepsEditor, type TestStepDraft, serializeSteps } from './TestStepsEditor';
 
 interface ControlOption { id: string; code: string | null; name: string }
 
@@ -41,6 +42,7 @@ export function NewTestPlanModal({
     const [name, setName] = useState('');
     const [method, setMethod] = useState<'MANUAL' | 'AUTOMATED'>('MANUAL');
     const [frequency, setFrequency] = useState('AD_HOC');
+    const [steps, setSteps] = useState<TestStepDraft[]>([]);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
@@ -62,7 +64,7 @@ export function NewTestPlanModal({
     }));
 
     const reset = () => {
-        setControlId(''); setName(''); setMethod('MANUAL'); setFrequency('AD_HOC');
+        setControlId(''); setName(''); setMethod('MANUAL'); setFrequency('AD_HOC'); setSteps([]);
     };
 
     const submit = async () => {
@@ -72,7 +74,7 @@ export function NewTestPlanModal({
             const res = await fetch(apiUrl(`/controls/${controlId}/tests/plans`), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name.trim(), method, frequency }),
+                body: JSON.stringify({ name: name.trim(), method, frequency, steps: serializeSteps(steps) }),
             });
             if (!res.ok) throw new Error('create failed');
             toast.success(t('unified.createSuccess'));
@@ -128,6 +130,9 @@ export function NewTestPlanModal({
                             setSelected={(o) => setFrequency(o?.value ?? 'AD_HOC')}
                             matchTriggerWidth
                         />
+                    </FormField>
+                    <FormField label={t('steps.label')} hint={t('steps.hint')}>
+                        <TestStepsEditor steps={steps} onChange={setSteps} />
                     </FormField>
                 </div>
             </Modal.Body>
