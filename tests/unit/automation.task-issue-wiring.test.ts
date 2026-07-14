@@ -21,8 +21,12 @@ jest.mock('@/lib/db-context', () => {
         ...actual,
         runInTenantContext: jest.fn(async (_ctx, callback) => {
             // Callback gets a `db` arg — repos are fully mocked below, so
-            // anything truthy satisfies the signature.
-            return callback({} as unknown);
+            // anything truthy satisfies the signature. reconcileTaskSource
+            // (TP-3) probes `db.task.findFirst` on a terminal transition;
+            // stub it to null so reconciliation no-ops in this unit test.
+            return callback({
+                task: { findFirst: jest.fn().mockResolvedValue(null) },
+            } as unknown);
         }),
     };
 });

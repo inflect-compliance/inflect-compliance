@@ -338,8 +338,9 @@ export async function materializeNis2Gaps(
                 severity: g.criticality,
                 source: 'AUDIT',
                 dueAt,
-                // No TaskLink FINDING entity type exists — record the
-                // finding linkage + the respondent hint in metadata.
+                // TP-3 — first-class FK to the Finding. metadataJson
+                // keeps the linkage too (UI/reader back-compat).
+                findingId: finding.id,
                 metadataJson: {
                     source: NIS2_SOURCE_KIND,
                     questionId: g.questionId,

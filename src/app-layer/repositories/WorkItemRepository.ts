@@ -328,6 +328,7 @@ export class WorkItemRepository {
         assigneeUserId?: string | null;
         reviewerUserId?: string | null;
         controlId?: string | null;
+        findingId?: string | null;
         metadataJson?: unknown;
     }) {
         // #102 item 2 — mint the `TSK-N` key from an atomic
@@ -358,6 +359,7 @@ export class WorkItemRepository {
                 assigneeUserId: data.assigneeUserId || null,
                 reviewerUserId: data.reviewerUserId || null,
                 controlId: data.controlId || null,
+                findingId: data.findingId || null,
                 createdByUserId: ctx.userId,
                 metadataJson: data.metadataJson != null ? (data.metadataJson as Prisma.InputJsonValue) : Prisma.JsonNull,
             },

@@ -118,6 +118,19 @@ const mockEmitEvent = emitAutomationEvent as jest.MockedFunction<typeof emitAuto
 const mockEnqueueEmail = enqueueEmail as jest.MockedFunction<typeof enqueueEmail>;
 const mockLog = logEvent as jest.MockedFunction<typeof logEvent>;
 
+/**
+ * TP-3 — a minimal `db` tx stub that makes `reconcileTaskSource`
+ * (called after terminal status writes) no-op: the task re-read
+ * returns a plain non-source-linked TASK, and the vulnerability probe
+ * finds nothing.
+ */
+function reconcileNoopDb() {
+    return {
+        task: { findFirst: jest.fn().mockResolvedValue({ id: 't1', type: 'TASK', controlId: null, findingId: null, metadataJson: null }) },
+        assetVulnerability: { findFirst: jest.fn().mockResolvedValue(null) },
+    };
+}
+
 beforeEach(() => {
     jest.clearAllMocks();
     mockSanitize.mockImplementation((s: string | null | undefined) => `SANITISED(${s})`);
@@ -236,7 +249,10 @@ describe('setTaskStatus — fromStatus capture + validateTypeRelevance', () => {
     });
 
     it('allows RESOLVED for INCIDENT when an ASSET link is present', async () => {
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
+        // TP-3 — terminal transitions now call reconcileTaskSource,
+        // which re-reads the task + probes for a linked vuln. Provide a
+        // non-reconcilable stub so the reconciler no-ops.
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn(reconcileNoopDb() as never));
         mockGetById.mockResolvedValueOnce({
             id: 't1', status: 'OPEN', type: 'INCIDENT', controlId: null,
         } as never);
@@ -298,7 +314,9 @@ describe('addTaskComment — Epic C.5 sanitisation', () => {
 
 describe('bulkSetTaskStatus', () => {
     it('emits one TASK_STATUS_CHANGED audit per id (not one summary row)', async () => {
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
+        // TP-3 — each terminal close reconciles its source; stub the
+        // re-read + vuln probe so the reconciler no-ops per id.
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn(reconcileNoopDb() as never));
         // S8 — bulk path pre-fetches every row's current status so
         // the all-or-nothing transition gate can run before the
         // bulk update. Each id resolves to a legal RESOLVED→CLOSED.
