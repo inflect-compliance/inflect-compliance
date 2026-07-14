@@ -14,7 +14,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Heading } from "@/components/ui/typography";
-import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { taskStatusVariant, taskStatusLabel } from "@/lib/task-status-badge";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { UserCombobox } from "@/components/ui/user-combobox";
 import { FormField } from "@/components/ui/form-field";
@@ -47,11 +48,6 @@ const buildTypeOptions = (t: OptT): ComboboxOption[] => [
     { value: "INCIDENT", label: t("typeLabels.INCIDENT") },
     { value: "IMPROVEMENT", label: t("typeLabels.IMPROVEMENT") },
 ];
-const TASK_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
-    OPEN: "warning", TRIAGED: "warning", IN_PROGRESS: "info", BLOCKED: "error",
-    DONE: "success", RESOLVED: "success", CLOSED: "neutral", CANCELLED: "neutral",
-};
-
 type Tab = "details" | "activity";
 
 interface TaskDetail {
@@ -233,8 +229,8 @@ export function TaskEditPanel({
         <div className="space-y-default" role="region" aria-label={tx("detail.editorAria.task")} data-testid="task-edit-panel">
             <div className="flex items-center gap-tight">
                 {task.key && <span className="font-mono text-xs text-content-muted">{task.key}</span>}
-                <StatusBadge variant={TASK_STATUS_BADGE[task.status] ?? "neutral"} size="sm">
-                    {task.status}
+                <StatusBadge variant={taskStatusVariant(task.status)} size="sm">
+                    {taskStatusLabel(task.status, tTask)}
                 </StatusBadge>
             </div>
             <Heading level={3} className="break-words">{task.title}</Heading>

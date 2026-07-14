@@ -58,7 +58,9 @@ const tVendors = resolver('vendors');
 const tGroup = (k: string) => resolver('common')(`filterGroups.${k}`);
 
 // Enum VALUE sets (the URL/API contract — unchanged by i18n).
-const TASK_STATUS = ['OPEN', 'IN_PROGRESS', 'IN_REVIEW', 'RESOLVED', 'CLOSED', 'CANCELED'];
+// The seven WorkItemStatus values (TP-1): no phantom IN_REVIEW,
+// includes the real TRIAGED + BLOCKED states.
+const TASK_STATUS = ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'BLOCKED', 'RESOLVED', 'CLOSED', 'CANCELED'];
 const TASK_TYPE = ['TASK', 'AUDIT_FINDING', 'CONTROL_GAP', 'INCIDENT', 'IMPROVEMENT'];
 const TASK_SEVERITY = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 const ASSET_TYPE = ['INFORMATION', 'SYSTEM', 'SERVICE', 'DATA_STORE', 'VENDOR', 'PEOPLE_PROCESS', 'APPLICATION', 'INFRASTRUCTURE', 'PROCESS', 'OTHER'];
@@ -199,7 +201,7 @@ describe('Assets filter config', () => {
 
 describe('URL round-trip for Tasks / Vendors / Assets', () => {
     it.each([
-        ['tasks', TASK_FILTER_KEYS, { status: ['OPEN', 'IN_REVIEW'], severity: ['CRITICAL'], due: ['overdue'] } as FilterState],
+        ['tasks', TASK_FILTER_KEYS, { status: ['OPEN', 'BLOCKED'], severity: ['CRITICAL'], due: ['overdue'] } as FilterState],
         ['vendors', VENDOR_FILTER_KEYS, { status: ['ACTIVE'], criticality: ['HIGH'], reviewDue: ['next30d'] } as FilterState],
         ['assets', ASSET_FILTER_KEYS, { type: ['SYSTEM'], status: ['ACTIVE'] } as FilterState],
     ])('%s is lossless across serialise/parse', (_name, keys, state) => {

@@ -28,10 +28,8 @@ import { TERMINAL_WORK_ITEM_STATUSES } from '@/app-layer/domain/work-item-status
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { MetaStrip } from '@/components/ui/meta-strip';
-import {
-    TASK_STATUS_VARIANT,
-    TASK_SEVERITY_VARIANT,
-} from '@/app-layer/domain/entity-status-mapping';
+import { TASK_SEVERITY_VARIANT } from '@/app-layer/domain/entity-status-mapping';
+import { taskStatusVariant } from '@/lib/task-status-badge';
 import { cardVariants } from '@/components/ui/card';
 // Shared evidence sub-table — lives under the control detail route's
 // `_tabs/` (kept there so existing guard exemptions + a unit test keyed
@@ -43,8 +41,8 @@ import { toYMD } from '@/components/ui/date-picker/date-utils';
 import { Pen2 } from '@/components/ui/icons/nucleo';
 import { cn } from '@/lib/cn';
 
-// Polish PR-1 — STATUS_BADGE / SEVERITY_BADGE moved to shared
-// domain mapping (TASK_STATUS_VARIANT / TASK_SEVERITY_VARIANT).
+// Status tone comes from the shared `TASK_STATUS_BADGE` map (TP-1) via
+// `taskStatusVariant`; severity tone from `TASK_SEVERITY_VARIANT`.
 // Labels stay local because they're presentation copy.
 const buildStatusLabels = (t: (k: string) => string): Record<string, string> => ({
     OPEN: t('statusLabels.OPEN'), TRIAGED: t('statusLabels.TRIAGED'), IN_PROGRESS: t('statusLabels.IN_PROGRESS'),
@@ -580,9 +578,7 @@ export default function TaskDetailPage() {
                             label: t('detail.status'),
                             value:
                                 STATUS_LABELS[task.status] ?? task.status,
-                            variant:
-                                TASK_STATUS_VARIANT[task.status] ??
-                                'neutral',
+                            variant: taskStatusVariant(task.status),
                         },
                         {
                             kind: 'status' as const,

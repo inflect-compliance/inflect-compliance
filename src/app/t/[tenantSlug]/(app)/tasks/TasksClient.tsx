@@ -56,13 +56,12 @@ import {
 } from '@/components/ui/date-picker/date-utils';
 import { useHydratedNow } from '@/lib/hooks/use-hydrated-now';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { taskStatusVariant } from '@/lib/task-status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
-const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
-    OPEN: 'neutral', TRIAGED: 'info', IN_PROGRESS: 'info',
-    BLOCKED: 'error', RESOLVED: 'success', CLOSED: 'neutral', CANCELED: 'neutral',
-};
+// Status → badge tone is the shared `TASK_STATUS_BADGE` map (TP-1),
+// consumed via `taskStatusVariant`. Labels stay local (label copy).
 const buildStatusLabels = (t: (k: string) => string): Record<string, string> => ({
     OPEN: t('statusLabels.OPEN'), TRIAGED: t('statusLabels.TRIAGED'), IN_PROGRESS: t('statusLabels.IN_PROGRESS'),
     BLOCKED: t('statusLabels.BLOCKED'), RESOLVED: t('statusLabels.RESOLVED'), CLOSED: t('statusLabels.CLOSED'), CANCELED: t('statusLabels.CANCELED'),
@@ -622,7 +621,7 @@ function TasksPageInner({
                 accessorKey: 'status',
                 header: t('colHeaders.status'),
                 cell: ({ row }) => (
-                    <StatusBadge variant={STATUS_BADGE[row.original.status] || 'neutral'} size="sm">
+                    <StatusBadge variant={taskStatusVariant(row.original.status)} size="sm">
                         {STATUS_LABELS[row.original.status] || row.original.status}
                     </StatusBadge>
                 ),
