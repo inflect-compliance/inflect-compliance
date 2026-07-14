@@ -4,16 +4,16 @@
  * Pins the operational-visibility contracts for the dashboard
  * widgets that close out the G-2 feature:
  *
- *   1. Pass/Fail donut: segments shipped to DonutChart match the
- *      pass/fail/inconclusive counts; center label is the rounded
- *      pass-rate.
- *   2. Overdue list: only items with daysUntilRun < 0 render;
+ *   1. Overdue list: only items with daysUntilRun < 0 render;
  *      sorted most-overdue-first; "+N more" appears when the
  *      automation.overdueScheduled count exceeds the visible rows.
- *   3. Sparkline: per-day TimeSeriesPoint[] passed to MiniAreaChart;
+ *   2. Sparkline: per-day TimeSeriesPoint[] passed to MiniAreaChart;
  *      empty-data path renders the "no runs" placeholder.
- *   4. Empty states are correct (no completed runs / no scheduled
- *      plans).
+ *   3. Empty state is correct (no scheduled plans).
+ *
+ * (R3-P3 removed the pass/fail donut — it duplicated the main
+ * dashboard's Result Distribution card — so this section no longer
+ * renders a distribution chart.)
  */
 
 import * as React from 'react';
@@ -30,15 +30,6 @@ jest.mock('@/lib/format-date', () => ({
 // Capture the props the chart primitives receive so we can assert
 // the data shape without rendering the full visx tree (it's heavy
 // under jsdom and we only care about wiring here).
-const donutSpy = jest.fn();
-jest.mock('@/components/ui/DonutChart', () => ({
-    __esModule: true,
-    default: (props: unknown) => {
-        donutSpy(props);
-        return <div data-testid="mock-donut" />;
-    },
-}));
-
 const sparklineSpy = jest.fn();
 jest.mock('@/components/ui/mini-area-chart', () => ({
     __esModule: true,
@@ -97,44 +88,7 @@ const BASE_PROPS = {
 };
 
 beforeEach(() => {
-    donutSpy.mockReset();
     sparklineSpy.mockReset();
-});
-
-// ─── 1. Donut ──────────────────────────────────────────────────────
-
-describe('TestDashboardG2Section — pass/fail donut', () => {
-    test('passes pass/fail/inconclusive segments and the rounded pass-rate label', () => {
-        render(<TestDashboardG2Section {...BASE_PROPS} />);
-
-        expect(donutSpy).toHaveBeenCalledTimes(1);
-        const props = donutSpy.mock.calls[0][0] as {
-            segments: Array<{ label: string; value: number }>;
-            centerLabel: string;
-        };
-        // 8 / (8+1+1) = 80%
-        expect(props.centerLabel).toBe('80%');
-        const byLabel = Object.fromEntries(
-            props.segments.map((s) => [s.label, s.value]),
-        );
-        expect(byLabel).toEqual({ Pass: 8, Fail: 1, Inconclusive: 1 });
-    });
-
-    test('renders empty-state copy when no completed runs exist', () => {
-        render(
-            <TestDashboardG2Section
-                {...BASE_PROPS}
-                passRuns={0}
-                failRuns={0}
-                inconclusiveRuns={0}
-            />,
-        );
-        // Donut not invoked at all in the empty-state branch.
-        expect(donutSpy).not.toHaveBeenCalled();
-        expect(
-            screen.getByText(/No completed runs in this period yet/i),
-        ).toBeInTheDocument();
-    });
 });
 
 // ─── 2. Overdue list ───────────────────────────────────────────────
