@@ -211,14 +211,18 @@ describe('computeReadiness — evidence query excludes archived/deleted', () => 
         await computeReadiness(makeRequestContext('READER'), 'c1');
 
         const evidenceQuery = findManyCallArgs[0];
-        // Regression: a refactor that dropped the where filter on
-        // the evidence sub-select would let archived/deleted evidence
-        // count toward readiness — the score reflects a state that
-        // would not stand up at audit intake.
-        expect(evidenceQuery.select.evidence.where).toEqual({
+        // Regression: a refactor that dropped the where filter on the
+        // evidence sub-select would let un-qualifying evidence count toward
+        // readiness — a score that would not stand up at audit intake.
+        // EP-1 routes this through `coverageQualifyingEvidenceWhere`, so the
+        // sub-select now ALSO requires APPROVED + unexpired (the OR branch),
+        // not merely non-archived / non-deleted.
+        expect(evidenceQuery.select.evidence.where).toMatchObject({
+            status: 'APPROVED',
             isArchived: false,
             deletedAt: null,
         });
+        expect(evidenceQuery.select.evidence.where.OR).toBeDefined();
     });
 });
 

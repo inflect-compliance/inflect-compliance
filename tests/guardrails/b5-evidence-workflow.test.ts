@@ -99,7 +99,9 @@ describe('B5 — Evidence workflow completion', () => {
             expect(sheet).toMatch(/evidence-sheet-approve-btn/);
             expect(sheet).toMatch(/evidence-sheet-reject-btn/);
             expect(sheet).toMatch(/onReview\(evidence\.id, 'APPROVED'\)/);
-            expect(sheet).toMatch(/onReview\(evidence\.id, 'REJECTED'\)/);
+            // EP-1: Reject now routes through the required-reason modal, so
+            // the call carries a third `reason` arg (onReview(id,'REJECTED',reason)).
+            expect(sheet).toMatch(/onReview\(evidence\.id, 'REJECTED'/);
         });
 
         it('renders Re-submit on REJECTED', () => {
