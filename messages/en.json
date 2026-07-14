@@ -5752,7 +5752,16 @@
         "loadError": "Failed to load calendar events. Try refreshing.",
         "ganttEmpty": "No duration-based events in this range. Create an audit cycle to see it here.",
         "clickDay": "Click a day to see events on that date.",
-        "eventsEmptyDay": "No events on this day."
+        "eventsEmptyDay": "No events on this day.",
+        "heatmapWindowLabel": "Last 12 months",
+        "ganttWindowLabel": "12-month timeline (fixed window)",
+        "completeAction": "Complete",
+        "rescheduleAction": "Reschedule",
+        "rescheduleAria": "Reschedule task due date",
+        "taskCompleteResolution": "Completed from calendar",
+        "taskCompleted": "Task completed",
+        "taskRescheduled": "Task rescheduled",
+        "taskActionError": "Couldn't update the task. Please try again."
     },
     "coverage": {
         "crumbDashboard": "Dashboard",

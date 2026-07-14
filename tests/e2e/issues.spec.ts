@@ -284,16 +284,21 @@ test.describe('Issue Management', () => {
         );
     });
 
-    test('dashboard page renders metrics', async ({ authedPage, isolatedTenant }) => {
+    test('legacy dashboard route redirects into the tasks list', async ({ authedPage, isolatedTenant }) => {
+        // TP-7 — the standalone Tasks dashboard was retired (merged into
+        // the /tasks list: server-computed KPI strip + "Assigned to me"
+        // toggle). The old route is now a redirect shim.
         await gotoAndVerify(
             authedPage,
             `/t/${isolatedTenant.tenantSlug}/tasks/dashboard`,
-            'h1',
+            '[data-testid="tasks-table"]',
         );
-        await expect(authedPage.locator('#dashboard-metrics')).toBeVisible({
-            timeout: 10000,
-        });
-        await expect(authedPage.locator('h1')).toContainText('Dashboard');
+        await expect(authedPage).toHaveURL(
+            new RegExp(`/t/${isolatedTenant.tenantSlug}/tasks$`),
+        );
+        await expect(
+            authedPage.locator('[data-testid="tasks-table"]'),
+        ).toBeVisible({ timeout: 10000 });
     });
 
     test('bulk action toolbar appears when issues selected', async ({

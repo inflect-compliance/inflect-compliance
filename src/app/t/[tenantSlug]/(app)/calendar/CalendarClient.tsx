@@ -23,6 +23,9 @@ import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/hooks/use-toast';
+import { DatePicker } from '@/components/ui/date-picker/date-picker';
+import { parseYMD, toYMD } from '@/components/ui/date-picker/date-utils';
 import { CalendarHeatmap } from '@/components/ui/CalendarHeatmap';
 import { CalendarMonth } from '@/components/ui/CalendarMonth';
 import { GanttTimeline } from '@/components/ui/GanttTimeline';
@@ -91,6 +94,7 @@ export function CalendarClient({
     initialRange,
 }: CalendarClientProps) {
     const t = useTranslations('calendar');
+    const toast = useToast();
     const [view, setView] = React.useState<View>('month');
     const [monthCursor, setMonthCursor] = React.useState<Date>(
         () => startOfUtcMonth(new Date()),
@@ -164,6 +168,95 @@ export function CalendarClient({
         );
     };
 
+    // ─── PR-3.7 — actionable side panel for task-backed events ───
+    //
+    // The day panel used to be navigate-only. For calendar events that
+    // are backed by a TASK, we surface Complete + Reschedule inline so a
+    // user can act on a deadline without leaving the calendar. Non-task
+    // events (audit cycles, evidence reviews, …) stay read-only — they
+    // carry no writable due date here. Both mutations go through the
+    // canonical task endpoints (status → setTaskStatus so the state
+    // machine + TP-3 reconciliation apply; PATCH for the due date), then
+    // revalidate the visible range so the grid reflects the change.
+    const apiBase = `/api/t/${tenantSlug}`;
+    const [busyEventId, setBusyEventId] = React.useState<string | null>(null);
+    const [rescheduleEventId, setRescheduleEventId] = React.useState<
+        string | null
+    >(null);
+
+    const optimisticPatch = React.useCallback(
+        (eventId: string, patch: Partial<CalendarEvent>) =>
+            calQuery.mutate(
+                (curr) =>
+                    curr
+                        ? {
+                              ...curr,
+                              events: curr.events.map((e) =>
+                                  e.id === eventId ? { ...e, ...patch } : e,
+                              ),
+                          }
+                        : curr,
+                { revalidate: false },
+            ),
+        [calQuery],
+    );
+
+    const completeTask = React.useCallback(
+        async (ev: CalendarEvent) => {
+            if (ev.entityType !== 'TASK') return;
+            setBusyEventId(ev.id);
+            // Optimistic — mute the event to `done` immediately.
+            await optimisticPatch(ev.id, { status: 'done' });
+            try {
+                const res = await fetch(
+                    `${apiBase}/tasks/${ev.entityId}/status`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            status: 'CLOSED',
+                            resolution: t('taskCompleteResolution'),
+                        }),
+                    },
+                );
+                if (!res.ok) throw new Error('complete failed');
+                toast.success(t('taskCompleted'));
+            } catch {
+                toast.error(t('taskActionError'));
+            } finally {
+                setBusyEventId(null);
+                // Reconcile with the server (rolls back the optimistic
+                // patch on failure, confirms it on success).
+                await calQuery.mutate();
+            }
+        },
+        [apiBase, calQuery, optimisticPatch, t, toast],
+    );
+
+    const rescheduleTask = React.useCallback(
+        async (ev: CalendarEvent, ymd: string) => {
+            if (ev.entityType !== 'TASK') return;
+            setBusyEventId(ev.id);
+            setRescheduleEventId(null);
+            await optimisticPatch(ev.id, { date: ymd });
+            try {
+                const res = await fetch(`${apiBase}/tasks/${ev.entityId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dueAt: ymd }),
+                });
+                if (!res.ok) throw new Error('reschedule failed');
+                toast.success(t('taskRescheduled'));
+            } catch {
+                toast.error(t('taskActionError'));
+            } finally {
+                setBusyEventId(null);
+                await calQuery.mutate();
+            }
+        },
+        [apiBase, calQuery, optimisticPatch, t, toast],
+    );
+
     return (
         <div className="space-y-section animate-fadeIn">
             {/* Header */}
@@ -199,8 +292,13 @@ export function CalendarClient({
                 </div>
             </header>
 
-            {/* Range navigation (month view only) */}
-            {view === 'month' && (
+            {/* Range navigation.
+                Month view has working prev/next arrows. Heatmap (last
+                12 months) and Gantt (12-month centred) use FIXED windows
+                — P4.2 renders an explicit label in the same slot so the
+                absence of arrows reads as intentional, not broken. We
+                deliberately do NOT wire range-nav into those views. */}
+            {view === 'month' ? (
                 <div
                     className={cn(cardVariants({ density: 'none' }), 'flex items-center justify-between px-4 py-2')}
                     data-testid="calendar-month-nav"
@@ -228,6 +326,17 @@ export function CalendarClient({
                     >
                         <ChevronRight className="size-4" />
                     </Button>
+                </div>
+            ) : (
+                <div
+                    className={cn(cardVariants({ density: 'none' }), 'flex items-center justify-center px-4 py-2')}
+                    data-testid="calendar-fixed-window-label"
+                >
+                    <span className="text-sm font-medium text-content-muted">
+                        {view === 'heatmap'
+                            ? t('heatmapWindowLabel')
+                            : t('ganttWindowLabel')}
+                    </span>
                 </div>
             )}
 
@@ -292,7 +401,10 @@ export function CalendarClient({
                                 </p>
                             ) : (
                                 <ul className="space-y-tight">
-                                    {selectedEvents.map((ev) => (
+                                    {selectedEvents.map((ev) => {
+                                        const isTask = ev.entityType === 'TASK';
+                                        const busy = busyEventId === ev.id;
+                                        return (
                                         <li
                                             key={ev.id}
                                             data-event-id={ev.id}
@@ -313,8 +425,51 @@ export function CalendarClient({
                                                     {ev.category} · {ev.status}
                                                 </div>
                                             </Link>
+                                            {/* PR-3.7 — inline actions for
+                                                task-backed events only. */}
+                                            {isTask && (
+                                                <div className="mt-1 px-2 pb-1">
+                                                    {rescheduleEventId === ev.id ? (
+                                                        <DatePicker
+                                                            clearable={false}
+                                                            align="start"
+                                                            value={parseYMD(ev.date.slice(0, 10))}
+                                                            onChange={(next) => {
+                                                                const ymd = toYMD(next);
+                                                                if (ymd) void rescheduleTask(ev, ymd);
+                                                                else setRescheduleEventId(null);
+                                                            }}
+                                                            aria-label={t('rescheduleAria')}
+                                                        />
+                                                    ) : (
+                                                        <div className="flex items-center gap-tight">
+                                                            {ev.status !== 'done' && (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="secondary"
+                                                                    size="xs"
+                                                                    disabled={busy}
+                                                                    onClick={() => void completeTask(ev)}
+                                                                >
+                                                                    {t('completeAction')}
+                                                                </Button>
+                                                            )}
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="xs"
+                                                                disabled={busy}
+                                                                onClick={() => setRescheduleEventId(ev.id)}
+                                                            >
+                                                                {t('rescheduleAction')}
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </li>
-                                    ))}
+                                        );
+                                    })}
                                 </ul>
                             )}
                         </>

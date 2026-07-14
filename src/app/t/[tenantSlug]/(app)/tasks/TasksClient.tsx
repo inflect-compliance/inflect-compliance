@@ -6,7 +6,6 @@
 
 /* eslint-disable react-hooks/exhaustive-deps -- Various useMemo dep arrays in this file deliberately omit identity-unstable callbacks (handlers/derived arrays recreated each render). The proper structural fix is wrapping parent-level callbacks in useCallback. Tracked as follow-up; existing per-line eslint-disable-next-line markers preserved. */
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Plus } from '@/components/ui/icons/nucleo';
@@ -22,8 +21,6 @@ import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
 import { useThresholdLoadMore } from '@/components/ui/hooks';
 import { TimestampTooltip } from '@/components/ui/timestamp-tooltip';
-import { Tooltip } from '@/components/ui/tooltip';
-import { TERMINAL_WORK_ITEM_STATUSES } from '@/app-layer/domain/work-item-status';
 import { DataTable, createColumns, useColumnsDropdown, sortRowsByDisplay, type SortAccessors } from '@/components/ui/table';
 import {
     FilterProvider,
@@ -38,7 +35,6 @@ import { ListPageShell } from '@/components/layout/ListPageShell';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
-import { buttonVariants } from '@/components/ui/button-variants';
 import { toApiSearchParams } from '@/lib/filters/url-sync';
 import { buildTaskFilters, TASK_FILTER_KEYS } from './filter-defs';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
@@ -55,7 +51,6 @@ import {
     startOfUtcDay,
     toYMD,
 } from '@/components/ui/date-picker/date-utils';
-import { useHydratedNow } from '@/lib/hooks/use-hydrated-now';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { taskStatusVariant } from '@/lib/task-status-badge';
 import { Heading } from '@/components/ui/typography';
@@ -110,8 +105,26 @@ interface TaskListItem {
     control: { id: string; code: string | null; name: string } | null;
 }
 
+// TP-7 — server-computed task metrics (getTaskMetrics). The list KPI
+// strip reads these fields so the KPI values reflect the WHOLE tenant,
+// not just the ≤100 SSR rows in the loaded page. Only the fields the
+// KPI cards render are declared here.
+export interface TaskListMetrics {
+    total: number;
+    byStatus: Record<string, number>;
+    overdue: number;
+    dueIn7d: number;
+    dueIn30d: number;
+}
+
 interface TasksClientProps {
     initialTasks: TaskListItem[];
+    /**
+     * Server-rendered `getTaskMetrics` snapshot — seeds the KPI strip
+     * instantly and acts as SWR fallbackData for `/tasks/metrics`
+     * (which returns the same usecase, so the two never diverge).
+     */
+    initialMetrics: TaskListMetrics;
     initialFilters?: Record<string, string>;
     tenantSlug: string;
     appPermissions: {
@@ -136,6 +149,7 @@ export function TasksClient(props: TasksClientProps) {
 
 function TasksPageInner({
     initialTasks,
+    initialMetrics,
     initialFilters,
     tenantSlug,
     appPermissions,
@@ -184,10 +198,6 @@ function TasksPageInner({
         // First-mount only.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-
-    // Null until after hydration — time-dependent UI (overdue/SLA
-    // badges) reads this so SSR and first-client render match exactly.
-    const hydratedNow = useHydratedNow();
 
     const filterCtx = useFilters();
     const { state, search, hasActive } = filterCtx;
@@ -325,31 +335,28 @@ function TasksPageInner({
         [visibleCards, liveFilters],
     );
 
-    const isOverdue = (task: TaskListItem) => !!(hydratedNow && task.dueAt && new Date(task.dueAt) < hydratedNow && !(TERMINAL_WORK_ITEM_STATUSES as readonly string[]).includes(task.status));
-
     // ─── R23-PR-E — KPI definitions for the Tasks page ───
     // Aligned to `status` + `due` filter keys (both filterable
     // server-side). "Due this week" uses the `due=next7d` pseudo-
     // enum the API already accepts.
     type TaskKpiId = 'total' | 'open' | 'overdue' | 'dueWeek';
-    // guardrail-ignore: KPI counts across the loaded page, not a refilter.
-    const totalTasks = tasks.length;
-    // guardrail-ignore: KPI count, not a refilter.
-    const openTasks = tasks.filter((t: TaskListItem) => t.status === 'OPEN').length;
-    // guardrail-ignore: KPI count, not a refilter.
-    const overdueTasks = tasks.filter(isOverdue).length;
-    // guardrail-ignore: KPI count, not a refilter.
-    const weekFromNow = hydratedNow
-        ? new Date(hydratedNow.getTime() + 7 * 24 * 60 * 60 * 1000)
-        : null;
-    const dueWeekTasks = tasks.filter(
-        (t: TaskListItem) =>
-            !!hydratedNow &&
-            !!weekFromNow &&
-            !!t.dueAt &&
-            new Date(t.dueAt) >= hydratedNow &&
-            new Date(t.dueAt) <= weekFromNow,
-    ).length;
+
+    // TP-7 — KPI values are SERVER-computed via getTaskMetrics, not
+    // counted from the loaded rows. Seeded by the SSR `initialMetrics`
+    // prop and revalidated against `/tasks/metrics` (the same usecase),
+    // so the KPI strip reflects the whole tenant and can never diverge
+    // from the server metrics past the 100-row SSR cap (the old
+    // client-row count silently under-reported once the list capped).
+    const metricsQuery = useTenantSWR<TaskListMetrics>(
+        CACHE_KEYS.tasks.metrics(),
+        { fallbackData: initialMetrics, dedupingInterval: 30_000 },
+    );
+    const metrics = metricsQuery.data ?? initialMetrics;
+    const totalTasks = metrics.total;
+    const openTasks = metrics.byStatus.OPEN ?? 0;
+    const overdueTasks = metrics.overdue;
+    const dueWeekTasks = metrics.dueIn7d;
+
     const taskKpiDefs: ReadonlyArray<KpiFilterDef<TaskKpiId>> = useMemo(
         () => [
             {
@@ -727,7 +734,7 @@ function TasksPageInner({
 
         return cols;
 
-    }, [appPermissions.tasks.edit, selected, tasks.length, tenantHref, hydratedNow, t]);
+    }, [appPermissions.tasks.edit, selected, tasks.length, tenantHref, t]);
 
     // Quick-view side panel. Keyed by task id so switching to another task
     // forces a fresh mount → openOnMount re-fires and TaskEditPanel re-seeds
@@ -853,9 +860,11 @@ function TasksPageInner({
                             >
                                 {t('list.assignedToMe')}
                             </Button>
-                            <Tooltip content={t('list.dashboardTooltip')}>
-                                <Link href={tenantHref('/tasks/dashboard')} aria-label={t('list.dashboardAria')} className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="dashboard-btn"><AppIcon name="dashboard" size={16} /></Link>
-                            </Tooltip>
+                            {/* TP-7 — the standalone Tasks dashboard was
+                                retired (merged into this list: the KPI
+                                strip above is now server-computed, and
+                                "My Tasks" is the "Assigned to me" toggle).
+                                The dashboard nav icon is gone with it. */}
                             {columnsDropdown}
                             {filtersDropdown}
                         </>

@@ -118,7 +118,6 @@ const LEGACY_LUCIDE_USERS = new Set<string>([
     'src/app/t/[tenantSlug]/(app)/reports/soa/SoAClient.tsx',
     'src/app/t/[tenantSlug]/(app)/risks/filter-defs.ts',
     'src/app/t/[tenantSlug]/(app)/security/mfa/page.tsx',
-    'src/app/t/[tenantSlug]/(app)/tasks/dashboard/page.tsx',
     'src/app/t/[tenantSlug]/(app)/tasks/filter-defs.ts',
     'src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx',
     'src/app/t/[tenantSlug]/(app)/vendors/filter-defs.ts',

@@ -116,7 +116,8 @@ const EXEMPT_FILES = new Set<string>([
     // sidebar nav is the canonical entry point.
     "src/app/t/[tenantSlug]/(app)/controls/dashboard/page.tsx",
     "src/app/t/[tenantSlug]/(app)/risks/dashboard/page.tsx",
-    "src/app/t/[tenantSlug]/(app)/tasks/dashboard/page.tsx",
+    // /tasks/dashboard retired in TP-7 — redirect shim (no L1 heading,
+    // so it needs no exemption; merged into the /tasks list).
     "src/app/t/[tenantSlug]/(app)/tests/dashboard/page.tsx",
     "src/app/t/[tenantSlug]/(app)/vendors/dashboard/page.tsx",
 

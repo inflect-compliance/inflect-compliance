@@ -61,11 +61,9 @@ const DASHBOARDS: DashboardEntry[] = [
         adopted: true,
         note: "Controls performance dashboard with status breakdown + owner workload tiles.",
     },
-    {
-        file: "src/app/t/[tenantSlug]/(app)/tasks/dashboard/page.tsx",
-        adopted: true,
-        note: "Tasks productivity dashboard with assignment + SLA + trend cards.",
-    },
+    // /tasks/dashboard retired in TP-7 — merged into the /tasks list
+    // (server-computed KPI strip + "Assigned to me" toggle). The route
+    // is now a redirect shim and no longer mounts <DashboardLayout>.
     {
         file: "src/app/t/[tenantSlug]/(app)/tests/dashboard/page.tsx",
         adopted: true,
