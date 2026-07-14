@@ -1961,7 +1961,10 @@
             "unarchiveFailedStatus": "Failed to unarchive evidence ({status})",
             "archiveFailedNet": "Failed to archive evidence",
             "unarchiveFailedNet": "Failed to unarchive evidence",
-            "entityLabel": "evidence"
+            "entityLabel": "evidence",
+            "retentionTriageAria": "Retention view",
+            "triageExpiring": "Expiring",
+            "reReview": "Re-review"
         },
         "reject": {
             "title": "Reject evidence",
@@ -2009,8 +2012,22 @@
             "submitForReview": "Submit for review",
             "resubmit": "Re-submit",
             "recertify": "Re-submit for review",
+            "reReview": "Re-review",
             "reject": "Reject",
-            "approve": "Approve"
+            "approve": "Approve",
+            "download": "Download",
+            "previewUnavailable": "Preview not available for this file type.",
+            "fileMetaTitle": "File details",
+            "fileName": "File name",
+            "fileSize": "Size",
+            "fileMime": "MIME type",
+            "fileHash": "SHA-256",
+            "copyHash": "Copy SHA-256",
+            "retentionUntil": "Retention until",
+            "expiry": "Expires",
+            "reviewHistoryTitle": "Review history",
+            "noReviewHistory": "No review activity yet.",
+            "reviewerUnknown": "Unknown reviewer"
         },
         "edit": {
             "title": "Edit evidence",
@@ -2101,7 +2118,9 @@
             "controlIdDesc": "Only show evidence attached to this control.",
             "folder": "Folder",
             "folderDesc": "Organisational folder label.",
-            "noFolder": "No folder"
+            "noFolder": "No folder",
+            "freshness": "Freshness",
+            "freshnessDesc": "Review-currency: current, expiring, expired, or needs review."
         },
         "filterEnums": {
             "type": {
@@ -2113,7 +2132,14 @@
                 "draft": "Draft",
                 "submitted": "Submitted",
                 "approved": "Approved",
-                "rejected": "Rejected"
+                "rejected": "Rejected",
+                "needsReview": "Needs review"
+            },
+            "freshness": {
+                "current": "Current",
+                "expiring": "Expiring soon",
+                "expired": "Expired",
+                "needsReview": "Needs review"
             }
         },
         "typeLabels": {
@@ -2127,6 +2153,7 @@
             "SUBMITTED": "Submitted",
             "APPROVED": "Approved",
             "REJECTED": "Rejected",
+            "NEEDS_REVIEW": "Needs Review",
             "PENDING_UPLOAD": "Pending Upload"
         }
     },

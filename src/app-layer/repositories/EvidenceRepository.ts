@@ -49,6 +49,11 @@ const evidenceListSelect = {
     expiredAt: true,
     deletedAt: true,
     retentionUntil: true,
+    // EP-2 — review-currency drives the freshness badge + the
+    // freshness filter/KPIs. `nextReviewDate` (primary anchor) +
+    // `reviewCycle` (cadence) surface the review schedule.
+    nextReviewDate: true,
+    reviewCycle: true,
     updatedAt: true,
     dateCollected: true,
     fileRecordId: true,
@@ -167,6 +172,19 @@ export class EvidenceRepository {
                     risk: { select: { id: true, key: true, title: true } },
                     asset: { select: { id: true, key: true, name: true } },
                     reviews: { include: { reviewer: { select: { name: true, email: true } } }, orderBy: { createdAt: 'desc' } },
+                    // EP-2 — file metadata (name/size/MIME/SHA-256 +
+                    // retention) powering the detail sheet's inline
+                    // preview, download affordance, and metadata block.
+                    fileRecord: {
+                        select: {
+                            id: true,
+                            originalName: true,
+                            mimeType: true,
+                            sizeBytes: true,
+                            sha256: true,
+                            retentionUntil: true,
+                        },
+                    },
                 },
             });
         });
