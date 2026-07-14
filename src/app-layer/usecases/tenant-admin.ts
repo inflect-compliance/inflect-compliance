@@ -372,11 +372,15 @@ export async function removeTenantMember(
             entityType: 'TenantMembership',
             entityId: membership.id,
             details: `Removed member: ${membership.user.email}`,
+            // `logEvent` validates detailsJson.category against the 6-value
+            // AuditDetailsJsonSchema enum — a hard delete is `entity_lifecycle`
+            // + operation:'delete' (NOT the 'membership' category, which is
+            // only accepted by the lower-level appendAuditEntry path).
             detailsJson: {
-                category: 'membership',
+                category: 'entity_lifecycle',
+                entityName: 'TenantMembership',
+                operation: 'delete',
                 event: 'member_removed',
-                role: membership.role,
-                userId: membership.userId,
             },
         });
 

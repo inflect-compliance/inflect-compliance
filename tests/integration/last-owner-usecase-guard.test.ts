@@ -221,4 +221,22 @@ describeFn('usecase-layer last-OWNER guard', () => {
 
         expect(updated.role).toBe('ADMIN');
     });
+
+    // ── 6. Happy path: removing a non-OWNER member succeeds ───────────
+    //     Regression guard — the audit write inside removeTenantMember must
+    //     use a valid AuditDetailsJsonSchema category (a bad category threw
+    //     "Invalid detailsJson structure" → 400 in prod).
+
+    it('6. removeTenantMember: hard-removes a non-OWNER member (audit write valid)', async () => {
+        const { tenantId, slug } = await setupTenantWithOwner('remove-happy');
+        const admin = await addMember(tenantId, slug, 'admin-remover', 'ADMIN');
+        const editor = await addMember(tenantId, slug, 'editor-removed', 'EDITOR');
+
+        await removeTenantMember(admin.ctx, { membershipId: editor.membershipId });
+
+        const gone = await prisma.tenantMembership.findFirst({
+            where: { id: editor.membershipId },
+        });
+        expect(gone).toBeNull();
+    });
 });
