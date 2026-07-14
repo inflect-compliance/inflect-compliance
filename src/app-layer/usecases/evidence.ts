@@ -247,6 +247,69 @@ const EVIDENCE_TRANSITIONS: Record<string, ReadonlySet<string>> = {
     SUBMITTED: new Set(['APPROVED', 'REJECTED']),
 };
 
+/**
+ * Segregation of duties — resolve the person who authored/submitted a
+ * piece of evidence so a reviewer can be blocked from approving their
+ * own work. The submitter is the reviewer of the latest `SUBMITTED`
+ * `EvidenceReview`; when no such review exists we fall back to the
+ * evidence's `ownerUserId`. Enforced UNCONDITIONALLY — there is no
+ * per-tenant "allow self-review" setting today.
+ */
+async function resolveEvidenceSubmitter(
+    db: import('@/lib/db-context').PrismaTx,
+    ctx: RequestContext,
+    evidenceId: string,
+    ownerUserId: string | null,
+): Promise<string | null> {
+    const submitters = await EvidenceRepository.getLatestSubmitters(db, ctx, [evidenceId]);
+    return submitters.get(evidenceId) ?? ownerUserId ?? null;
+}
+
+/**
+ * Fire the owner notification for an APPROVED / REJECTED decision.
+ * Shared by the single-item and bulk review paths so both notify
+ * identically. Notification routes via `ownerUserId` only — rows
+ * missing an owner FK simply don't notify (graceful degrade).
+ *
+ * `knownOwnerIds` is the bulk-path optimisation: the caller pre-resolves
+ * which owner ids exist in one batched `findMany`, so this helper skips
+ * the per-row `findUnique` (avoids an N+1 in the approve loop). The
+ * single path omits it and does the canonical FK lookup here.
+ */
+async function notifyEvidenceOwner(
+    db: import('@/lib/db-context').PrismaTx,
+    ctx: RequestContext,
+    evidence: { ownerUserId: string | null; title: string },
+    newStatus: 'APPROVED' | 'REJECTED',
+    comment?: string | null,
+    knownOwnerIds?: Set<string>,
+): Promise<void> {
+    if (!evidence.ownerUserId) return;
+    if (knownOwnerIds) {
+        if (!knownOwnerIds.has(evidence.ownerUserId)) return;
+    } else {
+        // Canonical FK path — route strictly via ownerUserId (the legacy
+        // free-text name lookup is retired; rows without an owner FK
+        // don't notify).
+        const ownerUser = evidence.ownerUserId
+            ? await db.user.findUnique({ where: { id: evidence.ownerUserId } })
+            : null;
+        if (!ownerUser) return;
+    }
+    await db.notification.create({
+        data: {
+            tenantId: ctx.tenantId,
+            // Non-null here: we returned early when ownerUserId is null,
+            // and both branches above confirm the owner exists.
+            userId: evidence.ownerUserId,
+            type: newStatus === 'APPROVED' ? 'EVIDENCE_APPROVED' : 'EVIDENCE_REJECTED',
+            title: `Evidence ${newStatus.toLowerCase()}: ${evidence.title}`,
+            message: comment || `Your evidence "${evidence.title}" has been ${newStatus.toLowerCase()}.`,
+            linkUrl: `/evidence`,
+        },
+    });
+}
+
 export async function reviewEvidence(ctx: RequestContext, id: string, data: { action: string; comment?: string | null }) {
     const { action, comment } = data;
 
@@ -274,28 +337,22 @@ export async function reviewEvidence(ctx: RequestContext, id: string, data: { ac
 
         const newStatus = action as 'SUBMITTED' | 'APPROVED' | 'REJECTED';
 
+        // Segregation of duties — a reviewer may not approve/reject
+        // evidence they submitted or own. Enforced unconditionally.
+        if (newStatus === 'APPROVED' || newStatus === 'REJECTED') {
+            const submitterId = await resolveEvidenceSubmitter(db, ctx, id, evidence.ownerUserId ?? null);
+            if (submitterId && submitterId === ctx.userId) {
+                throw forbidden(
+                    'You cannot review evidence you submitted. Segregation of duties requires a different reviewer.',
+                );
+            }
+        }
+
         await EvidenceRepository.update(db, ctx, id, { status: newStatus });
         await EvidenceRepository.addReview(db, ctx, id, newStatus, comment);
 
-        // Audit S3 — notification routes via `ownerUserId` only. The
-        // legacy free-text `name`-based lookup retired here; rows
-        // missing `ownerUserId` simply don't notify (graceful degrade).
         if (newStatus === 'APPROVED' || newStatus === 'REJECTED') {
-            const ownerUser = evidence.ownerUserId
-                ? await db.user.findUnique({ where: { id: evidence.ownerUserId } })
-                : null;
-            if (ownerUser) {
-                await db.notification.create({
-                    data: {
-                        tenantId: ctx.tenantId,
-                        userId: ownerUser.id,
-                        type: newStatus === 'APPROVED' ? 'EVIDENCE_APPROVED' : 'EVIDENCE_REJECTED',
-                        title: `Evidence ${newStatus.toLowerCase()}: ${evidence.title}`,
-                        message: comment || `Your evidence "${evidence.title}" has been ${newStatus.toLowerCase()}.`,
-                        linkUrl: `/evidence`,
-                    },
-                });
-            }
+            await notifyEvidenceOwner(db, ctx, evidence, newStatus, comment);
         }
 
         await logEvent(db, ctx, {
@@ -784,8 +841,10 @@ export async function downloadEvidenceFile(ctx: RequestContext, fileId: string) 
 }
 
 // ─── Bulk actions (canonical BulkActionBar rollout — wave B) ───
-// Assign-owner only: Evidence status is workflow-gated (the reviewer-identity
-// review chain in `reviewEvidence`), so there is no bulk status path.
+// Assign-owner + a reviewer-gated bulk-approve (see bulkApproveEvidence
+// below). The bulk-approve path enforces the SAME reviewer tier, SUBMITTED
+// precondition, and segregation-of-duties rule as the single-item
+// `reviewEvidence` — it is not a status bypass.
 
 export async function bulkAssignEvidence(
     ctx: RequestContext,
@@ -822,40 +881,87 @@ export async function bulkAssignEvidence(
 }
 
 /**
- * Bulk-approve evidence directly — the "review" workflow is bypassed here.
- * Every non-approved item (DRAFT / SUBMITTED / REJECTED / NEEDS_REVIEW)
- * moves straight to APPROVED, no SUBMITTED intermediate and no separate
- * reviewer-identity gate. An EvidenceReview row is still recorded (who + when)
- * for the audit trail, and a STATUS_CHANGE audit entry is written per item.
- * `nextReviewDate` is left as-is (set at creation from the review cycle), so an
- * approved item with a future/absent review date immediately counts as
- * "current" on the dashboard.
+ * Bulk-approve evidence — the reviewer-gated path.
+ *
+ * This mirrors the single-item `reviewEvidence` approval semantics
+ * rather than bypassing them:
+ *   - reviewer tier required (`assertCanAdmin`);
+ *   - only rows currently in `SUBMITTED` are eligible — DRAFT /
+ *     REJECTED / NEEDS_REVIEW / already-APPROVED are skipped, so the
+ *     SUBMITTED intermediate is never bypassed;
+ *   - segregation of duties: a row the acting reviewer submitted or
+ *     owns is skipped (enforced unconditionally, same as the single
+ *     path).
+ * Each approved row records an `EvidenceReview`, a STATUS_CHANGE audit
+ * entry, and an owner notification, identical to the single path.
+ * `nextReviewDate` is left as-is so an approved item with a
+ * future/absent review date immediately counts as "current".
+ *
+ * Returns `{ approved, skipped, skippedNotSubmitted, skippedSelfReview }`
+ * so the UI can explain what it did and didn't touch.
  */
 export async function bulkApproveEvidence(ctx: RequestContext, evidenceIds: string[]) {
-    assertCanWrite(ctx);
-    const approved = await runInTenantContext(ctx, async (db) => {
+    assertCanAdmin(ctx);
+    const counts = await runInTenantContext(ctx, async (db) => {
         const rows = await EvidenceRepository.listByIds(db, ctx, evidenceIds);
-        const toApprove = rows.filter((r) => r.status !== 'APPROVED');
-        if (toApprove.length === 0) return 0;
-        await EvidenceRepository.bulkUpdate(db, ctx, toApprove.map((r) => r.id), { status: 'APPROVED' });
-        for (const r of toApprove) {
-            await EvidenceRepository.addReview(db, ctx, r.id, 'APPROVED', 'Bulk approved');
-            await logEvent(db, ctx, {
-                action: 'STATUS_CHANGE',
-                entityType: 'Evidence',
-                entityId: r.id,
-                details: 'Evidence approved (bulk)',
-                detailsJson: {
-                    category: 'status_change',
-                    entityName: 'Evidence',
-                    fromStatus: r.status,
-                    toStatus: 'APPROVED',
-                    summary: 'approved (bulk)',
-                },
-            });
+        const submitted = rows.filter((r) => r.status === 'SUBMITTED');
+        const skippedNotSubmitted = rows.length - submitted.length;
+
+        // SoD — resolve every submitter in one batched query, then
+        // partition SUBMITTED rows into self-review (skip) vs approvable.
+        const submitters = await EvidenceRepository.getLatestSubmitters(
+            db,
+            ctx,
+            submitted.map((r) => r.id),
+        );
+        const toApprove: typeof submitted = [];
+        let skippedSelfReview = 0;
+        for (const r of submitted) {
+            const submitterId = submitters.get(r.id) ?? r.ownerUserId ?? null;
+            if (submitterId && submitterId === ctx.userId) {
+                skippedSelfReview += 1;
+            } else {
+                toApprove.push(r);
+            }
         }
-        return toApprove.length;
+
+        if (toApprove.length > 0) {
+            await EvidenceRepository.bulkUpdate(db, ctx, toApprove.map((r) => r.id), { status: 'APPROVED' });
+            // Batch-resolve which owners exist (one findMany) so the loop's
+            // notifications don't turn into an N+1 of per-row user lookups.
+            const ownerIds = [
+                ...new Set(toApprove.map((r) => r.ownerUserId).filter((v): v is string => !!v)),
+            ];
+            const owners = ownerIds.length > 0
+                ? await db.user.findMany({ where: { id: { in: ownerIds } }, select: { id: true } })
+                : [];
+            const knownOwnerIds = new Set(owners.map((o) => o.id));
+            for (const r of toApprove) {
+                await EvidenceRepository.addReview(db, ctx, r.id, 'APPROVED', 'Bulk approved');
+                await notifyEvidenceOwner(db, ctx, r, 'APPROVED', 'Bulk approved', knownOwnerIds);
+                await logEvent(db, ctx, {
+                    action: 'STATUS_CHANGE',
+                    entityType: 'Evidence',
+                    entityId: r.id,
+                    details: 'Evidence approved (bulk)',
+                    detailsJson: {
+                        category: 'status_change',
+                        entityName: 'Evidence',
+                        fromStatus: r.status,
+                        toStatus: 'APPROVED',
+                        summary: 'approved (bulk)',
+                    },
+                });
+            }
+        }
+
+        return {
+            approved: toApprove.length,
+            skipped: skippedNotSubmitted + skippedSelfReview,
+            skippedNotSubmitted,
+            skippedSelfReview,
+        };
     });
     await bumpEntityCacheVersion(ctx, 'evidence');
-    return { approved };
+    return counts;
 }

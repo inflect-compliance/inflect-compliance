@@ -25,6 +25,8 @@ jest.mock('@/app-layer/repositories/EvidenceRepository', () => ({
         getById: jest.fn(),
         update: jest.fn(),
         addReview: jest.fn(),
+        // SoD source (ep1 review gate) — empty map ⇒ fall back to owner.
+        getLatestSubmitters: jest.fn(async () => new Map()),
     },
 }));
 

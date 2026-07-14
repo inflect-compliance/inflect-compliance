@@ -219,7 +219,12 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // entity-create primary — test plans could previously only be born inside a
 // control) + the NewTestPlanModal's create-confirm primary. Each is the single
 // earned primary of a distinct region (page CTA / modal confirm). +2.
-const MAX_PRIMARY_COUNT = 152;
+// EP-1 (2026-07-14) — bumped 152 → 154 for the evidence RejectReasonModal:
+// its "Reject" confirm is the earned primary of the required-reason dialog
+// (paired with a secondary Cancel), shared by the list-row and detail-sheet
+// reject affordances. Measured = 153; ceiling at 154 keeps one slot of
+// headroom. +1 primary.
+const MAX_PRIMARY_COUNT = 154;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

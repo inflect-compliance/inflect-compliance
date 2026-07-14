@@ -205,6 +205,36 @@ export class EvidenceRepository {
         });
     }
 
+    /**
+     * Segregation-of-duties source: for each evidence id, the reviewer
+     * who last SUBMITTED it. One `findMany` (newest-first) reduced into a
+     * per-evidence map — no per-id read (query-shape guardrails). Rows
+     * without a SUBMITTED review are simply absent from the map; the
+     * caller falls back to `Evidence.ownerUserId`.
+     */
+    static async getLatestSubmitters(
+        db: PrismaTx,
+        ctx: RequestContext,
+        evidenceIds: string[],
+    ): Promise<Map<string, string>> {
+        const map = new Map<string, string>();
+        if (evidenceIds.length === 0) return map;
+        const reviews = await db.evidenceReview.findMany({ // guardrail-allow: unbounded
+            where: {
+                tenantId: ctx.tenantId,
+                evidenceId: { in: evidenceIds },
+                action: 'SUBMITTED',
+            },
+            select: { evidenceId: true, reviewerId: true },
+            orderBy: { createdAt: 'desc' },
+        });
+        // Newest-first ⇒ the first row seen per evidence is the latest.
+        for (const r of reviews) {
+            if (!map.has(r.evidenceId)) map.set(r.evidenceId, r.reviewerId);
+        }
+        return map;
+    }
+
     /** Fetch the tenant's evidence for the given ids (bulk-action audit source). */
     static async listByIds(db: PrismaTx, ctx: RequestContext, ids: string[]) {
         // Bounded by the `in: ids` set (bulk schemas cap at 100 ids); a `take:`

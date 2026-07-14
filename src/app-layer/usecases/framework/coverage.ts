@@ -5,6 +5,7 @@ import { runInTenantContext } from '@/lib/db-context';
 import { notFound } from '@/lib/errors/types';
 import { prisma } from '@/lib/prisma';
 import { rollUpRequirementVerdict } from '@/lib/compliance/requirement-status-rollup';
+import { isCoverageQualifyingEvidence } from '@/lib/compliance/coverage-evidence';
 
 // в”Ђв”Ђв”Ђ Coverage Computation в”Ђв”Ђв”Ђ
 
@@ -199,7 +200,7 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
                 control: {
                     include: {
                         tasks: { select: { id: true, status: true, dueAt: true, title: true } },
-                        evidence: { select: { id: true, status: true, title: true } },
+                        evidence: { select: { id: true, status: true, title: true, expiredAt: true, isArchived: true, deletedAt: true } },
                         // In-force exceptions: APPROVED and not yet expired.
                         exceptions: {
                             where: { status: 'APPROVED', expiresAt: { gt: now } },
@@ -261,9 +262,12 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
         justification: c.applicabilityJustification || 'No justification provided',
     }));
 
-    // Controls missing evidence
+    // Controls missing evidence — a control "has evidence" only when at
+    // least one attached row is coverage-qualifying (APPROVED + unexpired +
+    // not archived/deleted). Reuses the `now` resolved above.
     const missingEvidence = controls.filter((c) =>
-        c.status !== 'NOT_APPLICABLE' && (!c.evidence || c.evidence.length === 0)
+        c.status !== 'NOT_APPLICABLE' &&
+        !(c.evidence ?? []).some((e) => isCoverageQualifyingEvidence(e, now))
     ).map((c) => ({ code: c.code, name: c.name, status: c.status }));
 
     // Overdue tasks (reuses `now` defined above for the exception filter)

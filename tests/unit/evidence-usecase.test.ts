@@ -51,6 +51,10 @@ jest.mock('@/app-layer/repositories/EvidenceRepository', () => ({
         create: jest.fn(),
         update: jest.fn(),
         addReview: jest.fn(),
+        // SoD source (ep1 review gate). Empty map ⇒ submitter falls back
+        // to Evidence.ownerUserId; tests set ownerUserId ≠ acting user so
+        // self-review never trips.
+        getLatestSubmitters: jest.fn(async () => new Map()),
     },
 }));
 

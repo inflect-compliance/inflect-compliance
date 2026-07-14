@@ -15,19 +15,26 @@ const SRC_ROOT = path.resolve('src');
 // ─── 1) Readiness excludes archived evidence ───
 
 describe('Retention Hardening — Readiness scoring', () => {
-    test('ISO readiness evidence query filters isArchived', () => {
-        const content = fs.readFileSync(
+    test('ISO readiness evidence query routes through the coverage predicate (filters isArchived)', () => {
+        // EP-1: the isArchived/deletedAt/status filter now lives in the ONE
+        // shared coverage predicate; the scorer routes through it instead of
+        // inlining the literals. Verify (a) the scorer uses the predicate and
+        // (b) the predicate still filters isArchived.
+        const scorer = fs.readFileSync(
             path.join(SRC_ROOT, 'app-layer/usecases/audit-readiness-scoring.ts'), 'utf-8'
         );
-        // Must contain isArchived: false in evidence query context
-        expect(content).toContain('isArchived: false');
+        expect(scorer).toContain('coverageQualifyingEvidenceWhere');
+        const predicate = fs.readFileSync(
+            path.join(SRC_ROOT, 'lib/compliance/coverage-evidence.ts'), 'utf-8'
+        );
+        expect(predicate).toContain('isArchived: false');
     });
 
-    test('ISO readiness evidence query filters deletedAt', () => {
-        const content = fs.readFileSync(
-            path.join(SRC_ROOT, 'app-layer/usecases/audit-readiness-scoring.ts'), 'utf-8'
+    test('ISO readiness evidence query routes through the coverage predicate (filters deletedAt)', () => {
+        const predicate = fs.readFileSync(
+            path.join(SRC_ROOT, 'lib/compliance/coverage-evidence.ts'), 'utf-8'
         );
-        expect(content).toContain('deletedAt: null');
+        expect(predicate).toContain('deletedAt: null');
     });
 
     test('gap details mention archived/expired exclusion', () => {

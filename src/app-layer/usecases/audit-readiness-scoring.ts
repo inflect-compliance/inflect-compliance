@@ -16,9 +16,11 @@
  *   - Policies (presence of key NIS2 policies: IR/BCP/Supplier): 15%
  *   - Issues (penalty for open incidents/issues): 15%
  *
- * RETENTION HARDENING: Evidence queries exclude archived (isArchived=true)
- * and soft-deleted (deletedAt!=null) evidence. This ensures readiness
- * scores only reflect active, valid evidence.
+ * RETENTION HARDENING: Evidence queries route through the shared
+ * `coverageQualifyingEvidenceWhere` predicate — only APPROVED, not
+ * archived, not soft-deleted, and unexpired evidence counts toward a
+ * readiness score. Approval is load-bearing: a DRAFT / SUBMITTED /
+ * expired row no longer satisfies a control's evidence dimension.
  */
 import { type AuditCycle, type Applicability, type WorkItemStatus, Prisma } from '@prisma/client';
 import { RequestContext } from '../types';
@@ -27,6 +29,7 @@ import { logEvent } from '../events/audit';
 import { runInTenantContext } from '@/lib/db-context';
 import { notFound } from '@/lib/errors/types';
 import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
+import { coverageQualifyingEvidenceWhere } from '@/lib/compliance/coverage-evidence';
 
 
 // ─── Types ───
@@ -300,14 +303,13 @@ async function computeGenericReadiness(
     let withEvidence = 0;
     if (mappedControls.length > 0) {
         const ids = mappedControls.map((c) => c.id);
+        const now = new Date();
         const ev = await runInTenantContext(ctx, (tdb) =>
             tdb.evidence.findMany({
                 where: {
                     tenantId: ctx.tenantId,
                     controlId: { in: ids },
-                    isArchived: false,
-                    deletedAt: null,
-                    status: { in: ['SUBMITTED', 'APPROVED'] },
+                    ...coverageQualifyingEvidenceWhere(now),
                 },
                 select: { controlId: true },
             }),
@@ -418,12 +420,15 @@ async function computeISO27001Readiness(ctx: RequestContext, cycle: AuditCycle):
     const implementedControls = controls.filter((c) => c.status === 'IMPLEMENTED').length;
     const implScore = totalControls > 0 ? (implementedControls / totalControls) * 100 : 0;
 
-    // 3) Evidence completeness — EXCLUDES archived/deleted evidence
+    // 3) Evidence completeness — only APPROVED + unexpired evidence counts
+    // (routes through the shared coverage predicate, excluding archived,
+    // soft-deleted, non-approved, and expired rows).
+    const nowIso = new Date();
     const controlsWithEvidence = await runInTenantContext(ctx, (tdb) =>
         tdb.control.findMany({
             where: { tenantId: ctx.tenantId, applicability: 'APPLICABLE' },
             select: { id: true, code: true, name: true, evidence: {
-                where: { isArchived: false, deletedAt: null },
+                where: coverageQualifyingEvidenceWhere(nowIso),
                 select: { id: true },
             } },
         }));
@@ -570,11 +575,12 @@ async function computeNIS2Readiness(ctx: RequestContext, cycle: AuditCycle): Pro
         controlIds = allControls.map((c) => c.id);
     }
 
+    const nowNis2 = new Date();
     const controlsWithEv = await runInTenantContext(ctx, (tdb) =>
         tdb.control.findMany({
             where: { tenantId: ctx.tenantId, id: { in: controlIds } },
             select: { id: true, code: true, name: true, evidence: {
-                where: { isArchived: false, deletedAt: null },
+                where: coverageQualifyingEvidenceWhere(nowNis2),
                 select: { id: true },
             } },
         }));

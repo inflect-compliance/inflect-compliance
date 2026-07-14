@@ -62,7 +62,10 @@ function adminCtx() {
     return makeRequestContext('ADMIN', { tenantId: TENANT_ID, userId: adminUserId, tenantSlug: TAG });
 }
 function editorCtx() {
-    return makeRequestContext('EDITOR', { tenantId: TENANT_ID, userId: adminUserId, tenantSlug: TAG });
+    // EP-1: the editor MUST be a distinct user from the admin reviewer —
+    // segregation of duties now forbids approving/rejecting evidence you
+    // submitted. `ownerUserId` carries the EDITOR membership (see beforeAll).
+    return makeRequestContext('EDITOR', { tenantId: TENANT_ID, userId: ownerUserId, tenantSlug: TAG });
 }
 
 async function newDraft(opts: { title: string; type?: 'TEXT' | 'LINK'; controlId?: string; ownerUserId?: string | null; folder?: string | null }) {
@@ -234,31 +237,53 @@ describeFn('bulkAssignEvidence (integration)', () => {
 });
 
 describeFn('bulkApproveEvidence (integration)', () => {
-    it('approves DRAFT rows directly by an EDITOR — no SUBMITTED step (review chain bypassed)', async () => {
-        const a = await newDraft({ title: 'approve a' });
-        const b = await newDraft({ title: 'approve b' });
-        const res = await bulkApproveEvidence(editorCtx(), [a.id, b.id]);
-        expect(res.approved).toBe(2);
-        const rows = await globalPrisma.evidence.findMany({ where: { id: { in: [a.id, b.id] } } });
-        expect(rows.every((r) => r.status === 'APPROVED')).toBe(true);
+    // EP-1: bulk-approve is now a reviewer-tier action that acts ONLY on
+    // rows currently in SUBMITTED — the DRAFT→APPROVED bypass is closed —
+    // and refuses self-review. Submit as the editor (ownerUserId), approve
+    // as the admin (adminUserId) so the two roles are distinct.
+    async function submitAsEditor(id: string) {
+        await reviewEvidence(editorCtx(), id, { action: 'SUBMITTED' });
+    }
+
+    it('approves ONLY SUBMITTED rows and skips the rest (bypass closed)', async () => {
+        const submitted = await newDraft({ title: 'approve submitted' });
+        await submitAsEditor(submitted.id);
+        const draft = await newDraft({ title: 'stays draft' });
+        const res = await bulkApproveEvidence(adminCtx(), [submitted.id, draft.id]);
+        expect(res.approved).toBe(1);
+        expect(res.skippedNotSubmitted).toBe(1);
+        const rows = await globalPrisma.evidence.findMany({ where: { id: { in: [submitted.id, draft.id] } } });
+        const byId = Object.fromEntries(rows.map((r) => [r.id, r.status]));
+        expect(byId[submitted.id]).toBe('APPROVED');
+        expect(byId[draft.id]).toBe('DRAFT'); // never bypassed to APPROVED
+    });
+
+    it('an EDITOR cannot bulk-approve (reviewer tier required)', async () => {
+        const a = await newDraft({ title: 'editor denied' });
+        await submitAsEditor(a.id);
+        await expect(bulkApproveEvidence(editorCtx(), [a.id])).rejects.toThrow();
     });
 
     it('records an EvidenceReview row crediting the approver', async () => {
         const a = await newDraft({ title: 'approve review row' });
-        await bulkApproveEvidence(editorCtx(), [a.id]);
+        await submitAsEditor(a.id);
+        await bulkApproveEvidence(adminCtx(), [a.id]);
         const reviews = await globalPrisma.evidenceReview.findMany({ where: { evidenceId: a.id, action: 'APPROVED' } });
         expect(reviews.length).toBeGreaterThanOrEqual(1);
+        expect(reviews[0].reviewerId).toBe(adminUserId);
     });
 
-    it('is idempotent — an already-APPROVED row is skipped', async () => {
+    it('is idempotent — an already-APPROVED row is skipped (not SUBMITTED)', async () => {
         const a = await newDraft({ title: 'approve idempotent' });
-        await bulkApproveEvidence(editorCtx(), [a.id]);
-        const res = await bulkApproveEvidence(editorCtx(), [a.id]);
+        await submitAsEditor(a.id);
+        await bulkApproveEvidence(adminCtx(), [a.id]);
+        const res = await bulkApproveEvidence(adminCtx(), [a.id]);
         expect(res.approved).toBe(0);
+        expect(res.skippedNotSubmitted).toBe(1);
     });
 
     it('returns 0 when no ids match (empty-set early return)', async () => {
-        const res = await bulkApproveEvidence(editorCtx(), ['nope-1', 'nope-2']);
+        const res = await bulkApproveEvidence(adminCtx(), ['nope-1', 'nope-2']);
         expect(res.approved).toBe(0);
     });
 });

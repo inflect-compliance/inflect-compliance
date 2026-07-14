@@ -1928,7 +1928,8 @@
             "uploading": "Uploading...",
             "bulkApprove": "Approve",
             "bulkApproveConfirm": "Approve",
-            "bulkApproveDesc": "Selected evidence will be marked Approved. This bypasses the review step.",
+            "bulkApproveDesc": "Only submitted evidence you did not author will be approved. Draft, rejected, and your own submissions are skipped.",
+            "bulkApproveResult": "Approved {approved} · skipped {skippedNotSubmitted} (not submitted) · skipped {skippedSelfReview} (your own)",
             "bulkAssign": "Assign owner",
             "bulkAssignPlaceholder": "Owner (blank = unassign)",
             "bulkDelete": "Delete",
@@ -1961,6 +1962,14 @@
             "archiveFailedNet": "Failed to archive evidence",
             "unarchiveFailedNet": "Failed to unarchive evidence",
             "entityLabel": "evidence"
+        },
+        "reject": {
+            "title": "Reject evidence",
+            "description": "Explain why this evidence is being rejected. The reason is shared with the owner.",
+            "reasonLabel": "Rejection reason",
+            "reasonPlaceholder": "e.g. Screenshot is outdated — please re-capture with the current date visible.",
+            "cancel": "Cancel",
+            "confirm": "Reject evidence"
         },
         "colHeaders": {
             "folder": "Folder",

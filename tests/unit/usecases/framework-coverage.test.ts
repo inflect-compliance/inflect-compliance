@@ -324,7 +324,7 @@ describe('generateReadinessReport', () => {
         ]);
         tenantDb.controlRequirementLink.findMany.mockResolvedValueOnce([
             { requirementId: 'r-1', control: { id: 'c-1', code: 'CC1', name: 'No-Evidence', status: 'IMPLEMENTED', description: '', tasks: [], evidence: [] } },
-            { requirementId: 'r-2', control: { id: 'c-2', code: 'CC2', name: 'Has-Evidence', status: 'IMPLEMENTED', description: '', tasks: [], evidence: [{ id: 'e-1' }] } },
+            { requirementId: 'r-2', control: { id: 'c-2', code: 'CC2', name: 'Has-Evidence', status: 'IMPLEMENTED', description: '', tasks: [], evidence: [{ id: 'e-1', status: 'APPROVED', expiredAt: null, isArchived: false, deletedAt: null }] } },
         ]);
 
         const result = await generateReadinessReport(ctx, 'iso');
