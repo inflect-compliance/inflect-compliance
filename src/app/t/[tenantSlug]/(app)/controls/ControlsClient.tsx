@@ -118,14 +118,11 @@ interface ControlListItem {
     frequency: string | null;
     /** Widened to include id/email so the owner filter can resolve + display. */
     owner: { id: string; name: string | null; email: string | null } | null;
-    _count?: { controlTasks?: number; evidenceLinks?: number; evidence?: number };
-    controlTasks?: Array<{ status: string }>;
+    _count?: { evidenceLinks?: number; evidence?: number };
     /**
      * Unified linked-task counts (TaskLink CONTROL link OR the
      * `controlId` FK), supplied by `listControls`. The Tasks column
-     * reads these — the legacy `_count.controlTasks` / `controlTasks[]`
-     * counted the old ControlTask relation and read 0/0 for unified
-     * tasks.
+     * reads these — the legacy ControlTask stack was removed (TP-2).
      */
     taskTotal?: number;
     taskDone?: number;
@@ -603,8 +600,7 @@ function ControlsPageInner({
     // expanding renders its tasks inline (lazy-fetched). Stable refs so a
     // selection/expand re-render doesn't rebuild the table model.
     const getControlCanExpand = useCallback(
-        (row: Row<ControlListItem>) =>
-            (row.original.taskTotal ?? row.original._count?.controlTasks ?? 0) > 0,
+        (row: Row<ControlListItem>) => (row.original.taskTotal ?? 0) > 0,
         [],
     );
     // Controls PR-2 — quick-view side panel. Clicking a control NAME opens the
@@ -681,15 +677,10 @@ function ControlsPageInner({
 
     const taskStats = useCallback((c: ControlListItem) => {
         // Unified linked-task counts from `listControls` (TaskLink
-        // CONTROL link OR the controlId FK). Falls back to the legacy
-        // ControlTask relation only if the new fields are absent (older
-        // cached payload), so the column never regresses to a crash.
-        const total = c.taskTotal ?? c._count?.controlTasks ?? 0;
-        const done =
-            c.taskDone ??
-            // guardrail-ignore: legacy fallback over the row's own array.
-            c.controlTasks?.filter((t) => t.status === 'DONE').length ??
-            0;
+        // CONTROL link OR the controlId FK). The legacy ControlTask
+        // stack was removed (TP-2).
+        const total = c.taskTotal ?? 0;
+        const done = c.taskDone ?? 0;
         return { total, done };
     }, []);
 

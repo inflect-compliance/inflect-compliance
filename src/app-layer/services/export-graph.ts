@@ -66,7 +66,6 @@ export interface ExportEdge {
  *   Control → ControlTestPlan → ControlTestRun → ControlTestEvidenceLink
  *   Control → ControlTestRun (direct)
  *   Control → ControlEvidenceLink
- *   Control → ControlTask
  *   Control → ControlContributor
  *   Control → ControlAsset (join to Asset)
  *   Control → ControlRequirementLink (join to FrameworkRequirement)

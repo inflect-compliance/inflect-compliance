@@ -2,14 +2,14 @@
  * test-mock pattern; per-line typing has poor cost/benefit ratio. */
 
 /**
- * Unit tests for `src/app-layer/usecases/control/tasks.ts` and
- * `src/app-layer/usecases/control/evidence.ts`.
+ * Unit tests for `src/app-layer/usecases/control/evidence.ts`.
  *
- * Roadmap Q1 — Compliance core. Together these two files cover the
- * detail-page Tasks tab, Evidence tab (tab-lazy #102 payload), and
- * the contributor/asset linking surfaces. All are thin orchestration
- * over ControlRepository — RBAC + repo-returns-null → notFound +
- * audit event shape is what we're locking.
+ * Roadmap Q1 — Compliance core. Covers the detail-page Evidence tab
+ * (tab-lazy #102 payload) and the contributor/asset linking surfaces.
+ * All are thin orchestration over ControlRepository — RBAC +
+ * repo-returns-null → notFound + audit event shape is what we're
+ * locking. (The legacy control/tasks.ts stack was removed in TP-2;
+ * the Tasks tab now renders the unified Task model.)
  */
 
 const mockDb = {
@@ -23,10 +23,6 @@ jest.mock('@/lib/db-context', () => ({
 
 jest.mock('@/app-layer/repositories/ControlRepository', () => ({
     ControlRepository: {
-        listTasks: jest.fn(),
-        createTask: jest.fn(),
-        updateTask: jest.fn(),
-        deleteTask: jest.fn(),
         listEvidenceLinks: jest.fn(),
         linkEvidence: jest.fn(),
         unlinkEvidence: jest.fn(),
@@ -44,12 +40,6 @@ jest.mock('@/app-layer/events/audit', () => ({
 
 import { ControlRepository } from '@/app-layer/repositories/ControlRepository';
 import { logEvent } from '@/app-layer/events/audit';
-import {
-    listControlTasks,
-    createControlTask,
-    updateControlTask,
-    deleteControlTask,
-} from '@/app-layer/usecases/control/tasks';
 import {
     listEvidenceLinks,
     getControlEvidenceTab,
@@ -69,94 +59,6 @@ beforeEach(() => {
 
 const editorCtx = makeRequestContext('EDITOR');
 const readerCtx = makeRequestContext('READER');
-
-// ─── control/tasks.ts ──────────────────────────────────────────────
-
-describe('listControlTasks', () => {
-    it('delegates to ControlRepository.listTasks under the read gate', async () => {
-        (ControlRepository.listTasks as jest.Mock).mockResolvedValue([{ id: 't-1' }]);
-        const rows = await listControlTasks(readerCtx, 'c-1');
-        expect(rows).toEqual([{ id: 't-1' }]);
-        expect(ControlRepository.listTasks).toHaveBeenCalledWith(mockDb, readerCtx, 'c-1');
-    });
-});
-
-describe('createControlTask', () => {
-    it('creates a task and emits CONTROL_TASK_CREATED audit', async () => {
-        (ControlRepository.createTask as jest.Mock).mockResolvedValue({ id: 't-1', title: 'X' });
-        const res = await createControlTask(editorCtx, 'c-1', { title: 'X' });
-        expect(res).toEqual({ id: 't-1', title: 'X' });
-        const payload = (logEvent as jest.Mock).mock.calls[0][2];
-        expect(payload.action).toBe('CONTROL_TASK_CREATED');
-        expect(payload.entityId).toBe('c-1');
-    });
-
-    it('throws notFound when the control does not exist', async () => {
-        (ControlRepository.createTask as jest.Mock).mockResolvedValue(null);
-        await expect(createControlTask(editorCtx, 'missing', { title: 'X' })).rejects.toThrow(/Control not found/i);
-    });
-
-    it('rejects READER (manage-tasks gate)', async () => {
-        await expect(createControlTask(readerCtx, 'c-1', { title: 'X' })).rejects.toBeDefined();
-        expect(ControlRepository.createTask).not.toHaveBeenCalled();
-    });
-});
-
-describe('updateControlTask', () => {
-    it('emits CONTROL_TASK_COMPLETED when status set to DONE', async () => {
-        (ControlRepository.updateTask as jest.Mock).mockResolvedValue({ id: 't-1', controlId: 'c-1', title: 'X' });
-
-        await updateControlTask(editorCtx, 't-1', { status: 'DONE' });
-
-        const payload = (logEvent as jest.Mock).mock.calls[0][2];
-        expect(payload.action).toBe('CONTROL_TASK_COMPLETED');
-    });
-
-    it('emits CONTROL_TASK_UPDATED when status is not DONE', async () => {
-        (ControlRepository.updateTask as jest.Mock).mockResolvedValue({ id: 't-1', controlId: 'c-1', title: 'X' });
-
-        await updateControlTask(editorCtx, 't-1', { title: 'New' });
-
-        const payload = (logEvent as jest.Mock).mock.calls[0][2];
-        expect(payload.action).toBe('CONTROL_TASK_UPDATED');
-    });
-
-    it('throws notFound when the task is missing', async () => {
-        (ControlRepository.updateTask as jest.Mock).mockResolvedValue(null);
-        await expect(updateControlTask(editorCtx, 'missing', { title: 'X' })).rejects.toThrow(/Task not found/i);
-    });
-
-    it('emits status_change category when status is in the payload', async () => {
-        (ControlRepository.updateTask as jest.Mock).mockResolvedValue({ id: 't-1', controlId: 'c-1', title: 'X' });
-
-        await updateControlTask(editorCtx, 't-1', { status: 'IN_PROGRESS' });
-
-        const payload = (logEvent as jest.Mock).mock.calls[0][2];
-        expect(payload.detailsJson.category).toBe('status_change');
-        expect(payload.detailsJson.toStatus).toBe('IN_PROGRESS');
-    });
-
-    it('rejects READER (manage-tasks gate)', async () => {
-        await expect(updateControlTask(readerCtx, 't-1', { title: 'X' })).rejects.toBeDefined();
-    });
-});
-
-describe('deleteControlTask', () => {
-    it('returns success on delete', async () => {
-        (ControlRepository.deleteTask as jest.Mock).mockResolvedValue(true);
-        const res = await deleteControlTask(editorCtx, 't-1');
-        expect(res).toEqual({ success: true });
-    });
-
-    it('throws notFound when the task does not exist', async () => {
-        (ControlRepository.deleteTask as jest.Mock).mockResolvedValue(null);
-        await expect(deleteControlTask(editorCtx, 'missing')).rejects.toThrow(/Task not found/i);
-    });
-
-    it('rejects READER (manage-tasks gate)', async () => {
-        await expect(deleteControlTask(readerCtx, 't-1')).rejects.toBeDefined();
-    });
-});
 
 // ─── control/evidence.ts ───────────────────────────────────────────
 

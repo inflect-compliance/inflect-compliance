@@ -1312,69 +1312,6 @@ exports[`API contract — per-schema snapshots schema: ControlDetail 1`] = `
             "additionalProperties": {}
           }
         },
-        "controlTasks": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "controlId": {
-                "type": "string"
-              },
-              "title": {
-                "type": "string"
-              },
-              "description": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "status": {
-                "type": "string"
-              },
-              "dueAt": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "createdAt": {
-                "type": "string"
-              },
-              "assigneeUserId": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "assignee": {
-                "allOf": [
-                  {
-                    "$ref": "#/components/schemas/UserRef"
-                  },
-                  {
-                    "type": [
-                      "object",
-                      "null"
-                    ]
-                  }
-                ]
-              }
-            },
-            "required": [
-              "id",
-              "controlId",
-              "title",
-              "description",
-              "status",
-              "dueAt"
-            ],
-            "additionalProperties": {}
-          }
-        },
         "evidenceLinks": {
           "type": "array",
           "items": {
@@ -1594,7 +1531,7 @@ exports[`API contract — per-schema snapshots schema: ControlDetail 1`] = `
       "additionalProperties": {}
     }
   ],
-  "description": "Control with all relations included — contributors, tasks, evidence links, mapped risks/policies, and framework requirement mappings. Returned by GET /controls/{id}."
+  "description": "Control with all relations included — contributors, evidence links, mapped risks/policies, and framework requirement mappings. Returned by GET /controls/{id}. Tasks are the unified Task model, fetched via GET /tasks?linkedEntityType=CONTROL."
 }"
 `;
 
@@ -1876,80 +1813,6 @@ exports[`API contract — per-schema snapshots schema: ControlSetStatusRequest 1
     "status"
   ],
   "description": "Lifecycle transition for a control. NEEDS_REVIEW signals a control whose evidence has lapsed or whose owner was removed."
-}"
-`;
-
-exports[`API contract — per-schema snapshots schema: ControlTaskCreateRequest 1`] = `
-"{
-  "type": "object",
-  "properties": {
-    "title": {
-      "type": "string",
-      "minLength": 1
-    },
-    "description": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "assigneeUserId": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "dueAt": {
-      "type": [
-        "string",
-        "null"
-      ]
-    }
-  },
-  "required": [
-    "title"
-  ],
-  "description": "Create a task on a control. Tasks are the unit of operational work — implementation steps, evidence-gathering, review cycles."
-}"
-`;
-
-exports[`API contract — per-schema snapshots schema: ControlTaskUpdateRequest 1`] = `
-"{
-  "type": "object",
-  "properties": {
-    "title": {
-      "type": "string",
-      "minLength": 1
-    },
-    "description": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "status": {
-      "type": "string",
-      "enum": [
-        "OPEN",
-        "IN_PROGRESS",
-        "DONE",
-        "BLOCKED"
-      ]
-    },
-    "assigneeUserId": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "dueAt": {
-      "type": [
-        "string",
-        "null"
-      ]
-    }
-  },
-  "description": "Partial update for a control task — including status transitions and reassignment."
 }"
 `;
 

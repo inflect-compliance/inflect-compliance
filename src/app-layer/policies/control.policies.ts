@@ -25,13 +25,6 @@ export function assertCanUpdateControl(ctx: RequestContext) {
     }
 }
 
-/** ADMIN/EDITOR can manage control tasks */
-export function assertCanManageTasks(ctx: RequestContext) {
-    if (!ctx.permissions.canWrite) {
-        throw forbidden('You do not have permission to manage control tasks.');
-    }
-}
-
 /** ADMIN/EDITOR can link evidence */
 export function assertCanLinkEvidence(ctx: RequestContext) {
     if (!ctx.permissions.canWrite) {

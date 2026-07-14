@@ -210,25 +210,6 @@ export const AddContributorSchema = z.object({
     description: 'Add a user as a contributor to a control. Contributors get write access to the control without being the canonical owner.',
 });
 
-export const CreateControlTaskSchema = z.object({
-    title: z.string().min(1, 'Title is required'),
-    description: z.string().optional().nullable(),
-    assigneeUserId: z.string().optional().nullable(),
-    dueAt: z.string().optional().nullable(),
-}).strip().openapi('ControlTaskCreateRequest', {
-    description: 'Create a task on a control. Tasks are the unit of operational work — implementation steps, evidence-gathering, review cycles.',
-});
-
-export const UpdateControlTaskSchema = z.object({
-    title: z.string().min(1).optional(),
-    description: z.string().optional().nullable(),
-    status: z.enum(['OPEN', 'IN_PROGRESS', 'DONE', 'BLOCKED']).optional(),
-    assigneeUserId: z.string().optional().nullable(),
-    dueAt: z.string().optional().nullable(),
-}).strip().openapi('ControlTaskUpdateRequest', {
-    description: 'Partial update for a control task — including status transitions and reassignment.',
-});
-
 export const LinkEvidenceSchema = z.object({
     kind: z.enum(['FILE', 'LINK', 'INTEGRATION_RESULT']),
     fileId: z.string().optional().nullable(),

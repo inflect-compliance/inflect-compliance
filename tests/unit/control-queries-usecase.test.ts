@@ -32,7 +32,7 @@ const mockDb = {
         count: jest.fn(),
         findMany: jest.fn(),
     },
-    controlTask: {
+    task: {
         count: jest.fn(),
         groupBy: jest.fn(),
         findMany: jest.fn(),
@@ -244,8 +244,8 @@ describe('getControlDashboard', () => {
         (mockDb.control.count as jest.Mock)
             .mockResolvedValueOnce(3)  // implementedCount
             .mockResolvedValueOnce(2); // controlsDueSoon
-        (mockDb.controlTask.count as jest.Mock).mockResolvedValueOnce(4); // overdueTasks
-        (mockDb.controlTask.groupBy as jest.Mock).mockResolvedValueOnce([
+        (mockDb.task.count as jest.Mock).mockResolvedValueOnce(4); // overdueTasks
+        (mockDb.task.groupBy as jest.Mock).mockResolvedValueOnce([
             { controlId: 'c-1', _count: { _all: 3 } },
             { controlId: 'c-2', _count: { _all: 1 } },
         ]);
@@ -278,8 +278,8 @@ describe('getControlDashboard', () => {
             .mockResolvedValueOnce([])
             .mockResolvedValueOnce([{ applicability: 'NOT_APPLICABLE', _count: { _all: 5 } }]);
         (mockDb.control.count as jest.Mock).mockResolvedValueOnce(0).mockResolvedValueOnce(0);
-        (mockDb.controlTask.count as jest.Mock).mockResolvedValueOnce(0);
-        (mockDb.controlTask.groupBy as jest.Mock).mockResolvedValueOnce([]);
+        (mockDb.task.count as jest.Mock).mockResolvedValueOnce(0);
+        (mockDb.task.groupBy as jest.Mock).mockResolvedValueOnce([]);
         (mockDb.control.findMany as jest.Mock).mockResolvedValueOnce([]);
 
         const dash = await getControlDashboard(readerCtx);
@@ -292,7 +292,7 @@ describe('getControlDashboard', () => {
     it('caps top owners at 5 and sorts descending by open-task count', async () => {
         (mockDb.control.groupBy as jest.Mock).mockResolvedValueOnce([]).mockResolvedValueOnce([]);
         (mockDb.control.count as jest.Mock).mockResolvedValueOnce(0).mockResolvedValueOnce(0);
-        (mockDb.controlTask.count as jest.Mock).mockResolvedValueOnce(0);
+        (mockDb.task.count as jest.Mock).mockResolvedValueOnce(0);
         // 7 controls, each with 1 distinct owner, openTasks count 7..1
         const owners = [];
         const ownerProjections = [];
@@ -300,7 +300,7 @@ describe('getControlDashboard', () => {
             owners.push({ controlId: `c-${i}`, _count: { _all: i } });
             ownerProjections.push({ id: `c-${i}`, owner: { id: `u-${i}`, name: `User ${i}` } });
         }
-        (mockDb.controlTask.groupBy as jest.Mock).mockResolvedValueOnce(owners);
+        (mockDb.task.groupBy as jest.Mock).mockResolvedValueOnce(owners);
         (mockDb.control.findMany as jest.Mock).mockResolvedValueOnce(ownerProjections);
 
         const dash = await getControlDashboard(readerCtx);
@@ -313,8 +313,8 @@ describe('getControlDashboard', () => {
     it('owner name falls back to "Unknown" when null', async () => {
         (mockDb.control.groupBy as jest.Mock).mockResolvedValueOnce([]).mockResolvedValueOnce([]);
         (mockDb.control.count as jest.Mock).mockResolvedValueOnce(0).mockResolvedValueOnce(0);
-        (mockDb.controlTask.count as jest.Mock).mockResolvedValueOnce(0);
-        (mockDb.controlTask.groupBy as jest.Mock).mockResolvedValueOnce([
+        (mockDb.task.count as jest.Mock).mockResolvedValueOnce(0);
+        (mockDb.task.groupBy as jest.Mock).mockResolvedValueOnce([
             { controlId: 'c-1', _count: { _all: 1 } },
         ]);
         (mockDb.control.findMany as jest.Mock).mockResolvedValueOnce([
@@ -341,7 +341,7 @@ describe('runConsistencyCheck', () => {
     it('accepts OWNER (Epic 1 — OWNER superset of ADMIN)', async () => {
         (mockDb.control.findMany as jest.Mock).mockResolvedValueOnce([]);
         (mockDb.control.count as jest.Mock).mockResolvedValueOnce(0);
-        (mockDb.controlTask.findMany as jest.Mock).mockResolvedValueOnce([]);
+        (mockDb.task.findMany as jest.Mock).mockResolvedValueOnce([]);
         const res = await runConsistencyCheck(ownerCtx);
         expect(res.totalControls).toBe(0);
     });
@@ -349,7 +349,7 @@ describe('runConsistencyCheck', () => {
     it('accepts ADMIN', async () => {
         (mockDb.control.findMany as jest.Mock).mockResolvedValueOnce([]);
         (mockDb.control.count as jest.Mock).mockResolvedValueOnce(0);
-        (mockDb.controlTask.findMany as jest.Mock).mockResolvedValueOnce([]);
+        (mockDb.task.findMany as jest.Mock).mockResolvedValueOnce([]);
         const res = await runConsistencyCheck(adminCtx);
         expect(res.totalControls).toBe(0);
     });
@@ -360,7 +360,7 @@ describe('runConsistencyCheck', () => {
             { id: 'c-2', code: 'A.5', name: 'With Code' },
         ]);
         (mockDb.control.count as jest.Mock).mockResolvedValueOnce(2);
-        (mockDb.controlTask.findMany as jest.Mock).mockResolvedValueOnce([]);
+        (mockDb.task.findMany as jest.Mock).mockResolvedValueOnce([]);
 
         const res = await runConsistencyCheck(adminCtx);
 
@@ -375,7 +375,7 @@ describe('runConsistencyCheck', () => {
             { id: 'c-3', code: 'A.6', name: 'unique' },
         ]);
         (mockDb.control.count as jest.Mock).mockResolvedValueOnce(3);
-        (mockDb.controlTask.findMany as jest.Mock).mockResolvedValueOnce([]);
+        (mockDb.task.findMany as jest.Mock).mockResolvedValueOnce([]);
 
         const res = await runConsistencyCheck(adminCtx);
 
@@ -387,7 +387,7 @@ describe('runConsistencyCheck', () => {
     it('projects overdue tasks into the DTO shape', async () => {
         (mockDb.control.findMany as jest.Mock).mockResolvedValueOnce([]);
         (mockDb.control.count as jest.Mock).mockResolvedValueOnce(0);
-        (mockDb.controlTask.findMany as jest.Mock).mockResolvedValueOnce([
+        (mockDb.task.findMany as jest.Mock).mockResolvedValueOnce([
             {
                 id: 't-1',
                 title: 'Rotate keys',

@@ -82,7 +82,6 @@ const ISOLATION_BASELINE: readonly string[] = [
     "ControlEvidenceLink",
     "ControlKeySequence",
     "ControlRequirementLink",
-    "ControlTask",
     "ControlTestEvidenceLink",
     "ControlTestPlan",
     "ControlTestRun",

@@ -187,7 +187,6 @@ const FK_INDEX_EXEMPT: Record<string, string> = {
     'FindingAsset.createdByUserId': R_ACTOR,
     'AuditPackShareComment.resolvedByUserId': R_ACTOR,
     'ControlContributor.userId': R_ACTOR,
-    'ControlTask.assigneeUserId': R_ACTOR,
     'ControlEvidenceLink.createdByUserId': R_ACTOR,
     'ControlTemplateTask.templateId': R_LIBRARY_TABLE,
     'ControlTemplateRequirementLink.requirementId': R_LIBRARY_TABLE,
@@ -310,13 +309,6 @@ const LIST_QUERY_INDEXES: readonly CompositeIndex[] = [
         model: 'Evidence',
         fields: ['tenantId', 'type'],
         justification: 'EvidenceListFilters.type',
-    },
-    // ── ControlTask (from list-query-indexes.test.ts) ───────────────
-    {
-        model: 'ControlTask',
-        fields: ['tenantId', 'status', 'dueAt'],
-        justification:
-            'Dashboard overdue-tasks predicate + runConsistencyCheck overdue lookup',
     },
     // ── Task (from task-list-query-indexes.test.ts) ─────────────────
     {

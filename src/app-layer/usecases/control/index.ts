@@ -31,13 +31,6 @@ export {
 } from './mutations';
 
 export {
-    listControlTasks,
-    createControlTask,
-    updateControlTask,
-    deleteControlTask,
-} from './tasks';
-
-export {
     listEvidenceLinks,
     getControlEvidenceTab,
     linkEvidence,

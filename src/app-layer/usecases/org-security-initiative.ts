@@ -7,7 +7,7 @@
  * LOAD-BEARING DISTINCTION: an Initiative is a STRATEGIC, named programme
  * the org tracks across its tenants ("Roll out MFA org-wide", "Achieve
  * SOC 2") with its own lifecycle + progress — DISTINCT from atomic tenant
- * remediation (Task / ControlTask: "fix gap X in tenant Y"). An initiative
+ * remediation (a unified Task: "fix gap X in tenant Y"). An initiative
  * LINKS tenant work; it doesn't replace it.
  *
  * Org-scoped (global prisma, NOT tenant-scoped → no per-tenant RLS / DEK).

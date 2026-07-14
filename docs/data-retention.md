@@ -5,7 +5,7 @@ await legal / compliance / finance sign-off (see [Open questions](#open-question
 **Owners:** Engineering (mechanism + inventory) · Compliance/Legal (regulatory
 periods + GDPR) · Finance (financial-record periods) · Product (tenant tiers).
 
-This document categorizes **every one of the 151 Prisma models**, declares the
+This document categorizes **every one of the 150 Prisma models**, declares the
 retention behaviour that exists *today*, names who owns each undecided number,
 and enumerates the cleanup machinery. It is the companion to
 [`docs/encryption-data-protection.md`](encryption-data-protection.md) — that doc
@@ -25,7 +25,7 @@ covers confidentiality *at rest*; this one covers *lifecycle*.
   supported today (**it is not**, beyond `User.deletedAt` soft-delete) and what
   landing it would require — it does not implement it.
 
-## Category breakdown (150 models)
+## Category breakdown (149 models)
 
 | Category | Count | One-line posture |
 |----------|-------|------------------|
@@ -90,7 +90,6 @@ a `userId` but stores no contact PII).
 | `ControlException` | Business record | No | Soft-delete (`deletedAt`) — **NOT** auto-purged | Soft-deleted rows **not auto-purged** — gap |
 | `ControlKeySequence` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
 | `ControlRequirementLink` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
-| `ControlTask` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `ControlTemplate` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
 | `ControlTemplateRequirementLink` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
 | `ControlTemplateTask` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |

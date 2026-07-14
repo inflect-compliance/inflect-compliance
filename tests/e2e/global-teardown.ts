@@ -100,7 +100,6 @@ const TENANT_CHILD_TABLES: readonly string[] = [
     'ControlTestStep',
     'ControlTestRun',
     'ControlTestPlan',
-    'ControlTask',
     'AssetRiskLink',
     'RiskControl',
     'Risk',

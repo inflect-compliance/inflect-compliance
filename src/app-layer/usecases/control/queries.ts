@@ -7,6 +7,14 @@ import { runInTenantContext, runInTenantReadContext } from '@/lib/db-context';
 import { assertCanAdmin } from '../../policies/common';
 import { withDeleted } from '@/lib/soft-delete';
 import { cachedListRead } from '@/lib/cache/list-cache';
+import { TERMINAL_WORK_ITEM_STATUSES } from '../../domain/work-item-status';
+import type { WorkItemStatus } from '@prisma/client';
+
+// Non-terminal (active) work-item statuses — the unified-Task equivalent of
+// the legacy `status != 'DONE'` predicate the ControlTask dashboard used.
+const OPEN_TASK_STATUS_FILTER = {
+    notIn: [...TERMINAL_WORK_ITEM_STATUSES] as WorkItemStatus[],
+} as const;
 
 // ─── Queries ───
 
@@ -195,20 +203,28 @@ export async function getControlDashboard(ctx: RequestContext) {
                     nextDueAt: { not: null, lte: soonThreshold },
                 },
             }),
-            db.controlTask.count({
+            // Overdue = open (non-terminal) unified Task past its due date.
+            // Scoped to tasks that carry the direct `controlId` FK so the
+            // control dashboard counts control-attached work.
+            db.task.count({
                 where: {
                     tenantId: ctx.tenantId,
-                    status: { not: 'DONE' },
+                    controlId: { not: null },
+                    status: OPEN_TASK_STATUS_FILTER,
                     dueAt: { not: null, lt: now },
                 },
             }),
-            // Open tasks per control. Prisma can't group ControlTask
-            // by Control.ownerUserId directly (cross-relation), so we
+            // Open tasks per control. Prisma can't group Task by
+            // Control.ownerUserId directly (cross-relation), so we
             // group by controlId and fold into owners in JS over the
             // thin control → owner projection below.
-            db.controlTask.groupBy({
+            db.task.groupBy({
                 by: ['controlId'],
-                where: { tenantId: ctx.tenantId, status: { not: 'DONE' } },
+                where: {
+                    tenantId: ctx.tenantId,
+                    controlId: { not: null },
+                    status: OPEN_TASK_STATUS_FILTER,
+                },
                 _count: { _all: true },
             }),
             db.control.findMany({
@@ -306,15 +322,16 @@ export async function runConsistencyCheck(ctx: RequestContext) {
                 select: { id: true, code: true, name: true },
             }),
             db.control.count({ where: { tenantId: ctx.tenantId } }),
-            // Directly query the overdue tasks. With the
-            // GAP-perf [tenantId, status, dueAt] composite index
-            // this is an index range scan that returns only the
-            // matching rows — no scan-and-filter on the full task
-            // table.
-            db.controlTask.findMany({
+            // Directly query the overdue unified tasks attached to a
+            // control (direct `controlId` FK). With the Task
+            // `[tenantId, dueAt, status]` composite index this is an
+            // index range scan that returns only the matching rows —
+            // no scan-and-filter on the full task table.
+            db.task.findMany({
                 where: {
                     tenantId: ctx.tenantId,
-                    status: { in: ['OPEN', 'IN_PROGRESS'] },
+                    controlId: { not: null },
+                    status: OPEN_TASK_STATUS_FILTER,
                     dueAt: { lt: now, not: null },
                 },
                 select: {

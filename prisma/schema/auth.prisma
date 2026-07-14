@@ -153,7 +153,6 @@ model Tenant {
   controlEvidenceLinks              ControlEvidenceLink[]
   controlRequirementLinks           ControlRequirementLink[]
   frameworkRequirementOrders        FrameworkRequirementOrder[]
-  controlTasks                      ControlTask[]
   controlTestEvidenceLinks          ControlTestEvidenceLink[]
   controlTestPlans                  ControlTestPlan[]
   controlTestRuns                   ControlTestRun[]
@@ -485,7 +484,7 @@ model OrgMaturityRating {
 /// Cybether, MIT). A discrete, named improvement effort the org tracks
 /// across its tenants ("Roll out MFA org-wide", "Achieve SOC 2") with its
 /// own lifecycle + progress — DISTINCT from atomic tenant remediation
-/// (Task/ControlTask). ORG-scoped (global prisma, NOT TENANT_SCOPED_MODELS,
+/// (the unified Task). ORG-scoped (global prisma, NOT TENANT_SCOPED_MODELS,
 /// no per-tenant RLS / DEK). `description` sanitised at the usecase.
 model OrgSecurityInitiative {
   id                    String           @id @default(cuid())
@@ -895,7 +894,6 @@ model User {
   controlAssetsCreated          ControlAsset[]                  @relation("ControlAssetCreator")
   controlContributions          ControlContributor[]
   controlEvidenceLinksCreated   ControlEvidenceLink[]           @relation("ControlEvidenceCreator")
-  controlTaskAssignments        ControlTask[]                   @relation("ControlTaskAssignee")
   testEvidenceLinksCreated      ControlTestEvidenceLink[]       @relation("TestEvidenceCreator")
   createdTestPlans              ControlTestPlan[]               @relation("TestPlanCreator")
   ownedTestPlans                ControlTestPlan[]               @relation("TestPlanOwner")
