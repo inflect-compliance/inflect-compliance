@@ -64,10 +64,17 @@ import { toApiSearchParams } from '@/lib/filters/url-sync';
 import {
     buildEvidenceFilters,
     EVIDENCE_FILTER_KEYS,
+    evidenceFreshnessLabels,
 } from './filter-defs';
+import { evidenceStatusLabel } from './evidence-labels';
+import {
+    evidenceFreshnessBucket,
+    reviewCurrencyAnchor,
+    type EvidenceFreshnessBucket,
+} from '@/lib/evidence-review-currency';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
-import { Plus, Pen2, Download, BoxArchive, PaperPlane, Check, Xmark } from '@/components/ui/icons/nucleo';
+import { Plus, Pen2, Download, BoxArchive, PaperPlane, Check, Xmark, CalendarRefresh } from '@/components/ui/icons/nucleo';
 
 interface Permissions {
     canRead: boolean;
@@ -79,6 +86,9 @@ interface Permissions {
 
 const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     DRAFT: 'neutral', SUBMITTED: 'info', APPROVED: 'success', REJECTED: 'error',
+    // EP-2 — the stale-review sweep flips rows into NEEDS_REVIEW; give
+    // it a warning tone so it reads as "needs attention".
+    NEEDS_REVIEW: 'warning',
     PENDING_UPLOAD: 'info',
 };
 
@@ -122,6 +132,9 @@ interface EvidenceRow {
     expiredAt: string | null;
     deletedAt: string | null;
     retentionUntil: string | null;
+    // EP-2 — review-currency drives the freshness signal + filter/KPIs.
+    nextReviewDate: string | null;
+    reviewCycle: string | null;
     updatedAt: string;
     dateCollected: string;
     fileRecordId: string | null;
@@ -506,8 +519,11 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     const unarchiveEvidence = (id: string) => setArchived(id, false);
 
     const statusLabel = (status: string) => {
-        const map: Record<string, string> = { DRAFT: t.draft, SUBMITTED: t.submitted, APPROVED: t.approved, REJECTED: t.rejected, PENDING_UPLOAD: tx('list.uploading') };
-        return map[status] || status;
+        // Optimistic upload sentinel keeps its bespoke in-progress copy;
+        // every real EvidenceStatus (incl. NEEDS_REVIEW) resolves through
+        // the shared statusLabels group so table + sheet + gallery agree.
+        if (status === 'PENDING_UPLOAD') return tx('list.uploading');
+        return evidenceStatusLabel(status, tx);
     };
 
     // ─── Retention filter counts ───
@@ -602,6 +618,45 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             ? expiringEvidence
             : activeEvidence;
 
+    // ─── EP-2 — freshness (review-currency) refinement ───
+    // Read from the FilterProvider state (single-select). The API
+    // ignores the `freshness` param (schema `.strip()`), so this is a
+    // client-side view refinement layered on top of the retention tab.
+    const freshnessValue = (state.freshness?.[0] ?? null) as
+        | EvidenceFreshnessBucket
+        | null;
+    const displayEvidenceFresh = useMemo(
+        () =>
+            freshnessValue
+                // guardrail-ignore: local view refinement over already-loaded rows.
+                ? displayEvidence.filter(
+                      (ev) =>
+                          evidenceFreshnessBucket(ev, hydratedNow) ===
+                          freshnessValue,
+                  )
+                : displayEvidence,
+        [displayEvidence, freshnessValue, hydratedNow],
+    );
+
+    // Freshness KPI counts — a single pass over the loaded rows (a
+    // for-loop, not a client-side refilter of server data).
+    const freshnessCounts = useMemo(() => {
+        const counts = { current: 0, expiring: 0, expired: 0, needs_review: 0 };
+        for (const ev of evidence) {
+            if (ev.deletedAt) continue;
+            counts[evidenceFreshnessBucket(ev, hydratedNow)] += 1;
+        }
+        return counts;
+    }, [evidence, hydratedNow]);
+
+    const setFreshnessFilter = useCallback(
+        (bucket: EvidenceFreshnessBucket) => {
+            if (freshnessValue === bucket) filterCtx.removeAll('freshness');
+            else filterCtx.set('freshness', bucket);
+        },
+        [freshnessValue, filterCtx],
+    );
+
     // ─── PR-1: org-parity sortable headers + progressive disclosure ───
     const [sortBy, setSortBy] = useState<string | undefined>(undefined);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | undefined>(
@@ -638,8 +693,8 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         [t, hydratedNow, tx],
     );
     const sortedEvidence = useMemo(
-        () => sortRowsByDisplay(displayEvidence, sortAccessors, sortBy, sortOrder),
-        [displayEvidence, sortAccessors, sortBy, sortOrder],
+        () => sortRowsByDisplay(displayEvidenceFresh, sortAccessors, sortBy, sortOrder),
+        [displayEvidenceFresh, sortAccessors, sortBy, sortOrder],
     );
     const sortableEvidenceColumns = useMemo(
         () => ['title', 'type', 'control', 'retention', 'status', 'owner'],
@@ -866,15 +921,15 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
 
             cell: ({ row }) => {
                 const ev = row.original;
-                // `lastRefreshedAt` is not yet a discrete column on
-                // Evidence — `updatedAt` is the closest existing
-                // signal (any review action / metadata edit / archive
-                // toggle bumps it). Wrapping it in the FreshnessBadge
-                // here keeps the page semantic in sync with the
-                // Epic 43 spec without forcing a schema migration.
+                // EP-2 Part 4 — freshness now tracks REVIEW-CURRENCY,
+                // not `updatedAt`. `nextReviewDate` (primary) / `expiredAt`
+                // (fallback) mean a metadata edit or archive-toggle no
+                // longer resets the age: a future review date reads
+                // fresh, a past one reads increasingly stale ("overdue
+                // for review"). Same badge vocabulary, review-driven input.
                 return (
                     <FreshnessBadge
-                        lastRefreshedAt={ev.updatedAt ?? ev.dateCollected ?? null}
+                        lastRefreshedAt={reviewCurrencyAnchor(ev)}
                         now={hydratedNow}
                         compact
                         data-testid={`evidence-row-freshness-${ev.id}`}
@@ -1047,6 +1102,24 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                             </>
                         )}
                         {ev.status === 'REJECTED' && submitBtn}
+                        {/* EP-2 Part 5 — first-class Re-review action for
+                            NEEDS_REVIEW rows. Functionally NEEDS_REVIEW →
+                            SUBMITTED, but labelled for renewal (distinct
+                            icon + tooltip) so stale evidence is renewable
+                            straight from the row. */}
+                        {ev.status === 'NEEDS_REVIEW' && (
+                            <Tooltip content={tx('list.reReview')}>
+                                <button
+                                    type="button"
+                                    aria-label={tx('list.reReview')}
+                                    className={ICON_ACTION_CLASS}
+                                    id={`rereview-${ev.id}`}
+                                    onClick={() => submitReview(ev.id, 'SUBMITTED')}
+                                >
+                                    <CalendarRefresh className="size-3.5" />
+                                </button>
+                            </Tooltip>
+                        )}
                     </div>
                 );
             },
@@ -1215,10 +1288,60 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                     />
                 </div>
 
-                {/* Retention filter tabs (Active / Expiring / Archived) removed
-                    per product direction — the list defaults to the active view
-                    (`retentionFilter` still defaults to 'active'); status-scoped
-                    views remain reachable via the ?tab= deep-link. */}
+                {/* EP-2 Part 3 — retention triage. The Active / Expiring /
+                    Archived views were previously only reachable via the
+                    `?tab=` deep-link; this segmented control makes them a
+                    first-class affordance wired to the existing `filters.tab`
+                    state. */}
+                <div className="flex flex-wrap items-center gap-default">
+                    <ToggleGroup
+                        size="sm"
+                        ariaLabel={tx('list.retentionTriageAria')}
+                        options={[
+                            { value: 'active', label: tx('list.retentionActive'), id: 'evidence-tab-active' },
+                            { value: 'expiring', label: tx('list.triageExpiring'), id: 'evidence-tab-expiring' },
+                            { value: 'archived', label: tx('list.retentionArchived'), id: 'evidence-tab-archived' },
+                        ]}
+                        selected={retentionFilter}
+                        selectAction={(v) => setFilter('tab', v === 'active' ? '' : v)}
+                        className="shrink-0"
+                    />
+                </div>
+
+                {/* EP-2 Part 3 — freshness (review-currency) KPI strip.
+                    Each card toggles the freshness filter so the retention
+                    triage (schedule/archive state) and review-currency
+                    (overdue-for-review) dimensions compose. */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
+                    <KpiFilterCard
+                        label={evidenceFreshnessLabels(tx).current}
+                        value={freshnessCounts.current}
+                        tone="success"
+                        onClick={() => setFreshnessFilter('current')}
+                        selected={freshnessValue === 'current'}
+                    />
+                    <KpiFilterCard
+                        label={evidenceFreshnessLabels(tx).expiring}
+                        value={freshnessCounts.expiring}
+                        tone="attention"
+                        onClick={() => setFreshnessFilter('expiring')}
+                        selected={freshnessValue === 'expiring'}
+                    />
+                    <KpiFilterCard
+                        label={evidenceFreshnessLabels(tx).expired}
+                        value={freshnessCounts.expired}
+                        tone="critical"
+                        onClick={() => setFreshnessFilter('expired')}
+                        selected={freshnessValue === 'expired'}
+                    />
+                    <KpiFilterCard
+                        label={evidenceFreshnessLabels(tx).needs_review}
+                        value={freshnessCounts.needs_review}
+                        tone="attention"
+                        onClick={() => setFreshnessFilter('needs_review')}
+                        selected={freshnessValue === 'needs_review'}
+                    />
+                </div>
 
                 {/*
                   Filter toolbar — the Filter button + live search sit on
@@ -1283,8 +1406,24 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             <ListPageShell.Body>
                 <TruncationBanner truncated={truncated} />
                 {viewMode === 'gallery' ? (
+                  <>
+                    {/* EP-2 — bulk action bar in gallery view too (the
+                        table renders it via `selectionControls`; the
+                        gallery has no built-in selection chrome, so mount
+                        it here when a selection exists). */}
+                    {selected.size > 0 && (
+                        <div className="mb-default">
+                            <BulkActionBar
+                                actions={evidenceBulkActions}
+                                onApply={handleBulkApply}
+                                applying={bulkApplying}
+                                selectedCount={selected.size}
+                                entityLabel={tx('list.entityLabel')}
+                            />
+                        </div>
+                    )}
                     <EvidenceGallery
-                        rows={displayEvidence}
+                        rows={displayEvidenceFresh}
                         loading={evidenceQuery.isLoading && !evidenceQuery.data}
                         emptyState={
                             anyFilterActive ? (
@@ -1319,12 +1458,31 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                                 : null
                         }
                         statusBadgeVariant={(s) => STATUS_BADGE[s] ?? 'neutral'}
+                        statusLabel={statusLabel}
                         retentionStatus={(ev) => {
                             const rs = getRetentionStatus(ev, hydratedNow, tx);
                             return { label: rs.label, badge: rs.badge };
                         }}
+                        // EP-2 Part 2 — click-to-open (same handler the
+                        // table row uses) + bulk-selection parity + a
+                        // localized download label on every card.
+                        onRowClick={(ev) => {
+                            setDetailEvidenceId(ev.id);
+                            setDetailSheetOpen(true);
+                        }}
+                        selectedIds={selected}
+                        onToggleSelect={(id, next) =>
+                            setSelected((prev) => {
+                                const n = new Set(prev);
+                                if (next) n.add(id);
+                                else n.delete(id);
+                                return n;
+                            })
+                        }
+                        downloadLabel={tx('list.downloadFile')}
                         data-testid="evidence-gallery"
                     />
+                  </>
                 ) : (
                     <DataTable
                         fillBody

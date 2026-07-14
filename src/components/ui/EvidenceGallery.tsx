@@ -37,6 +37,8 @@
 import { useMemo, type CSSProperties } from 'react';
 import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Download } from '@/components/ui/icons/nucleo';
 import {
     FileTypeIcon,
     resolveFileTypeIcon,
@@ -83,10 +85,21 @@ export interface EvidenceGalleryProps<T extends EvidenceGalleryRow> {
     onRowClick?: (row: T) => void;
     /** Status badge resolver (re-uses the table's STATUS_BADGE map). */
     statusBadgeVariant?: (status: string) => StatusBadgeVariant;
+    /** Localized status label resolver (re-uses the table's statusLabel). */
+    statusLabel?: (status: string) => string;
     /** Retention status resolver (re-uses the table's getRetentionStatus). */
     retentionStatus?: (
         row: T,
     ) => { label: string; badge: StatusBadgeVariant } | null;
+    /**
+     * Bulk-selection parity with the table. When both are supplied,
+     * each card renders a selection checkbox wired to the SAME
+     * selection state the table uses.
+     */
+    selectedIds?: ReadonlySet<string>;
+    onToggleSelect?: (id: string, next: boolean) => void;
+    /** Localized aria-label for the per-card download control. */
+    downloadLabel?: string;
     /** A11y: gallery region label. */
     'aria-label'?: string;
     /** Outer test id. */
@@ -104,7 +117,11 @@ export function EvidenceGallery<T extends EvidenceGalleryRow>({
     fileUrl,
     onRowClick,
     statusBadgeVariant,
+    statusLabel,
     retentionStatus,
+    selectedIds,
+    onToggleSelect,
+    downloadLabel = 'Download',
     'aria-label': ariaLabel = 'Evidence gallery',
     'data-testid': dataTestId = 'evidence-gallery',
     style,
@@ -156,7 +173,12 @@ export function EvidenceGallery<T extends EvidenceGalleryRow>({
                     fileUrl={fileUrl}
                     onRowClick={onRowClick}
                     statusBadgeVariant={statusBadgeVariant}
+                    statusLabel={statusLabel}
                     retentionStatus={retentionStatus}
+                    selected={selectedIds?.has(row.id) ?? false}
+                    onToggleSelect={onToggleSelect}
+                    selectable={!!(selectedIds && onToggleSelect)}
+                    downloadLabel={downloadLabel}
                 />
             ))}
         </div>
@@ -170,7 +192,12 @@ interface GalleryCardProps<T extends EvidenceGalleryRow> {
     fileUrl: (row: T) => string | null;
     onRowClick?: (row: T) => void;
     statusBadgeVariant?: (status: string) => StatusBadgeVariant;
+    statusLabel?: (status: string) => string;
     retentionStatus?: (row: T) => { label: string; badge: StatusBadgeVariant } | null;
+    selectable?: boolean;
+    selected?: boolean;
+    onToggleSelect?: (id: string, next: boolean) => void;
+    downloadLabel?: string;
 }
 
 function GalleryCard<T extends EvidenceGalleryRow>({
@@ -178,7 +205,12 @@ function GalleryCard<T extends EvidenceGalleryRow>({
     fileUrl,
     onRowClick,
     statusBadgeVariant,
+    statusLabel,
     retentionStatus,
+    selectable,
+    selected,
+    onToggleSelect,
+    downloadLabel = 'Download',
 }: GalleryCardProps<T>) {
     const mime =
         row.fileRecord?.mimeType ??
@@ -222,6 +254,41 @@ function GalleryCard<T extends EvidenceGalleryRow>({
         >
             {/* Thumbnail / preview */}
             <div className="relative h-40 w-full overflow-hidden bg-bg-muted">
+                {/* Bulk-selection checkbox — parity with the table.
+                    Stops propagation so ticking the box doesn't open the
+                    detail sheet. */}
+                {selectable && !isPending && (
+                    <div
+                        className="absolute left-2 top-2 z-10"
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                    >
+                        <Checkbox
+                            checked={selected}
+                            onCheckedChange={(next) =>
+                                onToggleSelect?.(row.id, next === true)
+                            }
+                            aria-label={row.title}
+                            className="bg-bg-default"
+                            data-testid={`evidence-gallery-select-${row.id}`}
+                        />
+                    </div>
+                )}
+                {/* Download affordance — every file-backed card, not just
+                    PDFs. Non-file cards (LINK/TEXT) resolve `url === null`
+                    and render nothing here. */}
+                {url && !isPending && (
+                    <a
+                        href={url}
+                        download
+                        aria-label={downloadLabel}
+                        className="absolute right-2 top-2 z-10 inline-flex h-7 w-7 items-center justify-center rounded-md border border-border-subtle bg-bg-default/90 text-content-muted transition-colors hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        onClick={(e) => e.stopPropagation()}
+                        data-testid={`evidence-gallery-download-${row.id}`}
+                    >
+                        <Download className="size-3.5" />
+                    </a>
+                )}
                 {isImage ? (
                     // eslint-disable-next-line @next/next/no-img-element -- The src is a runtime tenant-scoped /api download URL with auth cookies; next/image needs declared remote-pattern allowlists + known dimensions, neither of which fits a per-tenant evidence thumbnail. `loading="lazy" decoding="async"` provides the perf characteristics that matter.
                     <img
@@ -307,7 +374,7 @@ function GalleryCard<T extends EvidenceGalleryRow>({
                     )}
                     {row.status && row.status !== 'PENDING_UPLOAD' && (
                         <StatusBadge variant={statusVariant}>
-                            {row.status}
+                            {statusLabel?.(row.status) ?? row.status}
                         </StatusBadge>
                     )}
                 </div>

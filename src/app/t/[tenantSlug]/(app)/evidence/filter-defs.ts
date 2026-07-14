@@ -24,10 +24,10 @@ import {
     optionsFromEnum,
 } from '@/components/ui/filter/filter-definitions';
 import type { FilterOption } from '@/components/ui/filter/types';
-import { FileText, CircleDot, Link2, FolderOpen } from 'lucide-react';
+import { FileText, CircleDot, Link2, FolderOpen, Clock } from 'lucide-react';
 
 /** Surface-namespace resolver (`useTranslations('evidence')`). */
-type T = (key: string, values?: Record<string, unknown>) => string;
+type T = (key: string, values?: Record<string, string | number | Date>) => string;
 /** Shared filter-group resolver (`useTranslations('common.filterGroups')`). */
 type TGroup = (key: string) => string;
 
@@ -49,6 +49,21 @@ export function evidenceStatusLabels(t: T): Record<string, string> {
         SUBMITTED: t('filterEnums.status.submitted'),
         APPROVED: t('filterEnums.status.approved'),
         REJECTED: t('filterEnums.status.rejected'),
+        // EP-2 — the stale-review sweep flips rows into NEEDS_REVIEW.
+        // Surfacing it here makes those rows filterable.
+        NEEDS_REVIEW: t('filterEnums.status.needsReview'),
+    };
+}
+
+// EP-2 — review-currency ("freshness") buckets. Applied client-side
+// against the loaded rows (the API ignores the `freshness` param via
+// `.strip()`), so this is a view refinement, not a server filter.
+export function evidenceFreshnessLabels(t: T): Record<string, string> {
+    return {
+        current: t('filterEnums.freshness.current'),
+        expiring: t('filterEnums.freshness.expiring'),
+        expired: t('filterEnums.freshness.expired'),
+        needs_review: t('filterEnums.freshness.needsReview'),
     };
 }
 
@@ -72,6 +87,17 @@ function evidenceFilterDefsInput(t: T, tGroup: TGroup) {
             icon: CircleDot,
             options: optionsFromEnum(evidenceStatusLabels(t)),
             multiple: true,
+            resetBehavior: 'clearable',
+        },
+        // EP-2 — freshness (review-currency) filter. Single-select;
+        // applied client-side against the loaded rows.
+        freshness: {
+            label: t('filters.freshness'),
+            description: t('filters.freshnessDesc'),
+            group: tGroup('workflow'),
+            icon: Clock,
+            options: optionsFromEnum(evidenceFreshnessLabels(t)),
+            multiple: false,
             resetBehavior: 'clearable',
         },
         controlId: {

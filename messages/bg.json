@@ -1961,7 +1961,10 @@
             "unarchiveFailedStatus": "Разархивирането на доказателството не бе успешно ({status})",
             "archiveFailedNet": "Архивирането на доказателството не бе успешно",
             "unarchiveFailedNet": "Разархивирането на доказателството не бе успешно",
-            "entityLabel": "доказателства"
+            "entityLabel": "доказателства",
+            "retentionTriageAria": "Изглед за задържане",
+            "triageExpiring": "Изтичащи",
+            "reReview": "Повторен преглед"
         },
         "reject": {
             "title": "Отхвърляне на доказателство",
@@ -2009,8 +2012,22 @@
             "submitForReview": "Изпрати за преглед",
             "resubmit": "Изпрати отново",
             "recertify": "Изпрати отново за преглед",
+            "reReview": "Повторен преглед",
             "reject": "Отхвърли",
-            "approve": "Одобри"
+            "approve": "Одобри",
+            "download": "Изтегли",
+            "previewUnavailable": "Няма визуализация за този тип файл.",
+            "fileMetaTitle": "Детайли за файла",
+            "fileName": "Име на файл",
+            "fileSize": "Размер",
+            "fileMime": "MIME тип",
+            "fileHash": "SHA-256",
+            "copyHash": "Копирай SHA-256",
+            "retentionUntil": "Задържане до",
+            "expiry": "Изтича",
+            "reviewHistoryTitle": "История на прегледите",
+            "noReviewHistory": "Все още няма активност по преглед",
+            "reviewerUnknown": "Неизвестен рецензент"
         },
         "edit": {
             "title": "Редактиране на доказателство",
@@ -2101,7 +2118,9 @@
             "controlIdDesc": "Показвай само доказателства, прикачени към този контрол.",
             "folder": "Папка",
             "folderDesc": "Етикет на организационна папка.",
-            "noFolder": "Без папка"
+            "noFolder": "Без папка",
+            "freshness": "Актуалност",
+            "freshnessDesc": "Актуалност на прегледа: актуално, изтичащо, изтекло или нуждаещо се от преглед."
         },
         "filterEnums": {
             "type": {
@@ -2113,7 +2132,14 @@
                 "draft": "Чернова",
                 "submitted": "Изпратено",
                 "approved": "Одобрено",
-                "rejected": "Отхвърлено"
+                "rejected": "Отхвърлено",
+                "needsReview": "Нужен преглед"
+            },
+            "freshness": {
+                "current": "Актуално",
+                "expiring": "Скоро изтича",
+                "expired": "Изтекло",
+                "needsReview": "Нужен преглед"
             }
         },
         "typeLabels": {
@@ -2127,6 +2153,7 @@
             "SUBMITTED": "Изпратено",
             "APPROVED": "Одобрено",
             "REJECTED": "Отхвърлено",
+            "NEEDS_REVIEW": "Нужен преглед",
             "PENDING_UPLOAD": "Изчаква качване"
         }
     },

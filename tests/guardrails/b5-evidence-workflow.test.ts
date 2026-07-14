@@ -109,12 +109,13 @@ describe('B5 — Evidence workflow completion', () => {
             expect(sheet).toMatch(/evidence-sheet-resubmit-btn/);
         });
 
-        it('renders Re-certify on NEEDS_REVIEW', () => {
+        it('renders Re-review on NEEDS_REVIEW', () => {
             // The Audit S3 follow-up landed `EvidenceStatus.NEEDS_REVIEW`.
-            // The sheet now exposes the re-certification action on
-            // that state.
+            // EP-2 (Part 5) made the renewal action first-class + discoverable,
+            // relabelling it "Re-review" (distinct from generic Submit); the
+            // sheet exposes it on that state via `evidence-sheet-rereview-btn`.
             expect(sheet).toMatch(/evidence\.status === 'NEEDS_REVIEW'/);
-            expect(sheet).toMatch(/evidence-sheet-recertify-btn/);
+            expect(sheet).toMatch(/evidence-sheet-rereview-btn/);
         });
     });
 });
