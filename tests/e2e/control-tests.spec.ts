@@ -165,8 +165,10 @@ test.describe('Control Tests (Test-of-Control)', () => {
             '#tests-page-title',
         );
         await expect(authedPage.locator('#tests-page-title')).toContainText('Tests');
+        // R3-P1 — the generic subtitle was replaced by the global tests-vs-checks
+        // explanation (the old copy ignored automated checks, the gap R3-P1 closes).
         await expect(
-            authedPage.locator('text=Test plans and recent results'),
+            authedPage.getByText(/manual plans/i),
         ).toBeVisible({ timeout: 5000 });
     });
 });
