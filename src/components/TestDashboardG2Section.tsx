@@ -2,16 +2,20 @@
 /**
  * Epic G-2 — Test dashboard automation section.
  *
- * Three widgets on top of the existing dashboard primitives:
+ * Two automation-specific widgets on top of the existing dashboard
+ * primitives:
  *
- *   1. Pass/Fail/Inconclusive donut          (DonutChart)
- *   2. Overdue scheduled tests list          (custom Link list)
- *   3. Per-day completed-run trend sparkline (MiniAreaChart)
+ *   1. Overdue scheduled tests list          (custom Link list)
+ *   2. Per-day completed-run trend sparkline (MiniAreaChart)
+ *
+ * (R3-P3 removed the pass/fail distribution donut that used to lead
+ * this section — it duplicated the main dashboard's always-rendered
+ * "Result Distribution" card, from the same run counters.)
  *
  * Reads the merged G-2 fields the dashboard API was extended to
  * return in prompt 4 (`automation`, `upcoming`, `trend`) plus the
  * legacy run counters (`passRuns`, `failRuns`, `inconclusiveRuns`)
- * which already drive the existing distribution cards.
+ * which drive the trend total.
  *
  * Mounts inside the existing TestDashboardPage; no chart-platform
  * exception — all visuals use the shared Epic 59 primitives.
@@ -19,7 +23,6 @@
 import Link from 'next/link';
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import DonutChart, { type DonutSegment } from '@/components/ui/DonutChart';
 import { MiniAreaChart } from '@/components/ui/mini-area-chart';
 import { useTenantHref } from '@/lib/tenant-context-provider';
 import { formatDate } from '@/lib/format-date';
@@ -76,17 +79,10 @@ export function TestDashboardG2Section({
     const tenantHref = useTenantHref();
     const t = useTranslations('panels.testDashG2');
 
-    const donutSegments = useMemo<DonutSegment[]>(
-        () => [
-            { label: t('pass'), value: passRuns, color: '#22c55e' },
-            { label: t('fail'), value: failRuns, color: '#ef4444' },
-            { label: t('inconclusive'), value: inconclusiveRuns, color: '#f59e0b' },
-        ],
-        [passRuns, failRuns, inconclusiveRuns, t],
-    );
+    // R3-P3 — the pass/fail donut was removed as a duplicate of the main
+    // dashboard's Result Distribution card; `totalCompleted` still labels the
+    // trend card's run total.
     const totalCompleted = passRuns + failRuns + inconclusiveRuns;
-    const passPct =
-        totalCompleted > 0 ? Math.round((passRuns / totalCompleted) * 100) : 0;
 
     // Sparkline data — daily completed-run counts (sum of all three
     // categories per day). MiniAreaChart wants TimeSeriesPoint[].
@@ -128,31 +124,12 @@ export function TestDashboardG2Section({
                 </span>
             </div>
 
-            <div className="grid lg:grid-cols-3 gap-section">
-                {/* ─── Pass/Fail Donut ───────────────────────────── */}
-                <div
-                    className={cardVariants()}
-                    data-testid="test-dashboard-g2-donut"
-                >
-                    <Heading level={3} className="mb-4">
-                        {t('resultDistribution', { period })}
-                    </Heading>
-                    {totalCompleted === 0 ? (
-                        <p className="text-content-subtle text-sm">
-                            {t('completedRunsEmpty')}
-                        </p>
-                    ) : (
-                        <div className="flex justify-center">
-                            <DonutChart
-                                segments={donutSegments}
-                                centerLabel={`${passPct}%`}
-                                centerSub={t('passRate')}
-                                size={180}
-                            />
-                        </div>
-                    )}
-                </div>
-
+            {/* R3-P3 — the pass/fail result-distribution donut that used to lead
+                this section duplicated the always-rendered "Result Distribution"
+                card above (same passRuns/failRuns/inconclusiveRuns counters).
+                Removed; this section now carries only its automation-unique
+                widgets (overdue-scheduled + daily-run trend). */}
+            <div className="grid lg:grid-cols-2 gap-section">
                 {/* ─── Overdue Scheduled Tests ───────────────────── */}
                 <div
                     className={cardVariants()}

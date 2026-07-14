@@ -12,12 +12,12 @@ import Link from 'next/link';
 import { useToast } from '@/components/ui/hooks/use-toast';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { ListPageShell } from '@/components/layout/ListPageShell';
-import { BackAffordance } from '@/components/nav/BackAffordance';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { TestsSubNav } from '../_components/TestsSubNav';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
 import { IconAction } from '@/components/ui/icon-action';
 import { AppIcon } from '@/components/icons/AppIcon';
-import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
@@ -109,26 +109,30 @@ export default function DueQueuePage() {
     return (
         <ListPageShell className="animate-fadeIn gap-section">
             <ListPageShell.Header>
-                <BackAffordance />
+                <PageBreadcrumbs
+                    items={[
+                        { label: t('crumb.dashboard'), href: tenantHref('/dashboard') },
+                        { label: t('crumb.tests'), href: tenantHref('/tests') },
+                        { label: t('due.crumb') },
+                    ]}
+                    className="mb-1"
+                />
+                <TestsSubNav active="due" className="mb-3" />
                 <div className="flex items-center justify-between">
                     <div>
                         <Heading level={1} id="due-queue-title">{t('due.title')}</Heading>
                         <p className="text-sm text-content-muted mt-1">{t('due.description')}</p>
                     </div>
-                    <div className="flex gap-compact">
-                        <Link href={tenantHref('/tests')} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>{t('due.backTests')}</Link>
-                        <Link href={tenantHref('/tests/dashboard')} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>{t('nav.dashboard')}</Link>
-                        {permissions.canWrite && (
-                            <IconAction
-                                variant="primary"
-                                onClick={handleRunDuePlanning}
-                                loading={planning}
-                                id="run-due-planning-btn"
-                                icon={<AppIcon name="run" size={16} />}
-                                label={t('due.runPlanning')}
-                            />
-                        )}
-                    </div>
+                    {permissions.canWrite && (
+                        <IconAction
+                            variant="primary"
+                            onClick={handleRunDuePlanning}
+                            loading={planning}
+                            id="run-due-planning-btn"
+                            icon={<AppIcon name="run" size={16} />}
+                            label={t('due.runPlanning')}
+                        />
+                    )}
                 </div>
             </ListPageShell.Header>
 

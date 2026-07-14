@@ -8,7 +8,7 @@ import DonutChart from '@/components/ui/DonutChart';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
-import { Heading } from '@/components/ui/typography';
+import { Heading, textLinkVariants } from '@/components/ui/typography';
 import { Card, cardVariants } from '@/components/ui/card';
 import { KPIStat } from '@/components/ui/metric';
 import { getStatusTone } from '@/lib/design/status-tone';
@@ -160,6 +160,14 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
                 },
             }}
         >
+            {/* R3-P3 — disambiguate this risk↔control↔asset coverage map from
+                the test dashboard's "framework test coverage" (test-plan/run
+                coverage) and audit-cycle readiness scores. */}
+            <p className="text-xs text-content-subtle" id="coverage-disambiguation">
+                {t('vsTestCoverage')}{' '}
+                <Link href={tenantHref('/tests/dashboard')} className={textLinkVariants({ tone: 'link' })}>{t('testCoverageLink')}</Link>
+            </p>
+
             {/* ── KPI Strip: 3 Coverage Donuts ────────────────────── */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-default" id="coverage-kpi-strip">
                 <CoverageKpiCard

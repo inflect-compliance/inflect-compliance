@@ -1547,6 +1547,9 @@
         "docs/implementation-notes/2026-07-14-guided-test-run.md": {
             "class": "historical"
         },
+        "docs/implementation-notes/2026-07-14-test-nav-and-dashboard-dedup.md": {
+            "class": "historical"
+        },
         "docs/implementation-notes/2026-07-13-control-exception-excepted-verdict.md": {
             "class": "historical"
         }

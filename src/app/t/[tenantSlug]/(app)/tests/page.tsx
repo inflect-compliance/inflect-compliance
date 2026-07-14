@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { NewTestPlanModal } from './_components/NewTestPlanModal';
+import { TestsSubNav } from './_components/TestsSubNav';
 import { FilterProvider, useFilterContext, useFilters, useFilterCardVisibility, filtersToCards, selectVisibleFilters } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
@@ -512,16 +513,18 @@ function TestsRollupContent() {
     return (
         <ListPageShell className="animate-fadeIn gap-section">
             <ListPageShell.Header>
+                <PageBreadcrumbs
+                    items={[
+                        { label: t('crumb.dashboard'), href: tenantHref('/dashboard') },
+                        { label: t('crumb.tests') },
+                    ]}
+                    className="mb-1"
+                />
+                {/* R3-P3 — the single sub-nav spine across the three test surfaces. */}
+                <TestsSubNav active="tests" className="mb-3" />
                 <div className="flex items-start justify-between gap-default">
                     <div>
-                        <PageBreadcrumbs
-                            items={[
-                                { label: t('crumb.dashboard'), href: tenantHref('/dashboard') },
-                                { label: t('crumb.tests') },
-                            ]}
-                            className="mb-1"
-                        />
-                        <Heading level={1} id="tests-page-title" className="sr-only">{t('list.title')}</Heading>
+                        <Heading level={1} id="tests-page-title">{t('list.title')}</Heading>
                         {/* R3-P1 — the tests-vs-checks distinction, explained at the
                             GLOBAL level (not only inline on a control's two tabs). */}
                         <p className="text-sm text-content-muted mt-1">{t('unified.explanation')}</p>
@@ -542,10 +545,6 @@ function TestsRollupContent() {
                             {t('unified.testPlanNoun')}
                         </Button>
                     )}
-                    {/* Nav icon buttons moved into the FilterToolbar's actions
-                        slot (left of the column/filter gears), so the header
-                        action cluster is now empty — matches the other entity
-                        list pages (UI batch items 4-6). */}
                 </div>
             </ListPageShell.Header>
 
@@ -602,16 +601,9 @@ function TestsRollupContent() {
                     searchPlaceholder={t('list.searchPlaceholder')}
                     actions={
                         <>
-                            <Tooltip content={t('nav.dueQueue')}>
-                                <Link href={tenantHref('/tests/due')} aria-label={t('nav.dueQueue')} className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="tests-due-btn">
-                                    <AppIcon name="clock" size={16} />
-                                </Link>
-                            </Tooltip>
-                            <Tooltip content={t('nav.dashboard')}>
-                                <Link href={tenantHref('/tests/dashboard')} aria-label={t('nav.dashboard')} className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="tests-dashboard-btn">
-                                    <AppIcon name="dashboard" size={16} />
-                                </Link>
-                            </Tooltip>
+                            {/* R3-P3 — due/dashboard cross-links now live in the
+                                shared TestsSubNav; only the cross-section
+                                access-reviews jump stays here. */}
                             <Tooltip content={t('nav.accessReviews')}>
                                 <Link href={tenantHref('/access-reviews')} aria-label={t('nav.accessReviews')} className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="tests-uar-btn">
                                     <AppIcon name="userCheck" size={16} />

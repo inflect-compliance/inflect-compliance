@@ -8,7 +8,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
-import { buttonVariants } from '@/components/ui/button-variants';
+import { TestsSubNav } from '../_components/TestsSubNav';
 import { ProgressBar, type ProgressBarVariant } from '@/components/ui/progress-bar';
 import { ProgressCircle } from '@/components/ui/progress-circle';
 import {
@@ -20,9 +20,8 @@ import { KPIStat, type MetricTone } from '@/components/ui/metric';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SkeletonDashboard } from '@/components/ui/skeleton';
 import { Heading } from '@/components/ui/typography';
+import { textLinkVariants } from '@/components/ui/typography';
 import { cardVariants } from '@/components/ui/card';
-import { Tooltip } from '@/components/ui/tooltip';
-import { AppIcon } from '@/components/icons/AppIcon';
 
 interface DashboardMetrics {
     periodDays: number;
@@ -113,43 +112,41 @@ export default function TestDashboardPage() {
     return (
         <DashboardLayout
             header={{
-                back: { smart: true },
+                breadcrumbs: [
+                    { label: t('crumb.dashboard'), href: tenantHref('/dashboard') },
+                    { label: t('crumb.tests'), href: tenantHref('/tests') },
+                    { label: t('dashboard.crumb') },
+                ],
                 title: t('dashboard.title'),
                 titleId: 'dashboard-title',
                 description: t('dashboard.description'),
                 actions: (
-                    <>
-                        <Link href={tenantHref('/tests')} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>{t('crumb.tests')}</Link>
-                        <Tooltip content={t('nav.dueQueue')}>
-                            <Link href={tenantHref('/tests/due')} aria-label={t('nav.dueQueue')} className={buttonVariants({ variant: 'secondary', size: 'icon' })}>
-                                <AppIcon name="clock" size={16} />
-                            </Link>
-                        </Tooltip>
-                        <div className="flex gap-1 bg-bg-default/50 rounded-lg p-1">
-                            {[30, 90].map(d => (
-                                <button
-                                    key={d}
-                                    onClick={() => setPeriod(d)}
-                                    className={`px-3 py-1 rounded text-xs font-medium transition-colors duration-150 ease-out ${period === d ? 'bg-[var(--brand-default)] text-content-emphasis' : 'text-content-muted hover:text-content-emphasis'}`}
-                                    id={`period-${d}-btn`}
-                                >
-                                    {t('dashboard.periodDays', { days: d })}
-                                </button>
-                            ))}
-                        </div>
-                    </>
+                    <div className="flex gap-1 bg-bg-default/50 rounded-lg p-1">
+                        {[30, 90].map(d => (
+                            <button
+                                key={d}
+                                onClick={() => setPeriod(d)}
+                                className={`px-3 py-1 rounded text-xs font-medium transition-colors duration-150 ease-out ${period === d ? 'bg-[var(--brand-default)] text-content-emphasis' : 'text-content-muted hover:text-content-emphasis'}`}
+                                id={`period-${d}-btn`}
+                            >
+                                {t('dashboard.periodDays', { days: d })}
+                            </button>
+                        ))}
+                    </div>
                 ),
             }}
         >
+            {/* R3-P3 — shared sub-nav spine across the three test surfaces. */}
+            <TestsSubNav active="dashboard" />
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-default">
+            {/* KPI Cards — R3-P3: rates only. The plan-total + overdue COUNTS
+                that used to sit here restated /tests and /tests/due; the
+                dashboard's job is rates & trends, the lists own the counts. */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
                 <MetricCard label={t('dashboard.kpi.completionRate')} value={`${metrics.completionRate}%`} sub={t('dashboard.kpi.completionSub', { completed: metrics.completedRuns, total: metrics.totalRuns })} color={metrics.completionRate >= 80 ? 'green' : metrics.completionRate >= 50 ? 'amber' : 'red'} />
                 <MetricCard label={t('dashboard.kpi.passRate')} value={`${metrics.passRate}%`} sub={t('dashboard.kpi.passSub', { count: metrics.passRuns })} color={metrics.passRate >= 80 ? 'green' : metrics.passRate >= 50 ? 'amber' : 'red'} />
                 <MetricCard label={t('dashboard.kpi.failRate')} value={`${metrics.failRate}%`} sub={t('dashboard.kpi.failSub', { count: metrics.failRuns })} color={metrics.failRate <= 10 ? 'green' : metrics.failRate <= 30 ? 'amber' : 'red'} />
                 <MetricCard label={t('dashboard.kpi.evidenceRate')} value={`${metrics.evidenceRate}%`} sub={t('dashboard.kpi.evidenceSub', { count: metrics.runsWithEvidence })} color={metrics.evidenceRate >= 80 ? 'green' : metrics.evidenceRate >= 50 ? 'amber' : 'red'} />
-                <MetricCard label={t('dashboard.kpi.overduePlans')} value={String(metrics.overduePlans)} sub={t('dashboard.kpi.overdueSub')} color={metrics.overduePlans === 0 ? 'green' : 'red'} />
-                <MetricCard label={t('dashboard.kpi.activePlans')} value={String(metrics.totalPlans)} sub={t('dashboard.kpi.totalSub')} color="brand" />
             </div>
 
             {/* Result Distribution */}
@@ -240,8 +237,15 @@ export default function TestDashboardPage() {
             {readiness.length > 0 && (
                 <div className={cardVariants()}>
                     <Heading level={2} className="mb-4" id="framework-readiness-title">{t('dashboard.fwCoverage')}</Heading>
-                    <p className="text-sm text-content-muted mb-4">
+                    <p className="text-sm text-content-muted mb-2">
                         {t('dashboard.fwCoverageDesc')}
+                    </p>
+                    {/* R3-P3 — disambiguate the three "coverage/readiness" surfaces
+                        so "test coverage" isn't confused with the risk/asset
+                        Coverage map or an audit-cycle readiness score. */}
+                    <p className="text-xs text-content-subtle mb-4">
+                        {t('dashboard.fwCoverageVsCoverage')}{' '}
+                        <Link href={tenantHref('/coverage')} className={textLinkVariants({ tone: 'link' })}>{t('dashboard.coverageMapLink')}</Link>
                     </p>
                     <div className="space-y-section animate-fadeIn">
                         {readiness.map(fw => (

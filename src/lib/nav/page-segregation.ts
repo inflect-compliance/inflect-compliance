@@ -69,6 +69,11 @@ export const BACK_AFFORDANCE_EXEMPT_SUBPAGES: readonly string[] = [
     '/reports/soa/print',     // print view, chrome-less by design
     '/risks/new',             // redirect shim → /risks?create=1
     '/tasks/new',             // redirect shim → /tasks?create=1
+    // R3-P3 — parent navigation is PageBreadcrumbs (Dashboard › Tests › …)
+    // plus the shared TestsSubNav spine, the richer form PageHeader itself
+    // prefers over a one-tap back affordance.
+    '/tests/due',
+    '/tests/dashboard',
     '/vendors/new',           // redirect shim → /vendors?create=1
 ] as const;
 

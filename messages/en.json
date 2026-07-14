@@ -5384,7 +5384,8 @@
             "needsRun": "Needs Run",
             "runNow": "Run Now",
             "empty": "No tests are due! All plans are on schedule.",
-            "runFailed": "Couldn't start the run. Try again."
+            "runFailed": "Couldn't start the run. Try again.",
+            "crumb": "Due queue"
         },
         "dashboard": {
             "title": "Test Dashboard",
@@ -5426,7 +5427,10 @@
             "passed": "{count}/{total} passed",
             "fwPlanCoverageAria": "{name} test plan coverage",
             "fwRunCoverageAria": "{name} recent run coverage",
-            "fwPassRateAria": "{name} pass rate"
+            "fwPassRateAria": "{name} pass rate",
+            "crumb": "Test dashboard",
+            "fwCoverageVsCoverage": "This measures test-plan and test-run coverage across your frameworks. For risk, asset and control protection coverage, see the",
+            "coverageMapLink": "Coverage map →"
         },
         "run": {
             "errors": {
@@ -5590,6 +5594,12 @@
             "moveDown": "Move step down",
             "remove": "Remove step",
             "add": "Add step"
+        },
+        "subnav": {
+            "tests": "Tests",
+            "due": "Due",
+            "dashboard": "Dashboard",
+            "aria": "Test sections"
         }
     },
     "agents": {
@@ -5733,7 +5743,9 @@
         "barAria": "{label} coverage",
         "loadingAria": "Loading coverage dashboard",
         "riskWordOne": "risk",
-        "riskWordOther": "risks"
+        "riskWordOther": "risks",
+        "vsTestCoverage": "This maps how risks, assets and controls protect each other. For framework test-plan and test-run coverage, see the",
+        "testCoverageLink": "Test dashboard →"
     },
     "accessReviews": {
         "crumbDashboard": "Dashboard",
