@@ -26,8 +26,6 @@ import {
     LogOut,
     Calendar as CalendarIcon,
     Workflow,
-    Library,
-    Radar,
     Menu,
     type LucideIcon,
 } from 'lucide-react';
@@ -97,19 +95,6 @@ export function useNavSections(): NavSectionDef[] {
                 { href: tenantHref('/assets'), label: t('assets'), icon: Building2 },
                 { href: tenantHref('/risks'), label: t('risks'), icon: AlertTriangle },
                 { href: tenantHref('/controls'), label: t('controls'), icon: ShieldCheck },
-            ],
-        },
-        {
-            // R2-P3 — the posture spine. Per-framework coverage/readiness is
-            // the universal creation-and-measurement path (all ~15 frameworks),
-            // yet Frameworks had been dropped from the sidebar (R13-PR12,
-            // ⌘K-only) and Coverage was reachable by URL alone. Surfacing both
-            // here stops relying on the command palette for pages users don't
-            // know exist.
-            title: t('compliance'),
-            items: [
-                { href: tenantHref('/frameworks'), label: t('frameworks'), icon: Library },
-                { href: tenantHref('/coverage'), label: t('coverage'), icon: Radar },
             ],
         },
         {
