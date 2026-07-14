@@ -4991,6 +4991,8 @@
             "typeDesc": "What kind of task / finding this represents.",
             "severity": "Severity",
             "severityDesc": "Impact severity of the task.",
+            "source": "Source",
+            "sourceDesc": "Where this task came from — manual entry or an automated sweep.",
             "due": "Due",
             "dueDesc": "Shortcut for overdue / due-soon filtering.",
             "assignee": "Assignee",
@@ -5021,6 +5023,14 @@
                 "MEDIUM": "Medium",
                 "HIGH": "High",
                 "CRITICAL": "Critical"
+            },
+            "source": {
+                "MANUAL": "Manual",
+                "TEMPLATE": "Template",
+                "POLICY_REVIEW": "Policy Review",
+                "AUDIT": "Audit",
+                "INTEGRATION": "Integration",
+                "EVIDENCE_EXPIRY": "Evidence Expiry"
             },
             "due": {
                 "overdue": "Overdue",

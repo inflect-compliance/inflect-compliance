@@ -27,6 +27,11 @@ const mockAuditLogCreate = jest.fn().mockResolvedValue({});
 const mockPrisma = {
     policy: { findMany: (...args: unknown[]) => mockPolicyFindMany(...args) },
     auditLog: { create: (...args: unknown[]) => mockAuditLogCreate(...args) },
+    // TP-5 — processOverdueReminders now materialises review-due signals as
+    // Task rows. The batched taskLink lookup returns [] (no existing task),
+    // so an overdue policy with an owner mints one task + link.
+    taskLink: { findMany: jest.fn().mockResolvedValue([]), create: jest.fn().mockResolvedValue({}) },
+    task: { create: jest.fn().mockResolvedValue({ id: 'task-x' }) },
 } as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 beforeEach(() => {

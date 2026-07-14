@@ -372,6 +372,7 @@ enum WorkItemSource {
   POLICY_REVIEW
   AUDIT
   INTEGRATION
+  EVIDENCE_EXPIRY
 }
 
 enum TaskLinkEntityType {

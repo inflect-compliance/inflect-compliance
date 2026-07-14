@@ -25,6 +25,7 @@ import type { PrismaClient, Prisma } from '@prisma/client';
 import { logger } from '@/lib/observability/logger';
 import { emitAutomationEvent } from '../automation';
 import { isNotificationsEnabled } from '../notifications/settings';
+import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
 import type { RequestContext } from '../types';
 
 export interface OverduePolicy {
@@ -175,6 +176,29 @@ export async function processOverdueReminders(
     // tenantNotificationSettings for every policy of the same tenant.
     const notifEnabled = new Map<string, boolean>();
 
+    // TP-5 — the review-due signal now materialises as a real Task in the
+    // universal /tasks inbox. Idempotency is per open review cycle: a set
+    // of policy ids that already carry an OPEN `POLICY_REVIEW` task,
+    // resolved in ONE batched query over the scanned policy set (no N+1 in
+    // the loop below). A fresh cycle after `markPolicyReviewed` advances
+    // `nextReviewAt`, so once the prior task closes a new one may be raised.
+    const policyIds = policies.map((p) => p.id);
+    const policiesWithOpenTask = new Set<string>();
+    if (policyIds.length) {
+        const openLinks = await db.taskLink.findMany({ // guardrail-allow: unbounded -- bounded by the scanned policyIds in: list (take:1000)
+            where: {
+                entityType: 'POLICY',
+                entityId: { in: policyIds },
+                task: {
+                    source: 'POLICY_REVIEW',
+                    status: { notIn: [...TERMINAL_WORK_ITEM_STATUSES] },
+                },
+            },
+            select: { entityId: true },
+        });
+        for (const l of openLinks) policiesWithOpenTask.add(l.entityId);
+    }
+
     for (const policy of policies) {
         if (!policy.nextReviewAt) continue;
         const reminderDays = policy.tenant?.reminderDaysBefore ?? DEFAULT_REMINDER_DAYS_BEFORE;
@@ -240,6 +264,40 @@ export async function processOverdueReminders(
                     dedupeKey: `${policy.tenantId}:POLICY_REVIEW_DUE:${ownerEmail}:${policy.id}:${now.toISOString().slice(0, 10)}`,
                 },
             }).catch(() => {});
+        }
+
+        // TP-5 — raise a Task for the review, linked to the policy and
+        // assigned to its owner. Requires an owner: `Task.createdByUserId`
+        // is NOT NULL and the reminder is only actionable by someone, so a
+        // policy with no owner keeps the audit + email + automation signals
+        // but no task. Idempotent via `policiesWithOpenTask` (batched
+        // above), and de-duped within this run as new ids are added.
+        if (policy.ownerUserId && !policiesWithOpenTask.has(policy.id)) {
+            const dueStr = policy.nextReviewAt.toISOString().slice(0, 10);
+            const task = await db.task.create({
+                data: {
+                    tenantId: policy.tenantId,
+                    source: 'POLICY_REVIEW',
+                    type: 'TASK',
+                    title: `Review policy: ${policy.title}`,
+                    description: overdue
+                        ? `Policy "${policy.title}" is ${dOver} day(s) overdue for review. Review the content and mark it reviewed to reset the review cycle.`
+                        : `Policy "${policy.title}" is due for review on ${dueStr}. Review the content and mark it reviewed to reset the review cycle.`,
+                    status: 'OPEN',
+                    priority: overdue ? 'P1' : 'P2',
+                    createdByUserId: policy.ownerUserId,
+                    assigneeUserId: policy.ownerUserId,
+                },
+            });
+            await db.taskLink.create({
+                data: {
+                    tenantId: policy.tenantId,
+                    taskId: task.id,
+                    entityType: 'POLICY',
+                    entityId: policy.id,
+                },
+            });
+            policiesWithOpenTask.add(policy.id);
         }
 
         out.push({ id: policy.id, tenantId: policy.tenantId, title: policy.title, daysOverdue: dOver });

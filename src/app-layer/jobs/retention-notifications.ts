@@ -105,11 +105,15 @@ export async function runEvidenceRetentionNotifications(
     let skippedNoActor = 0;
 
     for (const ev of expiring) {
-        // Check for existing task with same evidence link (idempotent)
+        // TP-5 — idempotency is keyed on the WORK SOURCE, not the task
+        // type: an open `EVIDENCE_EXPIRY` task already linked to this
+        // evidence means the reminder is live, so the sweep does not mint
+        // a duplicate. Once that task is closed (or CANCELED — terminal),
+        // a future sweep may raise a fresh one.
         const existingTask = await prisma.task.findFirst({
             where: {
                 tenantId: ev.tenantId,
-                type: 'IMPROVEMENT',
+                source: 'EVIDENCE_EXPIRY',
                 status: { notIn: [...TERMINAL_WORK_ITEM_STATUSES] },
                 links: {
                     some: {
@@ -144,12 +148,19 @@ export async function runEvidenceRetentionNotifications(
         const task = await prisma.task.create({
             data: {
                 tenantId: ev.tenantId,
-                type: 'IMPROVEMENT',
+                // TP-5 — a neutral TASK carrying the EVIDENCE_EXPIRY source
+                // so it lands in the universal /tasks inbox and is filterable
+                // by where it came from.
+                type: 'TASK',
+                source: 'EVIDENCE_EXPIRY',
                 title: `Refresh expiring evidence: ${ev.title}`,
                 description: `Evidence "${ev.title}" expires in ${daysLeft} days (${formatDate(ev.retentionUntil)}). Please upload refreshed evidence or extend the retention date.`,
                 status: 'OPEN',
                 priority: daysLeft <= 7 ? 'P1' : 'P2',
                 createdByUserId,
+                // Assign to the evidence owner when one exists so the
+                // reminder reaches the person responsible for it.
+                ...(ev.ownerUserId ? { assigneeUserId: ev.ownerUserId } : {}),
                 ...(ev.controlId ? { controlId: ev.controlId } : {}),
             },
         });

@@ -12,6 +12,7 @@ export interface TaskFilters {
     type?: string;
     severity?: string;
     priority?: string;
+    source?: string;
     assigneeUserId?: string;
     controlId?: string;
     due?: 'overdue' | 'next7d';
@@ -41,6 +42,10 @@ const taskListSelect = {
     type: true,
     severity: true,
     status: true,
+    // TP-5 — the work source that raised the task (MANUAL / AUDIT /
+    // POLICY_REVIEW / EVIDENCE_EXPIRY / INTEGRATION / TEMPLATE). Written on
+    // create but never selected until the universal-inbox filter needed it.
+    source: true,
     dueAt: true,
     createdAt: true,
     updatedAt: true,
@@ -248,6 +253,7 @@ export class WorkItemRepository {
         if (filters.type) where.type = filters.type as WorkItemType;
         if (filters.severity) where.severity = filters.severity as WorkItemSeverity;
         if (filters.priority) where.priority = filters.priority as WorkItemPriority;
+        if (filters.source) where.source = filters.source as WorkItemSource;
         if (filters.assigneeUserId) where.assigneeUserId = filters.assigneeUserId;
         if (filters.controlId) where.controlId = filters.controlId;
         if (filters.due === 'overdue') {
