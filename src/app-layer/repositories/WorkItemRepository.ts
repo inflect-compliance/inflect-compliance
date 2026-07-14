@@ -51,6 +51,14 @@ const taskListSelect = {
     updatedAt: true,
     assigneeUserId: true,
     assignee: { select: { id: true, name: true, email: true } },
+    // TP-6 — the directly-linked control (FK). Selected so the Tasks
+    // list can (a) render a linked-control column and (b) populate the
+    // "linked control" filter's runtime-derived options — before TP-6
+    // the select omitted it, so `controlOptionsFromTasks` always read
+    // `undefined` and the filter was permanently empty even though the
+    // server-side `controlId` filter matched.
+    controlId: true,
+    control: { select: { id: true, code: true, name: true, annexId: true } },
     // Linked-evidence count — surfaced on the Controls table's inline task
     // rows (category/status/owner/evidence). One correlated subquery; the
     // three removed above (links/comments/watchers) stay removed.

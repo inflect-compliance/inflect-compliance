@@ -22,6 +22,7 @@
  */
 import { useState } from 'react';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
+import { useToast } from '@/components/ui/hooks';
 import { useFormTelemetry } from '@/lib/telemetry/form-telemetry';
 import { useZodForm } from '@/lib/hooks/use-zod-form';
 import {
@@ -104,6 +105,7 @@ export function useNewTaskForm({
     initialPendingLinks,
 }: UseNewTaskFormOptions): NewTaskFormReturn {
     const apiUrl = useTenantApiUrl();
+    const toast = useToast();
     const telemetry = useFormTelemetry('NewTaskPage');
 
     // Extras kept outside Zod — see file header.
@@ -166,19 +168,46 @@ export function useNewTaskForm({
                 }
                 const task = await res.json();
 
-                // Best-effort secondary POSTs for the staged links.
+                // TP-6 — secondary POSTs for the staged links. These are
+                // NOT best-effort: a swallowed failure here left the task
+                // link-less (and, for AUDIT_FINDING / CONTROL_GAP /
+                // INCIDENT types, later UN-CLOSABLE because the type
+                // relevance check requires a control/asset link) while
+                // the form reported success. Collect any failure and
+                // surface it instead of pretending the create fully
+                // succeeded.
+                const failedLinks: PendingLink[] = [];
                 for (const link of pendingLinks) {
-                    await fetch(apiUrl(`/tasks/${task.id}/links`), {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            entityType: link.entityType,
-                            entityId: link.entityId,
-                            relation: 'RELATES_TO',
-                        }),
-                    }).catch(() => {
-                        /* swallow — link is best-effort */
-                    });
+                    try {
+                        const linkRes = await fetch(apiUrl(`/tasks/${task.id}/links`), {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                entityType: link.entityType,
+                                entityId: link.entityId,
+                                relation: 'RELATES_TO',
+                            }),
+                        });
+                        if (!linkRes.ok) failedLinks.push(link);
+                    } catch {
+                        failedLinks.push(link);
+                    }
+                }
+
+                if (failedLinks.length > 0) {
+                    const detail = failedLinks
+                        .map((l) => `${l.entityType} ${l.entityId}`)
+                        .join(', ');
+                    // Toast so the failure is visible even though the task
+                    // row itself was created.
+                    toast.error(
+                        `Task created, but ${failedLinks.length} link(s) failed to attach: ${detail}. Add them from the task page.`,
+                    );
+                    // Throw so useZodForm surfaces the error state and the
+                    // caller does NOT treat this as a clean success.
+                    throw new Error(
+                        `Task created, but ${failedLinks.length} link(s) failed to attach.`,
+                    );
                 }
 
                 telemetry.trackSuccess({ taskId: task.id });
