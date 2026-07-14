@@ -71,6 +71,7 @@ a `userId` but stores no contact PII).
 | `AuditPack` | Business record | No | Soft-delete (`deletedAt`); 90-day purge via `data-lifecycle` | Active: indefinite. Soft-deleted: 90-day purge |
 | `AuditPackItem` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `AuditPackShare` | Security ephemeral | No | `expiresAt` expiry (security) | DEFINED — expiry-driven |
+| `AuditPackShareComment` | Business record | Yes (`body`) | Cascade on pack/share/tenant delete; item set-null; status lifecycle (OPEN→RESOLVED) | Indefinite while tenant active — the auditor return-channel record (comments / evidence requests / findings) is part of the audit artefact |
 | `AuditorAccount` | PII subject | Yes | None today — cascade on parent/tenant delete only | UNDEFINED — GDPR erasure question |
 | `AuditorPackAccess` | Security ephemeral | No | None today — cascade on parent/tenant delete only | DEFINED — expiry-driven |
 | `AuthSession` | Security ephemeral | No | `expiresAt` expiry (security) | DEFINED — expiry-driven |

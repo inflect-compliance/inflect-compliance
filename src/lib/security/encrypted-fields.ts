@@ -293,6 +293,16 @@ export const ENCRYPTED_FIELDS: Readonly<Record<string, readonly string[]>> = {
     Incident: ['description'],
     IncidentNotification: ['submissionNote'],
     IncidentTimelineEntry: ['entry'],
+
+    // ─── Auditor return channel (feat/auditor-return-channel) ──
+    //  `body` is free text authored by an EXTERNAL auditor over a
+    //  shared-pack token — a comment, evidence request, or raised
+    //  finding/question flowing back to the tenant. It can quote
+    //  audit gaps, control weaknesses, or the auditor's own
+    //  assessment narrative, so it carries the same attacker value
+    //  as Finding.description. Sanitised on write (sanitizePlainText)
+    //  + encrypted at rest. Not searched (no contains/orderBy).
+    AuditPackShareComment: ['body'],
 } as const;
 
 /** Set of model names with at least one encrypted field. Fast-path check. */

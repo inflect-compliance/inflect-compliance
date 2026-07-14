@@ -113,6 +113,11 @@ const RICH_TEXT_COVERAGE: Readonly<
     Incident: { usecases: ['src/app-layer/usecases/incident.ts'], sanitizer: 'sanitizePlainText' },
     IncidentNotification: { usecases: ['src/app-layer/usecases/incident.ts'], sanitizer: 'sanitizePlainText' },
     IncidentTimelineEntry: { usecases: ['src/app-layer/usecases/incident.ts'], sanitizer: 'sanitizePlainText' },
+    // feat/auditor-return-channel — AuditPackShareComment.body is external-
+    // auditor free text (comment / evidence request / finding / question)
+    // arriving over a public shared-pack token; sanitised at the single
+    // addShareComment write seam before the Epic B middleware encrypts it.
+    AuditPackShareComment: { usecases: ['src/app-layer/usecases/audit-readiness/sharing.ts'], sanitizer: 'sanitizePlainText' },
 };
 
 /**

@@ -11,9 +11,10 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { UpgradeGate } from '@/components/UpgradeGate';
 import { CopyButton } from '@/components/ui/copy-button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { useCelebration } from '@/components/ui/hooks';
+import { Button } from '@/components/ui/button';
+import { useCelebration, useToast } from '@/components/ui/hooks';
 import { scopedMilestone } from '@/lib/celebrations';
-import { Package } from 'lucide-react';
+import { Package, MessageSquare } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { SharePointExportButton } from './SharePointExportButton';
 import { Heading } from '@/components/ui/typography';
@@ -44,14 +45,30 @@ interface PackDetail {
     items: PackItem[];
 }
 
+type ShareCommentKind = 'COMMENT' | 'EVIDENCE_REQUEST' | 'FINDING' | 'QUESTION';
+interface ShareComment {
+    id: string;
+    kind: ShareCommentKind;
+    body: string;
+    authorLabel: string;
+    status: 'OPEN' | 'RESOLVED';
+    auditPackItemId: string | null;
+    createdAt: string;
+    resolvedAt: string | null;
+}
+
 export default function PackDetailPage() {
     const params = useParams();
     const tenantSlug = params.tenantSlug as string;
     const packId = params.packId as string;
     const apiUrl = useCallback((path: string) => `/api/t/${tenantSlug}${path}`, [tenantSlug]);
     const tx = useTranslations('audits');
+    const toast = useToast();
 
     const [pack, setPack] = useState<PackDetail | null>(null);
+    const [comments, setComments] = useState<ShareComment[]>([]);
+    const [openCount, setOpenCount] = useState(0);
+    const [resolvingId, setResolvingId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [freezing, setFreezing] = useState(false);
     const [sharing, setSharing] = useState(false);
@@ -66,7 +83,30 @@ export default function PackDetailPage() {
             .finally(() => setLoading(false));
     }, [apiUrl, packId]);
 
+    const loadComments = useCallback(() => {
+        fetch(apiUrl(`/audits/packs/${packId}/share-comments`))
+            .then(r => r.ok ? r.json() : null)
+            .then((d) => {
+                if (d) { setComments(d.comments || []); setOpenCount(d.openCount || 0); }
+            })
+            .catch(() => { /* non-fatal — feed is supplementary */ });
+    }, [apiUrl, packId]);
+
     useEffect(() => { loadPack(); }, [loadPack]);
+    useEffect(() => { loadComments(); }, [loadComments]);
+
+    const resolveComment = async (id: string) => {
+        setResolvingId(id);
+        try {
+            const res = await fetch(apiUrl(`/audits/packs/${packId}/share-comments/${id}/resolve`), {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+            });
+            if (res.ok) loadComments();
+            else toast.error(tx('packs.auditorActivity.resolveError'));
+        } catch {
+            toast.error(tx('packs.auditorActivity.resolveError'));
+        } finally { setResolvingId(null); }
+    };
 
     const freeze = async () => {
         setFreezing(true);
@@ -301,6 +341,77 @@ export default function PackDetailPage() {
                     </div>
                 ))
             )}
+
+            {/* Auditor activity — the return channel from shared packs */}
+            <div className={cardVariants()} id="auditor-activity">
+                <div className="flex items-center justify-between mb-1">
+                    <Heading level={3} className="inline-flex items-center gap-tight">
+                        <MessageSquare size={16} /> {tx('packs.auditorActivity.title')}
+                        {openCount > 0 && (
+                            <StatusBadge variant="warning">{tx('packs.auditorActivity.openBadge', { count: openCount })}</StatusBadge>
+                        )}
+                    </Heading>
+                </div>
+                <p className="text-xs text-content-subtle mb-3">{tx('packs.auditorActivity.desc')}</p>
+                {comments.length === 0 ? (
+                    <EmptyState
+                        icon={MessageSquare}
+                        title={tx('packs.auditorActivity.empty')}
+                        description={tx('packs.auditorActivity.emptyDesc')}
+                    />
+                ) : (
+                    <ul className="divide-y divide-border-default/50">
+                        {comments.map((c) => {
+                            const item = c.auditPackItemId
+                                ? (pack.items || []).find((i) => i.id === c.auditPackItemId)
+                                : undefined;
+                            let itemName: string | undefined;
+                            if (item) {
+                                try {
+                                    const snap = JSON.parse(item.snapshotJson || '{}');
+                                    itemName = snap.code || snap.title || snap.name || item.entityId;
+                                } catch { itemName = item.entityId; }
+                            }
+                            const actionable = c.kind !== 'COMMENT';
+                            return (
+                                <li key={c.id} className="py-3">
+                                    <div className="flex items-start justify-between gap-compact">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-center gap-tight mb-1">
+                                                <StatusBadge variant={c.kind === 'FINDING' ? 'error' : c.kind === 'EVIDENCE_REQUEST' ? 'warning' : 'info'}>
+                                                    {tx(`packs.auditorActivity.kind.${c.kind}`)}
+                                                </StatusBadge>
+                                                {actionable && (
+                                                    <StatusBadge variant={c.status === 'OPEN' ? 'neutral' : 'success'}>
+                                                        {tx(`packs.auditorActivity.status${c.status}`)}
+                                                    </StatusBadge>
+                                                )}
+                                                <span className="text-xs text-content-subtle">{c.authorLabel}</span>
+                                                <span className="text-xs text-content-subtle">· {formatDateTime(c.createdAt)}</span>
+                                                {itemName && <span className="text-xs text-content-subtle truncate">· {tx('packs.auditorActivity.onItem', { item: itemName })}</span>}
+                                            </div>
+                                            <p className="text-sm whitespace-pre-wrap break-words">{c.body}</p>
+                                        </div>
+                                        {actionable && c.status === 'OPEN' && (
+                                            <RequirePermission resource="audits" action="share">
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    onClick={() => resolveComment(c.id)}
+                                                    loading={resolvingId === c.id}
+                                                    disabled={resolvingId === c.id}
+                                                >
+                                                    {resolvingId === c.id ? tx('packs.auditorActivity.resolving') : tx('packs.auditorActivity.resolve')}
+                                                </Button>
+                                            </RequirePermission>
+                                        )}
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                )}
+            </div>
 
             {/* Export area (placeholder) */}
             {isFrozen && (
