@@ -214,7 +214,12 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // share-with-expiry modal confirm + add-to-pack modal confirm. Each is
 // the single earned primary of a distinct visual region (page CTA / modal
 // confirm) and none share a screen with another primary in the same file.
-const MAX_PRIMARY_COUNT = 150;
+// R3-P1 (2026-07-14) — bumped 150 → 152 for the unified /tests surface: the
+// global "Test plan" create CTA in the /tests header (the canonical
+// entity-create primary — test plans could previously only be born inside a
+// control) + the NewTestPlanModal's create-confirm primary. Each is the single
+// earned primary of a distinct region (page CTA / modal confirm). +2.
+const MAX_PRIMARY_COUNT = 152;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

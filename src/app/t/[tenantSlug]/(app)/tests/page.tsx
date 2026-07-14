@@ -17,6 +17,10 @@ import { UserCombobox } from '@/components/ui/user-combobox';
 import { Combobox } from '@/components/ui/combobox';
 import { ownerDisplayName } from '@/lib/owner-display';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { Button } from '@/components/ui/button';
+import { ToggleGroup } from '@/components/ui/toggle-group';
+import { Plus } from '@/components/ui/icons/nucleo';
+import { NewTestPlanModal } from './_components/NewTestPlanModal';
 import { FilterProvider, useFilterContext, useFilters, useFilterCardVisibility, filtersToCards, selectVisibleFilters } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
@@ -54,6 +58,25 @@ interface TestPlanSummary {
         status: string;
     }>;
 }
+
+// R3-P1 — an automated integration check (IntegrationExecution) for the
+// unified /tests surface's "Automated checks" view.
+interface ControlCheck {
+    id: string;
+    provider: string;
+    automationKey: string;
+    status: string;
+    controlId: string | null;
+    executedAt: string | null;
+    control: { id: string; name: string; code: string | null } | null;
+}
+
+// Humanized check-status labels reuse the R2 controls.health.checkStatus.*
+// keys (rendered elsewhere too); unknown statuses fall back to the raw value.
+const CHECK_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
+    PASSED: 'success', FAILED: 'error', ERROR: 'error',
+    NOT_APPLICABLE: 'neutral', PENDING: 'info', RUNNING: 'info',
+};
 
 const freqLabels = (t: (key: string) => string): Record<string, string> => ({
     AD_HOC: t('freq.adHoc'), DAILY: t('freq.daily'), WEEKLY: t('freq.weekly'),
@@ -106,6 +129,14 @@ function TestsRollupContent() {
     const [plans, setPlans] = useState<TestPlanSummary[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // R3-P1 — segmented view: manual/scheduled Test plans vs Automated checks.
+    // "Show me all my control testing" now has ONE place.
+    const [view, setView] = useState<'plans' | 'checks'>('plans');
+    const [checks, setChecks] = useState<ControlCheck[]>([]);
+    const [checksLoading, setChecksLoading] = useState(false);
+    const [checksLoaded, setChecksLoaded] = useState(false);
+    const [createOpen, setCreateOpen] = useState(false);
+
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
@@ -118,6 +149,19 @@ function TestsRollupContent() {
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { fetchData(); }, [fetchData]);
+
+    // Lazy-load automated checks the first time the Checks view is opened.
+    useEffect(() => {
+        if (view !== 'checks' || checksLoaded) return;
+        let cancelled = false;
+        setChecksLoading(true);
+        fetch(apiUrl('/tests/checks'))
+            .then((r) => (r.ok ? r.json() : { checks: [] }))
+            .then((d) => { if (!cancelled) { setChecks(d.checks ?? []); setChecksLoaded(true); } })
+            .catch(() => { if (!cancelled) setChecksLoaded(true); })
+            .finally(() => { if (!cancelled) setChecksLoading(false); });
+        return () => { cancelled = true; };
+    }, [view, checksLoaded, apiUrl]);
 
     // ─── Bulk actions (canonical BulkActionBar) ───
     const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -205,6 +249,7 @@ function TestsRollupContent() {
             { id: 'name', label: t('colHeaders.name') },
             { id: 'status', label: t('colHeaders.status') },
             { id: 'control', label: t('colHeaders.control') },
+            { id: 'method', label: t('colHeaders.method') },
             { id: 'frequency', label: t('colHeaders.frequency') },
             { id: 'nextDue', label: t('colHeaders.nextDue') },
             { id: 'lastResult', label: t('colHeaders.lastResult') },
@@ -378,6 +423,21 @@ function TestsRollupContent() {
                         </Link>
                     ),
                 },
+                {
+                    // R3-P1 — method column so manual vs automated plans are
+                    // distinguishable on the canonical list (the inherited
+                    // panel already shows one; this must not be less informative).
+                    id: 'method', header: t('colHeaders.method'),
+                    accessorFn: (p) => p.method,
+                    cell: ({ row }) => {
+                        const m = row.original.method;
+                        return (
+                            <StatusBadge variant={m === 'AUTOMATED' ? 'info' : 'neutral'} size="sm">
+                                {t(`method.${m}` as Parameters<typeof t>[0])}
+                            </StatusBadge>
+                        );
+                    },
+                },
                 { id: 'frequency', header: t('colHeaders.frequency'), accessorFn: (p) => FREQ_LABELS[p.frequency] || p.frequency },
                 {
                     id: 'nextDue', header: t('colHeaders.nextDue'), accessorKey: 'nextDueAt',
@@ -406,12 +466,53 @@ function TestsRollupContent() {
         [t, tenantHref, orderColumns, FREQ_LABELS],
     );
 
+    // R3-P1 — columns for the Automated checks view.
+    const checkColumns = useMemo(
+        () =>
+            createColumns<ControlCheck>([
+                {
+                    id: 'check', header: t('checksList.colCheck'), accessorFn: (c) => c.automationKey,
+                    cell: ({ row }) => (
+                        <span className="text-xs font-mono text-content-default">{row.original.automationKey}</span>
+                    ),
+                },
+                {
+                    id: 'control', header: t('colHeaders.control'),
+                    accessorFn: (c) => c.control?.code || c.control?.name || '',
+                    cell: ({ row }) => row.original.control ? (
+                        <Link href={tenantHref(`/controls/${row.original.control.id}`)} className="text-content-muted hover:text-content-emphasis text-xs transition">
+                            {row.original.control.code || row.original.control.name}
+                        </Link>
+                    ) : <span className="text-content-subtle text-xs">—</span>,
+                },
+                {
+                    id: 'provider', header: t('checksList.colProvider'), accessorFn: (c) => c.provider,
+                    cell: ({ row }) => <span className="text-xs text-content-muted">{row.original.provider}</span>,
+                },
+                {
+                    id: 'status', header: t('colHeaders.status'), accessorFn: (c) => c.status,
+                    cell: ({ row }) => (
+                        <StatusBadge variant={CHECK_STATUS_BADGE[row.original.status] ?? 'neutral'} size="sm">
+                            {t(`checkStatus.${row.original.status}` as Parameters<typeof t>[0])}
+                        </StatusBadge>
+                    ),
+                },
+                {
+                    id: 'executedAt', header: t('checksList.colExecuted'), accessorKey: 'executedAt',
+                    cell: ({ row }) => row.original.executedAt ? (
+                        <span className="text-content-muted text-xs">{formatDate(row.original.executedAt)}</span>
+                    ) : <span className="text-content-subtle">—</span>,
+                },
+            ]),
+        [t, tenantHref],
+    );
+
     if (loading) return <div className="p-12 text-center text-content-subtle animate-pulse">{t('list.loading')}</div>;
 
     return (
         <ListPageShell className="animate-fadeIn gap-section">
             <ListPageShell.Header>
-                <div className="flex items-center justify-between">
+                <div className="flex items-start justify-between gap-default">
                     <div>
                         <PageBreadcrumbs
                             items={[
@@ -421,8 +522,26 @@ function TestsRollupContent() {
                             className="mb-1"
                         />
                         <Heading level={1} id="tests-page-title" className="sr-only">{t('list.title')}</Heading>
-                        <p className="text-sm text-content-muted mt-1">{t('list.description')}</p>
+                        {/* R3-P1 — the tests-vs-checks distinction, explained at the
+                            GLOBAL level (not only inline on a control's two tabs). */}
+                        <p className="text-sm text-content-muted mt-1">{t('unified.explanation')}</p>
+                        <div className="mt-3">
+                            <ToggleGroup
+                                ariaLabel={t('unified.viewAria')}
+                                selected={view}
+                                selectAction={(v) => setView(v as 'plans' | 'checks')}
+                                options={[
+                                    { value: 'plans', label: t('unified.tabPlans') },
+                                    { value: 'checks', label: t('unified.tabChecks') },
+                                ]}
+                            />
+                        </div>
                     </div>
+                    {view === 'plans' && (
+                        <Button variant="primary" icon={<Plus />} onClick={() => setCreateOpen(true)} id="tests-create-plan-btn">
+                            {t('unified.testPlanNoun')}
+                        </Button>
+                    )}
                     {/* Nav icon buttons moved into the FilterToolbar's actions
                         slot (left of the column/filter gears), so the header
                         action cluster is now empty — matches the other entity
@@ -431,6 +550,7 @@ function TestsRollupContent() {
             </ListPageShell.Header>
 
             <ListPageShell.Filters className="space-y-section">
+                {view === 'plans' && (<>
                 {/* KPI strip — clickable cards filter the table by status. */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
                     <KpiFilterCard
@@ -501,9 +621,26 @@ function TestsRollupContent() {
                         </>
                     }
                 />
+                </>)}
             </ListPageShell.Filters>
 
             <ListPageShell.Body>
+                {view === 'checks' ? (
+                    <DataTable
+                        fillBody
+                        data={checks}
+                        columns={checkColumns}
+                        getRowId={(c) => c.id}
+                        loading={checksLoading}
+                        selectionEnabled={false}
+                        emptyState={t('checksList.empty')}
+                        resourceName={(p) => p ? t('checksList.entityPlural') : t('checksList.entitySingular')}
+                        data-testid="tests-checks-table"
+                        onRowClick={(row) =>
+                            row.original.control && router.push(tenantHref(`/controls/${row.original.control.id}`))
+                        }
+                    />
+                ) : (
                 <DataTable
                     fillBody
                     data={sortedPlans}
@@ -551,7 +688,10 @@ function TestsRollupContent() {
                         )
                     }
                 />
+                )}
             </ListPageShell.Body>
+
+            <NewTestPlanModal open={createOpen} onClose={() => setCreateOpen(false)} onCreated={fetchData} />
         </ListPageShell>
     );
 }

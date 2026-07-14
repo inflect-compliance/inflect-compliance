@@ -145,6 +145,10 @@ export function InheritedTestPlansPanel({
             <InlineNotice variant="info">
                 {t('inherited.testsNotice', { entity: entityWord })}
             </InlineNotice>
+            {/* R3-P1 — the inherited view shows manual test PLANS only; automated
+                integration checks are per-control and not rolled up here, so the
+                picture would otherwise read as silently half-complete. */}
+            <p className="text-xs text-content-subtle">{t('inherited.checksNote')}</p>
             <DataTable<InheritedTestPlanRow>
                 data={rows}
                 columns={columns}

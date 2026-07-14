@@ -547,6 +547,37 @@ export async function listExecutionsForControl(
 }
 
 /**
+ * R3-P1 — tenant-wide automated-check history (IntegrationExecution across the
+ * whole tenant, not scoped to a single control). Backs the "Automated checks"
+ * view on the unified /tests surface, so "show me all my control testing" has
+ * ONE place instead of the checks being visible only per-control. Carries the
+ * control ref so each check row names the control it exercised.
+ */
+export async function listAllControlChecks(
+    ctx: RequestContext,
+    options: { limit?: number } = {}
+) {
+    return runInTenantContext(ctx, (db) =>
+        db.integrationExecution.findMany({
+            where: { tenantId: ctx.tenantId },
+            select: {
+                id: true,
+                provider: true,
+                automationKey: true,
+                status: true,
+                controlId: true,
+                triggeredBy: true,
+                errorMessage: true,
+                executedAt: true,
+                control: { select: { id: true, name: true, code: true } },
+            },
+            orderBy: { executedAt: 'desc' },
+            take: options.limit ?? 200,
+        })
+    );
+}
+
+/**
  * P1 — list a CONNECTION's check executions (independent of any control).
  * Powers the per-connection outcome view so a connector's value doesn't
  * depend on which controls happen to be wired to it.
