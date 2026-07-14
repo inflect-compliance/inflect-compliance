@@ -199,13 +199,31 @@ describe('sanitizePlainText — strips everything', () => {
         expect(out).toContain('tail');
     });
 
-    it('decodes encoded angle brackets so a future renderer cannot re-emit `<script>`', () => {
+    it('does NOT reconstitute a <script> from an entity-encoded payload (double-unescape XSS)', () => {
+        // Regression: the old "strip tags THEN decode" order let a
+        // pre-encoded `&lt;script&gt;` survive the stripper and then decode
+        // back into a live `<script>`. Encoded and raw payloads must be
+        // treated identically — the script is removed, not re-emitted.
         const out = sanitizePlainText('&lt;script&gt;alert(1)&lt;/script&gt;');
-        // The literal string the user would see when they read the
-        // field verbatim. Whether it then reaches a markdown renderer
-        // or PDF generator, no `<script>` element ever materialises
-        // because there's no script tag in the source HTML.
-        expect(out).toBe('<script>alert(1)</script>');
+        expect(out).not.toMatch(/<script/i);
+        expect(out).not.toMatch(/alert/);
+    });
+
+    it('strips an entity-encoded event-handler tag (no live <img onerror>)', () => {
+        const out = sanitizePlainText('&lt;img src=x onerror=alert(document.cookie)&gt;');
+        expect(out).not.toMatch(/<img/i);
+        expect(out).not.toMatch(/onerror/i);
+    });
+
+    it('resists MULTI-level entity encoding (&amp;lt;script&amp;gt;)', () => {
+        const out = sanitizePlainText('&amp;lt;script&amp;gt;alert(1)&amp;lt;/script&amp;gt;');
+        expect(out).not.toMatch(/<script/i);
+        expect(out).not.toMatch(/alert/);
+    });
+
+    it('resists numeric-entity encoding (&#60;script&#62; / &#x3c;)', () => {
+        expect(sanitizePlainText('&#60;script&#62;alert(1)&#60;/script&#62;')).not.toMatch(/<script/i);
+        expect(sanitizePlainText('&#x3c;script&#x3e;alert(1)&#x3c;/script&#x3e;')).not.toMatch(/<script/i);
     });
 
     it('decodes &amp; and &quot; and &#39;', () => {
