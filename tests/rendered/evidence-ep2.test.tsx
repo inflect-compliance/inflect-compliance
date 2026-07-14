@@ -210,7 +210,7 @@ describe('EP-2 — <EvidenceDetailSheet>', () => {
     it('shows the empty-history state when there are no reviews', () => {
         renderSheet(imageEvidence({ reviews: [] }));
         expect(
-            screen.getByText('No review activity yet.'),
+            screen.getByText('No review activity yet'),
         ).toBeInTheDocument();
     });
 
