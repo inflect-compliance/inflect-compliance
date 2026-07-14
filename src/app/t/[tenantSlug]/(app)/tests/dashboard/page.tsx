@@ -243,9 +243,9 @@ export default function TestDashboardPage() {
                     {/* R3-P3 — disambiguate the three "coverage/readiness" surfaces
                         so "test coverage" isn't confused with the risk/asset
                         Coverage map or an audit-cycle readiness score. */}
-                    <p className="text-xs text-content-subtle mb-4">
+                    <p className="text-xs text-content-muted mb-4">
                         {t('dashboard.fwCoverageVsCoverage')}{' '}
-                        <Link href={tenantHref('/coverage')} className={textLinkVariants({ tone: 'link' })}>{t('dashboard.coverageMapLink')}</Link>
+                        <Link href={tenantHref('/coverage')} className={textLinkVariants({ tone: 'underline' })}>{t('dashboard.coverageMapLink')}</Link>
                     </p>
                     <div className="space-y-section animate-fadeIn">
                         {readiness.map(fw => (

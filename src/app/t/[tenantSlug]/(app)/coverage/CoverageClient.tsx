@@ -163,9 +163,9 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
             {/* R3-P3 — disambiguate this risk↔control↔asset coverage map from
                 the test dashboard's "framework test coverage" (test-plan/run
                 coverage) and audit-cycle readiness scores. */}
-            <p className="text-xs text-content-subtle" id="coverage-disambiguation">
+            <p className="text-xs text-content-muted" id="coverage-disambiguation">
                 {t('vsTestCoverage')}{' '}
-                <Link href={tenantHref('/tests/dashboard')} className={textLinkVariants({ tone: 'link' })}>{t('testCoverageLink')}</Link>
+                <Link href={tenantHref('/tests/dashboard')} className={textLinkVariants({ tone: 'underline' })}>{t('testCoverageLink')}</Link>
             </p>
 
             {/* ── KPI Strip: 3 Coverage Donuts ────────────────────── */}
