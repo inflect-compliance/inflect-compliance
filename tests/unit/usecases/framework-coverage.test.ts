@@ -291,7 +291,7 @@ describe('generateReadinessReport', () => {
             { id: 'r-1', code: 'A', title: 'X', section: 'Org', sortOrder: 1 },
         ]);
         tenantDb.controlRequirementLink.findMany.mockResolvedValueOnce([
-            { requirementId: 'r-1', control: { id: 'c-1', code: 'CC1', name: 'NA Ctrl', status: 'NOT_APPLICABLE', applicabilityJustification: 'Justified because X', tasks: [], evidence: [] } },
+            { requirementId: 'r-1', control: { id: 'c-1', code: 'CC1', name: 'NA Ctrl', status: 'NOT_APPLICABLE', applicabilityJustification: 'Justified because X', tasks: [], evidenceControlLinks: [] } },
         ]);
 
         const result = await generateReadinessReport(ctx, 'iso');
@@ -308,7 +308,7 @@ describe('generateReadinessReport', () => {
             { id: 'r-1', code: 'A', title: 'X', section: 'Org', sortOrder: 1 },
         ]);
         tenantDb.controlRequirementLink.findMany.mockResolvedValueOnce([
-            { requirementId: 'r-1', control: { id: 'c-1', code: 'CC1', name: 'NA', status: 'NOT_APPLICABLE', applicabilityJustification: null, tasks: [], evidence: [] } },
+            { requirementId: 'r-1', control: { id: 'c-1', code: 'CC1', name: 'NA', status: 'NOT_APPLICABLE', applicabilityJustification: null, tasks: [], evidenceControlLinks: [] } },
         ]);
 
         const result = await generateReadinessReport(ctx, 'iso');
@@ -323,8 +323,8 @@ describe('generateReadinessReport', () => {
             { id: 'r-2', code: 'B', title: 'Y', section: 'Org', sortOrder: 2 },
         ]);
         tenantDb.controlRequirementLink.findMany.mockResolvedValueOnce([
-            { requirementId: 'r-1', control: { id: 'c-1', code: 'CC1', name: 'No-Evidence', status: 'IMPLEMENTED', description: '', tasks: [], evidence: [] } },
-            { requirementId: 'r-2', control: { id: 'c-2', code: 'CC2', name: 'Has-Evidence', status: 'IMPLEMENTED', description: '', tasks: [], evidence: [{ id: 'e-1', status: 'APPROVED', expiredAt: null, isArchived: false, deletedAt: null }] } },
+            { requirementId: 'r-1', control: { id: 'c-1', code: 'CC1', name: 'No-Evidence', status: 'IMPLEMENTED', description: '', tasks: [], evidenceControlLinks: [] } },
+            { requirementId: 'r-2', control: { id: 'c-2', code: 'CC2', name: 'Has-Evidence', status: 'IMPLEMENTED', description: '', tasks: [], evidenceControlLinks: [{ evidenceId: 'e-1', evidence: { id: 'e-1', status: 'APPROVED', expiredAt: null, isArchived: false, deletedAt: null, title: 'E1' } }] } },
         ]);
 
         const result = await generateReadinessReport(ctx, 'iso');
@@ -343,7 +343,7 @@ describe('generateReadinessReport', () => {
             { id: 'r-1', code: 'A', title: 'X', section: 'Org', sortOrder: 1 },
         ]);
         tenantDb.controlRequirementLink.findMany.mockResolvedValueOnce([
-            { requirementId: 'r-1', control: { id: 'c-1', code: 'CC1', name: 'X', status: 'IMPLEMENTED', description: '', evidence: [{ id: 'e-1' }],
+            { requirementId: 'r-1', control: { id: 'c-1', code: 'CC1', name: 'X', status: 'IMPLEMENTED', description: '', evidenceControlLinks: [{ evidenceId: 'e-1', evidence: { id: 'e-1' } }],
               tasks: [
                   { id: 't-1', status: 'OPEN', dueAt: past, title: 'Open Overdue' },
                   { id: 't-2', status: 'RESOLVED', dueAt: past, title: 'Resolved Past Due' },
@@ -370,7 +370,7 @@ describe('generateReadinessReport', () => {
             { id: 'r-1', code: 'A', title: 'X', section: 'Org', sortOrder: 1 },
         ]);
         tenantDb.controlRequirementLink.findMany.mockResolvedValueOnce([
-            { requirementId: 'r-1', control: { id: 'c-1', code: 'CC1', name: 'X', status: 'IMPLEMENTED', description: '', evidence: [],
+            { requirementId: 'r-1', control: { id: 'c-1', code: 'CC1', name: 'X', status: 'IMPLEMENTED', description: '', evidenceControlLinks: [],
               tasks: [
                   { id: 't-1', status: 'OPEN', dueAt: past, title: 'A' },
                   { id: 't-2', status: 'OPEN', dueAt: past, title: 'B' },
@@ -395,10 +395,10 @@ describe('generateReadinessReport', () => {
             id: `t-${i}`, status: 'OPEN', dueAt: past, title: `T${i}`,
         }));
         const evidenceMissing = Array.from({ length: 50 }, (_, i) => ({
-            id: `c-${i}`, code: `C${i}`, name: `Ctrl${i}`, status: 'IMPLEMENTED', description: '', evidence: [], tasks: [],
+            id: `c-${i}`, code: `C${i}`, name: `Ctrl${i}`, status: 'IMPLEMENTED', description: '', evidenceControlLinks: [], tasks: [],
         }));
         tenantDb.controlRequirementLink.findMany.mockResolvedValueOnce([
-            { requirementId: 'r-1', control: { id: 'c-with-tasks', code: 'C', name: 'C', status: 'IMPLEMENTED', description: '', evidence: [], tasks } },
+            { requirementId: 'r-1', control: { id: 'c-with-tasks', code: 'C', name: 'C', status: 'IMPLEMENTED', description: '', evidenceControlLinks: [], tasks } },
             ...evidenceMissing.map((c) => ({ requirementId: 'r-X', control: c })),
         ]);
 
@@ -417,7 +417,7 @@ describe('generateReadinessReport', () => {
             { id: 'r-2', code: 'B', title: 'Y', section: 'Org', sortOrder: 2 },
         ]);
         // Same control on both links.
-        const oneControl = { id: 'c-1', code: 'CC1', name: 'X', status: 'IMPLEMENTED', description: '', evidence: [], tasks: [] };
+        const oneControl = { id: 'c-1', code: 'CC1', name: 'X', status: 'IMPLEMENTED', description: '', evidenceControlLinks: [], tasks: [] };
         tenantDb.controlRequirementLink.findMany.mockResolvedValueOnce([
             { requirementId: 'r-1', control: oneControl },
             { requirementId: 'r-2', control: oneControl },
@@ -444,11 +444,11 @@ describe('exportReadinessReport', () => {
         tenantDb.controlRequirementLink.findMany.mockResolvedValueOnce([
             { requirementId: 'r-1', control: {
                 id: 'c-na', code: 'NA1', name: 'NotAppl', status: 'NOT_APPLICABLE', description: 'why',
-                evidence: [], tasks: [],
+                evidenceControlLinks: [], tasks: [],
             }},
             { requirementId: 'r-1', control: {
                 id: 'c-missing', code: 'M1', name: 'NoEv', status: 'IMPLEMENTED', description: '',
-                evidence: [], tasks: [{ id: 't-1', status: 'OPEN', dueAt: past, title: 'Late' }],
+                evidenceControlLinks: [], tasks: [{ id: 't-1', status: 'OPEN', dueAt: past, title: 'Late' }],
             }},
         ]);
     }

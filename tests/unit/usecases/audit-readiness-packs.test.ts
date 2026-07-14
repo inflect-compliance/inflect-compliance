@@ -340,7 +340,7 @@ describe('freezeAuditPack', () => {
             items: [{ id: 'i-1', entityType: 'CONTROL', entityId: 'c-1', snapshotJson: '{}' }],
         });
         mockTdb.control.findFirst.mockResolvedValueOnce({
-            id: 'c-1', code: 'CC1', name: 't', status: 'ACTIVE', tasks: [], evidence: [], requirementLinks: [],
+            id: 'c-1', code: 'CC1', name: 't', status: 'ACTIVE', tasks: [], evidenceControlLinks: [], requirementLinks: [],
         });
         mockTdb.auditPack.update.mockResolvedValueOnce({ id: 'p-1', status: 'FROZEN' });
         mockGetSoA.mockResolvedValueOnce({
@@ -381,7 +381,7 @@ describe('freezeAuditPack', () => {
         mockTdb.control.findFirst.mockResolvedValueOnce({
             id: 'c-1', code: 'CC1', name: 'Control Env', status: 'ACTIVE',
             tasks: [{ status: 'RESOLVED' }, { status: 'OPEN' }],
-            evidence: [{ id: 'e-1' }],
+            evidenceControlLinks: [{ id: 'ecl-1' }],
             requirementLinks: [{ requirement: { code: 'A.1', title: 'X' } }],
         });
         mockTdb.auditPack.update.mockResolvedValueOnce({ id: 'p-1', status: 'FROZEN' });
@@ -534,8 +534,8 @@ describe('previewDefaultPack', () => {
         ]);
         // Single curated control.findMany — status-filtered, evidence joined inline.
         mockTdb.control.findMany.mockResolvedValueOnce([
-            { id: 'ctrl-1', evidence: [{ id: 'e-1' }, { id: 'e-2' }] },
-            { id: 'ctrl-2', evidence: [{ id: 'e-1' /* dupe */ }] },
+            { id: 'ctrl-1', evidenceControlLinks: [{ evidenceId: 'e-1' }, { evidenceId: 'e-2' }] },
+            { id: 'ctrl-2', evidenceControlLinks: [{ evidenceId: 'e-1' /* dupe */ }] },
         ]);
         mockTdb.policy.findMany.mockResolvedValueOnce([
             { id: 'pol-sec', title: 'InfoSec Policy', category: 'Security' },
@@ -565,7 +565,7 @@ describe('previewDefaultPack', () => {
         mockTdb.controlRequirementLink.findMany.mockResolvedValueOnce([]); // no mappings
         // Single control.findMany — no {id in} filter, but still status-filtered.
         mockTdb.control.findMany.mockResolvedValueOnce([
-            { id: 'c-all-1', evidence: [] }, { id: 'c-all-2', evidence: [] }, { id: 'c-all-3', evidence: [] },
+            { id: 'c-all-1', evidenceControlLinks: [] }, { id: 'c-all-2', evidenceControlLinks: [] }, { id: 'c-all-3', evidenceControlLinks: [] },
         ]);
         mockTdb.policy.findMany.mockResolvedValueOnce([]);
         mockTdb.task.findMany.mockResolvedValueOnce([]);

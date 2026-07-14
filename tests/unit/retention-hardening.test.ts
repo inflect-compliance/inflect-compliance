@@ -92,15 +92,20 @@ describe('Retention Hardening — CI guardrail', () => {
         const content = fs.readFileSync(
             path.join(SRC_ROOT, 'app-layer/usecases/audit-readiness-scoring.ts'), 'utf-8'
         );
-        // Find all evidence query blocks (those with 'where' nearby), each should have isArchived filter
-        // Use regex to find evidence relation queries: evidence: { where: ... select: ... }
-        const evidenceQueryPattern = /evidence:\s*\{[^}]*where:/g;
+        // EP-3: Evidence↔Control is a many-to-many join now, so the evidence
+        // qualifier is a relation filter on the join — `evidence: <predicate>`.
+        // EP-1 routes every readiness evidence query through the shared
+        // `coverageQualifyingEvidenceWhere` predicate (which itself enforces
+        // isArchived=false + deletedAt=null + unexpired). Matching that call is
+        // the guardrail: a raw evidence query that skips the predicate would
+        // not match and would drop the archived/deleted/expired exclusions.
+        const evidenceQueryPattern = /evidence:\s*coverageQualifyingEvidenceWhere\(/g;
         const matches = content.match(evidenceQueryPattern);
         // Must have at least 2 (ISO + NIS2)
         expect(matches?.length).toBeGreaterThanOrEqual(2);
-        // Each match must include isArchived
+        // Each match must route through the qualifying predicate.
         for (const match of matches || []) {
-            expect(match).toBeDefined();
+            expect(match).toContain('coverageQualifyingEvidenceWhere');
         }
     });
 

@@ -34,6 +34,11 @@ jest.mock('@/lib/prisma', () => ({
         evidence: {
             create: jest.fn(),
         },
+        // Evidence↔Control is a many-to-many join now; integration evidence
+        // is attached to the control via an EvidenceControlLink row.
+        evidenceControlLink: {
+            create: jest.fn(),
+        },
         finding: {
             findFirst: jest.fn(),
             create: jest.fn(),

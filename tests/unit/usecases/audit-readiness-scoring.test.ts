@@ -217,12 +217,15 @@ describe('computeReadiness — evidence query excludes archived/deleted', () => 
         // EP-1 routes this through `coverageQualifyingEvidenceWhere`, so the
         // sub-select now ALSO requires APPROVED + unexpired (the OR branch),
         // not merely non-archived / non-deleted.
-        expect(evidenceQuery.select.evidence.where).toMatchObject({
+        // Evidence↔Control is a many-to-many join now; the qualifying
+        // predicate lives on the nested `evidence` relation filter of the
+        // `evidenceControlLinks` sub-select.
+        expect(evidenceQuery.select.evidenceControlLinks.where.evidence).toMatchObject({
             status: 'APPROVED',
             isArchived: false,
             deletedAt: null,
         });
-        expect(evidenceQuery.select.evidence.where.OR).toBeDefined();
+        expect(evidenceQuery.select.evidenceControlLinks.where.evidence.OR).toBeDefined();
     });
 });
 

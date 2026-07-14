@@ -118,7 +118,7 @@ interface ControlListItem {
     frequency: string | null;
     /** Widened to include id/email so the owner filter can resolve + display. */
     owner: { id: string; name: string | null; email: string | null } | null;
-    _count?: { evidenceLinks?: number; evidence?: number };
+    _count?: { evidenceLinks?: number; evidenceControlLinks?: number };
     /**
      * Unified linked-task counts (TaskLink CONTROL link OR the
      * `controlId` FK), supplied by `listControls`. The Tasks column
