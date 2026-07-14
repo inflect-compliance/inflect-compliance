@@ -25,6 +25,8 @@ import { DatePicker } from "@/components/ui/date-picker/date-picker";
 import { parseYMD, startOfUtcDay, toYMD } from "@/components/ui/date-picker/date-utils";
 import { PanelActivityFeed } from "./PanelActivityFeed";
 import { EvidenceUploadSection } from "@/components/evidence/EvidenceUploadSection";
+import { TERMINAL_WORK_ITEM_STATUSES } from "@/app-layer/domain/work-item-status";
+import { Button } from "@/components/ui/button";
 import type { ControlTask } from "./ControlTaskRows";
 
 type OptT = (key: string) => string;
@@ -48,6 +50,14 @@ const buildTypeOptions = (t: OptT): ComboboxOption[] => [
     { value: "INCIDENT", label: t("typeLabels.INCIDENT") },
     { value: "IMPROVEMENT", label: t("typeLabels.IMPROVEMENT") },
 ];
+// TP-4 — the panel now carries the FULL field set, incl. status.
+// RESOLVED is retired from the picker (redundant with CLOSED). Status
+// commits through the setTaskStatus endpoint (state machine + TP-3
+// source reconciliation), NOT a raw field PATCH. Labels come from the
+// shared task-status map — no local status→variant redeclaration.
+const SELECTABLE_STATUSES = ["OPEN", "TRIAGED", "IN_PROGRESS", "BLOCKED", "CLOSED", "CANCELED"];
+const buildStatusOptions = (t: OptT): ComboboxOption[] =>
+    SELECTABLE_STATUSES.map((value) => ({ value, label: taskStatusLabel(value, t) }));
 type Tab = "details" | "activity";
 
 interface TaskDetail {
@@ -69,6 +79,7 @@ export function TaskEditPanel({
     task,
     canWrite,
     onSaved,
+    variant = "panel",
 }: {
     tenantSlug: string;
     task: ControlTask;
@@ -76,12 +87,21 @@ export function TaskEditPanel({
     /** Retained for API compatibility (AsidePanel owns the close affordance). */
     onClose?: () => void;
     onSaved: () => void;
+    /**
+     * TP-4 — `panel` (default): the docked quick-view with its own
+     * heading + Details/Activity tabs + evidence upload. `form`: just
+     * the autosave field set, for embedding in the task-detail edit
+     * modal (retires the old EditTaskModal). Same fields either way —
+     * ONE edit surface, no divergent field sets.
+     */
+    variant?: "panel" | "form";
 }) {
     const tx = useTranslations("controls");
     const tTask = useTranslations("tasks");
     const SEVERITY_OPTIONS = useMemo(() => buildSeverityOptions(tTask), [tTask]);
     const PRIORITY_OPTIONS = useMemo(() => buildPriorityOptions(tTask), [tTask]);
     const TYPE_OPTIONS = useMemo(() => buildTypeOptions(tTask), [tTask]);
+    const STATUS_OPTIONS = useMemo(() => buildStatusOptions(tTask), [tTask]);
     const [tab, setTab] = useState<Tab>("details");
     const base = `/api/t/${tenantSlug}/tasks/${task.id}`;
 
@@ -96,6 +116,12 @@ export function TaskEditPanel({
     const [priority, setPriority] = useState("P2");
     const [dueAt, setDueAt] = useState("");
     const [assigneeId, setAssigneeId] = useState("");
+    // TP-4 — status is part of the field set now. It commits through
+    // the setTaskStatus endpoint (never a raw PATCH). Terminal moves
+    // (CLOSED / CANCELED) collect a required resolution note first.
+    const [status, setStatus] = useState(task.status ?? "OPEN");
+    const [pendingTerminalStatus, setPendingTerminalStatus] = useState<string | null>(null);
+    const [resolutionDraft, setResolutionDraft] = useState("");
     const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
     const [error, setError] = useState("");
     const loadedRef = useRef(false);
@@ -128,6 +154,7 @@ export function TaskEditPanel({
                 setPriority(t.priority ?? "P2");
                 setDueAt(t.dueAt ? String(t.dueAt).slice(0, 10) : "");
                 setAssigneeId(t.assigneeUserId ?? "");
+                setStatus(t.status ?? "OPEN");
                 fieldsRef.current = {
                     title: t.title ?? "",
                     description: t.description ?? "",
@@ -225,6 +252,254 @@ export function TaskEditPanel({
         [canWrite, base, onSaved, tx],
     );
 
+    /**
+     * Status persists via the dedicated /status endpoint (setTaskStatus)
+     * so the work-item state machine + TP-3 source reconciliation apply.
+     * Terminal moves need a resolution note; non-terminal commit at once.
+     */
+    const commitStatus = useCallback(
+        async (nextStatus: string, resolution?: string) => {
+            if (!canWrite) return;
+            setSaveState("saving");
+            setError("");
+            try {
+                const res = await fetch(`${base}/status`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(resolution ? { status: nextStatus, resolution } : { status: nextStatus }),
+                });
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    throw new Error(
+                        (typeof data?.error === "string" && data.error) || data?.message || tx("detail.errors.saveFailed"),
+                    );
+                }
+                setStatus(nextStatus);
+                setPendingTerminalStatus(null);
+                setResolutionDraft("");
+                setSaveState("saved");
+                onSaved();
+            } catch (err) {
+                setError(err instanceof Error ? err.message : tx("detail.errors.saveFailed"));
+                setSaveState("error");
+            }
+        },
+        [canWrite, base, onSaved, tx],
+    );
+
+    const handleStatusChange = useCallback(
+        (next: string) => {
+            if (!next || next === status) return;
+            if ((TERMINAL_WORK_ITEM_STATUSES as readonly string[]).includes(next)) {
+                setResolutionDraft("");
+                setPendingTerminalStatus(next);
+                return;
+            }
+            void commitStatus(next);
+        },
+        [status, commitStatus],
+    );
+
+    const details = (
+        <div className="space-y-default">
+            {error && (
+                <div className="rounded-lg border border-border-error bg-bg-error px-3 py-2 text-sm text-content-error" role="alert">
+                    {error}
+                </div>
+            )}
+            {/* Auto-saved edit form (PATCH on change/blur) — no Save button. */}
+            <div className="space-y-default" data-testid="task-edit-form">
+                <fieldset className="space-y-default" disabled={!canWrite}>
+                    <div>
+                        <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-title">
+                            {tx("detail.fields.title")} <RequiredMarker />
+                        </label>
+                        <input
+                            id="task-panel-title"
+                            type="text"
+                            className="input w-full"
+                            value={title}
+                            onChange={(e) => update({ title: e.target.value }, false)}
+                            onBlur={commitNow}
+                            required
+                            aria-invalid={titleInvalid || undefined}
+                        />
+                    </div>
+                    <div>
+                        <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-description">
+                            {tx("detail.fields.description")}
+                        </label>
+                        <textarea
+                            id="task-panel-description"
+                            className="input w-full"
+                            rows={3}
+                            value={description}
+                            onChange={(e) => update({ description: e.target.value }, false)}
+                            onBlur={commitNow}
+                        />
+                    </div>
+                    {/* Status — commits via setTaskStatus (state machine + reconciliation). */}
+                    <div>
+                        <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-status">{tx("detail.fields.status")}</label>
+                        <Combobox
+                            id="task-panel-status"
+                            name="status"
+                            options={STATUS_OPTIONS}
+                            selected={STATUS_OPTIONS.find((o) => o.value === (pendingTerminalStatus ?? status)) ?? null}
+                            setSelected={(o) => handleStatusChange(o?.value ?? status)}
+                            disabled={!canWrite}
+                            hideSearch
+                            matchTriggerWidth
+                            forceDropdown
+                            buttonProps={{ className: "w-full", size: "sm" }}
+                            caret
+                        />
+                        {pendingTerminalStatus && (
+                            <div className="mt-2 space-y-tight" data-testid="task-panel-terminal-prompt">
+                                <label className="block text-sm text-content-default" htmlFor="task-panel-resolution">
+                                    {tx("detail.fields.resolution")} <RequiredMarker />
+                                </label>
+                                <textarea
+                                    id="task-panel-resolution"
+                                    className="input w-full"
+                                    rows={2}
+                                    placeholder={tx("detail.fields.resolutionPlaceholder")}
+                                    value={resolutionDraft}
+                                    onChange={(e) => setResolutionDraft(e.target.value)}
+                                />
+                                <div className="flex gap-tight">
+                                    <Button
+                                        variant="primary"
+                                        size="sm"
+                                        disabled={!resolutionDraft.trim() || saveState === "saving"}
+                                        onClick={() => void commitStatus(pendingTerminalStatus, resolutionDraft.trim())}
+                                        data-testid="task-panel-terminal-apply"
+                                    >
+                                        {tx("detail.status.apply")}
+                                    </Button>
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        disabled={saveState === "saving"}
+                                        onClick={() => {
+                                            setPendingTerminalStatus(null);
+                                            setResolutionDraft("");
+                                        }}
+                                    >
+                                        {tx("detail.status.cancel")}
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    <div>
+                        <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-type">{tx("detail.fields.type")}</label>
+                        <Combobox
+                            id="task-panel-type"
+                            name="type"
+                            options={TYPE_OPTIONS}
+                            selected={TYPE_OPTIONS.find((o) => o.value === type) ?? null}
+                            setSelected={(o) => update({ type: o?.value ?? "TASK" }, true)}
+                            disabled={!canWrite}
+                            hideSearch
+                            matchTriggerWidth
+                            forceDropdown
+                            buttonProps={{ className: "w-full", size: "sm" }}
+                            caret
+                        />
+                    </div>
+                    <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
+                        <div>
+                            <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-severity">{tx("detail.fields.severity")}</label>
+                            <Combobox
+                                id="task-panel-severity"
+                                name="severity"
+                                options={SEVERITY_OPTIONS}
+                                selected={SEVERITY_OPTIONS.find((o) => o.value === severity) ?? null}
+                                setSelected={(o) => update({ severity: o?.value ?? "MEDIUM" }, true)}
+                                disabled={!canWrite}
+                                hideSearch
+                                matchTriggerWidth
+                                forceDropdown
+                                buttonProps={{ className: "w-full", size: "sm" }}
+                                caret
+                            />
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-priority">{tx("detail.fields.priority")}</label>
+                            <Combobox
+                                id="task-panel-priority"
+                                name="priority"
+                                options={PRIORITY_OPTIONS}
+                                selected={PRIORITY_OPTIONS.find((o) => o.value === priority) ?? null}
+                                setSelected={(o) => update({ priority: o?.value ?? "P2" }, true)}
+                                disabled={!canWrite}
+                                hideSearch
+                                matchTriggerWidth
+                                forceDropdown
+                                buttonProps={{ className: "w-full", size: "sm" }}
+                                caret
+                            />
+                        </div>
+                    </div>
+                    <FormField label={tx("detail.fields.dueDate")}>
+                        <DatePicker
+                            id="task-panel-due"
+                            className="w-full"
+                            placeholder={tx("detail.fields.selectDate")}
+                            clearable
+                            align="start"
+                            value={parseYMD(dueAt)}
+                            onChange={(next) => update({ dueAt: toYMD(next) ?? "" }, true)}
+                            disabledDays={{ before: startOfUtcDay(new Date()) }}
+                            aria-label={tx("detail.fields.dueDateAria")}
+                        />
+                    </FormField>
+                    <FormField label={tx("detail.fields.assignee")} description={tx("detail.fields.ownerHint")}>
+                        <UserCombobox
+                            id="task-panel-assignee"
+                            name="assigneeUserId"
+                            tenantSlug={tenantSlug}
+                            disabled={!canWrite}
+                            size="sm"
+                            selectedId={assigneeId || null}
+                            onChange={(userId) => {
+                                setAssigneeId(userId ?? "");
+                                void commitAssignee(userId ?? "");
+                            }}
+                            placeholder={task.assignee?.name || tx("detail.fields.unassigned")}
+                        />
+                    </FormField>
+                </fieldset>
+                {canWrite && (
+                    <p
+                        className="text-xs text-content-muted"
+                        data-testid="task-edit-autosave-status"
+                        aria-live="polite"
+                    >
+                        {saveState === "saving"
+                            ? tx("detail.autosave.saving")
+                            : saveState === "saved"
+                              ? tx("detail.autosave.saved")
+                              : saveState === "error"
+                                ? tx("detail.autosave.notSaved")
+                                : tx("detail.autosave.auto")}
+                    </p>
+                )}
+            </div>
+        </div>
+    );
+
+    // `form` variant — just the autosave field set, for the task-detail
+    // edit modal. No heading / tabs / activity / evidence chrome.
+    if (variant === "form") {
+        return (
+            <div className="space-y-default" role="region" aria-label={tx("detail.editorAria.task")} data-testid="task-edit-panel">
+                {details}
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-default" role="region" aria-label={tx("detail.editorAria.task")} data-testid="task-edit-panel">
             <div className="flex items-center gap-tight">
@@ -243,137 +518,7 @@ export function TaskEditPanel({
 
             {tab === "details" ? (
                 <div className="space-y-default">
-                    {error && (
-                        <div className="rounded-lg border border-border-error bg-bg-error px-3 py-2 text-sm text-content-error" role="alert">
-                            {error}
-                        </div>
-                    )}
-                    {/* Auto-saved edit form (PATCH on change/blur) — no Save button. */}
-                    <div className="space-y-default" data-testid="task-edit-form">
-                        <fieldset className="space-y-default" disabled={!canWrite}>
-                            <div>
-                                <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-title">
-                                    {tx("detail.fields.title")} <RequiredMarker />
-                                </label>
-                                <input
-                                    id="task-panel-title"
-                                    type="text"
-                                    className="input w-full"
-                                    value={title}
-                                    onChange={(e) => update({ title: e.target.value }, false)}
-                                    onBlur={commitNow}
-                                    required
-                                    aria-invalid={titleInvalid || undefined}
-                                />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-description">
-                                    {tx("detail.fields.description")}
-                                </label>
-                                <textarea
-                                    id="task-panel-description"
-                                    className="input w-full"
-                                    rows={3}
-                                    value={description}
-                                    onChange={(e) => update({ description: e.target.value }, false)}
-                                    onBlur={commitNow}
-                                />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-type">{tx("detail.fields.type")}</label>
-                                <Combobox
-                                    id="task-panel-type"
-                                    name="type"
-                                    options={TYPE_OPTIONS}
-                                    selected={TYPE_OPTIONS.find((o) => o.value === type) ?? null}
-                                    setSelected={(o) => update({ type: o?.value ?? "TASK" }, true)}
-                                    disabled={!canWrite}
-                                    hideSearch
-                                    matchTriggerWidth
-                                    forceDropdown
-                                    buttonProps={{ className: "w-full", size: "sm" }}
-                                    caret
-                                />
-                            </div>
-                            <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
-                                <div>
-                                    <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-severity">{tx("detail.fields.severity")}</label>
-                                    <Combobox
-                                        id="task-panel-severity"
-                                        name="severity"
-                                        options={SEVERITY_OPTIONS}
-                                        selected={SEVERITY_OPTIONS.find((o) => o.value === severity) ?? null}
-                                        setSelected={(o) => update({ severity: o?.value ?? "MEDIUM" }, true)}
-                                        disabled={!canWrite}
-                                        hideSearch
-                                        matchTriggerWidth
-                                        forceDropdown
-                                        buttonProps={{ className: "w-full", size: "sm" }}
-                                        caret
-                                    />
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-priority">{tx("detail.fields.priority")}</label>
-                                    <Combobox
-                                        id="task-panel-priority"
-                                        name="priority"
-                                        options={PRIORITY_OPTIONS}
-                                        selected={PRIORITY_OPTIONS.find((o) => o.value === priority) ?? null}
-                                        setSelected={(o) => update({ priority: o?.value ?? "P2" }, true)}
-                                        disabled={!canWrite}
-                                        hideSearch
-                                        matchTriggerWidth
-                                        forceDropdown
-                                        buttonProps={{ className: "w-full", size: "sm" }}
-                                        caret
-                                    />
-                                </div>
-                            </div>
-                            <FormField label={tx("detail.fields.dueDate")}>
-                                <DatePicker
-                                    id="task-panel-due"
-                                    className="w-full"
-                                    placeholder={tx("detail.fields.selectDate")}
-                                    clearable
-                                    align="start"
-                                    value={parseYMD(dueAt)}
-                                    onChange={(next) => update({ dueAt: toYMD(next) ?? "" }, true)}
-                                    disabledDays={{ before: startOfUtcDay(new Date()) }}
-                                    aria-label={tx("detail.fields.dueDateAria")}
-                                />
-                            </FormField>
-                            <FormField label={tx("detail.fields.assignee")} description={tx("detail.fields.ownerHint")}>
-                                <UserCombobox
-                                    id="task-panel-assignee"
-                                    name="assigneeUserId"
-                                    tenantSlug={tenantSlug}
-                                    disabled={!canWrite}
-                                    size="sm"
-                                    selectedId={assigneeId || null}
-                                    onChange={(userId) => {
-                                        setAssigneeId(userId ?? "");
-                                        void commitAssignee(userId ?? "");
-                                    }}
-                                    placeholder={task.assignee?.name || tx("detail.fields.unassigned")}
-                                />
-                            </FormField>
-                        </fieldset>
-                        {canWrite && (
-                            <p
-                                className="text-xs text-content-muted"
-                                data-testid="task-edit-autosave-status"
-                                aria-live="polite"
-                            >
-                                {saveState === "saving"
-                                    ? tx("detail.autosave.saving")
-                                    : saveState === "saved"
-                                      ? tx("detail.autosave.saved")
-                                      : saveState === "error"
-                                        ? tx("detail.autosave.notSaved")
-                                        : tx("detail.autosave.auto")}
-                            </p>
-                        )}
-                    </div>
+                    {details}
                     {/* Drag-and-drop evidence upload (canonical FileDropzone, compact in the rail). */}
                     <EvidenceUploadSection
                         tenantSlug={tenantSlug}

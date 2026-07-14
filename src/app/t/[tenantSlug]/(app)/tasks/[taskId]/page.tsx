@@ -36,8 +36,9 @@ import { cardVariants } from '@/components/ui/card';
 // on that path stay valid). Imported here via the `@/app` alias.
 import { EvidenceSubTable, type EvidenceTabData } from '@/app/t/[tenantSlug]/(app)/controls/[controlId]/_tabs/EvidenceSubTable';
 import { EvidenceAddForm } from '@/components/EvidenceAddForm';
-import { EditTaskModal, type EditTaskForm } from './_modals/EditTaskModal';
-import { toYMD } from '@/components/ui/date-picker/date-utils';
+// TP-4 — the task edit surface is now the shared inline autosave
+// TaskEditPanel (form variant), retiring the divergent EditTaskModal.
+import { TaskEditPanel } from '@/app/t/[tenantSlug]/(app)/controls/TaskEditPanel';
 import { Pen2 } from '@/components/ui/icons/nucleo';
 import { cn } from '@/lib/cn';
 
@@ -95,6 +96,15 @@ interface TaskDetail {
     assignee: { name: string | null } | null;
     createdBy: { name: string | null } | null;
     control: { id: string; code: string | null; name: string } | null;
+    // TP-4 — the originating source(s), for the provenance back-link.
+    findingId: string | null;
+    finding: { id: string; title: string; status: string } | null;
+    remediatedVulnerabilities: {
+        id: string;
+        cveId: string;
+        status: string;
+        asset: { id: string; name: string } | null;
+    }[];
     _count: { evidence: number; links: number; comments: number };
 }
 
@@ -166,13 +176,10 @@ export default function TaskDetailPage() {
     const [commentBody, setCommentBody] = useState('');
     const [savingComment, setSavingComment] = useState(false);
 
-    // Edit-task modal state — mirrors the control detail edit flow.
+    // Edit-task modal state — hosts the shared inline autosave
+    // TaskEditPanel (form variant). No local form/save state: the panel
+    // owns its own autosave lifecycle.
     const [showEditModal, setShowEditModal] = useState(false);
-    const [editForm, setEditForm] = useState<EditTaskForm>({
-        title: '', description: '', type: 'TASK', severity: 'MEDIUM', priority: 'P2', dueAt: '',
-    });
-    const [savingEdit, setSavingEdit] = useState(false);
-    const [editError, setEditError] = useState('');
 
     const canComment = role !== 'READER';
 
@@ -441,56 +448,6 @@ export default function TaskDetailPage() {
         });
     };
 
-    const openEditModal = () => {
-        if (!task) return;
-        setEditError('');
-        setEditForm({
-            title: task.title ?? '',
-            description: task.description ?? '',
-            type: task.type ?? 'TASK',
-            severity: task.severity ?? 'MEDIUM',
-            priority: task.priority ?? 'P2',
-            dueAt: task.dueAt ? toYMD(new Date(task.dueAt)) ?? '' : '',
-        });
-        setShowEditModal(true);
-    };
-
-    const handleEditSave = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setSavingEdit(true);
-        setEditError('');
-        try {
-            const res = await fetch(apiUrl(`/tasks/${taskId}`), {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    title: editForm.title,
-                    description: editForm.description || null,
-                    type: editForm.type,
-                    severity: editForm.severity,
-                    priority: editForm.priority,
-                    dueAt: editForm.dueAt
-                        ? new Date(editForm.dueAt).toISOString()
-                        : null,
-                }),
-            });
-            if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
-                throw new Error(
-                    (typeof data?.error === 'string' && data.error) ||
-                        data?.message ||
-                        t('detail.failedSave'),
-                );
-            }
-            setShowEditModal(false);
-            await taskQuery.mutate();
-        } catch (err) {
-            setEditError(err instanceof Error ? err.message : t('detail.failedSave'));
-        } finally {
-            setSavingEdit(false);
-        }
-    };
-
     const addComment = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!commentBody.trim()) return;
@@ -544,6 +501,47 @@ export default function TaskDetailPage() {
 
     const isOverdue = task.dueAt && new Date(task.dueAt) < new Date() && !(TERMINAL_WORK_ITEM_STATUSES as readonly string[]).includes(task.status);
     const metadata = task.metadataJson || {};
+
+    // TP-4 — resolve the task's provenance into a single prominent
+    // back-link + a plain-language "why this task exists / what
+    // completing it does" line. Priority: vulnerability → finding →
+    // control-gap (mostly mutually exclusive; a NIS2 gap-task carries
+    // both a control and a finding, and closing the finding is the
+    // meaningful completion effect, so finding wins over control).
+    const primaryVuln = task.remediatedVulnerabilities?.[0] ?? null;
+    const source: {
+        label: string;
+        href: string | null;
+        why: string;
+        linkId: string;
+    } | null = primaryVuln
+        ? {
+              label: primaryVuln.asset
+                  ? t('source.vulnLabel', { cve: primaryVuln.cveId, asset: primaryVuln.asset.name })
+                  : t('source.vulnLabelNoAsset', { cve: primaryVuln.cveId }),
+              href: primaryVuln.asset ? tenantHref(`/assets/${primaryVuln.asset.id}`) : null,
+              why: t('source.vulnWhy', { cve: primaryVuln.cveId }),
+              linkId: 'task-source-vuln-link',
+          }
+        : task.finding
+          ? {
+                label: t('source.findingLabel', { title: task.finding.title }),
+                href: tenantHref('/findings'),
+                why: t('source.findingWhy', { title: task.finding.title }),
+                linkId: 'task-source-finding-link',
+            }
+          : task.control && task.type === 'CONTROL_GAP'
+            ? {
+                  label: task.control.code
+                      ? t('source.controlLabel', { control: `${task.control.code} — ${task.control.name}` })
+                      : t('source.controlLabel', { control: task.control.name }),
+                  href: tenantHref(`/controls/${task.control.id}`),
+                  why: t('source.controlWhy', {
+                      control: task.control.code ?? task.control.name,
+                  }),
+                  linkId: 'task-source-control-link',
+              }
+            : null;
 
     return (
         <EntityDetailLayout
@@ -626,6 +624,32 @@ export default function TaskDetailPage() {
             activeTab={tab}
             onTabChange={(next) => setTab(next as Tab)}
         >
+            {/* TP-4 — provenance banner: front-and-center back-link to
+                the source that raised this task + a plain-language
+                explanation of what completing the task does. Generic
+                manual tasks (no source) render no banner. */}
+            {source && (
+                <div
+                    className={cn(cardVariants({ density: 'compact' }), 'border-border-emphasis space-y-1')}
+                    id="task-source-banner"
+                    data-testid="task-source-banner"
+                >
+                    <div className="flex items-center gap-tight">
+                        <span className="text-xs text-content-subtle uppercase">{t('source.heading')}</span>
+                        {source.href ? (
+                            <Link href={source.href} className={textLinkVariants({ tone: 'link' })} id={source.linkId}>
+                                {source.label}
+                            </Link>
+                        ) : (
+                            <span className="text-sm font-medium text-content-emphasis" id={source.linkId}>
+                                {source.label}
+                            </span>
+                        )}
+                    </div>
+                    <p className="text-sm text-content-muted">{source.why}</p>
+                </div>
+            )}
+
             {/* Assignment controls */}
             {permissions.canWrite && (
                 <div className={cardVariants({ density: 'compact' })}>
@@ -664,7 +688,7 @@ export default function TaskDetailPage() {
                             <Button
                                 variant="secondary"
                                 size="icon"
-                                onClick={openEditModal}
+                                onClick={() => setShowEditModal(true)}
                                 data-testid="task-edit-button"
                                 id="task-edit-button"
                                 aria-label={t('detail.editAria')}
@@ -855,6 +879,7 @@ export default function TaskDetailPage() {
                         loading={linksLoading}
                         canWrite={!!permissions.canWrite}
                         onRemove={removeLink}
+                        tenantHref={tenantHref}
                     />
                 </div>
             )}
@@ -1022,18 +1047,36 @@ export default function TaskDetailPage() {
                 </Modal.Actions>
             </Modal>
 
-            {/* Edit-task modal — page owns state + mutation, the modal
-                is a thin renderer (control-detail parity). */}
-            <EditTaskModal
-                open={showEditModal}
-                setOpen={setShowEditModal}
-                form={editForm}
-                setForm={setEditForm}
-                saving={savingEdit}
-                error={editError}
-                onCancel={() => setShowEditModal(false)}
-                onSubmit={handleEditSave}
-            />
+            {/* TP-4 — the ONE task edit surface: the shared inline
+                autosave TaskEditPanel (form variant), hosted in a modal
+                container. Full field set (title / description / status /
+                type / severity / priority / due / assignee), autosave on
+                change, no explicit Save button. Status routes through
+                setTaskStatus (state machine + TP-3 reconciliation). */}
+            <Modal
+                showModal={showEditModal}
+                setShowModal={setShowEditModal}
+                size="lg"
+                title={t('edit.title')}
+                description={t('edit.desc')}
+            >
+                <Modal.Header title={t('edit.title')} description={t('edit.desc')} />
+                <Modal.Body>
+                    <TaskEditPanel
+                        variant="form"
+                        tenantSlug={tenantSlug}
+                        task={{
+                            id: task.id,
+                            title: task.title,
+                            status: task.status,
+                            severity: task.severity,
+                            key: task.key ?? undefined,
+                        }}
+                        canWrite={!!permissions.canWrite}
+                        onSaved={() => void taskQuery.mutate()}
+                    />
+                </Modal.Body>
+            </Modal>
         </EntityDetailLayout>
     );
 }
@@ -1048,6 +1091,9 @@ interface TaskLinkRow {
     entityId: string;
     relation?: string | null;
     createdAt: string;
+    // TP-4 — resolved by the loader (listByTaskResolved).
+    name?: string | null;
+    path?: string | null;
 }
 
 function TaskLinksTable({
@@ -1055,11 +1101,13 @@ function TaskLinksTable({
     loading,
     canWrite,
     onRemove,
+    tenantHref,
 }: {
     links: TaskLinkRow[];
     loading: boolean;
     canWrite: boolean;
     onRemove: (id: string) => void;
+    tenantHref: (path: string) => string;
 }) {
     const t = useTranslations('tasks');
     const columns = useMemo(
@@ -1074,12 +1122,29 @@ function TaskLinksTable({
                 },
                 {
                     id: 'entityId',
-                    header: t('detail.linkEntityIdHeader'),
-                    cell: ({ row }) => (
-                        <span className="text-sm text-content-default font-mono">
-                            {row.original.entityId}
-                        </span>
-                    ),
+                    // TP-4 — render the resolved entity NAME as a real
+                    // link, not a raw cuid. Falls back to the id (mono)
+                    // only when the entity could not be resolved.
+                    header: t('detail.linkEntityHeader'),
+                    cell: ({ row }) => {
+                        const { name, path, entityId } = row.original;
+                        if (name && path) {
+                            return (
+                                <Link
+                                    href={tenantHref(path)}
+                                    className={textLinkVariants({ tone: 'link' })}
+                                >
+                                    {name}
+                                </Link>
+                            );
+                        }
+                        if (name) {
+                            return <span className="text-sm text-content-default">{name}</span>;
+                        }
+                        return (
+                            <span className="text-sm text-content-subtle font-mono">{entityId}</span>
+                        );
+                    },
                 },
                 {
                     id: 'relation',
@@ -1116,7 +1181,7 @@ function TaskLinksTable({
                       ]
                     : []),
             ]),
-        [canWrite, onRemove, t],
+        [canWrite, onRemove, t, tenantHref],
     );
     return (
         <DataTable

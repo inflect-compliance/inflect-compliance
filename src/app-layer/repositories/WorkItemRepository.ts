@@ -304,6 +304,19 @@ export class WorkItemRepository {
                 createdBy: { select: { id: true, name: true, email: true } },
                 reviewer: { select: { id: true, name: true, email: true } },
                 control: { select: { id: true, code: true, name: true } },
+                // TP-4 — the source that raised an auto-task, so the
+                // detail page can render a navigable back-link + a
+                // plain-language "why this task exists" banner.
+                finding: { select: { id: true, title: true, status: true } },
+                remediatedVulnerabilities: {
+                    take: 25,
+                    select: {
+                        id: true,
+                        cveId: true,
+                        status: true,
+                        asset: { select: { id: true, name: true } },
+                    },
+                },
                 links: { orderBy: { createdAt: 'desc' } },
                 comments: {
                     orderBy: { createdAt: 'asc' },
@@ -556,11 +569,132 @@ export class WorkItemRepository {
 
 // ─── TaskLink Repository ───
 
+/**
+ * TP-4 — a resolved task-link row: the raw link plus the linked
+ * entity's human display name + a tenant-relative detail path (null
+ * when the entity type has no detail route, or the entity is gone).
+ */
+export interface ResolvedTaskLink {
+    id: string;
+    entityType: string;
+    entityId: string;
+    relation: string | null;
+    createdAt: Date;
+    /** Human display name; null when the entity could not be resolved. */
+    name: string | null;
+    /** Tenant-relative detail path (e.g. `/controls/x`); null if none. */
+    path: string | null;
+}
+
 export class TaskLinkRepository {
     static async listByTask(db: PrismaTx, ctx: RequestContext, taskId: string) {
         return db.taskLink.findMany({
             where: { taskId, tenantId: ctx.tenantId },
             orderBy: { createdAt: 'desc' },
+        });
+    }
+
+    /**
+     * TP-4 — list a task's links AND resolve each linked entity's
+     * display name + detail path. One bounded query PER entity type
+     * (`id: { in: [...] }`), never per row — no N+1. Entities that no
+     * longer exist resolve to `{ name: null, path: null }` and the UI
+     * falls back to the raw id.
+     */
+    static async listByTaskResolved(
+        db: PrismaTx,
+        ctx: RequestContext,
+        taskId: string,
+    ): Promise<ResolvedTaskLink[]> {
+        const links = await db.taskLink.findMany({
+            where: { taskId, tenantId: ctx.tenantId },
+            orderBy: { createdAt: 'desc' },
+        });
+        if (links.length === 0) return [];
+
+        // Bucket entity ids by type so each type resolves in one query.
+        const idsByType = new Map<string, string[]>();
+        for (const l of links) {
+            const bucket = idsByType.get(l.entityType) ?? [];
+            bucket.push(l.entityId);
+            idsByType.set(l.entityType, bucket);
+        }
+        const tid = ctx.tenantId;
+        // `${type}:${id}` → { name, path }. Populated by the explicit
+        // per-type blocks below (NO Prisma read inside a loop).
+        const resolved = new Map<string, { name: string; path: string | null }>();
+        const put = (type: string, id: string, name: string, path: string | null) =>
+            resolved.set(`${type}:${id}`, { name, path });
+
+        const controlIds = idsByType.get('CONTROL');
+        if (controlIds?.length) {
+            const rows = await db.control.findMany({ // guardrail-allow: unbounded (bounded by primary-key `in:` list — a task's links)
+                where: { id: { in: controlIds }, tenantId: tid },
+                select: { id: true, code: true, name: true },
+            });
+            for (const r of rows) put('CONTROL', r.id, r.code ? `${r.code} — ${r.name}` : r.name, `/controls/${r.id}`);
+        }
+        const riskIds = idsByType.get('RISK');
+        if (riskIds?.length) {
+            const rows = await db.risk.findMany({ // guardrail-allow: unbounded (bounded by primary-key `in:` list — a task's links)
+                where: { id: { in: riskIds }, tenantId: tid },
+                select: { id: true, key: true, title: true },
+            });
+            for (const r of rows) put('RISK', r.id, r.key ? `${r.key} — ${r.title}` : r.title, `/risks/${r.id}`);
+        }
+        const assetIds = idsByType.get('ASSET');
+        if (assetIds?.length) {
+            const rows = await db.asset.findMany({ // guardrail-allow: unbounded (bounded by primary-key `in:` list — a task's links)
+                where: { id: { in: assetIds }, tenantId: tid },
+                select: { id: true, name: true },
+            });
+            for (const r of rows) put('ASSET', r.id, r.name, `/assets/${r.id}`);
+        }
+        const policyIds = idsByType.get('POLICY');
+        if (policyIds?.length) {
+            const rows = await db.policy.findMany({ // guardrail-allow: unbounded (bounded by primary-key `in:` list — a task's links)
+                where: { id: { in: policyIds }, tenantId: tid },
+                select: { id: true, title: true },
+            });
+            for (const r of rows) put('POLICY', r.id, r.title, `/policies/${r.id}`);
+        }
+        const vendorIds = idsByType.get('VENDOR');
+        if (vendorIds?.length) {
+            const rows = await db.vendor.findMany({ // guardrail-allow: unbounded (bounded by primary-key `in:` list — a task's links)
+                where: { id: { in: vendorIds }, tenantId: tid },
+                select: { id: true, name: true },
+            });
+            for (const r of rows) put('VENDOR', r.id, r.name, `/vendors/${r.id}`);
+        }
+        const evidenceIds = idsByType.get('EVIDENCE');
+        if (evidenceIds?.length) {
+            const rows = await db.evidence.findMany({ // guardrail-allow: unbounded (bounded by primary-key `in:` list — a task's links)
+                where: { id: { in: evidenceIds }, tenantId: tid },
+                select: { id: true, title: true },
+            });
+            // Evidence has no per-item detail route — name only.
+            for (const r of rows) put('EVIDENCE', r.id, r.title, null);
+        }
+        const reqIds = idsByType.get('FRAMEWORK_REQUIREMENT');
+        if (reqIds?.length) {
+            const rows = await db.frameworkRequirement.findMany({ // guardrail-allow: unbounded (bounded by primary-key `in:` list — a task's links)
+                where: { id: { in: reqIds } },
+                select: { id: true, code: true, title: true, framework: { select: { key: true } } },
+            });
+            for (const r of rows) put('FRAMEWORK_REQUIREMENT', r.id, `${r.code} — ${r.title}`, r.framework?.key ? `/frameworks/${r.framework.key}` : null);
+        }
+
+        return links.map((l) => {
+            const hit = resolved.get(`${l.entityType}:${l.entityId}`);
+            return {
+                id: l.id,
+                entityType: l.entityType,
+                entityId: l.entityId,
+                relation: l.relation,
+                createdAt: l.createdAt,
+                name: hit?.name ?? null,
+                path: hit?.path ?? null,
+            };
         });
     }
 

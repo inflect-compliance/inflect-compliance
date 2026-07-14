@@ -562,7 +562,9 @@ async function emitTaskAssignedNotification(
 
 export async function listTaskLinks(ctx: RequestContext, taskId: string) {
     assertCanReadTasks(ctx);
-    return runInTenantContext(ctx, (db) => TaskLinkRepository.listByTask(db, ctx, taskId));
+    // TP-4 — resolve each link's entity name + detail path so the UI
+    // renders a real link instead of a raw cuid. Bounded, no N+1.
+    return runInTenantContext(ctx, (db) => TaskLinkRepository.listByTaskResolved(db, ctx, taskId));
 }
 
 export async function addTaskLink(ctx: RequestContext, taskId: string, entityType: string, entityId: string, relation?: string) {

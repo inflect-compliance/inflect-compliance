@@ -1468,7 +1468,14 @@
                 "ownerHint": "Търсете членове за възлагане или изчистете за освобождаване.",
                 "unassigned": "Невъзложено",
                 "selectDate": "Изберете дата",
-                "dueDateAria": "Краен срок"
+                "dueDateAria": "Краен срок",
+                "status": "Статус",
+                "resolution": "Резолюция",
+                "resolutionPlaceholder": "Опишете как беше решено…"
+            },
+            "status": {
+                "apply": "Приложи",
+                "cancel": "Отказ"
             },
             "autosave": {
                 "saving": "Запазване…",
@@ -4914,6 +4921,7 @@
             "savingEllipsis": "Запазване…",
             "linkTypeHeader": "Тип",
             "linkEntityIdHeader": "ID на обект",
+            "linkEntityHeader": "Обект",
             "linkRelationHeader": "Връзка",
             "linkCreatedHeader": "Създадена",
             "linkActionsHeader": "Действия",
@@ -4923,6 +4931,16 @@
             "linksResourcePlural": "връзки",
             "linksResourceSingular": "връзка",
             "assignee": "Изпълнител"
+        },
+        "source": {
+            "heading": "Източник",
+            "vulnLabel": "{cve} на {asset}",
+            "vulnLabelNoAsset": "{cve}",
+            "vulnWhy": "Създадена за отстраняване на {cve}. Приключването маркира уязвимостта като смекчена.",
+            "findingLabel": "{title}",
+            "findingWhy": "Създадена от констатация „{title}“. Приключването затваря констатацията.",
+            "controlLabel": "{control}",
+            "controlWhy": "Създадена от неуспешен тест на контрола {control}. Приключването пре-проверява контрола."
         },
         "edit": {
             "title": "Редактиране на задача",

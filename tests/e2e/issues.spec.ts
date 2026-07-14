@@ -247,12 +247,12 @@ test.describe('Issue Management', () => {
         await expect(
             authedPage.locator('[data-testid="task-links-table"]'),
         ).toContainText('CONTROL', { timeout: 5000 });
-        // PR-D — TaskLinksTable renders the raw `entityId` (cuid),
-        // not the resolved entity name; assert against the seeded
-        // control's id rather than its display name.
+        // TP-4 — TaskLinksTable now renders the RESOLVED entity name
+        // as a real link (not the raw cuid), so assert the control's
+        // display name.
         await expect(
             authedPage.locator('[data-testid="task-links-table"]'),
-        ).toContainText(controlId);
+        ).toContainText(controlName);
     });
 
     test('add comment to issue', async ({ authedPage, isolatedTenant }) => {

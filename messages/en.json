@@ -1468,7 +1468,14 @@
                 "ownerHint": "Search members to assign, or clear to unassign.",
                 "unassigned": "Unassigned",
                 "selectDate": "Select date",
-                "dueDateAria": "Due date"
+                "dueDateAria": "Due date",
+                "status": "Status",
+                "resolution": "Resolution",
+                "resolutionPlaceholder": "Describe how this was resolved…"
+            },
+            "status": {
+                "apply": "Apply",
+                "cancel": "Cancel"
             },
             "autosave": {
                 "saving": "Saving…",
@@ -4914,6 +4921,7 @@
             "savingEllipsis": "Saving…",
             "linkTypeHeader": "Type",
             "linkEntityIdHeader": "Entity ID",
+            "linkEntityHeader": "Entity",
             "linkRelationHeader": "Relation",
             "linkCreatedHeader": "Created",
             "linkActionsHeader": "Actions",
@@ -4923,6 +4931,16 @@
             "linksResourcePlural": "links",
             "linksResourceSingular": "link",
             "assignee": "Assignee"
+        },
+        "source": {
+            "heading": "Source",
+            "vulnLabel": "{cve} on {asset}",
+            "vulnLabelNoAsset": "{cve}",
+            "vulnWhy": "Raised to remediate {cve}. Completing this marks the vulnerability mitigated.",
+            "findingLabel": "{title}",
+            "findingWhy": "Raised by finding “{title}”. Completing this closes the finding.",
+            "controlLabel": "{control}",
+            "controlWhy": "Raised by a failed test of control {control}. Completing this re-checks the control."
         },
         "edit": {
             "title": "Edit Task",
