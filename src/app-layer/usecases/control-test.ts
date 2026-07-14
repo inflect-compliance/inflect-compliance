@@ -36,6 +36,17 @@ function sanitizeOptional(v: string | null | undefined): string | null | undefin
     return sanitizePlainText(v);
 }
 
+// R3-P2 — `method` (auditor-facing MANUAL/AUTOMATED) is a derived projection
+// of `automationType` (how execution runs: MANUAL/SCRIPT/INTEGRATION). They
+// used to be edited on two separate surfaces and could disagree. This is the
+// single source of truth for the mapping; every write that touches one side
+// runs it so the pair can never drift.
+export function deriveMethodFromAutomationType(
+    automationType: string,
+): 'MANUAL' | 'AUTOMATED' {
+    return automationType === 'MANUAL' ? 'MANUAL' : 'AUTOMATED';
+}
+
 // ─── Queries ───
 
 export async function listControlTestPlans(ctx: RequestContext, controlId: string) {
@@ -241,17 +252,33 @@ export async function updateTestPlan(ctx: RequestContext, planId: string, patch:
     ownerUserId?: string | null;
     expectedEvidence?: unknown;
     status?: string;
+    steps?: Array<{ instruction: string; expectedOutput?: string | null }>;
 }) {
     assertCanManageTestPlans(ctx);
 
     // Epic D.2 — sanitise the free-text fields in the patch only when
     // they're actually being written (preserves "don't touch"
     // semantics for undefined).
-    const sanitisedPatch = {
+    const sanitisedPatch: Parameters<typeof TestPlanRepository.update>[3] = {
         ...patch,
         name: sanitizeOptional(patch.name) ?? undefined,
         description: sanitizeOptional(patch.description),
+        steps: patch.steps?.map((s) => ({
+            instruction: sanitizePlainText(s.instruction),
+            expectedOutput: s.expectedOutput == null ? s.expectedOutput : sanitizePlainText(s.expectedOutput),
+        })),
     };
+
+    // R3-P2 — method↔automation reconciliation. Setting a plan back to
+    // MANUAL must also strip any automation it carried (a MANUAL plan
+    // cannot stay scheduled), otherwise `method` and `automationType`
+    // silently disagree and the scheduler would keep firing a plan the
+    // operator believes is manual.
+    if (patch.method === 'MANUAL') {
+        sanitisedPatch.automationType = 'MANUAL';
+        sanitisedPatch.schedule = null;
+        sanitisedPatch.nextRunAt = null;
+    }
     const result = await runInTenantContext(ctx, async (db) => {
         const existing = await TestPlanRepository.getById(db, ctx, planId);
         if (!existing) throw notFound('Test plan not found');
@@ -298,6 +325,24 @@ export async function createTestRun(ctx: RequestContext, planId: string) {
 
         await emitTestRunCreated(db, ctx, { id: run.id, testPlanId: planId });
         return run;
+    });
+    await bumpEntityCacheVersion(ctx, 'test');
+    return result;
+}
+
+// R3-P2 — PLANNED → RUNNING. Clicking "Run" now begins a guided execution
+// (the tester walks the plan's procedure) rather than jumping straight to a
+// result-entry form. Idempotent for an already-RUNNING run; rejects a run
+// that is already COMPLETED.
+export async function startTestRun(ctx: RequestContext, runId: string) {
+    assertCanExecuteTests(ctx);
+
+    const result = await runInTenantContext(ctx, async (db) => {
+        const run = await TestRunRepository.getById(db, ctx, runId);
+        if (!run) throw notFound('Test run not found');
+        if (run.status === 'COMPLETED') throw badRequest('Test run is already completed');
+        if (run.status === 'RUNNING') return run;
+        return TestRunRepository.start(db, ctx, runId);
     });
     await bumpEntityCacheVersion(ctx, 'test');
     return result;

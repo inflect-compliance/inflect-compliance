@@ -12,6 +12,7 @@ import { Paperclip } from 'lucide-react';
 import { textLinkVariants } from '@/components/ui/typography';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
+import { useToast } from '@/components/ui/hooks/use-toast';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Plus } from '@/components/ui/icons/nucleo';
@@ -41,6 +42,13 @@ interface EvidenceLink {
     createdAt: string;
 }
 
+interface TestStepRef {
+    id: string;
+    sortOrder: number;
+    instruction: string;
+    expectedOutput: string | null;
+}
+
 interface TestRunDetail {
     id: string;
     status: string;
@@ -50,7 +58,7 @@ interface TestRunDetail {
     executedAt: string | null;
     controlId: string;
     testPlanId: string;
-    testPlan?: { id: string; name: string; controlId: string; frequency: string } | null;
+    testPlan?: { id: string; name: string; controlId: string; frequency: string; steps?: TestStepRef[] } | null;
     executedBy?: { name: string | null; email: string } | null;
     createdBy?: { name: string | null; email: string } | null;
     evidence: EvidenceLink[];
@@ -69,11 +77,16 @@ export default function TestRunPage() {
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const { permissions } = useTenantContext();
+    const toast = useToast();
     const runId = params?.runId as string;
 
     const [run, setRun] = useState<TestRunDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+
+    // Guided run — RUNNING transition + per-step checklist (ephemeral aid).
+    const [starting, setStarting] = useState(false);
+    const [checkedSteps, setCheckedSteps] = useState<Set<string>>(new Set());
 
     // Complete form
     const [result, setResult] = useState<'PASS' | 'FAIL' | 'INCONCLUSIVE'>('PASS');
@@ -87,6 +100,7 @@ export default function TestRunPage() {
     const [evUrl, setEvUrl] = useState('');
     const [evNote, setEvNote] = useState('');
     const [evEvidenceId, setEvEvidenceId] = useState('');
+    const [evidenceOptions, setEvidenceOptions] = useState<ComboboxOption[]>([]);
     const [evFile, setEvFile] = useState<File | null>(null);
     const [evFileTitle, setEvFileTitle] = useState('');
     const [evError, setEvError] = useState('');
@@ -124,6 +138,35 @@ export default function TestRunPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { fetchRun(); }, [fetchRun]);
 
+    // Load the evidence library once for the EVIDENCE-kind picker (replaces
+    // the old raw-cuid paste input).
+    useEffect(() => {
+        let cancelled = false;
+        fetch(apiUrl('/evidence'))
+            .then((r) => (r.ok ? r.json() : []))
+            .then((data) => {
+                if (cancelled) return;
+                const items = Array.isArray(data) ? data : (data.items ?? []);
+                // eslint-disable-next-line react-hooks/set-state-in-effect
+                setEvidenceOptions(items.map((e: { id: string; title: string }) => ({ value: e.id, label: e.title })));
+            })
+            .catch(() => {});
+        return () => { cancelled = true; };
+    }, [apiUrl]);
+
+    const startRun = async () => {
+        setStarting(true);
+        try {
+            const res = await fetch(apiUrl(`/tests/runs/${runId}/start`), { method: 'POST' });
+            if (!res.ok) throw new Error(await res.text());
+            await fetchRun();
+        } catch {
+            toast.error(t('run.errors.startFailed'));
+        } finally {
+            setStarting(false);
+        }
+    };
+
     const completeRun = async () => {
         setCompleting(true);
         try {
@@ -134,9 +177,11 @@ export default function TestRunPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
             });
-            if (res.ok) {
-                await fetchRun();
-            }
+            if (!res.ok) throw new Error(await res.text());
+            toast.success(t('run.completedToast'));
+            await fetchRun();
+        } catch {
+            toast.error(t('run.errors.completeFailed'));
         } finally {
             setCompleting(false);
         }
@@ -252,6 +297,9 @@ export default function TestRunPage() {
     }
 
     const isCompleted = run.status === 'COMPLETED';
+    const isRunning = run.status === 'RUNNING';
+    const isPlanned = run.status === 'PLANNED';
+    const steps = run.testPlan?.steps ?? [];
 
     // Determine if "Link" button should be disabled
     const canSubmitEvidence = evKind === 'LINK' ? !!evUrl : evKind === 'EVIDENCE' ? !!evEvidenceId : !!evFile;
@@ -315,8 +363,65 @@ export default function TestRunPage() {
                 />
             }
         >
-            {/* Complete Form — only if not completed */}
-            {!isCompleted && permissions.canWrite && (
+            {/* R3-P2 — guided run. PLANNED: preview the procedure + Start.
+                RUNNING: walk the steps as a checklist, then record the result. */}
+            {!isCompleted && steps.length > 0 && (
+                <Card className="space-y-default">
+                    <Heading level={3}>{t('run.procedureHeading')}</Heading>
+                    <ol className="space-y-tight">
+                        {steps.map((step, i) => {
+                            const checked = checkedSteps.has(step.id);
+                            return (
+                                <li key={step.id} className="flex gap-compact text-sm items-start">
+                                    {isRunning && permissions.canWrite ? (
+                                        <input
+                                            type="checkbox"
+                                            className="mt-1 flex-shrink-0"
+                                            checked={checked}
+                                            onChange={() => setCheckedSteps((prev) => {
+                                                const next = new Set(prev);
+                                                if (next.has(step.id)) next.delete(step.id); else next.add(step.id);
+                                                return next;
+                                            })}
+                                            id={`run-step-check-${i}`}
+                                            aria-label={step.instruction}
+                                        />
+                                    ) : (
+                                        <span className="w-6 h-6 rounded-full bg-[var(--brand-subtle)] text-[var(--brand-default)] text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                                            {i + 1}
+                                        </span>
+                                    )}
+                                    <div className={checked ? 'opacity-60' : ''}>
+                                        <p className={`text-content-default ${checked ? 'line-through' : ''}`}>{step.instruction}</p>
+                                        {step.expectedOutput && (
+                                            <p className="text-xs text-content-subtle mt-0.5">{t('run.stepExpected', { output: step.expectedOutput })}</p>
+                                        )}
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ol>
+                    {isRunning && (
+                        <p className="text-xs text-content-subtle">{t('run.stepsProgress', { done: checkedSteps.size, total: steps.length })}</p>
+                    )}
+                </Card>
+            )}
+
+            {/* PLANNED — begin the run before recording a result. */}
+            {isPlanned && permissions.canWrite && (
+                <Card className="flex items-center justify-between border-l-4 border-[var(--brand-default)]">
+                    <div>
+                        <Heading level={3}>{t('run.startHeading')}</Heading>
+                        <p className="text-sm text-content-muted mt-1">{t('run.startHint')}</p>
+                    </div>
+                    <Button variant="primary" onClick={startRun} disabled={starting} id="start-test-run-btn">
+                        {starting ? t('run.starting') : t('run.startTest')}
+                    </Button>
+                </Card>
+            )}
+
+            {/* Complete Form — only while the run is in progress */}
+            {isRunning && permissions.canWrite && (
                 <Card className="space-y-default border-l-4 border-[var(--brand-default)]">
                     <Heading level={3}>{t('run.completeHeading')}</Heading>
 
@@ -484,8 +589,15 @@ export default function TestRunPage() {
                         )}
                         {evKind === 'EVIDENCE' && (
                             <div>
-                                <label className="text-xs text-content-muted block mb-1">{t('run.evidenceId')}</label>
-                                <input className="input w-full" value={evEvidenceId} onChange={e => setEvEvidenceId(e.target.value)} placeholder={t('run.evidenceIdPlaceholder')} id="evidence-id-input" />
+                                <label className="text-xs text-content-muted block mb-1">{t('run.evidenceRecord')}</label>
+                                <Combobox
+                                    id="evidence-id-input"
+                                    options={evidenceOptions}
+                                    selected={evidenceOptions.find(o => o.value === evEvidenceId) ?? null}
+                                    setSelected={(opt) => setEvEvidenceId(opt?.value ?? '')}
+                                    placeholder={t('run.evidenceRecordPlaceholder')}
+                                    matchTriggerWidth
+                                />
                             </div>
                         )}
                         {(evKind === 'FILE_UPLOAD' || evKind === 'LINK') && (

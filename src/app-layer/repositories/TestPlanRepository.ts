@@ -84,6 +84,11 @@ export const TestPlanRepository = {
         ownerUserId?: string | null;
         expectedEvidence?: unknown;
         status?: string;
+        automationType?: string;
+        schedule?: string | null;
+        nextRunAt?: Date | null;
+        nextDueAt?: Date | null;
+        steps?: Array<{ instruction: string; expectedOutput?: string | null }>;
     }) {
         const data: Record<string, unknown> = {};
         if (patch.name !== undefined) data.name = patch.name;
@@ -93,11 +98,37 @@ export const TestPlanRepository = {
         if (patch.ownerUserId !== undefined) data.ownerUserId = patch.ownerUserId;
         if (patch.expectedEvidence !== undefined) data.expectedEvidence = JSON.parse(JSON.stringify(patch.expectedEvidence));
         if (patch.status !== undefined) data.status = patch.status;
+        // R3-P2 — method↔automation reconciliation writes these together so
+        // a plan can never be MANUAL-method while still carrying a schedule.
+        if (patch.automationType !== undefined) data.automationType = patch.automationType;
+        if (patch.schedule !== undefined) data.schedule = patch.schedule;
+        if (patch.nextRunAt !== undefined) data.nextRunAt = patch.nextRunAt;
+        if (patch.nextDueAt !== undefined) data.nextDueAt = patch.nextDueAt;
 
-        return db.controlTestPlan.update({
+        const updated = await db.controlTestPlan.update({
             where: { id: planId },
             data,
         });
+
+        // R3-P2 — steps, when provided, REPLACE the plan's procedure. Delete
+        // then recreate so sort order and removals apply atomically (the
+        // caller runs this inside a tenant transaction).
+        if (patch.steps !== undefined) {
+            await db.controlTestStep.deleteMany({ where: { tenantId: ctx.tenantId, testPlanId: planId } });
+            if (patch.steps.length > 0) {
+                await db.controlTestStep.createMany({
+                    data: patch.steps.map((step, i) => ({
+                        tenantId: ctx.tenantId,
+                        testPlanId: planId,
+                        sortOrder: i,
+                        instruction: step.instruction,
+                        expectedOutput: step.expectedOutput ?? null,
+                    })),
+                });
+            }
+        }
+
+        return updated;
     },
 
     async updateNextDueAt(db: PrismaTx, _ctx: RequestContext, planId: string, nextDueAt: Date | null) {

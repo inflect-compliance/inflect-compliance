@@ -93,8 +93,11 @@ const PRIMARY_BUDGET: Record<string, number> = {
     "src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx": 4,
     "src/app/t/[tenantSlug]/(app)/admin/vendor-templates/[templateId]/VendorTemplateBuilderClient.tsx": 4,
 
-    // 3-primary tier — page CTA + inline form + 1 contextual region
-    "src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx": 3,
+    // R3-P2 — 4 primaries, but two are runtime-mutually-exclusive: the
+    // "Start test" CTA (PLANNED-state guided-run region) and the
+    // "Complete" CTA (RUNNING-state result form) never render together
+    // (isPlanned vs isRunning). Plus the two evidence-form primaries.
+    "src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx": 4,
     // 3 page-level primaries + 1 for the close-resolution Modal's
     // confirm CTA (a distinct modal region added when terminal status
     // changes started prompting for a resolution note) + 2 for the

@@ -7,7 +7,9 @@
 import { formatDate } from '@/lib/format-date';
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useToast } from '@/components/ui/hooks/use-toast';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { BackAffordance } from '@/components/nav/BackAffordance';
@@ -46,6 +48,8 @@ export default function DueQueuePage() {
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const { permissions } = useTenantContext();
+    const router = useRouter();
+    const toast = useToast();
 
     const [queue, setQueue] = useState<DuePlan[]>([]);
     const [loading, setLoading] = useState(true);
@@ -85,14 +89,15 @@ export default function DueQueuePage() {
     };
 
     const handleQuickRun = async (planId: string) => {
-        const res = await fetch(apiUrl(`/tests/plans/${planId}/runs`), { method: 'POST' });
-        if (res.ok) {
+        try {
+            const res = await fetch(apiUrl(`/tests/plans/${planId}/runs`), { method: 'POST' });
+            if (!res.ok) throw new Error(await res.text());
             const run = await res.json();
-            // window.location.href setter triggers full navigation — used
-            // here intentionally to leave the SPA shell after a sync
-            // POST. Inside an async callback, not in render.
-            // eslint-disable-next-line react-hooks/immutability
-            window.location.href = tenantHref(`/tests/runs/${run.id}`);
+            // R3-P2 — client-side navigation keeps the SPA shell (no full
+            // reload); the old window.location.href discarded app state.
+            router.push(tenantHref(`/tests/runs/${run.id}`));
+        } catch {
+            toast.error(t('due.runFailed'));
         }
     };
 

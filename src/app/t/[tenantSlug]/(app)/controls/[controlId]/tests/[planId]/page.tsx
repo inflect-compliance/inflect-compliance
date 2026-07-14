@@ -21,6 +21,8 @@ import { KPIStat } from '@/components/ui/metric';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 import { Plus } from '@/components/ui/icons/nucleo';
+import { useToast } from '@/components/ui/hooks/use-toast';
+import { TestStepsEditor, type TestStepDraft, serializeSteps } from '@/app/t/[tenantSlug]/(app)/tests/_components/TestStepsEditor';
 
 interface TestPlanDetail {
     id: string;
@@ -105,9 +107,11 @@ export default function TestPlanDetailPage() {
     const [editFreq, setEditFreq] = useState('');
     const [editMethod, setEditMethod] = useState('');
     const [editStatus, setEditStatus] = useState('');
+    const [editSteps, setEditSteps] = useState<TestStepDraft[]>([]);
     const [saving, setSaving] = useState(false);
 
     const [creatingRun, setCreatingRun] = useState(false);
+    const toast = useToast();
 
     const fetchPlan = useCallback(async () => {
         setLoading(true);
@@ -121,6 +125,10 @@ export default function TestPlanDetailPage() {
             setEditFreq(data.frequency);
             setEditMethod(data.method);
             setEditStatus(data.status);
+            setEditSteps((data.steps ?? []).map((s: { instruction: string; expectedOutput: string | null }) => ({
+                instruction: s.instruction,
+                expectedOutput: s.expectedOutput ?? '',
+            })));
         } catch (e: unknown) {
             setError(e instanceof Error ? e.message : t('testPlan.unknownError'));
         } finally {
@@ -143,12 +151,14 @@ export default function TestPlanDetailPage() {
                     frequency: editFreq,
                     method: editMethod,
                     status: editStatus,
+                    steps: serializeSteps(editSteps),
                 }),
             });
-            if (res.ok) {
-                setEditing(false);
-                await fetchPlan();
-            }
+            if (!res.ok) throw new Error(await res.text());
+            setEditing(false);
+            await fetchPlan();
+        } catch {
+            toast.error(t('testPlan.saveFailed'));
         } finally {
             setSaving(false);
         }
@@ -158,10 +168,11 @@ export default function TestPlanDetailPage() {
         setCreatingRun(true);
         try {
             const res = await fetch(apiUrl(`/tests/plans/${planId}/runs`), { method: 'POST' });
-            if (res.ok) {
-                const run = await res.json();
-                router.push(tenantHref(`/tests/runs/${run.id}`));
-            }
+            if (!res.ok) throw new Error(await res.text());
+            const run = await res.json();
+            router.push(tenantHref(`/tests/runs/${run.id}`));
+        } catch {
+            toast.error(t('testPlan.runFailed'));
         } finally {
             setCreatingRun(false);
         }
@@ -234,6 +245,10 @@ export default function TestPlanDetailPage() {
                             <label className="text-xs text-content-muted block mb-1">{t('testPlan.status')}</label>
                             <Combobox hideSearch id="edit-plan-status" selected={PLAN_STATUS_OPTIONS.find(o => o.value === editStatus) ?? null} setSelected={(opt) => setEditStatus(opt?.value ?? editStatus)} options={PLAN_STATUS_OPTIONS} matchTriggerWidth />
                         </div>
+                    </div>
+                    <div>
+                        <label className="text-xs text-content-muted block mb-1">{t('testPlan.testProcedure')}</label>
+                        <TestStepsEditor steps={editSteps} onChange={setEditSteps} />
                     </div>
                     <Button variant="primary" size="sm" onClick={savePlan} disabled={saving} id="save-plan-changes-btn">
                         {saving ? t('testPlan.saving') : t('testPlan.saveChanges')}
