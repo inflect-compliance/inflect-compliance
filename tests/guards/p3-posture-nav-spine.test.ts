@@ -27,12 +27,16 @@ const FRAMEWORKS_PAGE = `${APP}/frameworks/page.tsx`;
 const CLAUSES = `${APP}/clauses/ClausesBrowser.tsx`;
 const SOA_USECASE = 'src/app-layer/usecases/soa.ts';
 
-describe('R2-P3 (1) posture spine in the sidebar', () => {
+describe('R2-P3 (1) posture spine — Frameworks/Coverage removed from the sidebar', () => {
+    // 2026-07-14 — reversed the R2-P3 decision at the user's request: the
+    // Frameworks and Coverage-map sidebar entries are removed. Both pages stay
+    // reachable via the command palette (⌘K) and the Frameworks pill on the
+    // Audits header. This ratchet now locks their ABSENCE so a future edit
+    // doesn't silently re-add them.
     const src = read(SIDEBAR);
-    it('Frameworks and Coverage are navigable from the sidebar', () => {
-        expect(src).toMatch(/tenantHref\('\/frameworks'\)/);
-        expect(src).toMatch(/tenantHref\('\/coverage'\)/);
-        expect(src).toMatch(/t\('compliance'\)/);
+    it('Frameworks and Coverage are not sidebar items', () => {
+        expect(src).not.toMatch(/tenantHref\('\/frameworks'\)/);
+        expect(src).not.toMatch(/tenantHref\('\/coverage'\)/);
     });
 });
 
