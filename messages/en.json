@@ -2491,7 +2491,8 @@
             "step5Title": "Track findings",
             "step5Desc": "Record and triage what the audit surfaces.",
             "step6Title": "Remediate",
-            "step6Desc": "Assign tasks and close out the actions."
+            "step6Desc": "Assign tasks and close out the actions.",
+            "auditorManagement": "Auditor management"
         },
         "readinessLegend": {
             "aria": "How the readiness score works",
@@ -2578,7 +2579,9 @@
             "issues": "Issues",
             "previewError": "Could not load default pack preview.",
             "totalItems": "Total: {count} items will be included in the default pack.",
-            "packs": "Packs"
+            "packs": "Packs",
+            "createPackError": "Could not create the default pack. Please try again.",
+            "addItemsError": "Pack created, but some items could not be added."
         },
         "readiness": {
             "cycleFallback": "Cycle",
@@ -2648,6 +2651,53 @@
                 },
                 "statusOPEN": "Open",
                 "statusRESOLVED": "Resolved"
+            },
+            "shareCreated": "Share link created",
+            "shareError": "Could not create the share link. Please try again.",
+            "shareRevoked": "Share link revoked",
+            "shareRevokeError": "Could not revoke the share link. Please try again.",
+            "cloneError": "Could not clone the pack. Please try again.",
+            "addItems": "Add items",
+            "sharesTitle": "Share links",
+            "sharesDesc": "Links you have shared with external auditors for this pack.",
+            "sharesEmpty": "No share links yet.",
+            "shareStateActive": "Active",
+            "shareStateExpired": "Expired",
+            "shareStateRevoked": "Revoked",
+            "shareCreatedOn": "Created {date}",
+            "shareExpiresOn": "Expires {date}",
+            "shareNoExpiry": "No expiry",
+            "revokeShare": "Revoke link",
+            "shareModal": {
+                "title": "Generate share link",
+                "desc": "Create a read-only link for an external auditor. Set an expiry so the link stops working automatically.",
+                "presetDays": "{days} days",
+                "noExpiry": "No expiry",
+                "expiryLabel": "Expiry date",
+                "expiryPlaceholder": "No expiry",
+                "cancel": "Cancel",
+                "submit": "Generate link"
+            },
+            "addPicker": {
+                "title": "Add items to pack",
+                "desc": "Add controls, policies, or evidence to this audit pack.",
+                "typeLabel": "Type",
+                "typeControl": "Control",
+                "typePolicy": "Policy",
+                "typeEvidence": "Evidence",
+                "itemLabel": "Item",
+                "itemPlaceholder": "Select an item…",
+                "loading": "Loading…",
+                "loadError": "Could not load items. Please try again.",
+                "added": "Item added to pack",
+                "addError": "Could not add the item. Please try again.",
+                "cancel": "Cancel",
+                "submit": "Add to pack"
+            },
+            "revokeShareModal": {
+                "title": "Revoke share link?",
+                "desc": "The external auditor using this link will lose access immediately. This cannot be undone.",
+                "confirm": "Revoke link"
             }
         },
         "auditor": {
@@ -2841,6 +2891,44 @@
             "loadingAria": "Loading your NIS2 questions",
             "submitZero": "Submit answers",
             "submitN": "Submit {count} answers"
+        },
+        "auditorsAdmin": {
+            "crumb": "Auditor management",
+            "title": "Auditor management",
+            "subtitle": "Invite named auditors and control which packs each can access.",
+            "inviteAuditor": "Invite auditor",
+            "emptyTitle": "No auditors yet",
+            "emptyDesc": "Invite an external auditor to give them access to frozen audit packs.",
+            "statusINVITED": "Invited",
+            "statusACTIVE": "Active",
+            "statusREVOKED": "Revoked",
+            "invitedOn": "Invited {date}",
+            "accessSection": "Pack access",
+            "noAccess": "No pack access granted",
+            "revokeAccessAria": "Revoke access to {pack}",
+            "allGranted": "All packs granted",
+            "grantPlaceholder": "Select a pack…",
+            "grant": "Grant access",
+            "packFallback": "Pack",
+            "loadError": "Could not load auditors. Please try again.",
+            "inviteSuccess": "Auditor invited",
+            "inviteError": "Could not invite the auditor. Please try again.",
+            "grantSuccess": "Access granted",
+            "grantError": "Could not grant access. Please try again.",
+            "revokeSuccess": "Access revoked",
+            "revokeError": "Could not revoke access. Please try again.",
+            "inviteTitle": "Invite auditor",
+            "inviteDesc": "The auditor is added to this tenant. Grant them access to specific packs afterwards.",
+            "emailLabel": "Email",
+            "emailPlaceholder": "auditor@example.com",
+            "nameLabel": "Name",
+            "namePlaceholder": "Optional display name",
+            "cancel": "Cancel",
+            "inviteSubmit": "Invite auditor",
+            "inviting": "Inviting…",
+            "revokeAccessTitle": "Revoke pack access?",
+            "revokeAccessDesc": "The auditor will immediately lose access to this pack.",
+            "revokeAccessConfirm": "Revoke access"
         }
     },
     "findings": {

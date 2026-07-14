@@ -91,6 +91,11 @@ const STATUS_BADGE_BUDGET: Record<string, number> = {
     "src/app/t/[tenantSlug]/(app)/admin/integrations/identity-accounts/page.tsx": 5,
     "src/app/t/[tenantSlug]/(app)/tasks/dashboard/page.tsx": 5,
     "src/app/t/[tenantSlug]/(app)/coverage/CoverageClient.tsx": 5,
+    // Prompt 2 — the pack page's new share-links section adds a per-share
+    // lifecycle badge (Active/Expired/Revoked) alongside the existing
+    // pack-status, auditor-activity (kind + status + open), and item-status
+    // badges. The share state is a distinct, decision-relevant signal.
+    "src/app/t/[tenantSlug]/(app)/audits/packs/[packId]/page.tsx": 5,
     // NIS2 gap-lifecycle surface: distinct badges across three sections —
     // run-history source (Baseline/Re-assessment), the gap table's
     // criticality + PERSONAL_LIABILITY + fine-exposure, and the propose

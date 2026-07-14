@@ -51,10 +51,10 @@ jest.mock('@/lib/audit', () => ({
 
 const tenantDb: any = {
     auditPack: { findFirst: jest.fn() },
-    auditPackShare: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
+    auditPackShare: { create: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
     auditPackItem: { findFirst: jest.fn() },
     auditPackShareComment: { create: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
-    auditorAccount: { upsert: jest.fn(), findFirst: jest.fn() },
+    auditorAccount: { upsert: jest.fn(), findFirst: jest.fn(), findMany: jest.fn() },
     auditorPackAccess: { create: jest.fn(), deleteMany: jest.fn() },
 };
 const globalDb: any = {
@@ -83,6 +83,8 @@ import {
     inviteAuditor,
     grantAuditorAccess,
     revokeAuditorAccess,
+    listAuditors,
+    listPackShares,
 } from '@/app-layer/usecases/audit-readiness/sharing';
 import {
     assertCanSharePack,
@@ -100,7 +102,8 @@ beforeEach(() => {
         tenantDb.auditPackItem.findFirst,
         tenantDb.auditPackShareComment.create, tenantDb.auditPackShareComment.findFirst,
         tenantDb.auditPackShareComment.findMany, tenantDb.auditPackShareComment.update,
-        tenantDb.auditorAccount.upsert, tenantDb.auditorAccount.findFirst,
+        tenantDb.auditorAccount.upsert, tenantDb.auditorAccount.findFirst, tenantDb.auditorAccount.findMany,
+        tenantDb.auditPackShare.findMany,
         tenantDb.auditorPackAccess.create, tenantDb.auditorPackAccess.deleteMany,
         globalDb.auditPackShare.findFirst,
         assertCanSharePack as jest.Mock,
@@ -353,6 +356,61 @@ describe('revokeAuditorAccess', () => {
         await revokeAuditorAccess(ctx, 'a-1', 'p-1');
 
         expect(auditCalls).toHaveLength(1);
+    });
+});
+
+// ──────────────────────────────────────────────────────────────────────
+// listAuditors / listPackShares — management readers
+// ──────────────────────────────────────────────────────────────────────
+describe('listAuditors', () => {
+    it('returns auditors with their pack-access refs (manage-gated)', async () => {
+        tenantDb.auditorAccount.findMany.mockResolvedValueOnce([
+            {
+                id: 'a-1', email: 'a@ex.com', name: 'Audrey', status: 'ACTIVE',
+                createdAt: new Date('2026-01-01'),
+                packAccess: [{ auditPackId: 'p-1', grantedAt: new Date('2026-02-01') }],
+            },
+            {
+                id: 'a-2', email: 'b@ex.com', name: null, status: 'INVITED',
+                createdAt: new Date('2026-01-02'), packAccess: [],
+            },
+        ]);
+
+        const result = await listAuditors(ctx);
+
+        expect(result).toHaveLength(2);
+        expect(result[0].packAccess[0].auditPackId).toBe('p-1');
+        expect(result[1].name).toBeNull();
+        expect(policyCalls).toEqual(['manage']);
+        // Scoped to the caller's tenant.
+        const where = tenantDb.auditorAccount.findMany.mock.calls[0][0].where;
+        expect(where.tenantId).toBe(ctx.tenantId);
+    });
+});
+
+describe('listPackShares', () => {
+    it('throws notFound when the pack is foreign to the tenant', async () => {
+        tenantDb.auditPack.findFirst.mockResolvedValueOnce(null);
+        await expect(listPackShares(ctx, 'p-foreign')).rejects.toThrow(/audit pack not found/i);
+        expect(tenantDb.auditPackShare.findMany).not.toHaveBeenCalled();
+    });
+
+    it('returns the pack share rows newest-first (share-gated, never leaks tokenHash)', async () => {
+        tenantDb.auditPack.findFirst.mockResolvedValueOnce({ id: 'p-1' });
+        tenantDb.auditPackShare.findMany.mockResolvedValueOnce([
+            { id: 's-1', createdAt: new Date('2026-03-01'), expiresAt: null, revokedAt: null, createdByUserId: 'u-1' },
+        ]);
+
+        const result = await listPackShares(ctx, 'p-1');
+
+        expect(result).toHaveLength(1);
+        expect(result[0].id).toBe('s-1');
+        expect(policyCalls).toEqual(['share']);
+        const args = tenantDb.auditPackShare.findMany.mock.calls[0][0];
+        expect(args.where).toEqual({ tenantId: ctx.tenantId, auditPackId: 'p-1' });
+        expect(args.orderBy).toEqual({ createdAt: 'desc' });
+        // Only lifecycle metadata is selected — the token hash is never returned.
+        expect(args.select.tokenHash).toBeUndefined();
     });
 });
 

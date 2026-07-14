@@ -135,6 +135,12 @@ test.describe('Audit Readiness', () => {
             await expect(shareBtn).toBeVisible({ timeout: 30_000 });
             await shareBtn.click();
 
+            // Share now opens an expiry modal — submit with the default
+            // (no expiry) to generate the link.
+            const shareSubmit = page.locator('#share-modal-submit');
+            await expect(shareSubmit).toBeVisible({ timeout: 15_000 });
+            await shareSubmit.click();
+
             await expect(page.locator('#share-link-card')).toBeVisible({
                 timeout: 15_000,
             });

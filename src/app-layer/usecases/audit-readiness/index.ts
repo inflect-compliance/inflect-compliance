@@ -38,8 +38,13 @@ export {
     inviteAuditor,
     grantAuditorAccess,
     revokeAuditorAccess,
+    listAuditors,
+    listPackShares,
 } from './sharing';
-export type { AddShareCommentInput, ShareCommentRow, AuditShareCommentKind } from './sharing';
+export type {
+    AddShareCommentInput, ShareCommentRow, AuditShareCommentKind,
+    AuditorSummary, AuditorPackAccessRef, PackShareRow,
+} from './sharing';
 
 // Page-data orchestration (collapses 1+N waterfall on the overview page)
 export { getReadinessOverview, type ReadinessOverviewPayload } from './overview';

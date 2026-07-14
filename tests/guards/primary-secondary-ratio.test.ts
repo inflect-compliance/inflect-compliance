@@ -208,7 +208,13 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // 2026-07-14 — +1 (146) for feat/auditor-return-channel's shared-pack "Send"
 // submit (the return-channel form's only primary), on top of the BIA + audit
 // modal primaries already counted.
-const MAX_PRIMARY_COUNT = 146;
+// Prompt 2 (2026-07-14) — bumped 146 → 150 for the auditor-accounts +
+// pack-lifecycle surfaces: the auditor-management page's header "Invite
+// auditor" CTA + its invite-modal confirm, and the pack page's
+// share-with-expiry modal confirm + add-to-pack modal confirm. Each is
+// the single earned primary of a distinct visual region (page CTA / modal
+// confirm) and none share a screen with another primary in the same file.
+const MAX_PRIMARY_COUNT = 150;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

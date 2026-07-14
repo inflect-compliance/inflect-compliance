@@ -526,19 +526,20 @@ describe('previewDefaultPack', () => {
         await expect(previewDefaultPack(ctx, 'c-1')).rejects.toThrow(/no default pack template for framework: soc1/i);
     });
 
-    it('ISO27001: uses framework-mapped controls + security-category policies', async () => {
+    it('ISO27001: uses framework-mapped OPERATING controls + evidence + relevant policies (curated)', async () => {
         mockTdb.auditCycle.findFirst.mockResolvedValueOnce({ id: 'c-1', frameworkKey: 'ISO27001' });
         mockTdb.framework.findFirst.mockResolvedValueOnce({ id: 'fw-iso' });
         mockTdb.controlRequirementLink.findMany.mockResolvedValueOnce([
             { controlId: 'ctrl-1' }, { controlId: 'ctrl-2' }, { controlId: 'ctrl-1' /* dupe */ },
         ]);
-        mockTdb.policy.findMany.mockResolvedValueOnce([
-            { id: 'pol-sec', category: 'Security' },
-            { id: 'pol-other', category: 'HR' },
-        ]);
+        // Single curated control.findMany — status-filtered, evidence joined inline.
         mockTdb.control.findMany.mockResolvedValueOnce([
-            { evidence: [{ id: 'e-1' }, { id: 'e-2' }] },
-            { evidence: [{ id: 'e-1' /* dupe */ }] },
+            { id: 'ctrl-1', evidence: [{ id: 'e-1' }, { id: 'e-2' }] },
+            { id: 'ctrl-2', evidence: [{ id: 'e-1' /* dupe */ }] },
+        ]);
+        mockTdb.policy.findMany.mockResolvedValueOnce([
+            { id: 'pol-sec', title: 'InfoSec Policy', category: 'Security' },
+            { id: 'pol-other', title: 'Vacation', category: 'HR' },
         ]);
         mockTdb.task.findMany.mockResolvedValueOnce([{ id: 't-1' }]);
 
@@ -546,56 +547,65 @@ describe('previewDefaultPack', () => {
 
         expect(result.frameworkKey).toBe('ISO27001');
         expect(result.selection.controls.count).toBe(2);
-        expect(result.selection.policies.count).toBe(1); // only Security
-        expect(result.selection.evidence.count).toBe(2);
+        expect(result.selection.policies.count).toBe(1); // only the security-relevant one
+        expect(result.selection.evidence.count).toBe(2); // deduped approved evidence
         expect(result.selection.issues.count).toBe(1);
         expect(result.totalItems).toBe(2 + 1 + 2 + 1);
+        // Curated: control.findMany filters by operating statuses.
+        const ctrlArgs = mockTdb.control.findMany.mock.calls[0][0];
+        expect(ctrlArgs.where.status.in).toEqual(expect.arrayContaining(['IMPLEMENTED', 'NEEDS_REVIEW']));
+        // Curated: policy.findMany filters by auditable statuses.
+        const polArgs = mockTdb.policy.findMany.mock.calls[0][0];
+        expect(polArgs.where.status.in).toEqual(expect.arrayContaining(['APPROVED', 'PUBLISHED']));
     });
 
-    it('ISO27001 fallback: when NO mapped controls exist, uses ALL tenant controls', async () => {
+    it('ISO27001 no-mapping fallback: narrows to operating controls, NOT a full dump', async () => {
         mockTdb.auditCycle.findFirst.mockResolvedValueOnce({ id: 'c-1', frameworkKey: 'ISO27001' });
         mockTdb.framework.findFirst.mockResolvedValueOnce({ id: 'fw-iso' });
         mockTdb.controlRequirementLink.findMany.mockResolvedValueOnce([]); // no mappings
-        // The fallback path queries control.findMany for ALL tenant
-        // controls without the {in: controlIds} filter.
-        mockTdb.control.findMany
-            .mockResolvedValueOnce([{ id: 'c-all-1' }, { id: 'c-all-2' }, { id: 'c-all-3' }])
-            .mockResolvedValueOnce([]); // second findMany — evidence join
+        // Single control.findMany — no {id in} filter, but still status-filtered.
+        mockTdb.control.findMany.mockResolvedValueOnce([
+            { id: 'c-all-1', evidence: [] }, { id: 'c-all-2', evidence: [] }, { id: 'c-all-3', evidence: [] },
+        ]);
         mockTdb.policy.findMany.mockResolvedValueOnce([]);
         mockTdb.task.findMany.mockResolvedValueOnce([]);
 
         const result = await previewDefaultPack(ctx, 'c-1');
 
         expect(result.selection.controls.count).toBe(3);
+        const ctrlArgs = mockTdb.control.findMany.mock.calls[0][0];
+        // No mapping → no id filter, but the status curation still applies.
+        expect(ctrlArgs.where.id).toBeUndefined();
+        expect(ctrlArgs.where.status.in).toEqual(expect.arrayContaining(['IMPLEMENTED', 'NEEDS_REVIEW']));
     });
 
-    it('ISO27001 policy fallback: when no Security policies, uses ALL policies', async () => {
+    it('ISO27001 policy fallback: when no keyword-relevant policy, uses all auditable policies', async () => {
         mockTdb.auditCycle.findFirst.mockResolvedValueOnce({ id: 'c-1', frameworkKey: 'ISO27001' });
         mockTdb.framework.findFirst.mockResolvedValueOnce({ id: 'fw-iso' });
         mockTdb.controlRequirementLink.findMany.mockResolvedValueOnce([{ controlId: 'c-1' }]);
-        mockTdb.policy.findMany.mockResolvedValueOnce([
-            { id: 'pol-hr', category: 'HR' },
-            { id: 'pol-finance', category: 'Finance' },
-        ]);
         mockTdb.control.findMany.mockResolvedValueOnce([]);
+        mockTdb.policy.findMany.mockResolvedValueOnce([
+            { id: 'pol-hr', title: 'HR handbook', category: 'HR' },
+            { id: 'pol-finance', title: 'Expenses', category: 'Finance' },
+        ]);
         mockTdb.task.findMany.mockResolvedValueOnce([]);
 
         const result = await previewDefaultPack(ctx, 'c-1');
 
-        expect(result.selection.policies.count).toBe(2); // both, no security match
+        expect(result.selection.policies.count).toBe(2); // both, no keyword match
     });
 
     it('NIS2: filters policies by NIS2-specific keywords', async () => {
         mockTdb.auditCycle.findFirst.mockResolvedValueOnce({ id: 'c-1', frameworkKey: 'NIS2' });
         mockTdb.framework.findFirst.mockResolvedValueOnce({ id: 'fw-nis2' });
         mockTdb.controlRequirementLink.findMany.mockResolvedValueOnce([{ controlId: 'c-1' }]);
+        mockTdb.control.findMany.mockResolvedValueOnce([]);
         mockTdb.policy.findMany.mockResolvedValueOnce([
             { id: 'pol-1', title: 'Incident Response', category: '' },
             { id: 'pol-2', title: 'AUP', category: '' },
             { id: 'pol-3', title: 'Supplier Security', category: '' },
             { id: 'pol-4', title: 'Vacation Policy', category: '' },
         ]);
-        mockTdb.control.findMany.mockResolvedValueOnce([]);
         mockTdb.task.findMany.mockResolvedValueOnce([]);
 
         const result = await previewDefaultPack(ctx, 'c-1');
