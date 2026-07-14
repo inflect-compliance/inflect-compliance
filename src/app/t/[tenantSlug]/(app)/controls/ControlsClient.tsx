@@ -873,7 +873,7 @@ function ControlsPageInner({
             header: t('colHeaders.evidence'),
             // R2-P4 — links + direct Evidence, matching the detail Evidence
             // tab badge (was evidenceLinks alone → the two diverged).
-            accessorFn: (c) => (c._count?.evidenceLinks ?? 0) + (c._count?.evidence ?? 0),
+            accessorFn: (c) => (c._count?.evidenceLinks ?? 0) + (c._count?.evidenceControlLinks ?? 0),
             cell: ({ getValue, row }) => {
                 const n = getValue<number>();
                 return (

@@ -26,10 +26,12 @@ const BIA_SURFACE = 'src/components/bia/ControlBiaSurface.tsx';
 const CHECKS_TAB = `${APP}/controls/[controlId]/_tabs/ControlChecksTab.tsx`;
 const COVERAGE_CLIENT = `${APP}/coverage/CoverageClient.tsx`;
 
-describe('R2-P4 (1) evidence count = links + direct', () => {
+describe('R2-P4 (1) evidence count = links + Evidence-entity links', () => {
     it('the list select counts evidence too and the column sums both', () => {
-        expect(read(CONTROL_REPO)).toMatch(/evidenceLinks: true, evidence: true/);
-        expect(read(CONTROLS_CLIENT)).toMatch(/evidenceLinks \?\? 0\) \+ \(c\._count\?\.evidence \?\? 0\)/);
+        // EP-3 — `Evidence.controlId` (direct) → the `EvidenceControlLink`
+        // join, so the second summed count is `evidenceControlLinks`.
+        expect(read(CONTROL_REPO)).toMatch(/evidenceLinks: true, evidenceControlLinks: true/);
+        expect(read(CONTROLS_CLIENT)).toMatch(/evidenceLinks \?\? 0\) \+ \(c\._count\?\.evidenceControlLinks \?\? 0\)/);
     });
 });
 
