@@ -611,6 +611,24 @@ export async function getEvidenceMetrics(ctx: RequestContext) {
     });
 }
 
+/**
+ * EP-4 — tenant-wide retention/KPI aggregate (READER-gated).
+ *
+ * Thin usecase over `EvidenceRepository.retentionMetrics`. Returns the
+ * authoritative status + expiry bucket counts computed by DB aggregate over
+ * the FULL dataset, so the Evidence list KPI strips + the "all current"
+ * celebration reflect the whole tenant rather than the ≤100-row SSR page.
+ * Distinct from `getEvidenceMetrics` (ADMIN-only storage/top-controls
+ * metrics) and `getRetentionMetrics` (retention dashboard buckets + top
+ * controls with expiring evidence).
+ */
+export async function getEvidenceRetentionMetrics(ctx: RequestContext) {
+    assertCanRead(ctx);
+    return runInTenantContext(ctx, (db) =>
+        EvidenceRepository.retentionMetrics(db, ctx),
+    );
+}
+
 // ─── File Upload / Download ───
 
 import { FileRepository } from '../repositories/FileRepository';
@@ -732,7 +750,13 @@ export async function uploadEvidenceFile(
             // Reuse existing FileRecord — delete the new file
             fileRecordId = existingFile.id;
             deduplicated = true;
-            try { await storage.delete(pathKey); } catch { /* best effort */ }
+            // Best-effort cleanup: on a SHA-256 dedup hit the just-written
+            // temp object is redundant (the canonical FileRecord already
+            // holds identical bytes). A failed delete only leaks one orphan
+            // object — it must NOT fail the dedup path, and there is no
+            // user-visible failure to surface. The retention/GC sweep
+            // reclaims orphans, so swallowing here is intentional.
+            try { await storage.delete(pathKey); } catch { /* best-effort orphan cleanup — see reason above */ }
         } else {
             // Create new FileRecord with cloud storage metadata
             const fileRecord = await FileRepository.createPending(db, ctx, {

@@ -35,6 +35,41 @@ export type EvidenceFreshnessBucket =
     | 'expired'
     | 'needs_review';
 
+/**
+ * EP-4 — the tenant-wide evidence retention/KPI aggregate shape.
+ *
+ * Computed by `getEvidenceRetentionMetrics` over the FULL dataset (a DB
+ * aggregate, not the ≤100-row SSR slice) so the Evidence list KPI strips
+ * and the "all current" celebration reflect the whole tenant. Defined in
+ * this pure `.ts` lib so both the server usecase/repository and the client
+ * island share exactly one contract.
+ *
+ * Bucket semantics mirror `evidenceFreshnessBucket` (over non-deleted rows,
+ * archived included): `needsReview` wins outright (status NEEDS_REVIEW);
+ * then `expired` (expiredAt set, or the review/retention date lapsed); then
+ * `expiringSoon` (review/retention date within 30 days); `current` is the
+ * remainder. `active` / `archived` are the retention-tab dimensions.
+ */
+export interface EvidenceRetentionMetrics {
+    total: number;
+    byStatus: Record<
+        'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'NEEDS_REVIEW',
+        number
+    >;
+    /** Not archived, not expired, not deleted — the live workspace. */
+    active: number;
+    /** isArchived = true (not deleted). */
+    archived: number;
+    /** Freshness "expiring" bucket count (review/retention date ≤ 30d out). */
+    expiringSoon: number;
+    /** Freshness "expired" bucket count (expiredAt set or date lapsed). */
+    expired: number;
+    /** status = NEEDS_REVIEW. */
+    needsReview: number;
+    /** Freshness "current" bucket count (total − needsReview − expired − expiringSoon). */
+    current: number;
+}
+
 const MS_PER_DAY = 86_400_000;
 const EXPIRING_WINDOW_DAYS = 30;
 

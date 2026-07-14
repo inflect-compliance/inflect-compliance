@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { getTenantCtx } from '@/app-layer/context';
-import { listEvidence } from '@/app-layer/usecases/evidence';
+import { listEvidence, getEvidenceRetentionMetrics } from '@/app-layer/usecases/evidence';
 import { listControls } from '@/app-layer/usecases/control';
 import { EvidenceClient } from './EvidenceClient';
 
@@ -31,16 +31,23 @@ export default async function EvidencePage({
         getTenantCtx({ tenantSlug }),
     ]);
 
-    // Data fetches depend on ctx but are independent of each other
-    const [evidence, controls] = await Promise.all([
+    // Data fetches depend on ctx but are independent of each other.
+    // EP-4 — the KPI strips + "all current" celebration are SERVER-computed
+    // (getEvidenceRetentionMetrics) rather than counted from the ≤100 SSR
+    // rows, so the tiles stay correct past the SSR row cap. The client feeds
+    // this as SWR fallbackData and revalidates against /evidence/retention
+    // (the same usecase) — the two can never diverge.
+    const [evidence, controls, metrics] = await Promise.all([
         listEvidence(ctx, undefined, { take: SSR_PAGE_LIMIT }),
         listControls(ctx, undefined, { take: SSR_PAGE_LIMIT }),
+        getEvidenceRetentionMetrics(ctx),
     ]);
 
     return (
         <EvidenceClient
             initialEvidence={JSON.parse(JSON.stringify(evidence))}
             initialControls={JSON.parse(JSON.stringify(controls))}
+            initialMetrics={JSON.parse(JSON.stringify(metrics))}
             tenantSlug={tenantSlug}
             permissions={ctx.permissions}
             translations={{

@@ -65,7 +65,6 @@ import { ToggleGroup } from '@/components/ui/toggle-group';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { useCelebration } from '@/components/ui/hooks';
 import { MILESTONES } from '@/lib/celebrations';
-import { isAllEvidenceCurrent } from '@/lib/evidence-freshness';
 import { toApiSearchParams } from '@/lib/filters/url-sync';
 import {
     buildEvidenceFilters,
@@ -77,6 +76,7 @@ import {
     evidenceFreshnessBucket,
     reviewCurrencyAnchor,
     type EvidenceFreshnessBucket,
+    type EvidenceRetentionMetrics,
 } from '@/lib/evidence-review-currency';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
@@ -183,6 +183,13 @@ interface EvidenceClientProps {
     initialEvidence: EvidenceRow[];
 
     initialControls: EvidenceControlOption[];
+    /**
+     * EP-4 — SSR snapshot of the tenant-wide retention/KPI aggregate. Seeds
+     * the KPI strips instantly and acts as SWR `fallbackData` for
+     * `/evidence/retention` (the same usecase), so the KPI values reflect the
+     * whole tenant and never diverge from the server metrics past the SSR cap.
+     */
+    initialMetrics: EvidenceRetentionMetrics;
     tenantSlug: string;
     permissions: Permissions;
     translations: Record<string, string>;
@@ -207,7 +214,7 @@ export function EvidenceClient(props: EvidenceClientProps) {
     );
 }
 
-function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permissions, translations: t }: EvidenceClientProps) {
+function EvidencePageInner({ initialEvidence, initialControls, initialMetrics, tenantSlug, permissions, translations: t }: EvidenceClientProps) {
     // `tx` — next-intl for the strings not threaded via the server
     // `translations` prop (retention labels, bulk actions, KPI labels,
     // empty states, tooltips, toasts, …). The prop `t` stays intact.
@@ -535,7 +542,14 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             await invalidateEvidence();
         } catch (e) {
             await invalidateEvidence(); // roll back to server truth
-            alert(e instanceof Error ? e.message : (isArchived ? tx('list.archiveFailedNet') : tx('list.unarchiveFailedNet')));
+            // EP-4 — surface via the platform toast (was a raw `alert`).
+            toast.error(
+                e instanceof Error
+                    ? e.message
+                    : isArchived
+                      ? tx('list.archiveFailedNet')
+                      : tx('list.unarchiveFailedNet'),
+            );
         }
     };
 
@@ -562,8 +576,19 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     // the tab-bar above the filter toolbar — KPIs cover status only
     // so the two affordances stay independent.
     type EvidenceKpiId = 'total' | 'draft' | 'submitted' | 'approved';
-    // guardrail-ignore: KPI counts across the loaded page, not a refilter.
-    const totalEvidence = evidence.length;
+
+    // EP-4 — the KPI strips are SERVER-computed (getEvidenceRetentionMetrics),
+    // NOT counted from the ≤100 loaded rows. Seeded by the SSR `initialMetrics`
+    // prop and revalidated against `/evidence/retention` (the same usecase),
+    // so the tiles reflect the WHOLE tenant and can never diverge from the
+    // server metrics past the SSR row cap (the old client-row count silently
+    // under-reported once the list capped).
+    const metricsQuery = useTenantSWR<EvidenceRetentionMetrics>(
+        CACHE_KEYS.evidence.retention(),
+        { fallbackData: initialMetrics, dedupingInterval: 30_000 },
+    );
+    const metrics = metricsQuery.data ?? initialMetrics;
+    const totalEvidence = metrics.total;
 
     // Canonical KPI-card sparklines (shared hook). `total` is an always-present
     // series; the status buckets (draft/submitted/approved) are forward-only
@@ -588,12 +613,10 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         () => assignSparklineVariants(['total', 'draft', 'submitted', 'approved']),
         [],
     );
-    // guardrail-ignore: KPI count, not a refilter.
-    const draftEvidence = evidence.filter((ev) => ev.status === 'DRAFT').length;
-    // guardrail-ignore: KPI count, not a refilter.
-    const submittedEvidence = evidence.filter((ev) => ev.status === 'SUBMITTED').length;
-    // guardrail-ignore: KPI count, not a refilter.
-    const approvedEvidence = evidence.filter((ev) => ev.status === 'APPROVED').length;
+    // EP-4 — server-sourced (metrics.byStatus), not a loaded-row count.
+    const draftEvidence = metrics.byStatus.DRAFT;
+    const submittedEvidence = metrics.byStatus.SUBMITTED;
+    const approvedEvidence = metrics.byStatus.APPROVED;
     const evidenceKpiDefs: ReadonlyArray<KpiFilterDef<EvidenceKpiId>> = useMemo(
         () => [
             {
@@ -662,16 +685,20 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         [displayEvidence, freshnessValue, hydratedNow],
     );
 
-    // Freshness KPI counts — a single pass over the loaded rows (a
-    // for-loop, not a client-side refilter of server data).
-    const freshnessCounts = useMemo(() => {
-        const counts = { current: 0, expiring: 0, expired: 0, needs_review: 0 };
-        for (const ev of evidence) {
-            if (ev.deletedAt) continue;
-            counts[evidenceFreshnessBucket(ev, hydratedNow)] += 1;
-        }
-        return counts;
-    }, [evidence, hydratedNow]);
+    // EP-4 — freshness KPI counts are SERVER-computed (the retention
+    // aggregate's freshness buckets), not a pass over the ≤100 loaded rows.
+    // The server buckets mirror `evidenceFreshnessBucket` exactly, so the
+    // tiles agree with the per-row freshness badge the table renders while
+    // reflecting the whole tenant.
+    const freshnessCounts = useMemo(
+        () => ({
+            current: metrics.current,
+            expiring: metrics.expiringSoon,
+            expired: metrics.expired,
+            needs_review: metrics.needsReview,
+        }),
+        [metrics],
+    );
 
     const setFreshnessFilter = useCallback(
         (bucket: EvidenceFreshnessBucket) => {
@@ -737,12 +764,21 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     //   - query has actually loaded data at least once
     // Session dedupe in `useCelebration` prevents repeat fires across
     // refreshes / re-renders.
+    // EP-4 — "all current" is judged from the SERVER retention aggregate
+    // (whole tenant) rather than `isAllEvidenceCurrent` over the ≤100 loaded
+    // rows: at least one non-deleted row AND zero in the expired / expiring /
+    // needs-review buckets means every row is in the `current` bucket.
+    const allEvidenceCurrent =
+        metrics.total > 0 &&
+        metrics.expired === 0 &&
+        metrics.expiringSoon === 0 &&
+        metrics.needsReview === 0;
     useEffect(() => {
         if (!hydratedNow) return;
         if (retentionFilter !== 'active') return;
         if (anyFilterActive) return;
         if (evidenceQuery.isLoading) return;
-        if (!isAllEvidenceCurrent(evidence, { now: hydratedNow })) return;
+        if (!allEvidenceCurrent) return;
         const def = MILESTONES['evidence-all-current'];
         celebrate({
             preset: def.preset,
@@ -751,7 +787,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             description: def.description,
         });
     }, [
-        evidence,
+        allEvidenceCurrent,
         hydratedNow,
         retentionFilter,
         anyFilterActive,

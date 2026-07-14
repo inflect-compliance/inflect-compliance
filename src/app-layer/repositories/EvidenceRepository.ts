@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { buildCursorWhere, CURSOR_ORDER_BY, computePageInfo, clampLimit } from '@/lib/pagination';
 import type { PaginatedResponse } from '@/lib/dto/pagination';
 import { traceRepository } from '@/lib/observability/repository-tracing';
+import type { EvidenceRetentionMetrics } from '@/lib/evidence-review-currency';
 
 export interface EvidenceListFilters {
     type?: string;
@@ -297,6 +298,114 @@ export class EvidenceRepository {
         return db.evidence.updateMany({
             where: { id: { in: ids }, tenantId: ctx.tenantId },
             data,
+        });
+    }
+
+    /**
+     * EP-4 — authoritative tenant-wide retention/KPI aggregate.
+     *
+     * Computed by DB aggregate over the FULL dataset (not the ≤100-row SSR
+     * page the list loads), so the Evidence KPI strips + the "all current"
+     * celebration are correct on large tenants. A fixed 5 queries — one
+     * `groupBy(status)` plus four `count`s — never a per-row loop. Bucket
+     * definitions mirror `evidenceFreshnessBucket` so the server counts
+     * agree with the per-row badge the table renders.
+     */
+    static async retentionMetrics(
+        db: PrismaTx,
+        ctx: RequestContext,
+    ): Promise<EvidenceRetentionMetrics> {
+        return traceRepository('evidence.retentionMetrics', ctx, async () => {
+            const tenantId = ctx.tenantId;
+            const now = new Date();
+            const soon = new Date(now.getTime() + 30 * 86_400_000);
+            // Soft-deleted rows are excluded everywhere (parity with the
+            // client's per-row pass, which `continue`s on `deletedAt`).
+            const base = { tenantId, deletedAt: null } as const;
+            // NEEDS_REVIEW wins the freshness bucket outright, so the
+            // expired/expiring counts exclude it to stay mutually exclusive.
+            const nonReview = {
+                ...base,
+                status: { not: 'NEEDS_REVIEW' as const },
+            };
+
+            const [byStatusRaw, archived, active, expired, expiringSoon] =
+                await Promise.all([
+                    db.evidence.groupBy({
+                        by: ['status'],
+                        where: base,
+                        _count: true,
+                    }),
+                    db.evidence.count({ where: { ...base, isArchived: true } }),
+                    db.evidence.count({
+                        where: { ...base, isArchived: false, expiredAt: null },
+                    }),
+                    // expired: expiredAt set, OR (no expiredAt) the review date
+                    // lapsed, OR (no review date) the retention date lapsed.
+                    db.evidence.count({
+                        where: {
+                            ...nonReview,
+                            OR: [
+                                { expiredAt: { not: null } },
+                                { expiredAt: null, nextReviewDate: { not: null, lt: now } },
+                                {
+                                    expiredAt: null,
+                                    nextReviewDate: null,
+                                    retentionUntil: { not: null, lt: now },
+                                },
+                            ],
+                        },
+                    }),
+                    // expiring: not expired, review date within 30d (else the
+                    // retention date within 30d when no review date is set).
+                    db.evidence.count({
+                        where: {
+                            ...nonReview,
+                            expiredAt: null,
+                            OR: [
+                                { nextReviewDate: { not: null, gte: now, lte: soon } },
+                                {
+                                    nextReviewDate: null,
+                                    retentionUntil: { not: null, gte: now, lte: soon },
+                                },
+                            ],
+                        },
+                    }),
+                ]);
+
+            const byStatus = {
+                DRAFT: 0,
+                SUBMITTED: 0,
+                APPROVED: 0,
+                REJECTED: 0,
+                NEEDS_REVIEW: 0,
+            } as EvidenceRetentionMetrics['byStatus'];
+            let total = 0;
+            for (const g of byStatusRaw) {
+                const count = g._count;
+                total += count;
+                if (g.status in byStatus) {
+                    byStatus[g.status as keyof typeof byStatus] = count;
+                }
+            }
+            const needsReview = byStatus.NEEDS_REVIEW;
+            // Every non-deleted row lands in exactly one freshness bucket, so
+            // `current` is the arithmetic remainder — no extra query.
+            const current = Math.max(
+                0,
+                total - needsReview - expired - expiringSoon,
+            );
+
+            return {
+                total,
+                byStatus,
+                active,
+                archived,
+                expiringSoon,
+                expired,
+                needsReview,
+                current,
+            };
         });
     }
 

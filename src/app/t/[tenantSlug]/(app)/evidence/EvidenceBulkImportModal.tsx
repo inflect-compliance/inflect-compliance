@@ -52,6 +52,9 @@ import {
 } from '@/lib/upload/upload-with-progress';
 
 const POLL_INTERVAL_MS = 2000;
+// EP-4 — after this many consecutive poll failures (throw / non-ok) the
+// import status surfaces a failed-import error instead of polling forever.
+const MAX_POLL_FAILURES = 5;
 
 interface ImportProgress {
     extracted: number;
@@ -132,14 +135,34 @@ export function EvidenceBulkImportModal({
     useEffect(() => {
         if (!jobId) return;
         let cancelled = false;
+        // EP-4 — a transient network blip is retried, but a PERSISTENTLY
+        // failing poll (fetch throws or a non-ok status MAX_POLL_FAILURES
+        // times in a row) now surfaces a failed-import state instead of
+        // silently stopping (non-ok) or retrying forever (throw). A
+        // successful poll resets the counter.
+        let consecutiveFailures = 0;
+        const onPollFailure = () => {
+            if (cancelled) return;
+            consecutiveFailures += 1;
+            if (consecutiveFailures >= MAX_POLL_FAILURES) {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
+                setError(tx('bulkImport.pollFailed'));
+                return; // stop polling — the operator can retry
+            }
+            setTimeout(tick, POLL_INTERVAL_MS);
+        };
         const tick = async () => {
             try {
                 const res = await fetch(
                     apiUrl(`/evidence/imports/${jobId}`),
                 );
-                if (!res.ok) return;
+                if (!res.ok) {
+                    onPollFailure();
+                    return;
+                }
                 const next = (await res.json()) as ImportStatus;
                 if (cancelled) return;
+                consecutiveFailures = 0;
                 setStatus(next);
                 if (
                     next.state === 'completed' ||
@@ -160,15 +183,15 @@ export function EvidenceBulkImportModal({
                 }
                 setTimeout(tick, POLL_INTERVAL_MS);
             } catch {
-                // Network blip — try again next tick.
-                setTimeout(tick, POLL_INTERVAL_MS);
+                // Network blip — retry up to MAX_POLL_FAILURES, then surface.
+                onPollFailure();
             }
         };
         tick();
         return () => {
             cancelled = true;
         };
-    }, [jobId, apiUrl, swrMutate]);
+    }, [jobId, apiUrl, swrMutate, tx]);
 
     // Per-file upload handler driven by <FileDropzone>. Folds the former
     // useMutation (mutationFn + onSuccess + onError) into one async fn:
