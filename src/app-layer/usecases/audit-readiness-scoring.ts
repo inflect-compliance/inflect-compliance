@@ -305,16 +305,16 @@ async function computeGenericReadiness(
         const ids = mappedControls.map((c) => c.id);
         const now = new Date();
         const ev = await runInTenantContext(ctx, (tdb) =>
-            tdb.evidence.findMany({
+            tdb.evidenceControlLink.findMany({
                 where: {
                     tenantId: ctx.tenantId,
                     controlId: { in: ids },
-                    ...coverageQualifyingEvidenceWhere(now),
+                    evidence: coverageQualifyingEvidenceWhere(now),
                 },
                 select: { controlId: true },
             }),
         );
-        withEvidence = new Set(ev.map((e) => e.controlId).filter((v): v is string => !!v)).size;
+        withEvidence = new Set(ev.map((e) => e.controlId)).size;
     }
     const evidenceScore =
         mappedControls.length > 0
@@ -427,17 +427,17 @@ async function computeISO27001Readiness(ctx: RequestContext, cycle: AuditCycle):
     const controlsWithEvidence = await runInTenantContext(ctx, (tdb) =>
         tdb.control.findMany({
             where: { tenantId: ctx.tenantId, applicability: 'APPLICABLE' },
-            select: { id: true, code: true, name: true, evidence: {
-                where: coverageQualifyingEvidenceWhere(nowIso),
+            select: { id: true, code: true, name: true, evidenceControlLinks: {
+                where: { evidence: coverageQualifyingEvidenceWhere(nowIso) },
                 select: { id: true },
             } },
         }));
-    const withEvidence = controlsWithEvidence.filter((c) => c.evidence?.length > 0).length;
+    const withEvidence = controlsWithEvidence.filter((c) => c.evidenceControlLinks?.length > 0).length;
     const evidenceScore = totalControls > 0 ? (withEvidence / totalControls) * 100 : 0;
 
     // Controls missing evidence (top 10)
     controlsWithEvidence
-        .filter((c) => !c.evidence?.length)
+        .filter((c) => !c.evidenceControlLinks?.length)
         .slice(0, 10)
         .forEach((c) => gaps.push({
             type: 'MISSING_EVIDENCE', severity: 'MEDIUM',
@@ -579,17 +579,17 @@ async function computeNIS2Readiness(ctx: RequestContext, cycle: AuditCycle): Pro
     const controlsWithEv = await runInTenantContext(ctx, (tdb) =>
         tdb.control.findMany({
             where: { tenantId: ctx.tenantId, id: { in: controlIds } },
-            select: { id: true, code: true, name: true, evidence: {
-                where: coverageQualifyingEvidenceWhere(nowNis2),
+            select: { id: true, code: true, name: true, evidenceControlLinks: {
+                where: { evidence: coverageQualifyingEvidenceWhere(nowNis2) },
                 select: { id: true },
             } },
         }));
     const totalControls = controlsWithEv.length;
-    const withEvidence = controlsWithEv.filter((c) => c.evidence?.length > 0).length;
+    const withEvidence = controlsWithEv.filter((c) => c.evidenceControlLinks?.length > 0).length;
     const evidenceScore = totalControls > 0 ? (withEvidence / totalControls) * 100 : 0;
 
     controlsWithEv
-        .filter((c) => !c.evidence?.length)
+        .filter((c) => !c.evidenceControlLinks?.length)
         .slice(0, 10)
         .forEach((c) => gaps.push({
             type: 'MISSING_EVIDENCE', severity: 'MEDIUM',

@@ -36,7 +36,8 @@ export const ControlListItemDTOSchema = z.object({
     updatedAt: z.string().optional(),
     owner: UserRefSchema.nullable().optional(),
     _count: z.object({
-        evidence: z.number().optional(),
+        // EP-3 — Evidence entities reach the control through the join.
+        evidenceControlLinks: z.number().optional(),
         risks: z.number().optional(),
         assets: z.number().optional(),
         // Unified linked-Task total for the control (TaskLink CONTROL link

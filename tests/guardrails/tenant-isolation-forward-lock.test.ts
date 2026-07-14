@@ -28,6 +28,7 @@ const exists = (rel: string) => fs.existsSync(path.join(ROOT, rel));
 
 /** Models with a dedicated two-tenant BEHAVIOURAL isolation test. */
 const ISOLATION_TESTED: Readonly<Record<string, string>> = {
+    EvidenceControlLink: "tests/integration/evidence-control-link-rls.test.ts",
     AccessReviewConnectedDecision: "tests/integration/access-review-rls.test.ts",
     ControlException: "tests/integration/control-exception-rls.test.ts",
     InboundQuestionnaire: "tests/integration/wave-features-rls.test.ts",

@@ -337,10 +337,9 @@ export async function processIncomingWebhook(input: WebhookInput): Promise<Webho
                         executionsCreated++;
 
                         // Create evidence for the check result
-                        await prisma.evidence.create({
+                        const evidence = await prisma.evidence.create({
                             data: {
                                 tenantId: matchedConnection.tenantId,
-                                controlId: control.id,
                                 // Webhook-created evidence is text-based; EvidenceType enum uses FILE/LINK/TEXT.
                                 // Map to TEXT as the semantically closest value for automation-generated content.
                                 type: EvidenceType.TEXT,
@@ -348,6 +347,14 @@ export async function processIncomingWebhook(input: WebhookInput): Promise<Webho
                                 content: `Automated evidence from ${provider} webhook event.\nEvent type: ${event.eventType ?? 'unknown'}\nExecution ID: ${execution.id}`,
                                 category: 'integration',
                                 status: 'APPROVED',
+                            },
+                        });
+                        await prisma.evidenceControlLink.create({
+                            data: {
+                                tenantId: matchedConnection.tenantId,
+                                evidenceId: evidence.id,
+                                controlId: control.id,
+                                createdByUserId: null,
                             },
                         });
                         evidenceCreated++;

@@ -39,6 +39,9 @@ const mockTx = {
     evidence: {
         create: jest.fn(),
     },
+    evidenceControlLink: {
+        create: jest.fn(),
+    },
     findingEvidence: {
         create: jest.fn(),
     },
@@ -162,6 +165,7 @@ beforeEach(() => {
     mockPlanFindFirst.mockReset();
     mockTx.controlTestRun.update.mockReset();
     mockTx.evidence.create.mockReset();
+    mockTx.evidenceControlLink.create.mockReset();
     mockTx.findingEvidence.create.mockReset();
 });
 
@@ -233,20 +237,32 @@ describe('runControlTestRunner — MANUAL plan', () => {
         expect(note).toContain('[Auto-scheduled by Epic G-2');
         expect(note).toContain(SCHEDULED_FOR);
 
-        // Evidence row carries the controlId — that's the
-        // load-bearing link for the Finding-via-FindingEvidence
-        // chain even though MANUAL doesn't create a Finding today.
+        // EP-3 — the Evidence row no longer carries a singular controlId.
+        // The control association is a separate EvidenceControlLink join
+        // row; that link is the load-bearing edge for the
+        // Finding-via-FindingEvidence chain even though MANUAL doesn't
+        // create a Finding today.
         expect(mockTx.evidence.create).toHaveBeenCalledTimes(1);
         const evData = mockTx.evidence.create.mock.calls[0][0].data;
         expect(evData).toMatchObject({
             tenantId: 'tenant-1',
-            controlId: 'ctrl-1',
             type: 'TEXT',
             status: 'APPROVED',
             category: 'integration',
         });
+        expect(evData).not.toHaveProperty('controlId');
         expect(evData.title).toContain('Quarterly access review');
         expect(evData.content).toContain('Awaiting manual completion');
+
+        // The control link is written via the EvidenceControlLink join,
+        // carrying the evidence id + the plan's controlId.
+        expect(mockTx.evidenceControlLink.create).toHaveBeenCalledTimes(1);
+        const linkData = mockTx.evidenceControlLink.create.mock.calls[0][0].data;
+        expect(linkData).toMatchObject({
+            tenantId: 'tenant-1',
+            evidenceId: 'ev-1',
+            controlId: 'ctrl-1',
+        });
 
         // Evidence is linked to the run via the existing
         // ControlTestEvidenceLink shape.

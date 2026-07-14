@@ -34,10 +34,16 @@ export async function getControlEvidenceTab(ctx: RequestContext, controlId: stri
         if (!control) throw notFound('Control not found');
         const [links, evidence] = await Promise.all([
             ControlRepository.listEvidenceLinks(db, ctx, controlId),
+            // EP-3 — Evidence entities are attached to a control through the
+            // many-to-many join now (not a singular controlId). Explicit
+            // `deletedAt: null` mirrors the task evidence tab — soft-deleted
+            // rows never surface in the control evidence list.
             db.evidence.findMany({
-                // Explicit `deletedAt: null` mirrors the task evidence tab —
-                // soft-deleted rows never surface in the control evidence list.
-                where: { controlId, tenantId: ctx.tenantId, deletedAt: null },
+                where: {
+                    tenantId: ctx.tenantId,
+                    deletedAt: null,
+                    evidenceControlLinks: { some: { controlId } },
+                },
                 orderBy: { createdAt: 'desc' },
             }),
         ]);

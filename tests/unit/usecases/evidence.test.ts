@@ -27,6 +27,12 @@ jest.mock('@/app-layer/repositories/EvidenceRepository', () => ({
         addReview: jest.fn(),
         // SoD source (ep1 review gate) — empty map ⇒ fall back to owner.
         getLatestSubmitters: jest.fn(async () => new Map()),
+        // EP-3 join-management — default: every requested control exists.
+        filterExistingControlIds: jest.fn(async (_db, _ctx, ids: string[]) => new Set(ids)),
+        createControlLinks: jest.fn(async () => undefined),
+        listControlLinks: jest.fn(async () => []),
+        linkControl: jest.fn(async () => true),
+        unlinkControl: jest.fn(async () => 1),
     },
 }));
 
@@ -42,6 +48,8 @@ jest.mock('../../../src/app-layer/events/audit', () => ({
 import {
     createEvidence,
     reviewEvidence,
+    linkEvidenceToControl,
+    unlinkEvidenceFromControl,
 } from '@/app-layer/usecases/evidence';
 import { runInTenantContext } from '@/lib/db-context';
 import { EvidenceRepository } from '@/app-layer/repositories/EvidenceRepository';
@@ -53,6 +61,10 @@ const mockCreate = EvidenceRepository.create as jest.MockedFunction<typeof Evide
 const mockGetById = EvidenceRepository.getById as jest.MockedFunction<typeof EvidenceRepository.getById>;
 const mockUpdate = EvidenceRepository.update as jest.MockedFunction<typeof EvidenceRepository.update>;
 const mockLog = logEvent as jest.MockedFunction<typeof logEvent>;
+const mockFilterControls = EvidenceRepository.filterExistingControlIds as jest.MockedFunction<typeof EvidenceRepository.filterExistingControlIds>;
+const mockCreateLinks = EvidenceRepository.createControlLinks as jest.MockedFunction<typeof EvidenceRepository.createControlLinks>;
+const mockLinkControl = EvidenceRepository.linkControl as jest.MockedFunction<typeof EvidenceRepository.linkControl>;
+const mockUnlinkControl = EvidenceRepository.unlinkControl as jest.MockedFunction<typeof EvidenceRepository.unlinkControl>;
 
 beforeEach(() => {
     jest.clearAllMocks();
@@ -60,10 +72,10 @@ beforeEach(() => {
 
 describe('createEvidence — cross-tenant control rejection', () => {
     it('rejects when controlId points at a control NOT in caller tenant', async () => {
-        const fakeDb = {
-            control: { findFirst: jest.fn().mockResolvedValue(null) },
-        };
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn(fakeDb as never));
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
+        // EP-3 — the control does not exist in the caller's tenant, so the
+        // tenant-scoped existence check returns an empty set.
+        mockFilterControls.mockResolvedValueOnce(new Set());
 
         await expect(
             createEvidence(
@@ -76,11 +88,10 @@ describe('createEvidence — cross-tenant control rejection', () => {
                 },
             ),
         ).rejects.toThrow(/INVALID_CONTROL/);
-        // Regression: a bug that drops `tenantId` from the WHERE on
-        // control.findFirst would let admin in A attach evidence to a
-        // control in tenant B — cross-tenant linkage in the audit
-        // surface.
+        // Regression: a bug that drops `tenantId` from the existence check
+        // would let admin in A attach evidence to a control in tenant B.
         expect(mockCreate).not.toHaveBeenCalled();
+        expect(mockCreateLinks).not.toHaveBeenCalled();
     });
 
     it('rejects READER on create (canWrite gate)', async () => {
@@ -93,11 +104,7 @@ describe('createEvidence — cross-tenant control rejection', () => {
     });
 
     it('persists status=DRAFT by default', async () => {
-        const fakeDb = {
-            control: { findFirst: jest.fn() },
-            controlEvidenceLink: { create: jest.fn() },
-        };
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn(fakeDb as never));
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
         mockCreate.mockResolvedValue({ id: 'e1', fileRecordId: null } as never);
 
         await createEvidence(makeRequestContext('EDITOR'), {
@@ -106,6 +113,99 @@ describe('createEvidence — cross-tenant control rejection', () => {
         });
         const repoArgs = mockCreate.mock.calls[0][2];
         expect(repoArgs.status).toBe('DRAFT');
+    });
+
+    it('EP-3 — multiple controlIds create ONE Evidence + N links (no clone)', async () => {
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
+        mockCreate.mockResolvedValue({ id: 'e-multi', fileRecordId: null } as never);
+
+        await createEvidence(makeRequestContext('EDITOR', { tenantId: 'tenant-A' }), {
+            type: 'LINK',
+            title: 'shared artifact',
+            content: 'https://example.com/a',
+            controlIds: ['c1', 'c2', 'c3'],
+        });
+
+        // Exactly ONE Evidence row created — never one-per-control.
+        expect(mockCreate).toHaveBeenCalledTimes(1);
+        // N join rows for the single evidence.
+        expect(mockCreateLinks).toHaveBeenCalledTimes(1);
+        expect(mockCreateLinks).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.anything(),
+            'e-multi',
+            ['c1', 'c2', 'c3'],
+        );
+    });
+
+    it('EP-3 — legacy singular controlId is wrapped into the link set', async () => {
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
+        mockCreate.mockResolvedValue({ id: 'e-legacy', fileRecordId: null } as never);
+
+        await createEvidence(makeRequestContext('EDITOR'), {
+            type: 'LINK',
+            title: 'legacy',
+            content: 'https://example.com/x',
+            controlId: 'c-legacy',
+        });
+        expect(mockCreateLinks).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.anything(),
+            'e-legacy',
+            ['c-legacy'],
+        );
+    });
+});
+
+describe('EP-3 — link / unlink evidence↔control', () => {
+    const evidenceRow = { id: 'e1', title: 'doc', status: 'DRAFT' };
+
+    it('linkEvidenceToControl creates one link + logs when new', async () => {
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
+        mockGetById.mockResolvedValue(evidenceRow as never);
+        mockFilterControls.mockResolvedValueOnce(new Set(['c1']));
+        mockLinkControl.mockResolvedValueOnce(true);
+
+        const res = await linkEvidenceToControl(makeRequestContext('EDITOR'), 'e1', 'c1');
+        expect(res).toEqual({ linked: true });
+        expect(mockLinkControl).toHaveBeenCalledWith(expect.anything(), expect.anything(), 'e1', 'c1');
+        expect(mockLog).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.anything(),
+            expect.objectContaining({ action: 'CONTROL_EVIDENCE_LINKED' }),
+        );
+    });
+
+    it('linkEvidenceToControl rejects a foreign control', async () => {
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
+        mockGetById.mockResolvedValue(evidenceRow as never);
+        mockFilterControls.mockResolvedValueOnce(new Set());
+        await expect(
+            linkEvidenceToControl(makeRequestContext('EDITOR'), 'e1', 'foreign'),
+        ).rejects.toThrow(/INVALID_CONTROL/);
+        expect(mockLinkControl).not.toHaveBeenCalled();
+    });
+
+    it('unlinkEvidenceFromControl removes the link + logs', async () => {
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
+        mockGetById.mockResolvedValue(evidenceRow as never);
+        mockUnlinkControl.mockResolvedValueOnce(1);
+        const res = await unlinkEvidenceFromControl(makeRequestContext('EDITOR'), 'e1', 'c1');
+        expect(res).toEqual({ success: true });
+        expect(mockLog).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.anything(),
+            expect.objectContaining({ action: 'CONTROL_EVIDENCE_UNLINKED' }),
+        );
+    });
+
+    it('unlinkEvidenceFromControl 404s when no link existed', async () => {
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
+        mockGetById.mockResolvedValue(evidenceRow as never);
+        mockUnlinkControl.mockResolvedValueOnce(0);
+        await expect(
+            unlinkEvidenceFromControl(makeRequestContext('EDITOR'), 'e1', 'c1'),
+        ).rejects.toThrow(/not linked/);
     });
 });
 

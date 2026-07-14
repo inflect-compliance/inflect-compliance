@@ -343,7 +343,6 @@ export async function runAutomationForControl(
                 const evidence = await db.evidence.create({
                     data: {
                         tenantId: ctx.tenantId,
-                        controlId: control.id,
                         // Integration EvidencePayload.type uses a wider vocabulary
                         // (DOCUMENT/SCREENSHOT/LOG/CONFIGURATION/REPORT) than the
                         // Prisma EvidenceType enum (FILE/LINK/TEXT). Integration-created
@@ -353,6 +352,14 @@ export async function runAutomationForControl(
                         content: evidencePayload.content,
                         category: evidencePayload.category ?? 'integration',
                         status: 'APPROVED',
+                    },
+                });
+                await db.evidenceControlLink.create({
+                    data: {
+                        tenantId: ctx.tenantId,
+                        evidenceId: evidence.id,
+                        controlId: control.id,
+                        createdByUserId: ctx.userId ?? null,
                     },
                 });
                 evidenceId = evidence.id;

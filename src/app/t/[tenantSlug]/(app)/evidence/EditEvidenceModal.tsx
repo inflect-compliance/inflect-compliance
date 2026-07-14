@@ -12,8 +12,23 @@
  * NewAssetModal) — wraps the existing `<Modal>` shell with a
  * disabled-while-submitting fieldset and an unsaved-changes guard
  * on close.
+ *
+ * EP-3 — the singular control link became a many-to-many join. The
+ * control field is now a `<Combobox multiple>` seeded from the
+ * evidence's linked controls; on save the PUT body carries
+ * `controlIds: string[]` (the usecase reconciles adds/removes).
+ * Category is editable here too, and file-type evidence gains a
+ * "Replace file" affordance.
  */
-import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    type Dispatch,
+    type SetStateAction,
+} from 'react';
 import { useTranslations } from 'next-intl';
 import { apiErrorMessage } from '@/lib/api-error';
 import { Button } from '@/components/ui/button';
@@ -22,7 +37,7 @@ import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { UserCombobox } from '@/components/ui/user-combobox';
-import { EntityPicker } from '@/components/ui/entity-picker';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { DatePicker } from '@/components/ui/date-picker/date-picker';
 import {
     parseYMD,
@@ -31,28 +46,52 @@ import {
 } from '@/components/ui/date-picker/date-utils';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 
+interface ControlOption {
+    id: string;
+    name: string;
+    code?: string | null;
+    annexId?: string | null;
+}
+
+/** Shared shape passed into the modal to seed the edit form. */
+export interface EditEvidenceInitial {
+    id: string;
+    title: string;
+    description: string | null;
+    ownerUserId: string | null;
+    /** EP-3 — the controls this evidence currently satisfies. */
+    controlLinks: ControlOption[];
+    /** EP-3 — persisted classification. */
+    category: string | null;
+    /** B8 follow-up — current folder label (null = unfoldered). */
+    folder?: string | null;
+    /** Retention date (ISO) — edited here now (was inline in the table). */
+    retentionUntil?: string | null;
+    /** EvidenceType — gates the "Replace file" affordance. */
+    type: string;
+    /** Linked file record id (present for FILE-type evidence). */
+    fileRecordId?: string | null;
+}
+
 export interface EditEvidenceModalProps {
     open: boolean;
     setOpen: Dispatch<SetStateAction<boolean>>;
     tenantSlug: string;
-    initial: {
-        id: string;
-        title: string;
-        description: string | null;
-        ownerUserId: string | null;
-        controlId: string | null;
-        /** B8 follow-up — current folder label (null = unfoldered). */
-        folder?: string | null;
-        /** Retention date (ISO) — edited here now (was inline in the table). */
-        retentionUntil?: string | null;
-    } | null;
+    /** Full control list for the tenant — powers the multi-select options. */
+    controls: ControlOption[];
+    initial: EditEvidenceInitial | null;
     onSaved?: () => void;
+}
+
+function controlLabel(c: ControlOption): string {
+    return `${c.annexId || c.code || 'Custom'}: ${c.name}`;
 }
 
 export function EditEvidenceModal({
     open,
     setOpen,
     tenantSlug,
+    controls,
     initial,
     onSaved,
 }: EditEvidenceModalProps) {
@@ -61,7 +100,12 @@ export function EditEvidenceModal({
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
-    const [controlId, setControlId] = useState('');
+    // EP-3 — multi-select control links.
+    const [selectedControls, setSelectedControls] = useState<
+        ComboboxOption<ControlOption>[]
+    >([]);
+    // EP-3 — editable category.
+    const [category, setCategory] = useState('');
     // B8 follow-up — folder is editable post-create.
     const [folder, setFolder] = useState('');
     // Retention date — moved here from the inline table column. Held as a
@@ -72,6 +116,19 @@ export function EditEvidenceModal({
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isDirty, setIsDirty] = useState(false);
+    // PART 4 — replace-file affordance (FILE-type evidence only).
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [replacing, setReplacing] = useState(false);
+
+    const controlOptions = useMemo<ComboboxOption<ControlOption>[]>(
+        () =>
+            controls.map((c) => ({
+                value: c.id,
+                label: controlLabel(c),
+                meta: c,
+            })),
+        [controls],
+    );
 
     // Seed from `initial` when the modal opens; reset dirty + error
     // each time so a re-open after cancel reads clean.
@@ -81,15 +138,28 @@ export function EditEvidenceModal({
             setTitle(initial.title);
             setDescription(initial.description ?? '');
             setOwnerUserId(initial.ownerUserId);
-            setControlId(initial.controlId ?? '');
+            // Prefer the shared option (stable label) but fall back to a
+            // synthesised option so a control missing from the loaded
+            // list still renders a chip.
+            setSelectedControls(
+                (initial.controlLinks ?? []).map((c) => {
+                    const found = controlOptions.find((o) => o.value === c.id);
+                    return (
+                        found ?? { value: c.id, label: controlLabel(c), meta: c }
+                    );
+                }),
+            );
+            setCategory(initial.category ?? '');
             setFolder(initial.folder ?? '');
             const ymd = initial.retentionUntil ? initial.retentionUntil.split('T')[0] : '';
             setRetentionDate(ymd);
             setInitialRetention(ymd);
             setSubmitting(false);
+            setReplacing(false);
             setError(null);
             setIsDirty(false);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, initial]);
 
     const canSubmit = title.trim().length > 0 && !submitting;
@@ -109,7 +179,10 @@ export function EditEvidenceModal({
                     title,
                     description: description || null,
                     ownerUserId: ownerUserId || null,
-                    controlId: controlId || null,
+                    // EP-3 — reconcile the whole link set. Never send the
+                    // legacy singular `controlId`.
+                    controlIds: selectedControls.map((o) => o.value),
+                    category: category.trim() || null,
                     // B8 follow-up — empty string clears the folder
                     // (the usecase null-coerces); a non-empty value
                     // sets it. `undefined` would skip the update.
@@ -148,12 +221,41 @@ export function EditEvidenceModal({
         }
     };
 
+    // PART 4 — replace the backing file of a FILE-type evidence record.
+    const handleReplaceFile = async (file: File) => {
+        if (!initial) return;
+        setReplacing(true);
+        setError(null);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await fetch(apiUrl(`/evidence/${initial.id}/replace`), {
+                method: 'POST',
+                body: formData,
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                setError(apiErrorMessage(err, t('edit.replaceFailed')));
+                return;
+            }
+            onSaved?.();
+            setOpen(false);
+        } catch {
+            setError(t('edit.replaceFailed'));
+        } finally {
+            setReplacing(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
+    const busy = submitting || replacing;
+
     const guardedSetOpen = useCallback<Dispatch<SetStateAction<boolean>>>(
         (next) => {
             const wantClose =
                 typeof next === 'function' ? !next(true) : next === false;
             if (wantClose) {
-                if (submitting) return;
+                if (busy) return;
                 if (
                     isDirty &&
                     !window.confirm(t('edit.discardConfirm'))
@@ -163,7 +265,7 @@ export function EditEvidenceModal({
             }
             setOpen(next);
         },
-        [submitting, isDirty, setOpen, t],
+        [busy, isDirty, setOpen, t],
     );
     const close = () => guardedSetOpen(false);
 
@@ -181,7 +283,7 @@ export function EditEvidenceModal({
             size="lg"
             title={t('edit.title')}
             description={t('edit.description')}
-            preventDefaultClose={submitting}
+            preventDefaultClose={busy}
         >
             <Modal.Header
                 title={t('edit.title')}
@@ -238,21 +340,45 @@ export function EditEvidenceModal({
                                     placeholder={t('edit.unassigned')}
                                 />
                             </FormField>
-                            <FormField label={t('edit.controlLabel')}>
-                                <EntityPicker
-                                    id="edit-evidence-control-input"
-                                    tenantSlug={tenantSlug}
-                                    entityType="CONTROL"
-                                    value={controlId}
-                                    onChange={(id) => {
-                                        setControlId(id);
+                            {/* EP-3 — editable category. */}
+                            <FormField label={t('edit.categoryLabel')}>
+                                <Input
+                                    id="edit-evidence-category-input"
+                                    value={category}
+                                    onChange={(e) => {
+                                        setCategory(e.target.value);
                                         markDirty();
                                     }}
-                                    placeholder={t('edit.linkControl')}
-                                    testId="edit-evidence-control-picker"
+                                    placeholder={t('edit.categoryPlaceholder')}
                                 />
                             </FormField>
                         </div>
+                        {/* EP-3 — multi-select control links. Sends
+                            `controlIds` on save; the usecase reconciles
+                            the add/remove diff. */}
+                        <FormField
+                            label={t('edit.controlsLabel')}
+                            description={t('edit.controlsDesc')}
+                        >
+                            <Combobox<true, ControlOption>
+                                multiple
+                                id="edit-evidence-control-input"
+                                name="controlIds"
+                                options={controlOptions}
+                                selected={selectedControls}
+                                setSelected={(opts) => {
+                                    setSelectedControls(opts);
+                                    markDirty();
+                                }}
+                                placeholder={t('edit.controlsPlaceholder')}
+                                searchPlaceholder={t('edit.controlsSearchPlaceholder')}
+                                emptyState={t('edit.controlsEmpty')}
+                                matchTriggerWidth
+                                forceDropdown
+                                buttonProps={{ className: 'w-full' }}
+                                caret
+                            />
+                        </FormField>
                         {/* B8 follow-up — folder is editable post-
                             create. Clearing the field re-files the
                             evidence as unfoldered. */}
@@ -291,13 +417,45 @@ export function EditEvidenceModal({
                             />
                         </FormField>
                     </fieldset>
+                    {/* PART 4 — replace the backing file. FILE-type
+                        evidence only. Sits outside the main fieldset so
+                        it stays actionable even while a metadata save is
+                        in flight would be wrong — it shares the busy
+                        gate below instead. */}
+                    {initial?.type === 'FILE' && (
+                        <div className="mt-default border-t border-border-subtle pt-default">
+                            <FormField
+                                label={t('edit.replaceFileLabel')}
+                                description={t('edit.replaceFileDesc')}
+                            >
+                                <div className="flex items-center gap-default">
+                                    <input
+                                        ref={fileInputRef}
+                                        id="edit-evidence-replace-input"
+                                        type="file"
+                                        className="input w-full"
+                                        disabled={busy}
+                                        onChange={(e) => {
+                                            const f = e.target.files?.[0];
+                                            if (f) void handleReplaceFile(f);
+                                        }}
+                                    />
+                                    {replacing && (
+                                        <span className="shrink-0 text-xs text-content-muted">
+                                            {t('edit.replacing')}
+                                        </span>
+                                    )}
+                                </div>
+                            </FormField>
+                        </div>
+                    )}
                 </Modal.Body>
                 <Modal.Actions>
                     <Button
                         variant="secondary"
                         size="sm"
                         onClick={close}
-                        disabled={submitting}
+                        disabled={busy}
                         id="edit-evidence-cancel-btn"
                     >
                         {t('edit.cancel')}
@@ -306,7 +464,7 @@ export function EditEvidenceModal({
                         type="submit"
                         variant="primary"
                         size="sm"
-                        disabled={!canSubmit}
+                        disabled={!canSubmit || replacing}
                         id="edit-evidence-submit-btn"
                     >
                         {submitting ? t('edit.saving') : t('edit.save')}

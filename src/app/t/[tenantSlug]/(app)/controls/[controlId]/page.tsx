@@ -671,7 +671,8 @@ export default function ControlDetailPage() {
             label: tx('detailPage.tabEvidence'),
             count:
                 (control._count?.evidenceLinks ?? 0) +
-                (control._count?.evidence ?? 0),
+                // EP-3 — Evidence entities reach the control through the join.
+                (control._count?.evidenceControlLinks ?? 0),
         },
         { key: 'mappings', label: tx('detailPage.tabMappings'), count: control._count?.frameworkMappings ?? 0 },
         { key: 'traceability', label: tx('detailPage.tabTraceability') },

@@ -24,8 +24,15 @@ describe('Evidence → Control linking — structural', () => {
         expect(usecaseContent).toContain('Control not found or belongs to a different tenant');
     });
 
-    test('createEvidence creates ControlEvidenceLink when controlId is provided', () => {
-        expect(usecaseContent).toContain('controlEvidenceLink.create');
+    test('createEvidence writes the EvidenceControlLink join (removed bridge is gone)', () => {
+        // EP-3 — createEvidence now delegates to
+        // EvidenceRepository.createControlLinks, which writes N
+        // EvidenceControlLink join rows. The old best-effort
+        // ControlEvidenceLink "bridge" write for Evidence entities is
+        // removed (ControlEvidenceLink is retained only for
+        // url/integration/bia artifacts).
+        expect(usecaseContent).toContain('createControlLinks');
+        expect(usecaseContent).not.toContain('controlEvidenceLink.create');
     });
 
     test('uploadEvidenceFile also validates controlId tenant', () => {
@@ -34,14 +41,21 @@ describe('Evidence → Control linking — structural', () => {
         expect(uploadSection).toContain('INVALID_CONTROL');
     });
 
-    test('uploadEvidenceFile creates ControlEvidenceLink for file evidence', () => {
+    test('uploadEvidenceFile writes the EvidenceControlLink join for file evidence', () => {
         const uploadSection = usecaseContent.split('uploadEvidenceFile')[1] || '';
-        expect(uploadSection).toContain('controlEvidenceLink.create');
+        expect(uploadSection).toContain('createControlLinks');
     });
 
-    test('duplicate link does not crash evidence creation', () => {
-        // The try/catch around controlEvidenceLink.create should swallow duplicates
-        expect(usecaseContent).toMatch(/catch\s*\{/);
+    test('duplicate control link is idempotent (join createMany skips duplicates)', () => {
+        // EP-3 — idempotency moved from the old try/catch around the bridge
+        // insert into the join repository: createControlLinks uses createMany
+        // with skipDuplicates, so re-linking the same control is a no-op.
+        const repoPath = require('path').resolve(
+            __dirname, '../../src/app-layer/repositories/EvidenceRepository.ts'
+        );
+        const repoContent = require('fs').readFileSync(repoPath, 'utf-8');
+        expect(repoContent).toContain('createControlLinks');
+        expect(repoContent).toContain('skipDuplicates');
     });
 });
 
@@ -57,9 +71,12 @@ describe('Control detail query — evidence completeness', () => {
         expect(repoContent).toContain('evidenceLinks');
     });
 
-    test('control getById includes evidence relation', () => {
-        // The query must include direct Evidence records via controlId FK
-        expect(repoContent).toMatch(/evidence:\s*\{/);
+    test('control getById reads evidence through the evidenceControlLinks join', () => {
+        // EP-3 — the singular Evidence.controlId FK is gone; the detail
+        // query includes the many-to-many join and flattens it back to the
+        // `control.evidence` array the detail page expects.
+        expect(repoContent).toMatch(/evidenceControlLinks:\s*\{/);
+        expect(repoContent).toContain('evidenceControlLinks.map');
     });
 });
 
@@ -106,9 +123,15 @@ describe('Control evidence tab — unified display', () => {
         expect(evidenceTabContent).toContain('directEvidence');
     });
 
-    test('evidence tab deduplicates by fileRecordId', () => {
-        expect(evidenceTabContent).toContain('linkedFileIds');
-        expect(evidenceTabContent).toContain('fileRecordId');
+    test('evidence tab reads direct evidence without the removed fileRecordId dedup', () => {
+        // EP-3 — Evidence entities reach the control through the
+        // EvidenceControlLink join; ControlEvidenceLink (`links`) now only
+        // carries genuinely non-Evidence artifacts. The old `linkedFileIds`
+        // dedup that compensated for the dual representation is gone — the
+        // sub-table reads `data.evidence` directly.
+        expect(evidenceTabContent).not.toContain('linkedFileIds');
+        expect(subtableContent).toContain('directEvidence');
+        expect(subtableContent).toMatch(/data\?\.evidence/);
     });
 
     test('evidence tab count includes both sources', () => {

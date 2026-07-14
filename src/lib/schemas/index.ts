@@ -303,7 +303,11 @@ export const PublishPolicySchema = z.object({
 // this base prevents a duplicate-component-id collision in the
 // OpenAPI document.
 const _CreateEvidenceBase = z.object({
+    // EP-3 — evidence↔control is many-to-many. `controlIds` creates ONE
+    // Evidence + N EvidenceControlLink rows. `controlId` is retained for
+    // backward-compat (wrapped into `[controlId]` at the usecase boundary).
     controlId: z.string().optional().nullable(),
+    controlIds: z.array(z.string().min(1)).max(100).optional(),
     type: z.enum(['TEXT', 'FILE', 'LINK', 'SCREENSHOT']).optional().default('TEXT'),
     title: z.string().min(1, 'Title is required'),
     content: z.string().optional(),
@@ -331,6 +335,10 @@ export const CreateEvidenceFormSchema = _CreateEvidenceBase.extend({
 export const UpdateEvidenceSchema = z.object({
     title: z.string().min(1).optional(),
     content: z.string().optional(),
+    // EP-3 — multi-select control association. When present, the edit
+    // reconciles EvidenceControlLink rows to exactly this set (adds/removes
+    // links rather than moving the record). Omitted ⇒ links untouched.
+    controlIds: z.array(z.string().min(1)).max(100).optional(),
     category: z.string().optional().nullable(),
     // B8 follow-up — folder is editable post-create so a tenant
     // can re-organise their evidence library after the fact.
@@ -348,6 +356,14 @@ export const EvidenceReviewSchema = z.object({
     comment: z.string().optional().nullable(),
 }).strip().openapi('EvidenceReviewRequest', {
     description: 'Lifecycle transition for an evidence record. SUBMITTED is the request-for-review state; APPROVED/REJECTED are reviewer decisions.',
+});
+
+// EP-3 — link/unlink an existing Evidence record to/from a control from the
+// evidence library (creates/removes one EvidenceControlLink row).
+export const LinkEvidenceControlSchema = z.object({
+    controlId: z.string().min(1, 'controlId is required'),
+}).strip().openapi('EvidenceControlLinkRequest', {
+    description: 'Associate an existing evidence record with a control. Creates one EvidenceControlLink; idempotent on the (evidence, control) pair.',
 });
 
 // ─── Findings ───

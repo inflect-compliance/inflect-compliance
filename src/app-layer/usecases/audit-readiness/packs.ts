@@ -118,7 +118,10 @@ async function createControlSnapshot(tdb: PrismaTx, controlId: string, tenantId:
         where: { id: controlId, tenantId },
         include: {
             tasks: { select: { id: true, title: true, status: true, dueAt: true } },
-            evidence: { select: { id: true, title: true, status: true, type: true } },
+            // Evidence↔Control is a many-to-many join now; the snapshot only
+            // needs the linked-evidence count (one join row per distinct
+            // evidence via the unique key).
+            evidenceControlLinks: { where: { tenantId }, select: { id: true } },
             requirementLinks: { include: { requirement: { select: { code: true, title: true, frameworkId: true } } } },
         },
     });
@@ -128,7 +131,7 @@ async function createControlSnapshot(tdb: PrismaTx, controlId: string, tenantId:
         objective: ctrl.objective,
         owner: ctrl.ownerUserId,
         taskCompletion: { total: ctrl.tasks.length, done: ctrl.tasks.filter((t) => t.status === WorkItemStatus.RESOLVED || t.status === WorkItemStatus.CLOSED).length },
-        evidenceCount: ctrl.evidence.length,
+        evidenceCount: ctrl.evidenceControlLinks.length,
         mappedRequirements: (ctrl.requirementLinks || []).map((l) => ({
             code: l.requirement.code, title: l.requirement.title,
         })),
@@ -339,7 +342,7 @@ async function buildCuratedDefaultPack(ctx: RequestContext, frameworkKey: string
                 status: { in: [...OPERATING_CONTROL_STATUSES] },
                 ...(mappedControlIds.length > 0 ? { id: { in: mappedControlIds } } : {}),
             },
-            select: { id: true, evidence: { where: { status: EvidenceStatus.APPROVED }, select: { id: true } } },
+            select: { id: true, evidenceControlLinks: { where: { evidence: { status: EvidenceStatus.APPROVED } }, select: { evidenceId: true } } },
             take: 2000,
         })
     );
@@ -359,8 +362,9 @@ async function buildCuratedDefaultPack(ctx: RequestContext, frameworkKey: string
     });
     const policyIds = (relevantPolicies.length > 0 ? relevantPolicies : policies).map((p) => p.id);
 
-    // APPROVED evidence linked to the selected operating controls.
-    const evidenceIds = [...new Set(operatingControls.flatMap((c) => c.evidence.map((e) => e.id)))];
+    // APPROVED evidence linked to the selected operating controls (deduped:
+    // one evidence can now be linked to several controls via the join).
+    const evidenceIds = [...new Set(operatingControls.flatMap((c) => c.evidenceControlLinks.map((l) => l.evidenceId)))];
 
     // Open (non-terminal) findings / tasks — the live remediation backlog.
     const issues = await runInTenantContext(ctx, (tdb) =>

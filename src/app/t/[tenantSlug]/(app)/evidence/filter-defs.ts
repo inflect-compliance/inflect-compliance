@@ -24,7 +24,7 @@ import {
     optionsFromEnum,
 } from '@/components/ui/filter/filter-definitions';
 import type { FilterOption } from '@/components/ui/filter/types';
-import { FileText, CircleDot, Link2, FolderOpen, Clock } from 'lucide-react';
+import { FileText, CircleDot, Link2, FolderOpen, Clock, Tag } from 'lucide-react';
 
 /** Surface-namespace resolver (`useTranslations('evidence')`). */
 type T = (key: string, values?: Record<string, string | number | Date>) => string;
@@ -124,6 +124,19 @@ function evidenceFilterDefsInput(t: T, tGroup: TGroup) {
             shouldFilter: true,
             resetBehavior: 'clearable',
         },
+        // EP-3 — Category filter. Maps 1:1 to the API `category`
+        // exact-match param. Options are derived at render time from
+        // the categories present in the currently-loaded evidence
+        // rows (mirrors the folder filter's runtime derivation).
+        category: {
+            label: t('filters.category'),
+            description: t('filters.categoryDesc'),
+            group: tGroup('classification'),
+            icon: Tag,
+            options: null, // filled at render time from loaded evidence
+            shouldFilter: true,
+            resetBehavior: 'clearable',
+        },
     } satisfies Record<string, FilterDefInput>;
 }
 
@@ -202,17 +215,43 @@ export function folderOptionsFromEvidence(
     return out;
 }
 
+/**
+ * EP-3 — build the Category filter's options from whatever evidence
+ * is currently loaded. Only categories actually present are listed;
+ * the API `category` param is an exact match, so an unset/"no
+ * category" bucket has no query representation and is intentionally
+ * omitted.
+ */
+export interface EvidenceCategoryLike {
+    category?: string | null;
+}
+
+export function categoryOptionsFromEvidence(
+    evidence: ReadonlyArray<EvidenceCategoryLike>,
+): FilterOption[] {
+    const present = new Set<string>();
+    for (const e of evidence) {
+        const c = (e.category || '').trim();
+        if (c) present.add(c);
+    }
+    return Array.from(present)
+        .sort()
+        .map((c) => ({ value: c, label: c }));
+}
+
 export function buildEvidenceFilters(
     controls: ReadonlyArray<ControlLike>,
-    evidence: ReadonlyArray<EvidenceFolderLike> = [],
+    evidence: ReadonlyArray<EvidenceFolderLike & EvidenceCategoryLike> = [],
     t: T = (k) => k,
     tGroup: TGroup = (k) => k,
 ) {
     const controlOpts = controlOptionsFromControls(controls);
     const folderOpts = folderOptionsFromEvidence(evidence, t);
+    const categoryOpts = categoryOptionsFromEvidence(evidence);
     return buildEvidenceFilterDefs(t, tGroup).filters.map((f) => {
         if (f.key === 'controlId') return { ...f, options: controlOpts };
         if (f.key === 'folder') return { ...f, options: folderOpts };
+        if (f.key === 'category') return { ...f, options: categoryOpts };
         return f;
     });
 }

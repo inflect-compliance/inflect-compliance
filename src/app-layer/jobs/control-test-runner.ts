@@ -502,7 +502,6 @@ async function createScheduledRunEvidence(
     const evidence = await db.evidence.create({
         data: {
             tenantId: ctx.tenantId,
-            controlId: data.controlId,
             type: 'TEXT',
             title: data.title,
             content: data.content,
@@ -514,6 +513,14 @@ async function createScheduledRunEvidence(
             ownerUserId: ctx.userId,
         },
         select: { id: true },
+    });
+    await db.evidenceControlLink.create({
+        data: {
+            tenantId: ctx.tenantId,
+            evidenceId: evidence.id,
+            controlId: data.controlId,
+            createdByUserId: ctx.userId ?? null,
+        },
     });
     await logEvent(db, ctx, {
         action: 'EVIDENCE_AUTO_ATTACHED',

@@ -57,6 +57,13 @@ const SITE_CONTRACTS: ReadonlyArray<SiteContract> = [
         name: 'Vendor document removal (vendor detail)',
         handlers: ['removeDoc'],
     },
+    {
+        // EP-3 — the evidence library detail sheet unlinks a control
+        // (EvidenceControlLink) from the "Used by N controls" list.
+        file: 'src/app/t/[tenantSlug]/(app)/evidence/EvidenceDetailSheet.tsx',
+        name: 'Evidence↔control unlink (evidence detail sheet)',
+        handlers: ['handleUnlinkControl'],
+    },
 ];
 
 function loadFile(file: string): string {

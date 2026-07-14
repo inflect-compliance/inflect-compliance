@@ -68,12 +68,18 @@ async function evidenceForControls(
     byId: Map<string, ControlRef>,
 ) {
     if (controlIds.length === 0) return [];
-    const evidence = await db.evidence.findMany({
-        where: { tenantId, controlId: { in: controlIds }, deletedAt: null },
-        orderBy: { createdAt: 'desc' },
+    // Evidence↔Control is a many-to-many join now: read the linked Evidence
+    // through it so each inherited row carries the control it came from. An
+    // evidence linked to several of the mapped controls surfaces once per
+    // control (the "control" column tells them apart) — the same inheritance
+    // semantic the single-FK version produced.
+    const links = await db.evidenceControlLink.findMany({
+        where: { tenantId, controlId: { in: controlIds }, evidence: { deletedAt: null } },
+        orderBy: { evidence: { createdAt: 'desc' } },
+        include: { evidence: true },
         take: AGG_TAKE,
     });
-    return evidence.map((e) => ({ ...e, control: e.controlId ? byId.get(e.controlId) ?? null : null }));
+    return links.map((l) => ({ ...l.evidence, control: byId.get(l.controlId) ?? null }));
 }
 
 async function testPlansForControls(

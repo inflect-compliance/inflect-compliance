@@ -91,8 +91,8 @@ export async function listExpiringEvidence(ctx: RequestContext, days: number = 3
     assertCanRead(ctx);
     const future = new Date(Date.now() + days * 86_400_000);
 
-    return runInTenantContext(ctx, (db) =>
-        db.evidence.findMany({
+    return runInTenantContext(ctx, async (db) => {
+        const rows = await db.evidence.findMany({
             where: {
                 tenantId: ctx.tenantId,
                 retentionUntil: { not: null, lte: future },
@@ -101,10 +101,13 @@ export async function listExpiringEvidence(ctx: RequestContext, days: number = 3
             },
             orderBy: { retentionUntil: 'asc' },
             include: {
-                control: { select: { id: true, name: true, annexId: true } },
+                // Evidence↔Control is a many-to-many join now; surface the
+                // first linked control as `control` for the retention view.
+                evidenceControlLinks: { select: { control: { select: { id: true, name: true, annexId: true } } } },
             },
-        }),
-    );
+        });
+        return rows.map((ev) => ({ ...ev, control: ev.evidenceControlLinks[0]?.control ?? null }));
+    });
 }
 
 /**
@@ -113,8 +116,8 @@ export async function listExpiringEvidence(ctx: RequestContext, days: number = 3
 export async function listExpiredEvidence(ctx: RequestContext) {
     assertCanRead(ctx);
 
-    return runInTenantContext(ctx, (db) =>
-        db.evidence.findMany({
+    return runInTenantContext(ctx, async (db) => {
+        const rows = await db.evidence.findMany({
             where: {
                 tenantId: ctx.tenantId,
                 expiredAt: { not: null },
@@ -122,10 +125,13 @@ export async function listExpiredEvidence(ctx: RequestContext) {
             },
             orderBy: { expiredAt: 'desc' },
             include: {
-                control: { select: { id: true, name: true, annexId: true } },
+                // Evidence↔Control is a many-to-many join now; surface the
+                // first linked control as `control` for the retention view.
+                evidenceControlLinks: { select: { control: { select: { id: true, name: true, annexId: true } } } },
             },
-        }),
-    );
+        });
+        return rows.map((ev) => ({ ...ev, control: ev.evidenceControlLinks[0]?.control ?? null }));
+    });
 }
 
 /**
@@ -246,27 +252,29 @@ export async function getRetentionMetrics(ctx: RequestContext) {
             },
         });
 
-        // Top controls with expiring evidence
-        const expiringEvidence = await db.evidence.findMany({
+        // Top controls with expiring evidence — read through the
+        // Evidence↔Control join so an evidence linked to several controls
+        // counts toward each of them (one join row per control).
+        const expiringLinks = await db.evidenceControlLink.findMany({
             where: {
                 tenantId: ctx.tenantId,
-                retentionUntil: { not: null, lte: in30Days, gt: now },
-                isArchived: false,
-                deletedAt: null,
-                controlId: { not: null },
+                evidence: {
+                    retentionUntil: { not: null, lte: in30Days, gt: now },
+                    isArchived: false,
+                    deletedAt: null,
+                },
             },
             select: { controlId: true, control: { select: { id: true, name: true, annexId: true } } },
         });
 
         const controlMap = new Map<string, { controlId: string; name: string; annexId: string; count: number }>();
-        for (const ev of expiringEvidence) {
-            const key = ev.controlId;
-            if (!key) continue;
+        for (const link of expiringLinks) {
+            const key = link.controlId;
             if (!controlMap.has(key)) {
                 controlMap.set(key, {
                     controlId: key,
-                    name: ev.control?.name || 'Unknown',
-                    annexId: ev.control?.annexId || '',
+                    name: link.control?.name || 'Unknown',
+                    annexId: link.control?.annexId || '',
                     count: 0,
                 });
             }

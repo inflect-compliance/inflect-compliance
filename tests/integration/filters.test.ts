@@ -205,7 +205,7 @@ describe('EvidenceRepository._buildWhere', () => {
         expect(where.type).toBe('FILE');
     });
 
-    it('filters by controlId', async () => {
+    it('filters by controlId through the EvidenceControlLink join', async () => {
         const { EvidenceRepository } = await import('@/app-layer/repositories/EvidenceRepository');
         const mockFindMany = jest.fn().mockResolvedValue([]);
         const mockDb = { evidence: { findMany: mockFindMany } } as unknown as PrismaTx;
@@ -213,8 +213,10 @@ describe('EvidenceRepository._buildWhere', () => {
 
         await EvidenceRepository.list(mockDb, ctx, { controlId: 'ctrl-1' });
 
+        // EP-3 — evidence↔control is many-to-many; the filter goes through
+        // the join relation, not a singular `controlId` column.
         const where = mockFindMany.mock.calls[0][0].where;
-        expect(where.controlId).toBe('ctrl-1');
+        expect(where.evidenceControlLinks).toEqual({ some: { controlId: 'ctrl-1' } });
     });
 
     it('enforces tenant boundary', async () => {

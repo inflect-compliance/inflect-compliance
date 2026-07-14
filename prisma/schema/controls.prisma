@@ -63,7 +63,8 @@ model Control {
   requirementLinks             ControlRequirementLink[]
   testPlans                    ControlTestPlan[]
   testRuns                     ControlTestRun[]
-  evidence                     Evidence[]
+  // EP-3 — evidence-entity↔control is now the many-to-many join.
+  evidenceControlLinks         EvidenceControlLink[]
   frameworkMappings            FrameworkMapping[]
   findings                     Finding[]                @relation("FindingControl")
   compensatingForFindings      Finding[]                @relation("FindingCompensatingControl")

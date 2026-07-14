@@ -360,7 +360,6 @@ async function attachReviewedAssessmentEvidence(
     const evidence = await db.evidence.create({
         data: {
             tenantId: ctx.tenantId,
-            controlId: null,
             type: 'TEXT',
             title: `Vendor assessment: ${a.templateVersion.name}`,
             content,

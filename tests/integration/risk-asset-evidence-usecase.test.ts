@@ -170,16 +170,17 @@ describeFn('uploadEvidenceFile — entity tagging (integration)', () => {
     const txtFile = (body: string) =>
         new File([body], 'note.txt', { type: 'text/plain' });
 
-    it('uploads a file tagged to a control (+ ControlEvidenceLink bridge)', async () => {
+    it('uploads a file tagged to a control via EvidenceControlLink', async () => {
+        // EP-3 — the upload creates ONE Evidence + an EvidenceControlLink
+        // (no ControlEvidenceLink bridge for Evidence entities).
         const ev = await uploadEvidenceFile(adminCtx(), txtFile('control body'), {
             title: 'Control upload',
             controlId: CONTROL_ID,
         });
-        expect(ev.controlId).toBe(CONTROL_ID);
+        expect(ev.controlIds).toContain(CONTROL_ID);
         expect(ev.type).toBe('FILE');
-        // Bridge row so it shows in the control Evidence tab.
-        const link = await globalPrisma.controlEvidenceLink.findFirst({
-            where: { controlId: CONTROL_ID, tenantId: TENANT_ID },
+        const link = await globalPrisma.evidenceControlLink.findFirst({
+            where: { controlId: CONTROL_ID, tenantId: TENANT_ID, evidenceId: ev.id },
         });
         expect(link).not.toBeNull();
     });

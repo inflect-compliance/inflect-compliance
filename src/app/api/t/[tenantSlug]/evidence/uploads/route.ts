@@ -23,9 +23,14 @@ export const POST = withApiErrorHandling(async (req: NextRequest, { params: para
         );
     }
 
+    // EP-3 — support many controls: repeated `controlIds` fields OR a single
+    // legacy `controlId`. Both feed the many-to-many join in the usecase.
+    const controlIds = formData.getAll('controlIds').map((v) => String(v)).filter(Boolean);
+
     const metadata = {
         title: formData.get('title') as string | undefined,
         controlId: formData.get('controlId') as string | null,
+        controlIds: controlIds.length > 0 ? controlIds : undefined,
         taskId: formData.get('taskId') as string | null,
         riskId: formData.get('riskId') as string | null,
         assetId: formData.get('assetId') as string | null,

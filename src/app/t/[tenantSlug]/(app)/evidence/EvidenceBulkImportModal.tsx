@@ -40,6 +40,8 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Modal } from '@/components/ui/modal';
+import { FormField } from '@/components/ui/form-field';
+import { EntityPicker } from '@/components/ui/entity-picker';
 import {
     FileDropzone,
     type FileDropzoneHandle,
@@ -108,6 +110,10 @@ export function EvidenceBulkImportModal({
     const [status, setStatus] = useState<ImportStatus | null>(null);
     const [queuedCount, setQueuedCount] = useState(0);
     const [busy, setBusy] = useState(false);
+    // EP-3 — optional default control + folder threaded onto every
+    // imported row (creates an EvidenceControlLink + folder label).
+    const [defaultControlId, setDefaultControlId] = useState('');
+    const [importFolder, setImportFolder] = useState('');
 
     useEffect(() => {
         if (!open) return;
@@ -117,6 +123,8 @@ export function EvidenceBulkImportModal({
         setStatus(null);
         setQueuedCount(0);
         setBusy(false);
+        setDefaultControlId('');
+        setImportFolder('');
     }, [open]);
 
     // Poll loop — runs only while a jobId is set + the job is not
@@ -177,6 +185,11 @@ export function EvidenceBulkImportModal({
         ) => {
             const formData = new FormData();
             formData.append('file', file);
+            // EP-3 — thread the optional default control (as a repeated
+            // `controlIds` field) + folder so imported rows get an
+            // EvidenceControlLink + folder label.
+            if (defaultControlId) formData.append('controlIds', defaultControlId);
+            if (importFolder.trim()) formData.append('folder', importFolder.trim());
             try {
                 const res = await uploadWithProgress<{ jobId: string }>(
                     apiUrl('/evidence/imports'),
@@ -205,7 +218,7 @@ export function EvidenceBulkImportModal({
                 throw err;
             }
         },
-        [apiUrl],
+        [apiUrl, defaultControlId, importFolder],
     );
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -275,6 +288,37 @@ export function EvidenceBulkImportModal({
                         title={tx('bulkImport.dropTitle')}
                         hint={tx('bulkImport.dropHint')}
                     />
+
+                    {/* EP-3 — optional metadata applied to every imported row. */}
+                    <div className="mt-default grid grid-cols-1 gap-default sm:grid-cols-2">
+                        <FormField
+                            label={tx('bulkImport.defaultControlLabel')}
+                            description={tx('bulkImport.defaultControlDesc')}
+                        >
+                            <EntityPicker
+                                id="bulk-import-control-input"
+                                tenantSlug={tenantSlug}
+                                entityType="CONTROL"
+                                value={defaultControlId}
+                                onChange={setDefaultControlId}
+                                placeholder={tx('bulkImport.defaultControlPlaceholder')}
+                                testId="bulk-import-control-picker"
+                            />
+                        </FormField>
+                        <FormField label={tx('bulkImport.folderLabel')}>
+                            <input
+                                id="bulk-import-folder-input"
+                                type="text"
+                                className="input w-full"
+                                placeholder={tx('bulkImport.folderPlaceholder')}
+                                list="evidence-folder-suggestions"
+                                value={importFolder}
+                                onChange={(e) => setImportFolder(e.target.value)}
+                                disabled={busy}
+                                autoComplete="off"
+                            />
+                        </FormField>
+                    </div>
 
                     {jobId && (
                         <Card

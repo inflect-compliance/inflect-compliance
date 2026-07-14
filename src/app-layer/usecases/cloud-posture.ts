@@ -114,14 +114,15 @@ export async function runCloudPostureCollection(input: CloudPostureCollectInput)
                     const nextReviewDate = new Date(now.getTime() + EVIDENCE_FRESHNESS_DAYS * 86_400_000);
                     const content = `${input.cloud} check "${c.id}" PASSED (${automationKey}) on ${now.toISOString().slice(0, 10)}. Machine-collected via Powerpipe; execution ${execution.id}.`;
                     const existing = await db.evidence.findFirst({
-                        where: { tenantId: ctx.tenantId, controlId, category, type: 'TEXT', isArchived: false, deletedAt: null },
+                        where: { tenantId: ctx.tenantId, evidenceControlLinks: { some: { controlId } }, category, type: 'TEXT', isArchived: false, deletedAt: null },
                         select: { id: true },
                     });
                     if (existing) {
                         const ev = await db.evidence.update({ where: { id: existing.id }, data: { title: `Automated evidence — ${c.id}`, content, dateCollected: now, nextReviewDate, status: 'APPROVED' } });
                         firstEvidenceId = firstEvidenceId ?? ev.id;
                     } else {
-                        const ev = await db.evidence.create({ data: { tenantId: ctx.tenantId, controlId, type: 'TEXT', title: `Automated evidence — ${c.id}`, content, category, dateCollected: now, reviewCycle: 'MONTHLY', nextReviewDate, status: 'APPROVED' } });
+                        const ev = await db.evidence.create({ data: { tenantId: ctx.tenantId, type: 'TEXT', title: `Automated evidence — ${c.id}`, content, category, dateCollected: now, reviewCycle: 'MONTHLY', nextReviewDate, status: 'APPROVED' } });
+                        await db.evidenceControlLink.create({ data: { tenantId: ctx.tenantId, evidenceId: ev.id, controlId, createdByUserId: null } });
                         firstEvidenceId = firstEvidenceId ?? ev.id;
                         try {
                             await db.controlEvidenceLink.create({ data: { tenantId: ctx.tenantId, controlId, kind: 'INTEGRATION_RESULT', integrationResultId: execution.id, note: `${input.cloud}: ${c.id}` } });

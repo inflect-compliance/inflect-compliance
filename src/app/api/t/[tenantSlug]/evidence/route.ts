@@ -16,6 +16,8 @@ const EvidenceQuerySchema = z.object({
     type: z.string().optional(),
     status: z.enum(['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED', 'NEEDS_REVIEW']).optional(),
     controlId: z.string().optional(),
+    // EP-3 Part 5 — category filter (exact match).
+    category: z.string().optional(),
     q: z.string().optional().transform(normalizeQ),
     archived: z.enum(['true', 'false']).optional(),
     expiring: z.enum(['true', 'false']).optional(),
@@ -41,6 +43,7 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params: param
         type: query.type,
         status: query.status,
         controlId: query.controlId,
+        category: query.category,
         folder: query.folder,
         q: query.q,
         archived: query.archived === 'true' ? true : query.archived === 'false' ? false : undefined,

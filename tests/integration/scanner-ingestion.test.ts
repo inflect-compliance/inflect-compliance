@@ -137,7 +137,7 @@ describeFn('scanner ingestion (integration)', () => {
         expect(res.findingsReconciledClosed).toBe(1);
 
         const { evidence, link, finding } = await runInTenantContext(ctx, async (db) => ({
-            evidence: await db.evidence.findFirst({ where: { tenantId, controlId, category: 'scanner:SEMGREP' } }),
+            evidence: await db.evidence.findFirst({ where: { tenantId, category: 'scanner:SEMGREP', evidenceControlLinks: { some: { controlId } } } }),
             link: await db.controlEvidenceLink.findFirst({
                 where: { tenantId, controlId, kind: 'INTEGRATION_RESULT' },
             }),
