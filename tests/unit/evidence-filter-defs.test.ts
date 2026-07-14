@@ -41,8 +41,12 @@ describe('Evidence filter config', () => {
         // when evidence folders shipped. The API GET route +
         // EvidenceListFilters + repository where-builder all honour
         // `folder` end-to-end (see b8-followup-evidence-folders ratchet).
+        // EP-2 added `freshness` (Current / Expiring-soon / Expired /
+        // Needs-review) — a CLIENT-SIDE-applied retention filter: the API
+        // GET route .strip()s the unknown param, so it never reaches the
+        // repository. It lives in the filter-def set for the UI popover.
         expect([...EVIDENCE_FILTER_KEYS].sort()).toEqual(
-            ['controlId', 'folder', 'status', 'type'].sort(),
+            ['controlId', 'folder', 'freshness', 'status', 'type'].sort(),
         );
     });
 

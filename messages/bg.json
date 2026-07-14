@@ -2026,7 +2026,7 @@
             "retentionUntil": "Задържане до",
             "expiry": "Изтича",
             "reviewHistoryTitle": "История на прегледите",
-            "noReviewHistory": "Все още няма активност по преглед.",
+            "noReviewHistory": "Все още няма активност по преглед",
             "reviewerUnknown": "Неизвестен рецензент"
         },
         "edit": {

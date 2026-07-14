@@ -2026,7 +2026,7 @@
             "retentionUntil": "Retention until",
             "expiry": "Expires",
             "reviewHistoryTitle": "Review history",
-            "noReviewHistory": "No review activity yet.",
+            "noReviewHistory": "No review activity yet",
             "reviewerUnknown": "Unknown reviewer"
         },
         "edit": {

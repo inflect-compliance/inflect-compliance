@@ -519,7 +519,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     const unarchiveEvidence = (id: string) => setArchived(id, false);
 
     const statusLabel = (status: string) => {
-        // Optimistic upload sentinel keeps its bespoke "Uploading…" copy;
+        // Optimistic upload sentinel keeps its bespoke in-progress copy;
         // every real EvidenceStatus (incl. NEEDS_REVIEW) resolves through
         // the shared statusLabels group so table + sheet + gallery agree.
         if (status === 'PENDING_UPLOAD') return tx('list.uploading');

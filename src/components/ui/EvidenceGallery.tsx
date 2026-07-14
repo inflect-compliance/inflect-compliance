@@ -282,7 +282,7 @@ function GalleryCard<T extends EvidenceGalleryRow>({
                         href={url}
                         download
                         aria-label={downloadLabel}
-                        className="absolute right-2 top-2 z-10 inline-flex h-7 w-7 items-center justify-center rounded-md bg-bg-default/90 text-content-muted shadow-sm transition-colors hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="absolute right-2 top-2 z-10 inline-flex h-7 w-7 items-center justify-center rounded-md border border-border-subtle bg-bg-default/90 text-content-muted transition-colors hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         onClick={(e) => e.stopPropagation()}
                         data-testid={`evidence-gallery-download-${row.id}`}
                     >
