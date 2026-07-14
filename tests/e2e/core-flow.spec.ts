@@ -77,6 +77,7 @@ test.describe('Core Certification Flow', () => {
             await page.waitForSelector('h1', { timeout: 60000 });
 
             await page.click('#add-evidence-btn');
+            await page.click('#create-evidence-upload'); // EP-3 create-menu → File upload
             await page.waitForSelector('#upload-form', { timeout: 5000 });
 
             await page.locator('#file-input').setInputFiles(EVIDENCE_FIXTURE);
