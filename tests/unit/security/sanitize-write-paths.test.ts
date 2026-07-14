@@ -352,14 +352,14 @@ describe('addTaskComment sanitises the body before persisting', () => {
         expect(body).toContain('tail');
     });
 
-    it('decodes HTML entities so a stored `&lt;script&gt;` cannot roundtrip', async () => {
+    it('an entity-encoded `&lt;script&gt;` is stripped, not reconstituted (double-unescape XSS)', async () => {
         mockTaskCommentAdd.mockResolvedValue({ id: 'c1' });
         await addTaskComment(ctx, 'task-1', '&lt;script&gt;x&lt;/script&gt;');
         const body = mockTaskCommentAdd.mock.calls[0][3];
-        expect(body).toBe('<script>x</script>');
-        // The literal text the user typed; whatever renderer reads it
-        // sees real angle brackets, not entities — so even a markdown
-        // engine that decodes entities cannot re-emit a script tag.
+        // The sanitiser decodes BEFORE stripping, so a pre-encoded payload is
+        // removed exactly like a raw `<script>` — the stored value can never
+        // roundtrip back into a live script for any downstream renderer.
+        expect(body).not.toMatch(/<script/i);
     });
 });
 
