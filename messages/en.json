@@ -4982,8 +4982,9 @@
         "filterEnums": {
             "status": {
                 "OPEN": "Open",
+                "TRIAGED": "Triaged",
                 "IN_PROGRESS": "In Progress",
-                "IN_REVIEW": "In Review",
+                "BLOCKED": "Blocked",
                 "RESOLVED": "Resolved",
                 "CLOSED": "Closed",
                 "CANCELED": "Canceled"

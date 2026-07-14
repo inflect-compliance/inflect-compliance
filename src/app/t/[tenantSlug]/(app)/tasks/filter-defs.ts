@@ -29,11 +29,14 @@ type TGroup = (key: string) => string;
 
 // ─── Labels (resolved at render) ─────────────────────────────────────
 
+// The status filter offers EXACTLY the seven WorkItemStatus values
+// (TP-1). No phantom IN_REVIEW; TRIAGED + BLOCKED are real states.
 function taskStatusLabels(t: T): Record<string, string> {
     return {
         OPEN: t('filterEnums.status.OPEN'),
+        TRIAGED: t('filterEnums.status.TRIAGED'),
         IN_PROGRESS: t('filterEnums.status.IN_PROGRESS'),
-        IN_REVIEW: t('filterEnums.status.IN_REVIEW'),
+        BLOCKED: t('filterEnums.status.BLOCKED'),
         RESOLVED: t('filterEnums.status.RESOLVED'),
         CLOSED: t('filterEnums.status.CLOSED'),
         CANCELED: t('filterEnums.status.CANCELED'),

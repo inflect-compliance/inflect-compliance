@@ -19,6 +19,7 @@
  */
 
 import type { StatusBadgeVariant } from '@/components/ui/status-badge';
+import { TASK_STATUS_BADGE } from '@/lib/task-status-badge';
 
 // ─── Risk status ─────────────────────────────────────────────────────
 
@@ -68,15 +69,14 @@ export const CONTROL_APPLICABILITY_VARIANT: Record<string, StatusBadgeVariant> =
 
 // ─── Task / WorkItem status ──────────────────────────────────────────
 
-export const TASK_STATUS_VARIANT: Record<string, StatusBadgeVariant> = {
-    OPEN: 'neutral',
-    TRIAGED: 'info',
-    IN_PROGRESS: 'info',
-    BLOCKED: 'error',
-    RESOLVED: 'success',
-    CLOSED: 'neutral',
-    CANCELED: 'neutral',
-};
+// Derived from the single source of truth in `@/lib/task-status-badge`
+// (Tasks roadmap TP-1) — kept as a thin compat alias so existing
+// callers (and the shape unit test) that want just the tone keep
+// working. Do NOT re-inline this literal; edit `TASK_STATUS_BADGE`.
+export const TASK_STATUS_VARIANT: Record<string, StatusBadgeVariant> =
+    Object.fromEntries(
+        Object.entries(TASK_STATUS_BADGE).map(([status, spec]) => [status, spec.variant]),
+    );
 
 export const TASK_SEVERITY_VARIANT: Record<string, StatusBadgeVariant> = {
     INFO: 'neutral',

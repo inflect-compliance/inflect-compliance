@@ -96,7 +96,9 @@ describe("ControlTaskRows (aligned inline sub-rows → quick-view)", () => {
         expect(screen.getByText("Access Control")).toBeInTheDocument();
         expect(screen.getByText("Sam Ray")).toBeInTheDocument();
         expect(screen.getByText("3 evidence")).toBeInTheDocument();
-        expect(screen.getByText("OPEN")).toBeInTheDocument();
+        // TP-1: the status badge now renders the shared, localized label
+        // (tasks.statusLabels.OPEN = "Open"), not the raw enum value.
+        expect(screen.getByText("Open")).toBeInTheDocument();
         const row = container.querySelector('[data-task-quickview="t1"]');
         expect(row?.tagName).toBe("TR");
         expect(row?.className).toContain("cursor-pointer");
@@ -105,7 +107,7 @@ describe("ControlTaskRows (aligned inline sub-rows → quick-view)", () => {
 
     it("clicking anywhere on the task row fires onTaskClick (whole-row target)", async () => {
         const { onTaskClick } = renderRows();
-        const badge = await screen.findByText("OPEN");
+        const badge = await screen.findByText("Open");
         fireEvent.click(badge);
         expect(onTaskClick).toHaveBeenCalledWith(expect.objectContaining({ id: "t1" }));
     });

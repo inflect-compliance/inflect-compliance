@@ -21,7 +21,8 @@
  */
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { taskStatusVariant, taskStatusLabel } from "@/lib/task-status-badge";
 
 export interface ControlTask {
     id: string;
@@ -33,17 +34,6 @@ export interface ControlTask {
     /** Linked-evidence count (from the task list `_count.evidence`). */
     _count?: { evidence?: number } | null;
 }
-
-const TASK_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
-    OPEN: "warning",
-    TRIAGED: "warning",
-    IN_PROGRESS: "info",
-    BLOCKED: "error",
-    DONE: "success",
-    RESOLVED: "success",
-    CLOSED: "neutral",
-    CANCELLED: "neutral",
-};
 
 export function ControlTaskRows({
     tenantSlug,
@@ -73,6 +63,7 @@ export function ControlTaskRows({
     onTaskClick?: (task: ControlTask) => void;
 }) {
     const tx = useTranslations("controls");
+    const tTask = useTranslations("tasks");
     const [tasks, setTasks] = useState<ControlTask[] | null>(null);
     const [error, setError] = useState(false);
 
@@ -130,8 +121,8 @@ export function ControlTaskRows({
                 );
             case "status":
                 return (
-                    <StatusBadge variant={TASK_STATUS_BADGE[t.status] ?? "neutral"} size="sm">
-                        {t.status}
+                    <StatusBadge variant={taskStatusVariant(t.status)} size="sm">
+                        {taskStatusLabel(t.status, tTask)}
                     </StatusBadge>
                 );
             case "owner": {

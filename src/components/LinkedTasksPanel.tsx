@@ -13,6 +13,7 @@ import {
     StatusBadge,
     type StatusBadgeVariant,
 } from '@/components/ui/status-badge';
+import { taskStatusVariant, taskStatusLabel } from '@/lib/task-status-badge';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { TimestampTooltip } from '@/components/ui/timestamp-tooltip';
@@ -25,12 +26,8 @@ import { NewTaskModal } from '@/app/t/[tenantSlug]/(app)/tasks/NewTaskModal';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-// Mirrors the Tasks page (TasksClient) maps so the control / asset /
-// risk Tasks tab renders the SAME columns + tones as the global table.
-const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
-    OPEN: 'neutral', TRIAGED: 'info', IN_PROGRESS: 'info',
-    BLOCKED: 'error', RESOLVED: 'success', CLOSED: 'neutral', CANCELED: 'neutral',
-};
+// Status → badge is the shared `TASK_STATUS_BADGE` map (TP-1); only
+// the severity tones stay local (out of TP-1 scope).
 const SEVERITY_BADGE: Record<string, StatusBadgeVariant> = {
     INFO: 'neutral', LOW: 'neutral', MEDIUM: 'warning',
     HIGH: 'error', CRITICAL: 'error',
@@ -75,12 +72,7 @@ export default function LinkedTasksPanel({
     const router = useRouter();
     const t = useTranslations('panels');
     const tr = useTranslations();
-    const STATUS_LABELS = useMemo<Record<string, string>>(() => ({
-        OPEN: tr('tasks.statusLabels.OPEN'), TRIAGED: tr('tasks.statusLabels.TRIAGED'),
-        IN_PROGRESS: tr('tasks.statusLabels.IN_PROGRESS'), BLOCKED: tr('tasks.statusLabels.BLOCKED'),
-        RESOLVED: tr('tasks.statusLabels.RESOLVED'), CLOSED: tr('tasks.statusLabels.CLOSED'),
-        CANCELED: tr('tasks.statusLabels.CANCELED'),
-    }), [tr]);
+    const tTasks = useTranslations('tasks');
     const TYPE_LABELS = useMemo<Record<string, string>>(() => ({
         AUDIT_FINDING: tr('tasks.typeLabels.AUDIT_FINDING'), CONTROL_GAP: tr('tasks.typeLabels.CONTROL_GAP'),
         INCIDENT: tr('tasks.typeLabels.INCIDENT'), IMPROVEMENT: tr('tasks.typeLabels.IMPROVEMENT'),
@@ -183,9 +175,9 @@ export default function LinkedTasksPanel({
                     accessorFn: (t) => t.status,
                     cell: ({ row }) => (
                         <StatusBadge
-                            variant={STATUS_BADGE[row.original.status] || 'neutral'}
+                            variant={taskStatusVariant(row.original.status)}
                         >
-                            {STATUS_LABELS[row.original.status] || row.original.status}
+                            {taskStatusLabel(row.original.status, tTasks)}
                         </StatusBadge>
                     ),
                 },
@@ -210,7 +202,7 @@ export default function LinkedTasksPanel({
                     ),
                 },
             ]),
-        [tenantHref, t, STATUS_LABELS, TYPE_LABELS, SEVERITY_LABELS],
+        [tenantHref, t, tTasks, TYPE_LABELS, SEVERITY_LABELS],
     );
 
     return (

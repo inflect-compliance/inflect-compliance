@@ -1,0 +1,139 @@
+/**
+ * Tasks roadmap TP-1 — task status vocabulary ratchet.
+ *
+ * Locks three invariants that used to drift across the codebase:
+ *
+ *   (a) The shared status→badge map (`src/lib/task-status-badge.ts`)
+ *       has EXACTLY the seven `WorkItemStatus` enum values — no phantom
+ *       "DONE", the spelling is "CANCELED" (one L), and every entry
+ *       carries a valid `<StatusBadge>` variant + a `labelKey`.
+ *
+ *   (b) The task renderers consume that shared map and do NOT redeclare
+ *       their own inline status→variant object (the old divergence: some
+ *       had `OPEN: 'warning'`, others `OPEN: 'neutral'`; some carried a
+ *       "DONE" tone or the two-L "CANCELLED" spelling).
+ *
+ *   (c) The Tasks list STATUS filter offers EXACTLY the seven enum
+ *       values — no phantom `IN_REVIEW`, and the real `TRIAGED` +
+ *       `BLOCKED` states are present.
+ *
+ * All three read the LIVE sources / schema, so a regression that
+ * re-inlines a map, adds a "DONE"/"CANCELLED" spelling, or desyncs the
+ * filter from the enum fails CI.
+ */
+
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { TASK_STATUS_BADGE } from '@/lib/task-status-badge';
+
+const ROOT = join(__dirname, '..', '..');
+
+/** Canonical enum values, parsed from the live Prisma schema. */
+function parseWorkItemStatusEnum(): string[] {
+    const schema = readFileSync(
+        join(ROOT, 'prisma', 'schema', 'enums.prisma'),
+        'utf8',
+    );
+    const match = schema.match(/enum\s+WorkItemStatus\s*\{([^}]*)\}/);
+    if (!match) throw new Error('WorkItemStatus enum not found in enums.prisma');
+    return match[1]
+        .split('\n')
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0 && !l.startsWith('//'));
+}
+
+const ENUM_VALUES = parseWorkItemStatusEnum();
+const ALLOWED_VARIANTS = new Set([
+    'success',
+    'info',
+    'neutral',
+    'warning',
+    'error',
+]);
+
+// The four renderers the map is meant to unify. Each MUST import the
+// shared module and MUST NOT redeclare a local status→variant map.
+const RENDERERS: Record<string, string> = {
+    LinkedTasksPanel: 'src/components/LinkedTasksPanel.tsx',
+    ControlTaskRows: 'src/app/t/[tenantSlug]/(app)/controls/ControlTaskRows.tsx',
+    TaskEditPanel: 'src/app/t/[tenantSlug]/(app)/controls/TaskEditPanel.tsx',
+    TasksClient: 'src/app/t/[tenantSlug]/(app)/tasks/TasksClient.tsx',
+};
+
+function read(rel: string): string {
+    return readFileSync(join(ROOT, rel), 'utf8');
+}
+
+describe('TP-1 (a) — the shared TASK_STATUS_BADGE map', () => {
+    test('has exactly the seven WorkItemStatus keys', () => {
+        expect(new Set(Object.keys(TASK_STATUS_BADGE))).toEqual(
+            new Set(ENUM_VALUES),
+        );
+        expect(Object.keys(TASK_STATUS_BADGE)).toHaveLength(7);
+    });
+
+    test('spelling is CANCELED (one L), and there is no DONE', () => {
+        const keys = Object.keys(TASK_STATUS_BADGE);
+        expect(keys).toContain('CANCELED');
+        expect(keys).not.toContain('CANCELLED');
+        expect(keys).not.toContain('DONE');
+    });
+
+    test('every entry has a valid StatusBadge variant + a labelKey', () => {
+        for (const [status, spec] of Object.entries(TASK_STATUS_BADGE)) {
+            expect(ALLOWED_VARIANTS.has(spec.variant)).toBe(true);
+            expect(typeof spec.labelKey).toBe('string');
+            expect(spec.labelKey.length).toBeGreaterThan(0);
+            // sanity: the key names the status it belongs to
+            expect(spec.labelKey).toContain(status);
+        }
+    });
+
+    test('OPEN is the one consistent open tone (neutral) and BLOCKED is the only error tone', () => {
+        expect(TASK_STATUS_BADGE.OPEN.variant).toBe('neutral');
+        const errorStatuses = Object.entries(TASK_STATUS_BADGE)
+            .filter(([, spec]) => spec.variant === 'error')
+            .map(([k]) => k);
+        expect(errorStatuses).toEqual(['BLOCKED']);
+    });
+});
+
+describe('TP-1 (b) — renderers consume the shared map, no inline status→variant map', () => {
+    for (const [name, rel] of Object.entries(RENDERERS)) {
+        test(`${name} imports the shared task-status-badge module`, () => {
+            const src = read(rel);
+            expect(src).toMatch(/from\s+['"]@\/lib\/task-status-badge['"]/);
+            expect(src).toMatch(/taskStatusVariant\s*\(/);
+        });
+
+        test(`${name} does not redeclare an inline status→variant object`, () => {
+            const src = read(rel);
+            // A local const/let/var named like a status map, assigned an
+            // object literal. The shared-module import + call sites never
+            // match `<NAME> ... = {`.
+            const inlineStatusMap =
+                /(?:const|let|var)\s+\w*STATUS\w*(?::[^=\n]*)?\s*=\s*\{/;
+            expect(src).not.toMatch(inlineStatusMap);
+        });
+
+        test(`${name} carries no "DONE" tone or two-L "CANCELLED" spelling`, () => {
+            const src = read(rel);
+            expect(src).not.toMatch(/CANCELLED/);
+            expect(src).not.toMatch(/\bDONE\b/);
+        });
+    }
+});
+
+describe('TP-1 (c) — the Tasks list STATUS filter equals the enum set', () => {
+    test('filter-defs status options are exactly the WorkItemStatus values', () => {
+        const src = read('src/app/t/[tenantSlug]/(app)/tasks/filter-defs.ts');
+        const filterStatuses = new Set(
+            [...src.matchAll(/filterEnums\.status\.(\w+)/g)].map((m) => m[1]),
+        );
+        expect(filterStatuses).toEqual(new Set(ENUM_VALUES));
+        // Explicit regression assertions for the exact bug TP-1 fixed.
+        expect(filterStatuses.has('IN_REVIEW')).toBe(false);
+        expect(filterStatuses.has('TRIAGED')).toBe(true);
+        expect(filterStatuses.has('BLOCKED')).toBe(true);
+    });
+});

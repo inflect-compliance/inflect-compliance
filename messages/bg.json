@@ -4982,8 +4982,9 @@
         "filterEnums": {
             "status": {
                 "OPEN": "Отворена",
+                "TRIAGED": "Приоритизирана",
                 "IN_PROGRESS": "В процес",
-                "IN_REVIEW": "На преглед",
+                "BLOCKED": "Блокирана",
                 "RESOLVED": "Разрешена",
                 "CLOSED": "Затворена",
                 "CANCELED": "Отменена"

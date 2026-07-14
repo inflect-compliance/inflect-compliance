@@ -18,7 +18,8 @@ import {
     StatusBreakdown,
     type StatusBreakdownVariant,
 } from '@/components/ui/status-breakdown';
-import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { taskStatusVariant } from '@/lib/task-status-badge';
 import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -59,10 +60,8 @@ const buildTypeLabels = (t: (k: string) => string): Record<string, string> => ({
     AUDIT_FINDING: t('typeLabels.AUDIT_FINDING'), CONTROL_GAP: t('typeLabels.CONTROL_GAP'),
     INCIDENT: t('typeLabels.INCIDENT'), IMPROVEMENT: t('typeLabels.IMPROVEMENT'), TASK: t('typeLabels.TASK'),
 });
-const TASK_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
-    OPEN: 'neutral', TRIAGED: 'info', IN_PROGRESS: 'info',
-    BLOCKED: 'error', RESOLVED: 'success', CLOSED: 'neutral', CANCELED: 'neutral',
-};
+// Status → badge tone is the shared `TASK_STATUS_BADGE` map (TP-1),
+// consumed via `taskStatusVariant`.
 
 interface Metrics {
     total: number;
@@ -178,7 +177,7 @@ export default function TaskDashboardPage() {
                             >
                                 <span className="font-mono text-xs text-content-subtle w-16 truncate">{task.key}</span>
                                 <span className="flex-1 text-content-emphasis truncate">{task.title}</span>
-                                <StatusBadge variant={TASK_STATUS_BADGE[task.status] || 'neutral'}>{task.status}</StatusBadge>
+                                <StatusBadge variant={taskStatusVariant(task.status)}>{STATUS_LABELS[task.status] || task.status}</StatusBadge>
                                 {task.dueAt && (
                                     <span className={`text-xs ${new Date(task.dueAt) < new Date() ? 'text-content-error' : 'text-content-muted'}`}>
                                         {formatDate(task.dueAt)}
