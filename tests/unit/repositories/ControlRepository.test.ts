@@ -38,13 +38,6 @@ function freshDb() {
             create: jest.fn().mockResolvedValue({ id: 'contrib-1' }),
             delete: jest.fn().mockResolvedValue({}),
         },
-        controlTask: {
-            findMany: jest.fn().mockResolvedValue([]),
-            findFirst: jest.fn(),
-            create: jest.fn().mockResolvedValue({ id: 'task-1' }),
-            update: jest.fn().mockResolvedValue({ id: 'task-1' }),
-            delete: jest.fn().mockResolvedValue({}),
-        },
         controlEvidenceLink: {
             findMany: jest.fn().mockResolvedValue([]),
             findFirst: jest.fn(),
@@ -329,95 +322,6 @@ describe('contributors', () => {
     });
 });
 
-// ─── Tasks ───
-
-describe('tasks', () => {
-    it('listTasks filters by controlId + tenant', async () => {
-        await ControlRepository.listTasks(db as any, ctx, 'c1');
-        expect((db.controlTask.findMany.mock.calls[0] as any[])[0].where).toEqual({
-            controlId: 'c1',
-            tenantId: 'tenant-1',
-        });
-    });
-
-    it('createTask returns null when the control is missing', async () => {
-        // Branch: !control → null.
-        db.control.findFirst.mockResolvedValueOnce(null);
-        expect(await ControlRepository.createTask(db as any, ctx, 'c1', { title: 't' })).toBeNull();
-    });
-
-    it('createTask coerces optional fields with || null and dueAt → Date', async () => {
-        // Branches: description/assignee defaulted; dueAt truthy → new Date(...).
-        db.control.findFirst.mockResolvedValueOnce({ id: 'c1' });
-        await ControlRepository.createTask(db as any, ctx, 'c1', {
-            title: 't',
-            dueAt: '2026-07-01T00:00:00.000Z',
-        });
-        const data = (db.controlTask.create.mock.calls[0] as any[])[0].data;
-        expect(data.description).toBeNull();
-        expect(data.assigneeUserId).toBeNull();
-        expect(data.dueAt).toBeInstanceOf(Date);
-    });
-
-    it('createTask leaves dueAt null when not provided', async () => {
-        // Branch: dueAt falsy → null.
-        db.control.findFirst.mockResolvedValueOnce({ id: 'c1' });
-        await ControlRepository.createTask(db as any, ctx, 'c1', { title: 't', description: 'd' });
-        const data = (db.controlTask.create.mock.calls[0] as any[])[0].data;
-        expect(data.dueAt).toBeNull();
-        expect(data.description).toBe('d');
-    });
-
-    it('updateTask returns null when the task is missing', async () => {
-        // Branch: !task → null.
-        db.controlTask.findFirst.mockResolvedValueOnce(null);
-        expect(await ControlRepository.updateTask(db as any, ctx, 't1', { title: 'x' })).toBeNull();
-    });
-
-    it('updateTask only sets provided fields (all undefined → empty patch)', async () => {
-        // Branch: every `!== undefined` arm false → empty data object.
-        db.controlTask.findFirst.mockResolvedValueOnce({ id: 't1' });
-        await ControlRepository.updateTask(db as any, ctx, 't1', {});
-        expect((db.controlTask.update.mock.calls[0] as any[])[0].data).toEqual({});
-    });
-
-    it('updateTask sets every provided field including dueAt clearing', async () => {
-        // Branches: all `!== undefined` arms true; dueAt provided as null → null.
-        db.controlTask.findFirst.mockResolvedValueOnce({ id: 't1' });
-        await ControlRepository.updateTask(db as any, ctx, 't1', {
-            title: 'T',
-            description: 'D',
-            status: 'DONE',
-            assigneeUserId: 'u9',
-            dueAt: null,
-        });
-        const data = (db.controlTask.update.mock.calls[0] as any[])[0].data;
-        expect(data).toMatchObject({ title: 'T', description: 'D', status: 'DONE', assigneeUserId: 'u9' });
-        expect(data.dueAt).toBeNull();
-    });
-
-    it('updateTask converts a provided dueAt string to a Date', async () => {
-        // Branch: dueAt provided + truthy → new Date(...).
-        db.controlTask.findFirst.mockResolvedValueOnce({ id: 't1' });
-        await ControlRepository.updateTask(db as any, ctx, 't1', { dueAt: '2026-08-01T00:00:00.000Z' });
-        expect((db.controlTask.update.mock.calls[0] as any[])[0].data.dueAt).toBeInstanceOf(Date);
-    });
-
-    it('deleteTask returns null when the task is missing', async () => {
-        // Branch: !task → null.
-        db.controlTask.findFirst.mockResolvedValueOnce(null);
-        expect(await ControlRepository.deleteTask(db as any, ctx, 't1')).toBeNull();
-        expect(db.controlTask.delete).not.toHaveBeenCalled();
-    });
-
-    it('deleteTask deletes and returns true when present', async () => {
-        db.controlTask.findFirst.mockResolvedValueOnce({ id: 't1' });
-        expect(await ControlRepository.deleteTask(db as any, ctx, 't1')).toBe(true);
-        expect(db.controlTask.delete).toHaveBeenCalledWith({ where: { id: 't1' } });
-    });
-});
-
-// ─── Evidence links ───
 
 describe('evidence links', () => {
     it('listEvidenceLinks filters by controlId + tenant', async () => {

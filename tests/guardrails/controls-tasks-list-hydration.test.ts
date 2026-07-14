@@ -74,12 +74,13 @@ describe('list-page hydration shape', () => {
 describe('ControlRepository list `_count` projection', () => {
     const repo = read('src/app-layer/repositories/ControlRepository.ts');
 
-    // Both `list()` and `listPaginated()` feed the same client surface
-    // (ControlsClient renders `_count?.controlTasks` and
-    // `_count?.evidenceLinks` only — see ControlsClient.tsx:411,616).
-    // Fetching the other four (`evidence`, `risks`, `assets`,
-    // `contributors`) costs a correlated subquery per row and the
-    // values are dropped. Lock the projection.
+    // Both `list()` and `listPaginated()` feed the same client surface.
+    // ControlsClient renders `_count?.evidenceLinks` (+ `evidence`); the
+    // Tasks column reads the unified `taskTotal`/`taskDone` fields
+    // `listControls` attaches (the legacy `_count.controlTasks` relation
+    // was removed in TP-2). Fetching the other four (`risks`, `assets`,
+    // `contributors`, and the now-gone `controlTasks`) costs a correlated
+    // subquery per row and the values are dropped. Lock the projection.
     //
     // PR-3 hoisted the list-shape into a shared `controlListSelect`
     // constant referenced by both functions, so the literal now
@@ -88,9 +89,9 @@ describe('ControlRepository list `_count` projection', () => {
     // R2-P4 — the list Evidence column now sums links + direct Evidence
     // (to agree with the detail badge), so `evidence` is a CONSUMED key, not
     // dropped bloat. The invariant is still "only the consumed keys".
-    const ALLOWED = /_count:\s*\{\s*select:\s*\{\s*controlTasks:\s*true,\s*evidenceLinks:\s*true,\s*evidence:\s*true\s*\}\s*\}/g;
+    const ALLOWED = /_count:\s*\{\s*select:\s*\{\s*evidenceLinks:\s*true,\s*evidence:\s*true\s*\}\s*\}/g;
 
-    test('list-shape exposes only the consumed _count keys (controlTasks + evidenceLinks + evidence)', () => {
+    test('list-shape exposes only the consumed _count keys (evidenceLinks + evidence)', () => {
         const matches = repo.match(ALLOWED) ?? [];
         // One declaration in the shared `controlListSelect` constant.
         expect(matches.length).toBeGreaterThanOrEqual(1);

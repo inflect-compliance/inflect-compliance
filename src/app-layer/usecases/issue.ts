@@ -1,6 +1,25 @@
 /**
- * @deprecated Legacy Issue usecase — delegates to Task repositories (WorkItemRepository).
- * All functions are preserved for backward compatibility with old Issue API routes.
+ * Issue usecase — the audit **evidence-bundle / freeze** concept.
+ *
+ * Issue vs Task — the deliberate split (see
+ * `docs/implementation-notes/2026-07-14-issue-vs-task.md`):
+ *
+ *   • **Task** is the unified work-item (the `Task` aggregate + BullMQ
+ *     jobs, list at `/tasks`). It is the single canonical model for
+ *     "a piece of work someone owns". The legacy per-control
+ *     `ControlTask` was folded into it (TP-2).
+ *   • **Issue** is NOT a second work-item model — its CRUD/list/status
+ *     surface delegates to the SAME `WorkItemRepository`/`Task` rows,
+ *     and every `/issues*` UI page 307-redirects to its `/tasks`
+ *     equivalent. What Issue adds on top is the **audit evidence-bundle
+ *     + freeze** lifecycle (`EvidenceBundleRepository`,
+ *     `assertCanManageBundles` / `assertCanFreeze`): grouping evidence
+ *     into an immutable, frozen bundle for an audit. That concept has
+ *     no home on Task, so this usecase is KEPT — not merged away.
+ *
+ * The plain work-item functions here remain for backward compatibility
+ * with the old Issue API routes; new work-item code should target the
+ * Task surface directly.
  */
 import { TaskLinkEntityType } from '@prisma/client';
 import { RequestContext } from '../types';

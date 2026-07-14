@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Inflect Compliance API",
-    "version": "1.775.0",
+    "version": "1.776.1",
     "description": "Multi-tenant compliance-management API. The schema layer in `src/lib/schemas/index.ts` (request bodies) and `src/lib/dto/*.dto.ts` (response shapes) is the single source of truth — this document is generated from those Zod schemas via `npm run openapi:generate`.\n\n**Authenticating.** To try an endpoint, click **Authorize**:\n- *BearerAuth* (recommended for integrations) — paste a tenant **API key** (`iflk_…`), minted under Admin → API Keys. Sent as `Authorization: Bearer iflk_…`.\n- *SessionCookie* — for the dev/staging \"Try it out\" flow, sign in first; the browser sends the `next-auth.session-token` cookie automatically (same-origin only).\n\n**Coverage.** Operations marked `x-stub: true` exist and are callable, but their request/response bodies are not yet published in this contract — only the critical-endpoint set carries full schemas. See `docs/api-consumer-guide.md` for the auth, rate-limit, versioning, and error-contract details.",
     "license": {
       "name": "Proprietary"
@@ -1282,69 +1282,6 @@
                   "additionalProperties": {}
                 }
               },
-              "controlTasks": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "controlId": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "description": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
-                    },
-                    "status": {
-                      "type": "string"
-                    },
-                    "dueAt": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
-                    },
-                    "createdAt": {
-                      "type": "string"
-                    },
-                    "assigneeUserId": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
-                    },
-                    "assignee": {
-                      "allOf": [
-                        {
-                          "$ref": "#/components/schemas/UserRef"
-                        },
-                        {
-                          "type": [
-                            "object",
-                            "null"
-                          ]
-                        }
-                      ]
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "controlId",
-                    "title",
-                    "description",
-                    "status",
-                    "dueAt"
-                  ],
-                  "additionalProperties": {}
-                }
-              },
               "evidenceLinks": {
                 "type": "array",
                 "items": {
@@ -1564,7 +1501,7 @@
             "additionalProperties": {}
           }
         ],
-        "description": "Control with all relations included — contributors, tasks, evidence links, mapped risks/policies, and framework requirement mappings. Returned by GET /controls/{id}."
+        "description": "Control with all relations included — contributors, evidence links, mapped risks/policies, and framework requirement mappings. Returned by GET /controls/{id}. Tasks are the unified Task model, fetched via GET /tasks?linkedEntityType=CONTROL."
       },
       "ControlListItem": {
         "type": "object",
@@ -1828,74 +1765,6 @@
           "status"
         ],
         "description": "Lifecycle transition for a control. NEEDS_REVIEW signals a control whose evidence has lapsed or whose owner was removed."
-      },
-      "ControlTaskCreateRequest": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "minLength": 1
-          },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "assigneeUserId": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "dueAt": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "title"
-        ],
-        "description": "Create a task on a control. Tasks are the unit of operational work — implementation steps, evidence-gathering, review cycles."
-      },
-      "ControlTaskUpdateRequest": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "minLength": 1
-          },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "OPEN",
-              "IN_PROGRESS",
-              "DONE",
-              "BLOCKED"
-            ]
-          },
-          "assigneeUserId": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "dueAt": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        },
-        "description": "Partial update for a control task — including status transitions and reassignment."
       },
       "ControlTemplatesInstallRequest": {
         "type": "object",
@@ -17419,90 +17288,6 @@
         }
       }
     },
-    "/api/t/{tenantSlug}/controls/tasks/{taskId}": {
-      "delete": {
-        "summary": "DELETE /api/t/{tenantSlug}/controls/tasks/{taskId}",
-        "description": "Stub entry — this route exists but its request/response schema is not yet published in the machine-readable contract. The path, method, and required path parameters are accurate; the body and success shape are not yet formally documented. See `docs/api-consumer-guide.md`. (The critical-endpoint set carries full request/response/permission/rate-limit entries.)",
-        "tags": [
-          "controls"
-        ],
-        "x-stub": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "tenantSlug",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "taskId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "2XX": {
-            "description": "Successful response. The success schema is not yet published in the contract."
-          },
-          "default": {
-            "description": "Error — see the ErrorResponse envelope.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "summary": "PATCH /api/t/{tenantSlug}/controls/tasks/{taskId}",
-        "description": "Stub entry — this route exists but its request/response schema is not yet published in the machine-readable contract. The path, method, and required path parameters are accurate; the body and success shape are not yet formally documented. See `docs/api-consumer-guide.md`. (The critical-endpoint set carries full request/response/permission/rate-limit entries.)",
-        "tags": [
-          "controls"
-        ],
-        "x-stub": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "tenantSlug",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "taskId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "2XX": {
-            "description": "Successful response. The success schema is not yet published in the contract."
-          },
-          "default": {
-            "description": "Error — see the ErrorResponse envelope.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/t/{tenantSlug}/controls/templates": {
       "get": {
         "summary": "GET /api/t/{tenantSlug}/controls/templates",
@@ -19224,90 +19009,6 @@
       },
       "post": {
         "summary": "POST /api/t/{tenantSlug}/controls/{controlId}/sync",
-        "description": "Stub entry — this route exists but its request/response schema is not yet published in the machine-readable contract. The path, method, and required path parameters are accurate; the body and success shape are not yet formally documented. See `docs/api-consumer-guide.md`. (The critical-endpoint set carries full request/response/permission/rate-limit entries.)",
-        "tags": [
-          "controls"
-        ],
-        "x-stub": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "tenantSlug",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "controlId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "2XX": {
-            "description": "Successful response. The success schema is not yet published in the contract."
-          },
-          "default": {
-            "description": "Error — see the ErrorResponse envelope.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/t/{tenantSlug}/controls/{controlId}/tasks": {
-      "get": {
-        "summary": "GET /api/t/{tenantSlug}/controls/{controlId}/tasks",
-        "description": "Stub entry — this route exists but its request/response schema is not yet published in the machine-readable contract. The path, method, and required path parameters are accurate; the body and success shape are not yet formally documented. See `docs/api-consumer-guide.md`. (The critical-endpoint set carries full request/response/permission/rate-limit entries.)",
-        "tags": [
-          "controls"
-        ],
-        "x-stub": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "tenantSlug",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "controlId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "2XX": {
-            "description": "Successful response. The success schema is not yet published in the contract."
-          },
-          "default": {
-            "description": "Error — see the ErrorResponse envelope.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "summary": "POST /api/t/{tenantSlug}/controls/{controlId}/tasks",
         "description": "Stub entry — this route exists but its request/response schema is not yet published in the machine-readable contract. The path, method, and required path parameters are accurate; the body and success shape are not yet formally documented. See `docs/api-consumer-guide.md`. (The critical-endpoint set carries full request/response/permission/rate-limit entries.)",
         "tags": [
           "controls"

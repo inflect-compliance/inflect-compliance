@@ -33,7 +33,6 @@ const TENANT_SCOPED_TABLES_WITH_TENANT_ID: string[] = [
     'TaskWatcher',
     // Control sub-entities
     'ControlContributor',
-    'ControlTask',
     'ControlEvidenceLink',
     'ControlRequirementLink',
     // Mapping/junction tables

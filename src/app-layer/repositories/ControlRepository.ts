@@ -46,7 +46,7 @@ const controlListSelect = {
     owner: { select: { id: true, name: true, email: true } },
     // R2-P4 — count links + direct Evidence so the list Evidence column
     // agrees with the detail Evidence tab badge (which counts both).
-    _count: { select: { controlTasks: true, evidenceLinks: true, evidence: true } },
+    _count: { select: { evidenceLinks: true, evidence: true } },
 } as const;
 
 export class ControlRepository {
@@ -136,7 +136,6 @@ export class ControlRepository {
                     createdBy: { select: { id: true, name: true, email: true } },
                     applicabilityDecidedBy: { select: { id: true, name: true, email: true } },
                     contributors: { include: { user: { select: { id: true, name: true, email: true } } } },
-                    controlTasks: { orderBy: { createdAt: 'desc' }, include: { assignee: { select: { id: true, name: true, email: true } } } },
                     evidenceLinks: { orderBy: { createdAt: 'desc' }, include: { createdBy: { select: { id: true, name: true } } } },
                     evidence: { where: { tenantId: ctx.tenantId }, orderBy: { createdAt: 'desc' } },
                     frameworkMappings: { include: { fromRequirement: { include: { framework: { select: { name: true } } } } } },
@@ -171,7 +170,6 @@ export class ControlRepository {
                     contributors: { include: { user: { select: { id: true, name: true, email: true } } } },
                     _count: {
                         select: {
-                            controlTasks: true,
                             evidenceLinks: true,
                             evidence: true,
                             // Canonical control↔requirement links (not the
@@ -305,55 +303,6 @@ export class ControlRepository {
         const link = await db.controlContributor.findFirst({ where: { controlId, userId } });
         if (!link) return null;
         await db.controlContributor.delete({ where: { id: link.id } });
-        return true;
-    }
-
-    // ─── Tasks ───
-
-    static async listTasks(db: PrismaTx, ctx: RequestContext, controlId: string) {
-        return db.controlTask.findMany({
-            where: { controlId, tenantId: ctx.tenantId },
-            orderBy: { createdAt: 'asc' },
-            include: { assignee: { select: { id: true, name: true, email: true } } },
-        });
-    }
-
-    static async createTask(db: PrismaTx, ctx: RequestContext, controlId: string, data: { title: string; description?: string | null; assigneeUserId?: string | null; dueAt?: string | null }) {
-        const control = await db.control.findFirst({ where: { id: controlId, tenantId: ctx.tenantId } });
-        if (!control) return null;
-        return db.controlTask.create({
-            data: {
-                tenantId: ctx.tenantId,
-                controlId,
-                title: data.title,
-                description: data.description || null,
-                assigneeUserId: data.assigneeUserId || null,
-                dueAt: data.dueAt ? new Date(data.dueAt) : null,
-            },
-            include: { assignee: { select: { id: true, name: true, email: true } } },
-        });
-    }
-
-    static async updateTask(db: PrismaTx, ctx: RequestContext, taskId: string, data: { title?: string; description?: string | null; status?: string; assigneeUserId?: string | null; dueAt?: string | null }) {
-        const task = await db.controlTask.findFirst({ where: { id: taskId, tenantId: ctx.tenantId } });
-        if (!task) return null;
-        return db.controlTask.update({
-            where: { id: taskId },
-            data: {
-                ...(data.title !== undefined && { title: data.title }),
-                ...(data.description !== undefined && { description: data.description }),
-                ...(data.status !== undefined && { status: data.status as 'OPEN' | 'IN_PROGRESS' | 'DONE' | 'BLOCKED' }),
-                ...(data.assigneeUserId !== undefined && { assigneeUserId: data.assigneeUserId }),
-                ...(data.dueAt !== undefined && { dueAt: data.dueAt ? new Date(data.dueAt) : null }),
-            },
-            include: { assignee: { select: { id: true, name: true, email: true } } },
-        });
-    }
-
-    static async deleteTask(db: PrismaTx, ctx: RequestContext, taskId: string) {
-        const task = await db.controlTask.findFirst({ where: { id: taskId, tenantId: ctx.tenantId } });
-        if (!task) return null;
-        await db.controlTask.delete({ where: { id: taskId } });
         return true;
     }
 

@@ -122,9 +122,6 @@ const NOT_SENSITIVE: Readonly<Record<string, string>> = {
     'VendorAssessmentTemplate.description': 'Questionnaire-template config description.',
     'VendorAssessmentTemplateSection.description':
         'Questionnaire-template section config description.',
-    'ControlTask.description':
-        'Control-task linkage label; sanitised at the usecase, low breach value.',
-
     // ── DERIVED / aggregate summaries — computed from other columns,
     //    or bounded + sanitised by contract; not primary free text. ────
     'CompliancePostureSummary.summaryText':

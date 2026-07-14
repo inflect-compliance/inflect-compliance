@@ -58,7 +58,7 @@ jest.mock('@/lib/soft-delete', () => {
 
 const tenantDb: any = {
     control: { findMany: jest.fn(), count: jest.fn(), groupBy: jest.fn() },
-    controlTask: { count: jest.fn(), groupBy: jest.fn(), findMany: jest.fn() },
+    task: { count: jest.fn(), groupBy: jest.fn(), findMany: jest.fn() },
     auditLog: { findMany: jest.fn() },
 };
 jest.mock('@/lib/db-context', () => {
@@ -102,7 +102,7 @@ beforeEach(() => {
         ControlRepository.list, ControlRepository.listPaginated,
         ControlRepository.getById, ControlRepository.getHeaderById,
         tenantDb.control.findMany, tenantDb.control.count, tenantDb.control.groupBy,
-        tenantDb.controlTask.count, tenantDb.controlTask.groupBy, tenantDb.controlTask.findMany,
+        tenantDb.task.count, tenantDb.task.groupBy, tenantDb.task.findMany,
         tenantDb.auditLog.findMany,
         WorkItemRepository.countLinkedToControl as jest.Mock,
         WorkItemRepository.countLinkedToControls as jest.Mock,
@@ -113,12 +113,12 @@ beforeEach(() => {
     (assertCanAdmin as jest.Mock).mockImplementation(() => policyCalls.push('admin'));
 });
 
-// `controlTask.count` (getControlHeader's legacy done count, unused
-// now) + `countLinkedToControls` (listControls' unified per-control
-// counts) need addressable defaults so the cache passthrough tests
-// don't NPE on the merge.
+// `task.count` (the dashboard's overdue-task count) +
+// `countLinkedToControls` (listControls' unified per-control counts)
+// need addressable defaults so the cache passthrough tests don't NPE
+// on the merge.
 beforeEach(() => {
-    tenantDb.controlTask.count.mockResolvedValue(0);
+    tenantDb.task.count.mockResolvedValue(0);
     (WorkItemRepository.countLinkedToControls as jest.Mock).mockResolvedValue(
         new Map(),
     );
@@ -261,8 +261,8 @@ describe('getControlDashboard', () => {
         tenantDb.control.count
             .mockResolvedValueOnce(opts.implementedCount ?? 0)
             .mockResolvedValueOnce(opts.dueSoonCount ?? 0);
-        tenantDb.controlTask.count.mockResolvedValueOnce(opts.overdueTasks ?? 0);
-        tenantDb.controlTask.groupBy.mockResolvedValueOnce(opts.openTasksByControl ?? []);
+        tenantDb.task.count.mockResolvedValueOnce(opts.overdueTasks ?? 0);
+        tenantDb.task.groupBy.mockResolvedValueOnce(opts.openTasksByControl ?? []);
         tenantDb.control.findMany.mockResolvedValueOnce(opts.controlOwners ?? []);
     }
 
@@ -361,7 +361,7 @@ describe('runConsistencyCheck', () => {
             { id: 'c-4', code: 'CC2', name: 'Unique' },
         ]);
         tenantDb.control.count.mockResolvedValueOnce(4);
-        tenantDb.controlTask.findMany.mockResolvedValueOnce([
+        tenantDb.task.findMany.mockResolvedValueOnce([
             { id: 't-1', title: 'Late', status: 'OPEN', dueAt: new Date('2020-01-01'),
               controlId: 'c-2', control: { code: 'CC1' } },
         ]);
@@ -384,7 +384,7 @@ describe('runConsistencyCheck', () => {
     it('OWNER allowed (Epic 1 — OWNER is a superset of ADMIN)', async () => {
         tenantDb.control.findMany.mockResolvedValueOnce([]);
         tenantDb.control.count.mockResolvedValueOnce(0);
-        tenantDb.controlTask.findMany.mockResolvedValueOnce([]);
+        tenantDb.task.findMany.mockResolvedValueOnce([]);
 
         const result = await runConsistencyCheck(makeRequestContext('OWNER'));
 
@@ -394,7 +394,7 @@ describe('runConsistencyCheck', () => {
     it('empty inputs produce zero-counts shape (no NaN / no exception)', async () => {
         tenantDb.control.findMany.mockResolvedValueOnce([]);
         tenantDb.control.count.mockResolvedValueOnce(0);
-        tenantDb.controlTask.findMany.mockResolvedValueOnce([]);
+        tenantDb.task.findMany.mockResolvedValueOnce([]);
 
         const result = await runConsistencyCheck(ctx);
 
@@ -408,7 +408,7 @@ describe('runConsistencyCheck', () => {
     it('overdueTask with null control.code is preserved (defensive null pass-through)', async () => {
         tenantDb.control.findMany.mockResolvedValueOnce([]);
         tenantDb.control.count.mockResolvedValueOnce(1);
-        tenantDb.controlTask.findMany.mockResolvedValueOnce([
+        tenantDb.task.findMany.mockResolvedValueOnce([
             { id: 't-1', title: 'X', status: 'OPEN', dueAt: new Date('2020-01-01'),
               controlId: 'c-orphan', control: null },
         ]);

@@ -39,6 +39,9 @@ export const ControlListItemDTOSchema = z.object({
         evidence: z.number().optional(),
         risks: z.number().optional(),
         assets: z.number().optional(),
+        // Unified linked-Task total for the control (TaskLink CONTROL link
+        // OR the direct `Task.controlId` FK). Overridden into `_count` by
+        // `getControlHeader` so the Tasks-tab badge matches the tab body.
         controlTasks: z.number().optional(),
         evidenceLinks: z.number().optional(),
         contributors: z.number().optional(),
@@ -53,19 +56,6 @@ export const ControlListItemDTOSchema = z.object({
 export type ControlListItemDTO = z.infer<typeof ControlListItemDTOSchema>;
 
 // ─── Sub-types for Control Detail ───
-
-export const ControlTaskDTOSchema = z.object({
-    id: z.string(),
-    controlId: z.string(),
-    title: z.string(),
-    description: z.string().nullable(),
-    status: z.string(),
-    dueAt: z.string().nullable(),
-    createdAt: z.string().optional(),
-    assigneeUserId: z.string().nullable().optional(),
-    assignee: UserRefSchema.nullable().optional(),
-}).passthrough();
-export type ControlTaskDTO = z.infer<typeof ControlTaskDTOSchema>;
 
 export const EvidenceLinkDTOSchema = z.object({
     id: z.string(),
@@ -133,14 +123,13 @@ export const ControlDetailDTOSchema = ControlListItemDTOSchema.extend({
     createdBy: UserRefSchema.nullable().optional(),
     applicabilityDecidedBy: UserRefSchema.nullable().optional(),
     contributors: z.array(ContributorDTOSchema).optional(),
-    controlTasks: z.array(ControlTaskDTOSchema).optional(),
     evidenceLinks: z.array(EvidenceLinkDTOSchema).optional(),
     evidence: z.array(z.object({ id: z.string() }).passthrough()).optional(),
     risks: z.array(RiskLinkDTOSchema).optional(),
     policyLinks: z.array(PolicyLinkDTOSchema).optional(),
     frameworkMappings: z.array(FrameworkMappingDTOSchema).optional(),
 }).openapi('ControlDetail', {
-    description: 'Control with all relations included — contributors, tasks, evidence links, mapped risks/policies, and framework requirement mappings. Returned by GET /controls/{id}.',
+    description: 'Control with all relations included — contributors, evidence links, mapped risks/policies, and framework requirement mappings. Returned by GET /controls/{id}. Tasks are the unified Task model, fetched via GET /tasks?linkedEntityType=CONTROL.',
 });
 export type ControlDetailDTO = z.infer<typeof ControlDetailDTOSchema>;
 
