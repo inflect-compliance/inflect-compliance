@@ -39,6 +39,7 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { InitialsAvatar } from '@/components/ui/initials-avatar';
 import { InlineNotice } from '@/components/ui/inline-notice';
+import { CopyText } from '@/components/ui/copy-text';
 import { cn } from '@/lib/cn';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
@@ -167,6 +168,9 @@ export default function MembersAdminPage() {
     // member via the global command palette (⌘K).
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    // Absolute invite link from the last "add member" — a share-anywhere
+    // fallback so access never depends on the invite email arriving.
+    const [inviteLink, setInviteLink] = useState<string | null>(null);
 
     // Invite form
     const [showInvite, setShowInvite] = useState(false);
@@ -239,6 +243,7 @@ export default function MembersAdminPage() {
         if (!inviteEmail.trim()) return;
         setError(null);
         setSuccess(null);
+        setInviteLink(null);
         setInviting(true);
 
         try {
@@ -255,12 +260,12 @@ export default function MembersAdminPage() {
             }
 
             const data = await res.json();
-            const typeMsg = data.type === 'invited'
-                ? t('members.invitationSent', { email: inviteEmail })
-                : data.type === 'reactivated'
-                    ? t('members.reactivated', { email: inviteEmail })
-                    : t('members.addedAs', { email: inviteEmail, role: inviteRole });
-            setSuccess(typeMsg);
+            // The member is authorised the moment they sign in with this
+            // email — access no longer depends on the invite email arriving.
+            setSuccess(t('members.memberAddedLoginHint', { email: inviteEmail, role: inviteRole }));
+            setInviteLink(
+                typeof data?.url === 'string' ? `${window.location.origin}${data.url}` : null,
+            );
             setInviteEmail('');
             setInviteRole('READER');
             setShowInvite(false);
@@ -878,9 +883,26 @@ export default function MembersAdminPage() {
                 <InlineNotice
                     variant="success"
                     id="members-success"
-                    onDismiss={() => setSuccess(null)}
+                    onDismiss={() => { setSuccess(null); setInviteLink(null); }}
                 >
-                    {success}
+                    <div className="space-y-tight">
+                        <span>{success}</span>
+                        {inviteLink && (
+                            <div className="flex items-center gap-tight text-xs">
+                                <span className="text-content-muted shrink-0">
+                                    {t('members.inviteLinkLabel')}
+                                </span>
+                                <CopyText
+                                    value={inviteLink}
+                                    label={t('members.copyInviteLink')}
+                                    truncate
+                                    className="min-w-0 font-mono"
+                                >
+                                    {inviteLink}
+                                </CopyText>
+                            </div>
+                        )}
+                    </div>
                 </InlineNotice>
             )}
 
