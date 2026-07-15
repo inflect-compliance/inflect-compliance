@@ -1532,6 +1532,9 @@
         "docs/implementation-notes/2026-07-13-integrations-identity-hub.md": {
             "class": "historical"
         },
+        "docs/implementation-notes/2026-07-15-entra-id-identity-provider.md": {
+            "class": "historical"
+        },
         "docs/implementation-notes/2026-07-13-control-link-status-unification.md": {
             "class": "historical"
         },

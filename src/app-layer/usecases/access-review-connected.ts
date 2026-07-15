@@ -18,14 +18,14 @@ import { runInTenantContext } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { badRequest, notFound, forbidden } from '@/lib/errors/types';
 
-const IDENTITY_PROVIDERS = ['okta', 'google-workspace'];
+const IDENTITY_PROVIDERS = ['okta', 'google-workspace', 'entra-id'];
 const MAX_SUBJECTS = 5000;
 
 export const CreateConnectedAccessReviewSchema = z.object({
     name: z.string().min(1).max(200),
     description: z.string().max(2000).optional(),
     /** Restrict to one provider; omit to review all connected identity accounts. */
-    provider: z.enum(['okta', 'google-workspace']).optional(),
+    provider: z.enum(['okta', 'google-workspace', 'entra-id']).optional(),
     reviewerUserId: z.string().min(1),
     dueAt: z.coerce.date().optional(),
     periodStartAt: z.coerce.date().optional(),
@@ -48,7 +48,7 @@ export async function createConnectedAccessReview(ctx: RequestContext, input: un
             take: MAX_SUBJECTS,
         });
         if (accounts.length === 0) {
-            throw badRequest('No active connected identity accounts match the requested scope — the campaign would have zero subjects. Sync Okta / Google Workspace first.');
+            throw badRequest('No active connected identity accounts match the requested scope — the campaign would have zero subjects. Sync Okta / Google Workspace / Entra ID first.');
         }
 
         const review = await AccessReviewRepository.create(db, ctx, {

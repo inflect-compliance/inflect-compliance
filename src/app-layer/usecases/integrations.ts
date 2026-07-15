@@ -30,7 +30,7 @@ import { CONNECTION_STALE_AFTER_SECONDS } from '@/lib/observability/connection-f
 import { runIdentitySync } from './identity-sync';
 
 /** Providers whose connection-level sync runs a directory/account sync. */
-const IDENTITY_SYNC_PROVIDERS = new Set(['okta', 'google-workspace']);
+const IDENTITY_SYNC_PROVIDERS = new Set(['okta', 'google-workspace', 'entra-id']);
 
 // ─── Connection Management ───────────────────────────────────────────
 
@@ -668,6 +668,7 @@ export function listAvailableAutomationKeys(): string[] {
 const PROVIDER_CATEGORY: Record<string, string> = {
     okta: 'identity',
     'google-workspace': 'identity',
+    'entra-id': 'identity',
     'aws-posture': 'cloud',
     'azure-posture': 'cloud',
     'gcp-posture': 'cloud',

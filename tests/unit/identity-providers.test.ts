@@ -9,6 +9,7 @@ import {
 } from '@/app-layer/integrations/providers/identity/types';
 import { OktaProvider, parseNextLink } from '@/app-layer/integrations/providers/okta';
 import { GoogleWorkspaceProvider } from '@/app-layer/integrations/providers/google-workspace';
+import { EntraIdProvider } from '@/app-layer/integrations/providers/entra-id';
 
 const NOW = new Date('2026-06-01T00:00:00.000Z');
 
@@ -171,5 +172,115 @@ describe('GoogleWorkspaceProvider', () => {
             { serviceAccountJson: JSON.stringify({ client_email: 'x@y.iam', private_key: 'k' }) },
         );
         expect(ok.valid).toBe(true);
+    });
+});
+
+describe('EntraIdProvider', () => {
+    const accounts = [acct({ externalUserId: 'e1', mfaEnrolled: false })];
+    const provider = new EntraIdProvider({ listAccounts: async () => accounts });
+
+    it('is an IdentitySyncProvider supporting the shared identity checks', () => {
+        expect(isIdentitySyncProvider(provider)).toBe(true);
+        expect(provider.supportedChecks).toContain('mfa_enforced');
+        expect(provider.supportedChecks).toContain('sso_enforced');
+    });
+
+    it('runCheck routes to the identity check and carries durationMs', async () => {
+        const r = await provider.runCheck({
+            automationKey: 'entra-id.mfa_enforced',
+            parsed: { provider: 'entra-id', checkType: 'mfa_enforced', raw: 'entra-id.mfa_enforced' },
+            tenantId: 't1',
+            connectionConfig: {},
+            triggeredBy: 'scheduled',
+        });
+        expect(r.status).toBe('FAILED'); // e1 lacks MFA
+        expect(typeof r.durationMs).toBe('number');
+    });
+
+    it('runCheck returns ERROR when the directory fetch throws', async () => {
+        const boom = new EntraIdProvider({ listAccounts: async () => { throw new Error('403'); } });
+        const r = await boom.runCheck({
+            automationKey: 'entra-id.mfa_enforced',
+            parsed: { provider: 'entra-id', checkType: 'mfa_enforced', raw: 'entra-id.mfa_enforced' },
+            tenantId: 't1',
+            connectionConfig: {},
+            triggeredBy: 'scheduled',
+        });
+        expect(r.status).toBe('ERROR');
+        expect(r.errorMessage).toContain('403');
+    });
+
+    it('validateConnection requires tenantId, clientId, and clientSecret', async () => {
+        expect((await provider.validateConnection({}, {})).valid).toBe(false);
+        expect((await provider.validateConnection({ tenantId: 't', clientId: 'c' }, {})).valid).toBe(false);
+    });
+
+    it('mapResultToEvidence returns null on ERROR, a REPORT with an entra-id category otherwise', () => {
+        const input = { automationKey: 'entra-id.mfa_enforced', parsed: { provider: 'entra-id', checkType: 'mfa_enforced', raw: 'entra-id.mfa_enforced' }, tenantId: 't', connectionConfig: {}, triggeredBy: 'scheduled' as const };
+        expect(provider.mapResultToEvidence(input, { status: 'ERROR', summary: '', details: {} })).toBeNull();
+        const ev = provider.mapResultToEvidence(input, { status: 'PASSED', summary: 'ok', details: {} });
+        expect(ev?.type).toBe('REPORT');
+        expect(ev?.category).toBe('entra-id:mfa_enforced');
+    });
+
+    it('fetchEntraAccounts normalizes Graph users and applies bulk admin/MFA/SSO enrichment', async () => {
+        // Route the injected fetch by URL to exercise the live enumeration path
+        // (users list → directoryRoles → MFA report → domains) without real creds.
+        const json = (body: unknown) => ({ ok: true, status: 200, json: async () => body } as unknown as Response);
+        const fetchImpl = (async (url: string | URL | Request) => {
+            const u = String(url);
+            if (u.includes('/users')) {
+                return json({
+                    value: [
+                        { id: 'u1', displayName: 'One', userPrincipalName: 'one@acme.com', mail: 'one@acme.com', accountEnabled: true, signInActivity: { lastSignInDateTime: '2026-05-01T00:00:00Z' } },
+                        { id: 'u2', displayName: 'Two', userPrincipalName: 'two@acme.com', accountEnabled: false },
+                    ],
+                });
+            }
+            if (u.includes('/directoryRoles')) {
+                return json({ value: [{ members: [{ id: 'u1', '@odata.type': '#microsoft.graph.user' }] }] });
+            }
+            if (u.includes('userRegistrationDetails')) {
+                return json({ value: [{ id: 'u1', isMfaRegistered: true }, { id: 'u2', isMfaRegistered: false }] });
+            }
+            if (u.includes('/domains')) {
+                return json({ value: [{ id: 'acme.com', authenticationType: 'Federated', isVerified: true }] });
+            }
+            throw new Error(`unexpected fetch ${u}`);
+        }) as unknown as typeof fetch;
+
+        const live = new EntraIdProvider({ getAccessToken: async () => 'tok', fetchImpl });
+        const { accounts: got, complete } = await live.listAccounts({ tenantId: 't', clientId: 'c' });
+        expect(complete).toBe(true);
+        const u1 = got.find((a) => a.externalUserId === 'u1')!;
+        const u2 = got.find((a) => a.externalUserId === 'u2')!;
+        expect(u1.status).toBe('ACTIVE');
+        expect(u2.status).toBe('SUSPENDED'); // accountEnabled: false
+        expect(u1.isAdmin).toBe(true);
+        expect(u2.isAdmin).toBe(false); // authoritative role membership → not null
+        expect(u1.mfaEnrolled).toBe(true);
+        expect(u2.mfaEnrolled).toBe(false);
+        expect(u1.ssoEnrolled).toBe(true); // acme.com is Federated
+        expect(u1.lastActiveAt).toBeInstanceOf(Date);
+    });
+
+    it('leaves signals null (→ NOT_APPLICABLE) when the enrichment surfaces fail', async () => {
+        const json = (body: unknown) => ({ ok: true, status: 200, json: async () => body } as unknown as Response);
+        const fetchImpl = (async (url: string | URL | Request) => {
+            const u = String(url);
+            if (u.includes('/users')) {
+                return json({ value: [{ id: 'u1', userPrincipalName: 'one@acme.com', accountEnabled: true }] });
+            }
+            // directoryRoles / reports / domains all fail — signals must stay null.
+            return { ok: false, status: 403, json: async () => ({}) } as unknown as Response;
+        }) as unknown as typeof fetch;
+        const live = new EntraIdProvider({ getAccessToken: async () => 'tok', fetchImpl });
+        const { accounts: got } = await live.listAccounts({ tenantId: 't', clientId: 'c' });
+        expect(got[0].isAdmin).toBeNull();
+        expect(got[0].mfaEnrolled).toBeNull();
+        expect(got[0].ssoEnrolled).toBeNull();
+        // An all-unknown population makes the MFA check NOT_APPLICABLE, never PASSED.
+        const na = runIdentityCheck('mfa_enforced', got, {}, NOW);
+        expect(na.status).toBe('NOT_APPLICABLE');
     });
 });

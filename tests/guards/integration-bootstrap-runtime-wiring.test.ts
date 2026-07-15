@@ -1,12 +1,12 @@
 /**
  * H1 — provider-fleet runtime ignition ratchet.
  *
- * `src/app-layer/integrations/bootstrap.ts` registers all 10 providers as
+ * `src/app-layer/integrations/bootstrap.ts` registers all 11 providers as
  * top-level side effects, but nothing imported it at runtime — so the registry
  * was empty in the running web + worker (dropdown empty, automation-runner
  * resolved no provider). This locks in:
  *   1. Both runtime entry points import the side-effecting bootstrap.
- *   2. Importing bootstrap actually populates the registry with all 10 ids.
+ *   2. Importing bootstrap actually populates the registry with all 11 ids.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -19,6 +19,7 @@ const EXPECTED_PROVIDER_IDS = [
     'aws-posture',
     'okta',
     'google-workspace',
+    'entra-id',
     'azure-posture',
     'gcp-posture',
     'bamboohr',
@@ -35,7 +36,7 @@ describe('integration provider fleet — runtime wiring', () => {
         expect(worker).toMatch(/integrations\/bootstrap/);
     });
 
-    it('importing bootstrap populates the registry with all 10 provider ids', () => {
+    it('importing bootstrap populates the registry with all 11 provider ids', () => {
         // Import the real registry + bootstrap side effect (no mocks) and assert
         // every provider actually registered.
         jest.isolateModules(() => {
