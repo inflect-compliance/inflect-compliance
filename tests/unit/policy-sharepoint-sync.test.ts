@@ -132,6 +132,7 @@ describe('pullPolicyFromSharePoint', () => {
             ctx,
             'p1',
             expect.objectContaining({ contentType: 'MARKDOWN', changeSummary: 'Synced from SharePoint' }),
+            { proposeOnly: true },
         );
     });
 
@@ -151,6 +152,7 @@ describe('pullPolicyFromSharePoint', () => {
             ctx,
             'p1',
             expect.objectContaining({ contentType: 'HTML', changeSummary: 'Synced from SharePoint (Word)' }),
+            { proposeOnly: true },
         );
     });
 });

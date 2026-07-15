@@ -73,6 +73,13 @@ export const PolicyListItemDTOSchema = z.object({
     nextReviewAt: z.string().nullable().optional(),
     lastReviewedAt: z.string().nullable().optional(),
     currentVersionId: z.string().nullable().optional(),
+    lifecycleVersion: z.number().optional(),
+    // Prior published snapshots (Prompt-3.1) — rollback targets.
+    lifecycleHistoryJson: z.array(z.object({
+        versionId: z.string(),
+        versionNumber: z.number(),
+        supersededAt: z.string().optional(),
+    }).passthrough()).nullable().optional(),
     createdAt: z.string().optional(),
     updatedAt: z.string().optional(),
     currentVersion: PolicyVersionDTOSchema.nullable().optional(),

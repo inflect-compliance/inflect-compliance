@@ -26,6 +26,7 @@ import {
     createPolicyFromTemplate,
     markPolicyReviewed,
     createPolicyVersion,
+    rollbackPolicy,
     updatePolicyMetadata,
     requestPolicyApproval,
     decidePolicyApproval,
@@ -288,6 +289,59 @@ describeFn('policy usecase — branch coverage (integration)', () => {
         await globalPrisma.policy.update({ where: { id: policy2.id }, data: { status: 'APPROVED' } });
         const published = await publishPolicy(ctx, policy2.id, v2.id);
         expect(published!.status).toBe('PUBLISHED');
+    });
+
+    it('lifecycle history + rollback (Prompt-3.1): publish increments lifecycleVersion, records prior snapshot, rollback restores it', async () => {
+        const policy = await createPolicy(ctx, { title: `LC ${randomUUID().slice(0, 6)}`, content: '# v1' });
+        const full = await getPolicy(ctx, policy.id);
+        const v1 = full.currentVersion!.id;
+
+        // First publish (bypass) → lifecycleVersion 2, no history yet.
+        await publishPolicy(ctx, policy.id, v1, { bypassApprovalReason: 'seed' });
+        let p = await getPolicy(ctx, policy.id);
+        expect(p.lifecycleVersion).toBe(2);
+        expect(p.lifecycleHistoryJson ?? []).toHaveLength(0);
+
+        // Second version + publish → lifecycleVersion 3, v1 recorded in history.
+        const v2 = await createPolicyVersion(ctx, policy.id, { contentType: 'MARKDOWN', contentText: '# v2' });
+        await publishPolicy(ctx, policy.id, v2.id, { bypassApprovalReason: 'v2' });
+        p = await getPolicy(ctx, policy.id);
+        expect(p.lifecycleVersion).toBe(3);
+        expect(p.currentVersionId).toBe(v2.id);
+        expect(p.lifecycleHistoryJson).toHaveLength(1);
+        expect((p.lifecycleHistoryJson as Array<{ versionId: string }>)[0].versionId).toBe(v1);
+
+        // Rollback → v1 is current again, history popped, lifecycleVersion bumped.
+        await rollbackPolicy(ctx, policy.id);
+        p = await getPolicy(ctx, policy.id);
+        expect(p.currentVersionId).toBe(v1);
+        expect(p.status).toBe('PUBLISHED');
+        expect(p.lifecycleHistoryJson ?? []).toHaveLength(0);
+        expect(p.lifecycleVersion).toBe(4);
+
+        // Nothing left to roll back to.
+        await expect(rollbackPolicy(ctx, policy.id)).rejects.toThrow(/No previous published/i);
+    });
+
+    it('createPolicyVersion proposeOnly (Prompt-3.2): does NOT demote a live PUBLISHED policy', async () => {
+        const policy = await createPolicy(ctx, { title: `Prop ${randomUUID().slice(0, 6)}`, content: '# live' });
+        const full = await getPolicy(ctx, policy.id);
+        const liveVersionId = full.currentVersion!.id;
+        await publishPolicy(ctx, policy.id, liveVersionId, { bypassApprovalReason: 'seed' });
+
+        // A normal edit demotes to DRAFT...
+        const normal = await createPolicyVersion(ctx, policy.id, { contentType: 'MARKDOWN', contentText: '# edit' });
+        expect((await getPolicy(ctx, policy.id)).status).toBe('DRAFT');
+        // re-publish to get back to a live state
+        await publishPolicy(ctx, policy.id, normal.id, { bypassApprovalReason: 'republish' });
+        expect((await getPolicy(ctx, policy.id)).status).toBe('PUBLISHED');
+
+        // ...but a proposeOnly (external) change keeps the policy PUBLISHED + current unchanged.
+        const proposed = await createPolicyVersion(ctx, policy.id, { contentType: 'MARKDOWN', contentText: '# external' }, { proposeOnly: true });
+        const after = await getPolicy(ctx, policy.id);
+        expect(after.status).toBe('PUBLISHED');
+        expect(after.currentVersionId).toBe(normal.id);
+        expect(after.currentVersionId).not.toBe(proposed.id);
     });
 
     it('markPolicyReviewed + updatePolicyMetadata three-state branches', async () => {

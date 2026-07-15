@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { RequestContext } from '../types';
 import { PolicyRepository, PolicyFilters, PolicyListParams } from '../repositories/PolicyRepository';
 import { PolicyVersionRepository } from '../repositories/PolicyVersionRepository';
@@ -88,6 +89,8 @@ export async function createPolicy(ctx: RequestContext, data: {
     reviewFrequencyDays?: number | null;
     language?: string | null;
     content?: string | null;
+    /** Initial-version editor mode (Prompt-3.3). Defaults to MARKDOWN. */
+    contentType?: 'MARKDOWN' | 'HTML';
 }) {
     assertCanWrite(ctx);
 
@@ -115,9 +118,10 @@ export async function createPolicy(ctx: RequestContext, data: {
         // Create initial version if content provided. Sanitised
         // before persistence — same contract as createPolicyVersion.
         if (data.content) {
+            const initialContentType = data.contentType ?? 'MARKDOWN';
             const version = await PolicyVersionRepository.create(db, ctx, policy.id, {
-                contentType: 'MARKDOWN',
-                contentText: sanitizePolicyContent('MARKDOWN', data.content),
+                contentType: initialContentType,
+                contentText: sanitizePolicyContent(initialContentType, data.content),
                 changeSummary: 'Initial version',
             });
             await PolicyRepository.setCurrentVersion(db, ctx, policy.id, version.id);
@@ -282,7 +286,16 @@ export async function createPolicyVersion(ctx: RequestContext, policyId: string,
     contentText?: string | null;
     externalUrl?: string | null;
     changeSummary?: string | null;
-}) {
+}, opts: {
+    /**
+     * Prompt-3.2 — when true, a new version on a PUBLISHED/APPROVED policy is a
+     * *proposed* draft: the live published version and status are NOT demoted.
+     * The proposal must go through request-approval → publish to replace the
+     * live version. Used by the SharePoint pull so an external edit never
+     * silently un-publishes a live policy (stranding its acknowledgements).
+     */
+    proposeOnly?: boolean;
+} = {}) {
     assertCanWrite(ctx);
 
     return runInTenantContext(ctx, async (db) => {
@@ -323,9 +336,27 @@ export async function createPolicyVersion(ctx: RequestContext, policyId: string,
 
         const version = await PolicyVersionRepository.create(db, ctx, policyId, safeData);
 
-        // Move policy back to DRAFT if it was in a published/approved state
-        if (policy.status === 'PUBLISHED' || policy.status === 'APPROVED') {
+        const wasLive = policy.status === 'PUBLISHED' || policy.status === 'APPROVED';
+        // Move policy back to DRAFT if it was published/approved — UNLESS this is
+        // a *proposed* external change (Prompt-3.2), which must not demote the
+        // live published version; the proposal awaits its own approval instead.
+        if (wasLive && !opts.proposeOnly) {
             await PolicyRepository.updateStatus(db, ctx, policyId, 'DRAFT');
+        }
+        if (wasLive && opts.proposeOnly) {
+            await logEvent(db, ctx, {
+                action: 'POLICY_EXTERNAL_CHANGE_PROPOSED',
+                entityType: 'Policy',
+                entityId: policyId,
+                details: `External change proposed as version ${version.versionNumber} (live ${policy.status} version unchanged)`,
+                detailsJson: {
+                    category: 'entity_lifecycle',
+                    entityName: 'Policy',
+                    summary: `External change proposed as v${version.versionNumber}; live ${policy.status} version retained pending re-approval`,
+                    after: { versionId: version.id, versionNumber: version.versionNumber, retainedStatus: policy.status },
+                },
+                metadata: { versionId: version.id, versionNumber: version.versionNumber },
+            });
         }
 
         await logEvent(db, ctx, {
@@ -572,6 +603,23 @@ export async function decidePolicyApproval(ctx: RequestContext, approvalId: stri
  * security policy mid-incident) shouldn't be entirely blocked, but
  * they MUST be auditable + justified.
  */
+/**
+ * A prior published snapshot recorded in `Policy.lifecycleHistoryJson` (Prompt-3.1).
+ * `versionId` is the still-existing PolicyVersion that rollback re-publishes.
+ */
+export interface PolicyLifecycleSnapshot {
+    /** lifecycleVersion at the time this snapshot was the live published version. */
+    version: number;
+    versionId: string;
+    versionNumber: number;
+    changeSummary: string | null;
+    /** ISO timestamp — when this published version was superseded. */
+    supersededAt: string;
+    supersededByUserId: string;
+}
+
+const MAX_LIFECYCLE_HISTORY = 20;
+
 export interface PublishPolicyOptions {
     /**
      * If set, allows publishing a policy that isn't APPROVED. The
@@ -611,9 +659,48 @@ export async function publishPolicy(
             );
         }
 
+        // ── Lifecycle history + counter (Prompt-3.1) ──
+        // Snapshot the OUTGOING published version (the one being replaced) into
+        // lifecycleHistoryJson and bump lifecycleVersion, so the list version
+        // column reflects real published lineage and rollback has a target.
+        const priorHistory: PolicyLifecycleSnapshot[] = Array.isArray(policy.lifecycleHistoryJson)
+            ? (policy.lifecycleHistoryJson as unknown as PolicyLifecycleSnapshot[])
+            : [];
+        let nextHistory = priorHistory;
+        // Capture the OUTGOING version when it was previously published
+        // (lifecycleVersion > 1 ⇒ at least one prior publish; currentVersionId
+        // tracks the last-published version). status may already be DRAFT here
+        // because creating the new version demoted it — so gate on the counter,
+        // not the live status.
+        if (
+            policy.lifecycleVersion > 1 &&
+            policy.currentVersionId &&
+            policy.currentVersionId !== versionId &&
+            policy.currentVersion
+        ) {
+            nextHistory = [
+                ...priorHistory,
+                {
+                    version: policy.lifecycleVersion,
+                    versionId: policy.currentVersionId,
+                    versionNumber: policy.currentVersion.versionNumber,
+                    changeSummary: policy.currentVersion.changeSummary ?? null,
+                    supersededAt: new Date().toISOString(),
+                    supersededByUserId: ctx.userId,
+                },
+            ].slice(-MAX_LIFECYCLE_HISTORY);
+        }
+
         // Set as current version and publish
         await PolicyRepository.setCurrentVersion(db, ctx, policyId, versionId);
         await PolicyRepository.updateStatus(db, ctx, policyId, 'PUBLISHED');
+        await db.policy.update({
+            where: { id: policyId },
+            data: {
+                lifecycleVersion: policy.lifecycleVersion + 1,
+                lifecycleHistoryJson: nextHistory as unknown as Prisma.InputJsonValue,
+            },
+        });
 
         // If we got here via the bypass path, emit the dedicated
         // audit row BEFORE the POLICY_PUBLISHED event so the timeline
@@ -673,6 +760,60 @@ export async function publishPolicy(
 
     recordPolicyPublished();
     return published;
+}
+
+/**
+ * Roll back to the previous published version (Prompt-3.1). Re-publishes the
+ * PolicyVersion recorded in the most-recent `lifecycleHistoryJson` entry,
+ * pops it off the history, and bumps `lifecycleVersion`. Admin-only.
+ */
+export async function rollbackPolicy(ctx: RequestContext, policyId: string) {
+    assertCanAdmin(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const policy = await PolicyRepository.getById(db, ctx, policyId);
+        if (!policy) throw notFound('Policy not found');
+
+        const history: PolicyLifecycleSnapshot[] = Array.isArray(policy.lifecycleHistoryJson)
+            ? (policy.lifecycleHistoryJson as unknown as PolicyLifecycleSnapshot[])
+            : [];
+        if (history.length === 0) {
+            throw badRequest('No previous published version to roll back to.');
+        }
+        const target = history[history.length - 1];
+
+        const targetVersion = await PolicyVersionRepository.getById(db, target.versionId);
+        if (!targetVersion || targetVersion.policyId !== policyId) {
+            throw badRequest('The previous published version no longer exists.');
+        }
+
+        const remaining = history.slice(0, -1);
+        await PolicyRepository.setCurrentVersion(db, ctx, policyId, target.versionId);
+        await PolicyRepository.updateStatus(db, ctx, policyId, 'PUBLISHED');
+        await db.policy.update({
+            where: { id: policyId },
+            data: {
+                lifecycleVersion: policy.lifecycleVersion + 1,
+                lifecycleHistoryJson: remaining as unknown as Prisma.InputJsonValue,
+            },
+        });
+
+        await logEvent(db, ctx, {
+            action: 'POLICY_ROLLED_BACK',
+            entityType: 'Policy',
+            entityId: policyId,
+            details: `Rolled back to version ${target.versionNumber}`,
+            detailsJson: {
+                category: 'status_change',
+                entityName: 'Policy',
+                toStatus: 'PUBLISHED',
+                summary: `Rolled back to previously-published version ${target.versionNumber}`,
+                after: { versionId: target.versionId, versionNumber: target.versionNumber },
+            },
+            metadata: { versionId: target.versionId, versionNumber: target.versionNumber },
+        });
+
+        return PolicyRepository.getById(db, ctx, policyId);
+    });
 }
 
 export async function archivePolicy(ctx: RequestContext, policyId: string) {

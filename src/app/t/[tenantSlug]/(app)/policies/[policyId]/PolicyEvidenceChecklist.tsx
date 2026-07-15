@@ -31,6 +31,8 @@ export function PolicyEvidenceChecklist({ policyId, items, canWrite, onChanged }
     const tenantHref = useTenantHref();
     const [options, setOptions] = useState<EvidenceOption[]>([]);
     const [busy, setBusy] = useState('');
+    const [newLabel, setNewLabel] = useState('');
+    const [adding, setAdding] = useState(false);
 
     useEffect(() => {
         if (!canWrite) return;
@@ -57,7 +59,25 @@ export function PolicyEvidenceChecklist({ policyId, items, canWrite, onChanged }
         }
     };
 
-    if (!items.length) return null;
+    // Add a new evidence-to-retain item (wires addPolicyEvidenceItem via POST).
+    const addItem = async () => {
+        const label = newLabel.trim();
+        if (!label || adding) return;
+        setAdding(true);
+        try {
+            const res = await fetch(apiUrl(`/policies/${policyId}/evidence-items`), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ label }),
+            });
+            if (res.ok) { setNewLabel(''); onChanged(); }
+        } finally {
+            setAdding(false);
+        }
+    };
+
+    // Render the card whenever there are items OR the user can add one.
+    if (!items.length && !canWrite) return null;
 
     const linkedCount = items.filter((i) => i.evidenceId).length;
 
@@ -117,6 +137,20 @@ export function PolicyEvidenceChecklist({ policyId, items, canWrite, onChanged }
                     </li>
                 ))}
             </ul>
+            {canWrite && (
+                <div className="mt-default flex items-center gap-tight">
+                    <input
+                        className="input flex-1"
+                        value={newLabel}
+                        onChange={(e) => setNewLabel(e.target.value)}
+                        placeholder={t('evidence.addPlaceholder')}
+                        data-testid="policy-evidence-add-input"
+                    />
+                    <Button variant="secondary" size="sm" onClick={addItem} disabled={!newLabel.trim() || adding} id="policy-evidence-add-btn">
+                        {t('evidence.add')}
+                    </Button>
+                </div>
+            )}
             <p className="mt-default text-xs text-content-subtle italic">
                 {t('evidence.note')}
             </p>

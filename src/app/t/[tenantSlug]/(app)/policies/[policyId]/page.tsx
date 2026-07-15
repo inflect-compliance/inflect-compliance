@@ -91,6 +91,7 @@ const EVENT_ICONS: Record<string, AppIconName> = {
     POLICY_REVIEWED: 'refresh', POLICY_REVIEW_OVERDUE: 'warning',
     POLICY_ATTESTED: 'userCheck', POLICY_ACK_REQUESTED: 'userCheck',
     POLICY_CONTROL_LINKED: 'link', POLICY_CONTROL_UNLINKED: 'link',
+    POLICY_ROLLED_BACK: 'refresh',
 };
 
 // i18n keys for event titles (localized instead of raw enum tokens).
@@ -102,6 +103,7 @@ const EVENT_LABEL_KEYS: Record<string, string> = {
     POLICY_REVIEWED: 'detail.event.reviewed', POLICY_REVIEW_OVERDUE: 'detail.event.reviewOverdue',
     POLICY_ATTESTED: 'detail.event.attested', POLICY_ACK_REQUESTED: 'detail.event.ackRequested',
     POLICY_CONTROL_LINKED: 'detail.event.controlLinked', POLICY_CONTROL_UNLINKED: 'detail.event.controlUnlinked',
+    POLICY_ROLLED_BACK: 'detail.event.rolledBack',
 };
 
 type ContentMode = 'MARKDOWN' | 'EXTERNAL_LINK' | 'FILE';
@@ -336,6 +338,15 @@ export default function PolicyDetailPage() {
         } catch (err: unknown) { setError(err instanceof Error ? err.message : t('detail.errUnknown')); } finally { setActionLoading(''); }
     };
 
+    const rollbackToPrevious = async () => {
+        setActionLoading('rollback');
+        try {
+            const res = await fetch(apiUrl(`/policies/${policyId}/rollback`), { method: 'POST' });
+            if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || t('detail.errFailed')); }
+            await fetchPolicy();
+        } catch (err: unknown) { setError(err instanceof Error ? err.message : t('detail.errUnknown')); } finally { setActionLoading(''); }
+    };
+
     const archivePolicy = async () => {
         setActionLoading('archive');
         try {
@@ -552,7 +563,7 @@ export default function PolicyDetailPage() {
                         </Button>
                     )}
                     {canPublishNow && (
-                        <Button variant="primary" size="sm" onClick={() => headerVersion && publishVersion(headerVersion.id)} disabled={!!actionLoading} id="header-publish">
+                        <Button variant="secondary" size="sm" onClick={() => headerVersion && publishVersion(headerVersion.id)} disabled={!!actionLoading} id="header-publish">
                             {t('detail.publish')}
                         </Button>
                     )}
@@ -775,6 +786,20 @@ export default function PolicyDetailPage() {
             {/* ── Version History ── */}
             {tab === 'versions' && (
                 <div className="space-y-compact" id="version-history">
+                    {/* Prompt-3.1 — published lineage + rollback to the previous
+                        published version (targets recorded in lifecycleHistoryJson). */}
+                    {(policy.lifecycleHistoryJson?.length ?? 0) > 0 && (
+                        <div className="flex items-center justify-between rounded-lg border border-border-subtle p-3">
+                            <span className="text-sm text-content-muted">
+                                {t('detail.rollbackHint', { count: policy.lifecycleHistoryJson!.length })}
+                            </span>
+                            {canAdmin && (
+                                <Button variant="secondary" size="sm" onClick={rollbackToPrevious} disabled={!!actionLoading} id="policy-rollback-btn">
+                                    {actionLoading === 'rollback' ? '…' : t('detail.rollback')}
+                                </Button>
+                            )}
+                        </div>
+                    )}
                     {/* Version diff (Epic 45.3) — defaults to
                         previous-vs-current so a reviewer's first
                         impression is always meaningful. The picker

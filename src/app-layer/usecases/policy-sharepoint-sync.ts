@@ -210,19 +210,22 @@ export async function pullPolicyFromSharePoint(
     const ab = await client.downloadItemContent(input.driveId, input.itemId);
 
     // SP-F3 — Word docs convert to HTML (mammoth); everything else is treated
-    // as markdown text. createPolicyVersion sanitises + audits + reverts to DRAFT.
+    // as markdown text. Prompt-3.2 — an external pull lands as a *proposed*
+    // draft version (`proposeOnly`): a live PUBLISHED policy is NOT demoted, so
+    // its acknowledgements are never silently stranded. The proposal must go
+    // through request-approval → publish to replace the live version.
     if (isDocxItem(item.name)) {
         await createPolicyVersion(ctx, policy.id, {
             contentType: 'HTML',
             contentText: await docxToPolicyHtml(ab),
             changeSummary: 'Synced from SharePoint (Word)',
-        });
+        }, { proposeOnly: true });
     } else {
         await createPolicyVersion(ctx, policy.id, {
             contentType: 'MARKDOWN',
             contentText: new TextDecoder().decode(ab),
             changeSummary: 'Synced from SharePoint',
-        });
+        }, { proposeOnly: true });
     }
 
     await runInTenantContext(ctx, async (db) => {

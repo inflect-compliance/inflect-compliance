@@ -224,7 +224,13 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // (paired with a secondary Cancel), shared by the list-row and detail-sheet
 // reject affordances. Measured = 153; ceiling at 154 keeps one slot of
 // headroom. +1 primary.
-const MAX_PRIMARY_COUNT = 154;
+// Policy-roadmap PR-C (2026-07-15) — bumped 154 → 155 for the emergency
+// publish-bypass modal ("Publish without approval" confirm) — the earned
+// primary of its own dialog region. The policy detail page's promoted header
+// Publish was demoted to secondary (its canonical primary lives on the version
+// card), which nets the measured count to 155 (reconciling a pre-existing
+// over-ceiling drift on main). Ceiling at 155 = measured, no headroom.
+const MAX_PRIMARY_COUNT = 155;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {
