@@ -246,6 +246,34 @@ async function applyMembershipClaims(
 // cookie — providers are never bundled into the Edge bundle. So the
 // split is no longer required.
 
+/**
+ * Resolve a usable email address from Microsoft Entra ID-token claims.
+ *
+ * The desired onboarding flow is: an admin adds `…@pwc.com` as a B2B guest
+ * in our Entra tenant + sends an in-app invite, then the guest signs in with
+ * Microsoft and is provisioned immediately (see redeemPendingInvitesByEmail).
+ * For that email-match to fire, the sign-in must surface the guest's REAL
+ * address so it equals the invite email. Entra is inconsistent here:
+ *   - `email` — present when a mail attribute / optional claim exists, but
+ *     frequently ABSENT for B2B guests. (Typed `string` by the provider, but
+ *     genuinely optional at runtime.)
+ *   - `preferred_username` — the guest's sign-in name, normally their real
+ *     external email (`ivaylo.i.ivanov@pwc.com`). Safe fallback.
+ *   - `upn` — the mangled `..._pwc.com#EXT#@ourtenant.onmicrosoft.com` form;
+ *     NEVER use it for matching (it would never equal the invite email).
+ *
+ * Returns the first `@`-shaped string claim, or null.
+ */
+export function resolveEntraEmail(...claims: unknown[]): string | null {
+    for (const c of claims) {
+        if (typeof c === 'string') {
+            const v = c.trim();
+            if (v.includes('@')) return v;
+        }
+    }
+    return null;
+}
+
 const providers: NextAuthOptions['providers'] = [
     Google({
         clientId: env.GOOGLE_CLIENT_ID,
@@ -282,6 +310,33 @@ const providers: NextAuthOptions['providers'] = [
                 // not by this scope.
                 scope: 'openid email profile offline_access https://graph.microsoft.com/GroupMember.Read.All',
             },
+        },
+        // Custom profile mapping — identical to the provider default EXCEPT the
+        // email is resolved via resolveEntraEmail() so B2B guests (who often
+        // arrive without an `email` claim) still land their real address. The
+        // profile-photo fetch is preserved verbatim so existing Entra users
+        // keep their avatar.
+        async profile(profile, tokens) {
+            let image: string | null = null;
+            try {
+                const response = await fetch(
+                    'https://graph.microsoft.com/v1.0/me/photos/48x48/$value',
+                    { headers: { Authorization: `Bearer ${tokens.access_token}` } },
+                );
+                if (response.ok && typeof Buffer !== 'undefined') {
+                    const pictureBuffer = await response.arrayBuffer();
+                    const pictureBase64 = Buffer.from(pictureBuffer).toString('base64');
+                    image = `data:image/jpeg;base64,${pictureBase64}`;
+                }
+            } catch {
+                // Photo is best-effort; InitialsAvatar covers the null case.
+            }
+            return {
+                id: profile.sub,
+                name: profile.name,
+                email: resolveEntraEmail(profile.email, profile.preferred_username),
+                image,
+            };
         },
     }),
     // Credentials — production-grade email+password auth.
