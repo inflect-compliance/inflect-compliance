@@ -237,10 +237,12 @@ function ProcessEdgeImpl(props: EdgeProps) {
     // a real Control row.
     const { tenantSlug } = useTenantContext();
     const tenantControls = useTenantControls(tenantSlug, { pollMs: 30000 });
-    const edgeControls = useMemo(
-        () => (Array.isArray(edgeData?.controls) ? edgeData.controls : []),
-        [edgeData?.controls],
-    );
+    // Plain derivation (no manual useMemo — the React Compiler memoizes it,
+    // and a manual memo on the optional-chained `edgeData?.controls` trips the
+    // compiler's "existing memoization could not be preserved" rule).
+    const edgeControls = Array.isArray(edgeData?.controls)
+        ? edgeData.controls
+        : [];
     const hasControls = edgeControls.length > 0;
 
     // R27-PR-B — cycle the connection variant
