@@ -690,15 +690,16 @@ function EvidencePageInner({ initialEvidence, initialControls, initialMetrics, t
     // The server buckets mirror `evidenceFreshnessBucket` exactly, so the
     // tiles agree with the per-row freshness badge the table renders while
     // reflecting the whole tenant.
-    const freshnessCounts = useMemo(
-        () => ({
-            current: metrics.current,
-            expiring: metrics.expiringSoon,
-            expired: metrics.expired,
-            needs_review: metrics.needsReview,
-        }),
-        [metrics],
-    );
+    // No manual useMemo — the React Compiler auto-memoizes this derivation,
+    // and a hand-rolled useMemo here trips the compiler's
+    // "existing memoization could not be preserved" bailout (which would
+    // skip compiling the whole component).
+    const freshnessCounts = {
+        current: metrics.current,
+        expiring: metrics.expiringSoon,
+        expired: metrics.expired,
+        needs_review: metrics.needsReview,
+    };
 
     const setFreshnessFilter = useCallback(
         (bucket: EvidenceFreshnessBucket) => {
