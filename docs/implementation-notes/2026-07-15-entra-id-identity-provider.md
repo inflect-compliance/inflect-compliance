@@ -37,14 +37,15 @@ false PASS (the H2 fail-honest contract). `signInActivity` in `$select` 4xxs on
 tenants without the licence/scope, so the enumeration retries once with a
 reduced projection instead of failing the whole sync.
 
-**Hybrid-AD coverage.** On-prem Active Directory is covered *through* this
-connector, not by a separate LDAP integration. AD identities synced to Entra via
-Azure AD Connect surface here (they carry `onPremisesSyncEnabled: true`), which
-matches how the large majority of orgs run AD. A standalone on-prem LDAP
-connector was deliberately **not** built: the integration stack is REST/`fetch`
-based on a single SaaS VM, and reaching customer domain controllers over LDAP
-would add a native dependency plus network egress to every customer DC. Estates
-running standalone on-prem AD with no Entra sync are the known gap.
+**Hybrid-AD coverage.** On-prem Active Directory identities synced to Entra via
+Azure AD Connect surface *through* this connector (they carry
+`onPremisesSyncEnabled: true`), which matches how the large majority of orgs run
+AD — so this connector already covers hybrid estates with no LDAP reachability
+required. Estates running **standalone** on-prem AD with no Entra sync are served
+by a separate direct-LDAPS `ActiveDirectoryProvider` (delivered in the follow-up
+PR), which binds to the customer domain controller over LDAPS. The two
+connectors are complementary: Entra for cloud + hybrid identities, the LDAPS
+connector for air-gapped / non-synced AD.
 
 ## Files
 
