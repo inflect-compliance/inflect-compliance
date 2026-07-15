@@ -77,6 +77,10 @@ model Evidence {
   @@index([tenantId, ownerUserId])
   // GAP-perf — supports `status` filter (DRAFT|SUBMITTED|APPROVED|REJECTED).
   @@index([tenantId, status])
+  // EP-4 — backs the tenant-wide retention/KPI aggregate
+  // (getEvidenceRetentionMetrics): groupBy(status) + the expiry/freshness
+  // bucket counts keyed on status + expiredAt over the FULL dataset.
+  @@index([tenantId, status, expiredAt])
   // Supports the task Evidence tab ("evidence for task X") + the
   // evidence "uploaded from" back-reference lookup.
   @@index([tenantId, taskId])

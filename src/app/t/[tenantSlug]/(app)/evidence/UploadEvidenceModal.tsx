@@ -69,6 +69,7 @@ import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { FormField } from '@/components/ui/form-field';
 import { RequiredMarker } from '@/components/ui/required-marker';
 import { InfoTooltip } from '@/components/ui/tooltip';
+import { InlineNotice } from '@/components/ui/inline-notice';
 import { DatePicker } from '@/components/ui/date-picker/date-picker';
 import {
     parseYMD,
@@ -142,6 +143,13 @@ export function UploadEvidenceModal({
     // (null = SharePoint not connected → the button stays hidden).
     const [spConnId, setSpConnId] = useState<string | null>(null);
     const [spPickerOpen, setSpPickerOpen] = useState(false);
+    // EP-4 — distinguish "not connected" (probe OK, zero connections → button
+    // stays hidden, the expected case) from "probe errored" (fetch threw or a
+    // non-ok status). A swallowed probe error used to be indistinguishable
+    // from not-connected — the button just silently never appeared. Now a
+    // probe error surfaces an inline notice so the user knows the connection
+    // check itself failed rather than assuming SharePoint isn't set up.
+    const [spProbeError, setSpProbeError] = useState(false);
 
     useEffect(() => {
         if (!open) return;
@@ -149,11 +157,19 @@ export function UploadEvidenceModal({
         void (async () => {
             try {
                 const res = await fetch(apiUrl('/integrations/sharepoint/connections'));
-                if (!res.ok) return;
+                if (!res.ok) {
+                    if (!cancelled) setSpProbeError(true);
+                    return;
+                }
                 const conns = (await res.json()) as Array<{ id: string }>;
-                if (!cancelled) setSpConnId(conns[0]?.id ?? null);
+                if (!cancelled) {
+                    setSpConnId(conns[0]?.id ?? null);
+                    setSpProbeError(false);
+                }
             } catch {
-                /* SharePoint optional — ignore */
+                // Client component — no console (a guard bans it); surface the
+                // failed connection check as UI state instead of swallowing it.
+                if (!cancelled) setSpProbeError(true);
             }
         })();
         return () => { cancelled = true; };
@@ -197,6 +213,7 @@ export function UploadEvidenceModal({
         setError('');
         setQueuedCount(0);
         setUploadingAll(false);
+        setSpProbeError(false);
     }, [open]);
 
     // Project controls into ComboboxOption shape. The annexId + code +
@@ -522,6 +539,17 @@ export function UploadEvidenceModal({
                                     >
                                         {tx('upload.importSharePoint')}
                                     </Button>
+                                </div>
+                            )}
+                            {/* EP-4 — the SharePoint connection probe errored
+                                (fetch threw or non-ok). Surface it so the user
+                                knows the check failed rather than assuming
+                                SharePoint just isn't connected. */}
+                            {spProbeError && !spConnId && (
+                                <div className="mt-default">
+                                    <InlineNotice variant="warning" title={tx('upload.spProbeErrorTitle')}>
+                                        {tx('upload.spProbeErrorBody')}
+                                    </InlineNotice>
                                 </div>
                             )}
                         </div>

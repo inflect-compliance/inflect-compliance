@@ -10,8 +10,8 @@
  *
  * Modal-based replacement for the inline `#text-evidence-form` that
  * EvidenceClient rendered toggle-style above the list. Keeps the same
- * POST `/evidence` contract (type=TEXT) and the same React-Query cache
- * invalidation so behaviour is byte-identical to the legacy flow.
+ * POST `/evidence` contract (type=TEXT); on success it revalidates the
+ * SWR evidence-list cache so the new row appears immediately.
  *
  * Preserved form ID: `text-evidence-form` (used by existing E2E).
  */
@@ -59,14 +59,11 @@ export function NewEvidenceTextModal({
 }: NewEvidenceTextModalProps) {
     const tx = useTranslations('evidence');
     const close = useCallback(() => setOpen(false), [setOpen]);
-    // Epic 69 — bridge cache invalidation. EvidenceClient now reads
-    // from `useTenantSWR(CACHE_KEYS.evidence.list())`, so the React
-    // Query invalidation below alone wouldn't refresh the page. We
-    // invalidate BOTH caches: RQ (in case other consumers still
-    // depend on it) and SWR (the actual source of truth for the
-    // list page after Epic 69). Once every consumer of the
-    // evidence list has migrated to SWR, the queryClient calls can
-    // be dropped.
+    // Epic 69 — the evidence list reads from
+    // `useTenantSWR(CACHE_KEYS.evidence.list())`, so on a successful create
+    // we revalidate every `/evidence?…` SWR entry (the sole source of truth
+    // for the list page). The legacy React-Query invalidation this modal
+    // once carried is gone — SWR is the only cache now.
     const { mutate: swrMutate } = useSWRConfig();
     const titleRef = useRef<HTMLInputElement>(null);
 
