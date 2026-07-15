@@ -9,7 +9,6 @@ import {
     AlertTriangle,
     Paperclip,
     Users,
-    Settings,
     ScrollText,
     LogOut,
     PanelLeftClose,
@@ -32,14 +31,16 @@ import { NavSection } from './nav-section';
 
 // ─── Nav configuration ───────────────────────────────────────────────
 //
-// Seven entries per Epic O-4 spec, in the order the spec lists them:
+// Nav entries per Epic O-4 spec, in the order the spec lists them:
 //   1. Portfolio Overview
 //   2. All Tenants
 //   3. Non-Performing Controls   ← drill-down
 //   4. Critical Risks            ← drill-down
 //   5. Overdue Evidence          ← drill-down
 //   6. Members
-//   7. Settings
+//   7. Audit Log
+// (The Settings entry was removed from the sidebar; the /settings
+//  route itself is unchanged.)
 //
 // `requiresDrillDown` flags the three drill-down entries — they're
 // hidden in the sidebar when the user lacks the permission (ORG_READER
@@ -52,7 +53,6 @@ interface OrgNavItemDef {
     icon: LucideIcon;
     requiresDrillDown?: boolean;
     requiresManageMembers?: boolean;
-    requiresManageTenants?: boolean;
 }
 
 interface OrgNavSectionDef {
@@ -113,15 +113,6 @@ export function useOrgNavSections(): OrgNavSectionDef[] {
                     // was added/removed/role-changed and when.
                     requiresManageMembers: true,
                 },
-                {
-                    href: orgHref('/settings'),
-                    label: t('nav.settings'),
-                    icon: Settings,
-                    // Settings UI is ORG_ADMIN-only because the spec
-                    // gates org config changes (rename, delete, etc.)
-                    // behind canManageTenants.
-                    requiresManageTenants: true,
-                },
             ],
         },
     ];
@@ -132,7 +123,6 @@ export function useOrgNavSections(): OrgNavSectionDef[] {
         items: section.items.filter((item) => {
             if (item.requiresDrillDown && !perms.canDrillDown) return false;
             if (item.requiresManageMembers && !perms.canManageMembers) return false;
-            if (item.requiresManageTenants && !perms.canManageTenants) return false;
             return true;
         }),
     }));
