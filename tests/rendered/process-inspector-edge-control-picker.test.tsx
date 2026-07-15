@@ -98,13 +98,12 @@ describe('ProcessInspector — edge-mode control picker (P2-PR-A)', () => {
         expect(wrapper).toHaveTextContent(/no controls yet/i);
     });
 
-    it('clearing the selection emits the canonical { controls: [] } patch', () => {
-        // The Combobox's clear path is asserted at the patch-level
-        // (the test stays decoupled from cmdk's internal DOM by
-        // calling commitLinkedControl(null) via the inspector's own
-        // contract). The component renders the picker mount; the
-        // structural ratchet locks the call shape. Together they
-        // prove: clearing → onEdgeUpdate(edgeId, { controls: [] }).
+    it('renders the multi-select picker with a pre-attached control (PR-D)', () => {
+        // PR-D — the picker is multi-select (`commitLinkedControls` emits a
+        // `controls` array; clearing all yields `controls: []`). The commit
+        // shape is locked by the structural ratchet; this render proves the
+        // inspector mounts the picker on the pre-attached `data.controls`
+        // shape without throwing.
         const onEdgeUpdate = jest.fn();
         render(
             <ProcessInspector

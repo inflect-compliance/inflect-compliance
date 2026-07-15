@@ -74,7 +74,7 @@ export interface ProcessMapWithGraph {
         controls: Array<{
             controlKey: string;
             label: string;
-            controlId: string | null;
+            controlId: string;
             dataJson: unknown;
         }>;
     }>;
@@ -395,7 +395,7 @@ export class ProcessMapRepository {
                         edgeId: edge.id,
                         controlKey: c.controlKey,
                         label: c.label,
-                        controlId: c.controlId ?? null,
+                        controlId: c.controlId,
                         dataJson:
                             c.dataJson === undefined
                                 ? Prisma.JsonNull

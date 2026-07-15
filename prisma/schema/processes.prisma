@@ -207,17 +207,19 @@ model ProcessEdgeControl {
   // Client-stable id, scoped to the edge.
   controlKey   String
   label        String
-  // Future FK to the real Control row. Nullable today so the
-  // PR-A scope can save edge-mounted controls without forcing
-  // the user to pick a Control first; PR-D wires the picker UI
-  // and may FLIP this to NOT NULL once the migration is safe.
-  controlId    String?
+  // FK to the real Control row. PR-D flipped this to NOT NULL + a real
+  // foreign key: the only way to attach a control to an edge is the
+  // inspector's Control picker, which always selects a real Control, so
+  // every edge control now maps to a live Control row. Deleting a Control
+  // cascades away its edge attachments.
+  controlId    String
   dataJson     Json?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  tenant Tenant      @relation(fields: [tenantId], references: [id])
-  edge   ProcessEdge @relation(fields: [edgeId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  tenant  Tenant      @relation(fields: [tenantId], references: [id])
+  edge    ProcessEdge @relation(fields: [edgeId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  control Control     @relation(fields: [controlId], references: [id], onDelete: Cascade)
 
   @@unique([edgeId, controlKey])
   @@index([tenantId, processMapId])

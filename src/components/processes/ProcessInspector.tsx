@@ -509,12 +509,11 @@ function EdgeInspectorBody({
         setLabel(typeof edge.label === "string" ? edge.label : "");
     }, [edge.id, edge.label]);
 
-    // Epic P2-PR-A — controls attached to this edge. PR-A allows
-    // ONE per edge in the inspector; the underlying ProcessEdgeControl
-    // table supports many for future "two controls gate this edge"
-    // shapes.
+    // Epic P2-PR-A / PR-D — controls attached to this edge. PR-D lifts the
+    // one-control-per-edge limit: the picker is a multi-select so several
+    // real controls can gate one connection ("two controls gate this edge").
+    // The underlying ProcessEdgeControl table already supported many.
     const existingControls = readEdgeControls(edge);
-    const selectedControl = existingControls[0] ?? null;
     // Passing the empty string short-circuits the hook to a no-op
     // ({ options: [], loading: false }); the picker block below
     // also gates on `tenantSlug` so absence cleanly hides the
@@ -530,31 +529,39 @@ function EdgeInspectorBody({
             })),
         [tenantControls],
     );
-    const selectedControlOption = useMemo<ComboboxOption | null>(() => {
-        if (!selectedControl?.controlId) return null;
-        return (
-            controlOptions.find((o) => o.value === selectedControl.controlId) ??
-            null
+    const selectedControlOptions = useMemo<ComboboxOption[]>(() => {
+        const ids = new Set(
+            existingControls
+                .map((c) => c.controlId)
+                .filter((id): id is string => typeof id === "string"),
         );
-    }, [controlOptions, selectedControl]);
+        return controlOptions.filter((o) => ids.has(o.value));
+    }, [controlOptions, existingControls]);
 
-    const commitLinkedControl = (option: ComboboxOption | null) => {
+    const commitLinkedControls = (options: ComboboxOption[]) => {
         if (!onEdgeUpdate) return;
-        if (option === null) {
-            // Clear: drop every control attached to this edge.
-            onEdgeUpdate(edge.id, { controls: [] });
-            return;
+        // Preserve the stable controlKey of controls already attached (match
+        // by controlId) so re-selection doesn't churn keys; mint a fresh key
+        // for newly-added controls.
+        const byControlId = new Map(
+            existingControls
+                .filter((c) => typeof c.controlId === "string")
+                .map((c) => [c.controlId as string, c]),
+        );
+        const next: EdgeControlRef[] = [];
+        for (const option of options) {
+            const ref = tenantControls.find((c) => c.id === option.value);
+            if (!ref) continue;
+            const existing = byControlId.get(ref.id);
+            next.push({
+                controlKey:
+                    existing?.controlKey ??
+                    `ctrl-${edge.id}-${ref.id}-${Date.now().toString(36)}`,
+                controlId: ref.id,
+                label: formatControlLabel(ref),
+            });
         }
-        const ref = tenantControls.find((c) => c.id === option.value);
-        if (!ref) return;
-        const next: EdgeControlRef = {
-            controlKey:
-                selectedControl?.controlKey ??
-                `ctrl-${edge.id}-${Date.now().toString(36)}`,
-            controlId: ref.id,
-            label: formatControlLabel(ref),
-        };
-        onEdgeUpdate(edge.id, { controls: [next] });
+        onEdgeUpdate(edge.id, { controls: next });
     };
 
     const commit = () => {
@@ -635,8 +642,9 @@ function EdgeInspectorBody({
                     {t("linkedControl")}
                 </span>
                 <Combobox
-                    selected={selectedControlOption}
-                    setSelected={commitLinkedControl}
+                    multiple
+                    selected={selectedControlOptions}
+                    setSelected={commitLinkedControls}
                     options={controlOptions}
                     disabled={controlsLoading || tenantControls.length === 0}
                     aria-label={t("linkedControl")}
