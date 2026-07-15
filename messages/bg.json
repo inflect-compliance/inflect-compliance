@@ -3564,6 +3564,9 @@
             "removedToast": "{email} е премахнат",
             "bulkDeactivatedToast": "Деактивирани са {count} членове",
             "bulkRemovedToast": "Премахнати са {count} членове",
+            "revokeInviteAction": "Отмяна на покана",
+            "inviteRevocationFailed": "Неуспешна отмяна на покана",
+            "bulkRevokedInvitesToast": "Отменени са {count} покани",
             "memberActions": "Действия за член"
         },
         "security": {
