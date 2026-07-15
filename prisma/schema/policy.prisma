@@ -74,6 +74,7 @@ model PolicyVersion {
   tenantId         String
   currentOfPolicy  Policy?                 @relation("CurrentVersion")
   acknowledgements PolicyAcknowledgement[]
+  ackAssignments   PolicyAcknowledgementAssignment[]
   approvals        PolicyApproval[]
   createdBy        User                    @relation("PolicyVersionCreator", fields: [createdById], references: [id])
   policy           Policy                  @relation("PolicyVersions", fields: [policyId], references: [id], onDelete: Cascade)
@@ -116,6 +117,29 @@ model PolicyAcknowledgement {
   policyVersion   PolicyVersion @relation(fields: [policyVersionId], references: [id], onDelete: Cascade)
   user            User          @relation(fields: [userId], references: [id])
 
+  @@unique([policyVersionId, userId])
+}
+
+/// A required-acknowledgement assignment (Prompt-1 campaign): binds a user to a
+/// specific published PolicyVersion they are REQUIRED to acknowledge. Completion
+/// is DERIVED from the sibling PolicyAcknowledgement row with the same
+/// (policyVersionId, userId) — this table records only the *requirement*, so
+/// "% acknowledged" and "who hasn't" are queryable.
+///
+/// Ownership-chained via PolicyVersion (no tenantId column — mirrors
+/// PolicyAcknowledgement; RLS is an EXISTS-on-PolicyVersion policy). `userId` /
+/// `assignedById` are plain scalars (resolved to User in the usecase) to keep
+/// the model self-contained.
+model PolicyAcknowledgementAssignment {
+  id              String        @id @default(cuid())
+  policyVersionId String
+  userId          String
+  assignedById    String
+  assignedAt      DateTime      @default(now())
+  policyVersion   PolicyVersion @relation(fields: [policyVersionId], references: [id], onDelete: Cascade)
+
+  // @@unique gives one requirement per (version,user) + a policyVersionId-leading
+  // index for the roster query.
   @@unique([policyVersionId, userId])
 }
 

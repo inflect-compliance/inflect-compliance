@@ -30,6 +30,7 @@ import { runInTenantContext } from '@/lib/db-context';
 import { notFound } from '@/lib/errors/types';
 import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
 import { coverageQualifyingEvidenceWhere } from '@/lib/compliance/coverage-evidence';
+import { policyCountsWhere } from '@/lib/policy/coverage-predicate';
 
 
 // ─── Types ───
@@ -596,10 +597,12 @@ async function computeNIS2Readiness(ctx: RequestContext, cycle: AuditCycle): Pro
             title: `${c.code}: ${c.name}`, details: 'No active evidence for this control (archived/expired excluded)', entityId: c.id,
         }));
 
-    // 3) Key policies check
+    // 3) Key policies check — only PUBLISHED (issued) policies count toward
+    // readiness. A DRAFT matching a key-policy keyword is NOT governance, so it
+    // no longer satisfies the NIS2 policy check. Uses the shared predicate.
     const policies = await runInTenantContext(ctx, (tdb) =>
         tdb.policy.findMany({
-            where: { tenantId: ctx.tenantId },
+            where: policyCountsWhere(ctx.tenantId),
             select: { id: true, title: true, category: true },
         }));
 

@@ -23,9 +23,11 @@ function mockDb(overrides: {
     riskCount?: number;
     controlCount?: number;
     assetCount?: number;
+    policyCount?: number;
     risksWithControls?: string[];
     controlsWithRisks?: string[];
     assetsWithControls?: string[];
+    policiesWithControls?: string[];
     unmappedRisks?: any[];
     uncoveredCriticalAssets?: any[];
     hotControls?: any[];
@@ -35,9 +37,11 @@ function mockDb(overrides: {
         riskCount = 10,
         controlCount = 20,
         assetCount = 15,
+        policyCount = 0,
         risksWithControls = ['r1', 'r2', 'r3'],
         controlsWithRisks = ['c1', 'c2'],
         assetsWithControls = ['a1', 'a2', 'a3', 'a4'],
+        policiesWithControls = [],
         unmappedRisks = [],
         uncoveredCriticalAssets = [],
         hotControls = [],
@@ -56,6 +60,12 @@ function mockDb(overrides: {
         asset: {
             count: jest.fn().mockResolvedValue(assetCount),
             findMany: jest.fn().mockResolvedValue(uncoveredCriticalAssets),
+        },
+        policy: {
+            count: jest.fn().mockResolvedValue(policyCount),
+        },
+        policyControlLink: {
+            findMany: jest.fn().mockResolvedValue(policiesWithControls.map(id => ({ policyId: id }))),
         },
         riskControl: {
             findMany: jest.fn()

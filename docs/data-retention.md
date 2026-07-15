@@ -160,6 +160,7 @@ a `userId` but stores no contact PII).
 | `PasswordResetToken` | Security ephemeral | No | `expiresAt` expiry (security) | DEFINED — expiry-driven |
 | `Policy` | Business record | No | retentionUntil sweep (data-lifecycle `runRetentionSweep`) + soft-delete | DEFINED (retentionUntil) where set; else indefinite |
 | `PolicyAcknowledgement` | Business record | maybe | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `PolicyAcknowledgementAssignment` | Business record | maybe | None today — cascade on parent policy-version/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `PolicyApproval` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `PolicyControlLink` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `PolicyEvidenceItem` | Business record | No | None today — cascade on parent policy/tenant delete; evidence link SetNull on evidence delete | Indefinite while tenant active — review w/ compliance |
