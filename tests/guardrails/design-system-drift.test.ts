@@ -346,10 +346,16 @@ describe('New page token discipline', () => {
         //     only; PageBreadcrumbs + cardVariants + StatusBadge + Modal +
         //     Combobox + FormField primitives) in the unmigrated tally until
         //     promoted to MIGRATED_PAGES.
+        //   - 130 (+1): G-3 single-lifecycle (roadmap 1/3) — the reviews queue
+        //     index admin/vendor-assessment-reviews/page.tsx +
+        //     VendorAssessmentReviewsQueueClient.tsx (semantic tokens only;
+        //     ListPageShell + DataTable + StatusBadge + formatDate primitives)
+        //     in the unmigrated tally until promoted to MIGRATED_PAGES. Net +1:
+        //     the same PR deleted the legacy World-A responder page.
         // Each increment names the epic + page + reason; promotion
         // to MIGRATED_PAGES is the path forward, never silent
         // floor-bumping.
-        expect(unmigrated.length).toBeLessThanOrEqual(129);
+        expect(unmigrated.length).toBeLessThanOrEqual(130);
     });
 
     it('migrated page count is at least 4', () => {
