@@ -17,14 +17,20 @@ import type { Edge } from "@xyflow/react";
 export interface EdgeControlWire {
     controlKey: string;
     label: string;
-    controlId: string | null;
+    // PR-D — controlId is REQUIRED. ProcessEdgeControl.controlId is NOT NULL
+    // with a real FK to Control, so a control-shaped row with no linkage can
+    // never be persisted. Any `data.controls` entry lacking a real controlId
+    // is dropped here rather than written.
+    controlId: string;
     dataJson: null;
 }
 
 /**
  * Read the canonical control list off an xyflow edge's
  * `data.controls` for save serialisation. Tolerant of pre-P2
- * edges whose data omits the array.
+ * edges whose data omits the array. Entries without a real
+ * `controlId` are dropped — every persisted edge control links to
+ * a live Control row.
  */
 export function edgeControlsForSave(e: Edge): EdgeControlWire[] {
     const raw = (e.data as { controls?: unknown } | undefined)?.controls;
@@ -37,12 +43,14 @@ export function edgeControlsForSave(e: Edge): EdgeControlWire[] {
                 controlId?: unknown;
             };
             if (typeof row.controlKey !== "string") return null;
+            if (typeof row.controlId !== "string" || row.controlId === "") {
+                return null;
+            }
             return {
                 controlKey: row.controlKey,
                 label:
                     typeof row.label === "string" ? row.label : row.controlKey,
-                controlId:
-                    typeof row.controlId === "string" ? row.controlId : null,
+                controlId: row.controlId,
                 dataJson: null,
             } satisfies EdgeControlWire;
         })

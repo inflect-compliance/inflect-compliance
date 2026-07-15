@@ -118,15 +118,13 @@ describe("R27-PR-B — edge connection language", () => {
         expect(EDGE).toMatch(/data-edge-variant-affordance/);
     });
 
-    it("preserves the control-on-edge affordance", () => {
-        expect(EDGE).toMatch(/!control && selected/);
-        // "Add control" is now localized — assert the English catalog value
-        // and that the edge references the i18n key.
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const enEdge = require('../../messages/en.json');
-        expect(enEdge.automation.edges.addControl).toMatch(/Add control/);
-        expect(EDGE).toMatch(/t\("addControl"\)/);
+    it("renders the persisted control-on-edge badge", () => {
+        // PR-D — the ephemeral single-click "Add control" stamp was
+        // retired (it wrote an unpersisted `data.control`). Controls are
+        // now attached via the inspector's real picker and rendered from
+        // the persisted `data.controls`; the badge marker survives.
         expect(EDGE).toMatch(/data-control-on-edge-badge/);
+        expect(EDGE).toMatch(/edgeData\?\.controls/);
     });
 });
 

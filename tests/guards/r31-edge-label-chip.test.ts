@@ -43,9 +43,10 @@ describe("R31 (Bundle 7) — edge label chip", () => {
     it("renders a chip via EdgeLabelRenderer when label is set + no control occupies the midpoint", () => {
         // Gated on both conditions:
         //   (a) typeof label === "string" && label.length > 0
-        //   (b) !control (the control overlay wins the centre)
+        //   (b) !hasControls (the persisted control pills win the centre;
+        //       PR-D renamed the singular `!control` gate to `!hasControls`)
         expect(src).toMatch(/typeof label === ["']string["'][\s\S]{0,200}label\.length > 0/);
-        expect(src).toMatch(/!control[\s\S]{0,400}typeof label/);
+        expect(src).toMatch(/!hasControls[\s\S]{0,400}typeof label/);
     });
 
     it("the chip surface matches the canvas chrome language", () => {

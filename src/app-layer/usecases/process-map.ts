@@ -180,6 +180,30 @@ export async function listMapsUsingControl(
 }
 
 /**
+ * PR-D — reverse lookup for a NODE-mounted risk link. Returns the process
+ * maps + nodes where a `risk` node links a given Risk. Read-only; surfaces
+ * "Where is this risk used?" on the Risk detail page.
+ */
+export async function listMapsUsingRisk(ctx: RequestContext, riskId: string) {
+    assertCanRead(ctx);
+    return runInTenantContext(ctx, (db) =>
+        ProcessMapRepository.listMapsByLinkedEntity(db, ctx, 'risk', riskId),
+    );
+}
+
+/**
+ * PR-D — reverse lookup for a NODE-mounted asset link. Returns the process
+ * maps + nodes where an `asset` node links a given Asset. Read-only;
+ * surfaces "Where is this asset used?" on the Asset detail page.
+ */
+export async function listMapsUsingAsset(ctx: RequestContext, assetId: string) {
+    assertCanRead(ctx);
+    return runInTenantContext(ctx, (db) =>
+        ProcessMapRepository.listMapsByLinkedEntity(db, ctx, 'asset', assetId),
+    );
+}
+
+/**
  * Epic P5-PR-A — list snapshots for a process map. Read-only;
  * surfaces the version-history sidebar.
  */

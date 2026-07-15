@@ -27,6 +27,7 @@
  *     own its xyflow state without prop-drilling.
  */
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/cn";
@@ -87,8 +88,17 @@ export function ProcessesClient({
     const [processes, setProcesses] = useState<ProcessMapSummary[]>(
         initialProcesses,
     );
+    // P2 reverse-lookup deep link — `/processes?activeId=<mapId>` opens
+    // straight to a specific map (the "Where used" modals on control / risk /
+    // asset detail link here). Honour the param when it names a map the tenant
+    // can see; otherwise fall back to the first map. Read once on mount: a
+    // deep link is a fresh route mount, so the initializer captures it.
+    const searchParams = useSearchParams();
+    const requestedId = searchParams.get("activeId");
     const [activeId, setActiveId] = useState<string | null>(
-        initialProcesses[0]?.id ?? null,
+        requestedId && initialProcesses.some((p) => p.id === requestedId)
+            ? requestedId
+            : (initialProcesses[0]?.id ?? null),
     );
 
     // Automation Epic 1 — the Process page gains a tab bar. "Canvas" is

@@ -101,17 +101,22 @@ describe("Epic P2-PR-A — control picker on edge", () => {
             expect(src).toMatch(/aria-label=\{t\("linkedControl"\)\}/);
         });
 
-        it("commitLinkedControl emits patch with a single EdgeControlRef on pick + empty on clear", () => {
-            // The shape of the patch is the contract with the
-            // canvas's handleEdgeUpdate; locking it here means a
-            // future "send the raw control id instead" refactor
-            // breaks before it ships.
+        it("picker is a MULTI-select — several controls can gate one edge (PR-D)", () => {
+            // PR-D lifted the one-control-per-edge cap. The Combobox is
+            // multi-select and the commit builds an array of EdgeControlRefs.
+            expect(src).toMatch(/multiple\s*\n\s*selected=\{selectedControlOptions\}/);
+            expect(src).toMatch(/setSelected=\{commitLinkedControls\}/);
+        });
+
+        it("commitLinkedControls emits a `controls` array patch (contract with handleEdgeUpdate)", () => {
+            // The shape of the patch is the contract with the canvas's
+            // handleEdgeUpdate; locking it here means a future "send the raw
+            // control id instead" refactor breaks before it ships. An empty
+            // selection (clear-all) yields `controls: []` via the same path.
             expect(src).toMatch(
-                /onEdgeUpdate\(edge\.id,\s*\{\s*controls:\s*\[\]\s*\}\)/,
+                /onEdgeUpdate\(edge\.id,\s*\{\s*controls:\s*next\s*\}\)/,
             );
-            expect(src).toMatch(
-                /onEdgeUpdate\(edge\.id,\s*\{\s*controls:\s*\[next\]\s*\}\)/,
-            );
+            expect(src).toMatch(/const next:\s*EdgeControlRef\[\]\s*=/);
         });
     });
 

@@ -31,6 +31,7 @@
 import { Handle, Position, useReactFlow, type NodeProps } from "@xyflow/react";
 import { memo, useCallback, type MouseEvent } from "react";
 import { useTranslations } from "next-intl";
+import { Link4 } from "@/components/ui/icons/nucleo/link4";
 import { ChevronRight } from "@/components/ui/icons/nucleo/chevron-right";
 import { cn } from "@/lib/cn";
 import {
@@ -254,6 +255,22 @@ function ProcessTypedNodeImpl({ id, data, selected }: NodeProps) {
     const cornerSticker: string | null =
         kind === "decision" ? "?" : kind === "external" ? "EXT" : null;
 
+    // PR-D — linked-entity indicator. A control / risk / asset node bound to
+    // a real compliance entity carries `data.linkedEntityId`. Surface a quiet
+    // link badge so an auditor can SEE which nodes are wired to the
+    // compliance spine (vs an orphan label). Mirrors the corner-sticker
+    // pattern; the badge sits bottom-right so it never collides with the
+    // top-right kind sticker.
+    const linkedEntityId =
+        typeof (nodeData as { linkedEntityId?: unknown }).linkedEntityId ===
+        "string"
+            ? ((nodeData as { linkedEntityId?: string }).linkedEntityId as string)
+            : null;
+    const showLinkedBadge =
+        (kind === "control" || kind === "risk" || kind === "asset") &&
+        linkedEntityId !== null &&
+        linkedEntityId.length > 0;
+
     return (
         <div
             className={cn(
@@ -283,6 +300,15 @@ function ProcessTypedNodeImpl({ id, data, selected }: NodeProps) {
                     data-process-node-sticker={kind}
                 >
                     {cornerSticker}
+                </span>
+            )}
+            {showLinkedBadge && (
+                <span
+                    className="absolute -bottom-1.5 -right-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full border border-canvas-border bg-canvas-frame text-[color:var(--brand-default)]"
+                    aria-hidden="true"
+                    data-node-linked-entity={kind}
+                >
+                    <Link4 className="h-2.5 w-2.5" />
                 </span>
             )}
             {meta.hasHandles && (

@@ -29,6 +29,7 @@ jest.mock('@/app-layer/repositories/ProcessMapRepository', () => ({
         replaceGraph: jest.fn(),
         softDelete: jest.fn(),
         setCanvasMode: jest.fn(),
+        listMapsByLinkedEntity: jest.fn(),
     },
 }));
 
@@ -47,6 +48,8 @@ import {
     saveProcessMap,
     setProcessMapCanvasMode,
     deleteProcessMap,
+    listMapsUsingRisk,
+    listMapsUsingAsset,
 } from '@/app-layer/usecases/process-map';
 
 function makeCtx(role: 'OWNER' | 'ADMIN' | 'EDITOR' | 'READER'): RequestContext {
@@ -322,5 +325,53 @@ describe('setProcessMapCanvasMode', () => {
         await expect(
             setProcessMapCanvasMode(makeCtx('READER'), 'pm-1', 'AUTOMATION'),
         ).rejects.toBeDefined();
+    });
+});
+
+describe('node-link reverse lookups (PR-D)', () => {
+    const ROW = [
+        {
+            mapId: 'pm-1',
+            mapName: 'Onboarding',
+            mapStatus: 'ACTIVE',
+            nodeKey: 'node-3',
+            nodeLabel: 'DB',
+        },
+    ];
+
+    it('listMapsUsingRisk queries the repo with the risk node kind', async () => {
+        (ProcessMapRepository.listMapsByLinkedEntity as jest.Mock).mockResolvedValue(
+            ROW,
+        );
+        const result = await listMapsUsingRisk(readerCtx, 'risk-9');
+        expect(result).toEqual(ROW);
+        expect(ProcessMapRepository.listMapsByLinkedEntity).toHaveBeenCalledWith(
+            mockDb,
+            readerCtx,
+            'risk',
+            'risk-9',
+        );
+    });
+
+    it('listMapsUsingAsset queries the repo with the asset node kind', async () => {
+        (ProcessMapRepository.listMapsByLinkedEntity as jest.Mock).mockResolvedValue(
+            ROW,
+        );
+        const result = await listMapsUsingAsset(readerCtx, 'asset-2');
+        expect(result).toEqual(ROW);
+        expect(ProcessMapRepository.listMapsByLinkedEntity).toHaveBeenCalledWith(
+            mockDb,
+            readerCtx,
+            'asset',
+            'asset-2',
+        );
+    });
+
+    it('both are read-only — a reader is allowed', async () => {
+        (ProcessMapRepository.listMapsByLinkedEntity as jest.Mock).mockResolvedValue(
+            [],
+        );
+        await expect(listMapsUsingRisk(readerCtx, 'r')).resolves.toEqual([]);
+        await expect(listMapsUsingAsset(readerCtx, 'a')).resolves.toEqual([]);
     });
 });

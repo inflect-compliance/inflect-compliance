@@ -67,7 +67,9 @@ export const ProcessEdgeInputSchema = z.object({
             z.object({
                 controlKey: z.string().min(1).max(128),
                 label: z.string().max(200),
-                controlId: z.string().optional().nullable(),
+                // PR-D — every edge control links to a real Control row
+                // (ProcessEdgeControl.controlId is NOT NULL + FK).
+                controlId: z.string().min(1),
                 dataJson: z.unknown().optional().nullable(),
             }),
         )

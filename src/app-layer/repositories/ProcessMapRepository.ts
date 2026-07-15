@@ -74,7 +74,7 @@ export interface ProcessMapWithGraph {
         controls: Array<{
             controlKey: string;
             label: string;
-            controlId: string | null;
+            controlId: string;
             dataJson: unknown;
         }>;
     }>;
@@ -395,7 +395,7 @@ export class ProcessMapRepository {
                         edgeId: edge.id,
                         controlKey: c.controlKey,
                         label: c.label,
-                        controlId: c.controlId ?? null,
+                        controlId: c.controlId,
                         dataJson:
                             c.dataJson === undefined
                                 ? Prisma.JsonNull
@@ -642,6 +642,67 @@ export class ProcessMapRepository {
                 mapStatus: r.edge.processMap.status,
                 edgeKey: r.edge.edgeKey,
                 edgeLabel: r.edge.labelOverride,
+            }));
+    }
+
+    /**
+     * PR-D — reverse lookup for a NODE-mounted compliance link.
+     * "Which process maps have a `<nodeType>` node linked to entity X?"
+     * The node link lives on `ProcessNode.dataJson.linkedEntityId` with the
+     * kind on the `nodeType` column, so this is the risk/asset/control-node
+     * analogue of `listMapsByControl` (which covers EDGE-mounted controls).
+     *
+     * `nodeType` is one of the compliance node kinds ('control' | 'risk' |
+     * 'asset'); `entityId` is the real Control/Risk/Asset id.
+     */
+    static async listMapsByLinkedEntity(
+        db: PrismaTx,
+        ctx: RequestContext,
+        nodeType: 'control' | 'risk' | 'asset',
+        entityId: string,
+    ): Promise<
+        Array<{
+            mapId: string;
+            mapName: string;
+            mapStatus: string;
+            nodeKey: string;
+            nodeLabel: string;
+        }>
+    > {
+        // Reverse lookup bounded by the nodes linking one entity (typically a
+        // handful across a tenant's maps); the leading `@@index([tenantId,
+        // processMapId])` gates the tenant seek and the JSON `linkedEntityId`
+        // filter narrows the rest. Small process-map graphs mean no take cap.
+        const rows = await db.processNode.findMany({ // guardrail-allow: unbounded
+            where: {
+                tenantId: ctx.tenantId,
+                nodeType,
+                dataJson: {
+                    path: ['linkedEntityId'],
+                    equals: entityId,
+                },
+            },
+            select: {
+                nodeKey: true,
+                label: true,
+                processMap: {
+                    select: {
+                        id: true,
+                        name: true,
+                        status: true,
+                        deletedAt: true,
+                    },
+                },
+            },
+        });
+        return rows
+            .filter((r) => r.processMap.deletedAt === null)
+            .map((r) => ({
+                mapId: r.processMap.id,
+                mapName: r.processMap.name,
+                mapStatus: r.processMap.status,
+                nodeKey: r.nodeKey,
+                nodeLabel: r.label,
             }));
     }
 }

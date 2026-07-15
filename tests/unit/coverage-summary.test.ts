@@ -32,6 +32,8 @@ function mockDb(overrides: {
     uncoveredCriticalAssets?: any[];
     hotControls?: any[];
     hotControlDetails?: any[];
+    processEdgeControlIds?: string[];
+    controlNodeLinkedIds?: string[];
 }) {
     const {
         riskCount = 10,
@@ -46,6 +48,8 @@ function mockDb(overrides: {
         uncoveredCriticalAssets = [],
         hotControls = [],
         hotControlDetails = [],
+        processEdgeControlIds = [],
+        controlNodeLinkedIds = [],
     } = overrides;
 
     return {
@@ -54,8 +58,25 @@ function mockDb(overrides: {
             findMany: jest.fn().mockResolvedValue(unmappedRisks),
         },
         control: {
-            count: jest.fn().mockResolvedValue(controlCount),
+            // Two call sites: total controls (no filter → controlCount) and the
+            // PR-D process-coverage count (where.id.in → size of that id list).
+            count: jest.fn().mockImplementation((args: any) => {
+                const inList = args?.where?.id?.in;
+                return Promise.resolve(
+                    Array.isArray(inList) ? inList.length : controlCount,
+                );
+            }),
             findMany: jest.fn().mockResolvedValue(hotControlDetails),
+        },
+        processEdgeControl: {
+            findMany: jest.fn().mockResolvedValue(
+                processEdgeControlIds.map(id => ({ controlId: id })),
+            ),
+        },
+        processNode: {
+            findMany: jest.fn().mockResolvedValue(
+                controlNodeLinkedIds.map(id => ({ dataJson: { linkedEntityId: id } })),
+            ),
         },
         asset: {
             count: jest.fn().mockResolvedValue(assetCount),
@@ -121,6 +142,25 @@ describe('coverageSummary', () => {
         expect(result.risksWithControlsPct).toBe(30);    // 3/10 = 30%
         expect(result.controlsWithRisksPct).toBe(10);     // 2/20 = 10%
         expect(result.assetsWithControlsPct).toBe(27);    // 4/15 ≈ 27%
+    });
+
+    it('counts process coverage from edge + node control links (deduped, PR-D)', async () => {
+        mockDbInstance = mockDb({
+            controlCount: 20,
+            // c1,c2 on edges; c2 (dup) + c3 on control nodes → union {c1,c2,c3}=3.
+            processEdgeControlIds: ['c1', 'c2'],
+            controlNodeLinkedIds: ['c2', 'c3'],
+        });
+        const result = await coverageSummary(ctx);
+        expect(result.controlsWithProcessCount).toBe(3);
+        expect(result.controlsWithProcessPct).toBe(15); // 3/20 = 15%
+    });
+
+    it('process coverage is 0 when no control is on any process', async () => {
+        mockDbInstance = mockDb({ controlCount: 20 });
+        const result = await coverageSummary(ctx);
+        expect(result.controlsWithProcessCount).toBe(0);
+        expect(result.controlsWithProcessPct).toBe(0);
     });
 
     it('handles empty tenant (all zeros)', async () => {

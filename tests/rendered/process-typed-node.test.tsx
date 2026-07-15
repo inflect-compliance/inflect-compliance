@@ -182,3 +182,33 @@ describe('ProcessTypedNode — R27 elevated surfaces', () => {
         expect(cls).toMatch(/bg-bg-elevated/);
     });
 });
+
+describe('ProcessTypedNode — linked-entity indicator (PR-D)', () => {
+    for (const kind of ['control', 'risk', 'asset'] as const) {
+        it(`shows the linked badge when a ${kind} node carries linkedEntityId`, () => {
+            const { container } = renderNode(kind, {
+                linkedEntityId: 'entity-123',
+            } as any);
+            const badge = container.querySelector(
+                `[data-node-linked-entity="${kind}"]`,
+            );
+            expect(badge).not.toBeNull();
+        });
+    }
+
+    it('does NOT show the linked badge when linkedEntityId is absent', () => {
+        const { container } = renderNode('risk');
+        expect(
+            container.querySelector('[data-node-linked-entity]'),
+        ).toBeNull();
+    });
+
+    it('does NOT show the linked badge on a non-compliance kind even if linkedEntityId is set', () => {
+        const { container } = renderNode('processStep', {
+            linkedEntityId: 'entity-123',
+        } as any);
+        expect(
+            container.querySelector('[data-node-linked-entity]'),
+        ).toBeNull();
+    });
+});
