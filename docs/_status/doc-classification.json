@@ -1502,6 +1502,9 @@
         "docs/implementation-notes/2026-07-10-compliance-schema-split.md": {
             "class": "historical"
         },
+        "docs/implementation-notes/2026-07-15-process-compliance-spine.md": {
+            "class": "historical"
+        },
         "docs/new-subsystem-checklist.md": {
             "class": "authoritative"
         },
