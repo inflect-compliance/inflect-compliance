@@ -5,7 +5,7 @@ import { VendorRepository, VendorDocumentRepository, VendorLinkRepository, Vendo
 import { QuestionnaireRepository, VendorAssessmentRepository } from '../repositories/AssessmentRepository';
 import { assertCanReadVendors, assertCanManageVendors, assertCanManageVendorDocs } from '../policies/vendor.policies';
 import { logEvent } from '../events/audit';
-import { runInTenantContext, runInTenantReadContext } from '@/lib/db-context';
+import { runInTenantContext, runInTenantReadContext, type PrismaTx } from '@/lib/db-context';
 import { notFound, badRequest } from '@/lib/errors/types';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { CreateVendorSchema } from '@/lib/schemas';
@@ -102,7 +102,21 @@ export async function updateVendor(ctx: RequestContext, vendorId: string, patch:
         );
     }
     const result = await runInTenantContext(ctx, async (db) => {
-        const previousStatus = patch.status ? (await VendorRepository.getById(db, ctx, vendorId))?.status : null;
+        let previousStatus: string | null = null;
+        if (patch.status) {
+            // Activation gate applies on the edit path too — a vendor must not
+            // be flipped to ACTIVE via the edit form without a completed
+            // assessment review (same rule as updateVendorStatusWithGate).
+            const current = await db.vendor.findFirst({
+                where: { id: vendorId, tenantId: ctx.tenantId },
+                include: { assessments: { orderBy: { createdAt: 'desc' }, take: 1 } },
+            });
+            if (!current) throw notFound('Vendor not found');
+            previousStatus = current.status;
+            if (patch.status === 'ACTIVE' && current.status !== 'ACTIVE' && !isActivationEligible(current.assessments[0])) {
+                throw badRequest(ACTIVATION_GATE_MESSAGE);
+            }
+        }
         const vendor = await VendorRepository.update(db, ctx, vendorId, sanitisedPatch);
         if (!vendor) throw notFound('Vendor not found');
 
@@ -237,7 +251,75 @@ export async function setVendorReviewDates(ctx: RequestContext, vendorId: string
 
 export async function listVendorLinks(ctx: RequestContext, vendorId: string) {
     assertCanReadVendors(ctx);
-    return runInTenantContext(ctx, (db) => VendorLinkRepository.listByVendor(db, ctx, vendorId));
+    return runInTenantContext(ctx, async (db) => {
+        const links = await VendorLinkRepository.listByVendor(db, ctx, vendorId);
+        // Hydrate each link with its target entity's display name so the UI
+        // renders a named hyperlink instead of a raw cuid. Batched per type
+        // (one query per entityType present) — no N+1.
+        const names = await resolveLinkedEntityNames(db, ctx, links);
+        return links.map((l) => ({
+            ...l,
+            entityName: names.get(`${l.entityType}:${l.entityId}`) ?? null,
+        }));
+    });
+}
+
+/**
+ * Resolve the display name of each (entityType, entityId) pair referenced by
+ * a set of vendor links. RISK/ISSUE carry `title`, CONTROL/ASSET carry
+ * `name`; ISSUE ids are Task ids (issues redirect to tasks). One query per
+ * distinct entityType.
+ */
+async function resolveLinkedEntityNames(
+    db: PrismaTx,
+    ctx: RequestContext,
+    links: { entityType: string; entityId: string }[],
+): Promise<Map<string, string>> {
+    const out = new Map<string, string>();
+    const byType = new Map<string, string[]>();
+    for (const l of links) {
+        const arr = byType.get(l.entityType) ?? [];
+        arr.push(l.entityId);
+        byType.set(l.entityType, arr);
+    }
+    const where = (ids: string[]) => ({ tenantId: ctx.tenantId, id: { in: ids } });
+    for (const [type, ids] of byType) {
+        if (type === 'RISK') {
+            for (const r of await db.risk.findMany({ where: where(ids), select: { id: true, title: true } }))
+                out.set(`RISK:${r.id}`, r.title);
+        } else if (type === 'CONTROL') {
+            for (const c of await db.control.findMany({ where: where(ids), select: { id: true, name: true } }))
+                out.set(`CONTROL:${c.id}`, c.name);
+        } else if (type === 'ASSET') {
+            for (const a of await db.asset.findMany({ where: where(ids), select: { id: true, name: true } }))
+                out.set(`ASSET:${a.id}`, a.name);
+        } else if (type === 'ISSUE') {
+            for (const t of await db.task.findMany({ where: where(ids), select: { id: true, title: true } }))
+                out.set(`ISSUE:${t.id}`, t.title);
+        }
+    }
+    return out;
+}
+
+/**
+ * Reverse "where-used": the vendors linked to a given entity. Powers the
+ * LinkedVendorsPanel on the Risk / Control / Asset / Task detail pages.
+ */
+export async function listVendorsLinkedToEntity(
+    ctx: RequestContext,
+    entityType: string,
+    entityId: string,
+): Promise<{ vendorId: string; vendorName: string; relation: string; linkId: string }[]> {
+    assertCanReadVendors(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const links = await VendorLinkRepository.listByEntity(db, ctx, entityType, entityId);
+        return links.map((l) => ({
+            linkId: l.id,
+            vendorId: l.vendorId,
+            vendorName: l.vendor?.name ?? l.vendorId,
+            relation: l.relation,
+        }));
+    });
 }
 
 export async function addVendorLink(ctx: RequestContext, vendorId: string, data: {
@@ -333,6 +415,12 @@ export async function getVendorMetrics(ctx: RequestContext) {
     return runInTenantReadContext(ctx, async (db) => {
         const now = new Date();
         const in30 = new Date(now.getTime() + 30 * 86400000);
+        // Reassessment cadence: an ACTIVE vendor should be re-assessed at
+        // least yearly. "Overdue reassessment" is genuinely distinct from
+        // "overdue review" (nextReviewAt, the manual review-cadence date) —
+        // it's driven by lastAssessmentReviewedAt (stamped by the G-3 review
+        // flow), so the two dashboard tiles no longer show the same number.
+        const reassessCutoff = new Date(now.getTime() - 365 * 86400000);
 
         const vendors = await db.vendor.findMany({
             where: { tenantId: ctx.tenantId },
@@ -347,6 +435,7 @@ export async function getVendorMetrics(ctx: RequestContext) {
         let overdueRenewal = 0;
         let upcomingRenewal = 0;
         let highRiskNoAssessment = 0;
+        let overdueReassessment = 0;
 
         for (const v of vendors) {
             byCriticality[v.criticality] = (byCriticality[v.criticality] || 0) + 1;
@@ -363,8 +452,19 @@ export async function getVendorMetrics(ctx: RequestContext) {
             if (v.contractRenewalAt && v.contractRenewalAt < now) overdueRenewal++;
             else if (v.contractRenewalAt && v.contractRenewalAt <= in30) upcomingRenewal++;
 
-            if (['HIGH', 'CRITICAL'].includes(v.criticality) && (!latestAssessment || latestAssessment.status !== 'APPROVED')) {
+            // High-criticality vendor whose latest assessment is NOT a
+            // completed review (no assessment, or still SENT/IN_PROGRESS/
+            // SUBMITTED). Previously keyed on the legacy APPROVED status, so
+            // G-3 REVIEWED/CLOSED vendors were mis-counted here forever.
+            if (['HIGH', 'CRITICAL'].includes(v.criticality)
+                && (!latestAssessment || !COMPLETED_ASSESSMENT_STATUSES.has(latestAssessment.status))) {
                 highRiskNoAssessment++;
+            }
+
+            // Active vendor never assessment-reviewed, or reviewed > 1y ago.
+            if (v.status === 'ACTIVE'
+                && (!v.lastAssessmentReviewedAt || v.lastAssessmentReviewedAt < reassessCutoff)) {
+                overdueReassessment++;
             }
         }
 
@@ -405,12 +505,30 @@ export async function getVendorMetrics(ctx: RequestContext) {
             // Continuous-monitoring dashboard signals.
             expiredAttestations: expiredAttestationRows.length,
             recentBreachActivity: recentBreachRows.length,
-            overdueReassessment: overdueReview,
+            overdueReassessment,
         };
     });
 }
 
 // ─── Workflow: Status with Approval Gate ───
+
+// A vendor's risk is "assessed" once its latest assessment reaches a COMPLETED
+// review state. G-3 assessments terminate at REVIEWED/CLOSED; APPROVED is the
+// legacy World-A terminal. The old gate keyed on APPROVED only, which a G-3
+// assessment can NEVER satisfy — so it was unsatisfiable (and dead: no route
+// called it). These two predicates are the single source of truth for the
+// activation gate + the highRiskNoAssessment metric.
+const COMPLETED_ASSESSMENT_STATUSES = new Set(['REVIEWED', 'CLOSED', 'APPROVED']);
+
+/** A completed review carrying a risk rating — the bar for activation. */
+function isActivationEligible(
+    latest: { status: string; riskRating: string | null } | undefined | null,
+): boolean {
+    return !!latest && COMPLETED_ASSESSMENT_STATUSES.has(latest.status) && latest.riskRating != null;
+}
+
+const ACTIVATION_GATE_MESSAGE =
+    'Cannot activate vendor without a completed assessment review. Send an assessment and complete its review (REVIEWED/CLOSED) first.';
 
 export async function updateVendorStatusWithGate(ctx: RequestContext, vendorId: string, newStatus: string) {
     assertCanManageVendors(ctx);
@@ -421,11 +539,10 @@ export async function updateVendorStatusWithGate(ctx: RequestContext, vendorId: 
         });
         if (!vendor) throw notFound('Vendor not found');
 
-        // Gate: cannot go ACTIVE without approved assessment
+        // Gate: cannot go ACTIVE without a completed assessment review.
         if (newStatus === 'ACTIVE' && vendor.status !== 'ACTIVE') {
-            const latestAssessment = vendor.assessments[0];
-            if (!latestAssessment || latestAssessment.status !== 'APPROVED') {
-                throw badRequest('Cannot activate vendor without an approved assessment. Complete and approve an assessment first.');
+            if (!isActivationEligible(vendor.assessments[0])) {
+                throw badRequest(ACTIVATION_GATE_MESSAGE);
             }
         }
 
@@ -454,28 +571,47 @@ export async function bulkSetVendorStatus(
     status: 'ACTIVE' | 'ONBOARDING' | 'OFFBOARDING' | 'OFFBOARDED',
 ) {
     assertCanManageVendors(ctx);
-    const updated = await runInTenantContext(ctx, async (db) => {
-        const rows = await VendorRepository.listByIds(db, ctx, vendorIds);
-        if (rows.length === 0) return 0;
-        await VendorRepository.bulkUpdate(db, ctx, vendorIds, { status });
-        for (const r of rows) {
-            await logEvent(db, ctx, {
-                action: 'VENDOR_STATUS_CHANGED',
-                entityType: 'Vendor',
-                entityId: r.id,
-                details: `Vendor "${r.name}" status set to ${status}`,
-                detailsJson: {
-                    category: 'status_change',
-                    entityName: 'Vendor',
-                    fromStatus: r.status,
-                    toStatus: status,
-                },
+    const outcome = await runInTenantContext(ctx, async (db) => {
+        const rows = await db.vendor.findMany({
+            where: { id: { in: vendorIds }, tenantId: ctx.tenantId },
+            include: { assessments: { orderBy: { createdAt: 'desc' }, take: 1 } },
+        });
+        if (rows.length === 0) return { updated: 0, blocked: [] as { id: string; name: string }[] };
+
+        // Activation gate applies to bulk too — only vendors with a completed
+        // assessment review may be bulk-activated. Vendors that fail the gate
+        // are skipped and reported (not silently ignored, not a hard failure
+        // for the whole batch). Other status transitions are ungated.
+        const blocked: { id: string; name: string }[] = [];
+        const eligible = status !== 'ACTIVE'
+            ? rows
+            : rows.filter((r) => {
+                if (r.status === 'ACTIVE' || isActivationEligible(r.assessments[0])) return true;
+                blocked.push({ id: r.id, name: r.name });
+                return false;
             });
+
+        if (eligible.length > 0) {
+            await VendorRepository.bulkUpdate(db, ctx, eligible.map((r) => r.id), { status });
+            for (const r of eligible) {
+                await logEvent(db, ctx, {
+                    action: 'VENDOR_STATUS_CHANGED',
+                    entityType: 'Vendor',
+                    entityId: r.id,
+                    details: `Vendor "${r.name}" status set to ${status}`,
+                    detailsJson: {
+                        category: 'status_change',
+                        entityName: 'Vendor',
+                        fromStatus: r.status,
+                        toStatus: status,
+                    },
+                });
+            }
         }
-        return rows.length;
+        return { updated: eligible.length, blocked };
     });
     await bumpEntityCacheVersion(ctx, 'vendor');
-    return { updated };
+    return outcome;
 }
 
 /** Bulk soft-delete vendors selected in the table action bar. */

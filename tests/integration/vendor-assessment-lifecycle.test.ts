@@ -164,6 +164,12 @@ describeFn('Epic G-3 — vendor assessment lifecycle (integration)', () => {
                     'VendorAssessmentTemplateQuestion',
                     'VendorAssessmentTemplateSection',
                     'VendorAssessmentTemplate',
+                    // Vendor-risk writeback artefacts (post-commit): the
+                    // auto-created register Risk + its opening ledger event
+                    // + the RISK VendorLink.
+                    'VendorLink',
+                    'RiskScoreEvent',
+                    'Risk',
                     'Vendor',
                     'NotificationOutbox',
                     'Notification',
@@ -247,5 +253,73 @@ describeFn('Epic G-3 — vendor assessment lifecycle (integration)', () => {
             where: { id: sent.assessmentId },
         });
         expect(afterClose?.status).toBe('CLOSED');
+    });
+
+    test('review writeback: sets vendor inherentRisk + lastAssessmentReviewedAt, and auto-creates exactly one register Risk on HIGH (idempotent on re-review)', async () => {
+        const ctx = makeRequestContext(Role.ADMIN, { userId, tenantId });
+
+        // Dedicated vendor so RISK-link / Risk counts are unpolluted by
+        // the lifecycle test's own review above.
+        const wbVendor = await prisma.vendor.create({
+            data: { tenantId, name: `G-3 WB Vendor ${runId}` },
+        });
+
+        // send → submit → review(HIGH) for `wbVendor`, returning the
+        // assessment id. Forces a HIGH rating via the finalRiskRating
+        // override so the outcome is deterministic regardless of scoring.
+        async function sendSubmitReviewHigh(): Promise<void> {
+            const sent = await sendAssessment(ctx, wbVendor.id, templateId, {
+                respondentEmail: 'respondent@example.test',
+                respondentName: 'Vendor Team',
+                appOriginOverride: 'http://localhost:3000',
+            });
+            await submitResponse(sent.externalAccessToken, sent.assessmentId, [
+                { questionId, answerJson: { value: 'no' } },
+            ]);
+            const reviewed = await reviewAssessment(ctx, sent.assessmentId, {
+                finalRiskRating: 'HIGH',
+            });
+            expect(reviewed.riskRating).toBe('HIGH');
+        }
+
+        // ── First review → writeback + auto-risk ──
+        await sendSubmitReviewHigh();
+
+        const vendorAfter1 = await prisma.vendor.findUnique({
+            where: { id: wbVendor.id },
+        });
+        // (a) inherentRisk mirrors the resolved rating; timestamp stamped.
+        expect(vendorAfter1?.inherentRisk).toBe('HIGH');
+        expect(vendorAfter1?.lastAssessmentReviewedAt).toBeTruthy();
+        // residualRisk stays manually-owned — untouched by the writeback.
+        expect(vendorAfter1?.residualRisk).toBeNull();
+
+        const linksAfter1 = await prisma.vendorLink.findMany({
+            where: { tenantId, vendorId: wbVendor.id, entityType: 'RISK' },
+        });
+        // (b) exactly one Risk + one RISK VendorLink created.
+        expect(linksAfter1).toHaveLength(1);
+        const riskId = linksAfter1[0].entityId;
+        const risk = await prisma.risk.findUnique({ where: { id: riskId } });
+        expect(risk).toBeTruthy();
+        expect(risk?.category).toBe('Third-party');
+        expect(risk?.title).toContain(wbVendor.name);
+        expect(risk?.title).toContain('HIGH');
+
+        // ── Second review of a NEW HIGH assessment on the same vendor ──
+        // Idempotent: the pre-existing RISK link short-circuits the
+        // auto-create, so no duplicate Risk / link appears.
+        await sendSubmitReviewHigh();
+
+        const linksAfter2 = await prisma.vendorLink.findMany({
+            where: { tenantId, vendorId: wbVendor.id, entityType: 'RISK' },
+        });
+        expect(linksAfter2).toHaveLength(1);
+        expect(linksAfter2[0].entityId).toBe(riskId);
+
+        const riskCount = await prisma.risk.count({
+            where: { tenantId, title: { contains: wbVendor.name } },
+        });
+        expect(riskCount).toBe(1);
     });
 });

@@ -136,9 +136,12 @@ export default function VendorDashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-section">
-                {/* By Criticality */}
+                {/* Business criticality — manually assigned axis */}
                 <div className={cn(cardVariants(), 'flex flex-col space-y-compact')}>
-                    <Heading level={3}>{tx('dashboard.byCriticality')}</Heading>
+                    <div>
+                        <Heading level={3}>{tx('dashboard.byCriticality')}</Heading>
+                        <p className="text-xs text-content-muted">{tx('dashboard.byCriticalityCaption')}</p>
+                    </div>
                     <div className="flex flex-1 flex-col justify-center">
                         <BreakdownBar data={metrics.byCriticality} colors={CRIT_COLORS} />
                     </div>
@@ -152,9 +155,12 @@ export default function VendorDashboardPage() {
                     </div>
                 </div>
 
-                {/* By Risk Rating */}
+                {/* Assessment risk — derived from the latest completed assessment */}
                 <div className={cn(cardVariants(), 'flex flex-col space-y-compact')}>
-                    <Heading level={3}>{tx('dashboard.byRiskRating')}</Heading>
+                    <div>
+                        <Heading level={3}>{tx('dashboard.byRiskRating')}</Heading>
+                        <p className="text-xs text-content-muted">{tx('dashboard.byRiskRatingCaption')}</p>
+                    </div>
                     <div className="flex flex-1 flex-col justify-center">
                         {Object.keys(metrics.byRiskRating).length > 0
                             ? <BreakdownBar data={metrics.byRiskRating} colors={CRIT_COLORS} />

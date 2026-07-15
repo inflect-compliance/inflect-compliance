@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
 import { Pen2, Plus } from '@/components/ui/icons/nucleo';
-import { Tooltip } from '@/components/ui/tooltip';
+import { Tooltip, InfoTooltip } from '@/components/ui/tooltip';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
@@ -64,6 +64,15 @@ const buildVendorLinkTypeOptions = (t: (key: string) => string): ComboboxOption[
 const buildVendorLinkRelationOptions = (t: (key: string) => string): ComboboxOption[] =>
     ['RELATED', 'USES', 'MITIGATES', 'STORES_DATA_FOR'].map((v) => ({ value: v, label: t(`linkRelation.${v}`) }));
 
+// Cross-entity link → target detail-page path (relative to tenant root).
+// ISSUE links resolve to the tasks surface (issues redirect to tasks).
+const LINK_ENTITY_HREF: Record<string, (id: string) => string> = {
+    RISK: (id) => `/risks/${id}`,
+    CONTROL: (id) => `/controls/${id}`,
+    ASSET: (id) => `/assets/${id}`,
+    ISSUE: (id) => `/tasks/${id}`,
+};
+
 type Tab = 'overview' | 'documents' | 'assessments' | 'monitoring' | 'links' | 'bundles' | 'subprocessors';
 
 // vendor → getVendor → VendorRepository.getById (vendor scalars + owner + _count).
@@ -109,6 +118,8 @@ interface VendorEditForm {
     description: string;
     criticality: string;
     status: string;
+    /** Empty string = clear (send null). Otherwise a VendorCriticality value. */
+    residualRisk: string;
 }
 
 // Epic G-3 — VendorAssessmentTemplate rows (the questionnaire model
@@ -127,6 +138,8 @@ interface VendorLinkRow {
     id: string;
     entityType: string;
     entityId: string;
+    /** Display name of the target entity; null until the backend resolves it. */
+    entityName?: string | null;
     relation: string;
     createdAt: string;
 }
@@ -164,6 +177,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     const [editForm, setEditForm] = useState<VendorEditForm>({
         name: '', legalName: '', websiteUrl: '', domain: '',
         country: '', description: '', criticality: '', status: '',
+        residualRisk: '',
     });
 
     // Doc form
@@ -208,7 +222,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
         if (res.ok) {
             const v = await res.json();
             setVendor(v);
-            setEditForm({ name: v.name, legalName: v.legalName || '', websiteUrl: v.websiteUrl || '', domain: v.domain || '', country: v.country || '', description: v.description || '', criticality: v.criticality, status: v.status });
+            setEditForm({ name: v.name, legalName: v.legalName || '', websiteUrl: v.websiteUrl || '', domain: v.domain || '', country: v.country || '', description: v.description || '', criticality: v.criticality, status: v.status, residualRisk: v.residualRisk || '' });
         }
         setLoading(false);
     }, [apiUrl, params.vendorId]);
@@ -266,7 +280,9 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
 
     const saveEdit = async () => {
         const res = await fetch(apiUrl(`/vendors/${params.vendorId}`), {
-            method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editForm),
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            // residualRisk is nullable: an empty selection clears it (send null).
+            body: JSON.stringify({ ...editForm, residualRisk: editForm.residualRisk || null }),
         });
         if (res.ok) { setVendor(await res.json()); setEditing(false); }
     };
@@ -472,7 +488,11 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         <div><span className="text-content-muted">{tx('detail.owner')}:</span> <span className="ml-2">{vendor.owner?.name || '—'}</span></div>
                         <div><span className="text-content-muted">{tx('detail.dataAccess')}:</span> <span className="ml-2">{vendor.dataAccess || '—'}</span></div>
                         <div><span className="text-content-muted">{tx('detail.subprocessor')}:</span> <span className="ml-2">{vendor.isSubprocessor ? tx('detail.yes') : tx('detail.no')}</span></div>
-                        <div><span className="text-content-muted">{tx('detail.inherentRisk')}:</span> <span className="ml-2">{vendor.inherentRisk ? <StatusBadge variant={CRIT_BADGE[vendor.inherentRisk]}>{vendor.inherentRisk}</StatusBadge> : '—'}</span></div>
+                        <div>
+                            <span className="text-content-muted">{tx('detail.inherentRisk')}:</span>
+                            <InfoTooltip content={tx('detail.inherentRiskHint')} aria-label={tx('detail.inherentRiskHint')} iconClassName="ml-1 align-text-bottom" />
+                            <span className="ml-2">{vendor.inherentRisk ? <StatusBadge variant={CRIT_BADGE[vendor.inherentRisk]}>{vendor.inherentRisk}</StatusBadge> : '—'}</span>
+                        </div>
                         <div><span className="text-content-muted">{tx('detail.nextReview')}:</span> <span className="ml-2">{fmtDate(vendor.nextReviewAt)}</span></div>
                         <div><span className="text-content-muted">{tx('detail.contractRenewal')}:</span> <span className="ml-2">{fmtDate(vendor.contractRenewalAt)}</span></div>
                     </div>
@@ -513,6 +533,21 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         <div>
                             <label className="block text-sm text-content-muted mb-1">{tx('detail.criticality')}</label>
                             <Combobox hideSearch selected={VENDOR_CRIT_OPTIONS.find(o => o.value === editForm.criticality) ?? null} setSelected={(opt) => setEditForm((p) => ({ ...p, criticality: opt?.value ?? p.criticality }))} options={VENDOR_CRIT_OPTIONS} matchTriggerWidth />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-content-muted mb-1">{tx('detail.residualRisk')}</label>
+                            {/* Nullable: the leading option clears residualRisk (sent as null). */}
+                            <Combobox
+                                hideSearch
+                                selected={
+                                    editForm.residualRisk
+                                        ? { value: editForm.residualRisk, label: editForm.residualRisk }
+                                        : { value: '', label: tx('detail.residualRiskNone') }
+                                }
+                                setSelected={(opt) => setEditForm((p) => ({ ...p, residualRisk: opt?.value ?? '' }))}
+                                options={[{ value: '', label: tx('detail.residualRiskNone') }, ...VENDOR_CRIT_OPTIONS]}
+                                matchTriggerWidth
+                            />
                         </div>
                     </div>
                     <div>
@@ -916,14 +951,31 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         return (
                             <div key={type} className={cn(cardVariants({ density: 'compact' }), 'space-y-tight')}>
                                 <Heading level={3}>{tx('detail.linkGroup', { type, count: typeLinks.length })}</Heading>
-                                {typeLinks.map((l) => (
-                                    <div key={l.id} className="flex items-center justify-between text-sm border-b border-border-subtle py-1">
-                                        <span><code className="text-xs text-content-info">{l.entityId}</code> <StatusBadge variant="neutral" className="ml-1">{l.relation}</StatusBadge></span>
-                                        {canWrite && <button className="text-content-error text-xs" onClick={async () => {
-                                            await fetch(apiUrl(`/vendors/${params.vendorId}/links/${l.id}`), { method: 'DELETE' }); fetchLinks();
-                                        }}>{tx('detail.remove')}</button>}
-                                    </div>
-                                ))}
+                                {typeLinks.map((l) => {
+                                    const buildHref = LINK_ENTITY_HREF[l.entityType];
+                                    // entityName resolves once the backend lands; until then
+                                    // fall back to the raw cuid so the row still links out.
+                                    const label = l.entityName ?? (
+                                        <code className="text-xs">{l.entityId}</code>
+                                    );
+                                    return (
+                                        <div key={l.id} className="flex items-center justify-between text-sm border-b border-border-subtle py-1">
+                                            <span>
+                                                {buildHref ? (
+                                                    <Link href={tenantHref(buildHref(l.entityId))} className="text-content-info hover:underline">
+                                                        {label}
+                                                    </Link>
+                                                ) : (
+                                                    <code className="text-xs text-content-info">{l.entityId}</code>
+                                                )}
+                                                <StatusBadge variant="neutral" className="ml-1">{l.relation}</StatusBadge>
+                                            </span>
+                                            {canWrite && <button className="text-content-error text-xs" onClick={async () => {
+                                                await fetch(apiUrl(`/vendors/${params.vendorId}/links/${l.id}`), { method: 'DELETE' }); fetchLinks();
+                                            }}>{tx('detail.remove')}</button>}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         );
                     })}
