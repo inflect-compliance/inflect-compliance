@@ -188,6 +188,21 @@ export class ProcessMapRepository {
         return res.count > 0;
     }
 
+    // PR-F — lifecycle status transition (DRAFT → ACTIVE → ARCHIVED). Metadata
+    // only; does not touch the graph. Mirrors setCanvasMode.
+    static async setStatus(
+        db: PrismaTx,
+        ctx: RequestContext,
+        id: string,
+        status: ProcessMapStatusValue,
+    ): Promise<boolean> {
+        const res = await db.processMap.updateMany({
+            where: { id, tenantId: ctx.tenantId, deletedAt: null },
+            data: { status },
+        });
+        return res.count > 0;
+    }
+
     static async create(
         db: PrismaTx,
         ctx: RequestContext,

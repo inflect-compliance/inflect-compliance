@@ -5,6 +5,7 @@ import {
     getProcessMap,
     saveProcessMap,
     setProcessMapCanvasMode,
+    setProcessMapStatus,
     deleteProcessMap,
 } from '@/app-layer/usecases/process-map';
 import { withValidatedBody } from '@/lib/validation/route';
@@ -12,10 +13,17 @@ import { SaveProcessMapSchema } from '@/app-layer/schemas/process-map';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
-/** PATCH — metadata-only mode switch (no graph save). */
-const PatchProcessMapSchema = z.object({
-    canvasMode: z.enum(['DOCUMENT', 'AUTOMATION']),
-});
+/** PATCH — metadata-only switch (no graph save): canvas mode OR lifecycle
+ *  status. Exactly one field is acted on per request (canvasMode wins if both
+ *  are somehow sent). */
+const PatchProcessMapSchema = z
+    .object({
+        canvasMode: z.enum(['DOCUMENT', 'AUTOMATION']).optional(),
+        status: z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']).optional(),
+    })
+    .refine((v) => v.canvasMode !== undefined || v.status !== undefined, {
+        message: 'One of canvasMode or status is required',
+    });
 
 export const GET = withApiErrorHandling(
     async (
@@ -55,7 +63,9 @@ export const PATCH = withApiErrorHandling(
         ) => {
             const params = await paramsPromise;
             const ctx = await getTenantCtx(params, req);
-            const result = await setProcessMapCanvasMode(ctx, params.id, body.canvasMode);
+            const result = body.canvasMode
+                ? await setProcessMapCanvasMode(ctx, params.id, body.canvasMode)
+                : await setProcessMapStatus(ctx, params.id, body.status!);
             return jsonResponse(result);
         },
     ),

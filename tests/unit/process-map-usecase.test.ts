@@ -29,6 +29,7 @@ jest.mock('@/app-layer/repositories/ProcessMapRepository', () => ({
         replaceGraph: jest.fn(),
         softDelete: jest.fn(),
         setCanvasMode: jest.fn(),
+        setStatus: jest.fn(),
         listMapsByLinkedEntity: jest.fn(),
     },
 }));
@@ -47,6 +48,7 @@ import {
     createProcessMap,
     saveProcessMap,
     setProcessMapCanvasMode,
+    setProcessMapStatus,
     deleteProcessMap,
     listMapsUsingRisk,
     listMapsUsingAsset,
@@ -324,6 +326,31 @@ describe('setProcessMapCanvasMode', () => {
     it('rejects a reader (no write permission)', async () => {
         await expect(
             setProcessMapCanvasMode(makeCtx('READER'), 'pm-1', 'AUTOMATION'),
+        ).rejects.toBeDefined();
+    });
+});
+
+describe('setProcessMapStatus (PR-F)', () => {
+    it('sets the lifecycle status + audits when the map exists', async () => {
+        (ProcessMapRepository.setStatus as jest.Mock).mockResolvedValue(true);
+        const res = await setProcessMapStatus(writerCtx, 'pm-1', 'ARCHIVED');
+        expect(res).toEqual({ id: 'pm-1', status: 'ARCHIVED' });
+        expect(ProcessMapRepository.setStatus).toHaveBeenCalledWith(
+            mockDb, writerCtx, 'pm-1', 'ARCHIVED',
+        );
+        expect(logEvent).toHaveBeenCalled();
+    });
+
+    it('throws notFound when no map matched', async () => {
+        (ProcessMapRepository.setStatus as jest.Mock).mockResolvedValue(false);
+        await expect(
+            setProcessMapStatus(writerCtx, 'pm-missing', 'ACTIVE'),
+        ).rejects.toThrow('Process map not found');
+    });
+
+    it('rejects a reader (no write permission)', async () => {
+        await expect(
+            setProcessMapStatus(makeCtx('READER'), 'pm-1', 'ACTIVE'),
         ).rejects.toBeDefined();
     });
 });

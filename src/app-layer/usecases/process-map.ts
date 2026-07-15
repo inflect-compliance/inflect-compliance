@@ -165,6 +165,36 @@ export async function setProcessMapCanvasMode(
 }
 
 /**
+ * PR-F — lifecycle status transition (DRAFT → ACTIVE → ARCHIVED). Metadata
+ * only; does not touch the graph. Mirrors setProcessMapCanvasMode.
+ */
+export async function setProcessMapStatus(
+    ctx: RequestContext,
+    id: string,
+    status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED',
+) {
+    assertCanWrite(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const ok = await ProcessMapRepository.setStatus(db, ctx, id, status);
+        if (!ok) throw notFound('Process map not found');
+        await logEvent(db, ctx, {
+            action: 'UPDATE',
+            entityType: 'ProcessMap',
+            entityId: id,
+            details: `Set status: ${status}`,
+            detailsJson: {
+                category: 'entity_lifecycle',
+                entityName: 'ProcessMap',
+                operation: 'updated',
+                after: { status },
+                summary: `Status → ${status}`,
+            },
+        });
+        return { id, status };
+    });
+}
+
+/**
  * Epic P2-PR-C — reverse lookup. Returns the process maps + edges
  * referencing a given control. Read-only; surfaces "Where is this
  * control used?" on the Control detail page.
