@@ -196,4 +196,22 @@ describe("Epic P2-PR-C — control reverse-lookup", () => {
             );
         });
     });
+
+    describe("Deep link — ProcessesClient honours ?activeId=", () => {
+        // PR-D — the reverse-lookup rows deep-link to
+        // `/processes?activeId=<mapId>`. Before PR-D the page ignored the
+        // param and always opened the first map. Lock that ProcessesClient
+        // reads it and seeds the active map (falling back to the first).
+        const src = read(
+            "src/app/t/[tenantSlug]/(app)/processes/ProcessesClient.tsx",
+        );
+
+        it("reads the activeId search param and seeds the active map", () => {
+            expect(src).toMatch(/useSearchParams/);
+            expect(src).toMatch(/get\("activeId"\)/);
+            expect(src).toMatch(
+                /initialProcesses\.some\(\(p\) => p\.id === requestedId\)/,
+            );
+        });
+    });
 });
