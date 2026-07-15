@@ -658,7 +658,7 @@ function PoliciesPageInner({
                     <KpiFilterCard
                         label={tx('list.kpiOverdueReview')}
                         value={overdueReviewPolicies}
-                        tone={overdueReviewPolicies > 0 ? 'critical' : 'neutral'}
+                        tone={overdueReviewPolicies > 0 ? 'critical' : 'default'}
                         onClick={() => togglePolicyKpi('overdueReview')}
                         selected={activePolicyKpi === 'overdueReview'}
                     />
