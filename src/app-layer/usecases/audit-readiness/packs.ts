@@ -1,9 +1,10 @@
 ﻿/**
  * Audit Readiness — Pack CRUD, Freeze, Snapshots, Export, Default Pack Preview
  */
-import { AuditPackItemEntityType, WorkItemStatus, ControlStatus, PolicyStatus, EvidenceStatus } from '@prisma/client';
+import { AuditPackItemEntityType, WorkItemStatus, ControlStatus, EvidenceStatus } from '@prisma/client';
 import { type PrismaTx } from '@/lib/db-context';
 import { RequestContext } from '../../types';
+import { policyCountsWhere } from '@/lib/policy/coverage-predicate';
 import {
     assertCanManageAuditPacks, assertCanFreezePack, assertCanViewPack,
 } from '../../policies/audit-readiness.policies';
@@ -277,9 +278,9 @@ export async function freezeAuditPack(ctx: RequestContext, packId: string) {
 //                 not-started / in-progress controls are excluded; the
 //                 no-mapping fallback narrows to operating controls
 //                 rather than every control.
-//   • Policies  — only APPROVED / PUBLISHED policies (a draft is not an
-//                 auditable artefact), preferring the framework-relevant
-//                 ones by category/title.
+//   • Policies  — only PUBLISHED (issued) policies (a draft/approved-but-
+//                 unpublished policy is not an auditable artefact), preferring
+//                 the framework-relevant ones by category/title.
 //   • Evidence  — APPROVED evidence linked to the selected controls
 //                 (the reviewed, attestation-grade artefacts).
 //   • Issues    — OPEN (non-terminal) findings/tasks, so the auditor
@@ -290,11 +291,10 @@ const OPERATING_CONTROL_STATUSES: readonly ControlStatus[] = [
     ControlStatus.IMPLEMENTED,
     ControlStatus.NEEDS_REVIEW,
 ];
-/** Policy statuses that are auditable (issued, not draft/archived). */
-const AUDITABLE_POLICY_STATUSES: readonly PolicyStatus[] = [
-    PolicyStatus.APPROVED,
-    PolicyStatus.PUBLISHED,
-];
+// Auditable policies are gated by the shared "counts toward coverage"
+// predicate (PUBLISHED + not deleted) — see @/lib/policy/coverage-predicate.
+// Previously this counted APPROVED as well; an approved-but-unpublished policy
+// has not been issued and is not an auditable artefact.
 
 export async function previewDefaultPack(ctx: RequestContext, cycleId: string) {
     assertCanViewPack(ctx);
@@ -348,10 +348,10 @@ async function buildCuratedDefaultPack(ctx: RequestContext, frameworkKey: string
     );
     const controlIds = operatingControls.map((c) => c.id);
 
-    // APPROVED / PUBLISHED policies, preferring framework-relevant ones.
+    // PUBLISHED (issued) policies, preferring framework-relevant ones.
     const policies = await runInTenantContext(ctx, (tdb) =>
         tdb.policy.findMany({
-            where: { tenantId: ctx.tenantId, status: { in: [...AUDITABLE_POLICY_STATUSES] } },
+            where: policyCountsWhere(ctx.tenantId),
             select: { id: true, title: true, category: true },
             take: 2000,
         })

@@ -3,6 +3,7 @@ import { ControlRiskRepository, AssetControlRepository, AssetRiskRepository } fr
 import { logEvent } from '../events/audit';
 import { forbidden } from '@/lib/errors/types';
 import { runInTenantContext } from '@/lib/db-context';
+import { policyCountsWhere } from '@/lib/policy/coverage-predicate';
 
 function assertCanRead(ctx: RequestContext) {
     // All roles can read traceability
@@ -230,23 +231,29 @@ export async function coverageSummary(ctx: RequestContext) {
     return runInTenantContext(ctx, async (db) => {
         const t = ctx.tenantId;
 
-        // Total counts
-        const [totalRisks, totalControls, totalAssets] = await Promise.all([
+        // Total counts. Policies use the shared "counts toward coverage"
+        // predicate (PUBLISHED + not deleted) — a DRAFT is not governance.
+        const [totalRisks, totalControls, totalAssets, totalPolicies] = await Promise.all([
             db.risk.count({ where: { tenantId: t } }),
             db.control.count({ where: { tenantId: t } }),
             db.asset.count({ where: { tenantId: t, status: 'ACTIVE' } }),
+            db.policy.count({ where: policyCountsWhere(t) }),
         ]);
 
         // Mapped counts (distinct)
-        const [risksWithControls, controlsWithRisks, assetsWithControls] = await Promise.all([
+        const [risksWithControls, controlsWithRisks, assetsWithControls, policiesWithControls] = await Promise.all([
             db.riskControl.findMany({ where: { tenantId: t }, select: { riskId: true }, distinct: ['riskId'] }),
             db.riskControl.findMany({ where: { tenantId: t }, select: { controlId: true }, distinct: ['controlId'] }),
             db.controlAsset.findMany({ where: { tenantId: t }, select: { assetId: true }, distinct: ['assetId'] }),
+            // Counting policies is gated by the same predicate, applied to the
+            // linked policy so an unpublished policy's links don't inflate coverage.
+            db.policyControlLink.findMany({ where: { tenantId: t, policy: policyCountsWhere(t) }, select: { policyId: true }, distinct: ['policyId'] }),
         ]);
 
         const risksWithControlsCount = risksWithControls.length;
         const controlsWithRisksCount = controlsWithRisks.length;
         const assetsWithControlsCount = assetsWithControls.length;
+        const policiesWithControlsCount = policiesWithControls.length;
 
         // Unmapped risks (no controls)
         const mappedRiskIds = new Set(risksWithControls.map(r => r.riskId));
@@ -293,6 +300,11 @@ export async function coverageSummary(ctx: RequestContext) {
             controlsWithRisksPct: totalControls > 0 ? Math.round((controlsWithRisksCount / totalControls) * 100) : 0,
             assetsWithControlsCount,
             assetsWithControlsPct: totalAssets > 0 ? Math.round((assetsWithControlsCount / totalAssets) * 100) : 0,
+            // Policy governance coverage — how many issued (PUBLISHED) policies
+            // are mapped to at least one control.
+            totalPolicies,
+            policiesWithControlsCount,
+            policiesWithControlsPct: totalPolicies > 0 ? Math.round((policiesWithControlsCount / totalPolicies) * 100) : 0,
             unmappedRisks,
             uncoveredCriticalAssets,
             hotControls: hotControlsResult,

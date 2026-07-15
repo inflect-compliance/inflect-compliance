@@ -28,6 +28,13 @@ const tenantDb: any = {
         findMany: jest.fn(),
         create: jest.fn(),
     },
+    policyAcknowledgementAssignment: {
+        createMany: jest.fn(),
+        findMany: jest.fn(),
+    },
+    tenantMembership: { findMany: jest.fn() },
+    notification: { create: jest.fn() },
+    user: { findMany: jest.fn() },
 };
 jest.mock('@/lib/db-context', () => {
     const actual = jest.requireActual('@/lib/db-context');
@@ -41,6 +48,8 @@ import {
     attestPolicy,
     getPolicyAttestation,
     listPolicyAttestations,
+    requirePolicyAcknowledgement,
+    getPolicyAcknowledgementRoster,
 } from '@/app-layer/usecases/policy-attestation';
 import { makeRequestContext } from '../../helpers/make-context';
 
@@ -50,6 +59,11 @@ beforeEach(() => {
     tenantDb.policyAcknowledgement.findUnique.mockReset();
     tenantDb.policyAcknowledgement.findMany.mockReset();
     tenantDb.policyAcknowledgement.create.mockReset();
+    tenantDb.policyAcknowledgementAssignment.createMany.mockReset();
+    tenantDb.policyAcknowledgementAssignment.findMany.mockReset();
+    tenantDb.tenantMembership.findMany.mockReset();
+    tenantDb.notification.create.mockReset().mockResolvedValue({ id: 'n1' });
+    tenantDb.user.findMany.mockReset();
 });
 
 const ctx = makeRequestContext('EDITOR');
@@ -231,5 +245,84 @@ describe('listPolicyAttestations', () => {
         const call = tenantDb.policyAcknowledgement.findMany.mock.calls[0][0];
         expect(call.where.policyVersionId).toBe('v1');
         expect(call.orderBy).toEqual({ acknowledgedAt: 'desc' });
+    });
+});
+
+describe('requirePolicyAcknowledgement (campaign)', () => {
+    it('requires admin', async () => {
+        await expect(
+            requirePolicyAcknowledgement(makeRequestContext('EDITOR'), 'p1', { audience: { type: 'all' } }),
+        ).rejects.toThrow();
+    });
+
+    it('refuses a non-PUBLISHED policy', async () => {
+        policyRepoGetById.mockResolvedValueOnce({ id: 'p1', status: 'DRAFT', currentVersionId: 'v1', title: 'P' });
+        await expect(
+            requirePolicyAcknowledgement(makeRequestContext('ADMIN'), 'p1', { audience: { type: 'all' } }),
+        ).rejects.toThrow(/Only PUBLISHED/);
+    });
+
+    it('throws when the audience resolves to zero members', async () => {
+        policyRepoGetById.mockResolvedValueOnce({ id: 'p1', status: 'PUBLISHED', currentVersionId: 'v1', title: 'P' });
+        tenantDb.tenantMembership.findMany.mockResolvedValueOnce([]);
+        await expect(
+            requirePolicyAcknowledgement(makeRequestContext('ADMIN'), 'p1', { audience: { type: 'all' } }),
+        ).rejects.toThrow(/zero active members/);
+    });
+
+    it('assigns the resolved audience, dedupes, and notifies each', async () => {
+        policyRepoGetById.mockResolvedValueOnce({ id: 'p1', status: 'PUBLISHED', currentVersionId: 'v1', title: 'Acceptable Use' });
+        tenantDb.tenantMembership.findMany.mockResolvedValueOnce([{ userId: 'u1' }, { userId: 'u2' }]);
+        tenantDb.policyAcknowledgementAssignment.createMany.mockResolvedValueOnce({ count: 2 });
+        const out = await requirePolicyAcknowledgement(makeRequestContext('ADMIN'), 'p1', { audience: { type: 'all' } });
+        expect(out).toEqual({ policyVersionId: 'v1', assignedCount: 2 });
+        const createManyArg = tenantDb.policyAcknowledgementAssignment.createMany.mock.calls[0][0];
+        expect(createManyArg.skipDuplicates).toBe(true);
+        expect(createManyArg.data).toHaveLength(2);
+        expect(createManyArg.data[0]).toMatchObject({ policyVersionId: 'v1', assignedById: 'user-1' });
+        expect(tenantDb.notification.create).toHaveBeenCalledTimes(2);
+    });
+
+    it('scopes a role audience to that role', async () => {
+        policyRepoGetById.mockResolvedValueOnce({ id: 'p1', status: 'PUBLISHED', currentVersionId: 'v1', title: 'P' });
+        tenantDb.tenantMembership.findMany.mockResolvedValueOnce([{ userId: 'u1' }]);
+        tenantDb.policyAcknowledgementAssignment.createMany.mockResolvedValueOnce({ count: 1 });
+        await requirePolicyAcknowledgement(makeRequestContext('ADMIN'), 'p1', { audience: { type: 'role', role: 'EDITOR' as any } });
+        const where = tenantDb.tenantMembership.findMany.mock.calls[0][0].where;
+        expect(where.role).toBe('EDITOR');
+        expect(where.status).toBe('ACTIVE');
+    });
+});
+
+describe('getPolicyAcknowledgementRoster', () => {
+    it('requires admin', async () => {
+        await expect(
+            getPolicyAcknowledgementRoster(makeRequestContext('EDITOR'), 'p1'),
+        ).rejects.toThrow();
+    });
+
+    it('computes % complete from assignments vs acknowledgements', async () => {
+        policyRepoGetById.mockResolvedValueOnce({ id: 'p1', status: 'PUBLISHED', currentVersionId: 'v1', title: 'P' });
+        // u1 + u2 assigned; only u1 acknowledged → 50% complete.
+        tenantDb.policyAcknowledgementAssignment.findMany.mockResolvedValueOnce([{ userId: 'u1' }, { userId: 'u2' }]);
+        tenantDb.policyAcknowledgement.findMany.mockResolvedValueOnce([{ userId: 'u1', acknowledgedAt: new Date('2026-06-01') }]);
+        tenantDb.user.findMany.mockResolvedValueOnce([
+            { id: 'u1', name: 'One', email: 'one@x.com' },
+            { id: 'u2', name: 'Two', email: 'two@x.com' },
+        ]);
+        const roster = await getPolicyAcknowledgementRoster(makeRequestContext('ADMIN'), 'p1');
+        expect(roster.assignedCount).toBe(2);
+        expect(roster.acknowledgedCount).toBe(1);
+        expect(roster.pctComplete).toBe(50);
+        // Outstanding (u2) sorts before acknowledged (u1).
+        expect(roster.entries[0].userId).toBe('u2');
+        expect(roster.entries[0].acknowledgedAt).toBeNull();
+        expect(roster.entries.find((e) => e.userId === 'u1')?.acknowledgedAt).not.toBeNull();
+    });
+
+    it('returns an empty roster when the policy has no current version', async () => {
+        policyRepoGetById.mockResolvedValueOnce({ id: 'p1', status: 'DRAFT', currentVersionId: null, title: 'P' });
+        const roster = await getPolicyAcknowledgementRoster(makeRequestContext('ADMIN'), 'p1');
+        expect(roster).toEqual({ policyVersionId: null, assignedCount: 0, acknowledgedCount: 0, pctComplete: 0, entries: [] });
     });
 });

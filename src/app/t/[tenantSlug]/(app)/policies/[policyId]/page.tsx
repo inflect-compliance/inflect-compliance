@@ -27,6 +27,7 @@ import { enrichPolicyHtml, renderPolicyMarkdown } from '@/lib/policy/policy-cont
 import type { RichTextContentType } from '@/components/ui/RichTextEditor';
 import { ApprovalBanner } from '@/components/ui/ApprovalBanner';
 import { VersionDiff } from '@/components/ui/VersionDiff';
+import { PolicyAcknowledgementsPanel } from '@/components/policies/PolicyAcknowledgementsPanel';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { MetaStrip } from '@/components/ui/meta-strip';
@@ -99,7 +100,7 @@ export default function PolicyDetailPage() {
     const [policy, setPolicy] = useState<PolicyDetailDTO | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [tab, setTab] = useState<'current' | 'versions' | 'mappings' | 'traceability' | 'editor' | 'activity'>('current');
+    const [tab, setTab] = useState<'current' | 'versions' | 'mappings' | 'traceability' | 'acknowledgements' | 'editor' | 'activity'>('current');
 
     // Editor state
     const [contentMode, setContentMode] = useState<ContentMode>('MARKDOWN');
@@ -414,12 +415,13 @@ export default function PolicyDetailPage() {
     const canWrite = tenant.permissions.canWrite;
     const canAdmin = tenant.permissions.canAdmin;
 
-    type PolicyTab = 'current' | 'versions' | 'mappings' | 'traceability' | 'editor' | 'activity';
+    type PolicyTab = 'current' | 'versions' | 'mappings' | 'traceability' | 'acknowledgements' | 'editor' | 'activity';
     const tabs: ReadonlyArray<{ key: PolicyTab; label: string }> = [
         { key: 'current', label: t('detail.tabCurrent') },
         { key: 'versions', label: t('detail.tabVersions') },
         { key: 'mappings', label: t('detail.tabMappings') },
         { key: 'traceability', label: t('detail.tabTraceability') },
+        { key: 'acknowledgements', label: t('detail.tabAcknowledgements') },
         ...(canWrite ? ([{ key: 'editor' as const, label: t('detail.tabEditor') }]) : []),
         { key: 'activity', label: t('detail.tabActivity') },
     ];
@@ -896,6 +898,13 @@ export default function PolicyDetailPage() {
                 <PolicyTraceabilityPanel
                     endpoint={apiUrl(`/policies/${policyId}/traceability`)}
                     tenantHref={tenantHref}
+                />
+            )}
+            {tab === 'acknowledgements' && (
+                <PolicyAcknowledgementsPanel
+                    policyId={policyId}
+                    canAdmin={canAdmin}
+                    isPublished={policy.status === 'PUBLISHED'}
                 />
             )}
             {tab === 'activity' && (
