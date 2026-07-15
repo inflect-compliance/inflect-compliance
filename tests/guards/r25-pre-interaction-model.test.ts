@@ -1,27 +1,22 @@
 /**
- * R25-PR-E — interaction model ratchet.
+ * PR-D — edge-control render contract (retargeted from the R25
+ * "pre-interaction model" ratchet).
  *
- * The R25 interaction model is deliberately constrained:
- *   - Drag from palette → drop creates a node (PR-B).
- *   - Drag from node handle → connect creates an edge (PR-B).
- *   - Click on edge → "+ Add control" affordance at midpoint;
- *     click → adds ControlOnEdge with default label "Control".
- *   - Standard xyflow drag for repositioning.
- *   - Standard xyflow Backspace for delete.
+ * History: R25 shipped a constrained canvas where the ONLY way to put a
+ * control on an edge was a single-click "+ Add control" affordance that
+ * stamped an ephemeral `data.control = { label }`. That label was never
+ * persisted — the save serialiser (`lib/processes/edge-controls.ts`) only
+ * reads `data.controls` (plural) — so the pill vanished on reload, and the
+ * "control" was a label with no link to a real Control row.
  *
- * Out-of-scope (and the ratchet enforces the absence):
- *   - Right-click context menus.
- *   - Inspector / properties panel.
- *   - Inline editing dialogs for control label.
+ * PR-D reconciled the two shapes onto ONE: ProcessEdge now renders the
+ * PERSISTED `data.controls`, each pill resolving its live name/status from
+ * the tenant control list, and controls are attached via the inspector's
+ * real Control picker (which writes `data.controls` with a real
+ * `controlId`). The ephemeral single-click stamp is gone.
  *
- * This ratchet locks the "+ Add control" affordance contract:
- *   1. The affordance appears ONLY when edge.selected === true.
- *   2. The affordance disappears once a control is added.
- *   3. Clicking the affordance mutates the edge's data.control via
- *      useReactFlow().setEdges.
- *   4. The affordance uses a contextual icon (ShieldPlus) distinct
- *      from the placed-control icon (ShieldCheck) so users see the
- *      action vs the result.
+ * This ratchet locks the new contract so a future refactor can't silently
+ * reintroduce the ephemeral, never-persisted shape.
  */
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -31,72 +26,51 @@ const EDGE_PATH = "src/components/processes/ProcessEdge.tsx";
 
 const SRC = fs.readFileSync(path.join(ROOT, EDGE_PATH), "utf8");
 
-describe("R25-PR-E — interaction model", () => {
-    describe("Add-control affordance", () => {
-        it("uses useReactFlow().setEdges to mutate edge data", () => {
-            // setEdges is the xyflow-blessed way to update edge
-            // state from inside a custom edge component. Mutating
-            // a parent's state directly would break xyflow's
-            // change-detection optimisations.
-            expect(SRC).toMatch(/useReactFlow\(\)/);
-            expect(SRC).toMatch(/setEdges\(/);
+describe("PR-D — edge-control render contract", () => {
+    describe("Renders the persisted `data.controls` shape", () => {
+        it("reads `data.controls` (plural, persisted), not `data.control`", () => {
+            // The plural shape is the one the serialiser round-trips. The
+            // singular ephemeral field must be gone so a pill can't render
+            // without being persisted.
+            expect(SRC).toMatch(/edgeData\?\.controls/);
+            expect(SRC).not.toMatch(/edgeData\?\.control\b/);
         });
 
-        it("affordance is rendered conditionally on (selected && !control)", () => {
-            // The affordance must NOT be always-on — that would
-            // clutter every edge at rest. Pattern: only show when
-            // the edge is SELECTED and does NOT yet carry a control.
-            expect(SRC).toMatch(
-                /\{!control\s*&&\s*selected\s*&&\s*\(/,
-            );
+        it("resolves each control's live status from the tenant control list", () => {
+            // A pill shows the control's REAL name + status, resolved via
+            // findTenantControl against the shared tenant control cache —
+            // not a free-typed label with no linkage.
+            expect(SRC).toMatch(/findTenantControl\(/);
+            expect(SRC).toMatch(/useTenantControls\(/);
         });
 
-        it("affordance click handler adds a control with the default label", () => {
-            // The constrained model: one click adds a control with
-            // a default label. No naming dialog, no inline editing
-            // (those are explicitly out of R25 scope).
-            // The default label is localized — assert catalog value + key ref.
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const en = require('../../messages/en.json');
-            expect(en.automation.edges.defaultControlLabel).toBe('Control');
-            expect(SRC).toMatch(
+        it("no ephemeral single-click stamp of `control: { label }`", () => {
+            // The pre-PR-D affordance wrote an unpersisted control. It must
+            // not come back.
+            expect(SRC).not.toMatch(
                 /control:\s*\{\s*label:\s*t\("defaultControlLabel"\)\s*\}/,
             );
+            expect(SRC).not.toMatch(/data-add-control-affordance/);
         });
 
-        it("affordance uses ShieldPlus icon (distinct from placed control's ShieldCheck)", () => {
-            // Different icons for the AFFORDANCE (action) vs the
-            // RESULT (placed control). Visual feedback that the
-            // click did something.
-            expect(SRC).toMatch(/ShieldPlus/);
+        it("placed controls use the ShieldCheck icon", () => {
             expect(SRC).toMatch(/ShieldCheck/);
         });
 
-        it("affordance positions at the edge midpoint (labelX/labelY)", () => {
-            // Affordances must appear AT the connection. R27-PR-B
-            // groups the variant cycle + add-control into one
-            // selection cluster positioned via getBezierPath's
-            // labelX/labelY midpoint.
+        it("pills render at the edge midpoint (labelX/labelY)", () => {
             expect(SRC).toMatch(/translate\(\$\{labelX\}px/);
-        });
-
-        it("affordance marker for downstream selectors", () => {
-            expect(SRC).toMatch(/data-add-control-affordance/);
         });
     });
 
     describe("Constrained model — explicit absences", () => {
         it("no context-menu wiring (right-click)", () => {
-            // R25 scope: no per-edge context menu. xyflow has
-            // onEdgeContextMenu — we deliberately don't use it.
             expect(SRC).not.toMatch(/onEdgeContextMenu/);
             expect(SRC).not.toMatch(/contextMenu/);
         });
 
         it("no inline label-editing input/dialog inside ProcessEdge", () => {
-            // The constrained model: control labels are not edited
-            // inline. Adding an <input> here would expand scope
-            // into label editing semantics — explicitly out.
+            // Control labels are not edited inline in the edge component;
+            // the inspector owns editing.
             const stripped = SRC.replace(/\/\*[\s\S]*?\*\//g, "").replace(
                 /\/\/[^\n]*/g,
                 "",

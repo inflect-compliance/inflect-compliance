@@ -27,7 +27,10 @@
  * not separate nodes hanging in space.
  *
  * Data-shape contract:
- *   edge.data.control:  { label: string } | undefined
+ *   edge.data.controls: EdgeControlData[] | undefined — the PERSISTED
+ *                       controls on this edge (controlKey + label +
+ *                       controlId), round-tripped by the save serialiser
+ *                       and attached via the inspector's real Control picker
  *   edge.data.variant:  'flow' | 'conditional' | 'reference' | undefined
  *   edge.data.isPreview: true while a proximity auto-bind is in flight
  */
@@ -39,10 +42,15 @@ import {
     useReactFlow,
     type EdgeProps,
 } from "@xyflow/react";
-import { ShieldCheck, ShieldPlus, Spline } from "lucide-react";
+import { ShieldCheck, Spline } from "lucide-react";
 import { memo, useCallback, useMemo, type CSSProperties } from "react";
 import { useTranslations } from "next-intl";
 import { useCanvasEmphasis } from "@/lib/processes/canvas-emphasis-context";
+import { useTenantContext } from "@/lib/tenant-context-provider";
+import {
+    useTenantControls,
+    findTenantControl,
+} from "@/lib/processes/use-tenant-controls";
 
 /** Surface-namespace resolver (`useTranslations('automation.edges')`). */
 type EdgesTranslate = ReturnType<typeof useTranslations>;
@@ -88,11 +96,24 @@ export function isProcessEdgeVariant(v: unknown): v is ProcessEdgeVariant {
     return v === "flow" || v === "conditional" || v === "reference";
 }
 
+/** A real control attached to an edge — mirrors the persisted
+ *  ProcessEdgeControl (controlKey + label + FK controlId). */
+export interface EdgeControlData {
+    controlKey: string;
+    label: string;
+    controlId: string | null;
+}
+
 export interface ProcessEdgeData {
-    /** Optional control placed on this connection. */
-    control?: {
-        label: string;
-    };
+    /**
+     * PR-D — real controls attached to this connection. This is the SAME
+     * `data.controls` the inspector's picker writes and the save serialiser
+     * (lib/processes/edge-controls.ts) persists + rehydrates, so a pill shown
+     * here survives a reload. (The prior ephemeral `data.control` singular
+     * shape — written by an on-edge "Add control" button but never saved — is
+     * gone; controls are added via the inspector's real Control picker.)
+     */
+    controls?: EdgeControlData[];
     /**
      * R26-PR-C — transient proximity auto-bind preview. Dashed
      * brand stroke; stripped from the edges array on commit.
@@ -201,29 +222,26 @@ function ProcessEdgeImpl(props: EdgeProps) {
     const automationEdgeStyle = useMemo(() => buildAutomationEdgeStyle(t), [t]);
 
     const edgeData = data as ProcessEdgeData | undefined;
-    const control = edgeData?.control;
     const isPreview = edgeData?.isPreview === true;
     const variant: ProcessEdgeVariant = isProcessEdgeVariant(edgeData?.variant)
         ? edgeData.variant
         : "flow";
     const { setEdges } = useReactFlow();
 
-    // R25-PR-E — single-click "Add control" affordance.
-    const addControl = useCallback(() => {
-        setEdges((eds) =>
-            eds.map((edge) =>
-                edge.id === id
-                    ? {
-                          ...edge,
-                          data: {
-                              ...(edge.data as ProcessEdgeData | undefined),
-                              control: { label: t("defaultControlLabel") },
-                          },
-                      }
-                    : edge,
-            ),
-        );
-    }, [id, setEdges, t]);
+    // PR-D — render the PERSISTED `data.controls`. This is the shape the
+    // inspector's real Control picker writes and the save serialiser
+    // (lib/processes/edge-controls.ts) round-trips, so every pill shown here
+    // survives a reload. Controls are attached via the inspector's picker
+    // (select the edge → pick a real Control), not stamped inline — an
+    // auditor sees which edges are controlled, and every visible pill maps to
+    // a real Control row.
+    const { tenantSlug } = useTenantContext();
+    const tenantControls = useTenantControls(tenantSlug, { pollMs: 30000 });
+    const edgeControls = useMemo(
+        () => (Array.isArray(edgeData?.controls) ? edgeData.controls : []),
+        [edgeData?.controls],
+    );
+    const hasControls = edgeControls.length > 0;
 
     // R27-PR-B — cycle the connection variant
     // flow → conditional → reference → flow. One affordance, no
@@ -290,9 +308,14 @@ function ProcessEdgeImpl(props: EdgeProps) {
                 // composes the emphasis-dim opacity on top.
                 style={edgeStyle}
             />
-            {control && (
+            {hasControls && (
                 // EdgeLabelRenderer pulls the overlay OUT of the SVG
                 // so React components render natively at the midpoint.
+                // PR-D — one pill per persisted control, stacked so multiple
+                // controls on one edge stay legible. Each pill resolves its
+                // live name/status from the tenant control list; the saved
+                // `label` is the fallback when the control list is still
+                // loading or the control was archived out of the list.
                 <EdgeLabelRenderer>
                     <div
                         style={{
@@ -300,14 +323,32 @@ function ProcessEdgeImpl(props: EdgeProps) {
                             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
                             pointerEvents: "all",
                         }}
-                        className="nodrag nopan"
+                        className="nodrag nopan flex flex-col items-center gap-0.5"
                         data-control-on-edge="true"
                     >
-                        <ControlOnEdge label={control.label} />
+                        {edgeControls.map((ec, i) => {
+                            const resolved = findTenantControl(
+                                tenantControls,
+                                ec.controlId,
+                            );
+                            return (
+                                <ControlOnEdge
+                                    key={ec.controlKey || `${ec.controlId}-${i}`}
+                                    label={
+                                        resolved
+                                            ? resolved.ref
+                                                ? `${resolved.ref} · ${resolved.title}`
+                                                : resolved.title
+                                            : ec.label
+                                    }
+                                    status={resolved?.status ?? null}
+                                />
+                            );
+                        })}
                     </div>
                 </EdgeLabelRenderer>
             )}
-            {!control && typeof label === "string" && label.length > 0 && (
+            {!hasControls && typeof label === "string" && label.length > 0 && (
                 // R31 Bundle 7 (PR 5 minimum viable) — chip-styled
                 // edge label. Pre-R31, the inspector's edge-label
                 // edit set `edge.label` but xyflow's default text
@@ -334,7 +375,7 @@ function ProcessEdgeImpl(props: EdgeProps) {
                     </div>
                 </EdgeLabelRenderer>
             )}
-            {!control &&
+            {!hasControls &&
                 !(typeof label === "string" && label.length > 0) &&
                 autoLabel && (
                     // VR-5 — semantic automation edge-kind chip.
@@ -357,13 +398,16 @@ function ProcessEdgeImpl(props: EdgeProps) {
             {selected && (
                 // R27-PR-B — selection affordances. Sits just above
                 // the midpoint when a control badge occupies it, so
-                // the two never collide. The variant cycle is always
-                // offered; "Add control" only when none exists yet.
+                // the two never collide. PR-D retired the inline
+                // "Add control" stamp (it wrote an ephemeral,
+                // never-persisted label); controls are now attached
+                // via the inspector's real Control picker when the
+                // edge is selected. The variant cycle stays inline.
                 <EdgeLabelRenderer>
                     <div
                         style={{
                             position: "absolute",
-                            transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY - (control ? 28 : 0)}px)`,
+                            transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY - (hasControls ? 28 : 0)}px)`,
                             pointerEvents: "all",
                         }}
                         className="nodrag nopan flex items-center gap-1"
@@ -384,20 +428,6 @@ function ProcessEdgeImpl(props: EdgeProps) {
                             />
                             <span>{edgeVariantMeta[variant].label}</span>
                         </button>
-                        {!control && selected && (
-                            <button
-                                type="button"
-                                onClick={addControl}
-                                className="inline-flex items-center gap-1 rounded-[8px] border border-border-emphasis bg-canvas-frame px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-content-emphasis transition-colors hover:bg-bg-muted"
-                                data-add-control-affordance="true"
-                            >
-                                <ShieldPlus
-                                    className="h-3 w-3 shrink-0 text-[color:var(--brand-default)]"
-                                    aria-hidden="true"
-                                />
-                                <span>{t("addControl")}</span>
-                            </button>
-                        )}
                     </div>
                 </EdgeLabelRenderer>
             )}
@@ -422,22 +452,44 @@ export const PROCESS_EDGE_TYPE = "processEdge";
  */
 interface ControlOnEdgeProps {
     label: string;
+    /**
+     * PR-D — live control status (e.g. IMPLEMENTED / IN_PROGRESS /
+     * NOT_IMPLEMENTED), resolved from the tenant control list. Null when
+     * still loading or the control is missing from the list. Drives the
+     * icon tone so an auditor can tell a satisfied control from an open one
+     * at a glance.
+     */
+    status?: string | null;
 }
 
-export function ControlOnEdge({ label }: ControlOnEdgeProps) {
+/** Map a Control.status to an icon tone class. Green when the control is
+ *  demonstrably in place; amber while in progress; muted otherwise. */
+function controlStatusTone(status: string | null | undefined): string {
+    const s = (status ?? "").toUpperCase();
+    if (s === "IMPLEMENTED" || s === "PASSING" || s === "OPERATING") {
+        return "text-[color:var(--status-success,var(--brand-default))]";
+    }
+    if (s === "IN_PROGRESS" || s === "PARTIAL") {
+        return "text-[color:var(--status-warning,var(--brand-default))]";
+    }
+    return "text-[color:var(--brand-default)]";
+}
+
+export function ControlOnEdge({ label, status }: ControlOnEdgeProps) {
     // R32-PR12 — chip vocabulary match. Pre-R32 the control pill
     // had a larger radius than the edge-label chip shipped in
     // R31 Bundle 7. Two pills on the same edge with two
     // different radii — every edge-mounted artefact now reads as
     // one consistent shape language. Same bg-canvas-frame as the
     // label chip; the brand-coloured icon is what distinguishes
-    // the control affordance.
+    // the control affordance. PR-D tints the icon by live status.
     return (
         <div
             className="inline-flex items-center gap-1 rounded-[4px] border border-canvas-border bg-canvas-frame px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-content-emphasis"
             data-control-on-edge-badge="true"
+            data-control-status={status ?? undefined}
         >
-            <ShieldCheck className="h-3 w-3 shrink-0 text-[color:var(--brand-default)]" />
+            <ShieldCheck className={`h-3 w-3 shrink-0 ${controlStatusTone(status)}`} />
             <span className="max-w-trunc-tight truncate">{label}</span>
         </div>
     );
