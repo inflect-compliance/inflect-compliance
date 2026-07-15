@@ -480,6 +480,16 @@ export async function decidePolicyApproval(ctx: RequestContext, approvalId: stri
             throw conflict('This approval request has already been decided');
         }
 
+        // Segregation of duties — the requester of a policy change may not
+        // APPROVE their own request. No per-tenant toggle exists today, so this
+        // is enforced unconditionally. A self-REJECTION is still allowed so a
+        // requester can withdraw a change without stranding it in IN_REVIEW.
+        if (decision.decision === 'APPROVED' && approval.requestedByUserId === ctx.userId) {
+            throw forbidden(
+                'Separation of duties: you cannot approve a policy change you requested. Another administrator must approve it.',
+            );
+        }
+
         const result = await PolicyApprovalRepository.decide(
             db, ctx, approvalId, decision.decision, decision.comment || undefined
         );

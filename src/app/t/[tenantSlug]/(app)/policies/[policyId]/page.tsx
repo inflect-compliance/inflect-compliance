@@ -28,6 +28,8 @@ import type { RichTextContentType } from '@/components/ui/RichTextEditor';
 import { ApprovalBanner } from '@/components/ui/ApprovalBanner';
 import { VersionDiff } from '@/components/ui/VersionDiff';
 import { PolicyAcknowledgementsPanel } from '@/components/policies/PolicyAcknowledgementsPanel';
+import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
+import { Modal } from '@/components/ui/modal';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { MetaStrip } from '@/components/ui/meta-strip';
@@ -80,10 +82,26 @@ const RichTextEditor = dynamic(
 const APPROVAL_BADGE: Record<string, StatusBadgeVariant> = {
     PENDING: 'info', APPROVED: 'success', REJECTED: 'error',
 };
-const EVENT_ICONS: Record<string, string> = {
-    POLICY_CREATED: 'create', POLICY_VERSION_CREATED: 'version', POLICY_UPDATED: 'edit',
-    POLICY_APPROVAL_REQUESTED: 'request', POLICY_APPROVED: 'approve', POLICY_REJECTED: 'reject',
-    POLICY_PUBLISHED: 'publish', POLICY_ARCHIVED: 'archive', POLICY_REVIEW_OVERDUE: 'overdue',
+// Real icon components (not string tokens) per event action. POLICY_REVIEWED
+// (fired by markPolicyReviewed) is now mapped.
+const EVENT_ICONS: Record<string, AppIconName> = {
+    POLICY_CREATED: 'create', POLICY_VERSION_CREATED: 'versions', POLICY_UPDATED: 'edit',
+    POLICY_APPROVAL_REQUESTED: 'userCheck', POLICY_APPROVED: 'checkCircle', POLICY_REJECTED: 'error',
+    POLICY_PUBLISHED: 'publish', POLICY_ARCHIVED: 'archive',
+    POLICY_REVIEWED: 'refresh', POLICY_REVIEW_OVERDUE: 'warning',
+    POLICY_ATTESTED: 'userCheck', POLICY_ACK_REQUESTED: 'userCheck',
+    POLICY_CONTROL_LINKED: 'link', POLICY_CONTROL_UNLINKED: 'link',
+};
+
+// i18n keys for event titles (localized instead of raw enum tokens).
+const EVENT_LABEL_KEYS: Record<string, string> = {
+    POLICY_CREATED: 'detail.event.created', POLICY_VERSION_CREATED: 'detail.event.versionCreated',
+    POLICY_UPDATED: 'detail.event.updated', POLICY_APPROVAL_REQUESTED: 'detail.event.approvalRequested',
+    POLICY_APPROVED: 'detail.event.approved', POLICY_REJECTED: 'detail.event.rejected',
+    POLICY_PUBLISHED: 'detail.event.published', POLICY_ARCHIVED: 'detail.event.archived',
+    POLICY_REVIEWED: 'detail.event.reviewed', POLICY_REVIEW_OVERDUE: 'detail.event.reviewOverdue',
+    POLICY_ATTESTED: 'detail.event.attested', POLICY_ACK_REQUESTED: 'detail.event.ackRequested',
+    POLICY_CONTROL_LINKED: 'detail.event.controlLinked', POLICY_CONTROL_UNLINKED: 'detail.event.controlUnlinked',
 };
 
 type ContentMode = 'MARKDOWN' | 'EXTERNAL_LINK' | 'FILE';
@@ -128,6 +146,9 @@ export default function PolicyDetailPage() {
 
     // Action state
     const [actionLoading, setActionLoading] = useState('');
+    // Emergency publish-bypass modal (admin-only "Publish without approval").
+    const [bypassOpen, setBypassOpen] = useState(false);
+    const [bypassReason, setBypassReason] = useState('');
 
     const fetchPolicy = useCallback(async () => {
         setLoading(true);
@@ -301,14 +322,16 @@ export default function PolicyDetailPage() {
         } catch (err: unknown) { setError(err instanceof Error ? err.message : t('detail.errUnknown')); } finally { setActionLoading(''); }
     };
 
-    const publishVersion = async (versionId: string) => {
+    const publishVersion = async (versionId: string, bypassApprovalReason?: string) => {
         setActionLoading('publish-' + versionId);
         try {
             const res = await fetch(apiUrl(`/policies/${policyId}/publish`), {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ versionId }),
+                body: JSON.stringify({ versionId, ...(bypassApprovalReason ? { bypassApprovalReason } : {}) }),
             });
             if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || t('detail.errFailed')); }
+            setBypassOpen(false);
+            setBypassReason('');
             await fetchPolicy();
         } catch (err: unknown) { setError(err instanceof Error ? err.message : t('detail.errUnknown')); } finally { setActionLoading(''); }
     };
@@ -415,6 +438,18 @@ export default function PolicyDetailPage() {
     const canWrite = tenant.permissions.canWrite;
     const canAdmin = tenant.permissions.canAdmin;
 
+    // Promoted state-advancing verbs (Prompt-2.4) target the current/displayed
+    // version — the same gating the per-version cards use, surfaced in the
+    // page action cluster so publish/request-approval are reachable from Current.
+    const headerVersion = versions.find((v) => v.id === policy.currentVersionId) ?? versions[0] ?? currentVersion;
+    const headerApprovals = (headerVersion?.approvals || []).filter((a) => a.status === 'PENDING' || a.status === 'APPROVED' || a.status === 'REJECTED');
+    const headerHasPending = headerApprovals.some((a) => a.status === 'PENDING');
+    const headerHasApproved = headerApprovals.some((a) => a.status === 'APPROVED');
+    const headerIsPublished = !!headerVersion && policy.currentVersionId === headerVersion.id && policy.status === 'PUBLISHED';
+    const canRequestApproval = canWrite && !!headerVersion && !headerHasPending && !headerHasApproved && !headerIsPublished && policy.status !== 'ARCHIVED';
+    const canPublishNow = canAdmin && !!headerVersion && headerHasApproved && !headerIsPublished;
+    const canBypassPublish = canAdmin && !!headerVersion && !headerHasApproved && !headerIsPublished && policy.status !== 'ARCHIVED';
+
     type PolicyTab = 'current' | 'versions' | 'mappings' | 'traceability' | 'acknowledgements' | 'editor' | 'activity';
     const tabs: ReadonlyArray<{ key: PolicyTab; label: string }> = [
         { key: 'current', label: t('detail.tabCurrent') },
@@ -509,6 +544,23 @@ export default function PolicyDetailPage() {
                     >
                         {t('detail.exportPdf')}
                     </a>
+                    {/* Prompt-2.4 — state-advancing verbs promoted from the
+                        per-version cards, gated on the current version's status. */}
+                    {canRequestApproval && (
+                        <Button variant="secondary" size="sm" onClick={() => headerVersion && requestApproval(headerVersion.id)} disabled={!!actionLoading} id="header-request-approval">
+                            {t('detail.requestApproval')}
+                        </Button>
+                    )}
+                    {canPublishNow && (
+                        <Button variant="primary" size="sm" onClick={() => headerVersion && publishVersion(headerVersion.id)} disabled={!!actionLoading} id="header-publish">
+                            {t('detail.publish')}
+                        </Button>
+                    )}
+                    {canBypassPublish && (
+                        <Button variant="secondary" size="sm" onClick={() => setBypassOpen(true)} disabled={!!actionLoading} id="header-publish-bypass">
+                            {t('detail.publishWithoutApproval')}
+                        </Button>
+                    )}
                     {canWrite && policy.status !== 'ARCHIVED' && (
                         <button onClick={() => {
                             setTab('editor');
@@ -898,6 +950,9 @@ export default function PolicyDetailPage() {
                 <PolicyTraceabilityPanel
                     endpoint={apiUrl(`/policies/${policyId}/traceability`)}
                     tenantHref={tenantHref}
+                    policyId={policyId}
+                    apiUrl={apiUrl}
+                    canWrite={canWrite}
                 />
             )}
             {tab === 'acknowledgements' && (
@@ -918,11 +973,13 @@ export default function PolicyDetailPage() {
                         <div className="space-y-compact">
                             {activities.map((evt: AuditLogEntry) => (
                                 <div key={evt.id} className="flex items-start gap-compact text-sm">
-                                    <span className="text-base mt-0.5">{EVENT_ICONS[evt.action] || 'event'}</span>
+                                    <AppIcon name={EVENT_ICONS[evt.action] ?? 'activity'} size={16} className="mt-0.5 text-content-muted shrink-0" />
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-tight">
                                             <span className="font-medium text-content-emphasis text-xs">
-                                                {evt.action.replace('POLICY_', '').replace(/_/g, ' ')}
+                                                {EVENT_LABEL_KEYS[evt.action]
+                                                    ? t(EVENT_LABEL_KEYS[evt.action])
+                                                    : evt.action.replace('POLICY_', '').replace(/_/g, ' ')}
                                             </span>
                                             <span className="text-xs text-content-subtle">{relativeTime(evt.createdAt)}</span>
                                         </div>
@@ -935,6 +992,38 @@ export default function PolicyDetailPage() {
                         </div>
                     )}
                 </div>
+            )}
+
+            {/* Prompt-2.5 — emergency publish-bypass. Admin-only; requires a
+                typed reason forwarded as bypassApprovalReason (audited). */}
+            {bypassOpen && (
+                <Modal showModal={bypassOpen} setShowModal={setBypassOpen}>
+                    <Modal.Header title={t('detail.bypassTitle')} />
+                    <Modal.Body>
+                        <div className="space-y-default">
+                            <p className="text-sm text-content-muted">{t('detail.bypassBody')}</p>
+                            <textarea
+                                className="input"
+                                rows={3}
+                                value={bypassReason}
+                                onChange={(e) => setBypassReason(e.target.value)}
+                                placeholder={t('detail.bypassReasonPlaceholder')}
+                                data-testid="policy-bypass-reason"
+                            />
+                        </div>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={() => setBypassOpen(false)}>{t('detail.cancel')}</Button>
+                        <Button
+                            variant="primary"
+                            onClick={() => headerVersion && publishVersion(headerVersion.id, bypassReason.trim())}
+                            disabled={!bypassReason.trim() || !!actionLoading}
+                            data-testid="policy-bypass-confirm"
+                        >
+                            {t('detail.publishWithoutApproval')}
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
             )}
         </EntityDetailLayout>
     );

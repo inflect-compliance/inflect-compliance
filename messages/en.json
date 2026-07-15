@@ -2341,6 +2341,7 @@
             "kpiDraft": "Draft",
             "kpiInReview": "In review",
             "kpiApproved": "Approved",
+            "kpiOverdueReview": "Overdue review",
             "resourcePlural": "policies",
             "resourceSingular": "policy",
             "entityLabel": "policies",
@@ -2470,6 +2471,10 @@
             "externalLink": "External Link",
             "requestApproval": "Request Approval",
             "publish": "Publish",
+            "publishWithoutApproval": "Publish without approval",
+            "bypassTitle": "Publish without approval",
+            "bypassBody": "This publishes the current version without an approval decision and records an audited bypass. Use only for emergencies.",
+            "bypassReasonPlaceholder": "Reason for the emergency publish (required)",
             "showContent": "Show content",
             "approvalsLabel": "Approvals",
             "approvalBy": "by {name}",
@@ -2497,6 +2502,22 @@
             "tabAcknowledgements": "Acknowledgements",
             "tabEditor": "Editor",
             "tabActivity": "Activity",
+            "event": {
+                "created": "Created",
+                "versionCreated": "Version created",
+                "updated": "Updated",
+                "approvalRequested": "Approval requested",
+                "approved": "Approved",
+                "rejected": "Rejected",
+                "published": "Published",
+                "archived": "Archived",
+                "reviewed": "Reviewed",
+                "reviewOverdue": "Review overdue",
+                "attested": "Acknowledged",
+                "ackRequested": "Acknowledgement requested",
+                "controlLinked": "Control linked",
+                "controlUnlinked": "Control unlinked"
+            },
             "errFileUpload": "File upload failed",
             "errCreateVersion": "Failed to create version",
             "errUnknown": "Unknown error",
@@ -2559,7 +2580,9 @@
             "status": "Status",
             "statusDesc": "Workflow stage of the policy.",
             "category": "Category",
-            "categoryDesc": "Policy domain / taxonomy bucket."
+            "categoryDesc": "Policy domain / taxonomy bucket.",
+            "reviewBucket": "Review cycle",
+            "reviewBucketDesc": "Whether the policy is overdue or due soon for periodic review."
         },
         "filterEnums": {
             "status": {
@@ -2568,6 +2591,10 @@
                 "approved": "Approved",
                 "published": "Published",
                 "archived": "Archived"
+            },
+            "reviewBucket": {
+                "overdue": "Overdue for review",
+                "upcoming": "Due within 30 days"
             }
         }
     },
@@ -6354,6 +6381,12 @@
         },
         "policyTrace": {
             "notice": "A policy links directly to controls; the risks those controls mitigate and the assets they protect are inherited through them. Manage these links on each control.",
+            "linkControl": "Link control",
+            "linkControlSearch": "Search controls…",
+            "unlink": "Unlink",
+            "unlinkControl": "Unlink control",
+            "controlUnlinked": "Control unlinked",
+            "undo": "Undo",
             "emptyLinkedControls": "No linked controls",
             "emptyLinkedControlsDesc": "This policy is not linked to any controls yet.",
             "emptyRelatedRisks": "No related risks",

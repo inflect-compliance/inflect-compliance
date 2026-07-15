@@ -69,6 +69,8 @@ interface PolicyRow {
     lifecycleVersion: number;
     nextReviewAt: string | null;
     updatedAt: string;
+    /** Derived client-side from nextReviewAt for the review-cycle filter/KPI. */
+    reviewBucket?: 'overdue' | 'upcoming';
 }
 
 interface PoliciesClientProps {
@@ -203,8 +205,24 @@ function PoliciesPageInner({
             : undefined,
     });
 
-    const policies = policiesQuery.data?.rows ?? [];
+    const rawPolicies = policiesQuery.data?.rows ?? [];
     const truncated = policiesQuery.data?.truncated ?? false;
+
+    // Derive the review-cycle bucket per row (hydration-safe: null until mount,
+    // matching the nextReviewAt column's overdue highlight). Drives the
+    // reviewBucket filter + the "overdue review" KPI.
+    const policies = useMemo<PolicyRow[]>(() => {
+        const nowMs = hydratedNow ? hydratedNow.getTime() : null;
+        const upcomingMs = nowMs !== null ? nowMs + 30 * 24 * 60 * 60 * 1000 : null;
+        return rawPolicies.map((p) => {
+            let reviewBucket: 'overdue' | 'upcoming' | undefined;
+            if (nowMs !== null && upcomingMs !== null && p.nextReviewAt) {
+                const due = new Date(p.nextReviewAt).getTime();
+                reviewBucket = due < nowMs ? 'overdue' : due <= upcomingMs ? 'upcoming' : undefined;
+            }
+            return { ...p, reviewBucket };
+        });
+    }, [rawPolicies, hydratedNow]);
 
     // ─── Sortable headers (per-column asc/desc, parity with Controls) ───
     const [sortBy, setSortBy] = useState<string | undefined>(undefined);
@@ -333,7 +351,7 @@ function PoliciesPageInner({
     );
 
     // ─── R23-PR-F — KPI definitions for the Policies page ───
-    type PolicyKpiId = 'total' | 'draft' | 'inReview' | 'approved';
+    type PolicyKpiId = 'total' | 'draft' | 'inReview' | 'approved' | 'overdueReview';
     // guardrail-ignore: KPI counts across the loaded page, not a refilter.
     const totalPolicies = policies.length;
 
@@ -366,6 +384,8 @@ function PoliciesPageInner({
     const approvedPolicies = policies.filter(
         (p) => p.status === 'APPROVED' || p.status === 'PUBLISHED',
     ).length;
+    // guardrail-ignore: KPI count, not a refilter.
+    const overdueReviewPolicies = policies.filter((p) => p.reviewBucket === 'overdue').length;
     const policyKpiDefs: ReadonlyArray<KpiFilterDef<PolicyKpiId>> = useMemo(
         () => [
             {
@@ -390,6 +410,12 @@ function PoliciesPageInner({
                 apply: (ctx) => ctx.set('status', 'APPROVED'),
                 isActive: (s) => (s.status ?? []).includes('APPROVED'),
                 clear: (ctx) => ctx.removeAll('status'),
+            },
+            {
+                id: 'overdueReview',
+                apply: (ctx) => ctx.set('reviewBucket', 'overdue'),
+                isActive: (s) => (s.reviewBucket ?? []).includes('overdue'),
+                clear: (ctx) => ctx.removeAll('reviewBucket'),
             },
         ],
         [],
@@ -628,6 +654,13 @@ function PoliciesPageInner({
                         sparklineDomain={centeredSparklineDomain(policyTrends.approved)}
                         onClick={() => togglePolicyKpi('approved')}
                         selected={activePolicyKpi === 'approved'}
+                    />
+                    <KpiFilterCard
+                        label={tx('list.kpiOverdueReview')}
+                        value={overdueReviewPolicies}
+                        tone={overdueReviewPolicies > 0 ? 'critical' : 'default'}
+                        onClick={() => togglePolicyKpi('overdueReview')}
+                        selected={activePolicyKpi === 'overdueReview'}
                     />
                 </div>
             }

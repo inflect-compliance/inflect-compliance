@@ -290,8 +290,12 @@ export const DecideApprovalSchema = z.object({
 
 export const PublishPolicySchema = z.object({
     versionId: z.string().min(1, 'versionId is required'),
+    // Emergency publish-bypass: a non-empty reason publishes a version that is
+    // NOT APPROVED, recording a POLICY_PUBLISH_BYPASS audit row. Admin-only
+    // (the usecase gates on canAdmin).
+    bypassApprovalReason: z.string().trim().min(1).max(1000).optional(),
 }).strip().openapi('PolicyPublishRequest', {
-    description: 'Promote an approved policy version to PUBLISHED. Only one published version per policy at a time; the previous published version is archived.',
+    description: 'Promote an approved policy version to PUBLISHED. Only one published version per policy at a time; the previous published version is archived. An admin may supply bypassApprovalReason to publish an un-approved version (audited).',
 });
 
 // ─── Evidence ───

@@ -17,6 +17,7 @@ const PolicyQuerySchema = z.object({
     category: z.string().optional(),
     language: z.string().optional(),
     q: z.string().optional().transform(normalizeQ),
+    reviewBucket: z.enum(['overdue', 'upcoming']).optional(),
     includeDeleted: z.enum(['true', 'false']).optional(),
 }).strip();
 
@@ -40,6 +41,7 @@ export const GET = withApiErrorHandling(requirePermission<{ tenantSlug: string }
         category: query.category,
         language: query.language,
         q: query.q,
+        reviewBucket: query.reviewBucket,
       },
     });
     return jsonResponse(result);
@@ -53,6 +55,7 @@ export const GET = withApiErrorHandling(requirePermission<{ tenantSlug: string }
       category: query.category,
       language: query.language,
       q: query.q,
+      reviewBucket: query.reviewBucket,
     },
     { take: LIST_BACKFILL_CAP + 1 },
   );

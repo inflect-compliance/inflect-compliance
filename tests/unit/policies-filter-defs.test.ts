@@ -35,7 +35,7 @@ const POLICY_STATUS_LABELS = buildPolicyStatusLabels(t);
 
 describe('Policies filter config', () => {
     it('manages the documented key set', () => {
-        expect([...POLICY_FILTER_KEYS].sort()).toEqual(['category', 'status'].sort());
+        expect([...POLICY_FILTER_KEYS].sort()).toEqual(['category', 'reviewBucket', 'status'].sort());
     });
 
     it('status is a multi-select enum matching PolicyStatus', () => {
