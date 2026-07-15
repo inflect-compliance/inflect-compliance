@@ -1,7 +1,7 @@
 /**
  * identity-sync jobs (PR-2).
  *
- *   - `identity-sync`          — sync ONE Okta / Google Workspace connection.
+ *   - `identity-sync`          — sync ONE Okta / Google Workspace / Entra ID connection.
  *   - `identity-sync-dispatch` — daily fan-out: enqueue a sync for every
  *                                enabled identity connection across tenants.
  *
@@ -16,7 +16,7 @@ import { enqueue } from './queue';
 import { runIdentitySync } from '@/app-layer/usecases/identity-sync';
 import type { IdentitySyncPayload } from './types';
 
-const IDENTITY_PROVIDERS = ['okta', 'google-workspace'];
+const IDENTITY_PROVIDERS = ['okta', 'google-workspace', 'entra-id'];
 
 export async function runIdentitySyncJob(payload: IdentitySyncPayload): Promise<{
     executionId: string;
