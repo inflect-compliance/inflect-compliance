@@ -19,6 +19,7 @@ import {
     createInviteToken,
     revokeInvite,
     redeemInvite,
+    redeemPendingInvitesByEmail,
 } from '@/app-layer/usecases/tenant-invites';
 import { createTenantWithOwner } from '@/app-layer/usecases/tenant-lifecycle';
 import { verifyAuditChain } from '@/lib/audit/audit-writer';
@@ -381,5 +382,138 @@ describeFn('invite-redemption usecases', () => {
         // Verify hash chain integrity.
         const chainResult = await verifyAuditChain(tenantId);
         expect(chainResult.valid).toBe(true);
+    });
+
+    // ── redeemPendingInvitesByEmail (verified-email sign-in path) ────────
+
+    it('11. by-email happy path — pending invite redeemed at sign-in without a token', async () => {
+        const { tenantId, ownerCtx } = await setupTenant('byemail-happy');
+        const inviteeEmail = emailFor('invitee-byemail');
+        const user = await createUser(inviteeEmail);
+
+        await createInviteToken(ownerCtx, { email: inviteeEmail, role: 'EDITOR' });
+
+        // No token — just the verified email, as the signIn callback provides.
+        const redeemed = await redeemPendingInvitesByEmail({
+            userId: user.id,
+            userEmail: inviteeEmail,
+        });
+
+        expect(redeemed).toHaveLength(1);
+        expect(redeemed[0]).toMatchObject({ tenantId, role: 'EDITOR' });
+
+        const membership = await prisma.tenantMembership.findUnique({
+            where: { tenantId_userId: { tenantId, userId: user.id } },
+            select: { status: true, role: true },
+        });
+        expect(membership?.status).toBe('ACTIVE');
+        expect(membership?.role).toBe('EDITOR');
+    });
+
+    it('12. by-email with NO pending invite — no membership, empty result (not auto-join)', async () => {
+        const { tenantId } = await setupTenant('byemail-noinvite');
+        const strangerEmail = emailFor('stranger-byemail');
+        const stranger = await createUser(strangerEmail);
+
+        const redeemed = await redeemPendingInvitesByEmail({
+            userId: stranger.id,
+            userEmail: strangerEmail,
+        });
+
+        expect(redeemed).toHaveLength(0);
+        const membership = await prisma.tenantMembership.findFirst({
+            where: { tenantId, userId: stranger.id },
+        });
+        expect(membership).toBeNull();
+    });
+
+    it('13. by-email is case-insensitive on the email match', async () => {
+        const { tenantId, ownerCtx } = await setupTenant('byemail-case');
+        const inviteeEmail = emailFor('invitee-case').toLowerCase();
+        const user = await createUser(inviteeEmail);
+
+        await createInviteToken(ownerCtx, { email: inviteeEmail, role: 'READER' });
+
+        const redeemed = await redeemPendingInvitesByEmail({
+            userId: user.id,
+            userEmail: inviteeEmail.toUpperCase(),
+        });
+
+        expect(redeemed).toHaveLength(1);
+        const membership = await prisma.tenantMembership.findUnique({
+            where: { tenantId_userId: { tenantId, userId: user.id } },
+            select: { status: true },
+        });
+        expect(membership?.status).toBe('ACTIVE');
+    });
+
+    it('14. by-email skips expired + revoked invites', async () => {
+        const { tenantId, ownerCtx } = await setupTenant('byemail-stale');
+        const inviteeEmail = emailFor('invitee-stale');
+        const user = await createUser(inviteeEmail);
+
+        const expired = await createInviteToken(ownerCtx, { email: inviteeEmail, role: 'EDITOR' });
+        await prisma.tenantInvite.update({
+            where: { id: expired.invite.id },
+            data: { expiresAt: new Date(Date.now() - 1000) },
+        });
+
+        const redeemed = await redeemPendingInvitesByEmail({
+            userId: user.id,
+            userEmail: inviteeEmail,
+        });
+
+        expect(redeemed).toHaveLength(0);
+        const membership = await prisma.tenantMembership.findFirst({
+            where: { tenantId, userId: user.id },
+        });
+        expect(membership).toBeNull();
+    });
+
+    it('15. by-email redeems invites across MULTIPLE tenants in one sign-in', async () => {
+        const a = await setupTenant('byemail-multi-a');
+        const b = await setupTenant('byemail-multi-b');
+        const inviteeEmail = emailFor('invitee-multi');
+        const user = await createUser(inviteeEmail);
+
+        await createInviteToken(a.ownerCtx, { email: inviteeEmail, role: 'READER' });
+        await createInviteToken(b.ownerCtx, { email: inviteeEmail, role: 'EDITOR' });
+
+        const redeemed = await redeemPendingInvitesByEmail({
+            userId: user.id,
+            userEmail: inviteeEmail,
+        });
+
+        expect(redeemed).toHaveLength(2);
+        const tenantIds = redeemed.map((r) => r.tenantId).sort();
+        expect(tenantIds).toEqual([a.tenantId, b.tenantId].sort());
+
+        for (const tid of [a.tenantId, b.tenantId]) {
+            const m = await prisma.tenantMembership.findUnique({
+                where: { tenantId_userId: { tenantId: tid, userId: user.id } },
+                select: { status: true },
+            });
+            expect(m?.status).toBe('ACTIVE');
+        }
+    });
+
+    it('16. by-email is idempotent — a second sign-in redeems nothing new', async () => {
+        const { tenantId, ownerCtx } = await setupTenant('byemail-idem');
+        const inviteeEmail = emailFor('invitee-idem');
+        const user = await createUser(inviteeEmail);
+
+        await createInviteToken(ownerCtx, { email: inviteeEmail, role: 'READER' });
+
+        const first = await redeemPendingInvitesByEmail({ userId: user.id, userEmail: inviteeEmail });
+        expect(first).toHaveLength(1);
+
+        // Invite is now accepted; a subsequent login finds nothing pending.
+        const second = await redeemPendingInvitesByEmail({ userId: user.id, userEmail: inviteeEmail });
+        expect(second).toHaveLength(0);
+
+        const count = await prisma.tenantMembership.count({
+            where: { tenantId, userId: user.id },
+        });
+        expect(count).toBe(1);
     });
 });

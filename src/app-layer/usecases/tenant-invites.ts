@@ -365,23 +365,49 @@ export async function redeemInvite(input: {
         );
     }
 
-    // ── Step 4 onwards run inside a $transaction so that the
-    //   membership upsert + return data are consistent. If the
-    //   transaction fails, acceptedAt from Step 1 is STILL committed
-    //   (invite is burnt), which is the safe failure mode.
-    const txResult = await prisma.$transaction(async (tx) => {
+    // ── Step 4 onwards: create the membership + audit + metric. The
+    //   invite is already claimed (acceptedAt committed in Step 1); a
+    //   failure here leaves it burnt, which is the safe failure mode.
+    return finalizeInviteRedemption(invite, input.userId);
+}
 
-        // ── Step 4: upsert membership ─────────────────────────────────
+// ─── finalizeInviteRedemption (shared tail) ──────────────────────────
+
+/**
+ * Turn an already-CLAIMED invite (acceptedAt committed by the caller)
+ * into an ACTIVE membership, audit it, record the metric, and return
+ * the redirect data. Shared by both redemption entry points:
+ *   - redeemInvite (token-bound, from the /invite/:token flow), and
+ *   - redeemPendingInvitesByEmail (verified-email-bound, at sign-in).
+ *
+ * The caller is responsible for the atomic claim (Step 1) and any
+ * binding check (email match). By the time we're here, the grant is
+ * authorised — this just materialises it.
+ *
+ * The membership upsert + slug lookup run in one $transaction; the
+ * audit call runs AFTER it commits because appendAuditEntry opens its
+ * own advisory-locked $transaction and must not nest.
+ */
+async function finalizeInviteRedemption(
+    invite: {
+        tenantId: string;
+        role: Role;
+        invitedById: string | null;
+        createdAt: Date;
+    },
+    userId: string,
+): Promise<RedeemResult> {
+    const txResult = await prisma.$transaction(async (tx) => {
         const membership = await tx.tenantMembership.upsert({
             where: {
                 tenantId_userId: {
                     tenantId: invite.tenantId,
-                    userId: input.userId,
+                    userId,
                 },
             },
             create: {
                 tenantId: invite.tenantId,
-                userId: input.userId,
+                userId,
                 role: invite.role,
                 status: 'ACTIVE',
                 invitedByUserId: invite.invitedById,
@@ -396,26 +422,21 @@ export async function redeemInvite(input: {
             },
         });
 
-        // ── Step 5: tenant slug for redirect ──────────────────────────
         const tenant = await tx.tenant.findUnique({
             where: { id: invite.tenantId },
             select: { slug: true },
         });
         if (!tenant) throw internal('Invariant: tenant disappeared mid-redemption');
 
-        // Return everything the post-commit audit call needs.
         return {
             membershipId: membership.id,
             tenantId: invite.tenantId,
-            userId: input.userId,
+            userId,
             role: invite.role as Role,
             slug: tenant.slug,
         };
     });
 
-    // ── Post-commit audit ─────────────────────────────────────────────
-    // appendAuditEntry opens its own advisory-locked $transaction, so
-    // it MUST be called outside the parent $transaction.
     await appendAuditEntry({
         tenantId: txResult.tenantId,
         userId: txResult.userId,
@@ -441,4 +462,85 @@ export async function redeemInvite(input: {
         slug: txResult.slug,
         role: txResult.role,
     };
+}
+
+// ─── redeemPendingInvitesByEmail ─────────────────────────────────────
+
+/**
+ * Sign-in-time membership provisioning by VERIFIED-EMAIL match.
+ *
+ * The delivered-email link (redeemInvite) is only one way to consume an
+ * invite. Email delivery is unreliable (SMTP drops, spam quarantine), so
+ * an admin who "adds a member" and the invitee who simply signs in with
+ * that same email should Just Work — the pending TenantInvite is the
+ * standing authorisation; a verified-email login is proof of possession
+ * of the address, exactly as the token URL is proof of possession of the
+ * link. This is the same model Vanta / Linear / GitHub use.
+ *
+ * Security contract — this is NOT auto-join (GAP-01):
+ *   - Only redeems invites that an admin EXPLICITLY created for this
+ *     exact email + role (createInviteToken). No invite ⇒ no membership.
+ *   - The CALLER (auth signIn callback) guarantees the email is verified
+ *     by the OAuth IdP and rejects `email_verified === false`. Do NOT
+ *     call this for the credentials provider, whose email is unverified.
+ *   - Each invite is claimed atomically (updateMany with the same
+ *     liveness predicates as redeemInvite) so a concurrent link-click +
+ *     login can't double-redeem; the loser simply skips.
+ *   - Idempotent: a user already ACTIVE for a tenant re-runs the upsert
+ *     harmlessly (and only if a fresh pending invite exists for them).
+ *
+ * Redeems ALL pending invites for the email — a user invited to several
+ * tenants gets every membership on first login. Best-effort per invite:
+ * one failure logs (via the thrown error to the caller) without blocking
+ * the rest — callers wrap in try/catch and never fail sign-in.
+ *
+ * @returns the list of memberships created/reactivated (may be empty).
+ */
+export async function redeemPendingInvitesByEmail(input: {
+    userId: string;
+    userEmail: string;
+}): Promise<RedeemResult[]> {
+    const normalizedEmail = input.userEmail.toLowerCase().trim();
+    if (!normalizedEmail) return [];
+
+    const now = new Date();
+    const pending = await prisma.tenantInvite.findMany({
+        where: {
+            email: normalizedEmail,
+            acceptedAt: null,
+            revokedAt: null,
+            expiresAt: { gt: now },
+        },
+        select: {
+            id: true,
+            tenantId: true,
+            role: true,
+            invitedById: true,
+            createdAt: true,
+        },
+        // Bounded: an email realistically has a handful of pending
+        // invites. Cap defensively so a pathological fan-out can't turn
+        // one sign-in into an unbounded write loop.
+        take: 50,
+    });
+
+    const redeemed: RedeemResult[] = [];
+    for (const invite of pending) {
+        // Atomic claim by id — the winner sets acceptedAt; a racing
+        // token-URL redemption of the same invite makes this count=0.
+        const claim = await prisma.tenantInvite.updateMany({
+            where: {
+                id: invite.id,
+                acceptedAt: null,
+                revokedAt: null,
+                expiresAt: { gt: new Date() },
+            },
+            data: { acceptedAt: new Date() },
+        });
+        if (claim.count !== 1) continue;
+
+        redeemed.push(await finalizeInviteRedemption(invite, input.userId));
+    }
+
+    return redeemed;
 }

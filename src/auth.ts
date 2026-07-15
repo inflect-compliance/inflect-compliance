@@ -345,6 +345,39 @@ async function ensureTenantMembershipFromInvite(
 }
 
 /**
+ * Verified-email invite provisioning (email-delivery-independent path).
+ *
+ * The admin "add member" flow creates a pending TenantInvite for an
+ * email + role. Historically the invitee could only join by clicking
+ * the emailed /invite/:token link — so an undelivered email (SMTP drop,
+ * spam quarantine) meant no access. This redeems ANY pending invite
+ * whose email matches the just-signed-in user's OAuth-verified email,
+ * so "add the role, they sign in, they're in" works without the email.
+ *
+ * OAuth-only by construction: the caller gates this to
+ * `account.provider !== 'credentials'` and the signIn callback already
+ * rejects `email_verified === false`, so the email is IdP-verified.
+ * Best-effort — a failure logs and never blocks sign-in.
+ */
+async function ensureTenantMembershipsFromPendingInvites(
+    userId: string,
+    userEmail: string,
+): Promise<void> {
+    try {
+        const { redeemPendingInvitesByEmail } = await import(
+            '@/app-layer/usecases/tenant-invites'
+        );
+        await redeemPendingInvitesByEmail({ userId, userEmail });
+    } catch (err) {
+        edgeLogger.warn('signIn: pending-invite-by-email provisioning failed', {
+            component: 'auth',
+            userId,
+            error: err instanceof Error ? err.message : String(err),
+        });
+    }
+}
+
+/**
  * Epic D — same shape as ensureTenantMembershipFromInvite but for
  * org invites. Reads the `inflect_org_invite_token` cookie set by
  * /api/org/invite/:token/start-signin, then calls redeemOrgInvite.
@@ -478,6 +511,12 @@ export const authOptions: NextAuthOptions = {
                         user.email,
                         inviteTokens.orgToken,
                     );
+                    // Email-verified provisioning: redeem any pending invite
+                    // for this email even without the emailed token link.
+                    await ensureTenantMembershipsFromPendingInvites(
+                        existingUser.id,
+                        user.email,
+                    );
                     return true;
                 }
             }
@@ -494,6 +533,15 @@ export const authOptions: NextAuthOptions = {
                     user.email,
                     inviteTokens.orgToken,
                 );
+                // Email-verified provisioning (OAuth only — the credentials
+                // provider's email is not IdP-verified). Redeems any pending
+                // invite matching the verified email; no invite ⇒ no-op.
+                if (account.provider !== 'credentials') {
+                    await ensureTenantMembershipsFromPendingInvites(
+                        user.id,
+                        user.email,
+                    );
+                }
             }
             // TODO(business-metrics): recordUserSignup({ signupSource }) on the
             // genuinely-NEW OAuth user path. Deferred — the PrismaAdapter creates
