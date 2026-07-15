@@ -194,13 +194,15 @@ describeFn('policy usecase — branch coverage (integration)', () => {
     // app-prisma transaction under the pg connection pool, so deciding tests
     // seed through globalPrisma (a separate, fully-committed connection that
     // every app-prisma read reliably sees).
-    async function seedApproval(policyId: string, versionId: string, status: 'PENDING' | 'APPROVED' = 'PENDING') {
+    async function seedApproval(policyId: string, versionId: string, status: 'PENDING' | 'APPROVED' = 'PENDING', requesterId: string = editorUserId) {
         return globalPrisma.policyApproval.create({
             data: {
                 tenantId: TENANT_ID,
                 policyId,
                 policyVersionId: versionId,
-                requestedByUserId: ownerUserId,
+                // Requester defaults to the EDITOR so the OWNER (ctx) can decide
+                // without tripping the segregation-of-duties self-approval guard.
+                requestedByUserId: requesterId,
                 status,
             },
         });
@@ -242,6 +244,22 @@ describeFn('policy usecase — branch coverage (integration)', () => {
         const a2 = await seedApproval(policy.id, v.id);
         await decidePolicyApproval(ctx, a2.id, { decision: 'REJECTED', comment: 'no' });
         expect((await getPolicy(ctx, policy.id)).status).toBe('DRAFT');
+    });
+
+    it('decidePolicyApproval: segregation of duties — the requester cannot APPROVE their own request', async () => {
+        const policy = await createPolicy(ctx, { title: `SoD ${randomUUID().slice(0, 6)}` });
+        const v = await createPolicyVersion(ctx, policy.id, { contentType: 'MARKDOWN', contentText: 'body' });
+        await globalPrisma.policy.update({ where: { id: policy.id }, data: { status: 'IN_REVIEW' } });
+
+        // Requested by the OWNER; the OWNER (ctx) may NOT approve it.
+        const selfApproval = await seedApproval(policy.id, v.id, 'PENDING', ownerUserId);
+        await expect(decidePolicyApproval(ctx, selfApproval.id, { decision: 'APPROVED' })).rejects.toThrow(/[Ss]eparation of duties|cannot approve/);
+        // Still PENDING (the guard fires before any status change).
+        expect((await globalPrisma.policyApproval.findUnique({ where: { id: selfApproval.id } }))?.status).toBe('PENDING');
+
+        // A self-REJECTION is allowed (a requester may withdraw).
+        await decidePolicyApproval(ctx, selfApproval.id, { decision: 'REJECTED', comment: 'withdraw' });
+        expect((await globalPrisma.policyApproval.findUnique({ where: { id: selfApproval.id } }))?.status).toBe('REJECTED');
     });
 
     it('publishPolicy: version mismatch, approval-gate, bypass, and approved publish', async () => {

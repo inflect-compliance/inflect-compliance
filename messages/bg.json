@@ -2341,6 +2341,7 @@
             "kpiDraft": "Чернови",
             "kpiInReview": "В преглед",
             "kpiApproved": "Одобрени",
+            "kpiOverdueReview": "Просрочен преглед",
             "resourcePlural": "политики",
             "resourceSingular": "политика",
             "entityLabel": "политики",
@@ -2470,6 +2471,10 @@
             "externalLink": "Външен линк",
             "requestApproval": "Заявка за одобрение",
             "publish": "Публикувай",
+            "publishWithoutApproval": "Публикувай без одобрение",
+            "bypassTitle": "Публикуване без одобрение",
+            "bypassBody": "Това публикува текущата версия без решение за одобрение и записва одитиран байпас. Използвайте само при спешни случаи.",
+            "bypassReasonPlaceholder": "Причина за спешното публикуване (задължително)",
             "showContent": "Покажи съдържанието",
             "approvalsLabel": "Одобрения",
             "approvalBy": "от {name}",
@@ -2497,6 +2502,22 @@
             "tabAcknowledgements": "Потвърждения",
             "tabEditor": "Редактор",
             "tabActivity": "Активност",
+            "event": {
+                "created": "Създадена",
+                "versionCreated": "Създадена версия",
+                "updated": "Обновена",
+                "approvalRequested": "Заявено одобрение",
+                "approved": "Одобрена",
+                "rejected": "Отхвърлена",
+                "published": "Публикувана",
+                "archived": "Архивирана",
+                "reviewed": "Прегледана",
+                "reviewOverdue": "Просрочен преглед",
+                "attested": "Потвърдена",
+                "ackRequested": "Заявено потвърждение",
+                "controlLinked": "Свързана контрола",
+                "controlUnlinked": "Премахната контрола"
+            },
             "errFileUpload": "Качването на файла е неуспешно",
             "errCreateVersion": "Неуспешно създаване на версия",
             "errUnknown": "Неизвестна грешка",
@@ -2559,9 +2580,15 @@
             "status": "Статус",
             "statusDesc": "Работен етап на политиката.",
             "category": "Категория",
-            "categoryDesc": "Домейн / таксономична група на политиката."
+            "categoryDesc": "Домейн / таксономична група на политиката.",
+            "reviewBucket": "Цикъл на преглед",
+            "reviewBucketDesc": "Дали политиката е просрочена или предстои за периодичен преглед."
         },
         "filterEnums": {
+            "reviewBucket": {
+                "overdue": "Просрочена за преглед",
+                "upcoming": "Дължима до 30 дни"
+            },
             "status": {
                 "draft": "Чернова",
                 "inReview": "В преглед",
@@ -6353,6 +6380,12 @@
             "failed": "Неуспешно зареждане на данните за проследимост"
         },
         "policyTrace": {
+            "linkControl": "Свържи контрола",
+            "linkControlSearch": "Търсене на контроли…",
+            "unlink": "Премахни",
+            "unlinkControl": "Премахни контрола",
+            "controlUnlinked": "Контролата е премахната",
+            "undo": "Отмени",
             "notice": "Политиката се свързва директно с контроли; рисковете, които тези контроли смекчават, и активите, които защитават, се наследяват чрез тях. Управлявайте тези връзки във всеки контрол.",
             "emptyLinkedControls": "Няма свързани контроли",
             "emptyLinkedControlsDesc": "Тази политика все още не е свързана с контроли.",

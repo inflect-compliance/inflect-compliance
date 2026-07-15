@@ -364,3 +364,59 @@ export async function linkPolicyControls(
         };
     });
 }
+
+export interface UnlinkPolicyControlsResult {
+    policyId: string;
+    removed: number;
+    unlinkedControlIds: string[];
+}
+
+/**
+ * Unlink one or more controls from a policy (the inverse of
+ * `linkPolicyControls`). Idempotent — unlinking a control that isn't linked is
+ * a no-op. `PolicyControlLink` is a pure M2M join, so no policy/control row is
+ * touched.
+ */
+export async function unlinkPolicyControls(
+    ctx: RequestContext,
+    policyId: string,
+    controlIds: string[],
+): Promise<UnlinkPolicyControlsResult> {
+    assertCanWrite(ctx);
+
+    const uniqueIds = [...new Set(controlIds)];
+    if (!uniqueIds.length) throw badRequest('No controls specified');
+
+    return runInTenantContext(ctx, async (db) => {
+        const policy = await db.policy.findFirst({
+            where: { id: policyId, tenantId: ctx.tenantId },
+            select: { id: true, title: true },
+        });
+        if (!policy) throw notFound('Policy not found');
+
+        const res = await db.policyControlLink.deleteMany({
+            where: { tenantId: ctx.tenantId, policyId, controlId: { in: uniqueIds } },
+        });
+
+        if (res.count > 0) {
+            await logEvent(db, ctx, {
+                action: 'POLICY_CONTROL_UNLINKED',
+                entityType: 'Policy',
+                entityId: policyId,
+                details: `Unlinked ${res.count} control(s) from policy "${policy.title}"`,
+                detailsJson: {
+                    category: 'relationship',
+                    operation: 'unlinked',
+                    sourceEntity: 'Policy',
+                    sourceId: policyId,
+                    targetEntity: 'Control',
+                    relation: 'UNLINK',
+                    summary: `Unlinked ${res.count} control(s) from policy`,
+                },
+                metadata: { controlIds: uniqueIds },
+            });
+        }
+
+        return { policyId, removed: res.count, unlinkedControlIds: uniqueIds };
+    });
+}

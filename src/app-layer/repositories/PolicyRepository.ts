@@ -9,6 +9,8 @@ export interface PolicyFilters {
     category?: string;
     language?: string;
     q?: string;
+    /** Review-cycle bucket: 'overdue' (nextReviewAt past) | 'upcoming' (≤30d). */
+    reviewBucket?: 'overdue' | 'upcoming';
 }
 
 export interface PolicyListParams {
@@ -91,6 +93,16 @@ export class PolicyRepository {
                 { title: { contains: filters.q, mode: 'insensitive' } },
                 { description: { contains: filters.q, mode: 'insensitive' } },
             ];
+        }
+        // Review-cycle bucket. `overdue` = nextReviewAt in the past; `upcoming`
+        // = due within the next 30 days. Makes "policies overdue for review"
+        // findable from the list (previously only surfaced via email reminders).
+        if (filters?.reviewBucket === 'overdue') {
+            where.nextReviewAt = { lt: new Date() };
+        } else if (filters?.reviewBucket === 'upcoming') {
+            const now = new Date();
+            const in30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+            where.nextReviewAt = { gte: now, lte: in30 };
         }
         return where;
     }

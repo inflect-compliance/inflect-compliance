@@ -13,7 +13,7 @@ import {
     optionsFromEnum,
 } from '@/components/ui/filter/filter-definitions';
 import type { FilterOption } from '@/components/ui/filter/types';
-import { CircleDot, Tag } from 'lucide-react';
+import { CircleDot, Tag, Clock } from 'lucide-react';
 
 /** Surface-namespace resolver (`useTranslations('policies')`). */
 type T = (key: string, values?: Record<string, unknown>) => string;
@@ -53,6 +53,20 @@ function policyFilterDefsInput(t: T, tGroup: TGroup) {
             icon: Tag,
             options: null, // derived from loaded rows
             multiple: true,
+            resetBehavior: 'clearable',
+        },
+        // Review-cycle bucket (Prompt-2.3). Matched against a `reviewBucket`
+        // field derived on each row from nextReviewAt.
+        reviewBucket: {
+            label: t('filters.reviewBucket'),
+            description: t('filters.reviewBucketDesc'),
+            group: tGroup('attributes'),
+            icon: Clock,
+            options: [
+                { value: 'overdue', label: t('filterEnums.reviewBucket.overdue') },
+                { value: 'upcoming', label: t('filterEnums.reviewBucket.upcoming') },
+            ],
+            multiple: false,
             resetBehavior: 'clearable',
         },
     } satisfies Record<string, FilterDefInput>;

@@ -12,7 +12,7 @@
  * coverage is purely derived. The shape mirrors the Asset/Risk inherited
  * data panels for visual consistency.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
@@ -20,6 +20,11 @@ import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-bad
 import { EmptyState } from '@/components/ui/empty-state';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { Heading } from '@/components/ui/typography';
+import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
+import { useToastWithUndo } from '@/components/ui/hooks';
+
+interface ControlOption { id: string; code: string | null; name: string; status: string | null; }
 
 interface ControlRef {
     id: string;
@@ -88,15 +93,28 @@ const CRITICALITY_BADGE: Record<string, StatusBadgeVariant> = {
 export default function PolicyTraceabilityPanel({
     endpoint,
     tenantHref,
+    policyId,
+    apiUrl,
+    canWrite = false,
 }: {
     /** Fully-qualified tenant API path, e.g. apiUrl('/policies/123/traceability'). */
     endpoint: string;
     tenantHref: (path: string) => string;
+    /** Enables the link/unlink affordances when provided with canWrite. */
+    policyId?: string;
+    apiUrl?: (path: string) => string;
+    canWrite?: boolean;
 }) {
     const [data, setData] = useState<PolicyTraceData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [availableControls, setAvailableControls] = useState<ControlOption[]>([]);
+    const [linking, setLinking] = useState(false);
     const t = useTranslations('panels');
     const tr = useTranslations();
+    const triggerUndoToast = useToastWithUndo();
+    // Link/unlink is available only when the page passes policyId + apiUrl + canWrite.
+    const editable = canWrite && !!policyId && !!apiUrl;
+    const controlLinksUrl = apiUrl && policyId ? apiUrl(`/policies/${policyId}/control-links`) : '';
 
     const CONTROL_STATUS_LABELS = useMemo<Record<string, string>>(() => ({
         NOT_STARTED: tr('controls.statusLabels.NOT_STARTED'), IN_PROGRESS: tr('controls.statusLabels.IN_PROGRESS'),
@@ -121,25 +139,77 @@ export default function PolicyTraceabilityPanel({
         HIGH: t('criticalityLabels.HIGH'), CRITICAL: t('criticalityLabels.CRITICAL'),
     }), [t]);
 
+    const load = useCallback(async () => {
+        try {
+            const res = await fetch(endpoint);
+            setData(res.ok ? await res.json() : null);
+        } catch {
+            setData(null);
+        } finally {
+            setLoading(false);
+        }
+    }, [endpoint]);
+
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => {
-        let cancelled = false;
         setLoading(true);
-        (async () => {
-            try {
-                const res = await fetch(endpoint);
-                const json = res.ok ? await res.json() : null;
-                if (!cancelled) setData(json);
-            } catch {
-                if (!cancelled) setData(null);
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        })();
-        return () => {
-            cancelled = true;
-        };
-    }, [endpoint]);
+        void load();
+    }, [load]);
+
+    // Available controls for the link picker (only when editable).
+    useEffect(() => {
+        if (!editable || !apiUrl) return;
+        fetch(apiUrl('/controls?limit=100'))
+            .then((r) => (r.ok ? r.json() : []))
+            .then((d) => {
+                const list = Array.isArray(d) ? d : (d?.controls ?? d?.items ?? []);
+                setAvailableControls(list as ControlOption[]);
+            })
+            .catch(() => setAvailableControls([]));
+    }, [editable, apiUrl]);
+
+    const linkedControlIds = useMemo(() => new Set((data?.controls ?? []).map((c) => c.control.id)), [data]);
+    const linkOptions = availableControls
+        .filter((c) => !linkedControlIds.has(c.id))
+        .map((c) => ({ value: c.id, label: c.code ? `${c.code} — ${c.name}` : c.name }));
+
+    const handleLink = async (controlId: string) => {
+        if (!controlLinksUrl || linking) return;
+        setLinking(true);
+        try {
+            const res = await fetch(controlLinksUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ controlIds: [controlId] }),
+            });
+            if (res.ok) await load();
+        } finally {
+            setLinking(false);
+        }
+    };
+
+    // Unlink — Epic 67 delayed-commit undo-toast. Optimistic removal; the DELETE
+    // is deferred 5s, and Undo (or a failure) restores the snapshot.
+    const handleUnlink = (controlId: string) => {
+        if (!controlLinksUrl) return;
+        const previous = data;
+        if (previous) setData({ ...previous, controls: previous.controls.filter((c) => c.control.id !== controlId) });
+        triggerUndoToast({
+            message: t('policyTrace.controlUnlinked'),
+            undoMessage: t('policyTrace.undo'),
+            action: async () => {
+                const res = await fetch(controlLinksUrl, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ controlIds: [controlId] }),
+                });
+                if (!res.ok) throw new Error('Unlink failed');
+                await load();
+            },
+            undoAction: () => { if (previous) setData(previous); },
+            onError: () => { if (previous) setData(previous); },
+        });
+    };
 
     const viaLabelT = (n: number) => n === 1 ? t('policyTrace.viaOne', { count: n }) : t('policyTrace.viaMany', { count: n });
 
@@ -184,6 +254,24 @@ export default function PolicyTraceabilityPanel({
                 );
             },
         },
+        ...(editable
+            ? [{
+                  id: 'unlink',
+                  header: '',
+                  cell: ({ row }: { row: { original: ControlEntry } }) => (
+                      <div className="text-right">
+                          <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleUnlink(row.original.control.id)}
+                              aria-label={t('policyTrace.unlinkControl')}
+                          >
+                              {t('policyTrace.unlink')}
+                          </Button>
+                      </div>
+                  ),
+              }]
+            : []),
     ]);
 
     const riskColumns = createColumns<RiskEntry>([
@@ -285,12 +373,30 @@ export default function PolicyTraceabilityPanel({
 
     return (
         <div className="space-y-section">
-            <InlineNotice variant="info">
-                {t('policyTrace.notice')}
-            </InlineNotice>
+            {!editable && (
+                <InlineNotice variant="info">
+                    {t('policyTrace.notice')}
+                </InlineNotice>
+            )}
 
             <div className="space-y-default">
-                <Heading level={3}>{tr('common.sections.controls')}</Heading>
+                <div className="flex items-center justify-between gap-default">
+                    <Heading level={3}>{tr('common.sections.controls')}</Heading>
+                    {editable && linkOptions.length > 0 && (
+                        <div className="w-72 max-w-full">
+                            <Combobox
+                                id="policy-link-control"
+                                selected={null}
+                                setSelected={(o) => { if (o?.value) void handleLink(o.value); }}
+                                options={linkOptions}
+                                placeholder={t('policyTrace.linkControl')}
+                                searchPlaceholder={t('policyTrace.linkControlSearch')}
+                                disabled={linking}
+                                matchTriggerWidth
+                            />
+                        </div>
+                    )}
+                </div>
                 <DataTable<ControlEntry>
                     data={data?.controls ?? []}
                     columns={controlColumns}
