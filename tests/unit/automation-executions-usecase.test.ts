@@ -102,4 +102,16 @@ describe('reTriggerRule', () => {
         const ctx = makeRequestContext('EDITOR');
         await expect(reTriggerRule(ctx, 'gone')).rejects.toThrow(/not found/i);
     });
+
+    it('reports a no-op (does NOT enqueue) when there is no prior execution to replay', async () => {
+        // PR-E honesty — replaying a rule that never ran would enqueue an
+        // empty-payload dispatch that silently no-ops. Report it instead.
+        ruleRepo.getById.mockResolvedValue({ id: 'r1', status: 'ENABLED', triggerEvent: 'RISK_CREATED' } as any);
+        execRepo.listForRule.mockResolvedValue([] as any);
+        const ctx = makeRequestContext('EDITOR');
+        const out = await reTriggerRule(ctx, 'r1');
+        expect(out.enqueued).toBe(false);
+        expect((out as { reason?: string }).reason).toBe('no_prior_execution');
+        expect(enqueueMock).not.toHaveBeenCalled();
+    });
 });

@@ -1,15 +1,22 @@
 /**
- * SLA monitor job (Automation Epic 5).
+ * Execution watchdog job (Automation Epic 5 — "SLA window").
  *
- * Scans RUNNING automation executions whose parent rule declares an
- * `slaWindowMinutes` and whose start is older than that window. Each
- * breached execution is completed as FAILED with an `slaBreached` outcome,
- * an audit event is written, and — when the rule configures a NOTIFY_USER
- * breach action — notifications are created for the configured recipients.
+ * IMPORTANT — what this actually watches: it scans RUNNING automation
+ * executions whose parent rule declares an `slaWindowMinutes` and whose start
+ * is older than that window. Because `automation-event-dispatch` runs each
+ * action synchronously and settles the execution row (SUCCEEDED/FAILED)
+ * immediately, a row only stays RUNNING while its action is genuinely
+ * in-flight. So in practice this catches STUCK / hung executions (an
+ * unresponsive webhook, a worker that died mid-run) — it is an execution
+ * watchdog, NOT a business-entity SLA ("this task must be done in 3 days").
+ * The builder copy is worded accordingly so users aren't misled. A true
+ * entity-deadline SLA would need a separate mechanism that tracks the target
+ * entity's own due date, not the execution's runtime.
  *
- * Detection + marking is the load-bearing capability; richer breach actions
- * (reassign, status change) record their intent in the outcome and are a
- * follow-up. Runs every 5 minutes (see schedules.ts).
+ * Each breached (stuck) execution is completed as FAILED with an `slaBreached`
+ * outcome, an audit event is written, and the configured breach action is
+ * executed (NOTIFY_USER wired here; see the breach-action handling below).
+ * Runs every 5 minutes (see schedules.ts).
  */
 import { runJob } from '@/lib/observability/job-runner';
 import { logger } from '@/lib/observability/logger';

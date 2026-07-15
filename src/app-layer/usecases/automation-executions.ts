@@ -170,6 +170,17 @@ export async function reTriggerRule(ctx: RequestContext, ruleId: string) {
             throw badRequest('Only ENABLED rules can be re-triggered');
         }
         const recent = await AutomationExecutionRepository.listForRule(db, ctx, ruleId, 1);
+        // PR-E — a re-trigger REPLAYS a prior execution's payload. With no prior
+        // execution there's nothing to replay: enqueuing an empty-payload
+        // dispatch would silently no-op (no fields for the rule's conditions to
+        // match) while reporting success. Report the no-op honestly instead.
+        if (recent.length === 0) {
+            return {
+                enqueued: false as const,
+                ruleId,
+                reason: 'no_prior_execution' as const,
+            };
+        }
         const data = (recent[0]?.triggerPayloadJson as Record<string, unknown>) ?? {};
 
         const stableKey = `manual-${Date.now()}-${Math.round(Math.random() * 1e9)}`;
@@ -188,6 +199,6 @@ export async function reTriggerRule(ctx: RequestContext, ruleId: string) {
                 data,
             },
         });
-        return { enqueued: true, ruleId, stableKey };
+        return { enqueued: true as const, ruleId, stableKey };
     });
 }

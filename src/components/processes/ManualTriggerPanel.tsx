@@ -56,7 +56,19 @@ export function ManualTriggerPanel() {
             const res = await fetch(apiUrl(`/automation/rules/${ruleId}/re-trigger`), {
                 method: 'POST',
             });
-            setResult(res.ok ? 'Fired — a manual execution was enqueued.' : 'Fire failed.');
+            const body = (await res.json().catch(() => ({}))) as {
+                enqueued?: boolean;
+                reason?: string;
+            };
+            // PR-E — honest result: a replay with no prior execution is a no-op,
+            // not a success. Distinguish the three outcomes.
+            if (res.ok && body.enqueued) {
+                setResult('Fired — a manual execution was enqueued.');
+            } else if (res.ok && body.reason === 'no_prior_execution') {
+                setResult('Nothing to replay — this rule has no prior execution to re-fire.');
+            } else {
+                setResult('Fire failed.');
+            }
         } finally {
             setBusy(false);
         }

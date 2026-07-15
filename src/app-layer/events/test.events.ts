@@ -44,7 +44,45 @@ export async function emitTestPlanUpdated(db: PrismaTx, ctx: RequestContext, pla
     });
 }
 
+/**
+ * PR-E — the pause/resume automation event for a status transition, or null
+ * when it isn't one. RESUMED is ONLY a transition OUT of PAUSED (previously it
+ * fired for any non-PAUSED target, e.g. ACTIVE→ARCHIVED, which was wrong).
+ */
+export function testPlanPauseResumeAction(
+    oldStatus: string,
+    newStatus: string,
+): 'TEST_PLAN_PAUSED' | 'TEST_PLAN_RESUMED' | null {
+    if (newStatus === 'PAUSED') return 'TEST_PLAN_PAUSED';
+    if (oldStatus === 'PAUSED') return 'TEST_PLAN_RESUMED';
+    return null;
+}
+
+/**
+ * PR-E — fire ONLY the pause/resume automation event (no audit row). Used by
+ * the bulk status path, which writes its own audit. No-op for a non-pause/
+ * resume change, so a bulk ACTIVE→ARCHIVED never emits a spurious RESUMED.
+ */
+export async function emitTestPlanStatusAutomationEvent(
+    ctx: RequestContext,
+    planId: string,
+    oldStatus: string,
+    newStatus: string,
+) {
+    const action = testPlanPauseResumeAction(oldStatus, newStatus);
+    if (!action) return;
+    await emitAutomationEvent(ctx, {
+        event: action,
+        entityType: 'ControlTestPlan',
+        entityId: planId,
+        actorUserId: ctx.userId,
+        data: { fromStatus: oldStatus, toStatus: newStatus },
+    });
+}
+
 export async function emitTestPlanStatusChanged(db: PrismaTx, ctx: RequestContext, planId: string, oldStatus: string, newStatus: string) {
+    // Only ever called for a genuine pause/resume transition (the caller
+    // gates), so this maps cleanly: →PAUSED = paused, PAUSED→ = resumed.
     const action = newStatus === 'PAUSED' ? 'TEST_PLAN_PAUSED' : 'TEST_PLAN_RESUMED';
     await logEvent(db, ctx, {
         action,

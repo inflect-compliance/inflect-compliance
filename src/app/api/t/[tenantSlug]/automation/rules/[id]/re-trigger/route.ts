@@ -10,5 +10,8 @@ export const POST = withApiErrorHandling(async (req: NextRequest, { params: para
     const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const result = await reTriggerRule(ctx, params.id);
-    return jsonResponse(result, { status: 202 });
+    // PR-E — 202 Accepted only when a replay was actually enqueued; a no-op
+    // (nothing to replay) is a 200 with the reason so the client can tell the
+    // user honestly rather than showing a false "re-triggered" success.
+    return jsonResponse(result, { status: result.enqueued ? 202 : 200 });
 });

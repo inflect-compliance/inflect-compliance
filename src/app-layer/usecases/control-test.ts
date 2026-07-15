@@ -15,6 +15,7 @@ import {
     emitTestPlanCreated,
     emitTestPlanUpdated,
     emitTestPlanStatusChanged,
+    emitTestPlanStatusAutomationEvent,
     emitTestRunCreated,
     emitTestRunCompleted,
     emitTestRunFailed,
@@ -295,9 +296,15 @@ export async function updateTestPlan(ctx: RequestContext, planId: string, patch:
             await TestPlanRepository.updateNextDueAt(db, ctx, planId, nextDueAt);
         }
 
-        // Emit events
-        if (newStatus && newStatus !== oldStatus) {
-            await emitTestPlanStatusChanged(db, ctx, planId, oldStatus, newStatus);
+        // Emit events. PR-E — only a genuine pause/resume (to/from PAUSED)
+        // fires the pause/resume event; other status changes (e.g.
+        // ACTIVE→ARCHIVED) are generic updates, not a mislabelled RESUMED.
+        const isPauseResume =
+            !!newStatus &&
+            newStatus !== oldStatus &&
+            (newStatus === 'PAUSED' || oldStatus === 'PAUSED');
+        if (isPauseResume) {
+            await emitTestPlanStatusChanged(db, ctx, planId, oldStatus, newStatus!);
         } else {
             await emitTestPlanUpdated(db, ctx, planId, patch);
         }
@@ -688,6 +695,10 @@ export async function bulkSetTestPlanStatus(
                     toStatus: status,
                 },
             });
+            // PR-E — the bulk path previously emitted NO automation event, so a
+            // bulk pause/resume never triggered rules. Fire it here (no-op for a
+            // non-pause/resume change).
+            await emitTestPlanStatusAutomationEvent(ctx, r.id, r.status, status);
         }
         return rows.length;
     });

@@ -34,4 +34,16 @@ describe('executor hardening', () => {
     it('NOTIFY_USER respects the tenant notification kill-switch', () => {
         expect(EXEC).toMatch(/isNotificationsEnabled/);
     });
+
+    it('the UPDATE_STATUS allowlist is a single shared source (executor + builder)', () => {
+        // PR-E — the builder's entity/status DROPDOWNS and the executor's
+        // enforcement both read UPDATE_STATUS_TARGETS, so they can never drift.
+        expect(EXEC).toMatch(/UPDATE_STATUS_TARGETS/);
+        expect(EXEC).toMatch(/from '@\/lib\/automation\/status-allowlist'/);
+        const modal = read('src/components/processes/RuleBuilderModal.tsx');
+        expect(modal).toMatch(/UPDATE_STATUS_TARGETS/);
+        // No free-text status Input for UPDATE_STATUS — it's a Combobox now.
+        expect(modal).toMatch(/statusValueOptions/);
+        expect(modal).toMatch(/entityTypeOptions/);
+    });
 });
