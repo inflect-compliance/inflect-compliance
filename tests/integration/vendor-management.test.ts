@@ -21,6 +21,7 @@ describe('Vendor Management Integration', () => {
             '[vendorId]/assessments/send/route.ts',
             '[vendorId]/links/route.ts',
             '[vendorId]/links/[linkId]/route.ts',
+            'linked/route.ts',
             'questionnaires/templates/route.ts',
             'questionnaires/templates/[templateKey]/route.ts',
         ];
@@ -41,6 +42,7 @@ describe('Vendor Management Integration', () => {
             '[vendorId]/assessments/send/route.ts',
             '[vendorId]/links/route.ts',
             '[vendorId]/links/[linkId]/route.ts',
+            'linked/route.ts',
         ];
 
         it.each(routeFiles)('route %s does not import prisma directly', (route) => {

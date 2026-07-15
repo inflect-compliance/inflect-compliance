@@ -33,6 +33,12 @@ model Vendor {
   inherentRisk        VendorCriticality?
   residualRisk        VendorCriticality?
   nextReviewAt        DateTime?
+  // Stamp written by the G-3 assessment review flow (reviewAssessment):
+  // when a review completes, inherentRisk is set from the assessment's
+  // derived rating and this records when. Distinct from nextReviewAt
+  // (the manual review-cadence date) — drives the reassessment-overdue
+  // metric and the highRiskNoAssessment / activation-gate checks.
+  lastAssessmentReviewedAt DateTime?
   contractRenewalAt   DateTime?
   dataAccess          VendorDataAccess?
   isSubprocessor      Boolean                @default(false)
@@ -547,6 +553,10 @@ model VendorLink {
 
   @@unique([tenantId, vendorId, entityType, entityId])
   @@index([tenantId, vendorId])
+  // Reverse "where-used" lookup: given a target entity, list the vendors
+  // linked to it (listByEntity / LinkedVendorsPanel on risk/control/asset
+  // detail pages).
+  @@index([tenantId, entityType, entityId])
 }
 
 model VendorEvidenceBundle {

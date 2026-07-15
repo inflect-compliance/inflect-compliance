@@ -13,6 +13,7 @@ import { useTenantContext, useTenantApiUrl, useTenantHref } from '@/lib/tenant-c
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import dynamic from 'next/dynamic';
 import LinkedTasksPanel from '@/components/LinkedTasksPanel';
+import { LinkedVendorsPanel } from '@/components/LinkedVendorsPanel';
 import { Eyebrow } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
 import { MetaStrip } from '@/components/ui/meta-strip';
@@ -493,6 +494,9 @@ export default function RiskDetailPage() {
                             tenantHref={href}
                             entityLabel="risk"
                         />
+                    </div>
+                    <div className="border-t border-border-subtle pt-default">
+                        <LinkedVendorsPanel entityType="RISK" entityId={riskId} />
                     </div>
                 </div>
             )}

@@ -14,6 +14,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { EditControlModal } from './_modals/EditControlModal';
 import { ControlReverseLookupModal } from '@/components/controls/ControlReverseLookupModal';
+import { LinkedVendorsPanel } from '@/components/LinkedVendorsPanel';
 import { ControlMappingsTab } from './_tabs/ControlMappingsTab';
 import { EvidenceSubTable, type EvidenceTabData } from './_tabs/EvidenceSubTable';
 import { ControlChecksTab } from './_tabs/ControlChecksTab';
@@ -1065,13 +1066,18 @@ export default function ControlDetailPage() {
             )}
 
             {tab === 'traceability' && (
-                <TraceabilityPanel
-                    apiBase={apiUrl('')}
-                    entityType="control"
-                    entityId={controlId}
-                    canWrite={permissions.canWrite}
-                    tenantHref={tenantHref}
-                />
+                <div className="space-y-section">
+                    <TraceabilityPanel
+                        apiBase={apiUrl('')}
+                        entityType="control"
+                        entityId={controlId}
+                        canWrite={permissions.canWrite}
+                        tenantHref={tenantHref}
+                    />
+                    <div className="border-t border-border-subtle pt-default">
+                        <LinkedVendorsPanel entityType="CONTROL" entityId={controlId} />
+                    </div>
+                </div>
             )}
 
             {tab === 'activity' && (
