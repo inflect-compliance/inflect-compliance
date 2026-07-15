@@ -190,6 +190,10 @@ export default function MembersAdminPage() {
     const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
     const [bulkApplying, setBulkApplying] = useState(false);
 
+    // Bulk selection + top action row for pending invites (revoke).
+    const [selectedInviteIds, setSelectedInviteIds] = useState<Set<string>>(new Set());
+    const [bulkRevokingInvites, setBulkRevokingInvites] = useState(false);
+
     // Epic C.3 — sessions modal
     const [sessionsModalUser, setSessionsModalUser] = useState<Member | null>(null);
     const [memberSessions, setMemberSessions] = useState<MemberSession[]>([]);
@@ -415,6 +419,54 @@ export default function MembersAdminPage() {
             value: 'remove',
             label: t('members.remove'),
             confirm: { tone: 'danger', confirmLabel: t('members.remove') },
+        },
+    ], [t]);
+
+    // Top action row for pending invites — revoke the selected invitations.
+    // Loops the per-invite DELETE endpoint client-side (no bulk endpoint); a
+    // partial failure surfaces the affected emails without blocking the rest.
+    const handleBulkRevokeInvites = async () => {
+        const ids = Array.from(selectedInviteIds);
+        if (ids.length === 0) return;
+        setError(null);
+        setSuccess(null);
+        setBulkRevokingInvites(true);
+
+        let ok = 0;
+        const failures: string[] = [];
+        try {
+            for (const id of ids) {
+                const email = invites.find((i) => i.id === id)?.email ?? id;
+                try {
+                    const res = await fetch(apiUrl(`/admin/invites/${id}`), { method: 'DELETE' });
+                    if (res.ok) {
+                        ok += 1;
+                    } else {
+                        const err = await res.json().catch(() => ({}));
+                        failures.push(`${email}: ${apiErrorMessage(err, t('members.inviteRevocationFailed'))}`);
+                    }
+                } catch (e) {
+                    failures.push(`${email}: ${(e as Error).message}`);
+                }
+            }
+            if (ok > 0) {
+                setSuccess(t('members.bulkRevokedInvitesToast', { count: ok }));
+            }
+            if (failures.length > 0) {
+                setError(failures.join('; '));
+            }
+            setSelectedInviteIds(new Set());
+            await fetchMembers();
+        } finally {
+            setBulkRevokingInvites(false);
+        }
+    };
+
+    const inviteBulkActions: BulkActionDef[] = useMemo(() => [
+        {
+            value: 'revoke',
+            label: t('members.revokeInviteAction'),
+            confirm: { tone: 'danger', confirmLabel: t('members.revokeInviteAction') },
         },
     ], [t]);
 
@@ -942,6 +994,22 @@ export default function MembersAdminPage() {
                             emptyState={t('members.emptyInvites')}
                             resourceName={(p) => (p ? t('members.resourceInvites') : t('members.resourceInvite'))}
                             data-testid="invites-table"
+                            selectionEnabled
+                            selectedRows={Object.fromEntries(
+                                Array.from(selectedInviteIds).map((id) => [id, true]),
+                            )}
+                            onRowSelectionChange={(rows) =>
+                                setSelectedInviteIds(new Set(rows.map((r) => r.original.id)))
+                            }
+                            selectionControls={() => (
+                                <BulkActionBar
+                                    actions={inviteBulkActions}
+                                    onApply={handleBulkRevokeInvites}
+                                    applying={bulkRevokingInvites}
+                                    selectedCount={selectedInviteIds.size}
+                                    entityLabel={t('members.resourceInvites')}
+                                />
+                            )}
                         />
                     </div>
                 </div>

@@ -34,13 +34,13 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next-test/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
     "scripts",
     "prisma/seed.ts",
-    "dub-reference"
+    "dub-reference",
+    ".next-test"
   ]
 }

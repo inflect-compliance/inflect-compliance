@@ -3564,6 +3564,9 @@
             "removedToast": "Removed {email}",
             "bulkDeactivatedToast": "Deactivated {count} members",
             "bulkRemovedToast": "Removed {count} members",
+            "revokeInviteAction": "Revoke invitation",
+            "inviteRevocationFailed": "Failed to revoke invitation",
+            "bulkRevokedInvitesToast": "Revoked {count} invitations",
             "memberActions": "Member actions"
         },
         "security": {
