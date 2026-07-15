@@ -10,6 +10,7 @@ import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTenantMembers } from '@/components/ui/user-combobox';
 import dynamic from 'next/dynamic';
 import LinkedTasksPanel from '@/components/LinkedTasksPanel';
+import { LinkedVendorsPanel } from '@/components/LinkedVendorsPanel';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CopyText } from '@/components/ui/copy-text';
 import { Button } from '@/components/ui/button';
@@ -505,6 +506,9 @@ export default function AssetDetailPage() {
                         canWrite={permissions.canWrite}
                         tenantHref={tenantHref}
                     />
+                    <div className="border-t border-border-subtle pt-default">
+                        <LinkedVendorsPanel entityType="ASSET" entityId={assetId} />
+                    </div>
                 </div>
             )}
             {activeTab === 'evidence' && (

@@ -96,11 +96,12 @@ describeFn('vendor bulk actions — integration', () => {
         const v1 = await seedVendor('Acme', 'ONBOARDING');
         const v2 = await seedVendor('Globex', 'ONBOARDING');
 
-        const res = await bulkSetVendorStatus(ctxAs(Role.ADMIN, admin.userId), [v1, v2], 'ACTIVE');
-        expect(res).toEqual({ updated: 2 });
+        // A non-ACTIVE transition is ungated — all rows eligible, none blocked.
+        const res = await bulkSetVendorStatus(ctxAs(Role.ADMIN, admin.userId), [v1, v2], 'OFFBOARDING');
+        expect(res).toEqual({ updated: 2, blocked: [] });
 
         const rows = await globalPrisma.vendor.findMany({ where: { tenantId: TENANT_ID } });
-        expect(rows.every((r) => r.status === 'ACTIVE')).toBe(true);
+        expect(rows.every((r) => r.status === 'OFFBOARDING')).toBe(true);
 
         const audits = await globalPrisma.auditLog.findMany({
             where: { tenantId: TENANT_ID, action: 'VENDOR_STATUS_CHANGED' },
@@ -109,9 +110,9 @@ describeFn('vendor bulk actions — integration', () => {
     });
 
     it('bulkSetVendorStatus returns {updated:0} for an empty / unknown id set (early-return branch)', async () => {
-        // No matching rows → listByIds returns [] → the `rows.length === 0` guard fires.
+        // No matching rows → findMany returns [] → the `rows.length === 0` guard fires.
         const res = await bulkSetVendorStatus(ctxAs(Role.ADMIN, admin.userId), ['no-such-id'], 'OFFBOARDED');
-        expect(res).toEqual({ updated: 0 });
+        expect(res).toEqual({ updated: 0, blocked: [] });
         const audits = await globalPrisma.auditLog.findMany({ where: { tenantId: TENANT_ID } });
         expect(audits).toHaveLength(0);
     });

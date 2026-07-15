@@ -35,6 +35,8 @@ import {
     type ScoringResult,
 } from '../services/vendor-assessment-scoring-engine';
 import { enqueueEmail } from '../notifications/enqueue';
+import { createRisk } from '@/app-layer/usecases/risk';
+import { addVendorLink, listVendorLinks } from '@/app-layer/usecases/vendor';
 import { logger } from '@/lib/observability/logger';
 // Audit S6 (2026-05-22) — `notifyAssessmentReviewed` runs
 // post-commit, after `runInTenantContext` has returned, so it needs
@@ -92,7 +94,7 @@ export async function reviewAssessment(
 ): Promise<ReviewAssessmentResult> {
     assertCanApproveAssessment(ctx);
 
-    return runInTenantContext(ctx, async (db) => {
+    const outcome = await runInTenantContext(ctx, async (db) => {
         // ── Load assessment + status guard ──
         const assessment = await db.vendorAssessment.findFirst({
             where: { id: assessmentId, tenantId: ctx.tenantId },
@@ -102,6 +104,8 @@ export async function reviewAssessment(
                 status: true,
                 templateVersionId: true,
                 templateId: true,
+                vendorId: true,
+                vendor: { select: { name: true } },
             },
         });
         if (!assessment) throw notFound('Assessment not found');
@@ -255,7 +259,7 @@ export async function reviewAssessment(
             riskRating,
         );
 
-        return {
+        const result: ReviewAssessmentResult = {
             status: 'REVIEWED' as const,
             score: scoring.score,
             riskRating,
@@ -263,7 +267,118 @@ export async function reviewAssessment(
             scoring,
             reviewedAt,
         };
+        return {
+            result,
+            vendorId: assessment.vendorId,
+            vendorName: assessment.vendor?.name ?? '',
+            riskRating,
+        };
     });
+
+    // ── Vendor-risk writeback + auto-create register Risk (post-commit) ──
+    // Runs AFTER the review transaction commits: it calls the risk /
+    // vendor usecases, each of which opens its own tenant context, so it
+    // must sit outside `runInTenantContext`. Best-effort — never fails
+    // the review (mirrors `notifyAssessmentReviewed`).
+    await applyAssessmentRiskWriteback(
+        ctx,
+        outcome.vendorId,
+        outcome.vendorName,
+        outcome.riskRating,
+    );
+
+    return outcome.result;
+}
+
+/**
+ * Post-commit vendor-risk writeback (P2.3). Two best-effort effects,
+ * each wrapped so a failure is logged but never rolls back the review:
+ *
+ *   1. Writeback the assessment-derived tier onto the vendor row —
+ *      `inherentRisk` + `lastAssessmentReviewedAt`. `residualRisk`
+ *      (manually-owned) and `criticality` are deliberately NOT touched.
+ *   2. On a HIGH/CRITICAL rating, auto-create a register Risk and link
+ *      it to the vendor. Idempotent: skipped when the vendor already
+ *      has ANY RISK VendorLink, so a re-review never duplicates it.
+ *
+ * Both call usecases that open their own tenant context, so this MUST
+ * run outside the review transaction.
+ */
+async function applyAssessmentRiskWriteback(
+    ctx: RequestContext,
+    vendorId: string,
+    vendorName: string,
+    riskRating: VendorCriticality | null,
+): Promise<void> {
+    if (!riskRating) return;
+
+    // 1. Writeback inherent tier + review timestamp.
+    try {
+        await prisma.vendor.updateMany({
+            where: { id: vendorId, tenantId: ctx.tenantId },
+            data: {
+                inherentRisk: riskRating,
+                lastAssessmentReviewedAt: new Date(),
+            },
+        });
+    } catch (err) {
+        logger.warn(
+            'vendor-assessment-review: inherent-risk writeback failed',
+            {
+                component: 'vendor-assessment-review',
+                vendorId,
+                err: err instanceof Error ? err : new Error(String(err)),
+            },
+        );
+    }
+
+    // 2. Auto-create a register Risk on high-risk ratings (idempotent).
+    if (riskRating !== 'HIGH' && riskRating !== 'CRITICAL') return;
+    try {
+        const links = await listVendorLinks(ctx, vendorId);
+        if (links.some((l) => l.entityType === 'RISK')) {
+            logger.info(
+                'vendor-assessment-review: vendor already has a RISK link — skipping auto-risk',
+                {
+                    component: 'vendor-assessment-review',
+                    vendorId,
+                    riskRating,
+                },
+            );
+            return;
+        }
+
+        const risk = await createRisk(ctx, {
+            title: `Vendor risk: ${vendorName} (${riskRating}) — from assessment`,
+            description: `Auto-created from vendor assessment review. Rating: ${riskRating}.`,
+            category: 'Third-party',
+        });
+        await addVendorLink(ctx, vendorId, {
+            entityType: 'RISK',
+            entityId: risk.id,
+            relation: 'RELATED',
+        });
+
+        logger.info(
+            'vendor-assessment-review: auto-created register risk from high-risk assessment',
+            {
+                component: 'vendor-assessment-review',
+                vendorId,
+                riskId: risk.id,
+                riskRating,
+            },
+        );
+    } catch (err) {
+        logger.warn(
+            'vendor-assessment-review: auto-risk creation failed',
+            {
+                component: 'vendor-assessment-review',
+                vendorId,
+                riskRating,
+                err: err instanceof Error ? err : new Error(String(err)),
+            },
+        );
+    }
 }
 
 /**

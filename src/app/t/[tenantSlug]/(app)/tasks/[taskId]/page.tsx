@@ -11,6 +11,7 @@ import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-c
 import { Button } from '@/components/ui/button';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { DataTable, createColumns } from '@/components/ui/table';
+import { LinkedVendorsPanel } from '@/components/LinkedVendorsPanel';
 import {
     EntityPicker,
     type EntityPickerKind,
@@ -1080,6 +1081,9 @@ export default function TaskDetailPage() {
                         onRemove={removeLink}
                         tenantHref={tenantHref}
                     />
+                    <div className="border-t border-border-subtle pt-default">
+                        <LinkedVendorsPanel entityType="ISSUE" entityId={taskId} />
+                    </div>
                 </div>
             )}
 

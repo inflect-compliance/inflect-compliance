@@ -292,6 +292,21 @@ export class VendorLinkRepository {
         });
     }
 
+    /**
+     * Reverse "where-used" query: given a target entity, list the vendor
+     * links pointing at it. Backed by the (tenantId, entityType, entityId)
+     * index. Includes the vendor's id + name so callers can render a
+     * "Linked vendors" section without an extra round-trip.
+     */
+    static async listByEntity(db: PrismaTx, ctx: RequestContext, entityType: string, entityId: string) {
+        return db.vendorLink.findMany({
+            where: { tenantId: ctx.tenantId, entityType: entityType as VendorLinkEntityType, entityId },
+            orderBy: { createdAt: 'desc' },
+            include: { vendor: { select: { id: true, name: true } } },
+            take: 200,
+        });
+    }
+
     static async create(db: PrismaTx, ctx: RequestContext, vendorId: string, data: {
         entityType: string;
         entityId: string;
