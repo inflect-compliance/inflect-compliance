@@ -25,7 +25,7 @@ async function createPolicy(page: Page, slug: string): Promise<string> {
     await gotoAndVerify(page, `/t/${slug}/policies/new`, '#policy-title-input');
     await page.fill('#policy-title-input', `E2E Test Policy ${uid}`);
     await page.fill(
-        '#policy-content-input',
+        '[data-testid="rich-text-editor-textarea"]',
         '# Test Policy\n\nThis is a test policy created by e2e.',
     );
     await page.click('#create-policy-btn');
@@ -76,7 +76,7 @@ test.describe('Policy Center', () => {
 
         await authedPage.fill('#policy-title-input', title);
         await authedPage.fill(
-            '#policy-content-input',
+            '[data-testid="rich-text-editor-textarea"]',
             '# Test Policy\n\nThis is a test policy created by e2e.',
         );
         await authedPage.click('#create-policy-btn');
@@ -151,13 +151,14 @@ test.describe('Policy Center', () => {
 
         // The activity API route may need JIT compilation on first
         // visit. The #activity-feed container renders immediately even
-        // during loading, so wait for the CREATED text to appear.
+        // during loading, so wait for the localized "Created" event
+        // label to appear (activity titles are localized, not raw enums).
         let createdVisible = false;
         for (let attempt = 0; attempt < 2 && !createdVisible; attempt++) {
             try {
                 await expect(
                     authedPage.locator('#activity-feed'),
-                ).toContainText('CREATED', { timeout: 30000 });
+                ).toContainText('Created', { timeout: 30000 });
                 createdVisible = true;
             } catch {
                 await authedPage.reload({ waitUntil: 'domcontentloaded' });
@@ -174,7 +175,7 @@ test.describe('Policy Center', () => {
             timeout: 10000,
         });
         await expect(authedPage.locator('#activity-feed')).toContainText(
-            'CREATED',
+            'Created',
             { timeout: 10000 },
         );
     });
