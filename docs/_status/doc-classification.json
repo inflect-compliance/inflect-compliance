@@ -1535,6 +1535,9 @@
         "docs/implementation-notes/2026-07-15-entra-id-identity-provider.md": {
             "class": "historical"
         },
+        "docs/implementation-notes/2026-07-15-active-directory-ldap-provider.md": {
+            "class": "historical"
+        },
         "docs/implementation-notes/2026-07-13-control-link-status-unification.md": {
             "class": "historical"
         },

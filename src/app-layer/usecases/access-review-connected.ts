@@ -18,14 +18,14 @@ import { runInTenantContext } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { badRequest, notFound, forbidden } from '@/lib/errors/types';
 
-const IDENTITY_PROVIDERS = ['okta', 'google-workspace', 'entra-id'];
+const IDENTITY_PROVIDERS = ['okta', 'google-workspace', 'entra-id', 'active-directory'];
 const MAX_SUBJECTS = 5000;
 
 export const CreateConnectedAccessReviewSchema = z.object({
     name: z.string().min(1).max(200),
     description: z.string().max(2000).optional(),
     /** Restrict to one provider; omit to review all connected identity accounts. */
-    provider: z.enum(['okta', 'google-workspace', 'entra-id']).optional(),
+    provider: z.enum(['okta', 'google-workspace', 'entra-id', 'active-directory']).optional(),
     reviewerUserId: z.string().min(1),
     dueAt: z.coerce.date().optional(),
     periodStartAt: z.coerce.date().optional(),

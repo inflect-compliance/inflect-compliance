@@ -82,7 +82,7 @@ export const SCHEDULED_JOBS: ScheduleDefinition[] = [
     {
         name: 'identity-sync-dispatch',
         pattern: '0 3 * * *',     // daily at 03:00 UTC
-        description: 'Fan out an identity-sync per enabled Okta / Google Workspace / Entra ID connection (directory → ConnectedIdentityAccount)',
+        description: 'Fan out an identity-sync per enabled Okta / Google Workspace / Entra ID / Active Directory connection (directory → ConnectedIdentityAccount)',
         defaultPayload: {},
     },
     {

@@ -1,5 +1,5 @@
 /**
- * identity-sync — enumerate a connected directory (Okta / Google Workspace / Entra ID)
+ * identity-sync — enumerate a connected directory (Okta / Google Workspace / Entra ID / Active Directory)
  * and upsert its accounts into `ConnectedIdentityAccount`, recording ONE
  * `IntegrationExecution`. Idempotent by `(tenantId, provider,
  * externalUserId)`; accounts that vanish from the directory are reconciled
@@ -19,7 +19,7 @@ import '../integrations/bootstrap'; // populate the provider registry in THIS mo
 import { registry } from '../integrations/registry';
 import { isIdentitySyncProvider, type IdentitySyncProvider, type NormalizedIdentityAccount } from '../integrations/providers/identity/types';
 
-const IDENTITY_PROVIDERS = new Set(['okta', 'google-workspace', 'entra-id']);
+const IDENTITY_PROVIDERS = new Set(['okta', 'google-workspace', 'entra-id', 'active-directory']);
 
 function makeSystemCtx(tenantId: string): RequestContext {
     return {

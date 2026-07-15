@@ -10,7 +10,7 @@
 model ConnectedIdentityAccount {
   id             String                 @id @default(cuid())
   tenantId       String
-  /// Provider prefix — 'okta' | 'google-workspace' | 'entra-id'. Matches the
+  /// Provider prefix — 'okta' | 'google-workspace' | 'entra-id' | 'active-directory'. Matches the
   /// ScheduledCheckProvider id so `{provider}.{check}` routing lines up.
   provider       String
   /// Stable id of the user in the provider's directory.
