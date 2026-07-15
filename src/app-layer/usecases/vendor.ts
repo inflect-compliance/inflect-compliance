@@ -283,7 +283,10 @@ async function resolveLinkedEntityNames(
         byType.set(l.entityType, arr);
     }
     const where = (ids: string[]) => ({ tenantId: ctx.tenantId, id: { in: ids } });
-    for (const [type, ids] of byType) {
+    // Bounded to ≤4 entityType iterations (RISK/CONTROL/ASSET/ISSUE), each a
+    // SINGLE batched findMany({ id: { in: ids } }); round-trips are capped at
+    // the number of distinct entity types, not the number of links.
+    for (const [type, ids] of byType) { // guardrail-allow: n+1 — batched per-type, ≤4 iterations
         if (type === 'RISK') {
             for (const r of await db.risk.findMany({ where: where(ids), select: { id: true, title: true } }))
                 out.set(`RISK:${r.id}`, r.title);

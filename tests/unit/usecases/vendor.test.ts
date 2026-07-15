@@ -101,7 +101,6 @@ import { makeRequestContext } from '../../helpers/make-context';
 const mockRunInTx = runInTenantContext as jest.MockedFunction<typeof runInTenantContext>;
 const mockVendorCreate = VendorRepository.create as jest.MockedFunction<typeof VendorRepository.create>;
 const mockVendorUpdate = VendorRepository.update as jest.MockedFunction<typeof VendorRepository.update>;
-const mockVendorGetById = VendorRepository.getById as jest.MockedFunction<typeof VendorRepository.getById>;
 const mockSanitize = sanitizePlainText as jest.MockedFunction<typeof sanitizePlainText>;
 const mockLog = logEvent as jest.MockedFunction<typeof logEvent>;
 
@@ -174,8 +173,18 @@ describe('updateVendor — loose-typed patch sanitisation + status-change audit'
     });
 
     it('emits VENDOR_STATUS_CHANGED when status changes; VENDOR_UPDATED otherwise', async () => {
-        mockRunInTx.mockImplementation(async (_ctx, fn) => fn({} as never));
-        mockVendorGetById.mockResolvedValue({ status: 'PROSPECTIVE' } as never);
+        // The status-change path now loads the current vendor + latest
+        // assessment via db.vendor.findFirst; supply a completed-review
+        // assessment so the ACTIVE activation gate is satisfied.
+        const db = {
+            vendor: {
+                findFirst: jest.fn().mockResolvedValue({
+                    status: 'PROSPECTIVE',
+                    assessments: [{ status: 'REVIEWED', riskRating: 'LOW' }],
+                }),
+            },
+        };
+        mockRunInTx.mockImplementation(async (_ctx, fn) => fn(db as never));
         mockVendorUpdate.mockResolvedValue({ id: 'v1', name: 'X' } as never);
 
         await updateVendor(makeRequestContext('ADMIN'), 'v1', {
@@ -191,14 +200,14 @@ describe('updateVendor — loose-typed patch sanitisation + status-change audit'
     });
 });
 
-describe('updateVendorStatusWithGate — APPROVED-assessment guard', () => {
-    it('rejects promotion to ACTIVE when no approved assessment exists', async () => {
+describe('updateVendorStatusWithGate — completed-review activation guard', () => {
+    it('rejects promotion to ACTIVE when no completed assessment review exists', async () => {
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({
                 vendor: {
                     findFirst: jest.fn().mockResolvedValue({
                         id: 'v1', status: 'PROSPECTIVE',
-                        assessments: [{ status: 'DRAFT' }], // not APPROVED
+                        assessments: [{ status: 'DRAFT' }], // not a completed review
                     }),
                     update: jest.fn(),
                 },
@@ -207,11 +216,11 @@ describe('updateVendorStatusWithGate — APPROVED-assessment guard', () => {
 
         await expect(
             updateVendorStatusWithGate(makeRequestContext('ADMIN'), 'v1', 'ACTIVE'),
-        ).rejects.toThrow(/approved assessment/);
+        ).rejects.toThrow(/completed assessment review/);
         // Regression: a refactor that bypassed this gate would let an
-        // admin rubber-stamp a vendor as ACTIVE without ever running an
-        // assessment — the very compliance bypass this gate exists to
-        // prevent.
+        // admin rubber-stamp a vendor as ACTIVE without ever completing an
+        // assessment review — the very compliance bypass this gate exists
+        // to prevent.
     });
 
     it('rejects when there are no assessments at all', async () => {
@@ -228,16 +237,19 @@ describe('updateVendorStatusWithGate — APPROVED-assessment guard', () => {
 
         await expect(
             updateVendorStatusWithGate(makeRequestContext('ADMIN'), 'v1', 'ACTIVE'),
-        ).rejects.toThrow(/approved assessment/);
+        ).rejects.toThrow(/completed assessment review/);
     });
 
-    it('allows promotion to ACTIVE when latest assessment is APPROVED', async () => {
+    it('allows promotion to ACTIVE when latest assessment is a completed review with a rating', async () => {
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({
                 vendor: {
                     findFirst: jest.fn().mockResolvedValue({
                         id: 'v1', status: 'PROSPECTIVE',
-                        assessments: [{ status: 'APPROVED' }],
+                        // Completed review (REVIEWED/CLOSED) carrying a risk
+                        // rating — the new activation bar. APPROVED-without-
+                        // rating would now be rejected.
+                        assessments: [{ status: 'REVIEWED', riskRating: 'LOW' }],
                     }),
                     update: jest.fn().mockResolvedValue({ id: 'v1' }),
                 },
@@ -249,7 +261,7 @@ describe('updateVendorStatusWithGate — APPROVED-assessment guard', () => {
         ).resolves.toBeDefined();
     });
 
-    it('allows non-ACTIVE transitions even without an APPROVED assessment', async () => {
+    it('allows non-ACTIVE transitions even without a completed assessment review', async () => {
         // Going to INACTIVE / SUSPENDED / etc. is always allowed; the
         // gate only fires on the ACTIVE promotion.
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>

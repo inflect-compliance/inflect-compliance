@@ -289,14 +289,15 @@ describeFn('vendor CRUD + workflow — integration', () => {
         ).rejects.toBeInstanceOf(ValidationError);
     });
 
-    it('gate allows ACTIVE when an approved assessment exists', async () => {
+    it('gate allows ACTIVE when a completed-review assessment with a rating exists', async () => {
         const v = await createVendor(adminCtx(), { name: 'Approvable', status: 'ONBOARDING' });
         await globalPrisma.vendorAssessment.create({
             data: {
                 tenantId: TENANT_ID,
                 vendorId: v.id,
                 requestedByUserId: admin.userId,
-                status: 'APPROVED',
+                status: 'REVIEWED',
+                riskRating: 'LOW',
             },
         });
         const updated = await updateVendorStatusWithGate(adminCtx(), v.id, 'ACTIVE');

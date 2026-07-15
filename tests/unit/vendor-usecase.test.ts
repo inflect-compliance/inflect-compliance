@@ -21,7 +21,17 @@
  *   - setVendorReviewDates.
  */
 
-const mockDb = {} as any;
+const mockDb = {
+    // updateVendor loads the current vendor (+ latest assessment) via
+    // db.vendor.findFirst when the patch carries a `status`.
+    vendor: { findFirst: jest.fn() },
+    // listVendorLinks hydrates each link's target entity name via a
+    // batched findMany per entityType. Default to empty ⇒ entityName null.
+    risk: { findMany: jest.fn(async () => []) },
+    control: { findMany: jest.fn(async () => []) },
+    asset: { findMany: jest.fn(async () => []) },
+    task: { findMany: jest.fn(async () => []) },
+} as any;
 
 jest.mock('@/lib/db-context', () => ({
     runInTenantContext: jest.fn(async (_ctx: any, fn: (db: any) => any) => fn(mockDb)),
@@ -202,6 +212,9 @@ describe('updateVendor', () => {
     });
 
     it('leaves non-string keys (enums, ids, dates) untouched', async () => {
+        // patch carries `status` ⇒ updateVendor loads the current vendor
+        // via db.vendor.findFirst. Target is not ACTIVE ⇒ gate does not fire.
+        (mockDb.vendor.findFirst as jest.Mock).mockResolvedValue({ status: 'ACTIVE', assessments: [] });
         (VendorRepository.update as jest.Mock).mockResolvedValue({ id: 'v-1', name: 'X' });
 
         const now = new Date('2026-01-01');
@@ -223,7 +236,8 @@ describe('updateVendor', () => {
     });
 
     it('emits VENDOR_STATUS_CHANGED when status changes', async () => {
-        (VendorRepository.getById as jest.Mock).mockResolvedValue({ id: 'v-1', status: 'ACTIVE' });
+        // Status change now loads current-vendor state via db.vendor.findFirst.
+        (mockDb.vendor.findFirst as jest.Mock).mockResolvedValue({ id: 'v-1', status: 'ACTIVE', assessments: [] });
         (VendorRepository.update as jest.Mock).mockResolvedValue({ id: 'v-1', name: 'X' });
 
         await updateVendor(editorCtx, 'v-1', { status: 'INACTIVE' });
@@ -348,10 +362,12 @@ describe('setVendorReviewDates', () => {
 // ─── Vendor Links ──────────────────────────────────────────────────
 
 describe('vendor links', () => {
-    it('listVendorLinks delegates under read gate', async () => {
+    it('listVendorLinks delegates under read gate + hydrates entityName', async () => {
         (VendorLinkRepository.listByVendor as jest.Mock).mockResolvedValue([{ id: 'l-1' }]);
         const rows = await listVendorLinks(readerCtx, 'v-1');
-        expect(rows).toEqual([{ id: 'l-1' }]);
+        // Each link is now hydrated with a resolved target-entity name.
+        // No entityType on the raw row ⇒ nothing to resolve ⇒ entityName null.
+        expect(rows).toEqual([{ id: 'l-1', entityName: null }]);
     });
 
     it('addVendorLink creates and returns', async () => {
