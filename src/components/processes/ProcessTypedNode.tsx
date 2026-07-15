@@ -31,7 +31,7 @@
 import { Handle, Position, useReactFlow, type NodeProps } from "@xyflow/react";
 import { memo, useCallback, type MouseEvent } from "react";
 import { useTranslations } from "next-intl";
-import { Link2 } from "lucide-react";
+import { Link4 } from "@/components/ui/icons/nucleo/link4";
 import { ChevronRight } from "@/components/ui/icons/nucleo/chevron-right";
 import { cn } from "@/lib/cn";
 import {
@@ -308,7 +308,7 @@ function ProcessTypedNodeImpl({ id, data, selected }: NodeProps) {
                     aria-hidden="true"
                     data-node-linked-entity={kind}
                 >
-                    <Link2 className="h-2.5 w-2.5" />
+                    <Link4 className="h-2.5 w-2.5" />
                 </span>
             )}
             {meta.hasHandles && (

@@ -140,13 +140,14 @@ describe("R26-PR-D — edge-mounted control affordance preserved", () => {
         expect(edgeSrc).toMatch(/ShieldCheck/);
     });
 
-    it("the 'Add control' affordance fires on selected, control-less edges", () => {
-        // The contextual affordance is the entry point users
-        // discover. Removing the gating would make the button
-        // always-on (cluttering); removing the affordance
-        // entirely would leave no way to add a control without
-        // an inspector panel (PR-E future work).
-        expect(edgeSrc).toMatch(/!control && selected/);
-        expect(edgeSrc).toMatch(/Add control/);
+    it("renders the persisted controls from data.controls (PR-D)", () => {
+        // PR-D retired the ephemeral single-click "Add control" affordance (it
+        // wrote an unpersisted data.control). Controls are attached via the
+        // inspector's real picker and rendered from the PERSISTED data.controls
+        // — so a pill survives a reload. Lock the persisted-render path.
+        expect(edgeSrc).toMatch(/edgeData\?\.controls/);
+        expect(edgeSrc).toMatch(/data-control-on-edge-badge/);
+        // The ephemeral stamp must not come back.
+        expect(edgeSrc).not.toMatch(/data-add-control-affordance/);
     });
 });

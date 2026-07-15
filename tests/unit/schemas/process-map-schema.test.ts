@@ -150,12 +150,25 @@ describe('ProcessEdgeInputSchema', () => {
             labelOverride: 'review',
             controls: [
                 { controlKey: 'c1', label: 'Control 1', controlId: 'ctl_1' },
-                { controlKey: 'c2', label: 'Control 2', controlId: null },
+                { controlKey: 'c2', label: 'Control 2', controlId: 'ctl_2' },
             ],
         });
         expect(r.controls).toHaveLength(2);
         expect(r.controls[0].controlId).toBe('ctl_1');
-        expect(r.controls[1].controlId).toBeNull();
+        // PR-D — controlId is now REQUIRED (NOT NULL + FK); a null/absent
+        // controlId is rejected (see the dedicated case below).
+        expect(r.controls[1].controlId).toBe('ctl_2');
+    });
+
+    it('rejects a control with no controlId (PR-D — controlId required)', () => {
+        expect(
+            ProcessEdgeInputSchema.safeParse({
+                edgeKey: 'e1',
+                sourceKey: 'n1',
+                targetKey: 'n2',
+                controls: [{ controlKey: 'c1', label: 'x' }],
+            }).success,
+        ).toBe(false);
     });
 
     // required-field branch
@@ -175,7 +188,7 @@ describe('ProcessEdgeInputSchema', () => {
                 edgeKey: 'e1',
                 sourceKey: 'n1',
                 targetKey: 'n2',
-                controls: [{ controlKey: '', label: 'x' }],
+                controls: [{ controlKey: '', label: 'x', controlId: 'ctl_1' }],
             }).success,
         ).toBe(false);
     });
@@ -185,6 +198,7 @@ describe('ProcessEdgeInputSchema', () => {
         const controls = Array.from({ length: 65 }, (_, i) => ({
             controlKey: `c${i}`,
             label: `Control ${i}`,
+            controlId: `ctl_${i}`,
         }));
         expect(
             ProcessEdgeInputSchema.safeParse({
