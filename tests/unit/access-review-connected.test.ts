@@ -59,6 +59,25 @@ describe('createConnectedAccessReview', () => {
         await expect(createConnectedAccessReview(ctx, { name: 'x', reviewerUserId: 'u' })).rejects.toThrow(/zero subjects|No active/i);
     });
 
+    it('scopes the account query to one directory when a provider is given (Entra ID / AD)', async () => {
+        const ctx = makeRequestContext('ADMIN');
+        await createConnectedAccessReview(ctx, { name: 'Azure review', reviewerUserId: 'u-rev', provider: 'entra-id' });
+        const where = mockDb.connectedIdentityAccount.findMany.mock.calls[0][0].where;
+        // A specific provider filters to that directory only (not the `in` list).
+        expect(where.provider).toBe('entra-id');
+
+        await createConnectedAccessReview(ctx, { name: 'AD review', reviewerUserId: 'u-rev', provider: 'active-directory' });
+        expect(mockDb.connectedIdentityAccount.findMany.mock.calls[1][0].where.provider).toBe('active-directory');
+    });
+
+    it('reviews every synced directory when no provider is given', async () => {
+        const ctx = makeRequestContext('ADMIN');
+        await createConnectedAccessReview(ctx, { name: 'All dirs', reviewerUserId: 'u-rev' });
+        const where = mockDb.connectedIdentityAccount.findMany.mock.calls[0][0].where;
+        // No provider → the `in` allowlist of every identity provider.
+        expect(where.provider.in).toEqual(expect.arrayContaining(['okta', 'google-workspace', 'entra-id', 'active-directory']));
+    });
+
     it('forbids a non-admin', async () => {
         const ctx = makeRequestContext('READER');
         await expect(createConnectedAccessReview(ctx, { name: 'x', reviewerUserId: 'u' })).rejects.toThrow();

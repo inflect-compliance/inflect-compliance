@@ -21,6 +21,7 @@ import { Modal } from '@/components/ui/modal';
 import { FormField } from '@/components/ui/form-field';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { UserCombobox } from '@/components/ui/user-combobox';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -243,7 +244,20 @@ function CreateCampaignButton({
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [scope, setScope] = useState<'ALL_USERS' | 'ADMIN_ONLY' | 'CONNECTED_APP'>('ALL_USERS');
+    // Directory scope for a CONNECTED_APP review — 'all' reviews every synced
+    // provider; a specific id (e.g. 'entra-id', 'active-directory') scopes the
+    // campaign to one directory. Matches the ScheduledCheckProvider ids the
+    // access-review-connected usecase accepts.
+    const [directory, setDirectory] = useState<string>('all');
     const [reviewerUserId, setReviewerUserId] = useState('');
+
+    const directoryOptions: ComboboxOption[] = [
+        { value: 'all', label: t('directoryAll') },
+        { value: 'okta', label: t('directoryOkta') },
+        { value: 'google-workspace', label: t('directoryGoogle') },
+        { value: 'entra-id', label: t('directoryEntra') },
+        { value: 'active-directory', label: t('directoryAd') },
+    ];
     const [dueAt, setDueAt] = useState<Date | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -255,13 +269,16 @@ function CreateCampaignButton({
         setError(null);
         try {
             // A CONNECTED_APP review runs over synced identity-provider accounts
-            // (Okta / Google Workspace) via a separate endpoint + usecase; the
-            // member scopes (ALL_USERS / ADMIN_ONLY) use the roster endpoint.
+            // (Okta / Google Workspace / Entra ID / Active Directory) via a
+            // separate endpoint + usecase; the member scopes (ALL_USERS /
+            // ADMIN_ONLY) use the roster endpoint. A specific `directory` scopes
+            // the campaign to one provider; 'all' omits the filter.
             const isConnected = scope === 'CONNECTED_APP';
             const body = isConnected
                 ? {
                       name,
                       description: description || undefined,
+                      provider: directory !== 'all' ? directory : undefined,
                       reviewerUserId,
                       dueAt: dueAt ? dueAt.toISOString() : undefined,
                   }
@@ -286,6 +303,8 @@ function CreateCampaignButton({
             setName('');
             setDescription('');
             setReviewerUserId('');
+            setDirectory('all');
+            setScope('ALL_USERS');
             setDueAt(null);
             onCreated(data.accessReviewId);
         } catch (err) {
@@ -349,7 +368,9 @@ function CreateCampaignButton({
                                             ['ALL_USERS', t('scopeAllUsers')],
                                             ['ADMIN_ONLY', t('scopeAdminOnly')],
                                             // Reviews connected identity-provider accounts (Okta /
-                                            // Google Workspace) synced via the integrations connector.
+                                            // Google Workspace / Entra ID / Active Directory) synced
+                                            // via the integrations connector; scoped by the Directory
+                                            // picker below.
                                             ['CONNECTED_APP', t('scopeConnectedApp')],
                                         ] as const
                                     ).map(([value, labelText]) => (
@@ -368,6 +389,29 @@ function CreateCampaignButton({
                                     ))}
                                 </RadioGroup>
                             </FormField>
+                            {scope === 'CONNECTED_APP' ? (
+                                <FormField
+                                    label={t('fieldDirectory')}
+                                    hint={t('directoryHint')}
+                                >
+                                    <div data-testid="access-review-new-directory">
+                                        <Combobox
+                                            hideSearch
+                                            id="access-review-directory-select"
+                                            selected={
+                                                directoryOptions.find(
+                                                    (o) => o.value === directory,
+                                                ) ?? null
+                                            }
+                                            setSelected={(opt) =>
+                                                setDirectory(opt?.value ?? 'all')
+                                            }
+                                            options={directoryOptions}
+                                            matchTriggerWidth
+                                        />
+                                    </div>
+                                </FormField>
+                            ) : null}
                             <FormField label={t('fieldReviewer')} required>
                                 {/* People-picker over the tenant's members
                                     (replaces the raw "usr_…" id input). The

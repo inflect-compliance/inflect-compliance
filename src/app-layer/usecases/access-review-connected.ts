@@ -1,8 +1,10 @@
 /**
  * Connected-app access reviews (PR-7) — the CONNECTED_APP scope.
  *
- * Reviews connected identity-provider accounts (Okta / Google Workspace,
- * PR-2's ConnectedIdentityAccount) rather than tenant memberships. Kept in a
+ * Reviews connected identity-provider accounts (Okta / Google Workspace /
+ * Microsoft Entra ID / Active Directory — PR-2's ConnectedIdentityAccount)
+ * rather than tenant memberships. An optional `provider` scopes the campaign to
+ * one directory; omit it to review every synced directory. Kept in a
  * SEPARATE module writing to AccessReviewConnectedDecision so the mature
  * member-review flow (access-review.ts) is 100% untouched.
  *
@@ -48,7 +50,7 @@ export async function createConnectedAccessReview(ctx: RequestContext, input: un
             take: MAX_SUBJECTS,
         });
         if (accounts.length === 0) {
-            throw badRequest('No active connected identity accounts match the requested scope — the campaign would have zero subjects. Sync Okta / Google Workspace / Entra ID first.');
+            throw badRequest('No active connected identity accounts match the requested scope — the campaign would have zero subjects. Connect and sync a directory (Okta / Google Workspace / Microsoft Entra ID / Active Directory) first.');
         }
 
         const review = await AccessReviewRepository.create(db, ctx, {
