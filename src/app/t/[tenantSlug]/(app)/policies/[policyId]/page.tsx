@@ -563,7 +563,7 @@ export default function PolicyDetailPage() {
                         </Button>
                     )}
                     {canPublishNow && (
-                        <Button variant="primary" size="sm" onClick={() => headerVersion && publishVersion(headerVersion.id)} disabled={!!actionLoading} id="header-publish">
+                        <Button variant="secondary" size="sm" onClick={() => headerVersion && publishVersion(headerVersion.id)} disabled={!!actionLoading} id="header-publish">
                             {t('detail.publish')}
                         </Button>
                     )}

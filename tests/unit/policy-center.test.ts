@@ -92,6 +92,8 @@ import * as usecases from '@/app-layer/usecases/policy';
 beforeEach(() => {
     jest.clearAllMocks();
     mockPolicyRepo.getBySlug.mockResolvedValue(null);
+    // publishPolicy writes lifecycle fields directly on the tenant db (Prompt-3.1).
+    mockDb.policy = { update: jest.fn() };
 });
 
 // ─── Authorization Matrix ───

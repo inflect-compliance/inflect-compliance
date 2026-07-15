@@ -2945,6 +2945,13 @@ exports[`API contract — per-schema snapshots schema: PolicyCreateRequest 1`] =
         "null"
       ]
     },
+    "contentType": {
+      "type": "string",
+      "enum": [
+        "MARKDOWN",
+        "HTML"
+      ]
+    },
     "templateId": {
       "type": [
         "string",
@@ -3319,6 +3326,34 @@ exports[`API contract — per-schema snapshots schema: PolicyListItem 1`] = `
         "null"
       ]
     },
+    "lifecycleVersion": {
+      "type": "number"
+    },
+    "lifecycleHistoryJson": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "object",
+        "properties": {
+          "versionId": {
+            "type": "string"
+          },
+          "versionNumber": {
+            "type": "number"
+          },
+          "supersededAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "versionId",
+          "versionNumber"
+        ],
+        "additionalProperties": {}
+      }
+    },
     "createdAt": {
       "type": "string"
     },
@@ -3566,12 +3601,17 @@ exports[`API contract — per-schema snapshots schema: PolicyPublishRequest 1`] 
     "versionId": {
       "type": "string",
       "minLength": 1
+    },
+    "bypassApprovalReason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
     }
   },
   "required": [
     "versionId"
   ],
-  "description": "Promote an approved policy version to PUBLISHED. Only one published version per policy at a time; the previous published version is archived."
+  "description": "Promote an approved policy version to PUBLISHED. Only one published version per policy at a time; the previous published version is archived. An admin may supply bypassApprovalReason to publish an un-approved version (audited)."
 }"
 `;
 

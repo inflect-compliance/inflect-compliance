@@ -90,7 +90,10 @@ const PRIMARY_BUDGET: Record<string, number> = {
     "src/app/org/[orgSlug]/(app)/members/MembersTable.tsx": 5,
 
     // Detail pages with edit/save flows + child modals
-    "src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx": 4,
+    // +1 for the Prompt-2.5 emergency publish-bypass modal — its own dialog
+    // region with a legitimate primary confirm (the header-cluster Publish mirror
+    // is demoted to secondary since the canonical primary lives on the version card).
+    "src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx": 5,
     "src/app/t/[tenantSlug]/(app)/admin/vendor-templates/[templateId]/VendorTemplateBuilderClient.tsx": 4,
 
     // R3-P2 — 4 primaries, but two are runtime-mutually-exclusive: the

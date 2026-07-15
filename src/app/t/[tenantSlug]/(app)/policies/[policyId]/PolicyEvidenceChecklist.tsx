@@ -143,7 +143,6 @@ export function PolicyEvidenceChecklist({ policyId, items, canWrite, onChanged }
                         className="input flex-1"
                         value={newLabel}
                         onChange={(e) => setNewLabel(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') void addItem(); }}
                         placeholder={t('evidence.addPlaceholder')}
                         data-testid="policy-evidence-add-input"
                     />

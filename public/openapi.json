@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Inflect Compliance API",
-    "version": "1.787.1",
+    "version": "1.798.0",
     "description": "Multi-tenant compliance-management API. The schema layer in `src/lib/schemas/index.ts` (request bodies) and `src/lib/dto/*.dto.ts` (response shapes) is the single source of truth — this document is generated from those Zod schemas via `npm run openapi:generate`.\n\n**Authenticating.** To try an endpoint, click **Authorize**:\n- *BearerAuth* (recommended for integrations) — paste a tenant **API key** (`iflk_…`), minted under Admin → API Keys. Sent as `Authorization: Bearer iflk_…`.\n- *SessionCookie* — for the dev/staging \"Try it out\" flow, sign in first; the browser sends the `next-auth.session-token` cookie automatically (same-origin only).\n\n**Coverage.** Operations marked `x-stub: true` exist and are callable, but their request/response bodies are not yet published in this contract — only the critical-endpoint set carries full schemas. See `docs/api-consumer-guide.md` for the auth, rate-limit, versioning, and error-contract details.",
     "license": {
       "name": "Proprietary"
@@ -2837,6 +2837,13 @@
               "null"
             ]
           },
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "MARKDOWN",
+              "HTML"
+            ]
+          },
           "templateId": {
             "type": [
               "string",
@@ -3205,6 +3212,34 @@
               "null"
             ]
           },
+          "lifecycleVersion": {
+            "type": "number"
+          },
+          "lifecycleHistoryJson": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object",
+              "properties": {
+                "versionId": {
+                  "type": "string"
+                },
+                "versionNumber": {
+                  "type": "number"
+                },
+                "supersededAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "versionId",
+                "versionNumber"
+              ],
+              "additionalProperties": {}
+            }
+          },
           "createdAt": {
             "type": "string"
           },
@@ -3443,12 +3478,17 @@
           "versionId": {
             "type": "string",
             "minLength": 1
+          },
+          "bypassApprovalReason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
           }
         },
         "required": [
           "versionId"
         ],
-        "description": "Promote an approved policy version to PUBLISHED. Only one published version per policy at a time; the previous published version is archived."
+        "description": "Promote an approved policy version to PUBLISHED. Only one published version per policy at a time; the previous published version is archived. An admin may supply bypassApprovalReason to publish an un-approved version (audited)."
       },
       "PolicyVersionCreateRequest": {
         "type": "object",
@@ -24785,6 +24825,49 @@
         }
       }
     },
+    "/api/t/{tenantSlug}/policies/{id}/acknowledgement-requests": {
+      "post": {
+        "summary": "POST /api/t/{tenantSlug}/policies/{id}/acknowledgement-requests",
+        "description": "Stub entry — this route exists but its request/response schema is not yet published in the machine-readable contract. The path, method, and required path parameters are accurate; the body and success shape are not yet formally documented. See `docs/api-consumer-guide.md`. (The critical-endpoint set carries full request/response/permission/rate-limit entries.)",
+        "tags": [
+          "policies"
+        ],
+        "x-stub": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "tenantSlug",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Successful response. The success schema is not yet published in the contract."
+          },
+          "default": {
+            "description": "Error — see the ErrorResponse envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/t/{tenantSlug}/policies/{id}/activity": {
       "get": {
         "summary": "GET /api/t/{tenantSlug}/policies/{id}/activity",
@@ -24965,7 +25048,177 @@
         }
       }
     },
+    "/api/t/{tenantSlug}/policies/{id}/attest": {
+      "post": {
+        "summary": "POST /api/t/{tenantSlug}/policies/{id}/attest",
+        "description": "Stub entry — this route exists but its request/response schema is not yet published in the machine-readable contract. The path, method, and required path parameters are accurate; the body and success shape are not yet formally documented. See `docs/api-consumer-guide.md`. (The critical-endpoint set carries full request/response/permission/rate-limit entries.)",
+        "tags": [
+          "policies"
+        ],
+        "x-stub": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "tenantSlug",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Successful response. The success schema is not yet published in the contract."
+          },
+          "default": {
+            "description": "Error — see the ErrorResponse envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/t/{tenantSlug}/policies/{id}/attestation": {
+      "get": {
+        "summary": "GET /api/t/{tenantSlug}/policies/{id}/attestation",
+        "description": "Stub entry — this route exists but its request/response schema is not yet published in the machine-readable contract. The path, method, and required path parameters are accurate; the body and success shape are not yet formally documented. See `docs/api-consumer-guide.md`. (The critical-endpoint set carries full request/response/permission/rate-limit entries.)",
+        "tags": [
+          "policies"
+        ],
+        "x-stub": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "tenantSlug",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Successful response. The success schema is not yet published in the contract."
+          },
+          "default": {
+            "description": "Error — see the ErrorResponse envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/t/{tenantSlug}/policies/{id}/attestations": {
+      "get": {
+        "summary": "GET /api/t/{tenantSlug}/policies/{id}/attestations",
+        "description": "Stub entry — this route exists but its request/response schema is not yet published in the machine-readable contract. The path, method, and required path parameters are accurate; the body and success shape are not yet formally documented. See `docs/api-consumer-guide.md`. (The critical-endpoint set carries full request/response/permission/rate-limit entries.)",
+        "tags": [
+          "policies"
+        ],
+        "x-stub": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "tenantSlug",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Successful response. The success schema is not yet published in the contract."
+          },
+          "default": {
+            "description": "Error — see the ErrorResponse envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/t/{tenantSlug}/policies/{id}/control-links": {
+      "delete": {
+        "summary": "DELETE /api/t/{tenantSlug}/policies/{id}/control-links",
+        "description": "Stub entry — this route exists but its request/response schema is not yet published in the machine-readable contract. The path, method, and required path parameters are accurate; the body and success shape are not yet formally documented. See `docs/api-consumer-guide.md`. (The critical-endpoint set carries full request/response/permission/rate-limit entries.)",
+        "tags": [
+          "policies"
+        ],
+        "x-stub": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "tenantSlug",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Successful response. The success schema is not yet published in the contract."
+          },
+          "default": {
+            "description": "Error — see the ErrorResponse envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "summary": "POST /api/t/{tenantSlug}/policies/{id}/control-links",
         "description": "Stub entry — this route exists but its request/response schema is not yet published in the machine-readable contract. The path, method, and required path parameters are accurate; the body and success shape are not yet formally documented. See `docs/api-consumer-guide.md`. (The critical-endpoint set carries full request/response/permission/rate-limit entries.)",
@@ -25361,6 +25614,49 @@
     "/api/t/{tenantSlug}/policies/{id}/review": {
       "post": {
         "summary": "POST /api/t/{tenantSlug}/policies/{id}/review",
+        "description": "Stub entry — this route exists but its request/response schema is not yet published in the machine-readable contract. The path, method, and required path parameters are accurate; the body and success shape are not yet formally documented. See `docs/api-consumer-guide.md`. (The critical-endpoint set carries full request/response/permission/rate-limit entries.)",
+        "tags": [
+          "policies"
+        ],
+        "x-stub": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "tenantSlug",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Successful response. The success schema is not yet published in the contract."
+          },
+          "default": {
+            "description": "Error — see the ErrorResponse envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/t/{tenantSlug}/policies/{id}/rollback": {
+      "post": {
+        "summary": "POST /api/t/{tenantSlug}/policies/{id}/rollback",
         "description": "Stub entry — this route exists but its request/response schema is not yet published in the machine-readable contract. The path, method, and required path parameters are accurate; the body and success shape are not yet formally documented. See `docs/api-consumer-guide.md`. (The critical-endpoint set carries full request/response/permission/rate-limit entries.)",
         "tags": [
           "policies"
