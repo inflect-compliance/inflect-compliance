@@ -60,8 +60,8 @@ describe('rq4-1 page segregation', () => {
     it('normalizePathname strips the tenant prefix and resolves dynamic segments', () => {
         expect(normalizePathname('/t/acme/risks/abc-123')).toBe('/risks/[riskId]');
         expect(normalizePathname('/t/acme/dashboard')).toBe('/dashboard');
-        expect(normalizePathname('/t/acme/vendors/v1/assessment/a1')).toBe(
-            '/vendors/[vendorId]/assessment/[assessmentId]',
+        expect(normalizePathname('/t/acme/tests/runs/run-1')).toBe(
+            '/tests/runs/[runId]',
         );
         expect(normalizePathname('/login')).toBeNull();
     });

@@ -24,10 +24,7 @@
  *      pass through).
  *   3. updateVendor: VENDOR_STATUS_CHANGED audit when status
  *      changes; VENDOR_UPDATED otherwise.
- *   4. saveAssessmentAnswers rejects edits on non-DRAFT.
- *   5. decideVendorAssessment requires canApproveAssessment + sanitises
- *      notes (encrypted column) before persist.
- *   6. updateVendorStatusWithGate: cannot promote to ACTIVE without
+ *   4. updateVendorStatusWithGate: cannot promote to ACTIVE without
  *      an APPROVED assessment.
  */
 
@@ -93,13 +90,10 @@ jest.mock('../../../src/app-layer/events/audit', () => ({
 import {
     createVendor,
     updateVendor,
-    saveAssessmentAnswers,
-    decideVendorAssessment,
     updateVendorStatusWithGate,
 } from '@/app-layer/usecases/vendor';
 import { runInTenantContext } from '@/lib/db-context';
 import { VendorRepository } from '@/app-layer/repositories/VendorRepository';
-import { VendorAssessmentRepository } from '@/app-layer/repositories/AssessmentRepository';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { logEvent } from '@/app-layer/events/audit';
 import { makeRequestContext } from '../../helpers/make-context';
@@ -108,8 +102,6 @@ const mockRunInTx = runInTenantContext as jest.MockedFunction<typeof runInTenant
 const mockVendorCreate = VendorRepository.create as jest.MockedFunction<typeof VendorRepository.create>;
 const mockVendorUpdate = VendorRepository.update as jest.MockedFunction<typeof VendorRepository.update>;
 const mockVendorGetById = VendorRepository.getById as jest.MockedFunction<typeof VendorRepository.getById>;
-const mockAssessGetById = VendorAssessmentRepository.getById as jest.MockedFunction<typeof VendorAssessmentRepository.getById>;
-const mockAssessDecide = VendorAssessmentRepository.decide as jest.MockedFunction<typeof VendorAssessmentRepository.decide>;
 const mockSanitize = sanitizePlainText as jest.MockedFunction<typeof sanitizePlainText>;
 const mockLog = logEvent as jest.MockedFunction<typeof logEvent>;
 
@@ -196,49 +188,6 @@ describe('updateVendor — loose-typed patch sanitisation + status-change audit'
         const actions = mockLog.mock.calls.map(c => (c[2] as any).action);
         expect(actions).toContain('VENDOR_STATUS_CHANGED');
         expect(actions).toContain('VENDOR_UPDATED');
-    });
-});
-
-describe('saveAssessmentAnswers', () => {
-    it('rejects edits on a non-DRAFT assessment', async () => {
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
-        mockAssessGetById.mockResolvedValueOnce({
-            id: 'a1', vendorId: 'v1', status: 'IN_REVIEW',
-            template: { questions: [] },
-        } as never);
-
-        await expect(
-            saveAssessmentAnswers(makeRequestContext('EDITOR'), 'a1', []),
-        ).rejects.toThrow(/non-draft/);
-        // Regression: a refactor that allowed answer edits post-submit
-        // would let a compliance team rewrite the answers AFTER the
-        // approver saw the assessment — defeating the audit trail.
-    });
-});
-
-describe('decideVendorAssessment', () => {
-    it('rejects EDITOR — assertCanApproveAssessment is admin-class', async () => {
-        await expect(
-            decideVendorAssessment(makeRequestContext('EDITOR'), 'a1', 'APPROVED'),
-        ).rejects.toThrow();
-    });
-
-    it('sanitises notes (encrypted column) before passing to repo', async () => {
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
-        mockAssessDecide.mockResolvedValueOnce({
-            id: 'a1', vendorId: 'v1',
-        } as never);
-
-        await decideVendorAssessment(
-            makeRequestContext('ADMIN'),
-            'a1',
-            'APPROVED',
-            '<script>note</script>',
-        );
-
-        const decideArgs = mockAssessDecide.mock.calls[0];
-        // signature: (db, ctx, assessmentId, decision, safeNotes)
-        expect(decideArgs[4]).toBe('SANITISED(<script>note</script>)');
     });
 });
 

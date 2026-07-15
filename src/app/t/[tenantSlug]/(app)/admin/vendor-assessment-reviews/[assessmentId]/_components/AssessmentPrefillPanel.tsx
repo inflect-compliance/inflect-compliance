@@ -9,9 +9,13 @@
  * Approve / Reject. Approving is the ONLY thing that writes a real answer
  * (propose-not-commit) — the panel makes that explicit. An expired SOC 2
  * period is flagged so a reviewer weighs the freshness.
+ *
+ * Mounted on the G-3 internal review surface
+ * (admin/vendor-assessment-reviews/[assessmentId]).
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
@@ -48,18 +52,16 @@ function proposedValue(json: unknown): string {
 }
 
 export function AssessmentPrefillPanel({
-    tenantSlug,
     vendorId,
     assessmentId,
     onApplied,
 }: {
-    tenantSlug: string;
     vendorId: string;
     assessmentId: string;
-    onApplied: () => void;
+    onApplied?: () => void;
 }) {
     const tx = useTranslations('vendors');
-    const apiUrl = useCallback((p: string) => `/api/t/${tenantSlug}${p}`, [tenantSlug]);
+    const apiUrl = useTenantApiUrl();
     const [docs, setDocs] = useState<VendorDoc[]>([]);
     const [selectedDoc, setSelectedDoc] = useState<string>('');
     const [extraction, setExtraction] = useState<Extraction | null>(null);
@@ -107,7 +109,7 @@ export function AssessmentPrefillPanel({
                 setExtraction((e) =>
                     e ? { ...e, proposals: e.proposals.map((p) => (p.id === proposalId ? { ...p, status: action === 'approve' ? 'ACCEPTED' : 'REJECTED' } : p)) } : e,
                 );
-                if (action === 'approve') onApplied();
+                if (action === 'approve') onApplied?.();
             } catch {
                 setError(tx('prefill.updateFailed'));
             } finally {

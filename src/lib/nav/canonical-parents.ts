@@ -62,6 +62,7 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
     '/admin/sso': { href: '/admin', label: 'Admin' },
     '/admin/training': { href: '/admin', label: 'Admin' },
     '/admin/trust-center': { href: '/admin', label: 'Admin' },
+    '/admin/vendor-assessment-reviews': { href: '/admin', label: 'Admin' },
     '/admin/vendor-assessment-reviews/[assessmentId]': { href: '/admin', label: 'Admin' },
     '/admin/vendor-templates': { href: '/admin', label: 'Admin' },
     '/admin/vendor-templates/[templateId]': { href: '/admin/vendor-templates', label: 'Vendor templates' },
@@ -179,10 +180,6 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
 
     // Vendors
     '/vendors/[vendorId]': { href: '/vendors', label: 'Vendors' },
-    '/vendors/[vendorId]/assessment/[assessmentId]': {
-        href: '/vendors/[vendorId]',
-        label: 'Vendor',
-    },
     '/vendors/dashboard': { href: '/vendors', label: 'Vendors' },
     '/vendors/new': { href: '/vendors', label: 'Vendors' },
 };

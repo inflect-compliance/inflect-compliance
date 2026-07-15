@@ -173,7 +173,6 @@ describe("EntityDetailLayout adoption — PR-4", () => {
       // NIS2 gap-assessment assignee answer page — a scoped question FORM, not
       // an entity-detail surface; carries its own PageHeader + BackAffordance.
       "src/app/t/[tenantSlug]/(app)/audits/nis2-gap/respond/[assignmentId]/page.tsx",
-      "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/assessment/[assessmentId]/page.tsx",
       "src/app/t/[tenantSlug]/(app)/issues/[issueId]/page.tsx", // legacy redirect → /tasks/[id]
       "src/app/t/[tenantSlug]/(app)/admin/vendor-templates/[templateId]/page.tsx",
       "src/app/t/[tenantSlug]/(app)/admin/vendor-assessment-reviews/[assessmentId]/page.tsx",

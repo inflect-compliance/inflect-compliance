@@ -97,12 +97,6 @@ const DETAIL_PAGES: DetailPageEntry[] = [
         note: "Access review detail — server shell delegates to AccessReviewDetailClient which already mounts <EntityDetailLayout>. R7-PR9's coarse ratchet missed this because it only scanned page.tsx; R8-PR3 adds compositionFile pointer so the ratchet checks the right file.",
     },
 
-    // ── Pending migration ──
-    {
-        file: "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/assessment/[assessmentId]/page.tsx",
-        adopted: false,
-        note: "Nested vendor assessment review detail. Pending migration — sub-route of vendor detail; needs breadcrumb stacking.",
-    },
     {
         file: "src/app/t/[tenantSlug]/(app)/controls/[controlId]/tests/[planId]/page.tsx",
         adopted: false,

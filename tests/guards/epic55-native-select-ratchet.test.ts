@@ -136,7 +136,6 @@ describe('Epic 55 — migrated surfaces must not regress to native <select>', ()
         'admin/api-keys/page.tsx',
         'admin/integrations/page.tsx',
         'vendors/[vendorId]/page.tsx',
-        'vendors/[vendorId]/assessment/[assessmentId]/page.tsx',
         'risks/ai/page.tsx',
         'policies/templates/page.tsx',
         'tests/runs/[runId]/page.tsx',
