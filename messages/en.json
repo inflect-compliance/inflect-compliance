@@ -7331,9 +7331,7 @@
       "autoChain": "Chain",
       "autoSlaBreach": "SLA breach",
       "autoOnTime": "On time",
-      "defaultControlLabel": "Control",
-      "variantTooltip": "{description} — click to change",
-      "addControl": "Add control"
+      "variantTooltip": "{description} — click to change"
     },
     "inspector": {
       "ruleTitle": "Rule",

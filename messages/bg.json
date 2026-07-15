@@ -7331,9 +7331,7 @@
       "autoChain": "Верига",
       "autoSlaBreach": "Нарушен SLA",
       "autoOnTime": "Навреме",
-      "defaultControlLabel": "Контрол",
-      "variantTooltip": "{description} — щракнете, за да промените",
-      "addControl": "Добави контрол"
+      "variantTooltip": "{description} — щракнете, за да промените"
     },
     "inspector": {
       "ruleTitle": "Правило",
