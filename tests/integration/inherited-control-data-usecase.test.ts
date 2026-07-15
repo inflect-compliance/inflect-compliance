@@ -68,7 +68,8 @@ describeFn('inherited-control-data usecases (real DB)', () => {
         barePolicyId = barePolicy.id;
         await prisma.policyControlLink.create({ data: { tenantId: TENANT, policyId: mappedPolicyId, controlId } });
 
-        await prisma.evidence.create({ data: { tenantId: TENANT, controlId, type: 'FILE', title: 'Ev' } });
+        const ev = await prisma.evidence.create({ data: { tenantId: TENANT, type: 'FILE', title: 'Ev' } });
+        await prisma.evidenceControlLink.create({ data: { tenantId: TENANT, evidenceId: ev.id, controlId } });
 
         const uid = await ensureUser();
         const plan = await prisma.controlTestPlan.create({
@@ -113,6 +114,7 @@ describeFn('inherited-control-data usecases (real DB)', () => {
         await prisma.framework.deleteMany({ where: { key: `fw-${SUITE}` } });
         await prisma.controlTestRun.deleteMany({ where: { tenantId: TENANT } });
         await prisma.controlTestPlan.deleteMany({ where: { tenantId: TENANT } });
+        await prisma.evidenceControlLink.deleteMany({ where: { tenantId: TENANT } });
         await prisma.evidence.deleteMany({ where: { tenantId: TENANT } });
         await prisma.controlAsset.deleteMany({ where: { tenantId: TENANT } });
         await prisma.riskControl.deleteMany({ where: { tenantId: TENANT } });

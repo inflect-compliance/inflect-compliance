@@ -26,7 +26,9 @@ export async function reconcileUnlinkedEvidence(
             where: {
                 tenantId,
                 type: 'FILE',
-                controlId: null,
+                // Evidence↔Control is a many-to-many join now: "unlinked" means
+                // the evidence has no control links at all.
+                evidenceControlLinks: { none: {} },
                 createdAt: { lt: cutoff },
                 deletedAt: null,
             },

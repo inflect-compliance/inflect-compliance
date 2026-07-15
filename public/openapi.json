@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Inflect Compliance API",
-    "version": "1.783.0",
+    "version": "1.786.1",
     "description": "Multi-tenant compliance-management API. The schema layer in `src/lib/schemas/index.ts` (request bodies) and `src/lib/dto/*.dto.ts` (response shapes) is the single source of truth — this document is generated from those Zod schemas via `npm run openapi:generate`.\n\n**Authenticating.** To try an endpoint, click **Authorize**:\n- *BearerAuth* (recommended for integrations) — paste a tenant **API key** (`iflk_…`), minted under Admin → API Keys. Sent as `Authorization: Bearer iflk_…`.\n- *SessionCookie* — for the dev/staging \"Try it out\" flow, sign in first; the browser sends the `next-auth.session-token` cookie automatically (same-origin only).\n\n**Coverage.** Operations marked `x-stub: true` exist and are callable, but their request/response bodies are not yet published in this contract — only the critical-endpoint set carries full schemas. See `docs/api-consumer-guide.md` for the auth, rate-limit, versioning, and error-contract details.",
     "license": {
       "name": "Proprietary"
@@ -1639,7 +1639,7 @@
           "_count": {
             "type": "object",
             "properties": {
-              "evidence": {
+              "evidenceControlLinks": {
                 "type": "number"
               },
               "risks": {
@@ -1924,6 +1924,69 @@
         ],
         "description": "Canonical error envelope returned by every error path. `code` is a stable string clients can branch on; `message` is human-readable; `requestId` correlates with server logs; `details` is optional structured context (validation issues, rate-limit info, etc.)."
       },
+      "EvidenceControlLink": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "controlId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "control": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "annexId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "code": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "controlId"
+        ],
+        "additionalProperties": {},
+        "description": "A single evidence↔control association. Evidence is many-to-many with controls via this join."
+      },
+      "EvidenceControlLinkRequest": {
+        "type": "object",
+        "properties": {
+          "controlId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "controlId"
+        ],
+        "description": "Associate an existing evidence record with a control. Creates one EvidenceControlLink; idempotent on the (evidence, control) pair."
+      },
       "EvidenceCreateRequest": {
         "type": "object",
         "properties": {
@@ -1932,6 +1995,14 @@
               "string",
               "null"
             ]
+          },
+          "controlIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "maxItems": 100
           },
           "type": {
             "type": "string",
@@ -2014,12 +2085,6 @@
           "tenantId": {
             "type": "string"
           },
-          "controlId": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "type": {
             "type": "string"
           },
@@ -2080,7 +2145,19 @@
           "updatedAt": {
             "type": "string"
           },
-          "control": {
+          "evidenceControlLinks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvidenceControlLink"
+            }
+          },
+          "reviews": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvidenceReview"
+            }
+          },
+          "risk": {
             "type": [
               "object",
               "null"
@@ -2089,10 +2166,19 @@
               "id": {
                 "type": "string"
               },
-              "name": {
-                "type": "string"
+              "key": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
-              "code": {
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "name": {
                 "type": [
                   "string",
                   "null"
@@ -2100,16 +2186,75 @@
               }
             },
             "required": [
-              "id",
-              "name"
+              "id"
             ],
             "additionalProperties": {}
           },
-          "reviews": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EvidenceReview"
-            }
+          "asset": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "key": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "additionalProperties": {}
+          },
+          "task": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "key": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "additionalProperties": {}
           }
         },
         "required": [
@@ -2120,7 +2265,7 @@
           "status"
         ],
         "additionalProperties": {},
-        "description": "Evidence record with the full review history attached. Returned by GET /evidence/{id}."
+        "description": "Evidence record with the full review history + where-used associations attached. Returned by GET /evidence/{id}."
       },
       "EvidenceLinkRequest": {
         "type": "object",
@@ -2167,12 +2312,6 @@
           "tenantId": {
             "type": "string"
           },
-          "controlId": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "type": {
             "type": "string"
           },
@@ -2233,30 +2372,11 @@
           "updatedAt": {
             "type": "string"
           },
-          "control": {
-            "type": [
-              "object",
-              "null"
-            ],
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "name": {
-                "type": "string"
-              },
-              "code": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            },
-            "required": [
-              "id",
-              "name"
-            ],
-            "additionalProperties": {}
+          "evidenceControlLinks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvidenceControlLink"
+            }
           }
         },
         "required": [
@@ -2349,6 +2469,14 @@
           },
           "content": {
             "type": "string"
+          },
+          "controlIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "maxItems": 100
           },
           "category": {
             "type": [
@@ -20171,9 +20299,146 @@
         }
       }
     },
+    "/api/t/{tenantSlug}/evidence/{id}/controls": {
+      "post": {
+        "summary": "POST /api/t/{tenantSlug}/evidence/{id}/controls",
+        "description": "Stub entry — this route exists but its request/response schema is not yet published in the machine-readable contract. The path, method, and required path parameters are accurate; the body and success shape are not yet formally documented. See `docs/api-consumer-guide.md`. (The critical-endpoint set carries full request/response/permission/rate-limit entries.)",
+        "tags": [
+          "evidence"
+        ],
+        "x-stub": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "tenantSlug",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Successful response. The success schema is not yet published in the contract."
+          },
+          "default": {
+            "description": "Error — see the ErrorResponse envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/t/{tenantSlug}/evidence/{id}/controls/{controlId}": {
+      "delete": {
+        "summary": "DELETE /api/t/{tenantSlug}/evidence/{id}/controls/{controlId}",
+        "description": "Stub entry — this route exists but its request/response schema is not yet published in the machine-readable contract. The path, method, and required path parameters are accurate; the body and success shape are not yet formally documented. See `docs/api-consumer-guide.md`. (The critical-endpoint set carries full request/response/permission/rate-limit entries.)",
+        "tags": [
+          "evidence"
+        ],
+        "x-stub": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "tenantSlug",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "controlId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Successful response. The success schema is not yet published in the contract."
+          },
+          "default": {
+            "description": "Error — see the ErrorResponse envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/t/{tenantSlug}/evidence/{id}/purge": {
       "post": {
         "summary": "POST /api/t/{tenantSlug}/evidence/{id}/purge",
+        "description": "Stub entry — this route exists but its request/response schema is not yet published in the machine-readable contract. The path, method, and required path parameters are accurate; the body and success shape are not yet formally documented. See `docs/api-consumer-guide.md`. (The critical-endpoint set carries full request/response/permission/rate-limit entries.)",
+        "tags": [
+          "evidence"
+        ],
+        "x-stub": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "tenantSlug",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Successful response. The success schema is not yet published in the contract."
+          },
+          "default": {
+            "description": "Error — see the ErrorResponse envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/t/{tenantSlug}/evidence/{id}/replace": {
+      "post": {
+        "summary": "POST /api/t/{tenantSlug}/evidence/{id}/replace",
         "description": "Stub entry — this route exists but its request/response schema is not yet published in the machine-readable contract. The path, method, and required path parameters are accurate; the body and success shape are not yet formally documented. See `docs/api-consumer-guide.md`. (The critical-endpoint set carries full request/response/permission/rate-limit entries.)",
         "tags": [
           "evidence"

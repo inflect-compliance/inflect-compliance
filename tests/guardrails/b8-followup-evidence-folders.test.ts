@@ -176,7 +176,9 @@ describe('B8 follow-up — evidence folders', () => {
 
         it('buildEvidenceFilters accepts evidence + injects folder options', () => {
             expect(src).toMatch(
-                /buildEvidenceFilters\([\s\S]{0,200}evidence: ReadonlyArray<EvidenceFolderLike>/,
+                // EP-3 intersected the evidence param type with
+                // EvidenceCategoryLike; the folder contract still holds.
+                /buildEvidenceFilters\([\s\S]{0,200}evidence: ReadonlyArray<EvidenceFolderLike/,
             );
         });
     });

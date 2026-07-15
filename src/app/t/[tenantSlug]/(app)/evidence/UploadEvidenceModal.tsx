@@ -128,6 +128,8 @@ export function UploadEvidenceModal({
 
     const [title, setTitle] = useState('');
     const [controlId, setControlId] = useState('');
+    // EP-3 — free-text category applied to every file in the batch.
+    const [category, setCategory] = useState('');
     // B8 follow-up — free-text folder label applied to every file
     // in the upload batch. Datalist below seeds it with values
     // already in use on existing evidence.
@@ -189,6 +191,8 @@ export function UploadEvidenceModal({
         if (!open) return;
         setTitle('');
         setControlId('');
+        setCategory('');
+        setFolder('');
         setRetentionUntil('');
         setError('');
         setQueuedCount(0);
@@ -236,6 +240,8 @@ export function UploadEvidenceModal({
         file: File;
         applyTitle: boolean;
         controlId: string;
+        /** EP-3 — category applied to every uploaded file. */
+        category: string;
         /** B8 follow-up — folder label applied to every uploaded file. */
         folder: string;
         retentionUntil: string;
@@ -255,6 +261,8 @@ export function UploadEvidenceModal({
             // titles would all land on the same string otherwise).
             if (applyTitle && title) formData.append('title', title);
             if (vars.controlId) formData.append('controlId', vars.controlId);
+            // EP-3 — category rides every uploaded row in the batch.
+            if (vars.category) formData.append('category', vars.category.trim());
             // B8 follow-up — folder rides every uploaded row in the
             // batch. The /uploads route forwards it to createEvidence.
             if (vars.folder) formData.append('folder', vars.folder.trim());
@@ -299,8 +307,9 @@ export function UploadEvidenceModal({
                 type: 'FILE',
                 status: 'PENDING_UPLOAD',
                 owner: null,
-                control: null,
-                controlId: null,
+                // EP-3 — the list row now reads many-to-many links + category.
+                evidenceControlLinks: [],
+                category: null,
                 retentionUntil: null,
                 isArchived: false,
                 expiredAt: null,
@@ -334,6 +343,7 @@ export function UploadEvidenceModal({
                     file,
                     applyTitle,
                     controlId,
+                    category,
                     folder,
                     retentionUntil,
                     onProgress: ctx.onProgress,
@@ -377,6 +387,7 @@ export function UploadEvidenceModal({
         [
             mutation,
             controlId,
+            category,
             folder,
             retentionUntil,
             telemetry,
@@ -613,6 +624,23 @@ export function UploadEvidenceModal({
                                 forceDropdown
                                 buttonProps={{ className: 'w-full' }}
                                 caret
+                            />
+                        </FormField>
+
+                        {/* EP-3 — Category. Free text applied to every
+                            file in the batch. */}
+                        <FormField
+                            label={tx('upload.categoryLabel')}
+                            description={tx('upload.categoryDesc')}
+                        >
+                            <input
+                                id="upload-evidence-category-input"
+                                type="text"
+                                className="input w-full"
+                                placeholder={tx('upload.categoryPlaceholder')}
+                                value={category}
+                                onChange={(e) => setCategory(e.target.value)}
+                                autoComplete="off"
                             />
                         </FormField>
 

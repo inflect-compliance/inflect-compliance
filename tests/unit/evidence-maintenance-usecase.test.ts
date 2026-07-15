@@ -53,15 +53,17 @@ beforeEach(() => {
 // ─── reconcileUnlinkedEvidence ─────────────────────────────────────
 
 describe('reconcileUnlinkedEvidence', () => {
-    it('queries for FILE evidence with no controlId older than the cutoff', async () => {
+    it('queries for FILE evidence with no control links older than the cutoff', async () => {
         (mockDb.evidence.findMany as jest.Mock).mockResolvedValue([]);
         const before = Date.now();
         await reconcileUnlinkedEvidence('tenant-1', 60);
         const args = (mockDb.evidence.findMany as jest.Mock).mock.calls[0][0];
+        // EP-3 — Evidence↔Control is a many-to-many join now; "unlinked" means
+        // the evidence has no EvidenceControlLink rows at all.
         expect(args.where).toMatchObject({
             tenantId: 'tenant-1',
             type: 'FILE',
-            controlId: null,
+            evidenceControlLinks: { none: {} },
             deletedAt: null,
         });
         const cutoff = args.where.createdAt.lt as Date;

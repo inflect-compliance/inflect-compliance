@@ -48,6 +48,9 @@ const mockPrisma: any = {
     control: { findMany: jest.fn() },
     integrationExecution: { create: jest.fn() },
     evidence: { create: jest.fn() },
+    // Evidence↔Control is a many-to-many join now; webhook evidence attaches
+    // to the matched control via an EvidenceControlLink row.
+    evidenceControlLink: { create: jest.fn() },
 };
 jest.mock('@/lib/prisma', () => ({
     __esModule: true,
@@ -376,6 +379,8 @@ describe('processIncomingWebhook — provider dispatch', () => {
             ]);
         mockPrisma.integrationExecution.create
             .mockResolvedValue({ id: 'exec-1' });
+        // Evidence↔Control join: the code reads evidence.id to build the link.
+        mockPrisma.evidence.create.mockResolvedValue({ id: 'ev-1' });
 
         const result = await processIncomingWebhook(makeInput());
 

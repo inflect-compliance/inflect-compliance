@@ -44,9 +44,9 @@ const controlListSelect = {
     // (`computePageInfo`) — it's not rendered in the table.
     createdAt: true,
     owner: { select: { id: true, name: true, email: true } },
-    // R2-P4 — count links + direct Evidence so the list Evidence column
-    // agrees with the detail Evidence tab badge (which counts both).
-    _count: { select: { evidenceLinks: true, evidence: true } },
+    // R2-P4 — count links + evidence↔control joins so the list Evidence
+    // column agrees with the detail Evidence tab badge (which counts both).
+    _count: { select: { evidenceLinks: true, evidenceControlLinks: true } },
 } as const;
 
 export class ControlRepository {
@@ -126,7 +126,7 @@ export class ControlRepository {
             // evidenceLinks / evidence / frameworkMappings arrays in
             // favour of per-tab fetches) is bounded follow-up; safe
             // trim landed here cuts the unused subqueries today.
-            return db.control.findFirst({
+            const control = await db.control.findFirst({
                 where: {
                     id,
                     OR: [{ tenantId: ctx.tenantId }, { tenantId: null }],
@@ -137,10 +137,19 @@ export class ControlRepository {
                     applicabilityDecidedBy: { select: { id: true, name: true, email: true } },
                     contributors: { include: { user: { select: { id: true, name: true, email: true } } } },
                     evidenceLinks: { orderBy: { createdAt: 'desc' }, include: { createdBy: { select: { id: true, name: true } } } },
-                    evidence: { where: { tenantId: ctx.tenantId }, orderBy: { createdAt: 'desc' } },
+                    // Evidence↔Control is now a many-to-many join; read the
+                    // linked Evidence rows through it and flatten back to the
+                    // `control.evidence` array the detail page expects.
+                    evidenceControlLinks: {
+                        where: { tenantId: ctx.tenantId },
+                        orderBy: { evidence: { createdAt: 'desc' } },
+                        include: { evidence: true },
+                    },
                     frameworkMappings: { include: { fromRequirement: { include: { framework: { select: { name: true } } } } } },
                 },
             });
+            if (!control) return null;
+            return { ...control, evidence: control.evidenceControlLinks.map((l) => l.evidence) };
         });
     }
 
@@ -171,7 +180,7 @@ export class ControlRepository {
                     _count: {
                         select: {
                             evidenceLinks: true,
-                            evidence: true,
+                            evidenceControlLinks: true,
                             // Canonical control↔requirement links (not the
                             // legacy frameworkMapping island) back the
                             // Mappings tab badge — mapped to the

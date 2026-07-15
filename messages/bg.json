@@ -1964,7 +1964,12 @@
             "entityLabel": "доказателства",
             "retentionTriageAria": "Изглед за задържане",
             "triageExpiring": "Изтичащи",
-            "reReview": "Повторен преглед"
+            "reReview": "Повторен преглед",
+            "createMenuAria": "Добавяне на доказателство",
+            "createFileUpload": "Качване на файл",
+            "createTextNote": "Текстова бележка",
+            "createLink": "Връзка / URL",
+            "createBulkImport": "Групов ZIP импорт"
         },
         "reject": {
             "title": "Отхвърляне на доказателство",
@@ -1978,7 +1983,8 @@
             "folder": "Папка",
             "retention": "Съхранение",
             "freshness": "Актуалност",
-            "actions": "Действия"
+            "actions": "Действия",
+            "category": "Категория"
         },
         "colVis": {
             "title": "Заглавие",
@@ -1989,7 +1995,8 @@
             "freshness": "Актуалност",
             "status": "Статус",
             "owner": "Отговорник",
-            "actions": "Действия"
+            "actions": "Действия",
+            "category": "Категория"
         },
         "detail": {
             "metaType": "Тип",
@@ -2027,7 +2034,18 @@
             "expiry": "Изтича",
             "reviewHistoryTitle": "История на прегледите",
             "noReviewHistory": "Все още няма активност по преглед",
-            "reviewerUnknown": "Неизвестен рецензент"
+            "reviewerUnknown": "Неизвестен рецензент",
+            "metaCategory": "Категория",
+            "usedByControls": "Използва се от {count} контрола",
+            "noControlsLinked": "Все още няма свързани контроли",
+            "unlinkControl": "Премахване на връзка с контрол",
+            "controlUnlinked": "Връзката с контрола е премахната",
+            "undo": "Отмяна",
+            "unlinkFailed": "Премахването на връзката е неуспешно",
+            "linkControlPlaceholder": "Изберете контрол…",
+            "linkControlButton": "Свързване на контрол",
+            "linking": "Свързване…",
+            "linkControlFailed": "Свързването с контрола е неуспешно"
         },
         "edit": {
             "title": "Редактиране на доказателство",
@@ -2049,7 +2067,18 @@
             "saving": "Запазване…",
             "save": "Запази промените",
             "updateFailed": "Неуспешно актуализиране на доказателството",
-            "retentionFailed": "Детайлите са запазени, но съхранението не бе актуализирано"
+            "retentionFailed": "Детайлите са запазени, но съхранението не бе актуализирано",
+            "categoryLabel": "Категория",
+            "categoryPlaceholder": "напр. Контрол на достъпа",
+            "controlsLabel": "Свързани контроли",
+            "controlsDesc": "Контролите, които това доказателство удовлетворява.",
+            "controlsPlaceholder": "Изберете контроли…",
+            "controlsSearchPlaceholder": "Търсене на контроли…",
+            "controlsEmpty": "Няма съвпадащи контроли",
+            "replaceFileLabel": "Замяна на файл",
+            "replaceFileDesc": "Качете нов файл, който да замени текущия.",
+            "replacing": "Заменя се…",
+            "replaceFailed": "Замяната на файла е неуспешна"
         },
         "upload": {
             "title": "Качване на доказателство",
@@ -2086,7 +2115,10 @@
             "spImportFailed": "Импортирането от SharePoint е неуспешно.",
             "spImportFailedNet": "Импортирането от SharePoint е неуспешно — мрежова грешка.",
             "uploadFailed": "Качването е неуспешно",
-            "controlsUnavailable": "Все още няма налични контроли за свързване."
+            "controlsUnavailable": "Все още няма налични контроли за свързване.",
+            "categoryLabel": "Категория",
+            "categoryDesc": "По желание — класифицирайте всеки файл в тази партида.",
+            "categoryPlaceholder": "напр. Контрол на достъпа"
         },
         "bulkImport": {
             "title": "Групово импортиране на доказателства",
@@ -2107,7 +2139,12 @@
             "importRunning": "Импортирането е в ход…",
             "uploading": "Качване…",
             "startImport": "Стартиране на импортирането",
-            "bulkImportFailed": "Груповото импортиране е неуспешно"
+            "bulkImportFailed": "Груповото импортиране е неуспешно",
+            "defaultControlLabel": "Контрол по подразбиране",
+            "defaultControlDesc": "Свързва всеки импортиран елемент с този контрол.",
+            "defaultControlPlaceholder": "Изберете контрол…",
+            "folderLabel": "Папка",
+            "folderPlaceholder": "напр. Одит Q3"
         },
         "filters": {
             "type": "Тип",
@@ -2120,7 +2157,9 @@
             "folderDesc": "Етикет на организационна папка.",
             "noFolder": "Без папка",
             "freshness": "Актуалност",
-            "freshnessDesc": "Актуалност на прегледа: актуално, изтичащо, изтекло или нуждаещо се от преглед."
+            "freshnessDesc": "Актуалност на прегледа: актуално, изтичащо, изтекло или нуждаещо се от преглед.",
+            "category": "Категория",
+            "categoryDesc": "Показва само доказателства в тази категория."
         },
         "filterEnums": {
             "type": {
@@ -2155,6 +2194,25 @@
             "REJECTED": "Отхвърлено",
             "NEEDS_REVIEW": "Нужен преглед",
             "PENDING_UPLOAD": "Изчаква качване"
+        },
+        "linkModal": {
+            "title": "Добавяне на доказателство-връзка",
+            "description": "Запишете URL адрес като доказателство към контрол.",
+            "titleLabel": "Заглавие",
+            "urlLabel": "URL адрес",
+            "urlPlaceholder": "https://…",
+            "linkControlLabel": "Връзка към контрол",
+            "noControlLink": "— Без връзка с контрол",
+            "searchControls": "Търсене на контроли…",
+            "noControlsMatch": "Няма съвпадащи контроли",
+            "categoryLabel": "Категория",
+            "folderLabel": "Папка",
+            "folderOptional": "(по желание)",
+            "folderPlaceholder": "напр. SOC2/2026 или Тримесечни прегледи на достъпа",
+            "cancel": "Отказ",
+            "creating": "Създава се…",
+            "submit": "Добавяне на доказателство",
+            "createFailed": "Създаването на доказателство е неуспешно"
         }
     },
     "personnel": {

@@ -30,6 +30,12 @@ const mockDb = {
         update: jest.fn(),
         count: jest.fn(),
     },
+    // EP-3 — the top-controls leaderboard in getRetentionMetrics now reads
+    // through the Evidence↔Control join instead of grouping Evidence by a
+    // singular controlId.
+    evidenceControlLink: {
+        findMany: jest.fn(),
+    },
 } as any;
 
 jest.mock('@/lib/db-context', () => ({
@@ -161,9 +167,11 @@ describe('updateEvidenceRetention', () => {
 
 describe('listExpiringEvidence', () => {
     it('returns rows from the repository under the read gate', async () => {
-        (mockDb.evidence.findMany as jest.Mock).mockResolvedValue([{ id: 'ev-1' }]);
+        // EP-3 — each row carries the Evidence↔Control join; the usecase
+        // flattens `evidenceControlLinks[0]?.control` onto a `control` field.
+        (mockDb.evidence.findMany as jest.Mock).mockResolvedValue([{ id: 'ev-1', evidenceControlLinks: [] }]);
         const rows = await listExpiringEvidence(readerCtx);
-        expect(rows).toEqual([{ id: 'ev-1' }]);
+        expect(rows).toEqual([{ id: 'ev-1', evidenceControlLinks: [], control: null }]);
     });
 
     it('queries with retentionUntil <= now + days, !isArchived, deletedAt null', async () => {
@@ -205,9 +213,10 @@ describe('listExpiringEvidence', () => {
 
 describe('listExpiredEvidence', () => {
     it('returns rows with expiredAt set, ordered desc', async () => {
-        (mockDb.evidence.findMany as jest.Mock).mockResolvedValue([{ id: 'ev-1' }]);
+        // EP-3 — join flattened onto `control` (see listExpiring above).
+        (mockDb.evidence.findMany as jest.Mock).mockResolvedValue([{ id: 'ev-1', evidenceControlLinks: [] }]);
         const rows = await listExpiredEvidence(readerCtx);
-        expect(rows).toEqual([{ id: 'ev-1' }]);
+        expect(rows).toEqual([{ id: 'ev-1', evidenceControlLinks: [], control: null }]);
         const args = (mockDb.evidence.findMany as jest.Mock).mock.calls[0][0];
         expect(args.where.expiredAt).toEqual({ not: null });
         expect(args.where.deletedAt).toBeNull();
@@ -328,7 +337,9 @@ describe('getRetentionMetrics', () => {
             .mockResolvedValueOnce(5)   // expiringCount
             .mockResolvedValueOnce(2)   // archivedCount
             .mockResolvedValueOnce(1);  // expiredCount
-        (mockDb.evidence.findMany as jest.Mock).mockResolvedValue([
+        // EP-3 — leaderboard is built from EvidenceControlLink join rows; an
+        // evidence linked to N controls yields N rows (one per control).
+        (mockDb.evidenceControlLink.findMany as jest.Mock).mockResolvedValue([
             { controlId: 'c-1', control: { id: 'c-1', name: 'Access control', annexId: 'A.5' } },
             { controlId: 'c-1', control: { id: 'c-1', name: 'Access control', annexId: 'A.5' } },
             { controlId: 'c-2', control: { id: 'c-2', name: 'Backups', annexId: 'A.8' } },
@@ -345,11 +356,13 @@ describe('getRetentionMetrics', () => {
         ]);
     });
 
-    it('drops rows whose controlId is null from the top-controls aggregation', async () => {
+    // EP-3 — the old "drops rows whose controlId is null" case no longer
+    // applies: EvidenceControlLink.controlId is a non-nullable FK, so the
+    // join can never surface a null-controlId row. This now pins the
+    // no-links path (empty join result → empty leaderboard).
+    it('returns an empty leaderboard when no expiring evidence is linked to controls', async () => {
         (mockDb.evidence.count as jest.Mock).mockResolvedValueOnce(0).mockResolvedValueOnce(0).mockResolvedValueOnce(0);
-        (mockDb.evidence.findMany as jest.Mock).mockResolvedValue([
-            { controlId: null, control: null },
-        ]);
+        (mockDb.evidenceControlLink.findMany as jest.Mock).mockResolvedValue([]);
         const res = await getRetentionMetrics(readerCtx);
         expect(res.topControlsWithExpiringEvidence).toEqual([]);
     });
@@ -360,14 +373,14 @@ describe('getRetentionMetrics', () => {
         for (let i = 0; i < 15; i++) {
             rows.push({ controlId: `c-${i}`, control: { id: `c-${i}`, name: `n${i}`, annexId: '' } });
         }
-        (mockDb.evidence.findMany as jest.Mock).mockResolvedValue(rows);
+        (mockDb.evidenceControlLink.findMany as jest.Mock).mockResolvedValue(rows);
         const res = await getRetentionMetrics(readerCtx);
         expect(res.topControlsWithExpiringEvidence).toHaveLength(10);
     });
 
     it('handles missing control relation with Unknown fallback', async () => {
         (mockDb.evidence.count as jest.Mock).mockResolvedValueOnce(0).mockResolvedValueOnce(0).mockResolvedValueOnce(0);
-        (mockDb.evidence.findMany as jest.Mock).mockResolvedValue([
+        (mockDb.evidenceControlLink.findMany as jest.Mock).mockResolvedValue([
             { controlId: 'c-orphan', control: null },
         ]);
         const res = await getRetentionMetrics(readerCtx);

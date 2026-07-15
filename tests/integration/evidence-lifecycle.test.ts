@@ -125,14 +125,19 @@ describeFn('createEvidence (integration)', () => {
         expect(ev.status).toBe('DRAFT');
     });
 
-    it('creates a LINK evidence tagged to a control + ControlEvidenceLink bridge', async () => {
+    it('creates a LINK evidence tagged to a control via EvidenceControlLink', async () => {
+        // EP-3 — evidence↔control is the many-to-many join now; no
+        // ControlEvidenceLink "bridge" is written for Evidence entities.
         const ev = await newDraft({ title: 'link ev', type: 'LINK', controlId: CONTROL_ID });
         expect(ev.type).toBe('LINK');
-        expect(ev.controlId).toBe(CONTROL_ID);
-        const link = await globalPrisma.controlEvidenceLink.findFirst({
-            where: { controlId: CONTROL_ID, tenantId: TENANT_ID, kind: 'LINK' },
+        const link = await globalPrisma.evidenceControlLink.findFirst({
+            where: { controlId: CONTROL_ID, tenantId: TENANT_ID, evidenceId: ev.id },
         });
         expect(link).not.toBeNull();
+        const bridge = await globalPrisma.controlEvidenceLink.findFirst({
+            where: { controlId: CONTROL_ID, tenantId: TENANT_ID, kind: 'LINK' },
+        });
+        expect(bridge).toBeNull();
     });
 
     it('null-coerces a blank folder to "no folder"', async () => {

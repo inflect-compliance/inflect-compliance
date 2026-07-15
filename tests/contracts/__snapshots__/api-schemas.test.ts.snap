@@ -1672,7 +1672,7 @@ exports[`API contract — per-schema snapshots schema: ControlListItem 1`] = `
     "_count": {
       "type": "object",
       "properties": {
-        "evidence": {
+        "evidenceControlLinks": {
           "type": "number"
         },
         "risks": {
@@ -1986,6 +1986,75 @@ exports[`API contract — per-schema snapshots schema: ErrorResponse 1`] = `
 }"
 `;
 
+exports[`API contract — per-schema snapshots schema: EvidenceControlLink 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "controlId": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "control": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "annexId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": {}
+    }
+  },
+  "required": [
+    "controlId"
+  ],
+  "additionalProperties": {},
+  "description": "A single evidence↔control association. Evidence is many-to-many with controls via this join."
+}"
+`;
+
+exports[`API contract — per-schema snapshots schema: EvidenceControlLinkRequest 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "controlId": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "controlId"
+  ],
+  "description": "Associate an existing evidence record with a control. Creates one EvidenceControlLink; idempotent on the (evidence, control) pair."
+}"
+`;
+
 exports[`API contract — per-schema snapshots schema: EvidenceCreateRequest 1`] = `
 "{
   "type": "object",
@@ -1995,6 +2064,14 @@ exports[`API contract — per-schema snapshots schema: EvidenceCreateRequest 1`]
         "string",
         "null"
       ]
+    },
+    "controlIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "maxItems": 100
     },
     "type": {
       "type": "string",
@@ -2080,12 +2157,6 @@ exports[`API contract — per-schema snapshots schema: EvidenceDetail 1`] = `
     "tenantId": {
       "type": "string"
     },
-    "controlId": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
     "type": {
       "type": "string"
     },
@@ -2146,7 +2217,19 @@ exports[`API contract — per-schema snapshots schema: EvidenceDetail 1`] = `
     "updatedAt": {
       "type": "string"
     },
-    "control": {
+    "evidenceControlLinks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/EvidenceControlLink"
+      }
+    },
+    "reviews": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/EvidenceReview"
+      }
+    },
+    "risk": {
       "type": [
         "object",
         "null"
@@ -2155,10 +2238,19 @@ exports[`API contract — per-schema snapshots schema: EvidenceDetail 1`] = `
         "id": {
           "type": "string"
         },
-        "name": {
-          "type": "string"
+        "key": {
+          "type": [
+            "string",
+            "null"
+          ]
         },
-        "code": {
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
           "type": [
             "string",
             "null"
@@ -2166,16 +2258,75 @@ exports[`API contract — per-schema snapshots schema: EvidenceDetail 1`] = `
         }
       },
       "required": [
-        "id",
-        "name"
+        "id"
       ],
       "additionalProperties": {}
     },
-    "reviews": {
-      "type": "array",
-      "items": {
-        "$ref": "#/components/schemas/EvidenceReview"
-      }
+    "asset": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "key": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": {}
+    },
+    "task": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "key": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": {}
     }
   },
   "required": [
@@ -2186,7 +2337,7 @@ exports[`API contract — per-schema snapshots schema: EvidenceDetail 1`] = `
     "status"
   ],
   "additionalProperties": {},
-  "description": "Evidence record with the full review history attached. Returned by GET /evidence/{id}."
+  "description": "Evidence record with the full review history + where-used associations attached. Returned by GET /evidence/{id}."
 }"
 `;
 
@@ -2239,12 +2390,6 @@ exports[`API contract — per-schema snapshots schema: EvidenceListItem 1`] = `
     "tenantId": {
       "type": "string"
     },
-    "controlId": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
     "type": {
       "type": "string"
     },
@@ -2305,30 +2450,11 @@ exports[`API contract — per-schema snapshots schema: EvidenceListItem 1`] = `
     "updatedAt": {
       "type": "string"
     },
-    "control": {
-      "type": [
-        "object",
-        "null"
-      ],
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "code": {
-          "type": [
-            "string",
-            "null"
-          ]
-        }
-      },
-      "required": [
-        "id",
-        "name"
-      ],
-      "additionalProperties": {}
+    "evidenceControlLinks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/EvidenceControlLink"
+      }
     }
   },
   "required": [
@@ -2430,6 +2556,14 @@ exports[`API contract — per-schema snapshots schema: EvidenceUpdateRequest 1`]
     },
     "content": {
       "type": "string"
+    },
+    "controlIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "maxItems": 100
     },
     "category": {
       "type": [

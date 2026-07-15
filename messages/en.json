@@ -1964,7 +1964,12 @@
             "entityLabel": "evidence",
             "retentionTriageAria": "Retention view",
             "triageExpiring": "Expiring",
-            "reReview": "Re-review"
+            "reReview": "Re-review",
+            "createMenuAria": "Add evidence",
+            "createFileUpload": "File upload",
+            "createTextNote": "Text note",
+            "createLink": "Link / URL",
+            "createBulkImport": "Bulk ZIP import"
         },
         "reject": {
             "title": "Reject evidence",
@@ -1978,7 +1983,8 @@
             "folder": "Folder",
             "retention": "Retention",
             "freshness": "Freshness",
-            "actions": "Actions"
+            "actions": "Actions",
+            "category": "Category"
         },
         "colVis": {
             "title": "Title",
@@ -1989,7 +1995,8 @@
             "freshness": "Freshness",
             "status": "Status",
             "owner": "Owner",
-            "actions": "Actions"
+            "actions": "Actions",
+            "category": "Category"
         },
         "detail": {
             "metaType": "Type",
@@ -2027,7 +2034,18 @@
             "expiry": "Expires",
             "reviewHistoryTitle": "Review history",
             "noReviewHistory": "No review activity yet",
-            "reviewerUnknown": "Unknown reviewer"
+            "reviewerUnknown": "Unknown reviewer",
+            "metaCategory": "Category",
+            "usedByControls": "Used by {count} controls",
+            "noControlsLinked": "No controls linked yet",
+            "unlinkControl": "Unlink control",
+            "controlUnlinked": "Control unlinked",
+            "undo": "Undo",
+            "unlinkFailed": "Unlink failed",
+            "linkControlPlaceholder": "Select control…",
+            "linkControlButton": "Link control",
+            "linking": "Linking…",
+            "linkControlFailed": "Failed to link control"
         },
         "edit": {
             "title": "Edit evidence",
@@ -2049,7 +2067,18 @@
             "saving": "Saving…",
             "save": "Save changes",
             "updateFailed": "Failed to update evidence",
-            "retentionFailed": "Saved details, but failed to update retention"
+            "retentionFailed": "Saved details, but failed to update retention",
+            "categoryLabel": "Category",
+            "categoryPlaceholder": "e.g. Access control",
+            "controlsLabel": "Linked controls",
+            "controlsDesc": "The controls this evidence satisfies.",
+            "controlsPlaceholder": "Select controls…",
+            "controlsSearchPlaceholder": "Search controls…",
+            "controlsEmpty": "No controls match",
+            "replaceFileLabel": "Replace file",
+            "replaceFileDesc": "Upload a new file to replace the current one.",
+            "replacing": "Replacing…",
+            "replaceFailed": "Failed to replace file"
         },
         "upload": {
             "title": "Upload evidence",
@@ -2086,7 +2115,10 @@
             "spImportFailed": "SharePoint import failed.",
             "spImportFailedNet": "SharePoint import failed — network error.",
             "uploadFailed": "Upload failed",
-            "controlsUnavailable": "No controls available to link yet."
+            "controlsUnavailable": "No controls available to link yet.",
+            "categoryLabel": "Category",
+            "categoryDesc": "Optional — classify every file in this batch.",
+            "categoryPlaceholder": "e.g. Access control"
         },
         "bulkImport": {
             "title": "Bulk import evidence",
@@ -2107,7 +2139,12 @@
             "importRunning": "Import running…",
             "uploading": "Uploading…",
             "startImport": "Start import",
-            "bulkImportFailed": "Bulk import failed"
+            "bulkImportFailed": "Bulk import failed",
+            "defaultControlLabel": "Default control",
+            "defaultControlDesc": "Link every imported item to this control.",
+            "defaultControlPlaceholder": "Select control…",
+            "folderLabel": "Folder",
+            "folderPlaceholder": "e.g. Q3 audit"
         },
         "filters": {
             "type": "Type",
@@ -2120,7 +2157,9 @@
             "folderDesc": "Organisational folder label.",
             "noFolder": "No folder",
             "freshness": "Freshness",
-            "freshnessDesc": "Review-currency: current, expiring, expired, or needs review."
+            "freshnessDesc": "Review-currency: current, expiring, expired, or needs review.",
+            "category": "Category",
+            "categoryDesc": "Only show evidence in this category."
         },
         "filterEnums": {
             "type": {
@@ -2155,6 +2194,25 @@
             "REJECTED": "Rejected",
             "NEEDS_REVIEW": "Needs Review",
             "PENDING_UPLOAD": "Pending Upload"
+        },
+        "linkModal": {
+            "title": "Add link evidence",
+            "description": "Capture a URL as evidence against a control.",
+            "titleLabel": "Title",
+            "urlLabel": "URL",
+            "urlPlaceholder": "https://…",
+            "linkControlLabel": "Link to control",
+            "noControlLink": "— No control link",
+            "searchControls": "Search controls…",
+            "noControlsMatch": "No controls match",
+            "categoryLabel": "Category",
+            "folderLabel": "Folder",
+            "folderOptional": "(optional)",
+            "folderPlaceholder": "e.g. SOC2/2026 or Quarterly access reviews",
+            "cancel": "Cancel",
+            "creating": "Creating…",
+            "submit": "Add evidence",
+            "createFailed": "Failed to create evidence"
         }
     },
     "personnel": {

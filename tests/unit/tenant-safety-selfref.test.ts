@@ -454,6 +454,10 @@ describe('GUARDRAIL: Prisma schema has no unregistered self-referencing models',
             // export/import system, RLS-isolated + same-tenant checks on the
             // hris-sync / personnel usecases.
             'Employee',
+            // EP-3 — FileRecord.previousFileRecordId (evidence file-version
+            // lineage chain); not exportable, RLS-isolated + same-tenant checks
+            // on the evidence replace-file usecase.
+            'FileRecord',
         ]);
 
         // Parse model blocks

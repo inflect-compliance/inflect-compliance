@@ -65,20 +65,24 @@ describe('Epic 43.2 — view toggle wiring', () => {
     });
 
     it('renders <EvidenceGallery> when viewMode === gallery, <DataTable> otherwise', () => {
-        // EP-2 wraps the gallery branch in a fragment with a gallery-view
-        // BulkActionBar, so assert the wiring without brittle proximity: the
-        // gallery ternary exists, and both renderers are mounted.
-        expect(src).toMatch(/viewMode === ['"]gallery['"]\s*\?/);
-        expect(src).toMatch(/<EvidenceGallery/);
+        // EP-3 — the gallery branch now opens with a fragment + comment +
+        // an optional in-branch <BulkActionBar> before <EvidenceGallery>,
+        // so allow intervening JSX/whitespace between the `? (` and the
+        // gallery element while still asserting the gallery lives in the
+        // `viewMode === 'gallery'` branch.
+        expect(src).toMatch(/viewMode === ['"]gallery['"]\s*\?\s*\([\s\S]{0,1200}<EvidenceGallery/);
         expect(src).toMatch(/<DataTable/);
     });
 
-    it('passes the SAME filtered array to both renderers', () => {
-        // Both views read from the SAME filtered list — EP-2 renamed it
-        // `displayEvidenceFresh` (freshness-filtered) but the invariant holds:
-        // gallery + table receive the identical array. A future refactor that
-        // introduced separate per-view state (galleryRows / tableRows) would
-        // BREAK filter preservation and fail CI here.
+    it('passes the SAME `displayEvidence` array to both renderers', () => {
+        // Both views read from displayEvidence — the filtered list.
+        // If a future refactor introduced separate per-view state
+        // (e.g. galleryRows / tableRows) that would BREAK filter
+        // preservation. This test fails CI on that regression.
+        // EP-2/EP-3 — the gallery binds the freshness-refined slice
+        // `displayEvidenceFresh` (a view refinement over `displayEvidence`);
+        // accept either binding so the gallery↔table filter-preservation
+        // regression class stays covered.
         expect(src).toMatch(
             /<EvidenceGallery[\s\S]{0,300}rows=\{(displayEvidenceFresh|displayEvidence)\}/,
         );

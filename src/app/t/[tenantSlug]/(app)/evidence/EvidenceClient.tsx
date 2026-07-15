@@ -22,7 +22,13 @@ import { useHydratedNow } from '@/lib/hooks/use-hydrated-now';
 import { UploadEvidenceModal } from './UploadEvidenceModal';
 import { EvidenceDetailSheet } from './EvidenceDetailSheet';
 import { EditEvidenceModal } from './EditEvidenceModal';
+import type { EditEvidenceInitial } from './EditEvidenceModal';
+import { NewEvidenceTextModal } from './NewEvidenceTextModal';
+import { NewEvidenceLinkModal } from './NewEvidenceLinkModal';
+import { EvidenceBulkImportModal } from './EvidenceBulkImportModal';
 import { RejectReasonModal } from './RejectReasonModal';
+import { Popover } from '@/components/ui/popover';
+import { CloudUpload, Note, Hyperlink, FileZip2 } from '@/components/ui/icons/nucleo';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
@@ -139,8 +145,28 @@ interface EvidenceRow {
     dateCollected: string;
     fileRecordId: string | null;
     content: string | null;
-    control: { id: string; name: string; annexId: string | null } | null;
+    // EP-3 — persisted classification, now surfaced in the list.
+    category: string | null;
+    // EP-3 — many-to-many control links replaced the singular `control`.
+    evidenceControlLinks: Array<{
+        control: {
+            id: string;
+            name: string;
+            annexId: string | null;
+            code: string | null;
+        };
+    }>;
     fileRecord: { id: string; mimeType: string | null } | null;
+}
+
+/** EP-3 — condensed label for the linked-controls table cell. */
+function controlLinksLabel(
+    links: EvidenceRow['evidenceControlLinks'] | undefined | null,
+): string {
+    if (!links || links.length === 0) return '—';
+    const first = links[0].control;
+    const prefix = first.annexId || first.code || first.name;
+    return links.length > 1 ? `${prefix} +${links.length - 1}` : prefix;
 }
 
 // Minimal control shape this page consumes (filter builder + upload modal).
@@ -374,19 +400,17 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         }
     }, [searchParams]);
     const [editModalOpen, setEditModalOpen] = useState(false);
-    const [editInitial, setEditInitial] = useState<{
-        id: string;
-        title: string;
-        description: string | null;
-        ownerUserId: string | null;
-        controlId: string | null;
-        // B8 follow-up — folder is editable in the modal; threaded
-        // through here so the modal seeds the input with the
-        // current value.
-        folder: string | null;
-        // Retention date is now edited in the modal too (was inline).
-        retentionUntil: string | null;
-    } | null>(null);
+    const [editInitial, setEditInitial] = useState<EditEvidenceInitial | null>(
+        null,
+    );
+
+    // PART 1 — consolidated create menu. One primary trigger opens a
+    // Popover.Menu offering the four creation surfaces; each item
+    // mounts its own modal.
+    const [createMenuOpen, setCreateMenuOpen] = useState(false);
+    const [showTextModal, setShowTextModal] = useState(false);
+    const [showLinkModal, setShowLinkModal] = useState(false);
+    const [showBulkImport, setShowBulkImport] = useState(false);
 
     // Invalidate every cached evidence-list filter variant. SWR's
     // function-form `mutate()` matches by absolute URL prefix —
@@ -683,8 +707,8 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                     ev.fileRecord?.mimeType ?? null,
                     ev.type ?? null,
                 ).label,
-            control: (ev) =>
-                ev.control ? `${ev.control.annexId || ''} ${ev.control.name}` : '—',
+            control: (ev) => controlLinksLabel(ev.evidenceControlLinks),
+            category: (ev) => ev.category || '—',
             retention: (ev) => getRetentionStatus(ev, hydratedNow, tx).label,
             status: (ev) => statusLabel(ev.status),
             owner: (ev) => ev.owner || '—',
@@ -697,7 +721,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         [displayEvidenceFresh, sortAccessors, sortBy, sortOrder],
     );
     const sortableEvidenceColumns = useMemo(
-        () => ['title', 'type', 'control', 'retention', 'status', 'owner'],
+        () => ['title', 'type', 'control', 'category', 'retention', 'status', 'owner'],
         [],
     );
     const {
@@ -743,6 +767,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             { id: 'title', label: tx('colVis.title') },
             { id: 'type', label: tx('colVis.type') },
             { id: 'control', label: tx('colVis.control') },
+            { id: 'category', label: tx('colVis.category') },
             // B8 follow-up — Folder column. Hidden by default
             // (`defaultHidden: true` would be ideal but the dropdown
             // primitive doesn't carry that yet) — the user reveals
@@ -864,11 +889,42 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         {
             id: 'control',
             header: t.control,
-
-            accessorFn: (ev) => ev.control ? `${ev.control.annexId || ''} ${ev.control.name}` : '\u2014',
-            cell: ({ getValue }: { getValue: () => string }) => (
-                <span className="text-xs text-content-muted">{getValue()}</span>
-            ),
+            // EP-3 \u2014 many-to-many links; the cell condenses to the
+            // first control's code/annex id + a "+N" overflow badge.
+            accessorFn: (ev) => controlLinksLabel(ev.evidenceControlLinks),
+            cell: ({ row }) => {
+                const links = row.original.evidenceControlLinks ?? [];
+                if (links.length === 0) {
+                    return <span className="text-content-subtle">\u2014</span>;
+                }
+                const label = controlLinksLabel(links);
+                const full = links
+                    .map((l) => {
+                        const c = l.control;
+                        const prefix = c.annexId || c.code || '';
+                        return prefix ? `${prefix}: ${c.name}` : c.name;
+                    })
+                    .join(', ');
+                return (
+                    <Tooltip content={full}>
+                        <span className="text-xs text-content-muted">{label}</span>
+                    </Tooltip>
+                );
+            },
+        },
+        {
+            id: 'category',
+            header: tx('colHeaders.category'),
+            // EP-3 \u2014 persisted classification, previously invisible.
+            accessorFn: (ev: { category?: string | null }) => ev.category || '',
+            cell: ({ row }: { row: { original: { category?: string | null } } }) =>
+                row.original.category ? (
+                    <span className="text-xs text-content-muted">
+                        {row.original.category}
+                    </span>
+                ) : (
+                    <span className="text-content-subtle">\u2014</span>
+                ),
         },
         {
             id: 'folder',
@@ -979,9 +1035,14 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                                     title: ev.title,
                                     description: ev.content ?? null,
                                     ownerUserId: ev.ownerUserId ?? null,
-                                    controlId: ev.control?.id ?? null,
+                                    controlLinks: (ev.evidenceControlLinks ?? []).map(
+                                        (l) => l.control,
+                                    ),
+                                    category: ev.category ?? null,
                                     folder: ev.folder ?? null,
                                     retentionUntil: ev.retentionUntil ?? null,
+                                    type: ev.type,
+                                    fileRecordId: ev.fileRecordId ?? null,
                                 });
                                 setEditModalOpen(true);
                             }}
@@ -1181,6 +1242,26 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         apiUrl={apiUrl}
                         controls={controls}
                     />
+                    <NewEvidenceTextModal
+                        open={showTextModal}
+                        setOpen={setShowTextModal}
+                        tenantSlug={tenantSlug}
+                        apiUrl={apiUrl}
+                        controls={controls}
+                    />
+                    <NewEvidenceLinkModal
+                        open={showLinkModal}
+                        setOpen={setShowLinkModal}
+                        tenantSlug={tenantSlug}
+                        apiUrl={apiUrl}
+                        controls={controls}
+                    />
+                    <EvidenceBulkImportModal
+                        open={showBulkImport}
+                        setOpen={setShowBulkImport}
+                        tenantSlug={tenantSlug}
+                        apiUrl={apiUrl}
+                    />
                 </>
             )}
 
@@ -1194,6 +1275,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 open={detailSheetOpen}
                 setOpen={setDetailSheetOpen}
                 evidenceId={detailEvidenceId}
+                tenantSlug={tenantSlug}
                 canWrite={permissions.canWrite}
                 canAdmin={permissions.canAdmin}
                 onEdit={(ev) => {
@@ -1213,6 +1295,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 open={editModalOpen}
                 setOpen={setEditModalOpen}
                 tenantSlug={tenantSlug}
+                controls={controls}
                 initial={editInitial}
                 onSaved={() => {
                     // Revalidate the list cache so the freshly-saved
@@ -1357,19 +1440,69 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                     filters={visibleFilterDefs}
                     leading={
                         permissions.canWrite ? (
-                            // UI-18: a single +Evidence button that opens the
-                            // Upload-a-file modal directly. The separate
-                            // "Upload file" + "Import ZIP" icon buttons (and the
-                            // text-only evidence modal) were removed. Relocated
-                            // from the page header into the toolbar's leading slot.
-                            <Button
-                                variant="primary"
-                                icon={<Plus className="-ml-0.5 -mr-2.5" />}
-                                onClick={() => setShowUpload(true)}
-                                id="add-evidence-btn"
+                            // PART 1 — one primary trigger opens a create
+                            // menu (Popover.Menu). The four creation
+                            // surfaces — file upload, text note, link/URL,
+                            // and bulk ZIP import — each mount their own
+                            // modal. The trigger keeps the canonical
+                            // icon-slot Plus + bare-noun label.
+                            <Popover
+                                openPopover={createMenuOpen}
+                                setOpenPopover={setCreateMenuOpen}
+                                align="start"
+                                content={
+                                    <Popover.Menu aria-label={tx('list.createMenuAria')}>
+                                        <Popover.Item
+                                            icon={<CloudUpload className="size-4" />}
+                                            id="create-evidence-upload"
+                                            onClick={() => {
+                                                setCreateMenuOpen(false);
+                                                setShowUpload(true);
+                                            }}
+                                        >
+                                            {tx('list.createFileUpload')}
+                                        </Popover.Item>
+                                        <Popover.Item
+                                            icon={<Note className="size-4" />}
+                                            id="create-evidence-text"
+                                            onClick={() => {
+                                                setCreateMenuOpen(false);
+                                                setShowTextModal(true);
+                                            }}
+                                        >
+                                            {tx('list.createTextNote')}
+                                        </Popover.Item>
+                                        <Popover.Item
+                                            icon={<Hyperlink className="size-4" />}
+                                            id="create-evidence-link"
+                                            onClick={() => {
+                                                setCreateMenuOpen(false);
+                                                setShowLinkModal(true);
+                                            }}
+                                        >
+                                            {tx('list.createLink')}
+                                        </Popover.Item>
+                                        <Popover.Item
+                                            icon={<FileZip2 className="size-4" />}
+                                            id="create-evidence-bulk"
+                                            onClick={() => {
+                                                setCreateMenuOpen(false);
+                                                setShowBulkImport(true);
+                                            }}
+                                        >
+                                            {tx('list.createBulkImport')}
+                                        </Popover.Item>
+                                    </Popover.Menu>
+                                }
                             >
-                                {t.addEvidence}
-                            </Button>
+                                <Button
+                                    variant="primary"
+                                    icon={<Plus className="-ml-0.5 -mr-2.5" />}
+                                    id="add-evidence-btn"
+                                >
+                                    {t.addEvidence}
+                                </Button>
+                            </Popover>
                         ) : undefined
                     }
                     actions={

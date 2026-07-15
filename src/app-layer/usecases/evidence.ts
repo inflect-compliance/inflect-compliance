@@ -10,6 +10,22 @@ import type { EvidenceType, ReviewCadence } from '@prisma/client';
 import { z } from 'zod';
 import { CreateEvidenceSchema, UpdateEvidenceSchema } from '@/lib/schemas';
 
+/**
+ * EP-3 — collapse the many-to-many `controlIds` input + the legacy singular
+ * `controlId` into a single deduped list. Empty/nullish entries are dropped.
+ */
+function normalizeControlIds(
+    controlIds: string[] | undefined | null,
+    controlId?: string | null,
+): string[] {
+    const set = new Set<string>();
+    for (const id of controlIds ?? []) {
+        if (id) set.add(id);
+    }
+    if (controlId) set.add(controlId);
+    return [...set];
+}
+
 export async function listEvidence(
     ctx: RequestContext,
     filters?: EvidenceListFilters,
@@ -102,21 +118,22 @@ export async function createEvidence(
         }
     }
 
-    const created = await runInTenantContext(ctx, async (db) => {
-        const controlId = data.controlId || null;
+    // EP-3 — normalise the control association to a set. `controlIds` is
+    // the many-to-many input; a legacy singular `controlId` is wrapped in.
+    const requestedControlIds = normalizeControlIds(data.controlIds, data.controlId);
 
-        // Validate control belongs to the same tenant
-        if (controlId) {
-            const control = await db.control.findFirst({
-                where: { id: controlId, tenantId: ctx.tenantId },
-                select: { id: true },
-            });
-            if (!control) throw badRequest('INVALID_CONTROL', 'Control not found or belongs to a different tenant');
+    const created = await runInTenantContext(ctx, async (db) => {
+        // Validate every control belongs to the same tenant (foreign /
+        // unknown ids are rejected — the isolation contract).
+        if (requestedControlIds.length > 0) {
+            const existing = await EvidenceRepository.filterExistingControlIds(db, ctx, requestedControlIds);
+            const missing = requestedControlIds.filter((id) => !existing.has(id));
+            if (missing.length > 0) {
+                throw badRequest('INVALID_CONTROL', 'Control not found or belongs to a different tenant');
+            }
         }
 
         const evidence = await EvidenceRepository.create(db, ctx, {
-            controlId,
-
             type: data.type as EvidenceType,
             title: data.title,
             content,
@@ -134,25 +151,10 @@ export async function createEvidence(
             status: 'DRAFT',
         });
 
-        // Bridge: create ControlEvidenceLink so evidence shows in the control evidence tab
-        if (controlId) {
-            const linkKind = data.type === 'LINK' ? 'LINK' : 'FILE';
-            try {
-                await db.controlEvidenceLink.create({
-                    data: {
-                        tenantId: ctx.tenantId,
-                        controlId,
-                        kind: linkKind,
-                        fileId: evidence.fileRecordId || null,
-                        url: data.type === 'LINK' ? (content || null) : null,
-                        note: evidence.title,
-                        createdByUserId: ctx.userId,
-                    },
-                });
-            } catch {
-                // Duplicate link is acceptable — don't fail the whole creation
-            }
-        }
+        // EP-3 — ONE Evidence + N join rows (no per-control clone, no
+        // ControlEvidenceLink bridge). The Evidence entity is the single
+        // source of truth for evidence↔control associations.
+        await EvidenceRepository.createControlLinks(db, ctx, evidence.id, requestedControlIds);
 
         await logEvent(db, ctx, {
             action: 'CREATE',
@@ -171,9 +173,9 @@ export async function createEvidence(
         return evidence;
     });
     // Linking back to a control also affects the control list view
-    // (`_count.evidence`); bump both entities.
+    // (evidence count); bump both entities.
     await bumpEntityCacheVersion(ctx, 'evidence');
-    if (data.controlId) await bumpEntityCacheVersion(ctx, 'control');
+    if (requestedControlIds.length > 0) await bumpEntityCacheVersion(ctx, 'control');
     return created;
 }
 
@@ -201,6 +203,29 @@ export async function updateEvidence(ctx: RequestContext, id: string, data: z.in
 
         if (!evidence) throw notFound('Evidence not found');
 
+        // EP-3 — reconcile control links to exactly `controlIds` when the
+        // multi-select is present. Adds/removes join rows (never moves the
+        // record). Omitted ⇒ links untouched.
+        if (data.controlIds !== undefined) {
+            const desired = normalizeControlIds(data.controlIds, null);
+            if (desired.length > 0) {
+                const existingControls = await EvidenceRepository.filterExistingControlIds(db, ctx, desired);
+                const missing = desired.filter((cid) => !existingControls.has(cid));
+                if (missing.length > 0) {
+                    throw badRequest('INVALID_CONTROL', 'Control not found or belongs to a different tenant');
+                }
+            }
+            const current = await EvidenceRepository.listControlLinks(db, ctx, id);
+            const currentIds = new Set(current.map((l) => l.controlId));
+            const desiredSet = new Set(desired);
+            const toAdd = desired.filter((cid) => !currentIds.has(cid));
+            const toRemove = [...currentIds].filter((cid) => !desiredSet.has(cid));
+            await EvidenceRepository.createControlLinks(db, ctx, id, toAdd);
+            for (const cid of toRemove) {
+                await EvidenceRepository.unlinkControl(db, ctx, id, cid);
+            }
+        }
+
         await logEvent(db, ctx, {
             action: 'UPDATE',
             entityType: 'Evidence',
@@ -219,7 +244,81 @@ export async function updateEvidence(ctx: RequestContext, id: string, data: z.in
         return evidence;
     });
     await bumpEntityCacheVersion(ctx, 'evidence');
+    if (data.controlIds !== undefined) await bumpEntityCacheVersion(ctx, 'control');
     return updated;
+}
+
+/**
+ * EP-3 Part 3 — link an existing evidence record to a control from the
+ * library. Creates one EvidenceControlLink (idempotent). Returns
+ * `{ linked: boolean }` — false when the pair already existed.
+ */
+export async function linkEvidenceToControl(ctx: RequestContext, evidenceId: string, controlId: string) {
+    assertCanWrite(ctx);
+    const result = await runInTenantContext(ctx, async (db) => {
+        const evidence = await EvidenceRepository.getById(db, ctx, evidenceId);
+        if (!evidence) throw notFound('Evidence not found');
+        const existing = await EvidenceRepository.filterExistingControlIds(db, ctx, [controlId]);
+        if (!existing.has(controlId)) {
+            throw badRequest('INVALID_CONTROL', 'Control not found or belongs to a different tenant');
+        }
+        const linked = await EvidenceRepository.linkControl(db, ctx, evidenceId, controlId);
+        if (linked) {
+            await logEvent(db, ctx, {
+                action: 'CONTROL_EVIDENCE_LINKED',
+                entityType: 'Evidence',
+                entityId: evidenceId,
+                details: `Evidence linked to control ${controlId}`,
+                detailsJson: {
+                    category: 'relationship',
+                    operation: 'linked',
+                    sourceEntity: 'Evidence',
+                    sourceId: evidenceId,
+                    targetEntity: 'Control',
+                    targetId: controlId,
+                    relation: 'evidence_control',
+                },
+            });
+        }
+        return { linked };
+    });
+    await bumpEntityCacheVersion(ctx, 'evidence');
+    await bumpEntityCacheVersion(ctx, 'control');
+    return result;
+}
+
+/**
+ * EP-3 Part 3 — remove the association between an evidence record and a
+ * control (deletes the EvidenceControlLink). The Evidence row itself
+ * survives — this is a detach, not a delete.
+ */
+export async function unlinkEvidenceFromControl(ctx: RequestContext, evidenceId: string, controlId: string) {
+    assertCanWrite(ctx);
+    const result = await runInTenantContext(ctx, async (db) => {
+        const evidence = await EvidenceRepository.getById(db, ctx, evidenceId);
+        if (!evidence) throw notFound('Evidence not found');
+        const removed = await EvidenceRepository.unlinkControl(db, ctx, evidenceId, controlId);
+        if (removed === 0) throw notFound('Evidence is not linked to that control');
+        await logEvent(db, ctx, {
+            action: 'CONTROL_EVIDENCE_UNLINKED',
+            entityType: 'Evidence',
+            entityId: evidenceId,
+            details: `Evidence unlinked from control ${controlId}`,
+            detailsJson: {
+                category: 'relationship',
+                operation: 'unlinked',
+                sourceEntity: 'Evidence',
+                sourceId: evidenceId,
+                targetEntity: 'Control',
+                targetId: controlId,
+                relation: 'evidence_control',
+            },
+        });
+        return { success: true };
+    });
+    await bumpEntityCacheVersion(ctx, 'evidence');
+    await bumpEntityCacheVersion(ctx, 'control');
+    return result;
 }
 
 /**
@@ -457,16 +556,18 @@ export async function getEvidenceMetrics(ctx: RequestContext) {
         const [totalEvidence, fileEvidence, linkedFileEvidence, fileRecordAgg, topControls] = await Promise.all([
             db.evidence.count({ where: { tenantId, deletedAt: null } }),
             db.evidence.count({ where: { tenantId, type: 'FILE', deletedAt: null } }),
-            db.evidence.count({ where: { tenantId, type: 'FILE', controlId: { not: null }, deletedAt: null } }),
+            // EP-3 — FILE evidence linked to at least one control (via join).
+            db.evidence.count({ where: { tenantId, type: 'FILE', deletedAt: null, evidenceControlLinks: { some: {} } } }),
 
             db.fileRecord.aggregate({
                 where: { tenantId, status: 'STORED' },
                 _sum: { sizeBytes: true },
                 _count: { id: true },
             }),
-            db.evidence.groupBy({
+            // EP-3 — top controls by evidence count, grouped over the join.
+            db.evidenceControlLink.groupBy({
                 by: ['controlId'],
-                where: { tenantId, controlId: { not: null }, deletedAt: null },
+                where: { tenantId, evidence: { deletedAt: null } },
                 _count: { id: true },
                 orderBy: { _count: { id: 'desc' } },
                 take: 10,
@@ -536,6 +637,8 @@ export async function uploadEvidenceFile(
     metadata: {
         title?: string;
         controlId?: string | null;
+        /** EP-3 — many-to-many control association (one Evidence + N links). */
+        controlIds?: string[] | null;
         /** Source task — set when uploaded from a task's Evidence tab. */
         taskId?: string | null;
         /** Source risk / asset — set when uploaded from that entity's Evidence tab. */
@@ -575,20 +678,22 @@ export async function uploadEvidenceFile(
 
     const writeResult = await storage.write(pathKey, readable, { mimeType });
 
+    // EP-3 — normalise the control association (many-to-many + legacy single).
+    const requestedControlIds = normalizeControlIds(metadata.controlIds, metadata.controlId);
+
     // Create FileRecord + Evidence in a transaction
     const result = await runInTenantContext(ctx, async (db) => {
-        const controlId = metadata.controlId || null;
         const taskId = metadata.taskId || null;
         const riskId = metadata.riskId || null;
         const assetId = metadata.assetId || null;
 
-        // Validate control belongs to the same tenant
-        if (controlId) {
-            const control = await db.control.findFirst({
-                where: { id: controlId, tenantId: ctx.tenantId },
-                select: { id: true },
-            });
-            if (!control) throw badRequest('INVALID_CONTROL', 'Control not found or belongs to a different tenant');
+        // Validate every control belongs to the same tenant
+        if (requestedControlIds.length > 0) {
+            const existing = await EvidenceRepository.filterExistingControlIds(db, ctx, requestedControlIds);
+            const missing = requestedControlIds.filter((id) => !existing.has(id));
+            if (missing.length > 0) {
+                throw badRequest('INVALID_CONTROL', 'Control not found or belongs to a different tenant');
+            }
         }
 
         // Validate task belongs to the same tenant
@@ -652,7 +757,6 @@ export async function uploadEvidenceFile(
             fileName: originalName,
             fileSize: writeResult.sizeBytes,
             fileRecordId,
-            controlId,
             taskId,
             riskId,
             assetId,
@@ -666,23 +770,9 @@ export async function uploadEvidenceFile(
             status: 'DRAFT',
         });
 
-        // Bridge: create ControlEvidenceLink so evidence shows in the control evidence tab
-        if (controlId) {
-            try {
-                await db.controlEvidenceLink.create({
-                    data: {
-                        tenantId: ctx.tenantId,
-                        controlId,
-                        kind: 'FILE',
-                        fileId: fileRecordId,
-                        note: evidence.title,
-                        createdByUserId: ctx.userId,
-                    },
-                });
-            } catch {
-                // Duplicate link is acceptable — don't fail the whole creation
-            }
-        }
+        // EP-3 — ONE Evidence + N join rows (no per-control clone, no
+        // ControlEvidenceLink bridge for Evidence entities).
+        await EvidenceRepository.createControlLinks(db, ctx, evidence.id, requestedControlIds);
 
         const eventAction = deduplicated ? 'FILE_DEDUP_REUSED' : 'EVIDENCE_FILE_UPLOADED';
         await logEvent(db, ctx, {
@@ -709,7 +799,7 @@ export async function uploadEvidenceFile(
 
         return {
             ...evidence,
-            controlId,
+            controlIds: requestedControlIds,
             fileRecord: {
                 id: fileRecordId,
                 originalName,
@@ -729,7 +819,120 @@ export async function uploadEvidenceFile(
     // pre-upload view for up to 60s (TTL), and the e2e
     // upload-then-verify flow times out waiting for the new row.
     await bumpEntityCacheVersion(ctx, 'evidence');
-    if (result.controlId) await bumpEntityCacheVersion(ctx, 'control');
+    if (requestedControlIds.length > 0) await bumpEntityCacheVersion(ctx, 'control');
+    return result;
+}
+
+/**
+ * EP-3 Part 4 — replace the file backing a FILE-type evidence record.
+ *
+ * Uploads a new file → creates a fresh FileRecord (chained to the prior one
+ * via `previousFileRecordId`) → repoints `Evidence.fileRecordId` and bumps
+ * `fileVersion`, PRESERVING the Evidence row's status / reviews / retention /
+ * control links. The point: updating a doc keeps lineage instead of spawning
+ * an unrelated Evidence row.
+ */
+export async function replaceEvidenceFile(ctx: RequestContext, evidenceId: string, file: File) {
+    assertCanWrite(ctx);
+
+    const mimeType = file.type || 'application/octet-stream';
+    if (!isAllowedMime(mimeType)) {
+        throw badRequest('FILE_TYPE_NOT_ALLOWED', `MIME type "${mimeType}" is not allowed`);
+    }
+    if (!isAllowedSize(file.size)) {
+        throw badRequest('FILE_TOO_LARGE', `File exceeds maximum size of ${FILE_MAX_SIZE_BYTES} bytes`);
+    }
+
+    // Validate the evidence exists + is FILE-type BEFORE touching storage.
+    const target = await runInTenantContext(ctx, async (db) => {
+        const ev = await db.evidence.findFirst({
+            where: { id: evidenceId, tenantId: ctx.tenantId, deletedAt: null },
+            select: { id: true, type: true, fileRecordId: true, fileVersion: true, title: true },
+        });
+        if (!ev) throw notFound('Evidence not found');
+        if (ev.type !== 'FILE') throw badRequest('NOT_FILE_EVIDENCE', 'Only FILE-type evidence can have its file replaced');
+        return ev;
+    });
+
+    const storage = getStorageProvider();
+    const originalName = file.name || 'unnamed';
+    const domain: StorageDomain = 'evidence';
+    const pathKey = buildTenantObjectKey(ctx.tenantId, domain, originalName);
+
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const readable = Readable.from(buffer);
+    const writeResult = await storage.write(pathKey, readable, { mimeType });
+
+    const result = await runInTenantContext(ctx, async (db) => {
+        // New FileRecord, chained to the one it supersedes.
+        const fileRecord = await FileRepository.createPending(db, ctx, {
+            pathKey,
+            originalName,
+            mimeType,
+            sizeBytes: writeResult.sizeBytes,
+            sha256: writeResult.sha256,
+            storageProvider: storage.name,
+            bucket: env.S3_BUCKET || null,
+            domain,
+        });
+        await FileRepository.markStored(db, ctx, fileRecord.id);
+        if (target.fileRecordId) {
+            await db.fileRecord.update({
+                where: { id: fileRecord.id },
+                data: { previousFileRecordId: target.fileRecordId },
+            });
+        }
+
+        // Repoint the Evidence at the new file + bump the version. Status,
+        // reviews, retention, and control links are untouched.
+        const updated = await db.evidence.update({
+            where: { id: evidenceId },
+            data: {
+                fileRecordId: fileRecord.id,
+                fileName: originalName,
+                fileSize: writeResult.sizeBytes,
+                content: pathKey,
+                fileVersion: target.fileVersion + 1,
+            },
+        });
+
+        await logEvent(db, ctx, {
+            action: 'EVIDENCE_FILE_REPLACED',
+            entityType: 'Evidence',
+            entityId: evidenceId,
+            details: `File replaced: ${originalName} (v${target.fileVersion + 1})`,
+            detailsJson: {
+                category: 'entity_lifecycle',
+                entityName: 'Evidence',
+                operation: 'updated',
+                changedFields: ['fileRecordId', 'fileName', 'fileSize', 'fileVersion'],
+                after: {
+                    fileRecordId: fileRecord.id,
+                    previousFileRecordId: target.fileRecordId,
+                    originalName,
+                    sizeBytes: writeResult.sizeBytes,
+                    sha256: writeResult.sha256,
+                    fileVersion: target.fileVersion + 1,
+                },
+                summary: `File replaced: ${originalName}`,
+            },
+        });
+
+        return {
+            ...updated,
+            fileRecord: {
+                id: fileRecord.id,
+                originalName,
+                mimeType,
+                sizeBytes: writeResult.sizeBytes,
+                sha256: writeResult.sha256,
+                status: 'STORED',
+                previousFileRecordId: target.fileRecordId,
+            },
+        };
+    });
+    await bumpEntityCacheVersion(ctx, 'evidence');
     return result;
 }
 
@@ -777,9 +980,15 @@ export async function downloadEvidenceFile(ctx: RequestContext, fileId: string) 
         }
 
         // ─── Strict Policy: control-aware access ───
+        // EP-3 — "linked to a control" now means the Evidence has at least
+        // one EvidenceControlLink (the singular controlId is gone).
         const evidence = await db.evidence.findFirst({
             where: { tenantId: ctx.tenantId, fileRecordId: fileId },
-            select: { id: true, controlId: true, deletedAt: true },
+            select: {
+                id: true,
+                deletedAt: true,
+                _count: { select: { evidenceControlLinks: true } },
+            },
         });
 
         if (evidence?.deletedAt) {
@@ -787,7 +996,7 @@ export async function downloadEvidenceFile(ctx: RequestContext, fileId: string) 
         }
 
         if (!ctx.permissions.canWrite) {
-            if (!evidence?.controlId) {
+            if (!evidence || evidence._count.evidenceControlLinks === 0) {
                 throw forbidden('You can only download evidence that is linked to a control. Contact an admin to link this evidence.');
             }
         }

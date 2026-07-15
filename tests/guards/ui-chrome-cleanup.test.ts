@@ -26,18 +26,20 @@ describe('UI-15 — removed buttons', () => {
     });
 });
 
-describe('UI-18 — unified evidence upload', () => {
+describe('UI-18 — evidence create menu', () => {
+    // EP-3 replaced the single +Evidence upload button with a create MENU
+    // (Popover.Menu) offering the four creation surfaces — File upload / Text
+    // note / Link (URL) / Bulk ZIP import — each mounting its own modal.
     const src = read('src/app/t/[tenantSlug]/(app)/evidence/EvidenceClient.tsx');
-    it('a single +Evidence button opens the Upload-a-file modal', () => {
-        expect(src).toMatch(/id="add-evidence-btn"/);
-        expect(src).toMatch(/onClick=\{\(\) => setShowUpload\(true\)\}/);
-        expect(src).toMatch(/<UploadEvidenceModal\b/);
+    it('the +Evidence trigger opens a create menu, not a bare upload button', () => {
+        expect(src).toMatch(/<Popover\.Menu/);
+        expect(src).toContain('create-evidence-upload');
+        expect(src).toContain('create-evidence-text');
     });
-    it('the upload-file + import-zip icon buttons + text modal are gone', () => {
-        expect(src).not.toContain('upload-evidence-btn');
-        expect(src).not.toContain('bulk-import-evidence-btn');
-        expect(src).not.toContain('add-text-evidence-btn');
-        expect(src).not.toMatch(/<NewEvidenceTextModal\b/);
-        expect(src).not.toMatch(/<EvidenceBulkImportModal\b/);
+    it('the create menu mounts all four creation surfaces', () => {
+        expect(src).toMatch(/<UploadEvidenceModal\b/);
+        expect(src).toMatch(/<NewEvidenceTextModal\b/);
+        expect(src).toMatch(/<NewEvidenceLinkModal\b/);
+        expect(src).toMatch(/<EvidenceBulkImportModal\b/);
     });
 });

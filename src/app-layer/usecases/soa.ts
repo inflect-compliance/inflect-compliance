@@ -336,10 +336,13 @@ export async function getSoA(ctx: RequestContext, options: SoAOptions = {}): Pro
 
 async function loadEvidenceCounts(ctx: RequestContext, controlIds: string[]): Promise<Map<string, number>> {
     const result = new Map<string, number>();
+    // Evidence↔Control is a many-to-many join now; count the join rows per
+    // control (the unique [tenantId, evidenceId, controlId] key means one row
+    // per distinct evidence, so the per-control tally is preserved).
     const counts = await runInTenantContext(ctx, (db) =>
-        db.evidence.groupBy({
+        db.evidenceControlLink.groupBy({
             by: ['controlId'],
-            where: { tenantId: ctx.tenantId, controlId: { in: controlIds }, deletedAt: null },
+            where: { tenantId: ctx.tenantId, controlId: { in: controlIds }, evidence: { deletedAt: null } },
             _count: { id: true },
         })
     );

@@ -118,7 +118,7 @@ interface ControlListItem {
     frequency: string | null;
     /** Widened to include id/email so the owner filter can resolve + display. */
     owner: { id: string; name: string | null; email: string | null } | null;
-    _count?: { evidenceLinks?: number; evidence?: number };
+    _count?: { evidenceLinks?: number; evidenceControlLinks?: number };
     /**
      * Unified linked-task counts (TaskLink CONTROL link OR the
      * `controlId` FK), supplied by `listControls`. The Tasks column
@@ -873,7 +873,7 @@ function ControlsPageInner({
             header: t('colHeaders.evidence'),
             // R2-P4 — links + direct Evidence, matching the detail Evidence
             // tab badge (was evidenceLinks alone → the two diverged).
-            accessorFn: (c) => (c._count?.evidenceLinks ?? 0) + (c._count?.evidence ?? 0),
+            accessorFn: (c) => (c._count?.evidenceLinks ?? 0) + (c._count?.evidenceControlLinks ?? 0),
             cell: ({ getValue, row }) => {
                 const n = getValue<number>();
                 return (

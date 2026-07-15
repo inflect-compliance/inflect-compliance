@@ -142,7 +142,8 @@ describe('reconcileUnlinkedEvidence', () => {
         // four guards are the load-bearing filters and must not drift.
         expect(where.tenantId).toBe('tenant-1');
         expect(where.type).toBe('FILE');
-        expect(where.controlId).toBeNull();
+        // EP-3 — "unlinked" now means no EvidenceControlLink join rows.
+        expect(where.evidenceControlLinks).toEqual({ none: {} });
         expect(where.deletedAt).toBeNull();
     });
 });

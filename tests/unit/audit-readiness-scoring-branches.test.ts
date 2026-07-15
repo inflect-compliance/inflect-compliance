@@ -83,12 +83,13 @@ function buildDb(opts: {
         const select = args?.select ?? {};
         // GENERIC: applicability APPLIES + deletedAt null + requirementLinks some
         if (where.requirementLinks) return opts.genericControls ?? [];
-        // ISO impl-count: applicability APPLICABLE, select has status, no evidence
-        if (where.applicability === 'APPLICABLE' && select.status && !select.evidence) {
+        // ISO impl-count: applicability APPLICABLE, select has status, no join
+        if (where.applicability === 'APPLICABLE' && select.status && !select.evidenceControlLinks) {
             return opts.controlsApplicable ?? [];
         }
-        // ISO/NIS2 evidence sub-select: select.evidence present
-        if (select.evidence) return opts.controlsWithEvidence ?? [];
+        // ISO/NIS2 evidence sub-select: select.evidenceControlLinks present
+        // (EP-3 — evidence-for-controls is read through the many-to-many join).
+        if (select.evidenceControlLinks) return opts.controlsWithEvidence ?? [];
         // NIS2 controlIds==[] fallback: where.tenantId only, select {id}
         return opts.allControls ?? [];
     });
@@ -107,6 +108,10 @@ function buildDb(opts: {
         controlRequirementLink: { findMany: jest.fn().mockResolvedValue(opts.mappedLinks ?? []) },
         control: { findMany: controlFindMany },
         evidence: { findMany: jest.fn().mockResolvedValue(opts.genericEvidence ?? []) },
+        // EP-3 — GENERIC evidence completeness reads the Evidence↔Control join
+        // directly: evidenceControlLink.findMany({ where: { controlId: { in } } })
+        // returning `{ controlId }` rows deduped into a withEvidence set.
+        evidenceControlLink: { findMany: jest.fn().mockResolvedValue(opts.genericEvidence ?? []) },
         // feat/audit-cycle-unify — open findings raised on the cycle's
         // audits fold into the issue count. Defaults to 0 so the
         // no-findings scores every test asserts stay unchanged.
@@ -152,8 +157,8 @@ describe('computeISO27001Readiness — scoring arithmetic & thresholds', () => {
                 { id: 'k2', code: 'C2', name: 'n', status: 'IMPLEMENTED' },
             ],
             controlsWithEvidence: [
-                { id: 'k1', code: 'C1', name: 'n', evidence: [{ id: 'e1' }] },
-                { id: 'k2', code: 'C2', name: 'n', evidence: [{ id: 'e2' }] },
+                { id: 'k1', code: 'C1', name: 'n', evidenceControlLinks: [{ evidenceId: 'e1' }] },
+                { id: 'k2', code: 'C2', name: 'n', evidenceControlLinks: [{ evidenceId: 'e2' }] },
             ],
         });
 
@@ -180,7 +185,7 @@ describe('computeISO27001Readiness — scoring arithmetic & thresholds', () => {
         // 4 controls, none with evidence → evidence 0 (< 50). 4 missing
         // → MISSING_EVIDENCE gaps (cap 10, only 4 here).
         const controlsWithEvidence = Array.from({ length: 4 }, (_, i) => ({
-            id: `k${i}`, code: `C${i}`, name: `c${i}`, evidence: [],
+            id: `k${i}`, code: `C${i}`, name: `c${i}`, evidenceControlLinks: [],
         }));
         // 7 overdue tasks → taskScore = max(0,100-70)=30; overdue>5 rec.
         // First 5 produce OVERDUE_TASK gaps. dueAt undefined → 'unknown'.
@@ -251,7 +256,7 @@ describe('computeISO27001Readiness — scoring arithmetic & thresholds', () => {
             id: `k${i}`, code: `C${i}`, name: 'n', status: i < 4 ? 'IMPLEMENTED' : 'DRAFT',
         }));
         const controlsWithEvidence = Array.from({ length: 5 }, (_, i) => ({
-            id: `k${i}`, code: `C${i}`, name: 'n', evidence: i < 3 ? [{ id: 'e' }] : [],
+            id: `k${i}`, code: `C${i}`, name: 'n', evidenceControlLinks: i < 3 ? [{ evidenceId: 'e' }] : [],
         }));
         mockDbHolder.db = buildDb({
             cycle: { id: 'c1', frameworkKey: 'ISO27001' },
@@ -310,7 +315,7 @@ describe('computeNIS2Readiness — policies, evidence fallback, issues', () => {
             framework: { id: 'fw-nis2' },
             requirements: [{ id: 'r1', code: 'Art.21', title: 'm' }],
             mappedLinks: [{ requirementId: 'r1', controlId: 'k1' }],
-            controlsWithEvidence: [{ id: 'k1', code: 'C1', name: 'n', evidence: [{ id: 'e1' }] }],
+            controlsWithEvidence: [{ id: 'k1', code: 'C1', name: 'n', evidenceControlLinks: [{ evidenceId: 'e1' }] }],
             policies,
             openTasks: [],
         });
@@ -330,8 +335,8 @@ describe('computeNIS2Readiness — policies, evidence fallback, issues', () => {
         // controls (the allControls branch). None have evidence.
         const allControls = [{ id: 'k1' }, { id: 'k2' }];
         const controlsWithEvidence = [
-            { id: 'k1', code: 'C1', name: 'n', evidence: [] },
-            { id: 'k2', code: 'C2', name: 'n', evidence: [] },
+            { id: 'k1', code: 'C1', name: 'n', evidenceControlLinks: [] },
+            { id: 'k2', code: 'C2', name: 'n', evidenceControlLinks: [] },
         ];
         // 1 requirement, unmapped → coverage 0, 1 UNMAPPED gap.
         const openTasks = Array.from({ length: 4 }, (_, i) => ({
@@ -383,7 +388,7 @@ describe('computeNIS2Readiness — policies, evidence fallback, issues', () => {
             framework: { id: 'fw-nis2' },
             requirements: [],
             mappedLinks: [{ requirementId: 'r1', controlId: 'k1' }],
-            controlsWithEvidence: [{ id: 'k1', code: 'C1', name: 'n', evidence: [{ id: 'e' }] }],
+            controlsWithEvidence: [{ id: 'k1', code: 'C1', name: 'n', evidenceControlLinks: [{ evidenceId: 'e' }] }],
             policies,
             openTasks: [],
         });
@@ -438,16 +443,18 @@ describe('computeGenericReadiness — custom framework path', () => {
         expect(r.score).toBe(0);
     });
 
-    it('evidence dedupes by controlId and ignores null controlId rows', async () => {
-        // 2 mapped controls. Evidence has dup k1 + a null controlId →
-        // withEvidence Set size = 1 → evidence 50.
+    it('evidence dedupes by controlId across join rows', async () => {
+        // 2 mapped controls. The join returns two rows both for k1 →
+        // withEvidence Set size = 1 → evidence 50. (EP-3: the join FK is
+        // non-nullable, so a null-controlId row can't occur here — the
+        // dedup is now the only branch this exercises.)
         mockDbHolder.db = buildDb({
             cycle: { id: 'c1', frameworkKey: 'CUSTOM-DEDUPE' },
             framework: { id: 'fw' },
             requirements: [{ id: 'r1', code: 'X', title: 't' }],
             mappedLinks: [{ requirementId: 'r1' }],
             genericControls: [{ id: 'k1' }, { id: 'k2' }],
-            genericEvidence: [{ controlId: 'k1' }, { controlId: 'k1' }, { controlId: null }],
+            genericEvidence: [{ controlId: 'k1' }, { controlId: 'k1' }],
             taskCount: 0,
         });
         const r = await computeReadiness(ctx, 'c1');

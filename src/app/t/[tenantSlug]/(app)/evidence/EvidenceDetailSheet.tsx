@@ -21,18 +21,21 @@ import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { useTranslations } from 'next-intl';
 import { RejectReasonModal } from './RejectReasonModal';
 import { evidenceStatusLabel, evidenceTypeLabel, evidenceReviewActionLabel } from './evidence-labels';
+import type { EditEvidenceInitial } from './EditEvidenceModal';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { Sheet } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { CopyText } from '@/components/ui/copy-text';
+import { EntityPicker } from '@/components/ui/entity-picker';
+import { useToastWithUndo } from '@/components/ui/hooks';
 import {
     FileTypeIcon,
     resolveFileTypeIcon,
 } from '@/components/ui/file-type-icon';
 import { formatDate, formatDateTime } from '@/lib/format-date';
-import { Pen2, Download } from '@/components/ui/icons/nucleo';
+import { Pen2, Download, Xmark } from '@/components/ui/icons/nucleo';
 import Link from 'next/link';
 import { textLinkVariants } from '@/components/ui/typography';
 import { useTenantHref, useTenantApiUrl } from '@/lib/tenant-context-provider';
@@ -58,21 +61,13 @@ export interface EvidenceDetailSheetProps {
     setOpen: Dispatch<SetStateAction<boolean>>;
     /** The clicked row id; `null` while the sheet is closed. */
     evidenceId: string | null;
+    /** Tenant slug — needed for the control link picker. */
+    tenantSlug: string;
     /** Allowed write surfaces — gates the edit + review buttons. */
     canWrite: boolean;
     canAdmin: boolean;
     /** Open the edit modal for the loaded evidence. */
-    onEdit: (evidence: {
-        id: string;
-        title: string;
-        description: string | null;
-        ownerUserId: string | null;
-        controlId: string | null;
-        /** B8 follow-up — current folder, threaded to the edit modal. */
-        folder: string | null;
-        /** Retention date (ISO) — edited in the modal now. */
-        retentionUntil: string | null;
-    }) => void;
+    onEdit: (evidence: EditEvidenceInitial) => void;
     /**
      * Existing parent review pipeline — re-uses the optimistic mutation.
      * `comment` carries a rejection reason (required for REJECTED, threaded
@@ -116,8 +111,21 @@ interface EvidenceDetailPayload {
     reviewCycle: string | null;
     owner: string | null;
     ownerUserId: string | null;
-    controlId: string | null;
-    control?: { id: string; code: string | null; name: string } | null;
+    /** EP-3 — persisted classification. */
+    category: string | null;
+    /** B8 follow-up — folder label (null = unfoldered). */
+    folder: string | null;
+    /** EP-3 — the controls this evidence satisfies (many-to-many). */
+    evidenceControlLinks: Array<{
+        id: string;
+        controlId: string;
+        control: {
+            id: string;
+            name: string;
+            annexId?: string | null;
+            code?: string | null;
+        };
+    }>;
     taskId: string | null;
     /** Source task / risk / asset — set when uploaded from that entity. */
     task?: { id: string; key: string | null; title: string } | null;
@@ -139,6 +147,7 @@ export function EvidenceDetailSheet({
     open,
     setOpen,
     evidenceId,
+    tenantSlug,
     canWrite,
     canAdmin,
     onEdit,
@@ -147,25 +156,95 @@ export function EvidenceDetailSheet({
     const t = useTranslations('evidence');
     const tenantHref = useTenantHref();
     const tenantApiUrl = useTenantApiUrl();
+    const triggerUndoToast = useToastWithUndo();
     // ep1 review gate — required-reason prompt for the sheet's Reject.
     const [rejectOpen, setRejectOpen] = useState(false);
+    // EP-3 — control link picker state.
+    const [linkControlId, setLinkControlId] = useState('');
+    const [linking, setLinking] = useState(false);
+    const [linkError, setLinkError] = useState<string | null>(null);
 
     const detailQuery = useTenantSWR<EvidenceDetailPayload>(
         open && evidenceId ? CACHE_KEYS.evidence.detail(evidenceId) : null,
     );
 
     const evidence = detailQuery.data;
+    const { mutate: mutateDetail } = detailQuery;
+
+    // EP-3 — unlink a control (Epic 67 undo-toast: optimistic remove +
+    // 5s deferred DELETE + undo). The evidence row survives.
+    const handleUnlinkControl = (controlId: string) => {
+        if (!evidence) return;
+        const previous = evidence;
+        // Optimistic remove so the row vanishes immediately.
+        void mutateDetail(
+            (cur) =>
+                cur
+                    ? {
+                          ...cur,
+                          evidenceControlLinks: (cur.evidenceControlLinks ?? []).filter(
+                              (l) => l.controlId !== controlId,
+                          ),
+                      }
+                    : cur,
+            { revalidate: false },
+        );
+        triggerUndoToast({
+            message: t('detail.controlUnlinked'),
+            undoMessage: t('detail.undo'),
+            action: async () => {
+                const res = await fetch(
+                    tenantApiUrl(
+                        `/evidence/${previous.id}/controls/${controlId}`,
+                    ),
+                    { method: 'DELETE' },
+                );
+                if (!res.ok) throw new Error(t('detail.unlinkFailed'));
+                await mutateDetail();
+            },
+            undoAction: () => {
+                void mutateDetail(previous, { revalidate: false });
+            },
+            onError: () => {
+                void mutateDetail(previous, { revalidate: false });
+            },
+        });
+    };
+
+    // EP-3 — link a new control. Idempotent POST, then revalidate.
+    const handleLinkControl = async () => {
+        if (!evidence || !linkControlId) return;
+        setLinking(true);
+        setLinkError(null);
+        try {
+            const res = await fetch(
+                tenantApiUrl(`/evidence/${evidence.id}/controls`),
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ controlId: linkControlId }),
+                },
+            );
+            if (!res.ok) {
+                setLinkError(t('detail.linkControlFailed'));
+                return;
+            }
+            setLinkControlId('');
+            await mutateDetail();
+        } catch {
+            setLinkError(t('detail.linkControlFailed'));
+        } finally {
+            setLinking(false);
+        }
+    };
 
     const metaRows = useMemo(() => {
         if (!evidence) return [];
         const rows: Array<{ label: string; value: React.ReactNode }> = [];
         rows.push({ label: t('detail.metaType'), value: evidenceTypeLabel(evidence.type, t) });
         if (evidence.owner) rows.push({ label: t('detail.metaOwner'), value: evidence.owner });
-        if (evidence.control) {
-            rows.push({
-                label: t('detail.metaControl'),
-                value: `${evidence.control.code ?? ''}${evidence.control.code ? ' — ' : ''}${evidence.control.name}`,
-            });
+        if (evidence.category) {
+            rows.push({ label: t('detail.metaCategory'), value: evidence.category });
         }
         if (evidence.task) {
             // Back-reference — which task this evidence was uploaded from.
@@ -340,6 +419,110 @@ export function EvidenceDetailSheet({
                                 </dl>
                             )}
 
+                            {/* EP-3 — where-used: the controls this
+                                evidence satisfies. Each row links to the
+                                control + carries an unlink affordance
+                                (undo-toast). A picker + Link button adds a
+                                new control link. */}
+                            <div
+                                className="space-y-tight"
+                                data-testid="evidence-sheet-controls"
+                            >
+                                <p className="text-xs font-medium uppercase tracking-widest text-content-subtle">
+                                    {t('detail.usedByControls', {
+                                        count: (evidence.evidenceControlLinks ?? []).length,
+                                    })}
+                                </p>
+                                {(evidence.evidenceControlLinks ?? []).length === 0 ? (
+                                    <p className="text-sm text-content-muted">
+                                        {t('detail.noControlsLinked')}
+                                    </p>
+                                ) : (
+                                    <ul className="space-y-tight">
+                                        {(evidence.evidenceControlLinks ?? []).map((l) => {
+                                            const prefix =
+                                                l.control.annexId ||
+                                                l.control.code ||
+                                                '';
+                                            return (
+                                                <li
+                                                    key={l.id}
+                                                    className="flex items-center justify-between gap-default"
+                                                >
+                                                    <Link
+                                                        href={tenantHref(
+                                                            `/controls/${l.controlId}`,
+                                                        )}
+                                                        className={textLinkVariants({
+                                                            tone: 'link',
+                                                        })}
+                                                    >
+                                                        {prefix
+                                                            ? `${prefix}: ${l.control.name}`
+                                                            : l.control.name}
+                                                    </Link>
+                                                    {canWrite && (
+                                                        <button
+                                                            type="button"
+                                                            aria-label={t(
+                                                                'detail.unlinkControl',
+                                                            )}
+                                                            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-content-muted transition-colors hover:bg-bg-muted hover:text-content-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                            id={`unlink-control-${l.controlId}`}
+                                                            onClick={() =>
+                                                                handleUnlinkControl(
+                                                                    l.controlId,
+                                                                )
+                                                            }
+                                                        >
+                                                            <Xmark className="size-3.5" />
+                                                        </button>
+                                                    )}
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                )}
+                                {canWrite && (
+                                    <div className="flex items-end gap-tight pt-tight">
+                                        <div className="min-w-0 flex-1">
+                                            <EntityPicker
+                                                id="evidence-link-control-input"
+                                                tenantSlug={tenantSlug}
+                                                entityType="CONTROL"
+                                                value={linkControlId}
+                                                onChange={setLinkControlId}
+                                                placeholder={t(
+                                                    'detail.linkControlPlaceholder',
+                                                )}
+                                                testId="evidence-link-control-picker"
+                                            />
+                                        </div>
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            id="evidence-link-control-btn"
+                                            disabled={!linkControlId || linking}
+                                            onClick={() =>
+                                                void handleLinkControl()
+                                            }
+                                        >
+                                            {linking
+                                                ? t('detail.linking')
+                                                : t('detail.linkControlButton')}
+                                        </Button>
+                                    </div>
+                                )}
+                                {linkError && (
+                                    <p
+                                        className="text-xs text-content-error"
+                                        role="alert"
+                                    >
+                                        {linkError}
+                                    </p>
+                                )}
+                            </div>
+
                             {evidence.description && (
                                 <div className="space-y-tight">
                                     <p className="text-xs font-medium uppercase tracking-widest text-content-subtle">
@@ -376,20 +559,25 @@ export function EvidenceDetailSheet({
                                             title: evidence.title,
                                             description: evidence.description,
                                             ownerUserId: evidence.ownerUserId,
-                                            controlId: evidence.controlId,
-                                            // B8 follow-up — the
-                                            // detail sheet fetches a
-                                            // fresh evidence row;
-                                            // forward its current
-                                            // folder so the edit
-                                            // modal opens already
-                                            // populated.
-                                            folder: (
-                                                evidence as {
-                                                    folder?: string | null;
-                                                }
-                                            ).folder ?? null,
+                                            // EP-3 — seed the multi-select
+                                            // from the linked controls.
+                                            controlLinks:
+                                                (evidence.evidenceControlLinks ?? []).map(
+                                                    (l) => ({
+                                                        id: l.control.id,
+                                                        name: l.control.name,
+                                                        annexId:
+                                                            l.control.annexId ??
+                                                            null,
+                                                        code:
+                                                            l.control.code ?? null,
+                                                    }),
+                                                ),
+                                            category: evidence.category,
+                                            folder: evidence.folder ?? null,
                                             retentionUntil: evidence.retentionUntil,
+                                            type: evidence.type,
+                                            fileRecordId: evidence.fileRecordId,
                                         })
                                     }
                                     id="evidence-sheet-edit-btn"

@@ -99,7 +99,8 @@ function imageEvidence(overrides: Record<string, unknown> = {}) {
         reviewCycle: 'QUARTERLY',
         owner: 'Alice',
         ownerUserId: 'usr_alice',
-        controlId: null,
+        // EP-3 — where-used associations (many-to-many controls + back-refs).
+        evidenceControlLinks: [],
         taskId: null,
         riskId: null,
         assetId: null,
@@ -135,6 +136,7 @@ function renderSheet(evidence: unknown, props: Record<string, unknown> = {}) {
             open
             setOpen={() => {}}
             evidenceId="ev_1"
+            tenantSlug="acme"
             canWrite
             canAdmin
             onEdit={() => {}}

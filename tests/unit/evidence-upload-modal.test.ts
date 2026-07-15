@@ -302,15 +302,21 @@ describe('NewEvidenceTextModal — shared Modal composition', () => {
 // ─── 6. EvidenceClient wiring ─────────────────────────────────
 
 describe('EvidenceClient — modal entry points', () => {
-    it('imports the Upload-a-file modal (the unified +Evidence flow, UI-18)', () => {
-        // Accept both static and dynamic imports (lazy-loading via next/dynamic)
-        const hasUpload = /from ['"]\.\/UploadEvidenceModal['"]/.test(CLIENT_SRC) ||
-            /import\(['"]\.\/UploadEvidenceModal['"]\)/.test(CLIENT_SRC);
-        expect(hasUpload).toBe(true);
-        // UI-18: the text-only modal is no longer imported by the client.
-        const hasText = /from ['"]\.\/NewEvidenceTextModal['"]/.test(CLIENT_SRC) ||
-            /import\(['"]\.\/NewEvidenceTextModal['"]\)/.test(CLIENT_SRC);
-        expect(hasText).toBe(false);
+    it('EP-3: imports all four create surfaces for the create menu', () => {
+        // EP-3 Part 1 reversed UI-18: the single +Evidence upload button
+        // became a Popover create-menu offering file upload, text note,
+        // link/URL, and bulk ZIP import — so all four modals are imported.
+        for (const mod of [
+            'UploadEvidenceModal',
+            'NewEvidenceTextModal',
+            'NewEvidenceLinkModal',
+            'EvidenceBulkImportModal',
+        ]) {
+            const imported =
+                new RegExp(`from ['"]\\./${mod}['"]`).test(CLIENT_SRC) ||
+                new RegExp(`import\\(['"]\\./${mod}['"]\\)`).test(CLIENT_SRC);
+            expect(imported).toBe(true);
+        }
     });
 
     it('mounts <UploadEvidenceModal> with tenant helpers and controls', () => {
@@ -322,23 +328,25 @@ describe('EvidenceClient — modal entry points', () => {
         expect(CLIENT_SRC).toMatch(/controls=\{controls\}/);
     });
 
-    it('UI-18: the text + bulk-import modals are no longer mounted in the client', () => {
-        // The +Evidence flow was unified onto the Upload-a-file modal; the
-        // text-only + ZIP-import surfaces were removed from the page header.
-        expect(CLIENT_SRC).not.toMatch(/<NewEvidenceTextModal\b/);
-        expect(CLIENT_SRC).not.toMatch(/<EvidenceBulkImportModal\b/);
+    it('EP-3: mounts all four create modals (upload + text + link + bulk)', () => {
+        // EP-3 restored the text + link + ZIP-import surfaces alongside
+        // upload, each mounted so the create menu can open them.
+        expect(CLIENT_SRC).toMatch(/<UploadEvidenceModal\b/);
+        expect(CLIENT_SRC).toMatch(/<NewEvidenceTextModal\b/);
+        expect(CLIENT_SRC).toMatch(/<NewEvidenceLinkModal\b/);
+        expect(CLIENT_SRC).toMatch(/<EvidenceBulkImportModal\b/);
     });
 
-    it('UI-18: a single +Evidence button opens the Upload-a-file modal', () => {
-        // One primary button → setShowUpload; the separate "Upload file" +
-        // "Import ZIP" icon buttons were removed.
-        expect(CLIENT_SRC).toMatch(/<UploadEvidenceModal\b/);
-        expect(CLIENT_SRC).toMatch(
-            /onClick=\{\(\)\s*=>\s*setShowUpload\(true\)\}/,
-        );
+    it('EP-3: the +Evidence trigger is a Popover create-menu opening the four surfaces', () => {
+        // One primary trigger opens a Popover.Menu; each item flips a
+        // distinct modal-visibility flag.
+        expect(CLIENT_SRC).toMatch(/<Popover\b/);
+        expect(CLIENT_SRC).toMatch(/<Popover\.Menu\b/);
         expect(CLIENT_SRC).toMatch(/id=["']add-evidence-btn["']/);
-        expect(CLIENT_SRC).not.toMatch(/id=["']bulk-import-evidence-btn["']/);
-        expect(CLIENT_SRC).not.toMatch(/id=["']add-text-evidence-btn["']/);
+        expect(CLIENT_SRC).toMatch(/setShowUpload\(true\)/);
+        expect(CLIENT_SRC).toMatch(/setShowTextModal\(true\)/);
+        expect(CLIENT_SRC).toMatch(/setShowLinkModal\(true\)/);
+        expect(CLIENT_SRC).toMatch(/setShowBulkImport\(true\)/);
     });
 
     it('removes the legacy inline forms entirely', () => {

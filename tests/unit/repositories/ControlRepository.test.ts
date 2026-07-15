@@ -173,12 +173,20 @@ describe('listPaginated', () => {
 // ─── getById / getHeaderById / listFrameworkMappings ───
 
 describe('read helpers', () => {
-    it('getById queries findFirst with tenant-or-null scope', async () => {
-        db.control.findFirst.mockResolvedValueOnce({ id: 'x' });
-        await ControlRepository.getById(db as any, ctx, 'x');
+    it('getById queries findFirst with tenant-or-null scope and flattens the evidence join', async () => {
+        // EP-3 — getById includes the `evidenceControlLinks` join and flattens
+        // it back to a `control.evidence` array; the mock row must carry the
+        // join so the `.map((l) => l.evidence)` flatten has something to read.
+        db.control.findFirst.mockResolvedValueOnce({
+            id: 'x',
+            evidenceControlLinks: [{ evidence: { id: 'ev-1', title: 'E1' } }],
+        });
+        const res = await ControlRepository.getById(db as any, ctx, 'x');
         const arg = (db.control.findFirst.mock.calls[0] as any[])[0];
         expect(arg.where.id).toBe('x');
         expect(arg.where.OR).toEqual([{ tenantId: 'tenant-1' }, { tenantId: null }]);
+        // Flattened back to the `evidence` array the detail page expects.
+        expect((res as any).evidence).toEqual([{ id: 'ev-1', title: 'E1' }]);
     });
 
     it('getHeaderById queries findFirst with a _count include', async () => {

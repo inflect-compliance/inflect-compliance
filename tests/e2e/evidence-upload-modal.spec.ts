@@ -27,7 +27,10 @@ test.describe('Epic 54 — Evidence upload modal', () => {
         await authedPage.waitForLoadState('networkidle').catch(() => {});
         const listUrl = authedPage.url();
 
+        // EP-3 — +Evidence is now a create menu; pick "File upload" to
+        // reach the upload modal.
         await authedPage.click('#add-evidence-btn');
+        await authedPage.click('#create-evidence-upload');
 
         await expect(authedPage.locator('#upload-form')).toBeVisible({
             timeout: 10000,
@@ -48,6 +51,7 @@ test.describe('Epic 54 — Evidence upload modal', () => {
         await openBtn.waitFor({ state: 'visible', timeout: 15_000 });
         await authedPage.waitForLoadState('networkidle').catch(() => {});
         await openBtn.click();
+        await authedPage.click('#create-evidence-upload'); // EP-3 create-menu → File upload
         await expect(authedPage.locator('#upload-form')).toBeVisible({
             timeout: 60_000,
         });
@@ -68,6 +72,7 @@ test.describe('Epic 54 — Evidence upload modal', () => {
         await openBtn.waitFor({ state: 'visible', timeout: 15_000 });
         await authedPage.waitForLoadState('networkidle').catch(() => {});
         await openBtn.click();
+        await authedPage.click('#create-evidence-upload'); // EP-3 create-menu → File upload
         await expect(authedPage.locator('#upload-form')).toBeVisible({
             timeout: 60_000,
         });
@@ -121,6 +126,7 @@ test.describe('Epic 54 — Evidence upload modal', () => {
         await openBtn.waitFor({ state: 'visible', timeout: 15_000 });
         await authedPage.waitForLoadState('networkidle').catch(() => {});
         await openBtn.click();
+        await authedPage.click('#create-evidence-upload'); // EP-3 create-menu → File upload
         await expect(authedPage.locator('#upload-form')).toBeVisible({
             timeout: 60_000,
         });

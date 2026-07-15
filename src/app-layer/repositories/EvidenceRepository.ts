@@ -10,6 +10,8 @@ export interface EvidenceListFilters {
     /** EvidenceStatus: DRAFT | SUBMITTED | APPROVED | REJECTED */
     status?: string;
     controlId?: string;
+    /** EP-3 Part 5 — category filter (exact match). */
+    category?: string;
     /**
      * B8 follow-up — folder filter. `__none__` is the sentinel for
      * "evidence with NULL or empty folder"; any other value is an
@@ -37,6 +39,8 @@ const evidenceListSelect = {
     fileName: true,
     type: true,
     status: true,
+    // EP-3 Part 5 — category is now a rendered column + filter.
+    category: true,
     owner: true,
     // Real owner FK — seeds the edit modal's owner picker when the
     // Evidence list-row edit affordance opens it (B8 follow-up parity
@@ -60,7 +64,12 @@ const evidenceListSelect = {
     // `createdAt` is required by the cursor-pagination helper
     // (`computePageInfo`) — it's not rendered in the table.
     createdAt: true,
-    control: { select: { id: true, name: true, annexId: true } },
+    // EP-3 — linked controls now come through the join. The list row
+    // renders the count + first control's label; the detail sheet reads
+    // the full set via getById.
+    evidenceControlLinks: {
+        select: { control: { select: { id: true, name: true, annexId: true, code: true } } },
+    },
     fileRecord: { select: { id: true, mimeType: true } },
 } as const;
 
@@ -120,7 +129,11 @@ export class EvidenceRepository {
             where.status = filters.status as Prisma.EnumEvidenceStatusFilter;
         }
         if (filters?.controlId) {
-            where.controlId = filters.controlId;
+            // EP-3 — filter through the many-to-many join.
+            where.evidenceControlLinks = { some: { controlId: filters.controlId } };
+        }
+        if (filters?.category) {
+            where.category = filters.category;
         }
         if (filters?.folder) {
             // B8 follow-up — `__none__` matches rows with a NULL
@@ -165,7 +178,16 @@ export class EvidenceRepository {
             return db.evidence.findFirst({
                 where: { id, tenantId: ctx.tenantId },
                 include: {
-                    control: true,
+                    // EP-3 — the "used by N controls" where-used list.
+                    evidenceControlLinks: {
+                        select: {
+                            id: true,
+                            controlId: true,
+                            createdAt: true,
+                            control: { select: { id: true, name: true, annexId: true, code: true } },
+                        },
+                        orderBy: { createdAt: 'asc' },
+                    },
                     // Source task / risk / asset — powers the "uploaded
                     // from" back-reference on the evidence detail sheet.
                     task: { select: { id: true, key: true, title: true } },
@@ -275,6 +297,99 @@ export class EvidenceRepository {
         return db.evidence.updateMany({
             where: { id: { in: ids }, tenantId: ctx.tenantId },
             data,
+        });
+    }
+
+    // ─── EP-3 — evidence↔control join management ───
+
+    /**
+     * Return the control ids that exist in this tenant among `controlIds`.
+     * One bounded `findMany` — the caller compares the returned set against
+     * its input to reject foreign/unknown controls.
+     */
+    static async filterExistingControlIds(
+        db: PrismaTx,
+        ctx: RequestContext,
+        controlIds: string[],
+    ): Promise<Set<string>> {
+        if (controlIds.length === 0) return new Set();
+        const rows = await db.control.findMany({ // guardrail-allow: unbounded
+            where: { id: { in: controlIds }, tenantId: ctx.tenantId },
+            select: { id: true },
+        });
+        return new Set(rows.map((r) => r.id));
+    }
+
+    /** The control ids currently linked to this evidence. */
+    static async listControlLinks(db: PrismaTx, ctx: RequestContext, evidenceId: string) {
+        return db.evidenceControlLink.findMany({ // guardrail-allow: unbounded
+            where: { tenantId: ctx.tenantId, evidenceId },
+            select: { id: true, controlId: true },
+        });
+    }
+
+    /**
+     * Create one EvidenceControlLink. Idempotent on the
+     * (tenant, evidence, control) unique — a duplicate insert is swallowed
+     * so re-linking is a no-op. Returns true if a NEW row was created.
+     */
+    static async linkControl(
+        db: PrismaTx,
+        ctx: RequestContext,
+        evidenceId: string,
+        controlId: string,
+    ): Promise<boolean> {
+        const existing = await db.evidenceControlLink.findUnique({
+            where: {
+                tenantId_evidenceId_controlId: {
+                    tenantId: ctx.tenantId,
+                    evidenceId,
+                    controlId,
+                },
+            },
+            select: { id: true },
+        });
+        if (existing) return false;
+        await db.evidenceControlLink.create({
+            data: {
+                tenantId: ctx.tenantId,
+                evidenceId,
+                controlId,
+                createdByUserId: ctx.userId,
+            },
+        });
+        return true;
+    }
+
+    /** Remove one EvidenceControlLink. Returns the deleted count (0 or 1). */
+    static async unlinkControl(
+        db: PrismaTx,
+        ctx: RequestContext,
+        evidenceId: string,
+        controlId: string,
+    ): Promise<number> {
+        const res = await db.evidenceControlLink.deleteMany({
+            where: { tenantId: ctx.tenantId, evidenceId, controlId },
+        });
+        return res.count;
+    }
+
+    /** Create links for many controls at once (skips duplicates). */
+    static async createControlLinks(
+        db: PrismaTx,
+        ctx: RequestContext,
+        evidenceId: string,
+        controlIds: string[],
+    ): Promise<void> {
+        if (controlIds.length === 0) return;
+        await db.evidenceControlLink.createMany({
+            data: controlIds.map((controlId) => ({
+                tenantId: ctx.tenantId,
+                evidenceId,
+                controlId,
+                createdByUserId: ctx.userId,
+            })),
+            skipDuplicates: true,
         });
     }
 }

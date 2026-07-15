@@ -91,14 +91,12 @@ export function EvidenceSubTable({
     const t = useTranslations('controls');
     const rows = useMemo<EvidenceTableRow[]>(() => {
         const links = data?.links ?? [];
-        const evidenceRows = data?.evidence ?? [];
-        const linkedFileIds = new Set(
-            links.map((l) => l.fileId).filter(Boolean) as string[],
-        );
-        const directEvidence = evidenceRows.filter(
-            (e) =>
-                !e.fileRecordId || !linkedFileIds.has(e.fileRecordId),
-        );
+        // EP-3 — Evidence entities reach the control through the
+        // EvidenceControlLink join; ControlEvidenceLink (`links`) now only
+        // carries genuinely non-Evidence artifacts (url / integration / bia),
+        // so the old fileRecordId dedup that compensated for the dual
+        // representation is gone.
+        const directEvidence = data?.evidence ?? [];
 
         const out: EvidenceTableRow[] = [];
         for (const el of links) {

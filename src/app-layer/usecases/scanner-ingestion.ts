@@ -235,7 +235,7 @@ export async function ingestScannerRun(
             const summary = `${source} ${scanType} scan passed on ${ranAt.toISOString().slice(0, 10)} — ${parsed.findings.length} finding(s), 0 at/above ${threshold}.${input.repoRef ? ` (${sanitizePlainText(input.repoRef)})` : ''}`;
 
             const existing = await db.evidence.findFirst({
-                where: { tenantId: ctx.tenantId, controlId, category, type: 'TEXT', isArchived: false, deletedAt: null },
+                where: { tenantId: ctx.tenantId, evidenceControlLinks: { some: { controlId } }, category, type: 'TEXT', isArchived: false, deletedAt: null },
                 select: { id: true },
             });
             if (existing) {
@@ -254,7 +254,6 @@ export async function ingestScannerRun(
                 const ev = await db.evidence.create({
                     data: {
                         tenantId: ctx.tenantId,
-                        controlId,
                         type: 'TEXT',
                         title: `Automated evidence — ${source} ${scanType}`,
                         content: summary,
@@ -263,6 +262,14 @@ export async function ingestScannerRun(
                         reviewCycle: 'MONTHLY',
                         nextReviewDate,
                         status: 'APPROVED',
+                    },
+                });
+                await db.evidenceControlLink.create({
+                    data: {
+                        tenantId: ctx.tenantId,
+                        evidenceId: ev.id,
+                        controlId,
+                        createdByUserId: ctx.userId ?? null,
                     },
                 });
                 evidenceId = ev.id;

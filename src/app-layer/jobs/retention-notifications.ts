@@ -70,13 +70,21 @@ export async function runEvidenceRetentionNotifications(
     };
     if (options.tenantId) where.tenantId = options.tenantId;
 
-    const expiring = await prisma.evidence.findMany({
+    // Evidence↔Control is a many-to-many join now; the notification payload +
+    // reminder Task carry a single controlId, so resolve the first linked
+    // control per evidence and expose it as `controlId` for the loop below.
+    const expiringRaw = await prisma.evidence.findMany({
         where,
         select: {
-            id: true, tenantId: true, title: true, owner: true, controlId: true,
+            id: true, tenantId: true, title: true, owner: true,
             ownerUserId: true, retentionUntil: true,
+            evidenceControlLinks: { select: { controlId: true }, take: 1 },
         },
     });
+    const expiring = expiringRaw.map((ev) => ({
+        ...ev,
+        controlId: ev.evidenceControlLinks[0]?.controlId ?? null,
+    }));
 
     // Cache of tenant-OWNER userId per tenant so we don't re-query for each
     // evidence row. The fallback chain for `createdByUserId` (required NOT
@@ -250,11 +258,18 @@ export async function runEvidenceRetentionNotifications(
         expiredAt: { not: null, lt: new Date() },
     };
     if (options.tenantId) expiredWhere.tenantId = options.tenantId;
-    const expired = await prisma.evidence.findMany({
+    const expiredRaw = await prisma.evidence.findMany({
         where: expiredWhere,
-        select: { id: true, tenantId: true, title: true, controlId: true, expiredAt: true },
+        select: {
+            id: true, tenantId: true, title: true, expiredAt: true,
+            evidenceControlLinks: { select: { controlId: true }, take: 1 },
+        },
         take: 1000,
     });
+    const expired = expiredRaw.map((ev) => ({
+        ...ev,
+        controlId: ev.evidenceControlLinks[0]?.controlId ?? null,
+    }));
     for (const ev of expired) {
         await emitEvidenceTrigger(
             'EVIDENCE_EXPIRED',

@@ -200,7 +200,12 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
                 control: {
                     include: {
                         tasks: { select: { id: true, status: true, dueAt: true, title: true } },
-                        evidence: { select: { id: true, status: true, title: true, expiredAt: true, isArchived: true, deletedAt: true } },
+                        // Evidence↔Control is a many-to-many join now; read the
+                        // linked Evidence through it (flattened at the consumer).
+                        evidenceControlLinks: {
+                            where: { tenantId: ctx.tenantId },
+                            select: { evidence: { select: { id: true, status: true, title: true, expiredAt: true, isArchived: true, deletedAt: true } } },
+                        },
                         // In-force exceptions: APPROVED and not yet expired.
                         exceptions: {
                             where: { status: 'APPROVED', expiresAt: { gt: now } },
@@ -267,7 +272,7 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
     // not archived/deleted). Reuses the `now` resolved above.
     const missingEvidence = controls.filter((c) =>
         c.status !== 'NOT_APPLICABLE' &&
-        !(c.evidence ?? []).some((e) => isCoverageQualifyingEvidence(e, now))
+        !(c.evidenceControlLinks ?? []).some((l) => isCoverageQualifyingEvidence(l.evidence, now))
     ).map((c) => ({ code: c.code, name: c.name, status: c.status }));
 
     // Overdue tasks (reuses `now` defined above for the exception filter)

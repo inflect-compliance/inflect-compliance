@@ -93,7 +93,9 @@ function buildDb(opts: {
                 opts.tenant === undefined ? { slug: 'acme' } : opts.tenant,
             ),
         },
-        evidence: {
+        // Evidence↔Control is a many-to-many join now; the SoA evidence
+        // rollup groups the join rows per control.
+        evidenceControlLink: {
             groupBy: jest.fn().mockResolvedValue(opts.evidence ?? []),
         },
         // SoA open-task rollup now reads the unified Task model (not the
@@ -314,7 +316,7 @@ describe('getSoA — rollups and field defaults', () => {
         });
         mockDbHolder.db = db;
         const out = await getSoA(ctx, { framework: 'ISO27001' });
-        expect(db.evidence.groupBy).not.toHaveBeenCalled();
+        expect(db.evidenceControlLink.groupBy).not.toHaveBeenCalled();
         expect(db.task.groupBy).not.toHaveBeenCalled();
         expect(db.controlTestRun.findMany).not.toHaveBeenCalled();
         expect(out.entries[0].evidenceCount).toBe(0);
@@ -336,7 +338,7 @@ describe('getSoA — rollups and field defaults', () => {
             includeTasks: true,
             includeTests: true,
         });
-        expect(db.evidence.groupBy).not.toHaveBeenCalled();
+        expect(db.evidenceControlLink.groupBy).not.toHaveBeenCalled();
         expect(db.task.groupBy).not.toHaveBeenCalled();
         expect(db.controlTestRun.findMany).not.toHaveBeenCalled();
     });
