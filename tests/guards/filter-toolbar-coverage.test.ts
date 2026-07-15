@@ -47,6 +47,8 @@ const EXEMPT_FILE_PATTERNS: RegExp[] = [
  * length to stop hand-waved exemptions.
  */
 const EXEMPTIONS: Record<string, string> = {
+    "src/app/t/[tenantSlug]/(app)/admin/vendor-assessment-reviews/VendorAssessmentReviewsQueueClient.tsx":
+        "Cross-vendor review queue — an admin aggregation of submitted/reviewed/closed assessments across all vendors, ordered by review priority; inline status is the only facet and the set is bounded, so it uses sort + row click-through rather than the faceted FilterToolbar.",
     "src/app/org/[orgSlug]/(app)/initiatives/InitiativesClient.tsx":
         "Org-level portfolio programme list — cross-tenant initiative records with sort + row click-through, no per-tenant faceted filters at the portfolio tier.",
     "src/app/org/[orgSlug]/(app)/initiatives/[initiativeId]/InitiativeDetailClient.tsx":

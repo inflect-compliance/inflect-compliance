@@ -647,6 +647,81 @@ export async function getTemplateTree(
     });
 }
 
+// ─── 7. publishTemplate ────────────────────────────────────────────
+
+/**
+ * Flip an unpublished draft to `isPublished=true`, making it selectable
+ * in the send-assessment flow. Publishing is a one-way status change:
+ * once published the template is read-only (the publish-guard rejects
+ * every mutating usecase), and a live assessment pins to a specific
+ * version — so an admin who wants further edits must clone first.
+ *
+ * Guards:
+ *   • 404 if the template is missing / in another tenant.
+ *   • `ALREADY_PUBLISHED` if it is already published (idempotency guard
+ *     — a double-publish is a client bug, not a silent no-op).
+ *   • `EMPTY_TEMPLATE` if it has zero questions — an empty questionnaire
+ *     is never a valid thing to send to a vendor.
+ */
+export async function publishTemplate(
+    ctx: RequestContext,
+    templateId: string,
+) {
+    assertCanManageVendorAssessmentTemplates(ctx);
+
+    return runInTenantContext(ctx, async (db) => {
+        const template = await db.vendorAssessmentTemplate.findFirst({
+            where: { id: templateId, tenantId: ctx.tenantId },
+            select: {
+                id: true,
+                key: true,
+                version: true,
+                name: true,
+                isPublished: true,
+                _count: { select: { questions: true } },
+            },
+        });
+        if (!template) throw notFound('Template not found');
+        if (template.isPublished) {
+            throw badRequest(
+                'ALREADY_PUBLISHED',
+                `Template "${template.name}" is already published.`,
+            );
+        }
+        if (template._count.questions === 0) {
+            throw badRequest(
+                'EMPTY_TEMPLATE',
+                'Cannot publish a template with no questions',
+            );
+        }
+
+        const updated = await db.vendorAssessmentTemplate.update({
+            where: { id: templateId },
+            data: { isPublished: true },
+            select: { id: true, isPublished: true },
+        });
+
+        await logEvent(db, ctx, {
+            action: 'VENDOR_ASSESSMENT_TEMPLATE_PUBLISHED',
+            entityType: 'VendorAssessmentTemplate',
+            entityId: templateId,
+            details:
+                `Published template "${template.name}" ` +
+                `(key=${template.key}, v${template.version}, ` +
+                `${template._count.questions} question(s))`,
+            detailsJson: {
+                category: 'status_change',
+                entityName: 'VendorAssessmentTemplate',
+                fromStatus: 'draft',
+                toStatus: 'published',
+                reason: `Vendor questionnaire template published (key=${template.key}, v${template.version})`,
+            },
+        });
+
+        return updated;
+    });
+}
+
 /** List templates for the admin index page. */
 export async function listTemplates(ctx: RequestContext) {
     if (!ctx.permissions.canRead) {

@@ -21,7 +21,6 @@
  *     · finding.createFinding / updateFinding
  *     · risk.createRisk / createRiskFromTemplate / updateRisk
  *     · vendor.createVendor / updateVendor / addVendorDocument
- *                / decideVendorAssessment
  *     · audit.createAudit / updateAudit (incl. checklist notes)
  *     · controlTest.createTestPlan / updateTestPlan / completeTestRun
  *
@@ -58,7 +57,6 @@ const mockVendorCreate = jest.fn();
 const mockVendorUpdate = jest.fn();
 const mockVendorGetById = jest.fn();
 const mockVendorDocCreate = jest.fn();
-const mockVendorAssessmentDecide = jest.fn();
 
 const mockAuditCreate = jest.fn();
 const mockAuditUpdate = jest.fn();
@@ -132,9 +130,7 @@ jest.mock('@/app-layer/repositories/VendorRepository', () => ({
 
 jest.mock('@/app-layer/repositories/AssessmentRepository', () => ({
     QuestionnaireRepository: {},
-    VendorAssessmentRepository: {
-        decide: (...a: unknown[]) => mockVendorAssessmentDecide(...a),
-    },
+    VendorAssessmentRepository: {},
     VendorAnswerRepository: {},
 }));
 
@@ -257,7 +253,6 @@ import {
     createVendor,
     updateVendor,
     addVendorDocument,
-    decideVendorAssessment,
 } from '@/app-layer/usecases/vendor';
 import { createAudit, updateAudit } from '@/app-layer/usecases/audit';
 import {
@@ -277,7 +272,7 @@ beforeEach(() => {
         mockFindingCreate, mockFindingUpdate, mockFindingGetById,
         mockRiskCreate, mockRiskUpdate, mockRiskTemplateGet, mockTenantFindUnique,
         mockVendorCreate, mockVendorUpdate, mockVendorGetById,
-        mockVendorDocCreate, mockVendorAssessmentDecide,
+        mockVendorDocCreate,
         mockAuditCreate, mockAuditUpdate, mockAuditChecklistUpdate,
         mockTestPlanCreate, mockTestPlanUpdate, mockTestPlanUpdateNextDueAt,
         mockTestPlanGetById, mockTestRunComplete, mockTestRunGetById,
@@ -513,15 +508,6 @@ describe('vendor.addVendorDocument sanitises title, externalUrl, notes', () => {
         const data = mockVendorDocCreate.mock.calls[0][3];
         expect(data.title).not.toMatch(/<script/);
         expect(data.notes).not.toMatch(/<script/);
-    });
-});
-
-describe('vendor.decideVendorAssessment sanitises the notes argument', () => {
-    it('strips <script> before forwarding to the repository', async () => {
-        mockVendorAssessmentDecide.mockResolvedValue({ id: 'a1', vendorId: 'v1' });
-        await decideVendorAssessment(ctx, 'a1', 'APPROVED', `Looks good ${XSS}`);
-        const notes = mockVendorAssessmentDecide.mock.calls[0][4];
-        expect(notes).not.toMatch(/<script/);
     });
 });
 

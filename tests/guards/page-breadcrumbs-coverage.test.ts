@@ -106,7 +106,6 @@ const EXEMPT_FILES = new Set<string>([
     "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/diff/page.tsx",
     "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/templates/page.tsx",
     "src/app/t/[tenantSlug]/(app)/admin/vendor-assessment-reviews/[assessmentId]/VendorAssessmentReviewClient.tsx",
-    "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/assessment/[assessmentId]/page.tsx",
 
     // ── Per-resource dashboards ─────────────────────────────────
     // These render the resource's own dashboard view (e.g.

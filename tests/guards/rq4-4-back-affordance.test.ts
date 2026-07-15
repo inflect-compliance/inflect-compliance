@@ -65,12 +65,12 @@ describe('rq4-4 back affordance', () => {
 
     it('resolveCanonicalParent expands dynamic segments shared with the child', () => {
         const parent = resolveCanonicalParent(
-            '/t/acme/vendors/v123/assessment/a456',
+            '/t/acme/frameworks/nis2/readiness',
             'acme',
         );
         expect(parent).toEqual({
-            href: '/t/acme/vendors/v123',
-            label: 'Vendor',
+            href: '/t/acme/frameworks/nis2',
+            label: 'NIS2',
         });
     });
 

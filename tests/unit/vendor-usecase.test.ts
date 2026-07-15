@@ -16,10 +16,7 @@
  *   - updateVendor — Epic D.2 free-text patch sanitisation,
  *     status-change branch (VENDOR_STATUS_CHANGED vs VENDOR_UPDATED).
  *   - Documents: add/remove/list — sanitisation, audit, notFound.
- *   - Assessments: start/get/submit + saveAssessmentAnswers with
- *     scoring service wiring + DRAFT-only edit gate.
- *   - decideVendorAssessment — APPROVED / REJECTED audit action,
- *     notes sanitisation seam.
+ *   - getVendorAssessment — read gate + notFound.
  *   - listVendorLinks / addVendorLink / removeVendorLink.
  *   - setVendorReviewDates.
  */
@@ -90,7 +87,6 @@ import {
 import {
     QuestionnaireRepository,
     VendorAssessmentRepository,
-    VendorAnswerRepository,
 } from '@/app-layer/repositories/AssessmentRepository';
 import { logEvent } from '@/app-layer/events/audit';
 import { sanitizePlainText } from '@/lib/security/sanitize';
@@ -103,11 +99,7 @@ import {
     listVendorDocuments,
     addVendorDocument,
     removeVendorDocument,
-    startVendorAssessment,
     getVendorAssessment,
-    saveAssessmentAnswers,
-    submitVendorAssessment,
-    decideVendorAssessment,
     listQuestionnaireTemplates,
     getQuestionnaireTemplate,
     setVendorReviewDates,
@@ -122,7 +114,6 @@ beforeEach(() => {
     (sanitizePlainText as jest.Mock).mockImplementation((s: string) => `SAN::${s}`);
 });
 
-const adminCtx = makeRequestContext('ADMIN');
 const editorCtx = makeRequestContext('EDITOR');
 const readerCtx = makeRequestContext('READER');
 
@@ -311,122 +302,6 @@ describe('vendor documents', () => {
 });
 
 // ─── Assessments ───────────────────────────────────────────────────
-
-describe('startVendorAssessment', () => {
-    it('throws notFound when the template is missing', async () => {
-        (QuestionnaireRepository.getByKey as jest.Mock).mockResolvedValue(null);
-        await expect(startVendorAssessment(editorCtx, 'v-1', 'missing'))
-            .rejects.toThrow(/Template "missing" not found/);
-    });
-
-    it('creates an assessment and emits VENDOR_ASSESSMENT_STARTED audit', async () => {
-        (QuestionnaireRepository.getByKey as jest.Mock).mockResolvedValue({ id: 't-1', name: 'SIG', key: 'sig' });
-        (VendorAssessmentRepository.create as jest.Mock).mockResolvedValue({ id: 'a-1' });
-
-        const res = await startVendorAssessment(editorCtx, 'v-1', 'sig');
-
-        expect(res).toEqual({ id: 'a-1' });
-        const payload = (logEvent as jest.Mock).mock.calls[0][2];
-        expect(payload.action).toBe('VENDOR_ASSESSMENT_STARTED');
-    });
-});
-
-describe('saveAssessmentAnswers', () => {
-    it('throws when the assessment is missing', async () => {
-        (VendorAssessmentRepository.getById as jest.Mock).mockResolvedValue(null);
-        await expect(saveAssessmentAnswers(editorCtx, 'missing', [])).rejects.toThrow(/Assessment not found/i);
-    });
-
-    it('rejects when the assessment is not in DRAFT', async () => {
-        (VendorAssessmentRepository.getById as jest.Mock).mockResolvedValue({
-            id: 'a-1', status: 'IN_REVIEW', template: { questions: [] },
-        });
-        await expect(saveAssessmentAnswers(editorCtx, 'a-1', [])).rejects.toThrow(/non-draft/i);
-    });
-
-    it('rejects when the assessment has no template (G-3 path)', async () => {
-        (VendorAssessmentRepository.getById as jest.Mock).mockResolvedValue({
-            id: 'a-1', status: 'DRAFT', template: null,
-        });
-        await expect(saveAssessmentAnswers(editorCtx, 'a-1', [])).rejects.toThrow(/G-3/i);
-    });
-
-    it('upserts answers, recomputes score, emits VENDOR_ASSESSMENT_SCORED', async () => {
-        (VendorAssessmentRepository.getById as jest.Mock).mockResolvedValue({
-            id: 'a-1',
-            vendorId: 'v-1',
-            status: 'DRAFT',
-            template: {
-                questions: [
-                    { id: 'q-1', weight: 1, riskPointsJson: {} },
-                ],
-            },
-        });
-        (VendorAnswerRepository.upsertMany as jest.Mock).mockResolvedValue([{ id: 'an-1' }]);
-        (VendorAnswerRepository.listByAssessment as jest.Mock).mockResolvedValue([{ questionId: 'q-1', answerJson: { v: true } }]);
-
-        const res = await saveAssessmentAnswers(editorCtx, 'a-1', [{ questionId: 'q-1', answerJson: { v: true } }]);
-
-        expect(res).toEqual({ saved: 1, score: 42, riskRating: 'LOW' });
-        expect(VendorAssessmentRepository.updateScore).toHaveBeenCalledWith(mockDb, 'a-1', 42, 'LOW');
-        const payload = (logEvent as jest.Mock).mock.calls[0][2];
-        expect(payload.action).toBe('VENDOR_ASSESSMENT_SCORED');
-    });
-});
-
-describe('submitVendorAssessment', () => {
-    it('emits VENDOR_ASSESSMENT_SUBMITTED audit on success', async () => {
-        (VendorAssessmentRepository.submit as jest.Mock).mockResolvedValue({ id: 'a-1', vendorId: 'v-1' });
-        await submitVendorAssessment(editorCtx, 'a-1');
-        const payload = (logEvent as jest.Mock).mock.calls[0][2];
-        expect(payload.action).toBe('VENDOR_ASSESSMENT_SUBMITTED');
-    });
-
-    it('throws notFound when not in DRAFT', async () => {
-        (VendorAssessmentRepository.submit as jest.Mock).mockResolvedValue(null);
-        await expect(submitVendorAssessment(editorCtx, 'a-1')).rejects.toThrow(/not found or not in DRAFT/i);
-    });
-});
-
-describe('decideVendorAssessment', () => {
-    it('emits VENDOR_ASSESSMENT_APPROVED when decision is APPROVED', async () => {
-        (VendorAssessmentRepository.decide as jest.Mock).mockResolvedValue({ id: 'a-1', vendorId: 'v-1' });
-
-        await decideVendorAssessment(adminCtx, 'a-1', 'APPROVED');
-
-        const payload = (logEvent as jest.Mock).mock.calls[0][2];
-        expect(payload.action).toBe('VENDOR_ASSESSMENT_APPROVED');
-    });
-
-    it('emits VENDOR_ASSESSMENT_REJECTED when decision is REJECTED', async () => {
-        (VendorAssessmentRepository.decide as jest.Mock).mockResolvedValue({ id: 'a-1', vendorId: 'v-1' });
-        await decideVendorAssessment(adminCtx, 'a-1', 'REJECTED', 'Bad SOC2');
-        const payload = (logEvent as jest.Mock).mock.calls[0][2];
-        expect(payload.action).toBe('VENDOR_ASSESSMENT_REJECTED');
-        expect(payload.detailsJson.reason).toBe('Bad SOC2');
-    });
-
-    it('sanitises the notes string before persistence', async () => {
-        (VendorAssessmentRepository.decide as jest.Mock).mockResolvedValue({ id: 'a-1', vendorId: 'v-1' });
-        await decideVendorAssessment(adminCtx, 'a-1', 'APPROVED', 'looks good');
-
-        // The decide call should receive the SAN::-prefixed notes
-        const decideArgs = (VendorAssessmentRepository.decide as jest.Mock).mock.calls[0];
-        expect(decideArgs[4]).toBe('SAN::looks good');
-    });
-
-    it('passes undefined notes through unchanged', async () => {
-        (VendorAssessmentRepository.decide as jest.Mock).mockResolvedValue({ id: 'a-1', vendorId: 'v-1' });
-        await decideVendorAssessment(adminCtx, 'a-1', 'APPROVED');
-        const decideArgs = (VendorAssessmentRepository.decide as jest.Mock).mock.calls[0];
-        expect(decideArgs[4]).toBeUndefined();
-    });
-
-    it('throws notFound when not in IN_REVIEW', async () => {
-        (VendorAssessmentRepository.decide as jest.Mock).mockResolvedValue(null);
-        await expect(decideVendorAssessment(adminCtx, 'a-1', 'APPROVED')).rejects.toThrow(/not found or not in IN_REVIEW/i);
-    });
-});
 
 describe('getVendorAssessment', () => {
     it('returns the row on hit', async () => {

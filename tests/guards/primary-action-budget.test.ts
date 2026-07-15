@@ -126,7 +126,6 @@ const PRIMARY_BUDGET: Record<string, number> = {
     // 2-primary tier — page CTA + inline form (R5-PR7 pattern)
     "src/components/ui/HeroMetric.tsx": 2,
     "src/components/TestPlansPanel.tsx": 2,
-    "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/assessment/[assessmentId]/page.tsx": 2,
     "src/app/t/[tenantSlug]/(app)/tests/due/page.tsx": 2,
     "src/app/t/[tenantSlug]/(app)/security/mfa/page.tsx": 2,
     "src/app/t/[tenantSlug]/(app)/reports/soa/SoAClient.tsx": 2,

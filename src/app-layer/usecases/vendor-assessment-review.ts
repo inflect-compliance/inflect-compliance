@@ -623,6 +623,77 @@ export async function getReviewView(
     });
 }
 
+// ─── 2b. listReviewableAssessments ─────────────────────────────────
+
+export interface ReviewableAssessmentRow {
+    id: string;
+    vendorId: string;
+    vendorName: string;
+    status: string;
+    score: number | null;
+    riskRating: VendorCriticality | null;
+    submittedAt: string | null;
+    reviewedAt: string | null;
+}
+
+/**
+ * Review-queue list. Returns the tenant's G-3 assessments
+ * (`templateVersionId` non-null) that have reached the reviewable /
+ * reviewed set — status SUBMITTED, REVIEWED, or CLOSED — for the
+ * reviewer index page. Ordered SUBMITTED-first (the actionable
+ * backlog rises to the top), then by `submittedAt` descending.
+ *
+ * Bounded at 200 rows. Permission gate: canRead — every
+ * authenticated tenant member can inspect the review queue; only
+ * admins can act on an individual assessment.
+ */
+export async function listReviewableAssessments(
+    ctx: RequestContext,
+): Promise<ReviewableAssessmentRow[]> {
+    if (!ctx.permissions.canRead) {
+        throw badRequest('Read access required.');
+    }
+
+    return runInTenantContext(ctx, async (db) => {
+        const rows = await db.vendorAssessment.findMany({
+            where: {
+                tenantId: ctx.tenantId,
+                templateVersionId: { not: null },
+                status: { in: ['SUBMITTED', 'REVIEWED', 'CLOSED'] },
+            },
+            select: {
+                id: true,
+                vendorId: true,
+                status: true,
+                score: true,
+                riskRating: true,
+                submittedAt: true,
+                reviewedAt: true,
+                vendor: { select: { name: true } },
+            },
+            orderBy: { submittedAt: 'desc' },
+            take: 200,
+        });
+
+        // Stable partition — SUBMITTED (actionable) first, preserving
+        // the submittedAt-desc order the DB already applied within each
+        // partition.
+        const submitted = rows.filter((r) => r.status === 'SUBMITTED');
+        const rest = rows.filter((r) => r.status !== 'SUBMITTED');
+
+        return [...submitted, ...rest].map((r) => ({
+            id: r.id,
+            vendorId: r.vendorId,
+            vendorName: r.vendor?.name ?? '',
+            status: r.status,
+            score: r.score,
+            riskRating: r.riskRating,
+            submittedAt: r.submittedAt?.toISOString() ?? null,
+            reviewedAt: r.reviewedAt?.toISOString() ?? null,
+        }));
+    });
+}
+
 // ─── 3. closeAssessment ────────────────────────────────────────────
 
 export async function closeAssessment(

@@ -130,17 +130,41 @@ export async function extractVendorDocument(
         proposalsCreated = await runInTenantContext(ctx, async (db) => {
             const assessment = await db.vendorAssessment.findFirst({
                 where: { id: input.assessmentId!, tenantId: ctx.tenantId },
-                select: { id: true, templateId: true },
+                select: { id: true, templateId: true, templateVersionId: true },
             });
-            // The legacy QuestionnaireQuestion set (what VendorAssessmentAnswer
-            // references). Assessments on a G-3 template version pre-fill via a
-            // follow-up; here we map against the template's questions.
-            if (!assessment?.templateId) return 0;
-            const questionList = await db.questionnaireQuestion.findMany({
-                where: { templateId: assessment.templateId },
-                select: { id: true, prompt: true },
-                take: 500,
-            });
+            if (!assessment) return 0;
+
+            // Resolve the question set to map against. Two assessment shapes:
+            //  • G-3 (templateVersionId set): questions live in
+            //    VendorAssessmentTemplateQuestion. A materialised answer is
+            //    keyed by BOTH questionId AND templateQuestionId = the
+            //    template-question id (see
+            //    vendor-assessment-response.ts::submitResponse), and
+            //    approveProposal upserts on (assessmentId, questionId) using
+            //    proposal.questionId — so a G-3 proposal MUST carry the
+            //    template-question id in both fields for approve to write the
+            //    correct row.
+            //  • Legacy World-A (templateId set): questions live in the legacy
+            //    QuestionnaireQuestion table; answers key on questionId only.
+            let questionList: Array<{ id: string; prompt: string }>;
+            let isG3: boolean;
+            if (assessment.templateVersionId) {
+                isG3 = true;
+                questionList = await db.vendorAssessmentTemplateQuestion.findMany({
+                    where: { templateId: assessment.templateVersionId },
+                    select: { id: true, prompt: true },
+                    take: 500,
+                });
+            } else if (assessment.templateId) {
+                isG3 = false;
+                questionList = await db.questionnaireQuestion.findMany({
+                    where: { templateId: assessment.templateId },
+                    select: { id: true, prompt: true },
+                    take: 500,
+                });
+            } else {
+                return 0;
+            }
 
             let created = 0;
             for (const q of questionList) {
@@ -155,6 +179,8 @@ export async function extractVendorDocument(
                         extractionId: extractionRow.id,
                         assessmentId: assessment.id,
                         questionId: q.id,
+                        // G-3 answers key on both fields (= template-question id).
+                        templateQuestionId: isG3 ? q.id : undefined,
                         proposedAnswerJson: { value: hasException ? 'PARTIAL' : 'YES', controls: matched.map((c) => c.ref), source: citation },
                         confidence: hasException ? 'medium' : 'high',
                         sourceCitation: citation,

@@ -2,14 +2,13 @@ import { z } from 'zod';
 import { VendorStatus } from '@prisma/client';
 import { RequestContext } from '../types';
 import { VendorRepository, VendorDocumentRepository, VendorLinkRepository, VendorFilters, VendorListParams } from '../repositories/VendorRepository';
-import { QuestionnaireRepository, VendorAssessmentRepository, VendorAnswerRepository } from '../repositories/AssessmentRepository';
-import { assertCanReadVendors, assertCanManageVendors, assertCanManageVendorDocs, assertCanRunAssessment, assertCanApproveAssessment } from '../policies/vendor.policies';
+import { QuestionnaireRepository, VendorAssessmentRepository } from '../repositories/AssessmentRepository';
+import { assertCanReadVendors, assertCanManageVendors, assertCanManageVendorDocs } from '../policies/vendor.policies';
 import { logEvent } from '../events/audit';
 import { runInTenantContext, runInTenantReadContext } from '@/lib/db-context';
 import { notFound, badRequest } from '@/lib/errors/types';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { CreateVendorSchema } from '@/lib/schemas';
-import { computeAnswerPoints, computeAssessmentScore, scoreToRiskRating } from '../services/vendor-scoring';
 import { bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 
 // Epic D.2 — preserve the three-state contract on update paths.
@@ -188,33 +187,6 @@ export async function removeVendorDocument(ctx: RequestContext, docId: string) {
 
 // ─── Vendor Assessments ───
 
-export async function startVendorAssessment(ctx: RequestContext, vendorId: string, templateKey: string) {
-    assertCanRunAssessment(ctx);
-    const result = await runInTenantContext(ctx, async (db) => {
-        const template = await QuestionnaireRepository.getByKey(db, templateKey);
-        if (!template) throw notFound(`Template "${templateKey}" not found`);
-
-        const assessment = await VendorAssessmentRepository.create(db, ctx, vendorId, template.id);
-        await logEvent(db, ctx, {
-            action: 'VENDOR_ASSESSMENT_STARTED',
-            entityType: 'Vendor',
-            entityId: vendorId,
-            details: `Assessment started with template "${template.name}"`,
-            detailsJson: {
-                category: 'entity_lifecycle',
-                entityName: 'VendorAssessment',
-                operation: 'created',
-                after: { assessmentId: assessment.id, templateKey, templateName: template.name },
-                summary: `Assessment started with template "${template.name}"`,
-            },
-            metadata: { assessmentId: assessment.id, templateKey },
-        });
-        return assessment;
-    });
-    await bumpEntityCacheVersion(ctx, 'vendor');
-    return result;
-}
-
 export async function getVendorAssessment(ctx: RequestContext, assessmentId: string) {
     assertCanReadVendors(ctx);
     return runInTenantContext(ctx, async (db) => {
@@ -222,108 +194,6 @@ export async function getVendorAssessment(ctx: RequestContext, assessmentId: str
         if (!assessment) throw notFound('Assessment not found');
         return assessment;
     });
-}
-
-export async function saveAssessmentAnswers(ctx: RequestContext, assessmentId: string, answers: { questionId: string; answerJson: unknown }[]) {
-    assertCanRunAssessment(ctx);
-    const result = await runInTenantContext(ctx, async (db) => {
-        const assessment = await VendorAssessmentRepository.getById(db, ctx, assessmentId);
-        if (!assessment) throw notFound('Assessment not found');
-        if (assessment.status !== 'DRAFT') throw badRequest('Cannot edit answers on a non-draft assessment');
-
-        // Load questions for point computation. Epic G-3 made
-        // `template` (legacy QuestionnaireTemplate) nullable; the
-        // existing approval-flow path always populates it, so a
-        // null here means a G-3-instantiated assessment landed in
-        // this legacy save path — reject loudly.
-        if (!assessment.template) {
-            throw badRequest(
-                'Cannot save legacy answers on a G-3 assessment — use the response path instead.',
-            );
-        }
-        const questionMap = new Map(assessment.template.questions.map(q => [q.id, q]));
-
-        const enrichedAnswers = answers.map(a => {
-            const q = questionMap.get(a.questionId);
-            const points = q ? computeAnswerPoints(
-                { id: q.id, weight: q.weight, riskPointsJson: q.riskPointsJson },
-                { questionId: a.questionId, answerJson: a.answerJson }
-            ) : 0;
-            return { questionId: a.questionId, answerJson: a.answerJson, computedPoints: points };
-        });
-
-        const saved = await VendorAnswerRepository.upsertMany(db, ctx, assessmentId, enrichedAnswers);
-
-        // Recalculate score
-        const allAnswers = await VendorAnswerRepository.listByAssessment(db, ctx, assessmentId);
-        const scoringQuestions = assessment.template.questions.map(q => ({
-            id: q.id, weight: q.weight, riskPointsJson: q.riskPointsJson,
-        }));
-        const scoringAnswers = allAnswers.map(a => ({
-            questionId: a.questionId, answerJson: a.answerJson,
-        }));
-        const { score, percentScore } = computeAssessmentScore(scoringQuestions, scoringAnswers);
-        const riskRating = scoreToRiskRating(percentScore);
-        await VendorAssessmentRepository.updateScore(db, assessmentId, score, riskRating);
-
-        await logEvent(db, ctx, {
-            action: 'VENDOR_ASSESSMENT_SCORED',
-            entityType: 'Vendor',
-            entityId: assessment.vendorId,
-            details: `Assessment scored: ${score} (${riskRating})`,
-            detailsJson: { category: 'custom', event: 'assessment_scored', assessmentId, score, percentScore, riskRating },
-            metadata: { assessmentId, score, percentScore, riskRating },
-        });
-
-        return { saved: saved.length, score, riskRating };
-    });
-    await bumpEntityCacheVersion(ctx, 'vendor');
-    return result;
-}
-
-export async function submitVendorAssessment(ctx: RequestContext, assessmentId: string) {
-    assertCanRunAssessment(ctx);
-    const result = await runInTenantContext(ctx, async (db) => {
-        const assessment = await VendorAssessmentRepository.submit(db, ctx, assessmentId);
-        if (!assessment) throw notFound('Assessment not found or not in DRAFT status');
-
-        await logEvent(db, ctx, {
-            action: 'VENDOR_ASSESSMENT_SUBMITTED',
-            entityType: 'Vendor',
-            entityId: assessment.vendorId,
-            details: 'Assessment submitted for review',
-            detailsJson: { category: 'status_change', entityName: 'VendorAssessment', fromStatus: 'DRAFT', toStatus: 'IN_REVIEW' },
-            metadata: { assessmentId },
-        });
-        return assessment;
-    });
-    await bumpEntityCacheVersion(ctx, 'vendor');
-    return result;
-}
-
-export async function decideVendorAssessment(ctx: RequestContext, assessmentId: string, decision: string, notes?: string | null) {
-    assertCanApproveAssessment(ctx);
-    // Epic D.2 — `notes` is encrypted on `VendorAssessment.notes` and
-    // also surfaces verbatim in the audit-log details string, so
-    // sanitise once at the top of the path.
-    const safeNotes = sanitizeOptional(notes);
-    const result = await runInTenantContext(ctx, async (db) => {
-        const assessment = await VendorAssessmentRepository.decide(db, ctx, assessmentId, decision, safeNotes ?? undefined);
-        if (!assessment) throw notFound('Assessment not found or not in IN_REVIEW status');
-
-        const action = decision === 'APPROVED' ? 'VENDOR_ASSESSMENT_APPROVED' : 'VENDOR_ASSESSMENT_REJECTED';
-        await logEvent(db, ctx, {
-            action,
-            entityType: 'Vendor',
-            entityId: assessment.vendorId,
-            details: `Assessment ${decision.toLowerCase()}`,
-            detailsJson: { category: 'status_change', entityName: 'VendorAssessment', fromStatus: 'IN_REVIEW', toStatus: decision, reason: notes || undefined },
-            metadata: { assessmentId, decision, notes },
-        });
-        return assessment;
-    });
-    await bumpEntityCacheVersion(ctx, 'vendor');
-    return result;
 }
 
 // ─── Questionnaire Templates ───

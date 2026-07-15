@@ -22,6 +22,7 @@ const mockTx = {
     vendorAssessmentTemplate: {
         create: jest.fn(),
         findFirst: jest.fn(),
+        update: jest.fn(),
         updateMany: jest.fn(),
     },
     vendorAssessmentTemplateSection: {
@@ -55,6 +56,7 @@ import {
     addSection,
     addQuestion,
     cloneTemplate,
+    publishTemplate,
 } from '@/app-layer/usecases/vendor-assessment-template';
 
 // ─── Helpers ───────────────────────────────────────────────────────
@@ -461,6 +463,78 @@ describe('cloneTemplate — SAME_KEY_NEW_VERSION mode', () => {
             isLatestVersion: true,
             isPublished: false,
         });
+    });
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// 5. publishTemplate
+// ═══════════════════════════════════════════════════════════════════
+
+describe('publishTemplate', () => {
+    test('rejects callers without canWrite', async () => {
+        await expect(
+            publishTemplate(makeCtx({ canWrite: false }), 't-1'),
+        ).rejects.toThrow(/permission|ADMIN/);
+    });
+
+    test('returns notFound when the template is not in the tenant', async () => {
+        mockTx.vendorAssessmentTemplate.findFirst.mockResolvedValueOnce(null);
+        await expect(
+            publishTemplate(makeCtx(), 't-missing'),
+        ).rejects.toThrow(/not found/i);
+    });
+
+    test('rejects an already-published template with ALREADY_PUBLISHED', async () => {
+        mockTx.vendorAssessmentTemplate.findFirst.mockResolvedValueOnce({
+            id: 't-1',
+            key: 'soc2',
+            version: 1,
+            name: 'SOC 2',
+            isPublished: true,
+            _count: { questions: 5 },
+        });
+        await expect(publishTemplate(makeCtx(), 't-1')).rejects.toThrow(
+            /ALREADY_PUBLISHED/,
+        );
+        expect(mockTx.vendorAssessmentTemplate.update).not.toHaveBeenCalled();
+    });
+
+    test('rejects a template with zero questions with EMPTY_TEMPLATE', async () => {
+        mockTx.vendorAssessmentTemplate.findFirst.mockResolvedValueOnce({
+            id: 't-1',
+            key: 'soc2',
+            version: 1,
+            name: 'SOC 2',
+            isPublished: false,
+            _count: { questions: 0 },
+        });
+        await expect(publishTemplate(makeCtx(), 't-1')).rejects.toThrow(
+            /EMPTY_TEMPLATE/,
+        );
+        expect(mockTx.vendorAssessmentTemplate.update).not.toHaveBeenCalled();
+    });
+
+    test('flips isPublished to true on a non-empty draft', async () => {
+        mockTx.vendorAssessmentTemplate.findFirst.mockResolvedValueOnce({
+            id: 't-1',
+            key: 'soc2',
+            version: 2,
+            name: 'SOC 2',
+            isPublished: false,
+            _count: { questions: 3 },
+        });
+        mockTx.vendorAssessmentTemplate.update.mockResolvedValueOnce({
+            id: 't-1',
+            isPublished: true,
+        });
+
+        const result = await publishTemplate(makeCtx(), 't-1');
+
+        const updateCall =
+            mockTx.vendorAssessmentTemplate.update.mock.calls[0][0];
+        expect(updateCall.where).toEqual({ id: 't-1' });
+        expect(updateCall.data).toEqual({ isPublished: true });
+        expect(result).toMatchObject({ id: 't-1', isPublished: true });
     });
 });
 

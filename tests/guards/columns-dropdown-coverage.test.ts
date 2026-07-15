@@ -39,6 +39,8 @@ const SCAN_DIR = 'src/app/t/[tenantSlug]/(app)';
  * absence of a gear; PRs that mount a gear should REMOVE the entry.
  */
 const EXEMPTIONS: Record<string, string> = {
+    'admin/vendor-assessment-reviews/VendorAssessmentReviewsQueueClient.tsx':
+        '(b) results view — cross-vendor review queue with a fixed derived column set (vendor, status, score, risk, submitted); per-column hide/show not meaningful.',
     'audits/nis2-gap/Nis2GapLifecycleClient.tsx':
         '(b) results view — run-history + prioritized-gap sub-tables with fixed derived columns; per-column hide/show not meaningful.',
     'frameworks/[frameworkKey]/readiness/Nis2ReadinessClient.tsx':
