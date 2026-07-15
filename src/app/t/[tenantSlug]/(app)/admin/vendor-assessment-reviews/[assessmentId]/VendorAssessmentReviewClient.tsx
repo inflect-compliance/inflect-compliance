@@ -29,11 +29,16 @@ import { Button } from '@/components/ui/button';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { SkeletonDetailPage } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/format-date';
-import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
+import {
+    VENDOR_ASSESSMENT_VARIANT,
+    vendorAssessmentStatusLabelKey,
+} from '@/app-layer/domain/entity-status-mapping';
+import { AssessmentPrefillPanel } from './_components/AssessmentPrefillPanel';
 
 interface Question {
     id: string;
@@ -102,15 +107,6 @@ const RATING_OPTIONS: ComboboxOption[] = [
     { value: 'CRITICAL', label: 'CRITICAL' },
 ];
 
-const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
-    DRAFT: 'neutral',
-    SENT: 'info',
-    IN_PROGRESS: 'info',
-    SUBMITTED: 'warning',
-    REVIEWED: 'success',
-    CLOSED: 'neutral',
-};
-
 export function VendorAssessmentReviewClient({
     assessmentId,
 }: {
@@ -119,6 +115,7 @@ export function VendorAssessmentReviewClient({
     const apiUrl = useTenantApiUrl();
     const { permissions } = useTenantContext();
     const t = useTranslations('admin');
+    const tv = useTranslations('vendors');
 
     const [view, setView] = useState<ReviewView | null>(null);
     const [loading, setLoading] = useState(true);
@@ -298,8 +295,8 @@ export function VendorAssessmentReviewClient({
                             <span>·</span>
                             <span>v{view.template.version}</span>
                             <span>·</span>
-                            <StatusBadge variant={STATUS_BADGE[view.status] ?? 'neutral'} size="sm" data-testid="review-status-badge">
-                                {view.status}
+                            <StatusBadge variant={VENDOR_ASSESSMENT_VARIANT[view.status] ?? 'neutral'} size="sm" data-testid="review-status-badge">
+                                {tv(vendorAssessmentStatusLabelKey(view.status))}
                             </StatusBadge>
                             {view.submittedAt && (
                                 <>
@@ -520,6 +517,20 @@ export function VendorAssessmentReviewClient({
                         </div>
                     </div>
                 ))}
+
+            {/* AI pre-fill — propose cited answers from a vendor document; a
+                human approves before anything is scored (propose-not-commit).
+                Gated to reviewers who can act on the assessment. */}
+            {permissions.canAdmin &&
+                (view.status === 'SUBMITTED' ||
+                    view.status === 'REVIEWED' ||
+                    view.status === 'CLOSED') && (
+                    <AssessmentPrefillPanel
+                        vendorId={view.vendor.id}
+                        assessmentId={view.assessmentId}
+                        onApplied={refresh}
+                    />
+                )}
 
             {/* Final rating + reviewer notes + actions */}
             {(view.status === 'SUBMITTED' || view.status === 'REVIEWED') && (

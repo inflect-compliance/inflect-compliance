@@ -168,6 +168,7 @@ export const SUBPAGES: readonly string[] = [
     '/admin/sso',
     '/admin/training',
     '/admin/trust-center',
+    '/admin/vendor-assessment-reviews',
     '/admin/vendor-assessment-reviews/[assessmentId]',
     '/admin/vendor-templates',
     '/admin/vendor-templates/[templateId]',
@@ -277,7 +278,6 @@ export const SUBPAGES: readonly string[] = [
 
     // Vendors
     '/vendors/[vendorId]',
-    '/vendors/[vendorId]/assessment/[assessmentId]',
     '/vendors/dashboard',
     '/vendors/new',
 ] as const;

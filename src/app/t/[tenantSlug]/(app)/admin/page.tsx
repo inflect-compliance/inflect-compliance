@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { Shield, CreditCard, KeyRound, ShieldCheck, ShieldPlus, Users, UserCog, CloudCog, Plug, Palette, Grid3x3, Gauge, Bell, ScrollText, Globe, Laptop, GraduationCap } from 'lucide-react';
+import { Shield, CreditCard, KeyRound, ShieldCheck, ShieldPlus, Users, UserCog, CloudCog, Plug, Palette, Grid3x3, Gauge, Bell, ScrollText, Globe, Laptop, GraduationCap, ClipboardList, ClipboardCheck } from 'lucide-react';
 import { Robot } from '@/components/ui/icons/nucleo';
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button-variants';
@@ -81,6 +81,13 @@ export default async function AdminPage({
             pills: [
                 { href: '/admin/risk-matrix', id: 'risk-matrix-pill-btn', icon: <Grid3x3 className={iconCls} />, label: t('nav.riskMatrix') },
                 { href: '/admin/risk-appetite', id: 'risk-appetite-pill-btn', icon: <Gauge className={iconCls} />, label: t('nav.riskAppetite') },
+            ],
+        },
+        {
+            title: t('section.vendors'),
+            pills: [
+                { href: '/admin/vendor-templates', id: 'vendor-templates-pill-btn', icon: <ClipboardList className={iconCls} />, label: t('nav.vendorTemplates') },
+                { href: '/admin/vendor-assessment-reviews', id: 'vendor-reviews-pill-btn', icon: <ClipboardCheck className={iconCls} />, label: t('nav.vendorReviews') },
             ],
         },
     ];

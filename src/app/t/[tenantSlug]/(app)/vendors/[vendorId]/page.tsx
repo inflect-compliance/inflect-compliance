@@ -35,6 +35,8 @@ import {
     VENDOR_STATUS_VARIANT,
     VENDOR_CRITICALITY_VARIANT,
     VENDOR_ASSESSMENT_VARIANT,
+    vendorAssessmentStatusLabelKey,
+    isG3AssessmentStatus,
 } from '@/app-layer/domain/entity-status-mapping';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
@@ -774,6 +776,18 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                         matchTriggerWidth
                                     />
                                 </FormField>
+                                {sendTemplates.length === 0 && (
+                                    <p className="text-xs text-content-muted -mt-1">
+                                        {tx('detail.templatesNoneHint')}{' '}
+                                        <Link
+                                            href={tenantHref('/admin/vendor-templates')}
+                                            className="text-content-info hover:underline"
+                                            id="send-modal-builder-link"
+                                        >
+                                            {tx('detail.templatesBuilderLink')}
+                                        </Link>
+                                    </p>
+                                )}
                                 <FormField label={tx('detail.respondentEmail')} required>
                                     <Input
                                         id="send-respondent-email"
@@ -1172,8 +1186,8 @@ function VendorAssessmentsTable({ assessments, vendorId, tenantHref }: { assessm
                     id: 'status',
                     header: tx('detail.status'),
                     cell: ({ row }) => (
-                        <StatusBadge variant={ASSESSMENT_STATUS_BADGE[row.original.status]}>
-                            {row.original.status}
+                        <StatusBadge variant={ASSESSMENT_STATUS_BADGE[row.original.status] ?? 'neutral'}>
+                            {tx(vendorAssessmentStatusLabelKey(row.original.status))}
                         </StatusBadge>
                     ),
                 },
@@ -1207,15 +1221,32 @@ function VendorAssessmentsTable({ assessments, vendorId, tenantHref }: { assessm
                 {
                     id: 'action',
                     header: tx('detail.action'),
-                    cell: ({ row }) => (
-                        <Link
-                            href={tenantHref(`/vendors/${vendorId}/assessment/${row.original.id}`)}
-                            className="text-content-info hover:underline text-xs"
-                            id={`open-assessment-${row.original.id}`}
-                        >
-                            {tx('detail.openArrow')}
-                        </Link>
-                    ),
+                    // G-3 lifecycle rows (SENT→…→CLOSED) all open the internal
+                    // review surface, which adapts by status: read-only progress
+                    // before SUBMITTED, review actions at SUBMITTED, close at
+                    // REVIEWED, history when CLOSED. SUBMITTED gets the emphatic
+                    // "Review" label. Legacy World-A rows (DRAFT/IN_REVIEW/…) have
+                    // no responder any more (that page was retired) — render a
+                    // muted, non-actionable marker rather than a dead link.
+                    cell: ({ row }) => {
+                        const status = row.original.status;
+                        if (!isG3AssessmentStatus(status)) {
+                            return (
+                                <span className="text-content-subtle text-xs">
+                                    {tx('detail.legacyAssessment')}
+                                </span>
+                            );
+                        }
+                        return (
+                            <Link
+                                href={tenantHref(`/admin/vendor-assessment-reviews/${row.original.id}`)}
+                                className="text-content-info hover:underline text-xs"
+                                id={`open-assessment-${row.original.id}`}
+                            >
+                                {status === 'SUBMITTED' ? tx('detail.reviewArrow') : tx('detail.openArrow')}
+                            </Link>
+                        );
+                    },
                 },
             ]),
         [vendorId, tenantHref, tx],

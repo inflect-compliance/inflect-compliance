@@ -106,6 +106,7 @@ export function VendorTemplateBuilderClient({
     const [sections, setSections] = useState<Section[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [publishing, setPublishing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [dirty, setDirty] = useState(false);
 
@@ -259,6 +260,36 @@ export function VendorTemplateBuilderClient({
         }
     }
 
+    async function publish() {
+        if (!tree || tree.isPublished || !permissions.canWrite) return;
+        setPublishing(true);
+        setError(null);
+        try {
+            const res = await fetch(
+                apiUrl(`/vendor-assessment-templates/${templateId}/publish`),
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                },
+            );
+            if (!res.ok) {
+                const b = await res.json().catch(() => ({}));
+                setError(
+                    apiErrorMessage(
+                        b,
+                        t('templateBuilder.publishError', { status: res.status }),
+                    ),
+                );
+                return;
+            }
+            // On success re-fetch — the tree flips to isPublished=true,
+            // which swaps the editor for the read-only published banner.
+            await refresh();
+        } finally {
+            setPublishing(false);
+        }
+    }
+
     async function addSection(title: string) {
         if (!editable) return;
         const res = await fetch(
@@ -358,18 +389,36 @@ export function VendorTemplateBuilderClient({
                         </StatusBadge>
                     </div>
                 </div>
-                {dirty && editable && (
-                    <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={saveOrder}
-                        disabled={saving}
-                        loading={saving}
-                        id="save-order-btn"
-                    >
-                        {saving ? t('templateBuilder.saving') : t('templateBuilder.saveOrder')}
-                    </Button>
-                )}
+                <div className="flex items-center gap-tight">
+                    {dirty && editable && (
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={saveOrder}
+                            disabled={saving}
+                            loading={saving}
+                            id="save-order-btn"
+                        >
+                            {saving ? t('templateBuilder.saving') : t('templateBuilder.saveOrder')}
+                        </Button>
+                    )}
+                    {permissions.canWrite &&
+                        !tree.isPublished &&
+                        tree.questions.length > 0 && (
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={publish}
+                                disabled={publishing}
+                                loading={publishing}
+                                id="publish-template-btn"
+                            >
+                                {publishing
+                                    ? t('templateBuilder.publishing')
+                                    : t('templateBuilder.publish')}
+                            </Button>
+                        )}
+                </div>
             </div>
 
             {tree.isPublished && (

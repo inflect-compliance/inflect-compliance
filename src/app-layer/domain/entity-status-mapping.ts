@@ -118,9 +118,46 @@ export const VENDOR_CRITICALITY_VARIANT: Record<string, StatusBadgeVariant> = {
 };
 
 // Vendor assessment lifecycle (separate from vendor status).
+// Covers BOTH the legacy World-A approval flow (DRAFT/IN_REVIEW/APPROVED/
+// REJECTED) and the live G-3 send-and-collect lifecycle
+// (SENT → IN_PROGRESS → SUBMITTED → REVIEWED → CLOSED). Every enum value
+// has a tone so no status renders the default-neutral fallback.
 export const VENDOR_ASSESSMENT_VARIANT: Record<string, StatusBadgeVariant> = {
+    // Legacy World-A.
     DRAFT: 'neutral',
     IN_REVIEW: 'warning',
     APPROVED: 'success',
     REJECTED: 'error',
+    // G-3 / World-B.
+    SENT: 'info',
+    IN_PROGRESS: 'info',
+    SUBMITTED: 'warning',
+    REVIEWED: 'success',
+    CLOSED: 'neutral',
 };
+
+// i18n message key (under the `vendors.statusLabel` block) for a
+// vendor-assessment status enum value. Client surfaces render
+// `t(vendorAssessmentStatusLabelKey(status))` instead of the raw enum.
+export function vendorAssessmentStatusLabelKey(status: string): string {
+    return `statusLabel.${status}`;
+}
+
+// The live G-3 "send-and-collect" lifecycle statuses. An assessment in any
+// of these opens the internal review surface (which adapts by status:
+// read-only progress before SUBMITTED, review at SUBMITTED, close at
+// REVIEWED, history when CLOSED). Anything else is a retired legacy
+// World-A row (DRAFT/IN_REVIEW/APPROVED/REJECTED) with no responder — the
+// vendor-table routes those to a non-actionable marker. This is the single
+// source of truth for the vendor-table "Open →" routing-by-status logic.
+const G3_ASSESSMENT_STATUSES: ReadonlySet<string> = new Set([
+    'SENT',
+    'IN_PROGRESS',
+    'SUBMITTED',
+    'REVIEWED',
+    'CLOSED',
+]);
+
+export function isG3AssessmentStatus(status: string): boolean {
+    return G3_ASSESSMENT_STATUSES.has(status);
+}
