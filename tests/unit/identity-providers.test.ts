@@ -10,6 +10,12 @@ import {
 import { OktaProvider, parseNextLink } from '@/app-layer/integrations/providers/okta';
 import { GoogleWorkspaceProvider } from '@/app-layer/integrations/providers/google-workspace';
 import { EntraIdProvider } from '@/app-layer/integrations/providers/entra-id';
+import {
+    ActiveDirectoryProvider,
+    formatObjectGuid,
+    fileTimeToDate,
+    cnOf,
+} from '@/app-layer/integrations/providers/active-directory';
 
 const NOW = new Date('2026-06-01T00:00:00.000Z');
 
@@ -282,5 +288,112 @@ describe('EntraIdProvider', () => {
         // An all-unknown population makes the MFA check NOT_APPLICABLE, never PASSED.
         const na = runIdentityCheck('mfa_enforced', got, {}, NOW);
         expect(na.status).toBe('NOT_APPLICABLE');
+    });
+});
+
+describe('Active Directory helpers', () => {
+    it('formatObjectGuid renders the AD mixed-endian byte order', () => {
+        const buf = Buffer.from([0, 17, 34, 51, 68, 85, 102, 119, 136, 153, 170, 187, 204, 221, 238, 255]);
+        expect(formatObjectGuid(buf)).toBe('33221100-5544-7766-8899-aabbccddeeff');
+        expect(formatObjectGuid('not-16-bytes')).toBeUndefined();
+    });
+
+    it('fileTimeToDate converts a Windows FILETIME and treats 0 / never as null', () => {
+        const ft = ((BigInt(Date.parse('2026-05-01T00:00:00Z')) + BigInt('11644473600000')) * BigInt(10000)).toString();
+        expect(fileTimeToDate(ft)?.toISOString()).toBe('2026-05-01T00:00:00.000Z');
+        expect(fileTimeToDate('0')).toBeNull();
+        expect(fileTimeToDate(undefined)).toBeNull();
+    });
+
+    it('cnOf extracts the leading CN from a distinguished name', () => {
+        expect(cnOf('CN=Domain Admins,CN=Users,DC=corp,DC=example,DC=com')).toBe('Domain Admins');
+        expect(cnOf('OU=Staff,DC=corp')).toBeNull();
+    });
+});
+
+describe('ActiveDirectoryProvider', () => {
+    // Built literally (not via acct(), whose `?? true` fallback would coerce the
+    // null MFA/SSO signals) so the NOT_APPLICABLE assertions are exercised.
+    const adAccounts: NormalizedIdentityAccount[] = [
+        { externalUserId: 'a1', email: 'a1@corp.example.com', displayName: 'A1', status: 'ACTIVE', isAdmin: true, mfaEnrolled: null, ssoEnrolled: null, groups: ['Domain Admins'], lastActiveAt: NOW },
+    ];
+    const provider = new ActiveDirectoryProvider({ listAccounts: async () => adAccounts });
+
+    it('is an IdentitySyncProvider supporting the shared identity checks', () => {
+        expect(isIdentitySyncProvider(provider)).toBe(true);
+        expect(provider.supportedChecks).toContain('no_dormant_admins');
+    });
+
+    it('runCheck routes to the identity check and carries durationMs', async () => {
+        const r = await provider.runCheck({
+            automationKey: 'active-directory.admin_count_within_threshold',
+            parsed: { provider: 'active-directory', checkType: 'admin_count_within_threshold', raw: 'active-directory.admin_count_within_threshold' },
+            tenantId: 't1',
+            connectionConfig: { maxAdmins: 0 },
+            triggeredBy: 'scheduled',
+        });
+        expect(r.status).toBe('FAILED'); // 1 admin > threshold 0
+        expect(typeof r.durationMs).toBe('number');
+    });
+
+    it('runCheck returns ERROR when the LDAP enumeration throws', async () => {
+        const boom = new ActiveDirectoryProvider({ listAccounts: async () => { throw new Error('LDAPS bind failed'); } });
+        const r = await boom.runCheck({
+            automationKey: 'active-directory.no_dormant_admins',
+            parsed: { provider: 'active-directory', checkType: 'no_dormant_admins', raw: 'active-directory.no_dormant_admins' },
+            tenantId: 't1',
+            connectionConfig: {},
+            triggeredBy: 'scheduled',
+        });
+        expect(r.status).toBe('ERROR');
+        expect(r.errorMessage).toContain('LDAPS bind failed');
+    });
+
+    it('mfa_enforced / sso_enforced are NOT_APPLICABLE on AD (no such attribute)', async () => {
+        const { accounts } = await provider.listAccounts({});
+        expect(runIdentityCheck('mfa_enforced', accounts, {}, NOW).status).toBe('NOT_APPLICABLE');
+        expect(runIdentityCheck('sso_enforced', accounts, {}, NOW).status).toBe('NOT_APPLICABLE');
+    });
+
+    it('validateConnection requires ldaps://, base DN, and bind credentials', async () => {
+        expect((await provider.validateConnection({}, {})).valid).toBe(false);
+        expect((await provider.validateConnection({ url: 'ldap://dc', baseDN: 'DC=corp' }, { bindDN: 'b', bindPassword: 'p' })).valid).toBe(false); // not ldaps
+    });
+
+    it('fetchAdAccounts maps UAC status, admin group membership, and last-logon over an injected LDAP client', async () => {
+        const guid = Buffer.from([0, 17, 34, 51, 68, 85, 102, 119, 136, 153, 170, 187, 204, 221, 238, 255]);
+        const ft = ((BigInt(Date.parse('2026-05-01T00:00:00Z')) + BigInt('11644473600000')) * BigInt(10000)).toString();
+        let bound = false;
+        const fakeClient = {
+            bind: async () => { bound = true; },
+            search: async () => ({
+                searchEntries: [
+                    { objectGUID: guid, sAMAccountName: 'jdoe', userPrincipalName: 'jdoe@corp.example.com', displayName: 'John Doe', userAccountControl: '512', memberOf: ['CN=Domain Admins,CN=Users,DC=corp,DC=example,DC=com'], lastLogonTimestamp: ft, distinguishedName: 'CN=John Doe,DC=corp' },
+                    { objectGUID: Buffer.from([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]), sAMAccountName: 'svc', userAccountControl: '514', memberOf: [], distinguishedName: 'CN=svc,DC=corp' },
+                ],
+            }),
+            unbind: async () => {},
+        };
+        const live = new ActiveDirectoryProvider({ createClient: () => fakeClient });
+        const { accounts, complete } = await live.listAccounts({ url: 'ldaps://dc:636', baseDN: 'DC=corp', bindDN: 'x', bindPassword: 'y' });
+        expect(bound).toBe(true);
+        expect(complete).toBe(true);
+        const jdoe = accounts.find((a) => a.email === 'jdoe@corp.example.com')!;
+        const svc = accounts.find((a) => a.displayName === 'svc')!;
+        expect(jdoe.externalUserId).toBe('33221100-5544-7766-8899-aabbccddeeff');
+        expect(jdoe.status).toBe('ACTIVE');
+        expect(jdoe.isAdmin).toBe(true); // Domain Admins
+        expect(jdoe.mfaEnrolled).toBeNull();
+        expect(jdoe.ssoEnrolled).toBeNull();
+        expect(jdoe.lastActiveAt).toBeInstanceOf(Date);
+        expect(svc.status).toBe('SUSPENDED'); // UAC 514 has ACCOUNTDISABLE
+        expect(svc.isAdmin).toBe(false);
+    });
+
+    it('mapResultToEvidence returns null on ERROR, a REPORT with an active-directory category otherwise', () => {
+        const input = { automationKey: 'active-directory.no_dormant_admins', parsed: { provider: 'active-directory', checkType: 'no_dormant_admins', raw: 'active-directory.no_dormant_admins' }, tenantId: 't', connectionConfig: {}, triggeredBy: 'scheduled' as const };
+        expect(provider.mapResultToEvidence(input, { status: 'ERROR', summary: '', details: {} })).toBeNull();
+        const ev = provider.mapResultToEvidence(input, { status: 'PASSED', summary: 'ok', details: {} });
+        expect(ev?.category).toBe('active-directory:no_dormant_admins');
     });
 });

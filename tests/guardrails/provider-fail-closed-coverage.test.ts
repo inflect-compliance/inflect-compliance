@@ -41,6 +41,7 @@ const FAIL_CLOSED_COVERAGE: Readonly<Record<string, { test: string; needle: stri
     okta: { test: 'tests/unit/identity-providers.test.ts', needle: 'runCheck returns ERROR' },
     'google-workspace': { test: 'tests/unit/identity-providers.test.ts', needle: 'runCheck' },
     'entra-id': { test: 'tests/unit/identity-providers.test.ts', needle: 'EntraIdProvider' },
+    'active-directory': { test: 'tests/unit/identity-providers.test.ts', needle: 'ActiveDirectoryProvider' },
     // Personnel + HRIS feed the personnel roster checks (empty roster → NA).
     personnel: { test: 'tests/unit/h2-fail-closed.test.ts', needle: 'runPersonnelCheck' },
     bamboohr: { test: 'tests/unit/h2-fail-closed.test.ts', needle: 'runPersonnelCheck' },

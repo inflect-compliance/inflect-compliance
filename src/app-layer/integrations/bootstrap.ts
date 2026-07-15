@@ -19,6 +19,7 @@ import { AwsPostureProvider } from './aws-posture-provider';
 import { OktaProvider } from './providers/okta';
 import { GoogleWorkspaceProvider } from './providers/google-workspace';
 import { EntraIdProvider } from './providers/entra-id';
+import { ActiveDirectoryProvider } from './providers/active-directory';
 import { AzurePostureProvider } from './providers/azure-posture-provider';
 import { GcpPostureProvider } from './providers/gcp-posture-provider';
 import { BambooHrProvider } from './providers/hris';
@@ -48,6 +49,10 @@ registry.register(new GoogleWorkspaceProvider());
 // Microsoft Entra ID (Azure AD) — directory sync + identity posture checks.
 // Also covers on-prem Active Directory identities synced via Azure AD Connect.
 registry.register(new EntraIdProvider());
+
+// Active Directory (on-prem) — direct-LDAPS directory sync + identity posture
+// checks for estates whose AD is NOT synced to Entra via Azure AD Connect.
+registry.register(new ActiveDirectoryProvider());
 
 // Azure cloud posture — Powerpipe steampipe-mod-azure-compliance benchmark evidence.
 registry.register(new AzurePostureProvider());

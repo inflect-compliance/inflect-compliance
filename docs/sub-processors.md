@@ -39,6 +39,7 @@ auditor can verify the inventory is accurate, not merely asserted.
 | Okta | Directory account metadata — email, status, MFA/admin flags (per-tenant integration only; read-only pull) | Identity posture sync | Global | Token lifetime | Yes (per-tenant opt-in) |
 | Google Workspace (`google-workspace`) | Directory account metadata — email, status, 2SV/admin flags (per-tenant integration only; read-only pull) | Identity posture sync | Global | Token lifetime | Yes (per-tenant opt-in) |
 | Microsoft Entra ID / Azure AD (`entra-id`) | Directory account metadata — email, status, MFA-registration/admin flags, domain federation (per-tenant integration only; read-only Graph pull; also covers on-prem AD synced via Azure AD Connect) | Identity posture sync | Global | Token lifetime | Yes (per-tenant opt-in) |
+| On-prem Active Directory (`active-directory`) | Directory account metadata — sAMAccountName/UPN, email, enabled/disabled status, group membership, last-logon (per-tenant integration only; read-only LDAPS bind to the customer's own domain controller — no data leaves the customer network except the metadata pulled into Inflect) | Identity posture sync | Customer-hosted DC | Sync retention | Yes (per-tenant opt-in) |
 | BambooHR (`hris`) | Employee roster metadata — name, work email, employment status, department (per-tenant integration only; read-only pull) | HRIS sync | Global | Token lifetime | Yes (per-tenant opt-in) |
 
 > **Customer-configured SSO IdPs.** A tenant may configure its own SAML
