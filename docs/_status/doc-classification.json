@@ -1505,6 +1505,9 @@
         "docs/implementation-notes/2026-07-15-process-compliance-spine.md": {
             "class": "historical"
         },
+        "docs/implementation-notes/2026-07-15-process-lifecycle-cleanup.md": {
+            "class": "historical"
+        },
         "docs/new-subsystem-checklist.md": {
             "class": "authoritative"
         },
