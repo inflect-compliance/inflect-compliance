@@ -82,9 +82,10 @@ describe('Epic O-4 — org shell structural contract', () => {
 
     // ── Sidebar nav structure ─────────────────────────────────────────
 
-    it('OrgSidebarNav declares all 7 spec nav entries', () => {
+    it('OrgSidebarNav declares the spec nav entries', () => {
         const src = read(NAV_PATH);
-        // Order matches the Epic O-4 spec.
+        // Order matches the Epic O-4 spec. Settings was removed from the
+        // sidebar (see the "Settings entry is not in the sidebar nav" test).
         for (const label of [
             'Portfolio Overview',
             'All Tenants',
@@ -92,7 +93,7 @@ describe('Epic O-4 — org shell structural contract', () => {
             'Critical Risks',
             'Overdue Evidence',
             'Members',
-            'Settings',
+            'Audit Log',
         ]) {
             expect(src).toContain(label);
         }
@@ -118,11 +119,13 @@ describe('Epic O-4 — org shell structural contract', () => {
         expect(src).toMatch(/canManageMembers/);
     });
 
-    it('Settings nav entry is gated by canManageTenants', () => {
+    it('Settings entry is not in the sidebar nav', () => {
         const src = read(NAV_PATH);
-        expect(src).toMatch(/label:\s*t\('nav\.settings'\)[\s\S]+?requiresManageTenants:\s*true/);
-        expect(enOrg('nav.settings')).toBe('Settings');
-        expect(src).toMatch(/canManageTenants/);
+        // The Settings button was removed from the org sidebar. The nav must
+        // not build a settings item — no nav.settings label and no /settings
+        // nav href. (The /settings route itself is unchanged.)
+        expect(src).not.toMatch(/label:\s*t\('nav\.settings'\)/);
+        expect(src).not.toMatch(/orgHref\('\/settings'\)/);
     });
 
     it('the unified AppShell reuses MobileDrawer from SidebarNav', () => {
