@@ -198,6 +198,8 @@ describe('coverageSummary — divide-by-zero guards', () => {
             risk: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
             control: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
             asset: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
+            policy: { count: jest.fn().mockResolvedValue(0) },
+            policyControlLink: { findMany: jest.fn().mockResolvedValue([]) },
             riskControl: {
                 findMany: jest.fn().mockResolvedValue([]),
                 groupBy: jest.fn().mockResolvedValue([]),

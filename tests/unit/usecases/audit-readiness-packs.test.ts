@@ -554,9 +554,11 @@ describe('previewDefaultPack', () => {
         // Curated: control.findMany filters by operating statuses.
         const ctrlArgs = mockTdb.control.findMany.mock.calls[0][0];
         expect(ctrlArgs.where.status.in).toEqual(expect.arrayContaining(['IMPLEMENTED', 'NEEDS_REVIEW']));
-        // Curated: policy.findMany filters by auditable statuses.
+        // Curated: policy.findMany filters through the shared coverage predicate
+        // (PUBLISHED + not deleted) — APPROVED-but-unpublished no longer counts.
         const polArgs = mockTdb.policy.findMany.mock.calls[0][0];
-        expect(polArgs.where.status.in).toEqual(expect.arrayContaining(['APPROVED', 'PUBLISHED']));
+        expect(polArgs.where.status).toBe('PUBLISHED');
+        expect(polArgs.where.deletedAt).toBeNull();
     });
 
     it('ISO27001 no-mapping fallback: narrows to operating controls, NOT a full dump', async () => {

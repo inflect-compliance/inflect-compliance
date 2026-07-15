@@ -20,6 +20,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Modal } from '@/components/ui/modal';
 import { FormField } from '@/components/ui/form-field';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { Heading } from '@/components/ui/typography';
 import { formatDate } from '@/lib/format-date';
 
 interface RosterEntry {
@@ -130,8 +131,8 @@ export function PolicyAcknowledgementsPanel({
             )}
 
             {/* Own acknowledgement */}
-            <div className="rounded-lg border border-border-default p-4 space-y-default">
-                <h3 className="text-sm font-semibold text-content-emphasis">{t('ack.yourStatusTitle')}</h3>
+            <div className="rounded-lg border border-border-subtle p-4 space-y-default">
+                <Heading level={3} className="text-sm font-semibold text-content-emphasis">{t('ack.yourStatusTitle')}</Heading>
                 {!isPublished ? (
                     <p className="text-sm text-content-muted">{t('ack.notPublished')}</p>
                 ) : ownAttested ? (
@@ -150,9 +151,9 @@ export function PolicyAcknowledgementsPanel({
 
             {/* Admin roster */}
             {canAdmin && (
-                <div className="rounded-lg border border-border-default p-4 space-y-default">
+                <div className="rounded-lg border border-border-subtle p-4 space-y-default">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-semibold text-content-emphasis">{t('ack.rosterTitle')}</h3>
+                        <Heading level={3} className="text-sm font-semibold text-content-emphasis">{t('ack.rosterTitle')}</Heading>
                         {isPublished && (
                             <Button variant="secondary" size="sm" onClick={() => setRequestOpen(true)} data-testid="policy-request-ack-button">
                                 {t('ack.requestAck')}
