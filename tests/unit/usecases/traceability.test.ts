@@ -205,6 +205,9 @@ describe('coverageSummary — divide-by-zero guards', () => {
                 groupBy: jest.fn().mockResolvedValue([]),
             },
             controlAsset: { findMany: jest.fn().mockResolvedValue([]) },
+            // PR-D — process-coverage inputs (empty by default).
+            processEdgeControl: { findMany: jest.fn().mockResolvedValue([]) },
+            processNode: { findMany: jest.fn().mockResolvedValue([]) },
         };
     }
 

@@ -5975,7 +5975,8 @@
     "riskWordOne": "риск",
     "riskWordOther": "риска",
     "vsTestCoverage": "Това показва как рисковете, активите и контролите се защитават взаимно. За покритие с тестови планове и изпълнения по рамки вижте",
-    "testCoverageLink": "Таблото за тестове →"
+    "testCoverageLink": "Таблото за тестове →",
+    "barProcess": "Контроли в процес"
   },
   "accessReviews": {
     "crumbDashboard": "Табло",

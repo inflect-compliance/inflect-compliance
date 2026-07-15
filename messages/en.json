@@ -5975,7 +5975,8 @@
     "riskWordOne": "risk",
     "riskWordOther": "risks",
     "vsTestCoverage": "This maps how risks, assets and controls protect each other. For framework test-plan and test-run coverage, see the",
-    "testCoverageLink": "Test dashboard →"
+    "testCoverageLink": "Test dashboard →",
+    "barProcess": "Controls in a process"
   },
   "accessReviews": {
     "crumbDashboard": "Dashboard",

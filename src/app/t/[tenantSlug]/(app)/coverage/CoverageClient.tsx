@@ -27,6 +27,9 @@ interface CoverageData {
     controlsWithRisksPct: number;
     assetsWithControlsCount: number;
     assetsWithControlsPct: number;
+    // PR-D — controls embedded in an operational process map.
+    controlsWithProcessCount: number;
+    controlsWithProcessPct: number;
     unmappedRisks: Array<{ id: string; title: string; score: number; status: string }>;
     uncoveredCriticalAssets: Array<{ id: string; name: string; type: string; criticality: string }>;
     hotControls: Array<{ id: string; code?: string; name: string; riskCount: number }>;
@@ -217,6 +220,13 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
                         label={t('barControls')}
                         pct={data.controlsWithRisksPct}
                         detail={`${data.controlsWithRisksCount}/${data.totalControls}`}
+                    />
+                    {/* PR-D — process coverage: controls wired into an
+                        operational process map (edge-mounted or node-linked). */}
+                    <CoverageBar
+                        label={t('barProcess')}
+                        pct={data.controlsWithProcessPct}
+                        detail={`${data.controlsWithProcessCount}/${data.totalControls}`}
                     />
                 </div>
             </Card>
