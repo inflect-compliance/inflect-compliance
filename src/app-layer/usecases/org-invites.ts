@@ -467,7 +467,7 @@ export async function redeemOrgInvite(input: {
                 trigger: 'invite_redemption',
                 tenantCount: provision.created,
                 tenantIds: provision.tenantIds,
-                role: 'AUDITOR',
+                role: 'ADMIN',
             },
             requestId: input.requestId,
         });

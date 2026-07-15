@@ -71,7 +71,7 @@ const readerCtx = {
     orgRole: 'ORG_READER' as const,
     permissions: {
         canViewPortfolio: true,
-        canDrillDown: false, // ← readers don't get auto-provisioned AUDITOR
+        canDrillDown: false, // ← readers don't get auto-provisioned ADMIN
         canExportReports: true,
         canManageTenants: false,
         canManageMembers: false,

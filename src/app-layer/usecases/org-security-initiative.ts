@@ -13,7 +13,7 @@
  * Org-scoped (global prisma, NOT tenant-scoped → no per-tenant RLS / DEK).
  * Cross-tenant link resolution goes through the SANCTIONED path —
  * `withTenantDb(tenantId, …)` per linked tenant (runs as app_user, RLS
- * enforced via the org's auto-provisioned AUDITOR membership) — NEVER by
+ * enforced via the org's auto-provisioned ADMIN membership) — NEVER by
  * bypassing tenant isolation. `description` is sanitised here. Create +
  * status-change are substantive → they audit.
  */

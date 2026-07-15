@@ -4,7 +4,7 @@
  *
  * Seeds an org with 3 tenants. Two scenarios:
  *
- *   1. **Healthy fan-out**: CISO has AUDITOR membership in all 3 →
+ *   1. **Healthy fan-out**: CISO has ADMIN membership in all 3 →
  *      drill-down iterates all 3 → no warning logged.
  *   2. **Drift**: manually delete CISO's membership in tenant-2 to
  *      simulate auto-provisioning drift → drill-down iterates only
@@ -89,12 +89,12 @@ describeFn('Portfolio drill-down — auditor fan-out integrity (DB-backed)', () 
             });
             tenantIds.push(tenant.id);
 
-            // CISO's auto-provisioned AUDITOR membership.
+            // CISO's auto-provisioned ADMIN membership.
             await prisma.tenantMembership.create({
                 data: {
                     tenantId: tenant.id,
                     userId: ciso.id,
-                    role: 'AUDITOR',
+                    role: 'ADMIN',
                     provisionedByOrgId: org.id,
                 },
             });
@@ -140,7 +140,7 @@ describeFn('Portfolio drill-down — auditor fan-out integrity (DB-backed)', () 
         }
     });
 
-    it('simulated drift: missing AUDITOR row → warning fires + iteration skips that tenant', async () => {
+    it('simulated drift: missing ADMIN row → warning fires + iteration skips that tenant', async () => {
         // Simulate manual deletion / provisioning drift on tenant-2.
         await prisma.tenantMembership.deleteMany({
             where: { tenantId: tenantIds[1], userId: cisoUserId },
@@ -177,7 +177,7 @@ describeFn('Portfolio drill-down — auditor fan-out integrity (DB-backed)', () 
                 data: {
                     tenantId: tenantIds[1],
                     userId: cisoUserId,
-                    role: 'AUDITOR',
+                    role: 'ADMIN',
                     provisionedByOrgId: orgId,
                 },
             });

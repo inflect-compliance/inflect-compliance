@@ -11,8 +11,8 @@
  *   * skipDuplicates routes correctly through the unique constraint.
  *   * Empty-set short-circuits (no DB write at all).
  *   * provisionAllOrgAdminsToTenant filters out ORG_READER members.
- *   * Deprovision targets ONLY (provisionedByOrgId, AUDITOR) rows —
- *     manual rows + other-org rows + non-AUDITOR-tagged rows untouched.
+ *   * Deprovision targets ONLY (provisionedByOrgId, ADMIN) rows —
+ *     manual rows + other-org rows + non-ADMIN-tagged rows untouched.
  *   * Deprovision returns the correct tenantIds list.
  */
 
@@ -63,7 +63,7 @@ beforeEach(() => {
 // ── provisionOrgAdminToTenants ─────────────────────────────────────────
 
 describe('provisionOrgAdminToTenants', () => {
-    it('creates AUDITOR memberships in every tenant under the org', async () => {
+    it('creates ADMIN memberships in every tenant under the org', async () => {
         tenantFindManyMock.mockResolvedValue([
             { id: 'tenant-1' },
             { id: 'tenant-2' },
@@ -88,7 +88,7 @@ describe('provisionOrgAdminToTenants', () => {
         expect(arg.data).toHaveLength(3);
         for (const row of arg.data) {
             expect(row.userId).toBe('user-1');
-            expect(row.role).toBe('AUDITOR');
+            expect(row.role).toBe('ADMIN');
             expect(row.provisionedByOrgId).toBe('org-1');
         }
         expect(arg.data.map((r: { tenantId: string }) => r.tenantId)).toEqual([
@@ -179,7 +179,7 @@ describe('provisionOrgAdminToTenants', () => {
 // ── provisionAllOrgAdminsToTenant ──────────────────────────────────────
 
 describe('provisionAllOrgAdminsToTenant', () => {
-    it('creates AUDITOR memberships for every ORG_ADMIN of the org', async () => {
+    it('creates ADMIN memberships for every ORG_ADMIN of the org', async () => {
         orgMembershipFindManyMock.mockResolvedValue([
             { userId: 'admin-a' },
             { userId: 'admin-b' },
@@ -204,7 +204,7 @@ describe('provisionAllOrgAdminsToTenant', () => {
         expect(arg.data).toHaveLength(2);
         for (const row of arg.data) {
             expect(row.tenantId).toBe('tenant-new');
-            expect(row.role).toBe('AUDITOR');
+            expect(row.role).toBe('ADMIN');
             expect(row.provisionedByOrgId).toBe('org-1');
         }
     });
@@ -256,7 +256,7 @@ describe('provisionAllOrgAdminsToTenant', () => {
 // ── deprovisionOrgAdmin ────────────────────────────────────────────────
 
 describe('deprovisionOrgAdmin', () => {
-    it('targets ONLY rows tagged provisionedByOrgId AND role=AUDITOR', async () => {
+    it('targets ONLY rows tagged provisionedByOrgId AND role=ADMIN', async () => {
         tenantMembershipFindManyMock.mockResolvedValue([
             { tenantId: 'tenant-1' },
             { tenantId: 'tenant-2' },
@@ -271,7 +271,7 @@ describe('deprovisionOrgAdmin', () => {
         });
 
         // Both the targets-read and the delete must use the same predicate
-        // (userId + provisionedByOrgId + role=AUDITOR). The role clause is
+        // (userId + provisionedByOrgId + role=ADMIN). The role clause is
         // load-bearing — see "manual memberships preserved" below.
         for (const call of [
             tenantMembershipFindManyMock.mock.calls[0][0],
@@ -280,7 +280,7 @@ describe('deprovisionOrgAdmin', () => {
             expect(call.where).toEqual({
                 userId: 'user-1',
                 provisionedByOrgId: 'org-1',
-                role: 'AUDITOR',
+                role: 'ADMIN',
             });
         }
     });
@@ -321,15 +321,15 @@ describe('deprovisionOrgAdmin', () => {
         expect(where.provisionedByOrgId).toBe('org-1');
     });
 
-    it('the AUDITOR role clause is present (defence-in-depth)', async () => {
+    it('the ADMIN role clause is present (defence-in-depth)', async () => {
         tenantMembershipFindManyMock.mockResolvedValue([]);
 
         await deprovisionOrgAdmin('org-1', 'user-1');
 
         // If a misconfigured row had provisionedByOrgId set on a non-
-        // AUDITOR record, this clause prevents the delete from widening
+        // ADMIN record, this clause prevents the delete from widening
         // and silently removing higher-privilege memberships.
-        expect(tenantMembershipFindManyMock.mock.calls[0][0].where.role).toBe('AUDITOR');
+        expect(tenantMembershipFindManyMock.mock.calls[0][0].where.role).toBe('ADMIN');
         // deleteMany inherits the same predicate when targets > 0; covered
         // by the first test in this describe block.
     });

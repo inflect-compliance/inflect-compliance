@@ -5,7 +5,7 @@
  * Postgres + RLS:
  *
  *   1. CREATE org with 2 child tenants
- *   2. CREATE the CISO + their auto-provisioned AUDITOR membership in
+ *   2. CREATE the CISO + their auto-provisioned ADMIN membership in
  *      both tenants (mirrors what `provisionOrgAdminToTenants` does
  *      at runtime)
  *   3. SEED tenant-scoped Control + Risk + Evidence rows in each
@@ -19,7 +19,7 @@
  *
  * Each per-tenant query inside the usecase runs through
  * `withTenantDb(tid, ...)` — `SET LOCAL ROLE app_user` + `SELECT
- * set_config('app.tenant_id', $1)`. RLS evaluates the AUDITOR
+ * set_config('app.tenant_id', $1)`. RLS evaluates the ADMIN
  * membership and lets the read through. If a future regression
  * introduced a runInGlobalContext bypass somewhere in the drill-down
  * chain, this test would still pass — the load-bearing structural
@@ -110,14 +110,14 @@ describeFn('Epic O-3 — portfolio drill-down lifecycle (DB-backed)', () => {
             tenantIds.push(tenant.id);
             tenantNames.push(name);
 
-            // The CISO's auto-provisioned AUDITOR membership in this
+            // The CISO's auto-provisioned ADMIN membership in this
             // tenant — what makes the per-tenant withTenantDb read
             // succeed under RLS.
             await prisma.tenantMembership.create({
                 data: {
                     tenantId: tenant.id,
                     userId: ciso.id,
-                    role: 'AUDITOR',
+                    role: 'ADMIN',
                     provisionedByOrgId: org.id,
                 },
             });

@@ -9,7 +9,7 @@
  *   3. `TenantOnboarding` row (matches the platform-admin
  *      `createTenantWithOwner` shape).
  *   4. After the transaction commits — `provisionAllOrgAdminsToTenant`
- *      so every existing ORG_ADMIN of the org gets an AUDITOR
+ *      so every existing ORG_ADMIN of the org gets an ADMIN
  *      membership in the new tenant.
  *
  * The creator's OWNER membership has `provisionedByOrgId = NULL` —
@@ -19,7 +19,7 @@
  *
  * The provision call's skipDuplicates ignores the creator's pre-
  * existing OWNER row — it's a no-op for that user. Other ORG_ADMINs
- * get fresh AUDITOR rows.
+ * get fresh ADMIN rows.
  */
 
 import { Prisma } from '@prisma/client';
@@ -111,8 +111,8 @@ export async function createTenantUnderOrg(
     }
 
     // Auto-provision OTHER ORG_ADMINs into the new tenant. The creator
-    // already has OWNER (higher than AUDITOR) — skipDuplicates skips
-    // them. Other admins get AUDITOR rows tagged with provisionedByOrgId.
+    // already has OWNER (higher than ADMIN) — skipDuplicates skips
+    // them. Other admins get ADMIN rows tagged with provisionedByOrgId.
     let provisionedAdmins = 0;
     try {
         const result = await provisionAllOrgAdminsToTenant(
@@ -123,7 +123,7 @@ export async function createTenantUnderOrg(
     } catch (err) {
         // Provisioning failure is logged but doesn't roll back the
         // tenant creation — the tenant is real and usable; the missing
-        // AUDITOR rows can be backfilled by re-running provisioning
+        // ADMIN rows can be backfilled by re-running provisioning
         // (it's idempotent). Operator visibility via the structured log.
         logger.warn('org-tenants.provision_after_create_failed', {
             component: 'org-tenants',

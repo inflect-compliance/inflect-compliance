@@ -3,7 +3,7 @@
  *
  * Three operations:
  *   1. `addOrgMember` — create OrgMembership; if role=ORG_ADMIN, fan
- *      out AUDITOR memberships into every child tenant.
+ *      out ADMIN memberships into every child tenant.
  *   2. `removeOrgMember` — fan in the deprovision (delete only auto-
  *      provisioned rows), then delete the OrgMembership. Manually-
  *      granted tenant memberships survive.
@@ -23,11 +23,11 @@
  * AuditLog table is tenant-scoped (`tenantId` is required), so one
  * audit row is written PER tenant whose access actually changed:
  *
- *   - `ORG_AUDITOR_PROVISIONED`   — written for each tenant where the
- *                                   user gained AUDITOR access (admin
+ *   - `ORG_ADMIN_PROVISIONED`   — written for each tenant where the
+ *                                   user gained ADMIN access (admin
  *                                   added; reader → admin promotion).
- *   - `ORG_AUDITOR_DEPROVISIONED` — written for each tenant where an
- *                                   auto-provisioned AUDITOR row was
+ *   - `ORG_ADMIN_DEPROVISIONED` — written for each tenant where an
+ *                                   auto-provisioned ADMIN row was
  *                                   deleted (admin removed; admin →
  *                                   reader demotion). Manual rows are
  *                                   excluded from the predicate so
@@ -70,7 +70,7 @@ import { appendOrgAuditEntry } from '@/lib/audit/org-audit-writer';
 // Per-tenant fan-out action strings written into the per-tenant
 // AuditLog chain. Distinct from the Epic B `OrgAuditAction` Prisma
 // enum (imported above), which targets the org-scoped `OrgAuditLog`.
-type TenantFanoutAuditAction = 'ORG_AUDITOR_PROVISIONED' | 'ORG_AUDITOR_DEPROVISIONED';
+type TenantFanoutAuditAction = 'ORG_ADMIN_PROVISIONED' | 'ORG_ADMIN_DEPROVISIONED';
 type OrgAuditSource =
     | 'org_member_added'
     | 'org_member_removed'
@@ -78,7 +78,7 @@ type OrgAuditSource =
     | 'org_member_demoted';
 
 /**
- * Fan an `ORG_AUDITOR_*` audit event out to every tenant where the
+ * Fan an `ORG_ADMIN_*` audit event out to every tenant where the
  * target user's access actually changed. Best-effort: a single
  * tenant's audit failure does not poison the rest, and a missed row
  * is recoverable via the chain-verification job. Each
@@ -324,7 +324,7 @@ export async function addOrgMember(
         );
         if (provision.tenantIds.length > 0) {
             await emitOrgMembershipAudit(ctx, {
-                action: 'ORG_AUDITOR_PROVISIONED',
+                action: 'ORG_ADMIN_PROVISIONED',
                 sourceAction: 'org_member_added',
                 targetUserId: user.id,
                 tenantIds: provision.tenantIds,
@@ -355,7 +355,7 @@ export async function addOrgMember(
                 trigger: 'org_member_added',
                 tenantCount: provision.created,
                 tenantIds: provision.tenantIds,
-                role: 'AUDITOR',
+                role: 'ADMIN',
             },
         });
     }
@@ -437,7 +437,7 @@ export async function removeOrgMember(
     let deprovision: DeprovisionResult | undefined;
     if (membership.role === 'ORG_ADMIN') {
         // Fan-in BEFORE deleting the OrgMembership so the user's
-        // tenant-side AUDITOR rows are gone before they lose
+        // tenant-side ADMIN rows are gone before they lose
         // org-admin status. The order doesn't change correctness —
         // both operations are idempotent — but it preserves the
         // logical sequence for any concurrent observer.
@@ -450,7 +450,7 @@ export async function removeOrgMember(
 
     if (deprovision && deprovision.tenantIds.length > 0) {
         await emitOrgMembershipAudit(ctx, {
-            action: 'ORG_AUDITOR_DEPROVISIONED',
+            action: 'ORG_ADMIN_DEPROVISIONED',
             sourceAction: 'org_member_removed',
             targetUserId: userId,
             tenantIds: deprovision.tenantIds,
@@ -477,7 +477,7 @@ export async function removeOrgMember(
                 trigger: 'org_member_removed',
                 tenantCount: deprovision.deleted,
                 tenantIds: deprovision.tenantIds,
-                role: 'AUDITOR',
+                role: 'ADMIN',
             },
         });
     }
@@ -537,7 +537,7 @@ export interface ChangeOrgMemberRoleResult {
  *   - both sides roll back (we stay in the prior state).
  *
  * Never half-state — no admin without tenant access, no orphaned
- * AUDITOR memberships pointing at a now-READER user.
+ * ADMIN memberships pointing at a now-READER user.
  *
  * Idempotent on no-op transitions (target role == current role).
  *
@@ -655,7 +655,7 @@ export async function changeOrgMemberRole(
         let deprovision: DeprovisionResult | undefined;
 
         if (transition === 'reader_to_admin') {
-            // Fan out AUDITOR rows into every child tenant. Idempotent
+            // Fan out ADMIN rows into every child tenant. Idempotent
             // — pre-existing manual memberships are preserved by the
             // unique-on-(tenantId, userId) skipDuplicates path.
             provision = await provisionOrgAdminToTenants(
@@ -666,7 +666,7 @@ export async function changeOrgMemberRole(
         } else {
             // Fan in. `deprovisionOrgAdmin` deletes ONLY rows tagged
             // `provisionedByOrgId === ctx.organizationId` AND
-            // `role === AUDITOR`. Manually-granted tenant memberships
+            // `role === ADMIN`. Manually-granted tenant memberships
             // and rows from a different org survive.
             deprovision = await deprovisionOrgAdmin(
                 ctx.organizationId,
@@ -683,7 +683,7 @@ export async function changeOrgMemberRole(
     // transaction had rolled back we wouldn't reach this line.
     if (transition === 'reader_to_admin' && result.provision && result.provision.tenantIds.length > 0) {
         await emitOrgMembershipAudit(ctx, {
-            action: 'ORG_AUDITOR_PROVISIONED',
+            action: 'ORG_ADMIN_PROVISIONED',
             sourceAction: 'org_member_promoted',
             targetUserId: userId,
             tenantIds: result.provision.tenantIds,
@@ -696,7 +696,7 @@ export async function changeOrgMemberRole(
         result.deprovision.tenantIds.length > 0
     ) {
         await emitOrgMembershipAudit(ctx, {
-            action: 'ORG_AUDITOR_DEPROVISIONED',
+            action: 'ORG_ADMIN_DEPROVISIONED',
             sourceAction: 'org_member_demoted',
             targetUserId: userId,
             tenantIds: result.deprovision.tenantIds,
@@ -727,7 +727,7 @@ export async function changeOrgMemberRole(
                 trigger: 'org_member_promoted',
                 tenantCount: result.provision.created,
                 tenantIds: result.provision.tenantIds,
-                role: 'AUDITOR',
+                role: 'ADMIN',
             },
         });
     } else if (transition === 'admin_to_reader' && result.deprovision && result.deprovision.deleted > 0) {
@@ -738,7 +738,7 @@ export async function changeOrgMemberRole(
                 trigger: 'org_member_demoted',
                 tenantCount: result.deprovision.deleted,
                 tenantIds: result.deprovision.tenantIds,
-                role: 'AUDITOR',
+                role: 'ADMIN',
             },
         });
     }

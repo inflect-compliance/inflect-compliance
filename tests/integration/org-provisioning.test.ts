@@ -83,9 +83,9 @@ describeFn('Epic O-2 — org-provisioning lifecycle (DB-backed)', () => {
         });
         secondCisoUserId = secondCiso.id;
 
-        // Pre-stage: the manual admin already has a non-AUDITOR
+        // Pre-stage: the manual admin already has a non-ADMIN
         // membership in tenant-1 from before the org existed. The
-        // provisioning sweep must NOT overwrite this with AUDITOR.
+        // provisioning sweep must NOT overwrite this with ADMIN.
         await prisma.tenantMembership.create({
             data: {
                 tenantId: tenantIds[0],
@@ -136,9 +136,9 @@ describeFn('Epic O-2 — org-provisioning lifecycle (DB-backed)', () => {
         await prisma.$disconnect();
     });
 
-    // ── 1. add ORG_ADMIN → AUDITOR in all org tenants ───────────────
+    // ── 1. add ORG_ADMIN → ADMIN in all org tenants ───────────────
 
-    it('provisionOrgAdminToTenants creates AUDITOR memberships in every org tenant', async () => {
+    it('provisionOrgAdminToTenants creates ADMIN memberships in every org tenant', async () => {
         const r = await provisionOrgAdminToTenants(orgId, cisoUserId);
         expect(r.totalConsidered).toBe(tenantIds.length);
         expect(r.created).toBe(tenantIds.length);
@@ -149,7 +149,7 @@ describeFn('Epic O-2 — org-provisioning lifecycle (DB-backed)', () => {
                 where: { tenantId_userId: { tenantId: tid, userId: cisoUserId } },
             });
             expect(m).not.toBeNull();
-            expect(m!.role).toBe('AUDITOR');
+            expect(m!.role).toBe('ADMIN');
             expect(m!.provisionedByOrgId).toBe(orgId);
         }
     });
@@ -163,7 +163,7 @@ describeFn('Epic O-2 — org-provisioning lifecycle (DB-backed)', () => {
         expect(r.totalConsidered).toBe(tenantIds.length);
 
         // The pre-existing manual ADMIN row in tenant-1 must still be
-        // ADMIN, not AUDITOR — the unique constraint protected it.
+        // ADMIN, not ADMIN — the unique constraint protected it.
         const manual = await prisma.tenantMembership.findUnique({
             where: {
                 tenantId_userId: {
@@ -188,7 +188,7 @@ describeFn('Epic O-2 — org-provisioning lifecycle (DB-backed)', () => {
         });
         try {
             const r = await provisionAllOrgAdminsToTenant(orgId, newTenant.id);
-            // 2 ORG_ADMINs (ciso + secondCiso) — both get AUDITOR memberships.
+            // 2 ORG_ADMINs (ciso + secondCiso) — both get ADMIN memberships.
             expect(r.totalConsidered).toBe(2);
             expect(r.created).toBe(2);
             expect(r.skipped).toBe(0);
@@ -198,7 +198,7 @@ describeFn('Epic O-2 — org-provisioning lifecycle (DB-backed)', () => {
                     tenantId_userId: { tenantId: newTenant.id, userId: cisoUserId },
                 },
             });
-            expect(cisoMem!.role).toBe('AUDITOR');
+            expect(cisoMem!.role).toBe('ADMIN');
             expect(cisoMem!.provisionedByOrgId).toBe(orgId);
 
             const secondCisoMem = await prisma.tenantMembership.findUnique({
@@ -209,7 +209,7 @@ describeFn('Epic O-2 — org-provisioning lifecycle (DB-backed)', () => {
                     },
                 },
             });
-            expect(secondCisoMem!.role).toBe('AUDITOR');
+            expect(secondCisoMem!.role).toBe('ADMIN');
             expect(secondCisoMem!.provisionedByOrgId).toBe(orgId);
         } finally {
             await prisma.tenantMembership.deleteMany({ where: { tenantId: newTenant.id } }).catch(() => {});
@@ -220,7 +220,7 @@ describeFn('Epic O-2 — org-provisioning lifecycle (DB-backed)', () => {
     // ── 4. deprovision: only auto-provisioned rows are removed ──────
 
     it('deprovisionOrgAdmin removes AUTO-PROVISIONED rows only — manual memberships survive', async () => {
-        // Pre-condition: ciso has AUDITOR (provisioned) in all 3 tenants.
+        // Pre-condition: ciso has ADMIN (provisioned) in all 3 tenants.
         // manualAdmin has ADMIN (manual) in tenant-1.
         const beforeDeprovision = await prisma.tenantMembership.findMany({
             where: { tenantId: { in: tenantIds } },
@@ -290,7 +290,7 @@ describeFn('Epic O-2 — org-provisioning lifecycle (DB-backed)', () => {
             expect(m).toBeNull();
         }
 
-        // Second CISO still has AUDITOR everywhere.
+        // Second CISO still has ADMIN everywhere.
         for (const tid of tenantIds) {
             const m = await prisma.tenantMembership.findUnique({
                 where: {
@@ -298,16 +298,16 @@ describeFn('Epic O-2 — org-provisioning lifecycle (DB-backed)', () => {
                 },
             });
             expect(m).not.toBeNull();
-            expect(m!.role).toBe('AUDITOR');
+            expect(m!.role).toBe('ADMIN');
             expect(m!.provisionedByOrgId).toBe(orgId);
         }
     });
 
-    // ── 5. defence-in-depth: AUDITOR-only filter on delete ──────────
+    // ── 5. defence-in-depth: ADMIN-only filter on delete ──────────
 
-    it('deprovisionOrgAdmin refuses to delete a non-AUDITOR row even if mistagged', async () => {
+    it('deprovisionOrgAdmin refuses to delete a non-ADMIN row even if mistagged', async () => {
         // Construct an anomalous row: provisionedByOrgId set, but role
-        // is EDITOR (the column is meant for AUDITOR rows only). The
+        // is EDITOR (the column is meant for ADMIN rows only). The
         // service's defence-in-depth filter must skip it.
         const anomalous = await prisma.tenantMembership.create({
             data: {
@@ -323,7 +323,7 @@ describeFn('Epic O-2 — org-provisioning lifecycle (DB-backed)', () => {
             // The pre-existing manual ADMIN in tenant-1 (no provisionedByOrgId)
             // is unaffected; the anomalous EDITOR row in tenant-2 is too —
             // both predicates (provisionedByOrgId === orgId AND role ===
-            // AUDITOR) must hold.
+            // ADMIN) must hold.
             expect(r.deleted).toBe(0);
             expect(r.tenantIds).toEqual([]);
 

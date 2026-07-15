@@ -3,7 +3,7 @@
  *
  *   POST /api/org/[orgSlug]/members
  *     add an ORG_ADMIN or ORG_READER. ORG_ADMIN add triggers fan-out
- *     of AUDITOR memberships into every existing org tenant.
+ *     of ADMIN memberships into every existing org tenant.
  *
  *   PUT /api/org/[orgSlug]/members
  *     change an existing member's role atomically. READER→ADMIN
@@ -14,7 +14,7 @@
  *
  *   DELETE /api/org/[orgSlug]/members?userId=...
  *     remove a member. ORG_ADMIN remove triggers fan-in of the
- *     auto-provisioned AUDITOR memberships (only those tagged with
+ *     auto-provisioned ADMIN memberships (only those tagged with
  *     this org's id; manual memberships are preserved). Last-
  *     ORG_ADMIN guard refuses to orphan the org.
  *

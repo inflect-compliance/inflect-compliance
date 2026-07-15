@@ -5,12 +5,12 @@
  *
  *   1. Create org (creator becomes ORG_ADMIN)
  *   2. Create 3 tenants under the org (creator becomes OWNER of each)
- *   3. Add a second user as ORG_ADMIN → AUDITOR rows fan into all 3
+ *   3. Add a second user as ORG_ADMIN → ADMIN rows fan into all 3
  *      tenants for that user
  *   4. Add a third user as ORG_READER → no fan-out
  *   5. Pre-stage a manual ADMIN row in tenant-1 for the ORG_READER
  *      to prove deprovision wouldn't touch it (control)
- *   6. Remove the second user (ORG_ADMIN) → AUDITOR rows for THAT
+ *   6. Remove the second user (ORG_ADMIN) → ADMIN rows for THAT
  *      user are deleted in all 3 tenants; the creator's OWNER rows
  *      and the manual ADMIN row are untouched
  *   7. Last-ORG_ADMIN guard: removing the creator (only remaining
@@ -158,7 +158,7 @@ describeFn('Epic O-2 — full organization lifecycle (DB-backed)', () => {
 
     // ── 3. Add second user as ORG_ADMIN → fan-out ───────────────────
 
-    it('adding a second ORG_ADMIN fans AUDITOR memberships into all org tenants', async () => {
+    it('adding a second ORG_ADMIN fans ADMIN memberships into all org tenants', async () => {
         const ctx = ctxFor('ORG_ADMIN', creatorUserId);
 
         const result = await addOrgMember(ctx, {
@@ -171,14 +171,14 @@ describeFn('Epic O-2 — full organization lifecycle (DB-backed)', () => {
         expect(result.provision!.created).toBe(3);
         expect(result.provision!.totalConsidered).toBe(3);
 
-        // Verify each tenant has the AUDITOR row tagged with the org id.
+        // Verify each tenant has the ADMIN row tagged with the org id.
         for (const tid of createdTenantIds) {
             const row = await prisma.tenantMembership.findUnique({
                 where: {
                     tenantId_userId: { tenantId: tid, userId: secondCisoUserId },
                 },
             });
-            expect(row!.role).toBe('AUDITOR');
+            expect(row!.role).toBe('ADMIN');
             expect(row!.provisionedByOrgId).toBe(orgId);
         }
     });
@@ -233,9 +233,9 @@ describeFn('Epic O-2 — full organization lifecycle (DB-backed)', () => {
         expect(row!.provisionedByOrgId).toBeNull();
     });
 
-    // ── 6. Remove second ORG_ADMIN → fan-in (only their AUDITORs) ───
+    // ── 6. Remove second ORG_ADMIN → fan-in (only their ADMINs) ───
 
-    it('removing the second ORG_ADMIN tears down AUDITOR rows ONLY for that user', async () => {
+    it('removing the second ORG_ADMIN tears down ADMIN rows ONLY for that user', async () => {
         const ctx = ctxFor('ORG_ADMIN', creatorUserId);
 
         const result = await removeOrgMember(ctx, { userId: secondCisoUserId });
@@ -245,7 +245,7 @@ describeFn('Epic O-2 — full organization lifecycle (DB-backed)', () => {
             expect.arrayContaining(createdTenantIds),
         );
 
-        // The second CISO's AUDITOR rows are gone.
+        // The second CISO's ADMIN rows are gone.
         for (const tid of createdTenantIds) {
             const row = await prisma.tenantMembership.findUnique({
                 where: {

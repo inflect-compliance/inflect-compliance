@@ -3,7 +3,7 @@
  *
  * The load-bearing security property: every per-tenant query MUST
  * run inside `withTenantDb(tenantId)` so RLS + the CISO's auto-
- * provisioned AUDITOR membership govern the read. The mocked
+ * provisioned ADMIN membership govern the read. The mocked
  * `withTenantDb` records the tenantIds it was called with, and the
  * test asserts:
  *

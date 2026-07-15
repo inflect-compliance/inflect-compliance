@@ -148,7 +148,7 @@ describe('addOrgMember', () => {
         });
     });
 
-    it('writes one ORG_AUDITOR_PROVISIONED audit row per affected tenant on ORG_ADMIN add', async () => {
+    it('writes one ORG_ADMIN_PROVISIONED audit row per affected tenant on ORG_ADMIN add', async () => {
         userUpsertMock.mockResolvedValue({ id: 'user-2', email: 'ciso@example.com' });
         orgMembershipFindUniqueMock.mockResolvedValue(null);
         orgMembershipCreateMock.mockResolvedValue({
@@ -181,7 +181,7 @@ describe('addOrgMember', () => {
         const sample = appendAuditEntryMock.mock.calls[0][0] as Record<string, unknown>;
         expect(sample.entity).toBe('TenantMembership');
         expect(sample.entityId).toBe('user-2');
-        expect(sample.action).toBe('ORG_AUDITOR_PROVISIONED');
+        expect(sample.action).toBe('ORG_ADMIN_PROVISIONED');
         expect(sample.userId).toBe('caller-1'); // actor from ctx
         expect(sample.actorType).toBe('USER');
         expect(sample.requestId).toBe('req-test');
@@ -296,7 +296,7 @@ describe('removeOrgMember', () => {
         expect(result.deprovision).toBeUndefined();
     });
 
-    it('writes one ORG_AUDITOR_DEPROVISIONED audit row per affected tenant on ORG_ADMIN remove', async () => {
+    it('writes one ORG_ADMIN_DEPROVISIONED audit row per affected tenant on ORG_ADMIN remove', async () => {
         orgMembershipFindUniqueMock.mockResolvedValue({ id: 'mem-1', role: 'ORG_ADMIN' });
         orgMembershipCountMock.mockResolvedValue(2);
         deprovisionOrgAdminMock.mockResolvedValue({
@@ -314,7 +314,7 @@ describe('removeOrgMember', () => {
         expect(tenantIdsAudited).toEqual(['t-1', 't-2', 't-3']);
 
         const sample = appendAuditEntryMock.mock.calls[0][0] as Record<string, unknown>;
-        expect(sample.action).toBe('ORG_AUDITOR_DEPROVISIONED');
+        expect(sample.action).toBe('ORG_ADMIN_DEPROVISIONED');
         expect(sample.entity).toBe('TenantMembership');
         expect(sample.entityId).toBe('user-2');
         const details = sample.detailsJson as Record<string, unknown>;
@@ -334,7 +334,7 @@ describe('removeOrgMember', () => {
         await removeOrgMember(ctxFor(), { userId: 'user-2' });
 
         // Order: deprovision → orgMembership.delete → audit emit. The
-        // tenant-side AUDITOR row is gone before the org-level row,
+        // tenant-side ADMIN row is gone before the org-level row,
         // and audit fires post-commit so a rollback (in a future
         // refactor that wraps these in a tx) wouldn't leave a dangling
         // audit entry.
@@ -455,7 +455,7 @@ describe('changeOrgMemberRole', () => {
         expect(result.deprovision).toBeUndefined();
         expect(result.membership.role).toBe('ORG_ADMIN');
 
-        // Audit fan-out: one ORG_AUDITOR_PROVISIONED row per
+        // Audit fan-out: one ORG_ADMIN_PROVISIONED row per
         // affected tenant, with previous/new role + promoted source
         // attribution.
         expect(appendAuditEntryMock).toHaveBeenCalledTimes(4);
@@ -464,7 +464,7 @@ describe('changeOrgMemberRole', () => {
             .sort();
         expect(tenantIdsAudited).toEqual(['t-1', 't-2', 't-3', 't-4']);
         const sample = appendAuditEntryMock.mock.calls[0][0] as Record<string, unknown>;
-        expect(sample.action).toBe('ORG_AUDITOR_PROVISIONED');
+        expect(sample.action).toBe('ORG_ADMIN_PROVISIONED');
         const details = sample.detailsJson as Record<string, unknown>;
         expect(details.sourceAction).toBe('org_member_promoted');
         expect(details.previousOrgRole).toBe('ORG_READER');
@@ -515,7 +515,7 @@ describe('changeOrgMemberRole', () => {
         expect(result.provision).toBeUndefined();
         expect(result.membership.role).toBe('ORG_READER');
 
-        // Audit fan-out: one ORG_AUDITOR_DEPROVISIONED row per
+        // Audit fan-out: one ORG_ADMIN_DEPROVISIONED row per
         // affected tenant, with previous/new role + demoted source
         // attribution.
         expect(appendAuditEntryMock).toHaveBeenCalledTimes(4);
@@ -524,7 +524,7 @@ describe('changeOrgMemberRole', () => {
             .sort();
         expect(tenantIdsAudited).toEqual(['t-1', 't-2', 't-3', 't-4']);
         const sample = appendAuditEntryMock.mock.calls[0][0] as Record<string, unknown>;
-        expect(sample.action).toBe('ORG_AUDITOR_DEPROVISIONED');
+        expect(sample.action).toBe('ORG_ADMIN_DEPROVISIONED');
         const details = sample.detailsJson as Record<string, unknown>;
         expect(details.sourceAction).toBe('org_member_demoted');
         expect(details.previousOrgRole).toBe('ORG_ADMIN');
