@@ -24,6 +24,7 @@ import type { AuditLogEntry } from '@/lib/dto';
 import { AssetCriticalityBadge } from '../_form/AssetCriticalityFields';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
+import { ProcessNodeReverseLookupModal } from '@/components/processes/ProcessNodeReverseLookupModal';
 import { EntityPrevNextNav } from '@/components/ui/entity-prev-next-nav';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
@@ -120,6 +121,9 @@ export default function AssetDetailPage() {
         : '';
     // Mutation-error channel (status change etc.); load errors come from SWR above.
     const [error, setError] = useState('');
+    // PR-D — "Where used" (process maps) reverse-lookup modal.
+    const tWhereUsed = useTranslations('panels.processWhereUsed');
+    const [processWhereUsedOpen, setProcessWhereUsedOpen] = useState(false);
 
     // Resolve the "Assigned to" user's display name from the tenant
     // roster so the read view can show a name, not a raw id.
@@ -311,21 +315,33 @@ export default function AssetDetailPage() {
             activeTab={activeTab}
             onTabChange={(k) => setActiveTab(k)}
             actions={
-                permissions.canWrite ? (
-                    <Combobox
-                        hideSearch
-                        id="asset-status-select"
-                        selected={ASSET_STATUS_OPTIONS.find(o => o.value === (asset.status || 'ACTIVE')) ?? null}
-                        setSelected={(opt) => { if (opt) changeStatus(opt.value); }}
-                        options={ASSET_STATUS_OPTIONS}
-                        disabled={changingStatus}
-                        placeholder={t('detail.statusPlaceholder')}
-                        // Item 29 — brand-color the status action (matches the
-                        // primary "+ …" create buttons), consistent with risk /
-                        // task / control detail headers.
-                        buttonProps={{ variant: 'primary', className: 'text-sm' }}
-                    />
-                ) : undefined
+                <>
+                    {/* PR-D — Where used in process maps. Visible to all
+                        viewers (readers + auditors need it most). */}
+                    <Button
+                        variant="secondary"
+                        onClick={() => setProcessWhereUsedOpen(true)}
+                        id="asset-where-used-btn"
+                        data-testid="asset-where-used-btn"
+                    >
+                        {tWhereUsed('button')}
+                    </Button>
+                    {permissions.canWrite && (
+                        <Combobox
+                            hideSearch
+                            id="asset-status-select"
+                            selected={ASSET_STATUS_OPTIONS.find(o => o.value === (asset.status || 'ACTIVE')) ?? null}
+                            setSelected={(opt) => { if (opt) changeStatus(opt.value); }}
+                            options={ASSET_STATUS_OPTIONS}
+                            disabled={changingStatus}
+                            placeholder={t('detail.statusPlaceholder')}
+                            // Item 29 — brand-color the status action (matches the
+                            // primary "+ …" create buttons), consistent with risk /
+                            // task / control detail headers.
+                            buttonProps={{ variant: 'primary', className: 'text-sm' }}
+                        />
+                    )}
+                </>
             }
 
             title={
@@ -722,6 +738,15 @@ export default function AssetDetailPage() {
 
                 </>
             )}
+
+            {/* PR-D — Where used (process maps) reverse-lookup modal */}
+            <ProcessNodeReverseLookupModal
+                entityType="asset"
+                entityId={assetId}
+                tenantSlug={tenantSlug}
+                open={processWhereUsedOpen}
+                onOpenChange={setProcessWhereUsedOpen}
+            />
         </EntityDetailLayout>
     );
 }

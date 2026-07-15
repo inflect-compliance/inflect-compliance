@@ -35,6 +35,7 @@ function freshDb() {
             createMany: jest.fn((..._args: any[]) =>
                 Promise.resolve({ count: 0 } as any),
             ),
+            findMany: jest.fn((..._args: any[]) => Promise.resolve([] as any[])),
         },
         processEdge: {
             deleteMany: jest.fn((..._args: any[]) =>
@@ -659,6 +660,71 @@ describe('ProcessMapRepository.listMapsByControl', () => {
             db as any,
             ctx,
             'ctrl-x',
+        );
+        expect(out).toEqual([]);
+    });
+});
+
+describe('ProcessMapRepository.listMapsByLinkedEntity', () => {
+    it('filters by tenant + nodeType + dataJson.linkedEntityId, drops soft-deleted', async () => {
+        db.processNode.findMany.mockResolvedValueOnce([
+            {
+                nodeKey: 'n1',
+                label: 'Prod DB',
+                processMap: {
+                    id: 'm1',
+                    name: 'Live',
+                    status: 'ACTIVE',
+                    deletedAt: null,
+                },
+            },
+            {
+                nodeKey: 'n2',
+                label: 'Old DB',
+                processMap: {
+                    id: 'm2',
+                    name: 'Gone',
+                    status: 'ARCHIVED',
+                    deletedAt: new Date(), // filtered out
+                },
+            },
+        ]);
+        const out = await ProcessMapRepository.listMapsByLinkedEntity(
+            db as any,
+            ctx,
+            'asset',
+            'asset-1',
+        );
+        const arg = db.processNode.findMany.mock.calls[0][0];
+        expect(arg.where).toEqual({
+            tenantId: ctx.tenantId,
+            nodeType: 'asset',
+            dataJson: { path: ['linkedEntityId'], equals: 'asset-1' },
+        });
+        expect(out).toHaveLength(1);
+        expect(out[0].mapId).toBe('m1');
+        expect(out[0].nodeKey).toBe('n1');
+        expect(out[0].nodeLabel).toBe('Prod DB');
+    });
+
+    it('passes the risk node kind through', async () => {
+        await ProcessMapRepository.listMapsByLinkedEntity(
+            db as any,
+            ctx,
+            'risk',
+            'risk-7',
+        );
+        expect(db.processNode.findMany.mock.calls[0][0].where.nodeType).toBe(
+            'risk',
+        );
+    });
+
+    it('returns empty when no rows', async () => {
+        const out = await ProcessMapRepository.listMapsByLinkedEntity(
+            db as any,
+            ctx,
+            'risk',
+            'risk-x',
         );
         expect(out).toEqual([]);
     });

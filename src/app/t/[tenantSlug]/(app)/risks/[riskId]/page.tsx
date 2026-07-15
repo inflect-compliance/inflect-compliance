@@ -23,6 +23,7 @@ import {
 } from '@/app-layer/domain/entity-status-mapping';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { Button } from '@/components/ui/button';
+import { ProcessNodeReverseLookupModal } from '@/components/processes/ProcessNodeReverseLookupModal';
 import { Pen2 } from '@/components/ui/icons/nucleo';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
@@ -152,6 +153,9 @@ export default function RiskDetailPage() {
         : null;
     // Mutation-error channel; load errors come from SWR above.
     const [error, setError] = useState<string | null>(null);
+    // PR-D — "Where used" (process maps) reverse-lookup modal.
+    const tWhereUsed = useTranslations('panels.processWhereUsed');
+    const [processWhereUsedOpen, setProcessWhereUsedOpen] = useState(false);
     const [editing, setEditing] = useState(false);
     const [saving, setSaving] = useState(false);
 
@@ -418,19 +422,31 @@ export default function RiskDetailPage() {
                 />
             }
             actions={
-                canWrite && (
-                    <Combobox
-                        hideSearch
-                        id="risk-status-select"
-                        selected={STATUS_OPTIONS.find(o => o.value === risk.status) ?? null}
-                        setSelected={(opt) => { if (opt) handleStatusChange(opt.value); }}
-                        options={STATUS_OPTIONS}
-                        placeholder={t('detail.statusPlaceholder')}
-                        // Item 29 — brand-color the status action (matches the
-                        // primary "+ …" create buttons).
-                        buttonProps={{ variant: 'primary', className: 'text-sm' }}
-                    />
-                )
+                <>
+                    {/* PR-D — Where used in process maps. Visible to all
+                        viewers (readers + auditors need it most). */}
+                    <Button
+                        variant="secondary"
+                        onClick={() => setProcessWhereUsedOpen(true)}
+                        id="risk-where-used-btn"
+                        data-testid="risk-where-used-btn"
+                    >
+                        {tWhereUsed('button')}
+                    </Button>
+                    {canWrite && (
+                        <Combobox
+                            hideSearch
+                            id="risk-status-select"
+                            selected={STATUS_OPTIONS.find(o => o.value === risk.status) ?? null}
+                            setSelected={(opt) => { if (opt) handleStatusChange(opt.value); }}
+                            options={STATUS_OPTIONS}
+                            placeholder={t('detail.statusPlaceholder')}
+                            // Item 29 — brand-color the status action (matches the
+                            // primary "+ …" create buttons).
+                            buttonProps={{ variant: 'primary', className: 'text-sm' }}
+                        />
+                    )}
+                </>
             }
         >
             {error && (
@@ -707,6 +723,15 @@ export default function RiskDetailPage() {
                     onSubmit={handleSave}
                 />
             )}
+
+            {/* PR-D — Where used (process maps) reverse-lookup modal */}
+            <ProcessNodeReverseLookupModal
+                entityType="risk"
+                entityId={riskId}
+                tenantSlug={tenant.tenantSlug}
+                open={processWhereUsedOpen}
+                onOpenChange={setProcessWhereUsedOpen}
+            />
         </EntityDetailLayout>
     );
 }
