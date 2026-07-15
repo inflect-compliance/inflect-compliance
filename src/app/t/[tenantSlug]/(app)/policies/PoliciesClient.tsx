@@ -530,10 +530,11 @@ function PoliciesPageInner({
             id: 'version',
             header: tx('colHeaders.version'),
             // Prefer the bound `currentVersion.versionNumber` (the
-            // operator-visible counter that ratchets only on
-            // publish). Falls back to `lifecycleVersion` (which
-            // matches CISO-Assistant's editing_version) and finally
-            // a dash for policies without any version row yet.
+            // operator-visible counter). Falls back to `lifecycleVersion`,
+            // which now reflects real published lineage — publishPolicy
+            // increments it and records prior published snapshots in
+            // lifecycleHistoryJson (Prompt-3.1), so it is no longer frozen
+            // at 1. Finally a dash for policies without any version row yet.
             accessorFn: (p) =>
                 p.currentVersion?.versionNumber ??
                 p.lifecycleVersion ??

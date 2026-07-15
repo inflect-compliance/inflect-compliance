@@ -248,7 +248,8 @@ export const CreatePolicySchema = z.object({
     ownerUserId: z.string().optional().nullable(),
     reviewFrequencyDays: z.coerce.number().int().min(1).optional().nullable(),
     language: z.string().optional().nullable(),
-    content: z.string().optional().nullable(), // initial markdown content
+    content: z.string().optional().nullable(), // initial content
+    contentType: z.enum(['MARKDOWN', 'HTML']).optional(), // initial-version editor mode (Prompt-3.3)
     templateId: z.string().optional().nullable(), // create from template
 }).strip().openapi('PolicyCreateRequest', {
     description: 'Create a policy. content (initial Markdown) AND templateId are optional but mutually exclusive — pass content for a from-scratch policy, templateId to spawn from a framework template. The first PolicyVersion is created server-side.',

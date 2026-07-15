@@ -27,6 +27,8 @@ export interface NewPolicyFormFields {
     description: string;
     category: string;
     content: string;
+    /** Editor mode for the initial version (Prompt-3.3) — same Tiptap editor as edit. */
+    contentType: 'MARKDOWN' | 'HTML';
     templateId: string;
 }
 
@@ -72,6 +74,7 @@ export function useNewPolicyForm({
         description: '',
         category: '',
         content: '',
+        contentType: 'MARKDOWN',
         templateId: '',
     });
     const [templates, setTemplates] = useState<PolicyTemplate[]>([]);
@@ -127,7 +130,7 @@ export function useNewPolicyForm({
         });
 
         try {
-            const body: { title: string; description: string | null; category: string | null; templateId?: string; content?: string | null } = {
+            const body: { title: string; description: string | null; category: string | null; templateId?: string; content?: string | null; contentType?: 'MARKDOWN' | 'HTML' } = {
                 title: fields.title,
                 description: fields.description || null,
                 category: fields.category || null,
@@ -136,6 +139,7 @@ export function useNewPolicyForm({
                 body.templateId = fields.templateId;
             } else {
                 body.content = fields.content || null;
+                body.contentType = fields.contentType;
             }
 
             const res = await fetch(apiUrl('/policies'), {

@@ -9,15 +9,22 @@
  * and the future `<NewPolicyModal>` (P2) render this component
  * unchanged; the wrapper supplies its own submit button + chrome.
  */
+import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Heading } from '@/components/ui/typography';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
+import type { RichTextContentType } from '@/components/ui/RichTextEditor';
 import type { NewPolicyFormReturn } from './useNewPolicyForm';
+
+// Prompt-3.3 — the SAME Tiptap editor used for later versions (lazy, no SSR).
+const RichTextEditor = dynamic(
+    () => import('@/components/ui/RichTextEditor').then((m) => m.RichTextEditor),
+    { ssr: false },
+);
 
 const POLICY_CATEGORIES: ComboboxOption[] = [
     'Information Security',
@@ -119,14 +126,19 @@ export function NewPolicyFields({ form }: { form: NewPolicyFormReturn }) {
                 />
             </FormField>
 
-            {/* Initial content for blank mode only */}
+            {/* Initial content for blank mode only — the same rich editor as
+                later versions (Tiptap), so first-version authoring is consistent. */}
             {!form.isTemplateMode && (
                 <FormField label={t('new.fieldContent')}>
-                    <Textarea
-                        id="policy-content-input"
-                        className="min-h-[200px] font-mono text-sm"
+                    <RichTextEditor
                         value={form.fields.content}
-                        onChange={(e) => form.setField('content', e.target.value)}
+                        contentType={form.fields.contentType}
+                        onChange={(value: string, contentType: RichTextContentType) => {
+                            form.setField('content', value);
+                            if (contentType === 'MARKDOWN' || contentType === 'HTML') {
+                                form.setField('contentType', contentType);
+                            }
+                        }}
                         placeholder={t('new.contentPlaceholder')}
                     />
                 </FormField>

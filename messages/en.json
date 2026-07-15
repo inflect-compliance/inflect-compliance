@@ -2472,6 +2472,8 @@
             "requestApproval": "Request Approval",
             "publish": "Publish",
             "publishWithoutApproval": "Publish without approval",
+            "rollback": "Roll back",
+            "rollbackHint": "{count} prior published version(s) recorded. Roll back to re-publish the most recent one.",
             "bypassTitle": "Publish without approval",
             "bypassBody": "This publishes the current version without an approval decision and records an audited bypass. Use only for emergencies.",
             "bypassReasonPlaceholder": "Reason for the emergency publish (required)",
@@ -2516,7 +2518,8 @@
                 "attested": "Acknowledged",
                 "ackRequested": "Acknowledgement requested",
                 "controlLinked": "Control linked",
-                "controlUnlinked": "Control unlinked"
+                "controlUnlinked": "Control unlinked",
+                "rolledBack": "Rolled back"
             },
             "errFileUpload": "File upload failed",
             "errCreateVersion": "Failed to create version",
@@ -2533,6 +2536,8 @@
             "linkedCount": "{linked}/{total} linked",
             "unlink": "Unlink",
             "linkPlaceholder": "Link evidence…",
+            "add": "Add item",
+            "addPlaceholder": "Add an evidence-to-retain item…",
             "note": "Suggested from the policy template — link each item to the evidence that proves the policy operates."
         },
         "sharepoint": {

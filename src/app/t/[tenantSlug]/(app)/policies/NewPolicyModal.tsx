@@ -12,7 +12,7 @@
  * `/policies?create=1`; the list page (PoliciesClient) reads the flag
  * on mount and opens this modal.
  */
-import { useCallback, useMemo, type Dispatch, type SetStateAction } from 'react';
+import { useCallback, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useTenantHref } from '@/lib/tenant-context-provider';
@@ -39,8 +39,12 @@ export function NewPolicyModal({
     const router = useRouter();
     const t = useTranslations('policies');
 
-    // The "Start with" selector at the top of the modal. "New" keeps the blank
-    // policy form below; "From template" navigates to the templates page.
+    // Prompt-3.3 — "Start with" is now internal state so "From template" opens
+    // the in-modal template picker (carrying the typed title forward) instead of
+    // abandoning the modal + discarding the title. The /policies/templates page
+    // is no longer the only path — this is the single, consistent creation flow.
+    const [templateMode, setTemplateMode] = useState(isTemplateMode);
+
     const createModeOptions = useMemo<ComboboxOption[]>(
         () => [
             { value: 'new', label: t('new.modeNew') },
@@ -50,7 +54,7 @@ export function NewPolicyModal({
     );
 
     const form = useNewPolicyForm({
-        isTemplateMode,
+        isTemplateMode: templateMode,
         onSuccess: (policy) => {
             setOpen(false);
             router.push(tenantHref(`/policies/${policy.id}`));
@@ -90,16 +94,14 @@ export function NewPolicyModal({
             showModal={open}
             setShowModal={guardedSetOpen}
             size="lg"
-            title={isTemplateMode ? t('new.titleTemplate') : t('new.titleBlank')}
-            description={
-                isTemplateMode ? t('new.descTemplate') : t('new.descBlank')
-            }
             preventDefaultClose={form.submitting}
         >
+            {/* Prompt-3.5 — the title/description live ONLY on Modal.Header
+                (previously duplicated on both <Modal> and <Modal.Header>). */}
             <Modal.Header
-                title={isTemplateMode ? t('new.titleTemplate') : t('new.titleBlank')}
+                title={templateMode ? t('new.titleTemplate') : t('new.titleBlank')}
                 description={
-                    isTemplateMode ? t('new.descTemplate') : t('new.descBlank')
+                    templateMode ? t('new.descTemplate') : t('new.descBlank')
                 }
             />
             <Modal.Form id="new-policy-form" onSubmit={handleSubmit}>
@@ -110,16 +112,11 @@ export function NewPolicyModal({
                                 id="new-policy-mode"
                                 name="newPolicyMode"
                                 options={createModeOptions}
-                                selected={createModeOptions[0]}
+                                selected={createModeOptions.find((o) => o.value === (templateMode ? 'from-template' : 'new')) ?? createModeOptions[0]}
                                 setSelected={(o) => {
-                                    if (o?.value === 'from-template') {
-                                        // Jump to the templates page — the
-                                        // dedicated from-template surface.
-                                        setOpen(false);
-                                        router.push(
-                                            tenantHref('/policies/templates'),
-                                        );
-                                    }
+                                    // Switch modes IN the modal — the typed title
+                                    // and other fields are preserved (same form).
+                                    setTemplateMode(o?.value === 'from-template');
                                 }}
                                 placeholder={t('new.modePlaceholder')}
                                 hideSearch
