@@ -4,7 +4,7 @@
  *   POST /api/org/[orgSlug]/tenants
  *     create a new tenant inside the org. Caller must be ORG_ADMIN
  *     (canManageTenants). Creator becomes OWNER of the new tenant.
- *     `provisionAllOrgAdminsToTenant` fans AUDITOR rows to the OTHER
+ *     `provisionAllOrgAdminsToTenant` fans ADMIN rows to the OTHER
  *     ORG_ADMINs (the creator already has OWNER, which the
  *     unique constraint preserves).
  *

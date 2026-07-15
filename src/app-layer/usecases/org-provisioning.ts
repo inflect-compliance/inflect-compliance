@@ -1,20 +1,22 @@
 /**
  * Hub-and-spoke organization auto-provisioning engine (Epic O-2).
  *
- * Three lifecycle entry points keep the ORG_ADMIN ↔ AUDITOR
- * relationship coherent across the org's child tenants:
+ * An ORG_ADMIN inherits full tenant ADMIN on every child tenant of the
+ * org (changed from the original read-only AUDITOR — an org admin is a
+ * customer administrator who operates their tenants, not just audits
+ * them). Three lifecycle entry points keep that relationship coherent:
  *
  *   1. `provisionOrgAdminToTenants(orgId, userId)`
  *      Fan-out on ORG_ADMIN add. For every tenant in the org, create
- *      an AUDITOR `TenantMembership` tagged with `provisionedByOrgId`.
+ *      an ADMIN `TenantMembership` tagged with `provisionedByOrgId`.
  *
  *   2. `provisionAllOrgAdminsToTenant(orgId, tenantId)`
  *      Fan-out on tenant add. For every existing ORG_ADMIN of the
- *      org, create the same AUDITOR membership in the new tenant.
+ *      org, create the same ADMIN membership in the new tenant.
  *
  *   3. `deprovisionOrgAdmin(orgId, userId)`
  *      Fan-in on ORG_ADMIN remove. Delete ONLY rows tagged with this
- *      org's id (and whose role is AUDITOR — defence-in-depth). Manual
+ *      org's id (and whose role is ADMIN — defence-in-depth). Manual
  *      memberships (provisionedByOrgId = NULL) and rows from a
  *      different org survive untouched.
  *
@@ -26,7 +28,7 @@
  * conflict means:
  *   - Re-running the fan-out is a no-op.
  *   - A pre-existing manual ADMIN/EDITOR/READER row is preserved
- *     (never overwritten with AUDITOR).
+ *     (never overwritten with ADMIN).
  *   - A pre-existing auto-provisioned row from this same org is left
  *     in place.
  *
@@ -92,7 +94,7 @@ export interface ProvisionResult {
     /** Total number of (tenantId, userId) pairs the call considered. */
     totalConsidered: number;
     /**
-     * Tenant ids where a new AUDITOR row was created. Caller fans an
+     * Tenant ids where a new ADMIN row was created. Caller fans an
      * audit-event row out to each tenant in this list. A tenant whose
      * membership pre-existed is intentionally omitted — its access
      * did not change as a result of this call, and an audit row there
@@ -170,7 +172,7 @@ export async function provisionOrgAdminToTenants(
         data: toCreate.map((t) => ({
             tenantId: t.id,
             userId,
-            role: Role.AUDITOR,
+            role: Role.ADMIN,
             provisionedByOrgId: orgId,
         })),
         skipDuplicates: true,
@@ -193,7 +195,7 @@ export async function provisionOrgAdminToTenants(
  *
  * `ORG_READER` members are deliberately excluded — readers don't
  * drill down into per-tenant detail and so don't need the
- * AUDITOR `TenantMembership`.
+ * ADMIN `TenantMembership`.
  */
 export async function provisionAllOrgAdminsToTenant(
     orgId: string,
@@ -212,7 +214,7 @@ export async function provisionAllOrgAdminsToTenant(
         data: admins.map((a) => ({
             tenantId,
             userId: a.userId,
-            role: Role.AUDITOR,
+            role: Role.ADMIN,
             provisionedByOrgId: orgId,
         })),
         skipDuplicates: true,
@@ -239,15 +241,15 @@ export async function provisionAllOrgAdminsToTenant(
 /**
  * Reverse the auto-provisioning. Deletes ONLY rows that match BOTH:
  *   - `provisionedByOrgId === orgId` (this exact org tagged the row)
- *   - `role === AUDITOR` (defence-in-depth: the column is intended
- *     for AUDITOR rows only; refusing to widen lets a misconfigured
+ *   - `role === ADMIN` (defence-in-depth: the column is intended
+ *     for ADMIN rows only; refusing to widen lets a misconfigured
  *     row survive for a human to investigate rather than silently
  *     vanish).
  *
  * Manual memberships (`provisionedByOrgId IS NULL`) and rows
  * provisioned by a different org are intentionally untouched. A user
  * who is ORG_ADMIN in two orgs and gets removed from one keeps their
- * AUDITOR memberships in the other org's tenants.
+ * ADMIN memberships in the other org's tenants.
  *
  * Wrapped in a transaction so the result's `tenantIds` reflects
  * exactly which rows were deleted — without the transaction, a
@@ -262,7 +264,7 @@ export async function deprovisionOrgAdmin(
     db?: Prisma.TransactionClient,
 ): Promise<DeprovisionResult> {
     // When the caller already owns a transaction (e.g. the role-change
-    // usecase), reuse it so the OrgMembership update + the AUDITOR
+    // usecase), reuse it so the OrgMembership update + the ADMIN
     // delete commit together. Otherwise open our own — the explicit
     // transaction is what guarantees the result's `tenantIds` reflects
     // the rows we actually deleted, even if a concurrent provisioner
@@ -282,7 +284,7 @@ async function doDeprovision(
         where: {
             userId,
             provisionedByOrgId: orgId,
-            role: Role.AUDITOR,
+            role: Role.ADMIN,
         },
         select: { tenantId: true },
     });
@@ -295,7 +297,7 @@ async function doDeprovision(
         where: {
             userId,
             provisionedByOrgId: orgId,
-            role: Role.AUDITOR,
+            role: Role.ADMIN,
         },
     });
 

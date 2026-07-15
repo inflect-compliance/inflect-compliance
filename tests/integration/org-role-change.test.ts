@@ -13,9 +13,9 @@
  *   4. **Promote** target ORG_READER → ORG_ADMIN. Assertions:
  *      - The OrgMembership.role is now ORG_ADMIN.
  *      - tenant-1 still has the manual READER row (unchanged) AND
- *        no AUDITOR row was created (skipDuplicates left the manual
+ *        no ADMIN row was created (skipDuplicates left the manual
  *        row in place).
- *      - tenant-2 has a fresh AUDITOR row tagged
+ *      - tenant-2 has a fresh ADMIN row tagged
  *        `provisionedByOrgId = orgId`.
  *      - The creator's OWNER row in each tenant is untouched.
  *   5. **Demote** target ORG_ADMIN → ORG_READER. Assertions:
@@ -23,7 +23,7 @@
  *      - tenant-1's manual READER row STILL survives (the load-
  *        bearing safety property — manual grants must not be
  *        deleted by deprovisioning).
- *      - tenant-2's AUDITOR row is gone.
+ *      - tenant-2's ADMIN row is gone.
  *      - The creator's OWNER row in each tenant is untouched.
  *   6. No-op same-role transition returns `transition: 'noop'` and
  *      doesn't touch any TenantMembership row.
@@ -157,7 +157,7 @@ describeFn('Epic O-2 — atomic org member role change (DB-backed)', () => {
 
     // ── 4. Promotion ─────────────────────────────────────────────────
 
-    it('promotes ORG_READER → ORG_ADMIN and fans out AUDITOR rows (manual rows preserved)', async () => {
+    it('promotes ORG_READER → ORG_ADMIN and fans out ADMIN rows (manual rows preserved)', async () => {
         const result = await changeOrgMemberRole(
             ctxFor('ORG_ADMIN', creatorUserId),
             { userId: targetUserId, role: 'ORG_ADMIN' },
@@ -183,7 +183,7 @@ describeFn('Epic O-2 — atomic org member role change (DB-backed)', () => {
         });
         expect(om?.role).toBe('ORG_ADMIN');
 
-        // tenant-1: the manual READER row is intact, no AUDITOR row
+        // tenant-1: the manual READER row is intact, no ADMIN row
         // was created.
         const t1 = await prisma.tenantMembership.findUnique({
             where: {
@@ -196,7 +196,7 @@ describeFn('Epic O-2 — atomic org member role change (DB-backed)', () => {
         expect(t1?.role).toBe('READER');
         expect(t1?.provisionedByOrgId).toBeNull();
 
-        // tenant-2: AUDITOR row exists and is tagged with this org.
+        // tenant-2: ADMIN row exists and is tagged with this org.
         const t2 = await prisma.tenantMembership.findUnique({
             where: {
                 tenantId_userId: {
@@ -205,7 +205,7 @@ describeFn('Epic O-2 — atomic org member role change (DB-backed)', () => {
                 },
             },
         });
-        expect(t2?.role).toBe('AUDITOR');
+        expect(t2?.role).toBe('ADMIN');
         expect(t2?.provisionedByOrgId).toBe(orgId);
 
         // Creator's OWNER rows are unchanged.
@@ -221,15 +221,15 @@ describeFn('Epic O-2 — atomic org member role change (DB-backed)', () => {
             expect(owner?.role).toBe('OWNER');
         }
 
-        // Durable audit evidence: exactly one ORG_AUDITOR_PROVISIONED
-        // row in tenant-2's AuditLog (where the AUDITOR membership was
+        // Durable audit evidence: exactly one ORG_ADMIN_PROVISIONED
+        // row in tenant-2's AuditLog (where the ADMIN membership was
         // newly created). Tenant-1's manual row pre-existed and is
         // intentionally NOT audited — the access invariant for that
         // tenant didn't change as a result of this op.
         const t2Audits = await prisma.auditLog.findMany({
             where: {
                 tenantId: tenantIds[1],
-                action: 'ORG_AUDITOR_PROVISIONED',
+                action: 'ORG_ADMIN_PROVISIONED',
                 entity: 'TenantMembership',
                 entityId: targetUserId,
             },
@@ -249,7 +249,7 @@ describeFn('Epic O-2 — atomic org member role change (DB-backed)', () => {
         const t1Audits = await prisma.auditLog.findMany({
             where: {
                 tenantId: tenantIds[0],
-                action: 'ORG_AUDITOR_PROVISIONED',
+                action: 'ORG_ADMIN_PROVISIONED',
                 entity: 'TenantMembership',
                 entityId: targetUserId,
             },
@@ -259,7 +259,7 @@ describeFn('Epic O-2 — atomic org member role change (DB-backed)', () => {
 
     // ── 5. Demotion ──────────────────────────────────────────────────
 
-    it('demotes ORG_ADMIN → ORG_READER and fans in AUDITOR rows (manual rows preserved)', async () => {
+    it('demotes ORG_ADMIN → ORG_READER and fans in ADMIN rows (manual rows preserved)', async () => {
         const result = await changeOrgMemberRole(
             ctxFor('ORG_ADMIN', creatorUserId),
             { userId: targetUserId, role: 'ORG_READER' },
@@ -268,7 +268,7 @@ describeFn('Epic O-2 — atomic org member role change (DB-backed)', () => {
         expect(result.transition).toBe('admin_to_reader');
         expect(result.membership.role).toBe('ORG_READER');
         expect(result.provision).toBeUndefined();
-        // Only tenant-2's AUDITOR row was tagged by this org. tenant-1's
+        // Only tenant-2's ADMIN row was tagged by this org. tenant-1's
         // manual READER row is provisionedByOrgId=NULL and is NEVER
         // touched by deprovisioning.
         expect(result.deprovision?.deleted).toBe(1);
@@ -298,7 +298,7 @@ describeFn('Epic O-2 — atomic org member role change (DB-backed)', () => {
         expect(t1?.role).toBe('READER');
         expect(t1?.provisionedByOrgId).toBeNull();
 
-        // tenant-2: AUDITOR row gone.
+        // tenant-2: ADMIN row gone.
         const t2 = await prisma.tenantMembership.findUnique({
             where: {
                 tenantId_userId: {
@@ -323,14 +323,14 @@ describeFn('Epic O-2 — atomic org member role change (DB-backed)', () => {
         }
 
         // Durable audit evidence: exactly one
-        // ORG_AUDITOR_DEPROVISIONED row in tenant-2's AuditLog (where
-        // the AUDITOR row was actually deleted). Tenant-1 — manual
+        // ORG_ADMIN_DEPROVISIONED row in tenant-2's AuditLog (where
+        // the ADMIN row was actually deleted). Tenant-1 — manual
         // grant — is intentionally NOT audited because the access
         // invariant there didn't change.
         const t2Audits = await prisma.auditLog.findMany({
             where: {
                 tenantId: tenantIds[1],
-                action: 'ORG_AUDITOR_DEPROVISIONED',
+                action: 'ORG_ADMIN_DEPROVISIONED',
                 entity: 'TenantMembership',
                 entityId: targetUserId,
             },
@@ -344,7 +344,7 @@ describeFn('Epic O-2 — atomic org member role change (DB-backed)', () => {
         const t1Audits = await prisma.auditLog.findMany({
             where: {
                 tenantId: tenantIds[0],
-                action: 'ORG_AUDITOR_DEPROVISIONED',
+                action: 'ORG_ADMIN_DEPROVISIONED',
                 entity: 'TenantMembership',
                 entityId: targetUserId,
             },

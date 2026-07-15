@@ -127,7 +127,7 @@ describe('drill-down integrity check — healthy fan-out (all tenants accessible
         expect(withTenantDbMock).toHaveBeenCalledTimes(3);
     });
 
-    it('manual non-AUDITOR rows (e.g. CISO is also OWNER somewhere) count as accessible', async () => {
+    it('manual non-ADMIN rows (e.g. CISO is also OWNER somewhere) count as accessible', async () => {
         getOrgTenantIdsMock.mockResolvedValue(TENANTS);
         // Only the row's existence matters — we don't filter on role.
         tenantMembershipFindManyMock.mockResolvedValue([

@@ -1567,6 +1567,9 @@
         },
         "docs/implementation-notes/2026-07-15-ep4-evidence-residuals.md": {
             "class": "historical"
+        },
+        "docs/implementation-notes/2026-07-15-org-admin-inherits-tenant-admin.md": {
+            "class": "historical"
         }
     }
 }

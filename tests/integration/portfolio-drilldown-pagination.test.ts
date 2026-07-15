@@ -90,13 +90,13 @@ describeFn('Portfolio drill-down — cursor pagination (DB-backed)', () => {
             });
             tenantIds.push(tenant.id);
 
-            // Auto-provisioned AUDITOR for the CISO so RLS lets the
+            // Auto-provisioned ADMIN for the CISO so RLS lets the
             // per-tenant queries through.
             await prisma.tenantMembership.create({
                 data: {
                     tenantId: tenant.id,
                     userId: ciso.id,
-                    role: 'AUDITOR',
+                    role: 'ADMIN',
                     provisionedByOrgId: org.id,
                 },
             });

@@ -103,7 +103,7 @@ describeFn('OrgAuditLog — immutability + hash chain', () => {
                 actorUserId,
                 action: 'ORG_ADMIN_PROVISIONED_TO_TENANTS',
                 targetUserId,
-                detailsJson: { tenantCount: 2, tenantIds: ['t-a', 't-b'], role: 'AUDITOR' },
+                detailsJson: { tenantCount: 2, tenantIds: ['t-a', 't-b'], role: 'ADMIN' },
             },
             prisma,
         );

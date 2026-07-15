@@ -167,7 +167,7 @@ describe('addOrgMember — org audit emission', () => {
             trigger: 'org_member_added',
             tenantCount: 2,
             tenantIds: ['t-1', 't-2'],
-            role: 'AUDITOR',
+            role: 'ADMIN',
         });
     });
 
@@ -228,7 +228,7 @@ describe('removeOrgMember — org audit emission', () => {
             trigger: 'org_member_removed',
             tenantCount: 2,
             tenantIds: ['t-1', 't-2'],
-            role: 'AUDITOR',
+            role: 'ADMIN',
         });
     });
 
@@ -318,7 +318,7 @@ describe('changeOrgMemberRole — org audit emission', () => {
         expect(provisioned[0].detailsJson).toMatchObject({
             trigger: 'org_member_promoted',
             tenantCount: 2,
-            role: 'AUDITOR',
+            role: 'ADMIN',
         });
     });
 
@@ -330,7 +330,7 @@ describe('changeOrgMemberRole — org audit emission', () => {
         expect(deprovisioned[0].detailsJson).toMatchObject({
             trigger: 'org_member_demoted',
             tenantCount: 3,
-            role: 'AUDITOR',
+            role: 'ADMIN',
         });
     });
 

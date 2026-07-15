@@ -10,7 +10,7 @@
  *   - All views require `canViewPortfolio` (any org member with that
  *     flag — ORG_ADMIN + ORG_READER).
  *   - Drill-down views additionally require `canDrillDown`. ORG_READERs
- *     don't have auto-provisioned AUDITOR membership in the child
+ *     don't have auto-provisioned ADMIN membership in the child
  *     tenants, so the drill-down would return zero rows anyway under
  *     RLS. Failing fast at 403 makes the UX deterministic.
  *
@@ -66,7 +66,7 @@ export const GET = withApiErrorHandling(
         // Drill-down views need both canViewPortfolio (covered by usecase
         // assert) AND canDrillDown (route-level fail-fast). The usecases
         // themselves only check canViewPortfolio because the cross-
-        // tenant safety property is enforced by the AUDITOR-membership
+        // tenant safety property is enforced by the ADMIN-membership
         // RLS at the data plane — but failing at the route layer gives
         // ORG_READERs a clean 403 rather than an empty array.
         if (DRILL_DOWN_VIEWS.has(view) && !ctx.permissions.canDrillDown) {

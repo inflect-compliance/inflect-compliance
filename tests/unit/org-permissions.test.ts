@@ -27,7 +27,7 @@ describe('Epic O-2 — getOrgPermissions', () => {
         const p = getOrgPermissions('ORG_READER');
         expect(p).toEqual<OrgPermissionSet>({
             canViewPortfolio: true,
-            canDrillDown: false, // no auto-provisioned AUDITOR membership
+            canDrillDown: false, // no auto-provisioned ADMIN membership
             canExportReports: true,
             canManageTenants: false,
             canManageMembers: false,
@@ -37,7 +37,7 @@ describe('Epic O-2 — getOrgPermissions', () => {
         });
     });
 
-    it('ORG_READER cannot drill down (mirrors the absence of AUDITOR membership)', () => {
+    it('ORG_READER cannot drill down (mirrors the absence of ADMIN membership)', () => {
         // Lock this specific row independently of the table above so
         // a cosmetic "let's flip drill-down for readers" PR can't
         // sneak through review unnoticed.

@@ -107,18 +107,18 @@ describe('GAP O4-2 — org members page structural contract', () => {
     });
 
     it('role-change UI surfaces provisioning side effects to the operator BEFORE commit', () => {
-        // Promotion to ORG_ADMIN fans AUDITOR rows out into every
+        // Promotion to ORG_ADMIN fans ADMIN rows out into every
         // child tenant; demotion fans them in. The modal MUST tell
         // the operator that's what happens — no surprises.
         const src = read(CLIENT_PATH);
         expect(src).toMatch(/org-change-role-promotion-callout/);
         expect(src).toMatch(/org-change-role-demotion-callout/);
-        // Promotion callout names the AUDITOR fan-out. i18n-aware: the
+        // Promotion callout names the ADMIN fan-out. i18n-aware: the
         // callout copy now lives in the catalog under
         // `members.promotionCallout` — assert the wiring + the copy.
         expect(src).toMatch(/t\('members\.promotionCallout'\)/);
         expect(enOrg('members.promotionCallout')).toMatch(
-            /AUDITOR\s+membership[\s\S]*?every[\s\S]*?child\s+tenant/i,
+            /ADMIN\s+membership[\s\S]*?every[\s\S]*?child\s+tenant/i,
         );
     });
 

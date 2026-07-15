@@ -23,7 +23,7 @@
  *      `AuditLog`, not in this table.
  *
  *   3. `TenantMembership.provisionedByOrgId` → ON DELETE SET NULL.
- *      Auto-provisioned AUDITOR memberships outlive the org so the
+ *      Auto-provisioned ADMIN memberships outlive the org so the
  *      user retains tenant-level read access. Only the back-link is
  *      cleared; role and tenantId are unchanged.
  *
@@ -139,7 +139,7 @@ describeFn('Organization deletion contract — FK cascade behaviour', () => {
             data: {
                 tenantId: tenant.id,
                 userId: user.id,
-                role: 'AUDITOR',
+                role: 'ADMIN',
                 provisionedByOrgId: org.id,
             },
         });
@@ -157,13 +157,13 @@ describeFn('Organization deletion contract — FK cascade behaviour', () => {
             },
         });
         try {
-            // Auto-provisioned AUDITOR membership survives — the
+            // Auto-provisioned ADMIN membership survives — the
             // user keeps tenant read access. Only the back-link
             // clears.
             expect(after).not.toBeNull();
             expect(after!.tenantId).toBe(tenant.id);
             expect(after!.userId).toBe(user.id);
-            expect(after!.role).toBe('AUDITOR');
+            expect(after!.role).toBe('ADMIN');
             expect(after!.provisionedByOrgId).toBeNull();
         } finally {
             await prisma.tenantMembership.delete({ where: { id: tm.id } }).catch(() => {});

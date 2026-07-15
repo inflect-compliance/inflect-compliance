@@ -64,7 +64,7 @@ function happySession() {
         userId: 'user-1',
         tenantId: 'tenant-irrelevant',
         email: 'ciso@example.com',
-        role: 'AUDITOR',
+        role: 'ADMIN',
     });
 }
 

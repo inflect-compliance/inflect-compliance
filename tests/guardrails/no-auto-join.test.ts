@@ -92,14 +92,18 @@ const ALLOWLISTED_MEMBERSHIP_SITES: ReadonlyArray<AllowlistedSite> = [
         file: 'src/app-layer/usecases/org-provisioning.ts',
         reason:
             'Epic O-2 hub-and-spoke ORG_ADMIN auto-provisioning. ' +
-            'Fan-out creates AUDITOR (read-only) memberships in every ' +
-            'tenant under the org, tagged with provisionedByOrgId so ' +
+            'Fan-out creates ADMIN memberships in every tenant under ' +
+            'the org, tagged with provisionedByOrgId so ' +
             'deprovisionOrgAdmin can distinguish auto-created from ' +
-            'manually-granted rows. createMany with skipDuplicates ' +
-            'preserves any pre-existing manual membership; the role ' +
-            'is hard-coded to AUDITOR (never higher). Audit emission ' +
-            'happens at the calling org-level API route, where the ' +
-            'OrgContext is in scope.',
+            'manually-granted rows. Safety comes from the precondition, ' +
+            'not the role ceiling: rows are created ONLY for a user who ' +
+            'already holds OrgMembership(role=ORG_ADMIN) — an org ' +
+            'administrator legitimately operates their tenants. The role ' +
+            'is hard-coded to ADMIN (never OWNER, so tenant lifecycle / ' +
+            'owner management stays out of reach). createMany with ' +
+            'skipDuplicates preserves any pre-existing manual membership. ' +
+            'Audit emission happens at the calling org-level API route, ' +
+            'where the OrgContext is in scope.',
     },
     {
         file: 'src/app-layer/usecases/org-tenants.ts',
@@ -111,7 +115,7 @@ const ALLOWLISTED_MEMBERSHIP_SITES: ReadonlyArray<AllowlistedSite> = [
             'is manually granted (provisionedByOrgId NULL) so it ' +
             'survives the creator\'s potential later removal as ' +
             'ORG_ADMIN. After the transaction commits, ' +
-            'provisionAllOrgAdminsToTenant fans AUDITOR rows for OTHER ' +
+            'provisionAllOrgAdminsToTenant fans ADMIN rows for OTHER ' +
             'org-admins via the already-allowlisted provisioning service.',
     },
 ];

@@ -8,7 +8,7 @@
  *   2. The acme-corp tenant is linked (Tenant.organizationId = org.id).
  *   3. An OrgMembership exists for the CISO user with role=ORG_ADMIN.
  *   4. Auto-provisioning is tracked correctly: every child tenant has
- *      a TenantMembership for the CISO with role=AUDITOR and
+ *      a TenantMembership for the CISO with role=ADMIN and
  *      provisionedByOrgId pointing at the org.
  *
  * This test does NOT run the seed itself (it constructs an isolated
@@ -71,12 +71,12 @@ describeFn('Epic O-1 — organization-layer bootstrap state', () => {
             },
         });
 
-        // Auto-provisioned AUDITOR (the seed's equivalent inline fan-out).
+        // Auto-provisioned ADMIN (the seed's equivalent inline fan-out).
         await prisma.tenantMembership.create({
             data: {
                 tenantId: tenant.id,
                 userId: ciso.id,
-                role: 'AUDITOR',
+                role: 'ADMIN',
                 provisionedByOrgId: org.id,
             },
         });
@@ -142,7 +142,7 @@ describeFn('Epic O-1 — organization-layer bootstrap state', () => {
 
     // ── Invariant 4 — provisioned membership tracking ───────────────
 
-    it('every child tenant has an AUDITOR membership for the CISO with provisionedByOrgId set', async () => {
+    it('every child tenant has an ADMIN membership for the CISO with provisionedByOrgId set', async () => {
         const orgTenants = await prisma.tenant.findMany({
             where: { organizationId: orgId },
             select: { id: true },
@@ -159,7 +159,7 @@ describeFn('Epic O-1 — organization-layer bootstrap state', () => {
                 },
             });
             expect(m).not.toBeNull();
-            expect(m!.role).toBe('AUDITOR');
+            expect(m!.role).toBe('ADMIN');
             expect(m!.provisionedByOrgId).toBe(orgId);
         }
     });

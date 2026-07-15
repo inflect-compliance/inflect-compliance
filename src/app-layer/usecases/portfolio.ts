@@ -15,7 +15,7 @@
  * `ComplianceSnapshot` (org-wide aggregates) — are read at the
  * org-management layer, not the per-tenant data plane. Drill-down
  * INTO any tenant goes through standard `runInTenantContext` with
- * the CISO's auto-provisioned AUDITOR membership; that's a separate
+ * the CISO's auto-provisioned ADMIN membership; that's a separate
  * Epic O-3 follow-up.
  *
  * Authorization: callers must pass an `OrgContext` (i.e. they came
@@ -331,7 +331,7 @@ export async function getPortfolioTenantHealth(
 // Inside the callback, every read against tenant-scoped tables runs
 // under FORCE ROW LEVEL SECURITY. The CISO is granted read access
 // only because the Epic O-2 auto-provisioning service created an
-// AUDITOR `TenantMembership` for them in each child tenant. Without
+// ADMIN `TenantMembership` for them in each child tenant. Without
 // that membership, the per-tenant query returns ZERO rows — the
 // portfolio drill-down never crosses tenant boundaries via a
 // privilege bypass; it just walks N legitimate per-tenant queries.
@@ -341,7 +341,7 @@ export async function getPortfolioTenantHealth(
 //   - We do NOT issue a single cross-tenant query against the
 //     business tables — every query targets exactly one tenantId.
 //   - If the CISO is removed as ORG_ADMIN, the deprovision usecase
-//     deletes their AUDITOR rows, and the same drill-down loop
+//     deletes their ADMIN rows, and the same drill-down loop
 //     starts returning zero rows per tenant (empty results, no
 //     errors) — the security envelope shrinks automatically.
 //
@@ -387,7 +387,7 @@ async function fanOutPerTenant<TRow>(
 // ── Auditor fan-out integrity check ───────────────────────────────────
 //
 // Cross-tenant drill-down relies on the org-admin's auto-provisioned
-// AUDITOR `TenantMembership` in every child tenant of the org — the
+// ADMIN `TenantMembership` in every child tenant of the org — the
 // `withTenantDb(tenantId, ...)` callback runs as `app_user` and the
 // per-tenant query gets through RLS BECAUSE the user has SOME
 // membership in that tenant. Without a membership row the per-tenant
@@ -410,13 +410,13 @@ async function fanOutPerTenant<TRow>(
 //      membership row — preserving the existing RLS contract while
 //      avoiding "phantom empty" results from inaccessible tenants.
 //
-// The check accepts ANY membership role (not strictly AUDITOR). The
-// auto-provisioning service writes AUDITOR rows tagged with
+// The check accepts ANY membership role (not strictly ADMIN). The
+// auto-provisioning service writes ADMIN rows tagged with
 // `provisionedByOrgId`, but a CISO who's also been MANUALLY granted
 // OWNER in one tenant has access via that manual row — drill-down
 // works there too, and we shouldn't spuriously warn. Drift is
 // strictly "this user has zero rows for tenant X", not "this user
-// doesn't have an AUDITOR row".
+// doesn't have an ADMIN row".
 //
 // Performance: one `findMany` against the indexed
 // `TenantMembership(tenantId, userId)` column. ~1ms regardless of org
@@ -466,7 +466,7 @@ async function checkAuditorFanOutIntegrity(
             // fires for an ORG_ADMIN whose drill-down should be
             // complete by design.
             hint:
-                'Auto-provisioned AUDITOR memberships are missing for this user in the listed tenants. Re-run provisionOrgAdminToTenants(orgId, userId) or inspect tenantMembership for manual deletions.',
+                'Auto-provisioned ADMIN memberships are missing for this user in the listed tenants. Re-run provisionOrgAdminToTenants(orgId, userId) or inspect tenantMembership for manual deletions.',
         });
     }
 
