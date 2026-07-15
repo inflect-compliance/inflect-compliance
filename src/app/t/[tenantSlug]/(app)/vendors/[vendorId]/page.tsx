@@ -10,7 +10,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
-import { Pen2, Plus } from '@/components/ui/icons/nucleo';
+import { Pen2, Plus, ChevronRight } from '@/components/ui/icons/nucleo';
 import { Tooltip, InfoTooltip } from '@/components/ui/tooltip';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
@@ -77,8 +77,7 @@ type Tab = 'overview' | 'documents' | 'assessments' | 'monitoring' | 'links' | '
 
 // vendor → getVendor → VendorRepository.getById (vendor scalars + owner + _count).
 // owner/_count optional: absent on the scalar-only PATCH/enrich responses that
-// also setVendor. `contractEnd` has no model field (the MetaStrip branch that
-// reads it is dead) — kept optional so the read compiles without modelling it.
+// also setVendor.
 interface VendorOwner {
     id: string;
     name: string | null;
@@ -100,7 +99,6 @@ interface VendorDetail {
     isSubprocessor: boolean;
     nextReviewAt: string | null;
     contractRenewalAt: string | null;
-    contractEnd?: string | null;
     certificationsJson: string[] | null;
     enrichmentLastRunAt: string | null;
     enrichmentStatus: string | null;
@@ -152,10 +150,45 @@ interface VendorBundleRow {
     createdBy: { name: string | null } | null;
     _count?: { items: number };
 }
+// P3.3 — bundle item entity types (the frozen-evidence set). Only
+// these four may be bundled. EVIDENCE + CONTROL are picked via the
+// shared <EntityPicker>; VENDOR_DOCUMENT + ASSESSMENT are vendor-
+// scoped so they draw from this page's already-loaded lists.
+const BUNDLE_ITEM_TYPE_KEYS = ['VENDOR_DOCUMENT', 'ASSESSMENT', 'EVIDENCE', 'CONTROL'] as const;
+type BundleItemType = (typeof BUNDLE_ITEM_TYPE_KEYS)[number];
+const buildBundleItemTypeOptions = (t: (k: string) => string): ComboboxOption[] =>
+    BUNDLE_ITEM_TYPE_KEYS.map((v) => ({ value: v, label: t(`detail.bundleItemTypes.${v}`) }));
+// GET /vendors/[id]/bundles/[bundleId] — a single bundle + its items.
+interface VendorBundleItem {
+    id: string;
+    entityType: string;
+    entityId: string;
+    snapshotJson?: unknown;
+}
+interface VendorBundleDetail {
+    id: string;
+    name: string;
+    frozenAt: string | null;
+    items: VendorBundleItem[];
+    createdBy?: { name: string | null } | null;
+}
+// P3.7b — recursive subprocessor chain (nth-party). GET
+// /vendors/[id]/subprocessors/chain returns the tenant's vendor at
+// the root (depth 0) with its transitive subprocessors nested,
+// bounded-depth + cycle-safe on the server.
+interface SubprocessorChainNode {
+    vendorId: string;
+    name: string;
+    criticality: string;
+    inherentRisk: string | null;
+    depth: number;
+    subprocessors: SubprocessorChainNode[];
+}
 
 export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: string; vendorId: string }> }) {
     const params = use(props.params);
     const tx = useTranslations('vendors');
+    const tCommon = useTranslations('common');
     const DOC_TYPE_LABELS = buildDocTypeLabels(tx);
     const DOC_TYPE_CB_OPTIONS = buildDocTypeCbOptions(DOC_TYPE_LABELS);
     const VENDOR_LINK_TYPE_OPTIONS = useMemo(() => buildVendorLinkTypeOptions(tx), [tx]);
@@ -212,9 +245,17 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     // Bundles
     const [bundles, setBundles] = useState<VendorBundleRow[]>([]);
     const [bundleName, setBundleName] = useState('');
+    // P3.3 — bundle-detail (expand-in-place) state.
+    const [expandedBundleId, setExpandedBundleId] = useState<string | null>(null);
+    const [bundleDetail, setBundleDetail] = useState<VendorBundleDetail | null>(null);
+    const [bundleItemType, setBundleItemType] = useState<BundleItemType>('EVIDENCE');
+    const [bundleItemId, setBundleItemId] = useState('');
+    const BUNDLE_ITEM_TYPE_OPTIONS = useMemo(() => buildBundleItemTypeOptions(tx), [tx]);
     // Subprocessors
     const [subs, setSubs] = useState<VendorSubprocessorRow[]>([]);
     const [subForm, setSubForm] = useState({ subprocessorVendorId: '', purpose: '' });
+    // P3.7b — recursive subprocessor chain.
+    const [chain, setChain] = useState<SubprocessorChainNode | null>(null);
 
     const fetchVendor = useCallback(async () => {
         setLoading(true);
@@ -271,12 +312,76 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { if (tab === 'bundles') fetchBundles(); }, [tab, fetchBundles]);
 
+    // P3.3 — load a single bundle's items (expand-in-place).
+    const fetchBundleDetail = useCallback(async (bundleId: string) => {
+        const res = await fetch(apiUrl(`/vendors/${params.vendorId}/bundles/${bundleId}`));
+        if (res.ok) setBundleDetail(await res.json());
+    }, [apiUrl, params.vendorId]);
+
+    // Plain handlers (React Compiler auto-memoizes) — manual useCallback here
+    // tripped preserve-manual-memoization because the inferred setter deps
+    // didn't match the hand-written list.
+    const toggleBundle = (bundleId: string) => {
+        setBundleItemId('');
+        setBundleItemType('EVIDENCE');
+        if (expandedBundleId === bundleId) {
+            setExpandedBundleId(null);
+            setBundleDetail(null);
+            return;
+        }
+        setExpandedBundleId(bundleId);
+        setBundleDetail(null);
+        fetchBundleDetail(bundleId);
+    };
+
+    // The add picker draws VENDOR_DOCUMENT / ASSESSMENT candidates from
+    // this page's vendor-scoped lists; lazy-load them the first time
+    // the operator selects that type.
+    const onBundleItemTypeChange = (next: BundleItemType) => {
+        setBundleItemType(next);
+        setBundleItemId('');
+        if (next === 'VENDOR_DOCUMENT' && docs.length === 0) fetchDocs();
+        if (next === 'ASSESSMENT' && assessments.length === 0) fetchAssessments();
+    };
+
+    const addBundleItem = async (bundleId: string) => {
+        if (!bundleItemId) return;
+        const res = await fetch(apiUrl(`/vendors/${params.vendorId}/bundles/${bundleId}`), {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ entityType: bundleItemType, entityId: bundleItemId }),
+        });
+        if (res.ok) {
+            setBundleItemId('');
+            fetchBundleDetail(bundleId);
+            fetchBundles();
+        }
+    };
+
+    const removeBundleItem = useCallback(async (bundleId: string, itemId: string) => {
+        const res = await fetch(apiUrl(`/vendors/${params.vendorId}/bundles/${bundleId}?itemId=${itemId}`), { method: 'DELETE' });
+        if (res.ok) { fetchBundleDetail(bundleId); fetchBundles(); }
+    }, [apiUrl, params.vendorId, fetchBundleDetail, fetchBundles]);
+
+    const freezeBundle = useCallback(async (bundleId: string) => {
+        if (!confirm(tx('detail.freezeConfirm'))) return;
+        const res = await fetch(apiUrl(`/vendors/${params.vendorId}/bundles/${bundleId}?action=freeze`), { method: 'POST' });
+        if (res.ok) {
+            fetchBundles();
+            if (expandedBundleId === bundleId) fetchBundleDetail(bundleId);
+        }
+    }, [apiUrl, params.vendorId, tx, fetchBundles, fetchBundleDetail, expandedBundleId]);
+
     const fetchSubs = useCallback(async () => {
         const res = await fetch(apiUrl(`/vendors/${params.vendorId}/subprocessors`));
         if (res.ok) setSubs(await res.json());
     }, [apiUrl, params.vendorId]);
+    // P3.7b — recursive nth-party chain, fetched alongside the flat list.
+    const fetchChain = useCallback(async () => {
+        const res = await fetch(apiUrl(`/vendors/${params.vendorId}/subprocessors/chain`));
+        if (res.ok) setChain(await res.json());
+    }, [apiUrl, params.vendorId]);
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    useEffect(() => { if (tab === 'subprocessors') fetchSubs(); }, [tab, fetchSubs]);
+    useEffect(() => { if (tab === 'subprocessors') { fetchSubs(); fetchChain(); } }, [tab, fetchSubs, fetchChain]);
 
     const saveEdit = async () => {
         const res = await fetch(apiUrl(`/vendors/${params.vendorId}`), {
@@ -425,7 +530,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         {
                             kind: 'status',
                             label: tx('detail.status'),
-                            value: vendor.status,
+                            value: tx('statusOption.' + vendor.status),
                             variant:
                                 VENDOR_STATUS_VARIANT[vendor.status] ??
                                 'neutral',
@@ -433,20 +538,12 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         {
                             kind: 'status',
                             label: tx('detail.criticality'),
-                            value: vendor.criticality,
+                            value: tx('criticalityLabel.' + vendor.criticality),
                             variant:
                                 VENDOR_CRITICALITY_VARIANT[
                                     vendor.criticality
                                 ] ?? 'neutral',
                         },
-                        ...(vendor.contractEnd
-                            ? [
-                                  {
-                                      label: tx('detail.contractEnd'),
-                                      value: formatDate(vendor.contractEnd),
-                                  } as const,
-                              ]
-                            : []),
                     ]}
                 />
             }
@@ -491,7 +588,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         <div>
                             <span className="text-content-muted">{tx('detail.inherentRisk')}:</span>
                             <InfoTooltip content={tx('detail.inherentRiskHint')} aria-label={tx('detail.inherentRiskHint')} iconClassName="ml-1 align-text-bottom" />
-                            <span className="ml-2">{vendor.inherentRisk ? <StatusBadge variant={CRIT_BADGE[vendor.inherentRisk]}>{vendor.inherentRisk}</StatusBadge> : '—'}</span>
+                            <span className="ml-2">{vendor.inherentRisk ? <StatusBadge variant={CRIT_BADGE[vendor.inherentRisk]}>{tx('criticalityLabel.' + vendor.inherentRisk)}</StatusBadge> : '—'}</span>
                         </div>
                         <div><span className="text-content-muted">{tx('detail.nextReview')}:</span> <span className="ml-2">{fmtDate(vendor.nextReviewAt)}</span></div>
                         <div><span className="text-content-muted">{tx('detail.contractRenewal')}:</span> <span className="ml-2">{fmtDate(vendor.contractRenewalAt)}</span></div>
@@ -1004,25 +1101,116 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                             }}>{tx('detail.createBundle')}</Button>
                         </div>
                     )}
-                    {bundles.map((b) => (
+                    {bundles.map((b) => {
+                        const expanded = expandedBundleId === b.id;
+                        const detail = expanded ? bundleDetail : null;
+                        const itemCount = detail ? detail.items.length : (b._count?.items || 0);
+                        return (
                         <div key={b.id} className={cn(cardVariants({ density: 'compact' }), 'space-y-tight')}>
                             <div className="flex items-center justify-between">
-                                <div>
+                                <button
+                                    type="button"
+                                    className="flex items-center gap-tight text-left hover:underline"
+                                    aria-expanded={expanded}
+                                    onClick={() => toggleBundle(b.id)}
+                                    id={`toggle-bundle-${b.id}`}
+                                >
+                                    <ChevronRight className={cn('size-3.5 text-content-muted transition-transform', expanded && 'rotate-90')} />
                                     <span className="font-medium">{b.name}</span>
-                                    <span className="ml-2 text-xs text-content-muted">{tx('detail.bundleItems', { count: b._count?.items || 0 })}</span>
-                                    {b.frozenAt && <StatusBadge variant="success" className="ml-2">{tx('detail.frozen')}</StatusBadge>}
-                                </div>
+                                    <span className="text-xs text-content-muted">{tx('detail.bundleItems', { count: itemCount })}</span>
+                                    {b.frozenAt && <StatusBadge variant="success">{tx('detail.frozen')}</StatusBadge>}
+                                </button>
                                 {canWrite && !b.frozenAt && (
-                                    <Button variant="secondary" size="xs" id={`freeze-bundle-${b.id}`} onClick={async () => {
-                                        if (!confirm(tx('detail.freezeConfirm'))) return;
-                                        await fetch(apiUrl(`/vendors/${params.vendorId}/bundles/${b.id}?action=freeze`), { method: 'POST' });
-                                        fetchBundles();
-                                    }}>{tx('detail.freeze')}</Button>
+                                    <Button
+                                        variant="secondary"
+                                        size="xs"
+                                        id={`freeze-bundle-${b.id}`}
+                                        disabled={itemCount === 0}
+                                        onClick={() => freezeBundle(b.id)}
+                                    >{tx('detail.freeze')}</Button>
                                 )}
                             </div>
                             <div className="text-xs text-content-muted">{tx('detail.bundleCreatedBy', { name: b.createdBy?.name || '—', date: formatDate(b.createdAt) })}</div>
+                            {/* P3.3 — bundle-detail: items + add/remove. */}
+                            {expanded && (
+                                <div className="border-t border-border-subtle pt-2 mt-1 space-y-tight">
+                                    {!detail && <p className="text-xs text-content-muted">{tCommon('ui.loading')}</p>}
+                                    {detail && detail.items.length === 0 && (
+                                        <p className="text-xs text-content-muted">{tx('detail.bundleNoItems')}</p>
+                                    )}
+                                    {detail?.items.map((it) => (
+                                        <div key={it.id} className="flex items-center justify-between text-sm border-b border-border-subtle py-1">
+                                            <span className="flex items-center gap-tight min-w-0">
+                                                <StatusBadge variant="neutral">{tx('detail.bundleItemTypes.' + it.entityType)}</StatusBadge>
+                                                <code className="text-xs text-content-muted truncate">{it.entityId}</code>
+                                            </span>
+                                            {canWrite && !detail.frozenAt && (
+                                                <button
+                                                    className="text-content-error text-xs"
+                                                    onClick={() => removeBundleItem(b.id, it.id)}
+                                                    id={`remove-bundle-item-${it.id}`}
+                                                >{tx('detail.remove')}</button>
+                                            )}
+                                        </div>
+                                    ))}
+                                    {/* Add-item control — hidden once frozen. */}
+                                    {canWrite && detail && !detail.frozenAt && (
+                                        <div className="flex flex-wrap items-end gap-compact pt-1">
+                                            <div>
+                                                <label className="block text-sm text-content-muted mb-1">{tx('detail.type')}</label>
+                                                <Combobox
+                                                    hideSearch
+                                                    id={`bundle-item-type-${b.id}`}
+                                                    selected={BUNDLE_ITEM_TYPE_OPTIONS.find((o) => o.value === bundleItemType) ?? null}
+                                                    setSelected={(opt) => onBundleItemTypeChange((opt?.value ?? 'EVIDENCE') as BundleItemType)}
+                                                    options={BUNDLE_ITEM_TYPE_OPTIONS}
+                                                    matchTriggerWidth
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm text-content-muted mb-1">{tx('detail.bundleItemEntity')}</label>
+                                                {bundleItemType === 'EVIDENCE' || bundleItemType === 'CONTROL' ? (
+                                                    <EntityPicker
+                                                        tenantSlug={params.tenantSlug}
+                                                        entityType={bundleItemType as EntityPickerKind}
+                                                        value={bundleItemId}
+                                                        onChange={setBundleItemId}
+                                                        id={`bundle-item-entity-${b.id}`}
+                                                        testId="vendor-bundle-item-picker"
+                                                        placeholder={tx('detail.selectEntity')}
+                                                        className="w-56"
+                                                    />
+                                                ) : (
+                                                    <Combobox
+                                                        id={`bundle-item-entity-${b.id}`}
+                                                        options={
+                                                            bundleItemType === 'VENDOR_DOCUMENT'
+                                                                ? docs.map((d) => ({ value: d.id, label: d.title || DOC_TYPE_LABELS[d.type] || d.type }))
+                                                                : assessments.map((a) => ({ value: a.id, label: a.template?.name || a.id }))
+                                                        }
+                                                        selected={(bundleItemType === 'VENDOR_DOCUMENT'
+                                                            ? docs.map((d) => ({ value: d.id, label: d.title || DOC_TYPE_LABELS[d.type] || d.type }))
+                                                            : assessments.map((a) => ({ value: a.id, label: a.template?.name || a.id }))
+                                                        ).find((o) => o.value === bundleItemId) ?? null}
+                                                        setSelected={(opt) => setBundleItemId(opt?.value ?? '')}
+                                                        placeholder={tx('detail.selectEntity')}
+                                                        matchTriggerWidth
+                                                    />
+                                                )}
+                                            </div>
+                                            <Button
+                                                variant="secondary"
+                                                disabled={!bundleItemId}
+                                                onClick={() => addBundleItem(b.id)}
+                                                id={`add-bundle-item-${b.id}`}
+                                            >{tx('detail.add')}</Button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
-                    ))}
+                        );
+                    })}
                     {bundles.length === 0 && (
                         <InlineEmptyState
                             title={tx('detail.bundlesEmptyTitle')}
@@ -1082,8 +1270,25 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                 { method: 'DELETE' },
                             );
                             fetchSubs();
+                            fetchChain();
                         }}
                     />
+                    {/* P3.7b — transitive (nth-party) chain view. Rendered
+                        below the flat one-hop table; shows the full
+                        subprocessor tree the backend resolves. */}
+                    {chain && chain.subprocessors.length > 0 && (
+                        <div className={cn(cardVariants({ density: 'compact' }), 'space-y-tight')}>
+                            <div className="flex items-center gap-tight">
+                                <Heading level={3}>{tx('detail.subChainTitle')}</Heading>
+                                <InfoTooltip content={tx('detail.subChainHint')} aria-label={tx('detail.subChainHint')} />
+                            </div>
+                            <div>
+                                {chain.subprocessors.map((node) => (
+                                    <SubprocessorChainNodeRow key={node.vendorId} node={node} />
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </EntityDetailLayout>
@@ -1255,7 +1460,7 @@ function VendorAssessmentsTable({ assessments, vendorId, tenantHref }: { assessm
                     cell: ({ row }) =>
                         row.original.riskRating ? (
                             <StatusBadge variant={CRIT_BADGE[row.original.riskRating]}>
-                                {row.original.riskRating}
+                                {tx('criticalityLabel.' + row.original.riskRating)}
                             </StatusBadge>
                         ) : (
                             '—'
@@ -1319,6 +1524,35 @@ function VendorAssessmentsTable({ assessments, vendorId, tenantHref }: { assessm
     );
 }
 
+// ─── Subprocessor chain (P3.7b) ─────────────────────────────────────
+// Recursive disclosure tree for the transitive (nth-party)
+// subprocessor graph. Each nesting level indents behind a left rule;
+// criticality + inherent-risk badges reuse the CRIT_BADGE variant map
+// with localized labels. Cycle-safety + depth bounding are the
+// server's job — this render simply walks whatever tree it receives.
+function SubprocessorChainNodeRow({ node }: { node: SubprocessorChainNode }) {
+    const tx = useTranslations('vendors');
+    return (
+        <div className="ml-2 border-l border-border-subtle pl-3">
+            <div className="flex flex-wrap items-center gap-tight text-sm py-1">
+                <span className="font-medium">{node.name}</span>
+                <StatusBadge variant={CRIT_BADGE[node.criticality] || 'neutral'}>
+                    {tx('criticalityLabel.' + node.criticality)}
+                </StatusBadge>
+                {node.inherentRisk && (
+                    <StatusBadge variant={CRIT_BADGE[node.inherentRisk]}>
+                        {tx('criticalityLabel.' + node.inherentRisk)}
+                    </StatusBadge>
+                )}
+                <span className="text-xs text-content-subtle">{tx('detail.chainDepth', { depth: node.depth })}</span>
+            </div>
+            {node.subprocessors.map((child) => (
+                <SubprocessorChainNodeRow key={child.vendorId} node={child} />
+            ))}
+        </div>
+    );
+}
+
 // ─── Subprocessors sub-table (R10-PR3 follow-up) ────────────────────
 // Tracks the vendor's nested subprocessors with per-row Remove
 // (canWrite-gated). Same shape as the R11-PR8 task-links template:
@@ -1368,7 +1602,9 @@ function VendorSubprocessorsTable({ subs, canWrite, onRemove }: { subs: VendorSu
                                 CRIT_BADGE[row.original.subprocessor?.criticality] || 'neutral'
                             }
                         >
-                            {row.original.subprocessor?.criticality || '—'}
+                            {row.original.subprocessor?.criticality
+                                ? tx('criticalityLabel.' + row.original.subprocessor.criticality)
+                                : '—'}
                         </StatusBadge>
                     ),
                 },
@@ -1378,7 +1614,7 @@ function VendorSubprocessorsTable({ subs, canWrite, onRemove }: { subs: VendorSu
                     cell: ({ row }) =>
                         row.original.subprocessor?.inherentRisk ? (
                             <StatusBadge variant={CRIT_BADGE[row.original.subprocessor.inherentRisk]}>
-                                {row.original.subprocessor.inherentRisk}
+                                {tx('criticalityLabel.' + row.original.subprocessor.inherentRisk)}
                             </StatusBadge>
                         ) : (
                             '—'

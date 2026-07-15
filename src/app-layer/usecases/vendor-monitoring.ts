@@ -385,7 +385,16 @@ export async function getVendorPosture(ctx: RequestContext, vendorId: string) {
             orderBy: { occurredAt: 'desc' },
             take: 100,
         });
-        return { vendor, monitor, events };
+        // Provider mode so the UI can honestly flag demo/stub signals: breach
+        // + TLS grades come from deterministic stubs unless a real provider is
+        // configured via env (mirrors the getBreachProvider/getTlsProvider
+        // factory selection). Attestation is always real (no provider), so
+        // it's intentionally omitted here.
+        const providers = {
+            breach: env.VENDOR_MONITOR_BREACH_PROVIDER === 'hibp-domain' ? 'hibp-domain' : 'stub',
+            tls: env.VENDOR_MONITOR_TLS_PROVIDER === 'header-grade' ? 'header-grade' : 'stub',
+        };
+        return { vendor, monitor, events, providers };
     });
 }
 

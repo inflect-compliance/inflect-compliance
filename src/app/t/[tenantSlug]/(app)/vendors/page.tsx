@@ -27,9 +27,12 @@ export default async function VendorRegisterPage({
     const sp = await searchParams;
     const ctx = await getTenantCtx({ tenantSlug });
 
-    // Build filters from searchParams for server-side data fetch
+    // Build filters from searchParams for server-side data fetch.
+    // riskRating is assessment-derived — VendorRepository._buildWhere maps it
+    // to an `assessments: { some: { riskRating } }` predicate; it just wasn't
+    // being forwarded from the SSR page, so the filter chip did nothing.
     const filters: Record<string, string> = {};
-    for (const key of ['q', 'status', 'criticality', 'reviewDue']) {
+    for (const key of ['q', 'status', 'criticality', 'reviewDue', 'riskRating']) {
         const val = sp[key];
         if (typeof val === 'string' && val) filters[key] = val;
     }

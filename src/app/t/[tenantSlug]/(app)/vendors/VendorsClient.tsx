@@ -429,14 +429,14 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
             accessorKey: 'status',
             header: t('columns.status'),
             cell: ({ row }) => (
-                <StatusBadge variant={STATUS_VARIANT[row.original.status] || 'neutral'} icon={null}>{row.original.status}</StatusBadge>
+                <StatusBadge variant={STATUS_VARIANT[row.original.status] || 'neutral'} icon={null}>{t('statusOption.' + row.original.status)}</StatusBadge>
             ),
         },
         {
             accessorKey: 'criticality',
             header: t('columns.criticality'),
             cell: ({ row }) => (
-                <StatusBadge variant={CRIT_VARIANT[row.original.criticality] || 'neutral'} icon={null}>{row.original.criticality}</StatusBadge>
+                <StatusBadge variant={CRIT_VARIANT[row.original.criticality] || 'neutral'} icon={null}>{t('criticalityLabel.' + row.original.criticality)}</StatusBadge>
             ),
         },
         {
@@ -446,7 +446,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
             cell: ({ row }) => {
                 const v = row.original;
                 return v.inherentRisk
-                    ? <StatusBadge variant={CRIT_VARIANT[v.inherentRisk] || 'neutral'} icon={null}>{v.inherentRisk}</StatusBadge>
+                    ? <StatusBadge variant={CRIT_VARIANT[v.inherentRisk] || 'neutral'} icon={null}>{t('criticalityLabel.' + v.inherentRisk)}</StatusBadge>
                     : <span>—</span>;
             },
         },

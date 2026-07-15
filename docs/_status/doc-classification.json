@@ -1576,6 +1576,9 @@
         },
         "docs/implementation-notes/2026-07-15-vendor-risk-writeback-register-linkage.md": {
             "class": "historical"
+        },
+        "docs/implementation-notes/2026-07-15-vendor-surface-hidden-controls.md": {
+            "class": "historical"
         }
     }
 }

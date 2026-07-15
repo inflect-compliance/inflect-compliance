@@ -85,7 +85,13 @@ const STATUS_BADGE_BUDGET: Record<string, number> = {
     "src/app/t/[tenantSlug]/(app)/risks/ai/page.tsx": 12,
     "src/app/t/[tenantSlug]/(app)/reports/soa/SoAClient.tsx": 11,
     "src/app/t/[tenantSlug]/(app)/controls/[controlId]/page.tsx": 10,
-    "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx": 9,
+    // Heavily-tabbed detail page — badges live across separate tabs (never
+    // on screen together): MetaStrip status/criticality, overview inherent
+    // risk, assessments status/rating, subprocessors + the new nth-party
+    // chain tree (criticality per node), bundle-item entity types, and link
+    // relations. +3 for the P3.3 bundle-items view + the P3.7 recursive
+    // subprocessor chain tree.
+    "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx": 12,
     // P1 — synced-identity roster: provider / status / admin / MFA are each a
     // distinct, decision-relevant security signal (one per column, not stacked).
     "src/app/t/[tenantSlug]/(app)/admin/integrations/identity-accounts/page.tsx": 5,

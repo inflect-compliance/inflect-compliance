@@ -13,6 +13,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Switch } from '@/components/ui/switch';
 import { Heading } from '@/components/ui/typography';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
 import { cardVariants } from '@/components/ui/card';
@@ -41,10 +42,23 @@ interface PostureEvent {
     summary: string;
     occurredAt: string;
 }
+interface Providers {
+    breach: 'stub' | 'hibp-domain';
+    tls: 'stub' | 'header-grade';
+}
 interface Posture {
     monitor: Monitor | null;
     events: PostureEvent[];
+    providers?: Providers;
 }
+
+/** The five monitor booleans the PATCH endpoint accepts. */
+type MonitorToggleField =
+    | 'enabled'
+    | 'checkAttestation'
+    | 'checkBreach'
+    | 'checkTls'
+    | 'materializeFindings';
 
 const SEVERITY_VARIANT: Record<string, StatusBadgeVariant> = {
     CRITICAL: 'error', HIGH: 'error', MEDIUM: 'warning', LOW: 'neutral', INFO: 'info',
@@ -75,6 +89,7 @@ export function VendorMonitoringPanel({
     const [posture, setPosture] = useState<Posture | null>(null);
     const [loading, setLoading] = useState(true);
     const [running, setRunning] = useState(false);
+    const [saving, setSaving] = useState<MonitorToggleField | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const load = useCallback(async () => {
@@ -108,6 +123,25 @@ export function VendorMonitoringPanel({
         }
     };
 
+    /** PATCH a single monitor boolean, then reload posture. */
+    const patchMonitor = async (field: MonitorToggleField, value: boolean) => {
+        setSaving(field);
+        try {
+            const res = await fetch(apiUrl(`/vendors/${vendorId}/monitor`), {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ [field]: value }),
+            });
+            if (!res.ok) throw new Error(t('monitoring.settingsSaveFailed'));
+            await load();
+            onChange?.();
+        } catch (e) {
+            setError(e instanceof Error ? e.message : t('monitoring.settingsSaveFailed'));
+        } finally {
+            setSaving(null);
+        }
+    };
+
     if (loading) {
         return <div className={cn(cardVariants(), 'text-sm text-content-muted')}>{t('monitoring.loading')}</div>;
     }
@@ -117,6 +151,14 @@ export function VendorMonitoringPanel({
 
     const m = posture?.monitor;
     const events = posture?.events ?? [];
+    const providers = posture?.providers;
+    const toggles: { field: MonitorToggleField; label: string; hint?: string }[] = [
+        { field: 'enabled', label: t('monitoring.toggleEnabled'), hint: t('monitoring.toggleEnabledHint') },
+        { field: 'checkAttestation', label: t('monitoring.toggleAttestation') },
+        { field: 'checkBreach', label: t('monitoring.toggleBreach') },
+        { field: 'checkTls', label: t('monitoring.toggleTls') },
+        { field: 'materializeFindings', label: t('monitoring.toggleMaterializeFindings'), hint: t('monitoring.materializeFindingsHint') },
+    ];
 
     return (
         <div className="space-y-section">
@@ -137,13 +179,25 @@ export function VendorMonitoringPanel({
                     </div>
                     <div>
                         <div className="text-content-muted">{t('monitoring.tlsGrade')}</div>
-                        <StatusBadge variant={GRADE_VARIANT(m?.tlsGrade ?? null)}>{m?.tlsGrade ?? '—'}</StatusBadge>
+                        <div className="mt-1 flex items-center gap-tight">
+                            <StatusBadge variant={GRADE_VARIANT(m?.tlsGrade ?? null)}>{m?.tlsGrade ?? '—'}</StatusBadge>
+                            {providers?.tls === 'stub' && (
+                                <span className="text-xs font-medium uppercase tracking-wide text-content-subtle">
+                                    {t('monitoring.stubMode')}
+                                </span>
+                            )}
+                        </div>
                     </div>
                     <div>
                         <div className="text-content-muted">{t('monitoring.breachLastSeen')}</div>
                         <div className={cn('mt-1', m?.breachLastSeenAt && 'text-content-danger')}>
                             {m?.breachLastSeenAt ? formatDateTime(m.breachLastSeenAt) : '—'}
                         </div>
+                        {providers?.breach === 'stub' && (
+                            <div className="mt-1 text-xs font-medium uppercase tracking-wide text-content-subtle">
+                                {t('monitoring.stubMode')}
+                            </div>
+                        )}
                     </div>
                     <div>
                         <div className="text-content-muted">{t('monitoring.attestationExpires')}</div>
@@ -159,6 +213,30 @@ export function VendorMonitoringPanel({
                     {m?.materializeFindings ? ` · ${t('monitoring.autoFindings')}` : ''}
                 </div>
             </div>
+
+            {/* Monitoring settings — signal toggles (write-gated) */}
+            {canWrite && (
+                <div className={cn(cardVariants(), 'space-y-default')}>
+                    <Heading level={3}>{t('monitoring.settingsTitle')}</Heading>
+                    <div className="space-y-default">
+                        {toggles.map(({ field, label, hint }) => (
+                            <div key={field} className="flex items-start justify-between gap-default">
+                                <div className="space-y-tight">
+                                    <span className="text-sm text-content-default">{label}</span>
+                                    {hint && <p className="text-xs text-content-muted">{hint}</p>}
+                                </div>
+                                <Switch
+                                    checked={!!m?.[field]}
+                                    loading={saving === field}
+                                    disabled={saving !== null}
+                                    onCheckedChange={(c) => patchMonitor(field, c)}
+                                    aria-label={label}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Posture timeline */}
             <div className={cn(cardVariants(), 'space-y-default')}>
