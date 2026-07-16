@@ -47,6 +47,8 @@ export interface SimulationRun {
     iterations: number; executionMs: number | null; completedAt: string | null;
     lecPointsJson: Array<{ threshold: number; probability: number }> | null;
     perRiskResultsJson: Array<{ riskId: string; title: string; aleMean: number; aleP90?: number; contribution: number }> | null;
+    /** PR-L — the run's correlation matrix was non-PSD and was dropped. */
+    correlationsDropped?: boolean | null;
 }
 
 /**
@@ -135,6 +137,18 @@ export function MonteCarloPanel({
                     <p className="mb-default text-xs text-content-muted">
                         {t('monteCarlo.lastRun', { date: run.completedAt ? formatDateTime(run.completedAt) : '', iterations: run.iterations.toLocaleString(), ms: run.executionMs ?? 0 })}
                     </p>
+                    {/* PR-L — the configured correlation matrix was non-PSD, so
+                        the sim dropped it and sampled independently. Surface it
+                        so these numbers aren't read as correlation-aware. */}
+                    {run.correlationsDropped && (
+                        <div
+                            className="mb-default rounded-md border border-border-warning bg-bg-warning/15 p-3 text-sm text-content-warning"
+                            role="alert"
+                            data-testid="mc-correlations-dropped"
+                        >
+                            {t('monteCarlo.correlationsDropped')}
+                        </div>
+                    )}
                     <div className="mb-default grid grid-cols-2 gap-default md:grid-cols-4">
                         <div className="rounded-md bg-bg-muted/30 px-default py-default"><KPIStat value={money(run.portfolioMean)} label={t('monteCarlo.meanAle')} /></div>
                         <div className="rounded-md bg-bg-muted/30 px-default py-default"><KPIStat value={money(run.portfolioP95)} label={t('monteCarlo.var95')} tone="attention" /></div>

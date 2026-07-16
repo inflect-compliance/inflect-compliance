@@ -99,6 +99,19 @@ export default function CorrelationMatrixPage() {
                         <InfoTooltip title={t('correlations.psdTitle')} content={t('correlations.psdHelp')} />
                         <span className="text-xs text-content-subtle">{t('correlations.clickHint')}</span>
                     </div>
+                    {/* PR-L — a non-PSD matrix is silently dropped from the
+                        Monte Carlo (Cholesky fails → independent sampling).
+                        Spell out that consequence so the operator knows their
+                        configured correlations won't apply until they fix it. */}
+                    {!m.isPositiveSemiDefinite && (
+                        <div
+                            className="rounded-md border border-border-error bg-bg-error/15 p-3 text-sm text-content-error"
+                            role="alert"
+                            data-testid="correlations-non-psd-warning"
+                        >
+                            {t('correlations.nonPsdWarning')}
+                        </div>
+                    )}
                     <div className="overflow-auto">
                         <table className="border-collapse text-xs">
                             <thead>

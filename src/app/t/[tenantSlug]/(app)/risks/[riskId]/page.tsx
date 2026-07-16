@@ -89,6 +89,9 @@ type Risk = {
     replacementCost: number | null;
     secondaryLossEventFrequency: number | null;
     secondaryLossMagnitude: number | null;
+    regulatoryFineEstimate: number | null;
+    reputationDamageEstimate: number | null;
+    competitiveAdvantageLoss: number | null;
     fairConfidence: 'LOW' | 'MEDIUM' | 'HIGH' | null;
     /** RQ3-2 — stored PERT triples (range-first estimation). */
     fairInputsJson: Record<string, unknown> | null;
@@ -579,6 +582,9 @@ export default function RiskDetailPage() {
                         replacementCost: risk.replacementCost,
                         secondaryLossEventFrequency: risk.secondaryLossEventFrequency,
                         secondaryLossMagnitude: risk.secondaryLossMagnitude,
+                        regulatoryFineEstimate: risk.regulatoryFineEstimate,
+                        reputationDamageEstimate: risk.reputationDamageEstimate,
+                        competitiveAdvantageLoss: risk.competitiveAdvantageLoss,
                         fairConfidence: risk.fairConfidence,
                         fairInputsJson: risk.fairInputsJson,
                     }}

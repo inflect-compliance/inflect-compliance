@@ -97,6 +97,19 @@ export default function RiskScenariosPage() {
 
     const archive = async (id: string) => { await fetch(apiUrl(`/risks/scenarios/${id}`), { method: 'DELETE' }); await load(); };
 
+    // PR-L — clone a scenario (name + overrides) so a mis-created what-if is
+    // recoverable without rebuilding it from scratch.
+    const clone = async (s: Scenario) => {
+        setBusy(true);
+        try {
+            await fetch(apiUrl(`/risks/scenarios/${s.id}/clone`), {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: t('scenarios.cloneName', { name: s.name }) }),
+            });
+            await load();
+        } finally { setBusy(false); }
+    };
+
     return (
         <div className="space-y-section">
             <BackAffordance />
@@ -166,6 +179,7 @@ export default function RiskScenariosPage() {
                                 {s.computedRoi != null && <span className="text-content-muted">{t('scenarios.roi', { roi: s.computedRoi.toFixed(1) })}</span>}
                                 <span className="ml-auto flex gap-tight">
                                     {s.status !== 'ARCHIVED' && <Button size="sm" variant="secondary" onClick={() => simulate(s.id)} disabled={busy}>{t('scenarios.simulate')}</Button>}
+                                    <Button size="sm" variant="ghost" onClick={() => clone(s)} disabled={busy} data-testid={`scenario-clone-${s.id}`}>{t('scenarios.clone')}</Button>
                                     {s.status !== 'ARCHIVED' && <Button size="sm" variant="ghost" onClick={() => archive(s.id)}>{t('scenarios.archive')}</Button>}
                                 </span>
                             </li>

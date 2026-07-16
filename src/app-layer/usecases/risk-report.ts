@@ -36,11 +36,17 @@ export interface ReportParameters {
 
 // ── Data assembly ─────────────────────────────────────────────────────
 
-export async function assembleReportData(ctx: RequestContext, title: string): Promise<ReportData> {
+export async function assembleReportData(
+    ctx: RequestContext,
+    title: string,
+    opts: { riskId?: string } = {},
+): Promise<ReportData> {
     const [risks, latestSim, appetite, tenant] = await Promise.all([
         runInTenantContext(ctx, (db) =>
             db.risk.findMany({
-                where: { tenantId: ctx.tenantId, deletedAt: null },
+                // PR-L — RISK_DEEP_DIVE scopes to a single risk when a riskId
+                // is supplied; otherwise the report is portfolio-wide.
+                where: { tenantId: ctx.tenantId, deletedAt: null, ...(opts.riskId ? { id: opts.riskId } : {}) },
                 select: { id: true, title: true, category: true, fairAle: true, sleAmount: true, aroAmount: true, rtoHours: true, rpoHours: true, revenueAtRisk: true },
                 take: 10000,
             }),
@@ -127,7 +133,9 @@ export async function generateReport(ctx: RequestContext, templateId: string, pa
     );
 
     try {
-        const data = await assembleReportData(ctx, template.name);
+        // RISK_DEEP_DIVE honours parameters.riskId to scope to one risk.
+        const scopeRiskId = template.type === 'RISK_DEEP_DIVE' ? parameters.riskId : undefined;
+        const data = await assembleReportData(ctx, template.name, { riskId: scopeRiskId });
         const buffer = format === 'CSV' ? renderCsv(data) : format === 'PPTX' ? await renderPptx(data) : await renderPdf(data);
         const { ext, mime } = FORMAT_META[format];
         const pathKey = generatePathKey(ctx.tenantId, `report-${run.id}.${ext}`);

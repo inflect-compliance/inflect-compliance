@@ -347,6 +347,10 @@ model RiskSimulationRun {
   lecPointsJson      Json?
   convergenceDelta   Float?
   executionMs        Int?
+  /// PR-L — a correlation matrix was supplied but was non-PSD, so it was
+  /// dropped and the sim sampled independently. Surfaced on the result so
+  /// the operator knows their configured correlations were not applied.
+  correlationsDropped Boolean  @default(false)
   status             String    @default("RUNNING") // RUNNING | COMPLETED | FAILED
   errorMessage       String?
   startedAt          DateTime  @default(now())

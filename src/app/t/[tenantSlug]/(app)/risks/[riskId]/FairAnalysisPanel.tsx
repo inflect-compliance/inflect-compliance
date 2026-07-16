@@ -59,6 +59,10 @@ export interface FairInitial {
     replacementCost: number | null;
     secondaryLossEventFrequency: number | null;
     secondaryLossMagnitude: number | null;
+    // PR-L — secondary-loss monetary decomposition, now editable in-panel.
+    regulatoryFineEstimate: number | null;
+    reputationDamageEstimate: number | null;
+    competitiveAdvantageLoss: number | null;
     fairConfidence: Conf | null;
     /** RQ3-2 — stored PERT triples; preferred over the point columns. */
     fairInputsJson?: Record<string, unknown> | null;
@@ -142,6 +146,13 @@ export function FairAnalysisPanel({
     const money = useMoneyFormatter();
     const [triples, setTriples] = useState<Triples>(() => seedTriples(initial));
     const [conf, setConf] = useState<Conf | null>(initial.fairConfidence);
+    // PR-L — secondary-loss monetary estimates (regulatory fine, reputation,
+    // competitive-advantage). Kept as strings for the inputs; '' → null on save.
+    const [secondary, setSecondary] = useState({
+        regulatoryFineEstimate: initial.regulatoryFineEstimate?.toString() ?? '',
+        reputationDamageEstimate: initial.reputationDamageEstimate?.toString() ?? '',
+        competitiveAdvantageLoss: initial.competitiveAdvantageLoss?.toString() ?? '',
+    });
     const [saving, setSaving] = useState(false);
     const [msg, setMsg] = useState<string | null>(null);
     const [msgOk, setMsgOk] = useState(false);
@@ -176,7 +187,13 @@ export function FairAnalysisPanel({
             const res = await fetch(apiUrl(`/risks/${riskId}/fair`), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ distributions, fairConfidence: conf }),
+                body: JSON.stringify({
+                    distributions,
+                    fairConfidence: conf,
+                    regulatoryFineEstimate: N(secondary.regulatoryFineEstimate),
+                    reputationDamageEstimate: N(secondary.reputationDamageEstimate),
+                    competitiveAdvantageLoss: N(secondary.competitiveAdvantageLoss),
+                }),
             });
             setMsg(res.ok ? t('fair.saved') : t('fair.saveFailed'));
             setMsgOk(res.ok);
@@ -186,7 +203,7 @@ export function FairAnalysisPanel({
         } finally {
             setSaving(false);
         }
-    }, [apiUrl, riskId, triples, conf, t]);
+    }, [apiUrl, riskId, triples, conf, secondary, t]);
 
     // RQ2-7 → RQ3-2 — warn-only range checks + category anchors.
     const warnings = useMemo(() => validateFairTriples(triples), [triples]);
@@ -274,6 +291,32 @@ export function FairAnalysisPanel({
                 <span>{t('fair.lef')} <span className="font-semibold tabular-nums">{derived.lef != null ? `${derived.lef.toFixed(2)}${t('perYear')}` : '—'}</span></span>
                 <span className="ml-auto">{t('fair.fairAle')} <span className="font-semibold tabular-nums text-content-emphasis">{derived.ale != null ? `${money(derived.ale)}${t('perYear')}` : '—'}</span></span>
             </div>
+
+            {/* PR-L — secondary-loss monetary decomposition. Previously stored
+                but never editable in-panel; these feed the FAIR secondary-loss
+                magnitude and the auditor deliverable. */}
+            <details className="rounded-md border border-border-subtle bg-bg-subtle" data-testid="fair-secondary-loss">
+                <summary className="cursor-pointer px-3 py-2 text-sm text-content-default">{t('fair.secondaryLossTitle')}</summary>
+                <div className="grid grid-cols-1 gap-default px-3 pb-3 sm:grid-cols-3">
+                    {([
+                        ['regulatoryFineEstimate', 'fair.regulatoryFine'],
+                        ['reputationDamageEstimate', 'fair.reputationDamage'],
+                        ['competitiveAdvantageLoss', 'fair.competitiveLoss'],
+                    ] as const).map(([field, labelKey]) => (
+                        <label key={field} className="block">
+                            <span className="text-xs text-content-muted">{t(labelKey)}</span>
+                            <Input
+                                id={`fair-${field}`}
+                                type="text"
+                                inputMode="decimal"
+                                value={secondary[field]}
+                                onChange={(e) => setSecondary((cur) => ({ ...cur, [field]: e.target.value }))}
+                                placeholder={t('fair.secondaryLossPlaceholder')}
+                            />
+                        </label>
+                    ))}
+                </div>
+            </details>
 
             {/* RQ2-7 — reasonableness warnings. Advisory by contract:
                 they never disable the save button. */}

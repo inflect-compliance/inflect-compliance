@@ -161,6 +161,14 @@ export interface SimulationResult {
     convergenceDelta: number;
     iterationsRun: number;
     executionMs: number;
+    /**
+     * True when a correlation matrix WAS supplied but could not be
+     * Cholesky-decomposed (non-PSD) — the sim silently fell back to
+     * independent sampling. Surfaced so the UI can tell the operator the
+     * correlations they configured were dropped, rather than pretending
+     * they were applied. (RQ-8 / PR-L.)
+     */
+    correlationsDropped: boolean;
 }
 
 function percentile(sorted: number[], p: number): number {
@@ -179,6 +187,7 @@ export function simulatePortfolio(risks: SimRisk[], config: SimulationConfig = {
         return {
             portfolioAle: { mean: 0, median: 0, p80: 0, p90: 0, p95: 0, p99: 0, stdDev: 0, min: 0, max: 0 },
             perRisk: [], lossExceedanceCurve: [], convergenceDelta: 0, iterationsRun: iterations, executionMs: Date.now() - start,
+            correlationsDropped: false,
         };
     }
 
@@ -197,9 +206,13 @@ export function simulatePortfolio(risks: SimRisk[], config: SimulationConfig = {
     // (sampleFairALEFromUniform); point-only risks use the single-uniform PERT.
     // Falls back to independent sampling if Cholesky fails.
     let cholesky: number[][] | null = null;
-    if (config.correlationMatrix && config.correlationMatrix.length === risks.length && risks.length > 0) {
-        try { cholesky = choleskyDecompose(config.correlationMatrix); } catch { cholesky = null; }
+    const correlationRequested = !!(config.correlationMatrix && config.correlationMatrix.length === risks.length && risks.length > 0);
+    if (correlationRequested) {
+        try { cholesky = choleskyDecompose(config.correlationMatrix!); } catch { cholesky = null; }
     }
+    // Correlations were requested but the matrix was non-PSD → we dropped
+    // them and sampled independently. Report it instead of hiding it.
+    const correlationsDropped = correlationRequested && cholesky === null;
 
     for (let i = 0; i < iterations; i++) {
         let loss = 0;
@@ -267,6 +280,7 @@ export function simulatePortfolio(risks: SimRisk[], config: SimulationConfig = {
             min: sorted[0], max: sorted[sorted.length - 1],
         },
         perRisk, lossExceedanceCurve, convergenceDelta, iterationsRun: iterations, executionMs: Date.now() - start,
+        correlationsDropped,
     };
 }
 
@@ -369,6 +383,7 @@ export async function runSimulation(
                 lecPointsJson: result.lossExceedanceCurve as unknown as Prisma.InputJsonValue,
                 convergenceDelta: result.convergenceDelta,
                 executionMs: result.executionMs,
+                correlationsDropped: result.correlationsDropped,
                 status: 'COMPLETED',
                 completedAt: new Date(),
             },
