@@ -230,7 +230,11 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // Publish was demoted to secondary (its canonical primary lives on the version
 // card), which nets the measured count to 155 (reconciling a pre-existing
 // over-ceiling drift on main). Ceiling at 155 = measured, no headroom.
-const MAX_PRIMARY_COUNT = 155;
+// PR-L (2026-07-16) — bumped 155 → 156 for the KRI edit-modal save button,
+// the earned primary of its own dialog region (modal-action-order requires
+// a modal's confirm action to be primary). The KRI page's create button stays
+// its canonical page primary; the edit-modal save is the +1.
+const MAX_PRIMARY_COUNT = 156;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

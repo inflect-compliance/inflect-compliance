@@ -108,6 +108,9 @@ const PRIMARY_BUDGET: Record<string, number> = {
     // mirroring the Links tab's add/submit pair).
     "src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx": 6,
     "src/app/t/[tenantSlug]/(app)/risks/ai/page.tsx": 3,
+    // PR-L — KRI page: the create-form primary + the edit-modal save primary
+    // (modal-action-order requires a modal's confirm action to be primary).
+    "src/app/t/[tenantSlug]/(app)/risks/kri/page.tsx": 2,
     "src/app/t/[tenantSlug]/(app)/controls/[controlId]/tests/[planId]/page.tsx": 3,
     "src/app/t/[tenantSlug]/(app)/admin/members/page.tsx": 3,
     "src/app/t/[tenantSlug]/(app)/admin/api-keys/page.tsx": 3,

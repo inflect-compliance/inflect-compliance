@@ -203,7 +203,7 @@ export default function KriPage() {
                 </Modal.Body>
                 <Modal.Actions>
                     <Button variant="secondary" size="sm" onClick={() => setEditing(null)}>{t('edit.cancel')}</Button>
-                    <Button variant="secondary" size="sm" onClick={saveEdit} disabled={busy || !draft.name.trim()} id="kri-edit-save">{t('edit.save')}</Button>
+                    <Button variant="primary" size="sm" onClick={saveEdit} disabled={busy || !draft.name.trim()} id="kri-edit-save">{t('edit.save')}</Button>
                 </Modal.Actions>
             </Modal>
 
