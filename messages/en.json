@@ -852,14 +852,18 @@
       "treatment": "Treatment",
       "ale": "ALE",
       "controls": "Controls",
-      "tasks": "Tasks"
+      "tasks": "Tasks",
+      "residual": "Residual",
+      "staleness": "Staleness"
     },
     "colHeaders": {
       "code": "Code",
       "ale": "ALE",
       "status": "Status",
       "owner": "Owner",
-      "tasks": "Tasks"
+      "tasks": "Tasks",
+      "residual": "Residual",
+      "staleness": "Staleness"
     },
     "viewLinks": {
       "dashboard": "Risk dashboard",
@@ -923,7 +927,8 @@
       "submit": "Create risk",
       "createFailed": "Failed to create risk",
       "createFailedStatus": "Failed to create risk ({status})",
-      "controlsEmpty": "No controls available to link."
+      "controlsEmpty": "No controls available to link.",
+      "controlLinkPartialFail": "{failed} of {total} control links failed to save. The risk was created; you can add the links from its detail page."
     },
     "detail": {
       "tabOverview": "Overview",
@@ -1324,7 +1329,15 @@
       "ownerDesc": "User accountable for treating the risk.",
       "score": "Risk score",
       "scoreDesc": "Inherent risk score range (0–25 by default).",
-      "scorePill": "Score {min}–{max}"
+      "scorePill": "Score {min}–{max}",
+      "residualScore": "Residual score",
+      "residualScoreDesc": "Filter by after-controls residual score",
+      "treatment": "Treatment",
+      "treatmentDesc": "Filter by treatment decision",
+      "quantified": "Quantified",
+      "quantifiedDesc": "Filter by whether the risk has a monetary ALE",
+      "quantifiedYes": "Quantified",
+      "quantifiedNo": "Not quantified"
     },
     "treatmentMitigate": "Mitigate",
     "treatmentAccept": "Accept",
@@ -1334,7 +1347,10 @@
     "viewsMenuAria": "Analytical views",
     "viewsAnalytics": "Analytics",
     "viewsRegistry": "Registry",
-    "viewVulnerabilities": "View vulnerabilities"
+    "viewVulnerabilities": "View vulnerabilities",
+    "stale": "Stale",
+    "kpiStale": "Stale",
+    "residualNotAssessed": "Residual not yet assessed"
   },
   "controls": {
     "title": "Controls Library",
@@ -4478,7 +4494,8 @@
     "previewEmpty": "No rows to preview",
     "rowsWord": "rows",
     "rowWord": "row",
-    "moreRows": "+{count} more…"
+    "moreRows": "+{count} more…",
+    "importSkipped": "{count} row(s) skipped (duplicate title)."
   },
   "ui": {
     "combobox": {

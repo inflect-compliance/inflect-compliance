@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useMemo } from 'react';
+import { Fragment, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useTenantHref, useTenantContext, useMoneyFormatter } from '@/lib/tenant-context-provider';
@@ -210,8 +210,8 @@ export default function RiskDashboardPage() {
                             <div key={i} className="text-center text-content-subtle font-medium pb-1">{i}</div>
                         ))}
                         {[5, 4, 3, 2, 1].map(l => (
-                            <>
-                                <div key={`l-${l}`} className="flex items-center text-content-subtle font-medium pr-2">{l}</div>
+                            <Fragment key={`row-${l}`}>
+                                <div className="flex items-center text-content-subtle font-medium pr-2">{l}</div>
                                 {[1, 2, 3, 4, 5].map(i => {
                                     const count = heatmapCounts[`${l}-${i}`] || 0;
                                     const s = l * i;
@@ -229,7 +229,7 @@ export default function RiskDashboardPage() {
                                         </div>
                                     );
                                 })}
-                            </>
+                            </Fragment>
                         ))}
                         <div className="text-content-subtle text-[10px] mt-1">L↑</div>
                         <div className="col-span-5 text-center text-content-subtle text-[10px] mt-1">{t('dash.impactArrow')}</div>

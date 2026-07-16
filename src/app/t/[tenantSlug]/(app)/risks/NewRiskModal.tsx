@@ -35,6 +35,7 @@
 
 import useSWR from 'swr';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { useToast } from '@/components/ui/hooks';
 import { useSWRConfig } from 'swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import type { CappedList } from '@/lib/list-backfill-cap';
@@ -126,6 +127,7 @@ export function NewRiskModal({
         [tx],
     );
     const close = useCallback(() => setOpen(false), [setOpen]);
+    const toast = useToast();
     // Epic 69 — bridge cache invalidation. RisksClient now reads
     // from `useTenantSWR(CACHE_KEYS.risks.list())`, so the React
     // Query invalidation alone wouldn't refresh the page. We
@@ -305,17 +307,31 @@ export function NewRiskModal({
             }
             const risk = await res.json();
 
-            // Phase 2 — link selected controls. Matches the legacy
-            // two-phase wizard; failures are best-effort so a partial
-            // network hiccup doesn't orphan the created risk.
+            // Phase 2 — link selected controls. The risk is already
+            // created, so a control-link failure never orphans it — but
+            // PR-K stops swallowing those failures silently: we COUNT them
+            // and surface a partial-failure toast so a dropped link is
+            // visible, not lost.
+            let controlLinkFailures = 0;
             for (const controlId of selectedControlIds) {
-                await fetch(apiUrl(`/risks/${risk.id}/controls`), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ controlId }),
-                }).catch(() => {
-                    /* best-effort */
-                });
+                try {
+                    const linkRes = await fetch(apiUrl(`/risks/${risk.id}/controls`), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ controlId }),
+                    });
+                    if (!linkRes.ok) controlLinkFailures += 1;
+                } catch {
+                    controlLinkFailures += 1;
+                }
+            }
+            if (controlLinkFailures > 0) {
+                toast.warning(
+                    tx('new.controlLinkPartialFail', {
+                        failed: controlLinkFailures,
+                        total: selectedControlIds.size,
+                    }),
+                );
             }
 
             // Bridge to the SWR cache that RisksClient reads from.

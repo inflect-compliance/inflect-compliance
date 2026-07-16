@@ -852,14 +852,18 @@
       "treatment": "Третиране",
       "ale": "ALE",
       "controls": "Контроли",
-      "tasks": "Задачи"
+      "tasks": "Задачи",
+      "residual": "Остатъчен",
+      "staleness": "Актуалност"
     },
     "colHeaders": {
       "code": "Код",
       "ale": "ALE",
       "status": "Статус",
       "owner": "Отговорник",
-      "tasks": "Задачи"
+      "tasks": "Задачи",
+      "residual": "Остатъчен",
+      "staleness": "Актуалност"
     },
     "viewLinks": {
       "dashboard": "Табло за рискове",
@@ -923,7 +927,8 @@
       "submit": "Създай риск",
       "createFailed": "Неуспешно създаване на риск",
       "createFailedStatus": "Неуспешно създаване на риск ({status})",
-      "controlsEmpty": "Няма налични контроли за свързване."
+      "controlsEmpty": "Няма налични контроли за свързване.",
+      "controlLinkPartialFail": "{failed} от {total} връзки към контроли не бяха запазени. Рискът е създаден; можете да добавите връзките от страницата му."
     },
     "detail": {
       "tabOverview": "Общ преглед",
@@ -1324,7 +1329,15 @@
       "ownerDesc": "Потребител, отговорен за третирането на риска.",
       "score": "Рисков резултат",
       "scoreDesc": "Диапазон на присъщия рисков резултат (0–25 по подразбиране).",
-      "scorePill": "Резултат {min}–{max}"
+      "scorePill": "Резултат {min}–{max}",
+      "residualScore": "Остатъчен резултат",
+      "residualScoreDesc": "Филтрирай по остатъчен резултат след контроли",
+      "treatment": "Третиране",
+      "treatmentDesc": "Филтрирай по решение за третиране",
+      "quantified": "Количествено",
+      "quantifiedDesc": "Филтрирай според това дали рискът има паричен ALE",
+      "quantifiedYes": "Количествено",
+      "quantifiedNo": "Без количествена оценка"
     },
     "treatmentMitigate": "Смекчаване",
     "treatmentAccept": "Приемане",
@@ -1334,7 +1347,10 @@
     "viewsMenuAria": "Аналитични изгледи",
     "viewsAnalytics": "Анализи",
     "viewsRegistry": "Регистър",
-    "viewVulnerabilities": "Преглед на уязвимости"
+    "viewVulnerabilities": "Преглед на уязвимости",
+    "stale": "Остарял",
+    "kpiStale": "Остарели",
+    "residualNotAssessed": "Остатъчният риск още не е оценен"
   },
   "controls": {
     "title": "Библиотека с контроли",
@@ -4478,7 +4494,8 @@
     "previewEmpty": "Няма редове за преглед",
     "rowsWord": "реда",
     "rowWord": "ред",
-    "moreRows": "+още {count}…"
+    "moreRows": "+още {count}…",
+    "importSkipped": "{count} ред(а) пропуснати (дублирано заглавие)."
   },
   "ui": {
     "combobox": {

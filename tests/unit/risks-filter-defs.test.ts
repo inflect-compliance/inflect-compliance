@@ -49,9 +49,28 @@ const RISK_STATUS_VALUES = ['OPEN', 'MITIGATING', 'MITIGATED', 'ACCEPTED', 'CLOS
 
 describe('Risks filter config', () => {
     it('manages the documented key set', () => {
+        // PR-K added residual score, treatment, quantified, and stale.
         expect([...RISK_FILTER_KEYS].sort()).toEqual(
-            ['category', 'ownerUserId', 'score', 'status'].sort(),
+            ['category', 'ownerUserId', 'quantified', 'residualScore', 'score', 'stale', 'status', 'treatment'].sort(),
         );
+    });
+
+    it('PR-K filters: residualScore is a range; treatment multi-enum; quantified + stale single-select', () => {
+        const residual = riskFilterDefs.getFilter('residualScore');
+        expect(residual.type).toBe('range');
+        expect(residual.hideOperator).toBe(true);
+
+        const treatment = riskFilterDefs.getFilter('treatment');
+        expect(treatment.multiple).toBe(true);
+        expect((treatment.options ?? []).map((o) => o.value).sort()).toEqual(
+            ['AVOID', 'TOLERATE', 'TRANSFER', 'TREAT'].sort(),
+        );
+
+        const quantified = riskFilterDefs.getFilter('quantified');
+        expect((quantified.options ?? []).map((o) => o.value).sort()).toEqual(['no', 'yes']);
+
+        const stale = riskFilterDefs.getFilter('stale');
+        expect((stale.options ?? []).map((o) => o.value)).toEqual(['true']);
     });
 
     it('status is a multi-select enum covering every RiskStatus value', () => {

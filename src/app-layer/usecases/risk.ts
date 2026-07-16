@@ -887,6 +887,114 @@ export async function unlinkRiskEvidence(
     return outcome;
 }
 
+// ─── Bulk import (CSV → one request) ───
+
+export interface RiskImportRow {
+    title: string;
+    description?: string | null;
+    category?: string | null;
+    likelihood?: number;
+    impact?: number;
+    owner?: string | null;
+    ownerUserId?: string | null;
+}
+
+export interface RiskImportResult {
+    created: number;
+    skipped: number;
+    createdIds: string[];
+    errors: { row: number; title: string; message: string }[];
+}
+
+/**
+ * Bulk-create risks from a parsed CSV in ONE request (replacing the old
+ * per-row POST loop). Mirrors `bulkImportAssets`:
+ *
+ *   • **Dedupe by title.** A row whose (case-insensitive) title already exists
+ *     in the tenant — or repeats earlier in the same batch — is skipped, so
+ *     re-importing the same CSV is idempotent.
+ *   • **Owner resolution.** A free-text `owner` cell is resolved to a real
+ *     `ownerUserId` against the tenant roster (member name OR email,
+ *     case-insensitive); on a match the assignee is set and the free-text is
+ *     dropped, otherwise it falls back to the legacy `treatmentOwner` string.
+ *
+ * Each row is created through `createRisk` (derive-on-write score, per-risk
+ * CREATE audit entry). Per-row errors are isolated — one bad row never rolls
+ * back the good ones.
+ */
+export async function bulkImportRisks(
+    ctx: RequestContext,
+    rows: RiskImportRow[],
+): Promise<RiskImportResult> {
+    assertCanWrite(ctx);
+
+    // One up-front read pass: existing titles (dedupe) + member roster (owner).
+    const { existingTitles, ownerByKey } = await runInTenantContext(ctx, async (db) => {
+        const existing = await db.risk.findMany({ // guardrail-allow: unbounded — dedupe needs the full tenant title set; selects `title` only (tiny rows).
+            where: { tenantId: ctx.tenantId },
+            select: { title: true },
+        });
+        const members = await db.tenantMembership.findMany({
+            where: { tenantId: ctx.tenantId, status: 'ACTIVE' },
+            select: { userId: true, user: { select: { name: true, email: true } } },
+        });
+        const ownerByKey = new Map<string, string>();
+        for (const m of members) {
+            const name = m.user?.name?.trim().toLowerCase();
+            const email = m.user?.email?.trim().toLowerCase();
+            if (name) ownerByKey.set(name, m.userId);
+            if (email) ownerByKey.set(email, m.userId);
+        }
+        return { existingTitles: existing.map((r: { title: string }) => r.title), ownerByKey };
+    });
+
+    const seen = new Set(existingTitles.map((n) => n.trim().toLowerCase()));
+    const result: RiskImportResult = { created: 0, skipped: 0, createdIds: [], errors: [] };
+
+    let i = 0;
+    for (const row of rows) {
+        i += 1;
+        const titleLc = row.title?.trim().toLowerCase() ?? '';
+        if (!titleLc) {
+            result.errors.push({ row: i, title: row.title ?? '', message: 'Title is required' });
+            continue;
+        }
+        if (seen.has(titleLc)) {
+            result.skipped += 1;
+            continue;
+        }
+        seen.add(titleLc);
+
+        // Resolve free-text owner → member; keep the free-text as a legacy
+        // treatmentOwner fallback when it matches no one.
+        let ownerUserId = row.ownerUserId ?? null;
+        let treatmentOwner: string | null = null;
+        if (row.owner) {
+            const match = !ownerUserId ? ownerByKey.get(row.owner.trim().toLowerCase()) : undefined;
+            if (match) ownerUserId = match;
+            else treatmentOwner = row.owner;
+        }
+
+        try {
+            const risk = await createRisk(ctx, {
+                title: row.title,
+                description: row.description ?? undefined,
+                category: row.category ?? undefined,
+                likelihood: row.likelihood,
+                impact: row.impact,
+                ownerUserId,
+                treatmentOwner,
+            });
+            result.created += 1;
+            result.createdIds.push(risk.id);
+        } catch (e) {
+            result.errors.push({ row: i, title: row.title, message: e instanceof Error ? e.message : String(e) });
+        }
+    }
+
+    return result;
+}
+
 // ─── Bulk actions (canonical BulkActionBar rollout) ───
 
 export async function bulkSetRiskStatus(

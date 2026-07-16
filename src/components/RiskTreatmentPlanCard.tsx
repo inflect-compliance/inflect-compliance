@@ -24,8 +24,18 @@ import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { DatePicker } from '@/components/ui/date-picker';
 import { formatDate } from '@/lib/format-date';
 import { Heading } from '@/components/ui/typography';
+import {
+    DECISION_TO_STRATEGY,
+    type TreatmentDecisionValue,
+} from '@/lib/risk-treatment-vocabulary';
 
 type Strategy = 'MITIGATE' | 'ACCEPT' | 'TRANSFER' | 'AVOID';
+
+/** Seed the create-plan strategy from the risk's treatment decision. */
+function strategyFromDecision(decision: string | null | undefined): Strategy {
+    if (!decision) return 'MITIGATE';
+    return DECISION_TO_STRATEGY[decision as TreatmentDecisionValue] ?? 'MITIGATE';
+}
 type Status = 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'OVERDUE';
 
 interface MilestoneRow {
@@ -76,6 +86,10 @@ interface Props {
     ownerChoices: readonly OwnerChoice[];
     canWrite: boolean;
     canAdmin: boolean;
+    /// The risk's treatment DECISION (TREAT/TOLERATE/TRANSFER/AVOID).
+    /// PR-K — seeds the create-plan strategy via DECISION_TO_STRATEGY so
+    /// "Accept" doesn't open the dialog defaulted to Mitigate.
+    treatment?: string | null;
 }
 
 const STRATEGY_VARIANT: Record<Strategy, 'info' | 'success' | 'warning' | 'neutral'> = {
@@ -98,6 +112,7 @@ export function RiskTreatmentPlanCard({
     ownerChoices,
     canWrite,
     canAdmin,
+    treatment,
 }: Props) {
     const { mutate: swrMutate } = useSWRConfig();
     const t = useTranslations('panels.treatment');
@@ -173,6 +188,7 @@ export function RiskTreatmentPlanCard({
                     apiBase={apiBase}
                     riskId={riskId}
                     ownerChoices={ownerChoices}
+                    treatment={treatment}
                     onClose={() => setCreateOpen(false)}
                     onSuccess={() => {
                         setCreateOpen(false);
@@ -434,12 +450,14 @@ function CreatePlanDialog({
     apiBase,
     riskId,
     ownerChoices,
+    treatment,
     onClose,
     onSuccess,
 }: {
     apiBase: string;
     riskId: string;
     ownerChoices: readonly OwnerChoice[];
+    treatment?: string | null;
     onClose: () => void;
     onSuccess: () => void;
 }) {
@@ -450,7 +468,8 @@ function CreatePlanDialog({
         { value: 'TRANSFER', label: t('optTransfer') },
         { value: 'AVOID', label: t('optAvoid') },
     ], [t]);
-    const [strategy, setStrategy] = useState<Strategy>('MITIGATE');
+    // PR-K — seed from the risk's decision so "Accept" → ACCEPT, not MITIGATE.
+    const [strategy, setStrategy] = useState<Strategy>(() => strategyFromDecision(treatment));
     const [ownerUserId, setOwnerUserId] = useState<string>(
         ownerChoices[0]?.userId ?? '',
     );

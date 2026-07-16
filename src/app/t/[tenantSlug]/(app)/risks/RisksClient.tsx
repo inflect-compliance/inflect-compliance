@@ -60,7 +60,6 @@ import {
     RISK_API_TRANSFORMS,
     RISK_FILTER_KEYS,
 } from './filter-defs';
-import { useHydratedNow } from '@/lib/hooks/use-hydrated-now';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { resolveBandForScore } from '@/lib/risk-matrix/scoring';
@@ -342,6 +341,21 @@ function RisksPageInner({
 
     const rawRisks = risksQuery.data?.rows ?? [];
     const truncated = risksQuery.data?.truncated ?? false;
+
+    // PR-K — real multi-signal staleness (review overdue, assessment aged,
+    // controls moved since, sensor moved). Wires the previously-dead
+    // GET /risks/staleness route: drives the staleness column badge + the
+    // "Stale" KPI count. Failure-soft — a failed load just hides the badge.
+    const stalenessQuery = useTenantSWR<{
+        staleRisks: Array<{ riskId: string; reasons: string[]; assessmentAgeDays: number | null; description: string }>;
+    }>('/risks/staleness');
+    const staleById = useMemo(() => {
+        const m = new Map<string, { reasons: string[]; description: string }>();
+        for (const r of stalenessQuery.data?.staleRisks ?? []) {
+            m.set(r.riskId, { reasons: r.reasons, description: r.description });
+        }
+        return m;
+    }, [stalenessQuery.data]);
     const loading = risksQuery.isLoading && !risksQuery.data;
 
     // ─── Bulk actions (canonical BulkActionBar) ───
@@ -442,6 +456,8 @@ function RisksPageInner({
             title: (r) => r.title || '',
             asset: (r) => r.asset?.name || '—',
             inherentScore: (r) => r.inherentScore || 0,
+            // PR-K — after-controls posture. Null sorts last (not yet assessed).
+            residual: (r) => r.residualScore ?? null,
             ale: (r) => riskAle(r) ?? null,
             // P1 — canonical treatment vocabulary (Mitigate/Accept/…) so the
             // list reads the same as the detail page + reports.
@@ -456,7 +472,7 @@ function RisksPageInner({
         [rawRisks, sortAccessors, sortBy, sortOrder],
     );
     const sortableRiskColumns = useMemo(
-        () => ['title', 'asset', 'inherentScore', 'ale', 'treatment', 'status'],
+        () => ['title', 'asset', 'inherentScore', 'residual', 'ale', 'treatment', 'status'],
         [],
     );
 
@@ -481,6 +497,9 @@ function RisksPageInner({
             { id: 'asset', label: tx('colVis.asset') },
             { id: 'inherentScore', label: tx('colVis.score') },
             { id: 'level', label: tx('colVis.level') },
+            // PR-K — residual (after-controls) score + staleness posture.
+            { id: 'residual', label: tx('colVis.residual') },
+            { id: 'staleness', label: tx('colVis.staleness') },
             { id: 'status', label: tx('colVis.status') },
             { id: 'owner', label: tx('colVis.owner') },
             { id: 'treatment', label: tx('colVis.treatment') },
@@ -514,9 +533,8 @@ function RisksPageInner({
     const openCount = risks.filter(r => r.status === 'OPEN' || r.status === 'MITIGATING').length;
     // `now` is null during SSR and first client render so the overdue
     // count matches exactly across hydration (avoids React #418/#422).
-    const now = useHydratedNow();
-    // guardrail-ignore: KPI count across the loaded page, not a refilter.
-    const overdueRisks = now ? risks.filter(r => r.nextReviewAt && new Date(r.nextReviewAt) < now) : [];
+    // PR-K — the naive nextReviewAt<now overdue count was replaced by the
+    // real multi-signal staleness detector (staleById above).
 
     // Canonical KPI-card sparklines (shared hook). total + open are always-
     // present series; avgScore + overdue are forward-only nullable columns
@@ -547,7 +565,7 @@ function RisksPageInner({
     // applied (KPI click OR a status pill set via the dropdown). The
     // "Total" KPI is active when no filters are set — it's the
     // implicit default state.
-    type RiskKpiId = 'total' | 'open';
+    type RiskKpiId = 'total' | 'open' | 'stale';
     const kpiDefs: ReadonlyArray<KpiFilterDef<RiskKpiId>> = useMemo(
         () => [
             {
@@ -569,6 +587,15 @@ function RisksPageInner({
                     (state.status ?? []).includes('OPEN'),
                 clear: (ctx) => ctx.removeAll('status'),
             },
+            {
+                // PR-K — "Stale" owns the `stale` key. The server resolves
+                // the multi-signal detector to the stale id set, so this
+                // toggle is a real filter, not a naive nextReviewAt count.
+                id: 'stale',
+                apply: (ctx) => ctx.set('stale', 'true'),
+                isActive: (state) => (state.stale ?? []).includes('true'),
+                clear: (ctx) => ctx.removeAll('stale'),
+            },
         ],
         [],
     );
@@ -583,9 +610,11 @@ function RisksPageInner({
             { id: 'total', label: t.totalRisks, kind: 'kpi' },
             { id: 'avgScore', label: t.avgScore, kind: 'kpi' },
             { id: 'open', label: t.openRisks, kind: 'kpi' },
-            { id: 'overdue', label: t.overdueReviews, kind: 'kpi' },
+            // PR-K — the naive "overdue reviews" stat is now the real
+            // multi-signal "Stale" KPI (card id kept for storage stability).
+            { id: 'overdue', label: tx('kpiStale'), kind: 'kpi' },
         ],
-        [t],
+        [t, tx],
     );
     const { visibleCards: visibleKpiCards, dropdown: filtersDropdown } =
         useFilterCardVisibility({
@@ -845,6 +874,62 @@ function RisksPageInner({
             },
         },
         {
+            // PR-K — residual (after-controls) score. Same band-colour
+            // language as the inherent chip so a reviewer sees the
+            // posture that matters without opening the heatmap or each
+            // detail page. Null (not yet assessed) reads as an em-dash.
+            id: 'residual',
+            header: tx('colHeaders.residual'),
+            accessorFn: sortAccessors.residual,
+            cell: ({ row }) => {
+                const rs = row.original.residualScore;
+                if (rs == null) {
+                    return <span className="text-xs text-content-subtle" title={tx('residualNotAssessed')}>—</span>;
+                }
+                const band = resolveBandForScore(rs, matrixConfig.bands);
+                return (
+                    <span
+                        className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 font-bold tabular-nums text-content-emphasis"
+                        style={{ backgroundColor: `${band.color}33` }}
+                        title={`${band.name} (${rs})`}
+                        data-band={band.name}
+                        data-testid={`risk-residual-${row.original.id}`}
+                    >
+                        <span
+                            aria-hidden="true"
+                            className="inline-block w-1.5 h-1.5 rounded-full"
+                            style={{ backgroundColor: band.color }}
+                        />
+                        {rs}
+                    </span>
+                );
+            },
+        },
+        {
+            // PR-K — staleness posture from the real multi-signal detector
+            // (GET /risks/staleness). A "Stale" badge with the reason in a
+            // tooltip; fresh rows read as an em-dash.
+            id: 'staleness',
+            header: tx('colHeaders.staleness'),
+            enableSorting: false,
+            accessorFn: (r) => (staleById.has(r.id) ? 1 : 0),
+            cell: ({ row }) => {
+                const stale = staleById.get(row.original.id);
+                if (!stale) {
+                    return <span className="text-xs text-content-subtle">—</span>;
+                }
+                return (
+                    <Tooltip content={stale.description}>
+                        <span data-testid={`risk-stale-${row.original.id}`}>
+                            <StatusBadge variant="warning" size="sm">
+                                {tx('stale')}
+                            </StatusBadge>
+                        </span>
+                    </Tooltip>
+                );
+            },
+        },
+        {
             // RQ3-OB-B — dedicated ALE column. The inline chip next
             // to the score (above) keeps the qual↔quant side-by-side
             // (RQ2-5 / RQ3-4); THIS column adds sortability — a
@@ -938,7 +1023,7 @@ function RisksPageInner({
                 );
             },
         },
-    ]), [t, tx, getRiskBand, matrixConfig, tailByRisk, sortAccessors]);
+    ]), [t, tx, getRiskBand, matrixConfig, tailByRisk, sortAccessors, staleById]);
 
     // Right-rail Phase 3 — the AI assist co-pilot rail. A persistent,
     // co-resident entry point to the AI risk-assessment flow that
@@ -1014,11 +1099,12 @@ function RisksPageInner({
                                 sparkline: riskTrends.open,
                             },
                             overdue: {
-                                value: overdueRisks.length,
-                                tone:
-                                    overdueRisks.length > 0
-                                        ? 'critical'
-                                        : 'success',
+                                // PR-K — driven by the real multi-signal
+                                // detector (staleById), clickable to apply
+                                // the server-side `stale` filter.
+                                value: staleById.size,
+                                tone: staleById.size > 0 ? 'critical' : 'success',
+                                kpi: 'stale',
                                 sparkline: riskTrends.overdue,
                             },
                         };
