@@ -3,8 +3,9 @@
   "tagFormat": "v${version}",
   "plugins": [
     [
-      "@semantic-release/commit-analyzer",
+      "./scripts/semrel-minor-cap.mjs",
       {
+        "_comment": "Wraps @semantic-release/commit-analyzer (forwarded this preset + releaseRules verbatim) to cap the MINOR component at three digits: the release that would become X.1000.0 rolls over to (X+1).0.0 instead. That rollover major is COSMETIC — no breaking change behind it — and is safe here because the app is npmPublish:false (the version only feeds Helm appVersion + Docker tags). A real breaking change still bumps the major the normal way via feat!/BREAKING CHANGE. See scripts/lib/minor-cap.mjs.",
         "preset": "conventionalcommits",
         "releaseRules": [
           { "type": "feat", "release": "minor" },
