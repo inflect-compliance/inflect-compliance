@@ -136,9 +136,6 @@ const EXEMPTIONS: Record<string, string> = {
         "Findings list — currently uses inline filter controls; planned for FilterToolbar migration in a follow-up.",
     "src/app/t/[tenantSlug]/(app)/frameworks/FrameworksClient.tsx":
         "Framework picker — small fixed catalogue of installable frameworks; tile + status surface, not a filter-driven list.",
-    "src/app/t/[tenantSlug]/(app)/reports/ReportsClient.tsx":
-        "Reports landing — composite of discrete report tiles, not an entity list.",
-
     // ── Wizards / multi-step flows ──
     "src/app/t/[tenantSlug]/(app)/risks/import/page.tsx":
         "Risk import wizard — staged workflow, each step has its own controls; not an ongoing browse surface.",

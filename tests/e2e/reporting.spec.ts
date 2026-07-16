@@ -71,25 +71,27 @@ test.describe('Reporting & Audit Narrative', () => {
 
     // ─── D) Reports Page (read-only) ─────────────────────────────────
 
-    test('D — reports page shows SOA and Risk Register', async ({
+    test('D — reports landing is a framework-scoped report catalog', async ({
         authedPage: page,
         isolatedTenant,
     }) => {
         const tenantSlug = isolatedTenant.tenantSlug;
         await gotoAndVerify(page, `/t/${tenantSlug}/reports`, '#reports-heading', 4);
 
-        await expect(page.locator('#soa-tab-btn')).toBeVisible();
-        await expect(page.locator('#risk-tab-btn')).toBeVisible();
-        await expect(page.locator('#soa-table')).toBeVisible({ timeout: 5000 });
-        await expect(page.locator('#export-soa-btn')).toBeVisible();
+        // PR-G — the landing is a report catalog scoped by a framework selector,
+        // NOT a SoA table. Assert the new IA.
+        await expect(page.locator('#reports-framework-select')).toBeVisible();
+        await expect(page.locator('[data-testid="report-catalog"]')).toBeVisible();
+        await expect(page.locator('[data-testid="report-card-coverage"]')).toBeVisible();
+        await expect(page.locator('[data-testid="report-card-risk"]')).toBeVisible();
+        // The universal default report renders on-screen (coverage/readiness).
+        await expect(
+            page.locator('[data-testid="readiness-report-body"]'),
+        ).toBeVisible({ timeout: 5000 });
 
-        await page.click('#risk-tab-btn');
-        await expect(page.locator('#risk-table')).toBeVisible({ timeout: 5000 });
-        await expect(page.locator('#export-risks-btn')).toBeVisible();
-
-        await page.click('#soa-tab-btn');
-        await expect(page.locator('#soa-table')).toBeVisible({ timeout: 5000 });
-        await expect(page.locator('#export-soa-btn')).toBeVisible();
+        // The old SoA tab-table is gone from the hub (SoA now lives at /reports/soa).
+        await expect(page.locator('#soa-tab-btn')).toHaveCount(0);
+        await expect(page.locator('#soa-table')).toHaveCount(0);
     });
 
     // ─── E-G) Audit cycle → pack → freeze → share (one scenario) ─────
