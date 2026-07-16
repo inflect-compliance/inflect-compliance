@@ -92,6 +92,11 @@ const STATUS_BADGE_BUDGET: Record<string, number> = {
     // relations. +3 for the P3.3 bundle-items view + the P3.7 recursive
     // subprocessor chain tree.
     "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx": 12,
+    // Asset detail — badges live across separate tabs/sections (never stacked
+    // in one cell): the CVE-vulnerability sub-table (severity + status) and the
+    // scanner-findings sub-table (severity + status) each on the vuln tab, plus
+    // the vuln convert/matched signals. Two independent tables → 6.
+    "src/app/t/[tenantSlug]/(app)/assets/[id]/page.tsx": 6,
     // P1 — synced-identity roster: provider / status / admin / MFA are each a
     // distinct, decision-relevant security signal (one per column, not stacked).
     "src/app/t/[tenantSlug]/(app)/admin/integrations/identity-accounts/page.tsx": 5,

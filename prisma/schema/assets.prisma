@@ -51,6 +51,7 @@ model Asset {
   findingLinks        FindingAsset[]
   controls            ControlAsset[]
   vulnerabilities     AssetVulnerability[]
+  scannerFindings     ScannerFinding[]     @relation("AssetScannerFindings")
   riskSuggestionItems RiskSuggestionItem[]
   // Evidence attached directly to this asset (Evidence Library tag +
   // the asset Evidence tab). Mirrors Control/Task.
@@ -211,16 +212,22 @@ model ScannerFinding {
   cweIds       String[] @default([])
   /// OPEN|TRIAGED|FIXED|FALSE_POSITIVE|ACCEPTED — triage lifecycle.
   status       String   @default("OPEN")
+  /// Asset the scanned target resolved to (repoRef → Asset.externalRef/name),
+  /// or NULL when the target couldn't be resolved (left unlinked, logged).
+  /// SetNull on asset purge so the finding survives the asset's removal.
+  assetId      String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   tenant     Tenant     @relation(fields: [tenantId], references: [id])
   scannerRun ScannerRun @relation(fields: [scannerRunId], references: [id], onDelete: Cascade)
+  asset      Asset?     @relation("AssetScannerFindings", fields: [assetId], references: [id], onDelete: SetNull)
 
   /// Idempotent ingest: re-scanning the same issue updates this one row.
   @@unique([tenantId, fingerprint])
   @@index([tenantId, scannerRunId, status])
   @@index([tenantId, status, severity])
+  @@index([tenantId, assetId])
   @@index([scannerRunId])
 }
 

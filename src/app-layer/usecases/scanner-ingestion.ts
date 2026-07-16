@@ -34,6 +34,7 @@ import { assertCanRead, assertCanWrite } from '../policies/common';
 import { runInTenantContext } from '@/lib/db-context';
 import { badRequest, notFound } from '@/lib/errors/types';
 import { logEvent } from '../events/audit';
+import { logger } from '@/lib/observability';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { createFinding } from './finding';
 import {
@@ -198,6 +199,37 @@ export async function ingestScannerRun(
             },
         });
 
+        // Resolve the scanned target to an asset so its findings hang off the
+        // asset's vuln surface. RULE: normalize the run's repoRef (strip any
+        // '@<ref>' suffix) and match it case-insensitively against
+        // Asset.externalRef, then Asset.name. First match wins. No match →
+        // leave findings UNLINKED (logged, never guessed). Resolved once per
+        // run since a run targets a single repo.
+        let resolvedAssetId: string | null = null;
+        if (input.repoRef) {
+            const target = input.repoRef.split('@')[0].trim();
+            if (target) {
+                const asset = await db.asset.findFirst({
+                    where: {
+                        tenantId: ctx.tenantId,
+                        OR: [
+                            { externalRef: { equals: target, mode: 'insensitive' } },
+                            { name: { equals: target, mode: 'insensitive' } },
+                        ],
+                    },
+                    select: { id: true },
+                });
+                resolvedAssetId = asset?.id ?? null;
+                if (!resolvedAssetId) {
+                    logger.info('scanner-ingestion: scan target did not resolve to an asset — findings left unlinked', {
+                        component: 'scanner-ingestion',
+                        tenantId: ctx.tenantId,
+                        repoRef: target,
+                    });
+                }
+            }
+        }
+
         // Dedup by (tenantId, fingerprint): a recurring issue stays one
         // row. On update we refresh content but PRESERVE triage status
         // (a FALSE_POSITIVE / ACCEPTED finding must not silently reopen).
@@ -215,6 +247,7 @@ export async function ingestScannerRun(
                     location: f.location,
                     cweIds: f.cweIds,
                     status: 'OPEN',
+                    assetId: resolvedAssetId,
                 },
                 update: {
                     scannerRunId: run.id,
@@ -223,6 +256,9 @@ export async function ingestScannerRun(
                     description: f.description ? sanitizePlainText(f.description) : null,
                     location: f.location,
                     cweIds: f.cweIds,
+                    // Only (re)link on resolve — a later run that can't resolve
+                    // must not null an existing link.
+                    ...(resolvedAssetId ? { assetId: resolvedAssetId } : {}),
                 },
             });
         }
@@ -418,6 +454,22 @@ export async function listScannerFindings(
             include: { scannerRun: { select: { source: true, scanType: true, ranAt: true } } },
             orderBy: [{ severity: 'desc' }, { createdAt: 'desc' }],
             take: Math.min(opts?.take ?? 200, 500),
+        });
+    });
+    return rows.map((r) => ({ ...r, frameworks: mapCwes(r.cweIds) }));
+}
+
+/** Scanner findings resolved to a given asset (ScannerFinding.assetId) — the
+ *  asset detail vuln tab surfaces these alongside the CVE-matched
+ *  AssetVulnerability rows, so an asset shows its full vulnerability picture. */
+export async function listAssetScannerFindings(ctx: RequestContext, assetId: string) {
+    assertCanRead(ctx);
+    const rows = await runInTenantContext(ctx, async (db) => {
+        return db.scannerFinding.findMany({
+            where: { tenantId: ctx.tenantId, assetId },
+            include: { scannerRun: { select: { source: true, scanType: true, ranAt: true, repoRef: true } } },
+            orderBy: [{ severity: 'desc' }, { createdAt: 'desc' }],
+            take: 200,
         });
     });
     return rows.map((r) => ({ ...r, frameworks: mapCwes(r.cweIds) }));

@@ -21,6 +21,9 @@ import { useThresholdLoadMore } from '@/components/ui/hooks';
 import { toApiSearchParams } from '@/lib/filters/url-sync';
 import { buildAssetFilters, ASSET_FILTER_KEYS } from './filter-defs';
 import { Button } from '@/components/ui/button';
+import { Modal } from '@/components/ui/modal';
+import { Input } from '@/components/ui/input';
+import { FormField } from '@/components/ui/form-field';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { buttonVariants } from '@/components/ui/button-variants';
@@ -84,13 +87,16 @@ interface AssetListRow {
     /** Per-asset OPEN-vulnerability rollup (batched by listAssets). */
     openVulnCount: number;
     maxVulnSeverity: string | null;
+    /** Soft-delete timestamp — non-null only in the "Deleted assets" view
+     *  (rows fetched with `?includeDeleted=true`). */
+    deletedAt: string | null;
 }
 
 interface AssetsClientProps {
     initialAssets: AssetListRow[];
     initialFilters: Record<string, string>;
     tenantSlug: string;
-    permissions: { canWrite: boolean };
+    permissions: { canWrite: boolean; canAdmin?: boolean };
     translations: {
         title: string;
         listDescription: string;
@@ -142,6 +148,17 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     // Item 32 — quick-look side panel: the id of the asset whose panel
     // is open (null = closed).
     const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
+    // "Deleted assets" lifecycle view — admin-only toggle that swaps the
+    // list to soft-deleted rows (fetched with `?includeDeleted=true`) so
+    // an admin can Restore or permanently Purge them.
+    const [showDeleted, setShowDeleted] = useState(false);
+    // Typed-confirm purge modal — Purge is irreversible, so it uses the
+    // sanctioned type-to-confirm pattern (mirrors the org TenantsTable
+    // remove flow), NOT the undo-toast.
+    const [purgeTarget, setPurgeTarget] = useState<AssetListRow | null>(null);
+    const [confirmText, setConfirmText] = useState('');
+    const [purging, setPurging] = useState(false);
+    const [purgeError, setPurgeError] = useState<string | null>(null);
     const searchParams = useSearchParams();
     const router = useRouter();
     const prefetchData = usePrefetchTenant();
@@ -187,11 +204,17 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     }, [queryKeyFilters, initialFilters, serverHadFilters, hasActive]);
 
     const assetsKey = useMemo(() => {
-        const qs = fetchParams.toString();
+        const params = new URLSearchParams(fetchParams);
+        // Deleted view is a distinct fetch — append the flag so the SWR key
+        // (and the backing GET) selects soft-deleted rows too.
+        if (showDeleted) params.set('includeDeleted', 'true');
+        const qs = params.toString();
         return qs ? `${CACHE_KEYS.assets.list()}?${qs}` : CACHE_KEYS.assets.list();
-    }, [fetchParams]);
+    }, [fetchParams, showDeleted]);
     const assetsQuery = useTenantSWR<AssetListRow[]>(assetsKey, {
-        fallbackData: filtersMatchInitial ? initialAssets : undefined,
+        // The SSR initial payload never contains soft-deleted rows, so the
+        // deleted view must always fetch fresh (no fallback).
+        fallbackData: filtersMatchInitial && !showDeleted ? initialAssets : undefined,
     });
     const assets = assetsQuery.data ?? [];
 
@@ -520,6 +543,51 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         columns: assetColumnList,
     });
 
+    // ─── Deleted-asset lifecycle actions ───
+    const handleRestore = async (id: string) => {
+        const res = await fetch(apiUrl(`/assets/${id}/restore`), {
+            method: 'POST',
+            credentials: 'same-origin',
+        });
+        if (res.ok) await assetsQuery.mutate();
+    };
+    const closePurge = () => {
+        setPurgeTarget(null);
+        setConfirmText('');
+        setPurging(false);
+        setPurgeError(null);
+    };
+    const confirmPurge = async () => {
+        if (!purgeTarget) return;
+        setPurging(true);
+        setPurgeError(null);
+        try {
+            const res = await fetch(apiUrl(`/assets/${purgeTarget.id}/purge`), {
+                method: 'POST',
+                credentials: 'same-origin',
+            });
+            if (!res.ok) {
+                let message = tx('deleted.purgeFailed');
+                try {
+                    const body = (await res.json()) as { error?: { message?: string } };
+                    if (body?.error?.message) message = body.error.message;
+                } catch {
+                    /* not JSON */
+                }
+                setPurgeError(message);
+                setPurging(false);
+                return;
+            }
+            closePurge();
+            await assetsQuery.mutate();
+        } catch (err) {
+            setPurgeError(err instanceof Error ? err.message : tx('deleted.purgeFailed'));
+            setPurging(false);
+        }
+    };
+    // The confirm target token is the asset key when present, else its name.
+    const purgeConfirmToken = purgeTarget?.key ?? purgeTarget?.name ?? '';
+
     const assetColumns = useMemo(() => createColumns<AssetListRow>([
         {
             // First-column convention — `AST-N` Code leads. Mono +
@@ -679,7 +747,51 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                 );
             },
         },
-    ]), [t, tx, sortAccessors]);
+        // Lifecycle actions — only present in the "Deleted assets" view.
+        // For a soft-deleted row: a neutral "Deleted" badge + Restore /
+        // Purge. Live rows (deletedAt == null) render a muted em dash.
+        ...(showDeleted
+            ? [
+                  {
+                      id: 'lifecycle',
+                      header: tx('deleted.actions'),
+                      cell: ({ row }: { row: { original: AssetListRow } }) => {
+                          const a = row.original;
+                          if (!a.deletedAt) {
+                              return <span className="text-content-muted">—</span>;
+                          }
+                          return (
+                              <div className="flex items-center gap-tight">
+                                  <StatusBadge variant="neutral" size="sm">
+                                      {tx('deleted.badge')}
+                                  </StatusBadge>
+                                  <Button
+                                      type="button"
+                                      variant="secondary"
+                                      size="xs"
+                                      onClick={(e) => {
+                                          e.stopPropagation();
+                                          void handleRestore(a.id);
+                                      }}
+                                      text={tx('deleted.restore')}
+                                  />
+                                  <Button
+                                      type="button"
+                                      variant="destructive"
+                                      size="xs"
+                                      onClick={(e) => {
+                                          e.stopPropagation();
+                                          setPurgeTarget(a);
+                                      }}
+                                      text={tx('deleted.purge')}
+                                  />
+                              </div>
+                          );
+                      },
+                  },
+              ]
+            : []),
+    ]), [t, tx, sortAccessors, showDeleted]);
 
     return (
         <ListPageShell className="animate-fadeIn gap-section">
@@ -776,6 +888,18 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                                         <AppIcon name="upload" size={16} />
                                     </Link>
                                 </Tooltip>
+                            )}
+                            {/* Deleted-assets view toggle — admin only (only
+                                admins can Restore / Purge server-side). */}
+                            {permissions.canAdmin && (
+                                <Button
+                                    id="assets-show-deleted-toggle"
+                                    variant={showDeleted ? 'primary' : 'secondary'}
+                                    size="sm"
+                                    aria-pressed={showDeleted}
+                                    onClick={() => setShowDeleted((v) => !v)}
+                                    text={tx('deleted.toggle')}
+                                />
                             )}
                             {columnsDropdown}
                             {filtersDropdown}
@@ -885,6 +1009,64 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     addAsset: t.addAsset,
                 }}
             />
+
+            {/* Typed-confirmation purge modal — Purge is irreversible, so it
+                requires typing the asset key/name (the sanctioned pattern for
+                permanent deletion, NOT the undo-toast). */}
+            <Modal
+                showModal={purgeTarget !== null}
+                setShowModal={(o) => (o ? null : closePurge())}
+            >
+                <Modal.Header title={tx('deleted.purgeTitle')} />
+                <Modal.Body>
+                    {purgeTarget && (
+                        <div className="space-y-default">
+                            <p className="text-sm text-content-default">
+                                {tx('deleted.purgeBody', {
+                                    name: purgeConfirmToken,
+                                })}
+                            </p>
+                            <FormField
+                                label={tx('deleted.purgeTypeToConfirm', {
+                                    name: purgeConfirmToken,
+                                })}
+                                required
+                            >
+                                <Input
+                                    value={confirmText}
+                                    onChange={(e) => setConfirmText(e.target.value)}
+                                    autoComplete="off"
+                                    autoFocus
+                                    placeholder={purgeConfirmToken}
+                                />
+                            </FormField>
+                            {purgeError && (
+                                <p className="text-sm text-content-error">{purgeError}</p>
+                            )}
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Actions>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={closePurge}
+                        text={t.cancel}
+                    />
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        loading={purging}
+                        disabled={
+                            purging || confirmText.trim() !== purgeConfirmToken
+                        }
+                        onClick={confirmPurge}
+                        text={tx('deleted.purge')}
+                    />
+                </Modal.Actions>
+            </Modal>
         </ListPageShell>
     );
 }

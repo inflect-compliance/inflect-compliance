@@ -52,7 +52,7 @@ export default async function AssetsPage({
                 initialAssets={JSON.parse(JSON.stringify(assets))}
                 initialFilters={filters}
                 tenantSlug={tenantSlug}
-                permissions={{ canWrite: ctx.permissions.canWrite }}
+                permissions={{ canWrite: ctx.permissions.canWrite, canAdmin: ctx.permissions.canAdmin }}
                 translations={{
                     title: t('title'),
                 listDescription: t('listDescription'),

@@ -510,7 +510,17 @@
         "convertedRisk": "Vulnerability converted to a risk",
         "convertedFinding": "Vulnerability converted to a finding",
         "convertFailed": "Conversion failed",
-        "seeAll": "See all vulnerabilities"
+        "seeAll": "See all vulnerabilities",
+        "scannerTitle": "Scanner findings",
+        "scannerSeeAll": "Security testing",
+        "scannerEmptyTitle": "No scanner findings",
+        "scannerEmptyDesc": "Scanner findings resolved to this asset appear here.",
+        "scannerSeverity": "Severity",
+        "scannerFinding": "Finding",
+        "scannerRule": "Rule",
+        "scannerLocation": "Location",
+        "scannerSource": "Scanner",
+        "scannerStatus": "Status"
       },
       "activityFeed": {
         "loading": "Loading activity…",
@@ -538,7 +548,11 @@
       "identityHintAction": "Add identity",
       "dependencies": "Dependencies",
       "businessProcesses": "Business processes",
-      "retention": "Retention"
+      "retention": "Retention",
+      "deleteAsset": "Delete asset",
+      "deleteConfirmTitle": "Delete this asset?",
+      "deleteConfirmDesc": "The asset is soft-deleted and can be restored from the Deleted assets view.",
+      "deleteConfirmLabel": "Delete asset"
     },
     "filters": {
       "type": "Type",
@@ -641,7 +655,18 @@
       "ownerImported": "imported"
     },
     "viewVulnerabilities": "View vulnerabilities",
-    "openVulnsAria": "{count} open vulnerabilities"
+    "openVulnsAria": "{count} open vulnerabilities",
+    "deleted": {
+      "toggle": "Deleted assets",
+      "actions": "Lifecycle",
+      "badge": "Deleted",
+      "restore": "Restore",
+      "purge": "Purge",
+      "purgeTitle": "Permanently purge asset",
+      "purgeBody": "This permanently deletes {name} and all of its data. This action cannot be undone.",
+      "purgeTypeToConfirm": "Type {name} to confirm",
+      "purgeFailed": "Failed to purge asset. Please try again."
+    }
   },
   "risks": {
     "title": "Risk Register",
