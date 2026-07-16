@@ -41,7 +41,7 @@ jest.mock('@/app-layer/repositories/ControlTemplateRepository', () => ({
 
 jest.mock('@/app-layer/repositories/ControlRepository', () => ({
     ControlRepository: {
-        listFrameworkMappings: jest.fn(),
+        listControlRequirementLinks: jest.fn(),
     },
 }));
 
@@ -90,7 +90,7 @@ const mockTplList = ControlTemplateRepository.list as jest.MockedFunction<typeof
 const mockTplGetById = ControlTemplateRepository.getById as jest.MockedFunction<typeof ControlTemplateRepository.getById>;
 const mockListFw = FrameworkRepository.listFrameworks as jest.MockedFunction<typeof FrameworkRepository.listFrameworks>;
 const mockListReqs = FrameworkRepository.listRequirements as jest.MockedFunction<typeof FrameworkRepository.listRequirements>;
-const mockListMappings = ControlRepository.listFrameworkMappings as jest.MockedFunction<typeof ControlRepository.listFrameworkMappings>;
+const mockListMappings = ControlRepository.listControlRequirementLinks as jest.MockedFunction<typeof ControlRepository.listControlRequirementLinks>;
 
 beforeEach(() => {
     policyCalls.length = 0;
@@ -168,7 +168,7 @@ describe('installControlsFromTemplate', () => {
         const result = await installControlsFromTemplate(ctx, ['t-1']);
 
         expect(result).toEqual([
-            { templateCode: 'CC1', controlId: 'ctrl-existing', tasksCreated: 0, requirementsLinked: 0 },
+            { templateCode: 'CC1', controlId: 'ctrl-existing', tasksCreated: 0, requirementsLinked: 0, skipped: true },
         ]);
         expect(mockDb.control.create).not.toHaveBeenCalled();
         // No audit on the idempotent-skip branch — only happy-path
@@ -196,7 +196,7 @@ describe('installControlsFromTemplate', () => {
         const result = await installControlsFromTemplate(ctx, ['t-1']);
 
         expect(result).toEqual([
-            { templateCode: 'CC1', controlId: 'ctrl-new', tasksCreated: 2, requirementsLinked: 3 },
+            { templateCode: 'CC1', controlId: 'ctrl-new', tasksCreated: 2, requirementsLinked: 3, skipped: false },
         ]);
         expect(mockDb.task.create).toHaveBeenCalledTimes(2);
         expect(mockDb.controlRequirementLink.upsert).toHaveBeenCalledTimes(3);

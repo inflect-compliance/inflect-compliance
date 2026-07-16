@@ -58,7 +58,7 @@ function graph(
 describe('buildSankeyDataset — column placement', () => {
     it('places every node into its kind column with stable layout indices', () => {
         const g = graph(
-            [n('a1', 'asset'), n('r1', 'risk'), n('c1', 'control')],
+            [n('a1', 'asset'), n('r1', 'risk'), n('c1', 'control'), n('q1', 'requirement')],
             [],
         );
         const ds = buildSankeyDataset(g);
@@ -66,9 +66,10 @@ describe('buildSankeyDataset — column placement', () => {
         expect(byId.a1).toBe(0); // asset → col 0
         expect(byId.r1).toBe(1); // risk  → col 1
         expect(byId.c1).toBe(2); // control → col 2
+        expect(byId.q1).toBe(3); // requirement → col 3 (downstream of control)
     });
 
-    it('drops kinds outside the column layout (requirement, policy)', () => {
+    it('places requirement (col 3) but drops kinds still outside the layout (policy)', () => {
         const g = graph(
             [
                 n('a1', 'asset'),
@@ -78,7 +79,24 @@ describe('buildSankeyDataset — column placement', () => {
             [],
         );
         const ds = buildSankeyDataset(g);
-        expect(ds.nodes.map((x) => x.id).sort()).toEqual(['a1']);
+        // requirement now has a column; policy remains unrepresented.
+        expect(ds.nodes.map((x) => x.id).sort()).toEqual(['a1', 'q1']);
+    });
+
+    it('projects the control→requirement implements edge as a left-to-right band', () => {
+        // control(2) implements requirement(3): control column < requirement
+        // column, so the edge keeps its control → requirement direction.
+        const g = graph(
+            [n('c1', 'control'), n('q1', 'requirement')],
+            [e('e1', 'c1', 'q1', 'implements')],
+        );
+        const ds = buildSankeyDataset(g);
+        expect(ds.links).toHaveLength(1);
+        expect(ds.links[0]).toMatchObject({
+            source: 'c1',
+            target: 'q1',
+            relation: 'implements',
+        });
     });
 
     it('reports per-column counts and skips empty columns', () => {

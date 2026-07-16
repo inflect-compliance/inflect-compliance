@@ -20,14 +20,32 @@ import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useToastWithUndo } from '@/components/ui/hooks';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { Button } from '@/components/ui/button';
-import { Combobox } from '@/components/ui/combobox';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
 import { CopyText } from '@/components/ui/copy-text';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 import { DataTable, createColumns } from '@/components/ui/table';
+import { Modal } from '@/components/ui/modal';
+import { FormField } from '@/components/ui/form-field';
+import { Textarea } from '@/components/ui/textarea';
 import { Plus } from '@/components/ui/icons/nucleo';
 import type { FrameworkDTO, RequirementDTO, FrameworkMappingDTO } from '@/lib/dto';
+
+// Per-framework applicability override. The `applicability` /
+// `applicabilityJustification` fields live on the ControlRequirementLink
+// but are not yet surfaced by the mappings GET (see report) — extended
+// here locally so the row renders "Inherit" until the DTO/repo lands the
+// fields, then reflects the persisted override automatically.
+type LinkApplicability = 'APPLICABLE' | 'NOT_APPLICABLE';
+type MappingRow = FrameworkMappingDTO & {
+    applicability?: LinkApplicability | null;
+    applicabilityJustification?: string | null;
+};
+// Combobox uses 'INHERIT' as the sentinel for "no override" — it maps to
+// a null applicability on the wire (revert to the control's global value).
+const APPLICABILITY_CHOICES = ['INHERIT', 'APPLICABLE', 'NOT_APPLICABLE'] as const;
+type ApplicabilityChoice = (typeof APPLICABILITY_CHOICES)[number];
 
 interface ControlMappingsTabProps {
     controlId: string;
@@ -45,9 +63,79 @@ export function ControlMappingsTab({
     const t = useTranslations('controls');
     const triggerUndoToast = useToastWithUndo();
 
-    const mappingsSWR = useTenantSWR<FrameworkMappingDTO[]>(
+    const mappingsSWR = useTenantSWR<MappingRow[]>(
         CACHE_KEYS.controls.mappings(controlId),
     );
+
+    // Per-row applicability override state. `savingReqId` disables the
+    // row's combobox mid-flight; the justification modal captures the
+    // required reason before persisting a NOT_APPLICABLE override.
+    const [savingReqId, setSavingReqId] = useState<string | null>(null);
+    const [justifyModal, setJustifyModal] = useState<
+        { reqId: string; label: string } | null
+    >(null);
+    const [justifyText, setJustifyText] = useState('');
+
+    const applicabilityOptions = useMemo<ComboboxOption[]>(
+        () => [
+            { value: 'INHERIT', label: t('mappingsTab.applicabilityInherit') },
+            { value: 'APPLICABLE', label: t('mappingsTab.applicabilityApplicable') },
+            { value: 'NOT_APPLICABLE', label: t('mappingsTab.applicabilityNotApplicable') },
+        ],
+        [t],
+    );
+
+    // POST the override for one requirement, then refetch this tab's SWR
+    // (and the page-data header via onMutated). `applicability: null`
+    // clears the override → inherit the control's global applicability.
+    const persistApplicability = async (
+        reqId: string,
+        applicability: LinkApplicability | null,
+        justification: string | null,
+    ) => {
+        setSavingReqId(reqId);
+        try {
+            await fetch(
+                apiUrl(`/controls/${controlId}/requirements/${reqId}/applicability`),
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ applicability, justification }),
+                },
+            );
+            await mappingsSWR.mutate();
+            onMutated();
+        } finally {
+            setSavingReqId(null);
+        }
+    };
+
+    const onApplicabilityChange = (
+        reqId: string,
+        label: string,
+        choice: ApplicabilityChoice,
+    ) => {
+        if (choice === 'NOT_APPLICABLE') {
+            // Not applicable requires a justification — open the modal.
+            setJustifyText('');
+            setJustifyModal({ reqId, label });
+            return;
+        }
+        // Inherit → null override; Applicable → explicit APPLICABLE.
+        void persistApplicability(
+            reqId,
+            choice === 'APPLICABLE' ? 'APPLICABLE' : null,
+            null,
+        );
+    };
+
+    const confirmNotApplicable = async () => {
+        if (!justifyModal || !justifyText.trim()) return;
+        const { reqId } = justifyModal;
+        await persistApplicability(reqId, 'NOT_APPLICABLE', justifyText.trim());
+        setJustifyModal(null);
+        setJustifyText('');
+    };
 
     const [showMapForm, setShowMapForm] = useState(false);
     const [frameworks, setFrameworks] = useState<FrameworkDTO[]>([]);
@@ -144,7 +232,7 @@ export function ControlMappingsTab({
     // preserved inside cell renderers.
     const columns = useMemo(
         () =>
-            createColumns<FrameworkMappingDTO>([
+            createColumns<MappingRow>([
                 {
                     id: 'framework',
                     header: t('mappingsTab.colFramework'),
@@ -176,12 +264,59 @@ export function ControlMappingsTab({
                         );
                     },
                 },
+                {
+                    id: 'applicability',
+                    header: t('mappingsTab.colApplicability'),
+                    cell: ({ row }: { row: { original: MappingRow } }) => {
+                        const reqId =
+                            row.original.fromRequirement?.id ||
+                            row.original.fromRequirementId ||
+                            '';
+                        const req = row.original.fromRequirement;
+                        const label = req?.code || req?.title || req?.description || '—';
+                        const current: ApplicabilityChoice =
+                            row.original.applicability === 'APPLICABLE'
+                                ? 'APPLICABLE'
+                                : row.original.applicability === 'NOT_APPLICABLE'
+                                    ? 'NOT_APPLICABLE'
+                                    : 'INHERIT';
+                        if (!canWrite) {
+                            return (
+                                <span className="text-xs text-content-subtle">
+                                    {applicabilityOptions.find((o) => o.value === current)?.label}
+                                </span>
+                            );
+                        }
+                        return (
+                            <Combobox
+                                hideSearch
+                                forceDropdown
+                                id={`applicability-${row.original.id}`}
+                                options={applicabilityOptions}
+                                selected={
+                                    applicabilityOptions.find((o) => o.value === current) ?? null
+                                }
+                                setSelected={(opt) => {
+                                    if (opt) {
+                                        onApplicabilityChange(
+                                            reqId,
+                                            label,
+                                            opt.value as ApplicabilityChoice,
+                                        );
+                                    }
+                                }}
+                                disabled={savingReqId === reqId}
+                                buttonProps={{ variant: 'secondary', size: 'sm', className: 'text-xs' }}
+                            />
+                        );
+                    },
+                },
                 ...(canWrite
                     ? [
                           {
                               id: 'actions',
                               header: t('mappingsTab.colActions'),
-                              cell: ({ row }: { row: { original: FrameworkMappingDTO } }) => (
+                              cell: ({ row }: { row: { original: MappingRow } }) => (
                                   <button
                                       className="text-content-error text-xs hover:text-content-error"
                                       onClick={() =>
@@ -202,8 +337,10 @@ export function ControlMappingsTab({
             ]),
         // unmapRequirement closes over SWR state, so include the data
         // fingerprint as a dependency to avoid stale undo snapshots.
+        // savingReqId + applicabilityOptions keep the per-row applicability
+        // combobox current (disabled state + labels).
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [canWrite, mappingsSWR.data],
+        [canWrite, mappingsSWR.data, savingReqId, applicabilityOptions],
     );
 
     return (
@@ -278,6 +415,55 @@ export function ControlMappingsTab({
                     />
                 </div>
             )}
+
+            {/* Justification modal — a NOT_APPLICABLE override must carry a
+                reason (per-framework scoping of an N/A decision). */}
+            <Modal
+                showModal={justifyModal !== null}
+                setShowModal={(next) => {
+                    const open = typeof next === 'boolean' ? next : justifyModal !== null;
+                    if (!open) {
+                        setJustifyModal(null);
+                        setJustifyText('');
+                    }
+                }}
+                title={t('mappingsTab.applicabilityJustifyTitle')}
+            >
+                <Modal.Header title={t('mappingsTab.applicabilityJustifyTitle')} />
+                <Modal.Body>
+                    <FormField label={t('mappingsTab.applicabilityJustifyLabel', { requirement: justifyModal?.label ?? '' })} required>
+                        <Textarea
+                            id="applicability-justification-input"
+                            rows={4}
+                            value={justifyText}
+                            onChange={(e) => setJustifyText(e.target.value)}
+                            placeholder={t('mappingsTab.applicabilityJustifyPlaceholder')}
+                        />
+                    </FormField>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Modal.Actions>
+                        <Button
+                            variant="secondary"
+                            onClick={() => {
+                                setJustifyModal(null);
+                                setJustifyText('');
+                            }}
+                            id="applicability-justify-cancel"
+                        >
+                            {t('mappingsTab.cancel')}
+                        </Button>
+                        <Button
+                            variant="primary"
+                            onClick={confirmNotApplicable}
+                            disabled={!justifyText.trim() || savingReqId === justifyModal?.reqId}
+                            id="applicability-justify-save"
+                        >
+                            {t('mappingsTab.applicabilityJustifySave')}
+                        </Button>
+                    </Modal.Actions>
+                </Modal.Footer>
+            </Modal>
         </div>
     );
 }

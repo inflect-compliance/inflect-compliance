@@ -43,7 +43,7 @@ jest.mock('@/app-layer/repositories/ControlTemplateRepository', () => ({
 
 jest.mock('@/app-layer/repositories/ControlRepository', () => ({
     ControlRepository: {
-        listFrameworkMappings: jest.fn(),
+        listControlRequirementLinks: jest.fn(),
     },
 }));
 
@@ -133,6 +133,7 @@ describe('installControlsFromTemplate', () => {
             controlId: 'c-existing',
             tasksCreated: 0,
             requirementsLinked: 0,
+            skipped: true,
         }]);
         // No new control created
         expect(mockDb.control.create).not.toHaveBeenCalled();
@@ -159,7 +160,7 @@ describe('installControlsFromTemplate', () => {
         const res = await installControlsFromTemplate(editorCtx, ['t-1']);
 
         expect(res).toEqual([{
-            templateCode: 'A.5', controlId: 'c-new', tasksCreated: 2, requirementsLinked: 2,
+            templateCode: 'A.5', controlId: 'c-new', tasksCreated: 2, requirementsLinked: 2, skipped: false,
         }]);
         expect(mockDb.task.create).toHaveBeenCalledTimes(2);
         expect(mockDb.controlRequirementLink.upsert).toHaveBeenCalledTimes(2);
@@ -180,8 +181,8 @@ describe('installControlsFromTemplate', () => {
         const res = await installControlsFromTemplate(editorCtx, ['t-1', 't-2']);
 
         expect(res).toEqual([
-            { templateCode: 'A.5', controlId: 'c-existing', tasksCreated: 0, requirementsLinked: 0 },
-            { templateCode: 'A.6', controlId: 'c-new', tasksCreated: 0, requirementsLinked: 0 },
+            { templateCode: 'A.5', controlId: 'c-existing', tasksCreated: 0, requirementsLinked: 0, skipped: true },
+            { templateCode: 'A.6', controlId: 'c-new', tasksCreated: 0, requirementsLinked: 0, skipped: false },
         ]);
     });
 
@@ -244,7 +245,7 @@ describe('unmapRequirementFromControl', () => {
 describe('listControlMappings', () => {
     it('returns the framework mappings when the control exists', async () => {
         (mockDb.control.findFirst as jest.Mock).mockResolvedValue({ id: 'c-1' });
-        (ControlRepository.listFrameworkMappings as jest.Mock).mockResolvedValue([{ id: 'm-1' }]);
+        (ControlRepository.listControlRequirementLinks as jest.Mock).mockResolvedValue([{ id: 'm-1' }]);
 
         const res = await listControlMappings(readerCtx, 'c-1');
 
@@ -255,7 +256,7 @@ describe('listControlMappings', () => {
         (mockDb.control.findFirst as jest.Mock).mockResolvedValue(null);
         await expect(listControlMappings(readerCtx, 'missing'))
             .rejects.toThrow(/Control not found/i);
-        expect(ControlRepository.listFrameworkMappings).not.toHaveBeenCalled();
+        expect(ControlRepository.listControlRequirementLinks).not.toHaveBeenCalled();
     });
 });
 

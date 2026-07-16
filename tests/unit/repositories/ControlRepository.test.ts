@@ -170,7 +170,7 @@ describe('listPaginated', () => {
     });
 });
 
-// ─── getById / getHeaderById / listFrameworkMappings ───
+// ─── getById / getHeaderById / listControlRequirementLinks ───
 
 describe('read helpers', () => {
     it('getById queries findFirst with tenant-or-null scope and flattens the evidence join', async () => {
@@ -196,8 +196,8 @@ describe('read helpers', () => {
         expect(arg.include._count).toBeTruthy();
     });
 
-    it('listFrameworkMappings reads canonical controlRequirementLink scoped to control + tenant', async () => {
-        await ControlRepository.listFrameworkMappings(db as any, ctx, 'ctrl-9');
+    it('listControlRequirementLinks reads canonical controlRequirementLink scoped to control + tenant', async () => {
+        await ControlRepository.listControlRequirementLinks(db as any, ctx, 'ctrl-9');
         const arg = (db.controlRequirementLink.findMany.mock.calls[0] as any[])[0];
         expect(arg.where.controlId).toBe('ctrl-9');
         expect(arg.where.tenantId).toBe('tenant-1');

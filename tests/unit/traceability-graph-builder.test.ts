@@ -12,6 +12,7 @@ import {
     type RawAsset,
     type RawControl,
     type RawLink,
+    type RawRequirement,
     type RawRisk,
 } from '@/lib/traceability-graph/build';
 import { DEFAULT_NODE_CAP } from '@/lib/traceability-graph/types';
@@ -26,6 +27,14 @@ function risk(id: string, title = `Risk ${id}`): RawRisk {
 }
 function asset(id: string, name = `Asset ${id}`): RawAsset {
     return { id, name, type: 'SYSTEM', criticality: 'HIGH', status: 'ACTIVE' };
+}
+function requirement(
+    id: string,
+    code = `A.${id}`,
+    title = `Requirement ${id}`,
+    frameworkName: string | null = 'ISO 27001',
+): RawRequirement {
+    return { id, code, title, framework: frameworkName ? { name: frameworkName } : null };
 }
 function link(
     id: string,
@@ -46,6 +55,7 @@ describe('buildTraceabilityGraph — node normalisation', () => {
             controls: [ctrl('c1', 'A.5.1', 'Information security policies')],
             risks: [],
             assets: [],
+            requirements: [],
             links: [],
         });
         expect(g.nodes).toHaveLength(1);
@@ -65,6 +75,7 @@ describe('buildTraceabilityGraph — node normalisation', () => {
             controls: [{ id: 'c1', code: null, name: 'Access Logging', status: 'IN_PROGRESS' }],
             risks: [],
             assets: [],
+            requirements: [],
             links: [],
         });
         expect(g.nodes[0].label).toBe('Access Logging');
@@ -77,6 +88,7 @@ describe('buildTraceabilityGraph — node normalisation', () => {
             controls: [],
             risks: [risk('r1', 'Phishing exposure')],
             assets: [],
+            requirements: [],
             links: [],
         });
         expect(g.nodes[0]).toMatchObject({
@@ -95,6 +107,7 @@ describe('buildTraceabilityGraph — node normalisation', () => {
             controls: [],
             risks: [],
             assets: [{ id: 'a1', name: 'Prod DB', type: 'DATA_STORE', criticality: 'HIGH', status: 'ACTIVE' }],
+            requirements: [],
             links: [],
         });
         expect(g.nodes[0]).toMatchObject({
@@ -104,6 +117,26 @@ describe('buildTraceabilityGraph — node normalisation', () => {
             secondary: 'DATA STORE',
             badge: 'HIGH',
             href: '/t/acme-corp/assets/a1',
+        });
+    });
+
+    it('renders requirement nodes with code+title label and framework as secondary', () => {
+        const g = buildTraceabilityGraph({
+            tenantSlug: TENANT_SLUG,
+            controls: [],
+            risks: [],
+            assets: [],
+            requirements: [requirement('q1', 'A.5.1', 'Information security policies')],
+            links: [],
+        });
+        expect(g.nodes).toHaveLength(1);
+        expect(g.nodes[0]).toMatchObject({
+            id: 'q1',
+            kind: 'requirement',
+            label: 'A.5.1 Information security policies',
+            secondary: 'ISO 27001',
+            badge: null,
+            href: null,
         });
     });
 });
@@ -117,6 +150,7 @@ describe('buildTraceabilityGraph — edges', () => {
             controls: [ctrl('c1')],
             risks: [risk('r1')],
             assets: [],
+            requirements: [],
             links: [link('l1', 'c1', 'r1', 'mitigates')],
         });
         expect(g.edges).toHaveLength(1);
@@ -129,12 +163,34 @@ describe('buildTraceabilityGraph — edges', () => {
         });
     });
 
+    it('emits the control→requirement implements edge between both nodes', () => {
+        const g = buildTraceabilityGraph({
+            tenantSlug: TENANT_SLUG,
+            controls: [ctrl('c1')],
+            risks: [],
+            assets: [],
+            requirements: [requirement('q1')],
+            links: [link('crl:1', 'c1', 'q1', 'implements')],
+        });
+        expect(g.nodes.map((n) => n.kind).sort()).toEqual(['control', 'requirement']);
+        expect(g.edges).toHaveLength(1);
+        expect(g.edges[0]).toMatchObject({
+            id: 'crl:1',
+            source: 'c1',
+            target: 'q1',
+            relation: 'implements',
+        });
+        const byKind = Object.fromEntries(g.categories.map((c) => [c.kind, c.count]));
+        expect(byKind.requirement).toBe(1);
+    });
+
     it('preserves the qualifier (coverage type, exposure level)', () => {
         const g = buildTraceabilityGraph({
             tenantSlug: TENANT_SLUG,
             controls: [ctrl('c1')],
             risks: [],
             assets: [asset('a1')],
+            requirements: [],
             links: [link('l1', 'c1', 'a1', 'protects', 'FULL')],
         });
         expect(g.edges[0].qualifier).toBe('FULL');
@@ -146,6 +202,7 @@ describe('buildTraceabilityGraph — edges', () => {
             controls: [ctrl('c1')],
             risks: [risk('r1')],
             assets: [],
+            requirements: [],
             links: [link('l1', 'c1', 'r1', 'mitigates')],
             filters: { kinds: ['control'] },
         });
@@ -165,6 +222,7 @@ describe('buildTraceabilityGraph — categories', () => {
             controls: [ctrl('c1')],
             risks: [risk('r1')],
             assets: [],
+            requirements: [],
             links: [],
             filters: { kinds: ['control'] },
         });
@@ -178,6 +236,7 @@ describe('buildTraceabilityGraph — categories', () => {
             controls: [ctrl('c1')],
             risks: [risk('r1')],
             assets: [asset('a1')],
+            requirements: [],
             links: [],
         });
         const byKind = Object.fromEntries(g.categories.map((c) => [c.kind, c]));
@@ -204,6 +263,7 @@ describe('buildTraceabilityGraph — capping', () => {
             controls: [ctrl('c1'), ctrl('c2')],
             risks: [risk('r1')],
             assets: [asset('a1')],
+            requirements: [],
             links: [],
             nodeCap: 100,
         });
@@ -224,6 +284,7 @@ describe('buildTraceabilityGraph — capping', () => {
             controls,
             risks,
             assets,
+            requirements: [],
             links: [],
             nodeCap: 7,
         });
@@ -245,6 +306,7 @@ describe('buildTraceabilityGraph — capping', () => {
             controls: [ctrl('c1')],
             risks: [],
             assets: [],
+            requirements: [],
             links: [],
         });
         expect(g.meta.truncated).toBe(false); // 1 < 500
@@ -261,6 +323,7 @@ describe('buildTraceabilityGraph — meta.appliedFilters', () => {
             controls: [ctrl('c1')],
             risks: [],
             assets: [],
+            requirements: [],
             links: [],
             filters: { kinds: ['control'], focusId: 'c1', focusRadius: 2 },
         });
@@ -277,6 +340,7 @@ describe('buildTraceabilityGraph — meta.appliedFilters', () => {
             controls: [],
             risks: [],
             assets: [],
+            requirements: [],
             links: [],
         });
         expect(g.meta.appliedFilters).toEqual({});

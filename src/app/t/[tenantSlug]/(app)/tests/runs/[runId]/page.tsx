@@ -1,16 +1,19 @@
 'use client';
-/* TODO(swr-migration): this file has fetch-on-mount + setState
- * patterns flagged by react-hooks/set-state-in-effect. Each call site
- * carries an inline disable directive; collectively they should
- * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
+/* Routing note (Task 2): this RUN lives at the top-level
+ * /tests/runs/{runId} while its parent PLAN lives under
+ * /controls/{controlId}/tests/{planId}. That split route tree is
+ * deliberate (moving it is riskier + out of scope) — the breadcrumbs
+ * below bridge the hop back through the control's plan so the parent
+ * context never flips between Controls and Tests. */
 
 import { formatDate } from '@/lib/format-date';
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
 import { Paperclip } from 'lucide-react';
 import { textLinkVariants } from '@/components/ui/typography';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { useToast } from '@/components/ui/hooks/use-toast';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -18,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
+import { type BreadcrumbItem } from '@/components/ui/breadcrumbs';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { MetaStrip } from '@/components/ui/meta-strip';
@@ -80,9 +84,10 @@ export default function TestRunPage() {
     const toast = useToast();
     const runId = params?.runId as string;
 
-    const [run, setRun] = useState<TestRunDetail | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    // Epic 69 — canonical tenant-aware read. Guided-runner mutations
+    // (start / complete / evidence link+unlink / retest) refetch via
+    // mutate() instead of the old imperative fetchRun().
+    const { data: run, isLoading, error, mutate } = useTenantSWR<TestRunDetail>(`/tests/runs/${runId}`);
 
     // Guided run — RUNNING transition + per-step checklist (ephemeral aid).
     const [starting, setStarting] = useState(false);
@@ -100,7 +105,6 @@ export default function TestRunPage() {
     const [evUrl, setEvUrl] = useState('');
     const [evNote, setEvNote] = useState('');
     const [evEvidenceId, setEvEvidenceId] = useState('');
-    const [evidenceOptions, setEvidenceOptions] = useState<ComboboxOption[]>([]);
     const [evFile, setEvFile] = useState<File | null>(null);
     const [evFileTitle, setEvFileTitle] = useState('');
     const [evError, setEvError] = useState('');
@@ -122,44 +126,23 @@ export default function TestRunPage() {
         }
     };
 
-    const fetchRun = useCallback(async () => {
-        setLoading(true);
-        try {
-            const res = await fetch(apiUrl(`/tests/runs/${runId}`));
-            if (!res.ok) throw new Error(t('run.errors.notFound'));
-            setRun(await res.json());
-        } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : t('run.errors.unknown'));
-        } finally {
-            setLoading(false);
-        }
-    }, [apiUrl, runId, t]);
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    useEffect(() => { fetchRun(); }, [fetchRun]);
-
-    // Load the evidence library once for the EVIDENCE-kind picker (replaces
-    // the old raw-cuid paste input).
-    useEffect(() => {
-        let cancelled = false;
-        fetch(apiUrl('/evidence'))
-            .then((r) => (r.ok ? r.json() : []))
-            .then((data) => {
-                if (cancelled) return;
-                const items = Array.isArray(data) ? data : (data.items ?? []);
-                // eslint-disable-next-line react-hooks/set-state-in-effect
-                setEvidenceOptions(items.map((e: { id: string; title: string }) => ({ value: e.id, label: e.title })));
-            })
-            .catch(() => {});
-        return () => { cancelled = true; };
-    }, [apiUrl]);
+    // Evidence library for the EVIDENCE-kind picker — read via SWR and
+    // derived to options, replacing the old fetch-into-setState effect.
+    // The endpoint may return a bare array or a `{ items }` envelope.
+    const { data: evidenceData } = useTenantSWR<
+        { id: string; title: string }[] | { items?: { id: string; title: string }[] }
+    >('/evidence');
+    const evidenceOptions = useMemo<ComboboxOption[]>(() => {
+        const items = Array.isArray(evidenceData) ? evidenceData : (evidenceData?.items ?? []);
+        return items.map((e) => ({ value: e.id, label: e.title }));
+    }, [evidenceData]);
 
     const startRun = async () => {
         setStarting(true);
         try {
             const res = await fetch(apiUrl(`/tests/runs/${runId}/start`), { method: 'POST' });
             if (!res.ok) throw new Error(await res.text());
-            await fetchRun();
+            await mutate();
         } catch {
             toast.error(t('run.errors.startFailed'));
         } finally {
@@ -179,7 +162,7 @@ export default function TestRunPage() {
             });
             if (!res.ok) throw new Error(await res.text());
             toast.success(t('run.completedToast'));
-            await fetchRun();
+            await mutate();
         } catch {
             toast.error(t('run.errors.completeFailed'));
         } finally {
@@ -251,7 +234,7 @@ export default function TestRunPage() {
             setEvEvidenceId('');
             setEvFile(null);
             setEvFileTitle('');
-            await fetchRun();
+            await mutate();
         } catch (err) {
             setEvError(err instanceof Error ? err.message : t('run.errors.addFailed'));
         } finally {
@@ -263,34 +246,46 @@ export default function TestRunPage() {
         setUnlinkingId(linkId);
         try {
             await fetch(apiUrl(`/tests/runs/${runId}/evidence/${linkId}`), { method: 'DELETE' });
-            await fetchRun();
+            await mutate();
         } finally {
             setUnlinkingId(null);
         }
     };
 
-    const fallbackBreadcrumbs = [
+    // Task 2 — ONE coherent chain in every state. Always route the
+    // parent hop back through the control's plan (falling back to
+    // /controls when ids aren't known yet) so the ancestor context never
+    // flips between Controls and Tests. `run` is optional here so the
+    // same chain renders in the loading/error states too.
+    const breadcrumbs: BreadcrumbItem[] = [
         { label: t('crumb.dashboard'), href: tenantHref('/dashboard') },
-        { label: t('crumb.tests'), href: tenantHref('/tests') },
-        { label: run?.testPlan?.name ?? t('run.run') },
+        { label: t('run.controls'), href: tenantHref('/controls') },
+        ...(run?.controlId && run?.testPlanId
+            ? [{
+                label: run.testPlan?.name ?? t('run.plan'),
+                href: tenantHref(`/controls/${run.controlId}/tests/${run.testPlanId}`),
+            }]
+            : []),
+        { label: t('run.run') },
     ];
-    if (loading) {
+
+    if (isLoading && !run) {
         return (
-            <EntityDetailLayout loading title="" breadcrumbs={fallbackBreadcrumbs}>
+            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (error) {
         return (
-            <EntityDetailLayout error={error} title="" breadcrumbs={fallbackBreadcrumbs}>
+            <EntityDetailLayout error={t('run.errors.notFound')} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (!run) {
         return (
-            <EntityDetailLayout empty={{ message: t('run.notFoundEmpty') }} title="" breadcrumbs={fallbackBreadcrumbs}>
+            <EntityDetailLayout empty={{ message: t('run.notFoundEmpty') }} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
@@ -303,15 +298,6 @@ export default function TestRunPage() {
 
     // Determine if "Link" button should be disabled
     const canSubmitEvidence = evKind === 'LINK' ? !!evUrl : evKind === 'EVIDENCE' ? !!evEvidenceId : !!evFile;
-
-    const breadcrumbs = run.testPlan
-        ? [
-            { label: t('crumb.dashboard'), href: tenantHref('/dashboard') },
-            { label: t('run.controls'), href: tenantHref('/controls') },
-            { label: run.testPlan.name, href: tenantHref(`/controls/${run.testPlan.controlId}/tests/${run.testPlanId}`) },
-            { label: t('run.run') },
-        ]
-        : fallbackBreadcrumbs;
 
     return (
         <EntityDetailLayout

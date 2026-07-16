@@ -128,16 +128,28 @@ describe("Epic P2-PR-C — control reverse-lookup", () => {
         it("fetches lazily — only when `open` is true", () => {
             // The useEffect MUST gate on `open` first; an
             // unconditional fetch would hit the API on every
-            // control detail page mount.
+            // control detail page mount. (Wide window — the effect
+            // now carries a multi-line comment before the guard.)
             expect(src).toMatch(
-                /useEffect\(\(\)\s*=>\s*\{[\s\S]{0,200}if\s*\(!open\)\s*return/,
+                /useEffect\(\(\)\s*=>\s*\{[\s\S]{0,600}if\s*\(!open\)\s*return/,
             );
         });
 
         it("hits the canonical reverse-lookup URL", () => {
+            // The modal now reads four sections; the shared base is
+            // built once and each read appends its suffix.
             expect(src).toMatch(
-                /\/api\/t\/\$\{tenantSlug\}\/controls\/\$\{controlId\}\/process-maps/,
+                /const base = `\/api\/t\/\$\{tenantSlug\}\/controls\/\$\{controlId\}`/,
             );
+            expect(src).toMatch(/fetch\(`\$\{base\}\/process-maps`\)/);
+        });
+
+        it("also fetches the requirements + traceability sections", () => {
+            // The reverse-lookup grew from process-maps-only into a
+            // four-section "where used" roll-up (requirements it
+            // satisfies, risks it mitigates, assets it protects).
+            expect(src).toMatch(/fetch\(`\$\{base\}\/requirements`\)/);
+            expect(src).toMatch(/fetch\(`\$\{base\}\/traceability`\)/);
         });
 
         it("groups multi-edge results by map (one row per map)", () => {

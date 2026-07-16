@@ -231,6 +231,12 @@ model ControlRequirementLink {
   tenantId      String
   controlId     String
   requirementId String
+  /// Per-framework applicability override. NULL = inherit the control's global
+  /// Control.applicability. Set to scope an N/A decision to ONE framework —
+  /// a control can be N/A for framework A yet applicable for framework B.
+  /// SoA / coverage read the EFFECTIVE value (link ?? control).
+  applicability            Applicability?
+  applicabilityJustification String?
   createdAt     DateTime             @default(now())
   control       Control              @relation(fields: [controlId], references: [id], onDelete: Cascade)
   requirement   FrameworkRequirement @relation(fields: [requirementId], references: [id])

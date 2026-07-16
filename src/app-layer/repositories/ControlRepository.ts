@@ -194,17 +194,16 @@ export class ControlRepository {
     }
 
     /**
-     * Framework mappings for one control — the per-tab fetch that backs the
-     * control detail Mappings tab (#102 item 1).
+     * The framework-requirement links for one control — backs the control
+     * detail Requirements tab.
      *
-     * Reads the CANONICAL `controlRequirementLink` table (not the legacy
-     * `frameworkMapping` island) so the tab shows the same links that SoA /
-     * coverage / readiness read — including links created by the framework
-     * install wizard, not just the old template path. The row is mapped back
-     * to the `FrameworkMappingDTO` shape the tab already renders
-     * (`fromRequirement` + `framework.name`).
+     * Named for what it queries: the CANONICAL `controlRequirementLink` table
+     * (NOT the legacy `frameworkMapping` island — a real but separate model on
+     * `Control`). SoA / coverage / readiness read the same links, so the tab
+     * shows exactly the mappings that drive those surfaces. The row is mapped
+     * to the `fromRequirement` + `framework.name` shape the tab renders.
      */
-    static async listFrameworkMappings(db: PrismaTx, ctx: RequestContext, controlId: string) {
+    static async listControlRequirementLinks(db: PrismaTx, ctx: RequestContext, controlId: string) {
         const links = await db.controlRequirementLink.findMany({
             where: { controlId, tenantId: ctx.tenantId },
             include: {
@@ -217,6 +216,11 @@ export class ControlRepository {
             id: l.id,
             fromRequirementId: l.requirementId,
             toControlId: l.controlId,
+            // Per-framework applicability override on the link (null = inherit
+            // the control's global value) so the Requirements tab can show +
+            // edit it.
+            applicability: l.applicability,
+            applicabilityJustification: l.applicabilityJustification,
             fromRequirement: {
                 id: l.requirement.id,
                 code: l.requirement.code,

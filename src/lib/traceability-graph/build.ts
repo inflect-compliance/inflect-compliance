@@ -43,6 +43,13 @@ export interface RawAsset {
     status: string;
 }
 
+export interface RawRequirement {
+    id: string;
+    code: string;
+    title: string;
+    framework: { name: string } | null;
+}
+
 export interface RawLink {
     /** Underlying link-row id. */
     id: string;
@@ -59,7 +66,8 @@ export interface BuildInput {
     controls: ReadonlyArray<RawControl>;
     risks: ReadonlyArray<RawRisk>;
     assets: ReadonlyArray<RawAsset>;
-    /** Edges, all three relationship types pre-tagged. */
+    requirements: ReadonlyArray<RawRequirement>;
+    /** Edges, all four relationship types pre-tagged. */
     links: ReadonlyArray<RawLink>;
     /** Filters the caller asked for — echoed back in `meta`. */
     filters?: TraceabilityGraphFilters;
@@ -99,6 +107,22 @@ function assetNode(a: RawAsset, tenantSlug: string): TraceabilityNode {
         secondary: a.type.replace(/_/g, ' '),
         badge: a.criticality,
         href: `/t/${tenantSlug}/assets/${a.id}`,
+    };
+}
+
+function requirementNode(r: RawRequirement): TraceabilityNode {
+    return {
+        id: r.id,
+        kind: 'requirement',
+        // Requirement code leads (e.g. "A.5.1"); the full title is the
+        // secondary line, mirroring controlNode's code/name split.
+        label: r.code ? `${r.code} ${r.title}` : r.title,
+        secondary: r.framework?.name ?? null,
+        badge: null,
+        // Requirements have no per-id detail route (they live inside the
+        // framework page keyed by framework key, which we don't select
+        // here) — non-navigable, so null per the TraceabilityNode contract.
+        href: null,
     };
 }
 
@@ -152,6 +176,9 @@ export function buildTraceabilityGraph(input: BuildInput): TraceabilityGraph {
     }
     if (!allowedKinds || allowedKinds.has('asset')) {
         for (const a of input.assets) allNodes.push(assetNode(a, input.tenantSlug));
+    }
+    if (!allowedKinds || allowedKinds.has('requirement')) {
+        for (const r of input.requirements) allNodes.push(requirementNode(r));
     }
 
     // 2. Apply soft cap (keeps relative weights per kind).

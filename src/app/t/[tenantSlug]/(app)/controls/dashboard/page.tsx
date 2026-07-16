@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { useTenantApiUrl, useTenantContext } from '@/lib/tenant-context-provider';
+import Link from 'next/link';
+import { useTenantApiUrl, useTenantContext, useTenantHref } from '@/lib/tenant-context-provider';
 import type { ControlDashboardDTO, ConsistencyCheckDTO } from '@/lib/dto';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { IconAction } from '@/components/ui/icon-action';
@@ -36,6 +37,7 @@ const STATUS_VARIANT: Record<string, StatusBreakdownVariant> = {
 
 export default function ControlsDashboard() {
     const apiUrl = useTenantApiUrl();
+    const tenantHref = useTenantHref();
     const { permissions } = useTenantContext();
     const t = useTranslations('controls');
     const STATUS_LABELS = buildStatusLabels(t);
@@ -195,34 +197,72 @@ export default function ControlsDashboard() {
             </div>
 
             {/* Consistency Check */}
-            {showConsistency && consistency && (
-                <Card id="consistency-results">
-                    <Heading level={3} className="mb-3"><AppIcon name="search" size={16} className="inline-block mr-1" /> {t('dashboard.consistencyResults')}</Heading>
-                    <div className="grid grid-cols-3 gap-default mb-4">
-                        <div className="text-center">
-                            <p className={`text-xl font-bold ${consistency.summary.missingCodeCount > 0 ? 'text-content-warning' : 'text-content-success'}`}>
-                                {consistency.summary.missingCodeCount}
+            {showConsistency && consistency && (() => {
+                // Each count deep-links to a client-side filtered controls
+                // view (`/controls?ids=…`) listing exactly the offending
+                // controls. A zero count renders as a plain (non-linked)
+                // number — nothing to navigate to.
+                const missingIds = consistency.issues.missingCode.map((x) => x.id);
+                const duplicateIds = consistency.issues.duplicateCodes.flatMap((d) => d.controlIds);
+                const overdueIds = Array.from(
+                    new Set(consistency.issues.overdueTasks.map((tk) => tk.controlId)),
+                );
+                const renderCount = (
+                    count: number,
+                    ids: string[],
+                    toneClass: string,
+                    label: string,
+                    id: string,
+                ) => (
+                    <div className="text-center">
+                        {count > 0 && ids.length > 0 ? (
+                            <Link
+                                href={tenantHref(`/controls?ids=${ids.join(',')}`)}
+                                id={id}
+                                className={`text-xl font-bold ${toneClass} hover:underline focus-visible:outline-none focus-visible:underline`}
+                            >
+                                {count}
+                            </Link>
+                        ) : (
+                            <p className={`text-xl font-bold ${count > 0 ? toneClass : 'text-content-success'}`}>
+                                {count}
                             </p>
-                            <p className="text-xs text-content-subtle">{t('dashboard.missingCode')}</p>
-                        </div>
-                        <div className="text-center">
-                            <p className={`text-xl font-bold ${consistency.summary.duplicateCodeCount > 0 ? 'text-content-error' : 'text-content-success'}`}>
-                                {consistency.summary.duplicateCodeCount}
-                            </p>
-                            <p className="text-xs text-content-subtle">{t('dashboard.duplicateCodes')}</p>
-                        </div>
-                        <div className="text-center">
-                            <p className={`text-xl font-bold ${consistency.summary.overdueTaskCount > 0 ? 'text-content-error' : 'text-content-success'}`}>
-                                {consistency.summary.overdueTaskCount}
-                            </p>
-                            <p className="text-xs text-content-subtle">{t('dashboard.overdueTasks')}</p>
-                        </div>
+                        )}
+                        <p className="text-xs text-content-subtle">{label}</p>
                     </div>
-                    {consistency.summary.missingCodeCount === 0 && consistency.summary.duplicateCodeCount === 0 && consistency.summary.overdueTaskCount === 0 && (
-                        <p className="text-sm text-content-success text-center"><AppIcon name="success" size={16} className="inline-block mr-1" /> {t('dashboard.allPassed')}</p>
-                    )}
-                </Card>
-            )}
+                );
+                return (
+                    <Card id="consistency-results">
+                        <Heading level={3} className="mb-3"><AppIcon name="search" size={16} className="inline-block mr-1" /> {t('dashboard.consistencyResults')}</Heading>
+                        <div className="grid grid-cols-3 gap-default mb-4">
+                            {renderCount(
+                                consistency.summary.missingCodeCount,
+                                missingIds,
+                                'text-content-warning',
+                                t('dashboard.missingCode'),
+                                'consistency-missing-code-link',
+                            )}
+                            {renderCount(
+                                consistency.summary.duplicateCodeCount,
+                                duplicateIds,
+                                'text-content-error',
+                                t('dashboard.duplicateCodes'),
+                                'consistency-duplicate-codes-link',
+                            )}
+                            {renderCount(
+                                consistency.summary.overdueTaskCount,
+                                overdueIds,
+                                'text-content-error',
+                                t('dashboard.overdueTasks'),
+                                'consistency-overdue-tasks-link',
+                            )}
+                        </div>
+                        {consistency.summary.missingCodeCount === 0 && consistency.summary.duplicateCodeCount === 0 && consistency.summary.overdueTaskCount === 0 && (
+                            <p className="text-sm text-content-success text-center"><AppIcon name="success" size={16} className="inline-block mr-1" /> {t('dashboard.allPassed')}</p>
+                        )}
+                    </Card>
+                );
+            })()}
 
             {/* R2-P3 — the Best-value controls leaderboard (RQ3-8, mitigation
                 ROI) was a well-built component mounted nowhere. It belongs on

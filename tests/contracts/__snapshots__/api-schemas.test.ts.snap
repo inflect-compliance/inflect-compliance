@@ -1611,6 +1611,23 @@ exports[`API contract — per-schema snapshots schema: ControlDetail 1`] = `
               "fromRequirementId": {
                 "type": "string"
               },
+              "applicability": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "APPLICABLE",
+                  "NOT_APPLICABLE",
+                  null
+                ]
+              },
+              "applicabilityJustification": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "fromRequirement": {
                 "type": [
                   "object",

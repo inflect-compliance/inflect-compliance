@@ -34,6 +34,7 @@ import { CACHE_KEYS } from '@/lib/swr-keys';
 import { extractMutationError } from '@/lib/mutations';
 import { useToastWithUndo } from '@/components/ui/hooks';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
+import { UserCombobox } from '@/components/ui/user-combobox';
 import { Tooltip, InfoTooltip } from '@/components/ui/tooltip';
 import { CopyText } from '@/components/ui/copy-text';
 import dynamic from 'next/dynamic';
@@ -252,6 +253,13 @@ export default function ControlDetailPage() {
     // Epic P2-PR-C — reverse-lookup modal. "Where is this control
     // used in process maps?" — opens from a header button.
     const [reverseLookupOpen, setReverseLookupOpen] = useState(false);
+
+    // Contributor add/remove (Overview). Adds/removes route through the
+    // dedicated contributor endpoints; the page-data SWR (which already
+    // carries `control.contributors`) is revalidated on success so the
+    // badge list stays authoritative.
+    const [addContributorId, setAddContributorId] = useState<string | null>(null);
+    const [savingContributor, setSavingContributor] = useState(false);
 
     // Task creation
 
@@ -547,6 +555,34 @@ export default function ControlDetailPage() {
         setShowApplicability(false);
     };
 
+    const addContributor = async () => {
+        if (!addContributorId) return;
+        setSavingContributor(true);
+        try {
+            await fetch(apiUrl(`/controls/${controlId}/contributors`), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: addContributorId }),
+            });
+            setAddContributorId(null);
+            await refetch();
+        } finally {
+            setSavingContributor(false);
+        }
+    };
+
+    const removeContributor = async (userId: string) => {
+        setSavingContributor(true);
+        try {
+            await fetch(apiUrl(`/controls/${controlId}/contributors/${userId}`), {
+                method: 'DELETE',
+            });
+            await refetch();
+        } finally {
+            setSavingContributor(false);
+        }
+    };
+
     // B4 (2026-06-07): the legacy control-scoped task flow
     // (updateTaskStatus + controlTaskColumns + the tasksSWR fetch) was
     // removed with the legacy "Control tasks" DataTable — the Control Tasks
@@ -713,7 +749,10 @@ export default function ControlDetailPage() {
                 // EP-3 — Evidence entities reach the control through the join.
                 (control._count?.evidenceControlLinks ?? 0),
         },
-        { key: 'mappings', label: tx('detailPage.tabMappings'), count: control._count?.frameworkMappings ?? 0 },
+        // Tab KEY stays 'mappings' (URLs/state depend on it); only the
+        // visible LABEL is "Requirements" — this tab holds control↔requirement
+        // links, while the Traceability tab holds risks + assets.
+        { key: 'mappings', label: tx('detailPage.tabRequirements'), count: control._count?.frameworkMappings ?? 0 },
         { key: 'traceability', label: tx('detailPage.tabTraceability') },
         { key: 'activity', label: tx('detailPage.tabActivity') },
         { key: 'tests', label: tx('detailPage.tabTests') },
@@ -978,11 +1017,50 @@ export default function ControlDetailPage() {
                         )}
                         <div>
                             <span className="text-xs text-content-subtle uppercase">{tx('detailPage.eyebrowContributors')}</span>
-                            <div className="text-sm text-content-default mt-1">
+                            <div className="text-sm text-content-default mt-1 flex flex-wrap items-center gap-tight">
                                 {(control.contributors?.length ?? 0) > 0 ? control.contributors?.map((c: ContributorDTO) => (
-                                    <StatusBadge variant="neutral" className="mr-1" key={c.user.id}>{c.user.name ?? '—'}</StatusBadge>
-                                )) : '—'}
+                                    <StatusBadge variant="neutral" key={c.user.id} className="inline-flex items-center gap-1">
+                                        {c.user.name ?? '—'}
+                                        {permissions.canWrite && (
+                                            <button
+                                                type="button"
+                                                onClick={() => removeContributor(c.user.id)}
+                                                disabled={savingContributor}
+                                                aria-label={tx('detailPage.removeContributor', { name: c.user.name ?? '' })}
+                                                id={`remove-contributor-${c.user.id}`}
+                                                className="text-content-subtle hover:text-content-error leading-none"
+                                            >
+                                                &times;
+                                            </button>
+                                        )}
+                                    </StatusBadge>
+                                )) : <span className="text-content-subtle">—</span>}
                             </div>
+                            {permissions.canWrite && (
+                                <div className="mt-2 flex items-center gap-tight">
+                                    <div className="min-w-0 flex-1">
+                                        <UserCombobox
+                                            tenantSlug={tenantSlug}
+                                            selectedId={addContributorId}
+                                            onChange={(userId) => setAddContributorId(userId)}
+                                            placeholder={tx('detailPage.addContributorPlaceholder')}
+                                            size="sm"
+                                            filter={(m) =>
+                                                !(control.contributors ?? []).some((c) => c.user.id === m.id)
+                                            }
+                                        />
+                                    </div>
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={addContributor}
+                                        disabled={!addContributorId || savingContributor}
+                                        id="add-contributor-btn"
+                                    >
+                                        {tx('detailPage.addContributor')}
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                         <div>
                             <span className="text-xs text-content-subtle uppercase">{tx('detailPage.eyebrowLastTested')}</span>

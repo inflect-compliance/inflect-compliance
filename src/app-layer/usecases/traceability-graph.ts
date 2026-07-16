@@ -2,8 +2,9 @@
  * Epic 47.1 — `getTraceabilityGraph` usecase.
  *
  * Pulls every Control / Risk / Asset for the calling tenant plus
- * the three relationship link tables (`RiskControl`,
- * `ControlAsset`, `AssetRiskLink`) and assembles them into a
+ * the four relationship link tables (`RiskControl`,
+ * `ControlAsset`, `AssetRiskLink`, `ControlRequirementLink`) and
+ * the linked FrameworkRequirements, then assembles them into a
  * typed, capped, category-tagged graph payload via
  * `buildTraceabilityGraph`.
  *
@@ -27,6 +28,7 @@ import {
     type RawAsset,
     type RawControl,
     type RawLink,
+    type RawRequirement,
     type RawRisk,
 } from '@/lib/traceability-graph/build';
 import {
@@ -81,8 +83,8 @@ export async function getTraceabilityGraph(
     const linkCap = nodeCap * LINK_CAP_MULTIPLIER;
 
     return runInTenantContext(ctx, async (db) => {
-        // Run the 6 reads in parallel — the bottleneck is the link
-        // table joins, not the entity fetches. Each respects RLS
+        // Run the entity + link reads in parallel — the bottleneck is
+        // the link table joins, not the entity fetches. Each respects RLS
         // independently; explicit `tenantId` filter is defence-in-
         // depth, matching every other usecase in this layer.
         const [
@@ -92,6 +94,7 @@ export async function getTraceabilityGraph(
             riskControls,
             controlAssets,
             assetRisks,
+            controlRequirementLinks,
         ] = await Promise.all([
             wantKinds && !wantKinds.has('control')
                 ? Promise.resolve([] as RawControl[])
@@ -151,7 +154,40 @@ export async function getTraceabilityGraph(
                 },
                 take: linkCap,
             }),
+            // Gated on the requirement kind — mirrors the node fetches:
+            // when the caller filters requirements out there's no point
+            // materialising the control→requirement link rows.
+            wantKinds && !wantKinds.has('requirement')
+                ? Promise.resolve(
+                      [] as { id: string; controlId: string; requirementId: string }[],
+                  )
+                : db.controlRequirementLink.findMany({
+                      where: { tenantId: ctx.tenantId },
+                      select: { id: true, controlId: true, requirementId: true },
+                      take: linkCap,
+                  }),
         ]);
+
+        // Fetch ONLY the requirements actually linked to a control, so
+        // the requirement column isn't flooded with the tenant's entire
+        // framework corpus. FrameworkRequirement is a global (non-tenant)
+        // model — tenant scoping is carried by the link rows above.
+        const linkedRequirementIds = [
+            ...new Set(controlRequirementLinks.map((l) => l.requirementId)),
+        ];
+        const requirements: RawRequirement[] =
+            linkedRequirementIds.length === 0
+                ? []
+                : await db.frameworkRequirement.findMany({
+                      where: { id: { in: linkedRequirementIds } },
+                      select: {
+                          id: true,
+                          code: true,
+                          title: true,
+                          framework: { select: { name: true } },
+                      },
+                      take: nodeCap,
+                  });
 
         // Tag each link with its semantic relation. The graph
         // builder sees these as one homogeneous list and just
@@ -178,6 +214,13 @@ export async function getTraceabilityGraph(
                 relation: 'exposes' as const,
                 qualifier: l.exposureLevel,
             })),
+            ...controlRequirementLinks.map((l) => ({
+                id: `crl:${l.id}`,
+                a: l.controlId,
+                b: l.requirementId,
+                relation: 'implements' as const,
+                qualifier: null,
+            })),
         ];
 
         return buildTraceabilityGraph({
@@ -189,6 +232,7 @@ export async function getTraceabilityGraph(
             controls,
             risks,
             assets,
+            requirements,
             links,
             filters,
             nodeCap: options.nodeCap ?? DEFAULT_NODE_CAP,
