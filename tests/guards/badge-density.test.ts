@@ -85,6 +85,13 @@ const STATUS_BADGE_BUDGET: Record<string, number> = {
     "src/app/t/[tenantSlug]/(app)/risks/ai/page.tsx": 12,
     "src/app/t/[tenantSlug]/(app)/reports/soa/SoAClient.tsx": 11,
     "src/app/t/[tenantSlug]/(app)/controls/[controlId]/page.tsx": 10,
+    // Controls list — status / criticality / applicability / tasks and the new
+    // Health verdict badge each lead a distinct column (never stacked in one
+    // cell). +1 for the health-verdict column.
+    "src/app/t/[tenantSlug]/(app)/controls/ControlsClient.tsx": 5,
+    // Control health card — badges across separate vital tiles (composite
+    // health verdict + status + latest-test + latest-check), never stacked.
+    "src/app/t/[tenantSlug]/(app)/controls/[controlId]/_tabs/ControlHealthCard.tsx": 5,
     // Heavily-tabbed detail page — badges live across separate tabs (never
     // on screen together): MetaStrip status/criticality, overview inherent
     // risk, assessments status/rating, subprocessors + the new nth-party

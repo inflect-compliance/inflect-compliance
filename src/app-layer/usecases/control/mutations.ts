@@ -109,6 +109,10 @@ export async function updateControl(ctx: RequestContext, id: string, data: {
     successCriteria?: string | null;
     testingMethodology?: string | null;
     annualCost?: number | null;
+    /** Declared operating effectiveness (0–100). The measured pass rate wins
+     *  when a control has test history; this is the fallback ROI/residual use
+     *  otherwise. Editable so the fallback is real, not a dead column. */
+    effectiveness?: number | null;
 }) {
     assertCanUpdateControl(ctx);
 
@@ -126,6 +130,7 @@ export async function updateControl(ctx: RequestContext, id: string, data: {
             ...(data.successCriteria !== undefined && { successCriteria: data.successCriteria }),
             ...(data.testingMethodology !== undefined && { testingMethodology: data.testingMethodology }),
             ...(data.annualCost !== undefined && { annualCost: data.annualCost }),
+            ...(data.effectiveness !== undefined && { effectiveness: data.effectiveness }),
         });
 
         if (!control) {
@@ -284,41 +289,11 @@ export async function setControlOwner(ctx: RequestContext, id: string, ownerUser
     return result;
 }
 
-// ─── Cadence: Mark Test Completed ───
-
-export async function markControlTestCompleted(ctx: RequestContext, controlId: string) {
-    assertCanUpdateControl(ctx);
-
-    const result = await runInTenantContext(ctx, async (db) => {
-        const existing = await ControlRepository.getById(db, ctx, controlId);
-        if (!existing) throw notFound('Control not found');
-        if (!existing.tenantId) throw forbidden('Cannot modify global library controls');
-        if (existing.applicability === 'NOT_APPLICABLE') {
-            throw badRequest('Cannot mark test completed for NOT_APPLICABLE controls');
-        }
-
-        const now = new Date();
-        const nextDue = computeNextDueAt(existing.frequency, now);
-
-        const updated = await ControlRepository.update(db, ctx, controlId, {
-            lastTested: now,
-            nextDueAt: nextDue,
-        });
-
-        await logEvent(db, ctx, {
-            action: 'CONTROL_TEST_COMPLETED',
-            entityType: 'Control',
-            entityId: controlId,
-            details: `Test completed. Next due: ${nextDue ? nextDue.toISOString().slice(0, 10) : 'N/A (ad hoc)'}`,
-            detailsJson: { category: 'custom', event: 'test_completed', lastTested: now.toISOString(), nextDueAt: nextDue?.toISOString() ?? null },
-            metadata: { lastTested: now.toISOString(), nextDueAt: nextDue?.toISOString() ?? null },
-        });
-
-        return updated;
-    });
-    await bumpEntityCacheVersion(ctx, 'control');
-    return result;
-}
+// ─── Cadence ───
+// The manual `markControlTestCompleted` + `POST /test-completed` endpoint were
+// removed — the identical control-state write (lastTested + nextDueAt) is
+// performed automatically by `attestControlTested` on every completed
+// test/check run (see control-test.ts), and no UI ever called the manual one.
 
 // ─── Soft Delete / Restore / Purge ───
 

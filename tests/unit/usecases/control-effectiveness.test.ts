@@ -61,9 +61,9 @@ describe('getControlEffectiveness', () => {
 
     it('computes pass rate correctly from PASS/FAIL/INCONCLUSIVE groups', async () => {
         tenantDb.controlTestRun.groupBy.mockResolvedValueOnce([
-            { result: 'PASS', _count: { _all: 7 } },
-            { result: 'FAIL', _count: { _all: 2 } },
-            { result: 'INCONCLUSIVE', _count: { _all: 1 } },
+            { controlId: 'c-1', result: 'PASS', _count: { _all: 7 } },
+            { controlId: 'c-1', result: 'FAIL', _count: { _all: 2 } },
+            { controlId: 'c-1', result: 'INCONCLUSIVE', _count: { _all: 1 } },
         ]);
         const out = await getControlEffectiveness(ctx, 'c-1');
         expect(out.passes).toBe(7);
@@ -75,7 +75,7 @@ describe('getControlEffectiveness', () => {
 
     it('all PASS → passRate 100', async () => {
         tenantDb.controlTestRun.groupBy.mockResolvedValueOnce([
-            { result: 'PASS', _count: { _all: 5 } },
+            { controlId: 'c-1', result: 'PASS', _count: { _all: 5 } },
         ]);
         const out = await getControlEffectiveness(ctx, 'c-1');
         expect(out.passRate).toBe(100);
@@ -83,8 +83,8 @@ describe('getControlEffectiveness', () => {
 
     it('no PASS → passRate 0', async () => {
         tenantDb.controlTestRun.groupBy.mockResolvedValueOnce([
-            { result: 'FAIL', _count: { _all: 3 } },
-            { result: 'INCONCLUSIVE', _count: { _all: 1 } },
+            { controlId: 'c-1', result: 'FAIL', _count: { _all: 3 } },
+            { controlId: 'c-1', result: 'INCONCLUSIVE', _count: { _all: 1 } },
         ]);
         const out = await getControlEffectiveness(ctx, 'c-1');
         expect(out.passRate).toBe(0);
@@ -92,8 +92,8 @@ describe('getControlEffectiveness', () => {
 
     it('rounds the percentage to the nearest integer', async () => {
         tenantDb.controlTestRun.groupBy.mockResolvedValueOnce([
-            { result: 'PASS', _count: { _all: 2 } },
-            { result: 'FAIL', _count: { _all: 1 } },
+            { controlId: 'c-1', result: 'PASS', _count: { _all: 2 } },
+            { controlId: 'c-1', result: 'FAIL', _count: { _all: 1 } },
         ]);
         const out = await getControlEffectiveness(ctx, 'c-1');
         // 2/3 = 66.66… → 67
@@ -119,7 +119,9 @@ describe('getControlEffectiveness', () => {
         const call = tenantDb.controlTestRun.groupBy.mock.calls[0][0];
         expect(call.where.status).toBe('COMPLETED');
         expect(call.where.tenantId).toBe('tenant-1');
-        expect(call.where.controlId).toBe('ctrl-X');
+        // Canonical batched shape: the single-control wrapper passes a
+        // one-element `in` list to `computeControlEffectivenessMap`.
+        expect(call.where.controlId.in).toEqual(['ctrl-X']);
     });
 
     it('default window is 90 days', async () => {

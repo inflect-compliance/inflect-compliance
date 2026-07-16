@@ -9,6 +9,10 @@
 
 const mockDb = {
     control: { findFirst: jest.fn(), findMany: jest.fn() },
+    // MEASURED→DECLARED reconciliation now runs a batched groupBy for the
+    // measured pass rate; an empty result means measured contributes nothing,
+    // so ROI falls back to the DECLARED `effectiveness` scalar these cases seed.
+    controlTestRun: { groupBy: jest.fn().mockResolvedValue([]) },
 } as any;
 
 jest.mock('@/lib/db-context', () => ({

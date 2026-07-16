@@ -2084,6 +2084,14 @@ exports[`API contract — per-schema snapshots schema: ControlUpdateRequest 1`] 
         "null"
       ],
       "minimum": 0
+    },
+    "effectiveness": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 100
     }
   },
   "description": "Partial update for a control. Status, applicability, and owner have dedicated focused endpoints; this body covers descriptive metadata only."

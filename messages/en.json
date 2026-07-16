@@ -1429,7 +1429,8 @@
       "owner": "Owner",
       "frequency": "Frequency",
       "tasks": "Tasks",
-      "evidence": "Evidence"
+      "evidence": "Evidence",
+      "health": "Health"
     },
     "bulk": {
       "setStatus": "Set status",
@@ -1456,7 +1457,8 @@
       "na": "N/A",
       "yes": "Yes",
       "categorisedEmpty": "No categorised controls yet.",
-      "notAssessed": "Not assessed"
+      "notAssessed": "Not assessed",
+      "healthColumn": "Health"
     },
     "empty": {
       "filterTitle": "No controls match your filters",
@@ -1661,7 +1663,10 @@
       "unassigned": "Unassigned",
       "cancel": "Cancel",
       "saving": "Saving...",
-      "save": "Save"
+      "save": "Save",
+      "effectivenessLabel": "Declared effectiveness (%)",
+      "effectivenessHelp": "Declared fallback (0–100%). The measured pass rate wins when tests exist — leave at 0 if not declared.",
+      "effectivenessAria": "Declared effectiveness percent"
     },
     "newTask": {
       "title": "Create Task",
@@ -1684,7 +1689,11 @@
       "sublineOne": "Across {quantified} of {linked} linked risk with a quantified ALE, priced at {effectiveness}% declared effectiveness.",
       "sublineOther": "Across {quantified} of {linked} linked risks with a quantified ALE, priced at {effectiveness}% declared effectiveness.",
       "loadError": "Couldn't load ROI.",
-      "retry": "Retry"
+      "retry": "Retry",
+      "source": {
+        "MEASURED": "Measured",
+        "DECLARED": "Declared"
+      }
     },
     "mappingsTab": {
       "unmapped": "Requirement unmapped",
@@ -1758,7 +1767,8 @@
       "missingCode": "Missing Code",
       "duplicateCodes": "Duplicate Codes",
       "allPassed": "All checks passed — no issues found",
-      "bestValueTitle": "Best-value controls"
+      "bestValueTitle": "Best-value controls",
+      "controlHealthTitle": "Control health"
     },
     "templates": {
       "title": "Control Templates",
@@ -1920,7 +1930,15 @@
         "NOT_APPLICABLE": "N/A",
         "PENDING": "Pending",
         "RUNNING": "Running"
-      }
+      },
+      "verdict": {
+        "HEALTHY": "Healthy",
+        "DEGRADED": "Degraded",
+        "AT_RISK": "At risk",
+        "NOT_APPLICABLE": "Not applicable",
+        "UNKNOWN": "Unknown"
+      },
+      "effectivenessMetaFull": "{passes} passed · {inconclusive} inconclusive · {total} total · last {days}d"
     },
     "conceptHelp": {
       "successCriteria": "What \"good\" looks like — the observable outcome that proves this control is working.",

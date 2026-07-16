@@ -223,6 +223,9 @@ export const UpdateControlSchema = z.object({
     // RQ3-8 — annual cost in the tenant's currency. Float (matches
     // the existing Risk money-field pattern); null clears the price.
     annualCost: z.number().nonnegative().optional().nullable(),
+    // Declared operating effectiveness 0–100 — the ROI/residual fallback when a
+    // control has no measured test history (measured pass rate wins otherwise).
+    effectiveness: z.number().int().min(0).max(100).optional().nullable(),
 }).strip().openapi('ControlUpdateRequest', {
     description: 'Partial update for a control. Status, applicability, and owner have dedicated focused endpoints; this body covers descriptive metadata only.',
 });
