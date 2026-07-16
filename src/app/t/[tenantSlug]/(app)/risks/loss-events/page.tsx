@@ -247,7 +247,7 @@ export default function LossEventsPage() {
                                 <StatusBadge variant={r.status === 'within_band' ? 'success' : r.status === 'under_forecast' ? 'error' : 'warning'}>
                                     {t(`lossEvents.status_${r.status}` as string)}
                                 </StatusBadge>
-                                <span className="font-medium text-content-emphasis truncate max-w-48">{r.title}</span>
+                                <span className="font-medium text-content-emphasis truncate max-w-[12rem]">{r.title}</span>
                                 <span className="tabular-nums text-content-muted">
                                     {t('lossEvents.calibrationCompare', { actual: money(r.actual), p50: money(r.p50), p90: money(r.p90) })}
                                 </span>

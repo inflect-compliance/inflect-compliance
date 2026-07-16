@@ -72,7 +72,7 @@ export default function RiskReportsPage() {
                 <ul className="divide-y divide-border-subtle">
                     {templates.map((tpl) => (
                         <li key={tpl.id} className="flex flex-wrap items-center gap-default py-default text-sm">
-                            <div className="flex-1 min-w-48">
+                            <div className="flex-1 min-w-[12rem]">
                                 <div className="font-medium text-content-emphasis">{tpl.name}</div>
                                 {tpl.description && <div className="text-xs text-content-muted">{tpl.description}</div>}
                                 {isDeepDive(tpl) && (
@@ -168,13 +168,13 @@ function NewTemplateForm({ apiUrl, onCreated, t }: { apiUrl: (p: string) => stri
     }
     return (
         <div className="flex flex-wrap items-end gap-default border-t border-border-subtle pt-default">
-            <label className="block flex-1 min-w-48"><span className="text-xs text-content-muted">{t('reports.templateName')}</span>
+            <label className="block flex-1 min-w-[12rem]"><span className="text-xs text-content-muted">{t('reports.templateName')}</span>
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('reports.templateNamePlaceholder')} />
             </label>
             <label className="block w-full sm:w-56"><span className="text-xs text-content-muted">{t('reports.templateType')}</span>
                 <Combobox id="new-template-type" options={TYPE_OPTIONS} selected={TYPE_OPTIONS.find((o) => o.value === type) ?? null} setSelected={(o) => { if (o) setType(String(o.value)); }} />
             </label>
-            <Button size="sm" variant="primary" onClick={create} disabled={busy || !name.trim()}>{t('reports.createTemplate')}</Button>
+            <Button size="sm" variant="secondary" onClick={create} disabled={busy || !name.trim()}>{t('reports.createTemplate')}</Button>
             <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>{t('edit.cancel')}</Button>
         </div>
     );
@@ -234,10 +234,10 @@ function SchedulesCard({
                 <label className="block w-full sm:w-40"><span className="text-xs text-content-muted">{t('reports.scheduleCadence')}</span>
                     <Combobox id="schedule-cadence" options={cadenceOptions} selected={cadenceOptions.find((o) => o.value === cadence) ?? null} setSelected={(o) => { if (o) setCadence(o.value as (typeof CADENCES)[number]); }} />
                 </label>
-                <label className="block flex-1 min-w-48"><span className="text-xs text-content-muted">{t('reports.scheduleRecipients')}</span>
+                <label className="block flex-1 min-w-[12rem]"><span className="text-xs text-content-muted">{t('reports.scheduleRecipients')}</span>
                     <Input value={recipients} onChange={(e) => setRecipients(e.target.value)} placeholder={t('reports.scheduleRecipientsPlaceholder')} />
                 </label>
-                <Button variant="primary" onClick={create} disabled={busy || !templateId || !recipients.trim()} id="schedule-create-btn">{t('reports.scheduleCreate')}</Button>
+                <Button variant="secondary" onClick={create} disabled={busy || !templateId || !recipients.trim()} id="schedule-create-btn">{t('reports.scheduleCreate')}</Button>
             </div>
 
             <AnalyticsState isLoading={loading} error={error} isEmpty={schedules.length === 0} emptyText={t('reports.schedulesEmpty')} errorText={t('reports.loadError')}>

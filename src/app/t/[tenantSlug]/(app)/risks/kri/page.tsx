@@ -203,7 +203,7 @@ export default function KriPage() {
                 </Modal.Body>
                 <Modal.Actions>
                     <Button variant="secondary" size="sm" onClick={() => setEditing(null)}>{t('edit.cancel')}</Button>
-                    <Button variant="primary" size="sm" onClick={saveEdit} disabled={busy || !draft.name.trim()} id="kri-edit-save">{t('edit.save')}</Button>
+                    <Button variant="secondary" size="sm" onClick={saveEdit} disabled={busy || !draft.name.trim()} id="kri-edit-save">{t('edit.save')}</Button>
                 </Modal.Actions>
             </Modal>
 
@@ -245,14 +245,14 @@ function KriFields({
     return (
         <div className="space-y-default">
             <div className="flex flex-wrap items-end gap-default">
-                <label className="block flex-1 min-w-48"><span className="text-xs text-content-muted">{t('kri.name')}</span><Input id={`${idPrefix}-name`} value={draft.name} onChange={(e) => set('name', e.target.value)} placeholder={t('kri.namePlaceholder')} /></label>
+                <label className="block flex-1 min-w-[12rem]"><span className="text-xs text-content-muted">{t('kri.name')}</span><Input id={`${idPrefix}-name`} value={draft.name} onChange={(e) => set('name', e.target.value)} placeholder={t('kri.namePlaceholder')} /></label>
                 <label className="block w-20 sm:w-24"><span className="text-xs text-content-muted">{t('kri.unit')}</span><Input id={`${idPrefix}-unit`} value={draft.unit} onChange={(e) => set('unit', e.target.value)} placeholder={t('kri.unitPlaceholder')} /></label>
                 <label className="block w-24 sm:w-28"><span className="text-xs text-content-muted">{t('kri.greenMax')}</span><Input type="text" inputMode="decimal" value={draft.greenMax} onChange={(e) => set('greenMax', e.target.value)} /></label>
                 <label className="block w-24 sm:w-28"><span className="text-xs text-content-muted">{t('kri.amberMax')}</span><Input type="text" inputMode="decimal" value={draft.amberMax} onChange={(e) => set('amberMax', e.target.value)} /></label>
                 <label className="block w-24 sm:w-28"><span className="text-xs text-content-muted">{t('kri.target')}</span><Input type="text" inputMode="decimal" value={draft.targetValue} onChange={(e) => set('targetValue', e.target.value)} /></label>
             </div>
             <div className="flex flex-wrap items-end gap-default">
-                <label className="block flex-1 min-w-48"><span className="text-xs text-content-muted">{t('kri.riskLabel')}</span>
+                <label className="block flex-1 min-w-[12rem]"><span className="text-xs text-content-muted">{t('kri.riskLabel')}</span>
                     <RiskPicker id={`${idPrefix}-risk-picker`} value={draft.riskId} onChange={(v) => set('riskId', v)} allowNone noneLabel={t('kri.riskNone')} placeholder={t('kri.riskPlaceholder')} />
                 </label>
                 <label className="block w-full sm:w-48"><span className="text-xs text-content-muted">{t('kri.directionLabel')}</span>

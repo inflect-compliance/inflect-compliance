@@ -140,7 +140,7 @@ export async function recordReading(
         try {
             const task = await createTask(ctx, {
                 title: `Remediate breached KRI: ${redTransition.kriName}`,
-                type: 'REMEDIATION',
+                type: 'TASK',
                 priority: 'HIGH',
                 source: 'kri_breach',
                 assigneeUserId: redTransition.ownerUserId ?? undefined,
