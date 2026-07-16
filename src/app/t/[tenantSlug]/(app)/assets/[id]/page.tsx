@@ -4,7 +4,7 @@ import { formatDate, formatDateTime } from '@/lib/format-date';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTenantMembers } from '@/components/ui/user-combobox';
@@ -17,7 +17,8 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { CopyText } from '@/components/ui/copy-text';
 import { Button } from '@/components/ui/button';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
-import { Pen2 } from '@/components/ui/icons/nucleo';
+import { Pen2, Trash } from '@/components/ui/icons/nucleo';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Tooltip, InfoTooltip } from '@/components/ui/tooltip';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { DataTable, type ColumnDef } from '@/components/ui/table';
@@ -92,6 +93,17 @@ interface AssetVulnRow {
     remediationDueAt: string | null;
     cve: { id: string; cvssScore: number | null; cvssSeverity: string | null; summary: string } | null;
     ownerUser: { id: string; name: string | null; email: string | null } | null;
+}
+
+/** One scanner finding resolved to this asset (GET /assets/[id]/scanner-findings). */
+interface AssetScannerFindingRow {
+    id: string;
+    ruleId: string;
+    severity: string;
+    title: string;
+    location: string | null;
+    status: string;
+    scannerRun: { source: string; scanType: string; ranAt: string } | null;
 }
 
 /** CVSS severity → StatusBadge variant. CRITICAL/HIGH → red, MEDIUM → amber, LOW → green. */
@@ -196,6 +208,13 @@ export default function AssetDetailPage() {
     );
     const vulnRows = vulnQuery.data?.rows ?? [];
     const vulnLoading = vulnQuery.isLoading;
+    // Scanner findings resolved to this asset — rendered alongside the CVE
+    // vulnerabilities so the asset shows its full vulnerability picture.
+    const scannerQuery = useTenantSWR<{ rows: AssetScannerFindingRow[] }>(
+        activeTab === 'vulnerabilities' ? `/assets/${assetId}/scanner-findings` : null,
+    );
+    const scannerRows = scannerQuery.data?.rows ?? [];
+    const scannerLoading = scannerQuery.isLoading;
     // Per-row conversion state (id → 'risk' | 'finding' pending marker).
     const [convertingId, setConvertingId] = useState<string | null>(null);
     const convertVuln = async (id: string, kind: 'risk' | 'finding') => {
@@ -228,6 +247,21 @@ export default function AssetDetailPage() {
     const openEdit = () => {
         setEditSeed((n) => n + 1);
         setEditing(true);
+    };
+
+    // Single-asset soft-delete (reversible via the deleted-assets view →
+    // Restore). ConfirmDialog is enough here; the irreversible purge is
+    // gated behind a typed-confirmation modal on the deleted-assets list.
+    const router = useRouter();
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const handleDelete = async () => {
+        try {
+            const res = await fetch(apiUrl(`/assets/${assetId}`), { method: 'DELETE' });
+            if (!res.ok) throw new Error(`Failed to delete (${res.status})`);
+            router.push(tenantHref('/assets'));
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Failed to delete asset');
+        }
     };
     const editInitial = asset
         ? {
@@ -368,6 +402,19 @@ export default function AssetDetailPage() {
                             buttonProps={{ variant: 'primary', className: 'text-sm' }}
                         />
                     )}
+                    {permissions.canAdmin && (
+                        <Tooltip content={t('detail.deleteAsset')}>
+                            <Button
+                                variant="secondary"
+                                size="icon"
+                                onClick={() => setDeleteOpen(true)}
+                                id="asset-delete-btn"
+                                aria-label={t('detail.deleteAsset')}
+                            >
+                                <Trash className="size-4" />
+                            </Button>
+                        </Tooltip>
+                    )}
                 </>
             }
 
@@ -440,6 +487,7 @@ export default function AssetDetailPage() {
                 </div>
             )}
             {activeTab === 'vulnerabilities' && (
+              <div className="space-y-section">
                 <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')} id="asset-vulnerabilities-tab">
                     {/* Inbound link to the global Vulnerabilities view, scoped to
                         this asset — the same deep-link the assets-list badge uses. */}
@@ -546,6 +594,43 @@ export default function AssetDetailPage() {
                         ] as ColumnDef<AssetVulnRow, unknown>[]}
                     />
                 </div>
+                {/* Scanner findings resolved to this asset (SAST / SCA / secrets
+                    / IaC) — shown alongside the CVE-matched vulnerabilities so
+                    the asset carries its full vulnerability picture. */}
+                <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')} id="asset-scanner-findings">
+                    <div className="flex items-center justify-between border-b border-border-subtle p-3">
+                        <Heading level={3}>{t('detail.vuln.scannerTitle')}</Heading>
+                        <Link
+                            href={tenantHref('/security-testing')}
+                            className="text-sm text-content-muted hover:text-content-default hover:underline"
+                        >
+                            {t('detail.vuln.scannerSeeAll')} →
+                        </Link>
+                    </div>
+                    <DataTable<AssetScannerFindingRow>
+                        data={scannerRows}
+                        loading={scannerLoading}
+                        getRowId={(r) => r.id}
+                        resourceName={() => t('detail.vuln.scannerTitle')}
+                        emptyState={
+                            <EmptyState
+                                size="sm"
+                                variant="no-records"
+                                title={t('detail.vuln.scannerEmptyTitle')}
+                                description={t('detail.vuln.scannerEmptyDesc')}
+                            />
+                        }
+                        columns={[
+                            { id: 'severity', header: t('detail.vuln.scannerSeverity'), accessorFn: (r: AssetScannerFindingRow) => r.severity, cell: ({ row }: { row: { original: AssetScannerFindingRow } }) => <StatusBadge variant={severityVariant(row.original.severity)} size="sm">{row.original.severity}</StatusBadge> },
+                            { id: 'title', header: t('detail.vuln.scannerFinding'), accessorFn: (r: AssetScannerFindingRow) => r.title, cell: ({ row }: { row: { original: AssetScannerFindingRow } }) => <span className="text-sm">{row.original.title}</span> },
+                            { id: 'rule', header: t('detail.vuln.scannerRule'), accessorFn: (r: AssetScannerFindingRow) => r.ruleId, cell: ({ row }: { row: { original: AssetScannerFindingRow } }) => <span className="text-xs text-content-muted">{row.original.ruleId}</span> },
+                            { id: 'location', header: t('detail.vuln.scannerLocation'), accessorFn: (r: AssetScannerFindingRow) => r.location ?? '—', cell: ({ row }: { row: { original: AssetScannerFindingRow } }) => <span className="text-xs text-content-muted">{row.original.location ?? '—'}</span> },
+                            { id: 'source', header: t('detail.vuln.scannerSource'), accessorFn: (r: AssetScannerFindingRow) => r.scannerRun?.source ?? '—', cell: ({ row }: { row: { original: AssetScannerFindingRow } }) => <span className="text-xs text-content-muted">{row.original.scannerRun?.source ?? '—'}</span> },
+                            { id: 'status', header: t('detail.vuln.scannerStatus'), accessorFn: (r: AssetScannerFindingRow) => r.status, cell: ({ row }: { row: { original: AssetScannerFindingRow } }) => <StatusBadge variant="neutral" size="sm">{row.original.status}</StatusBadge> },
+                        ] as ColumnDef<AssetScannerFindingRow, unknown>[]}
+                    />
+                </div>
+              </div>
             )}
             {activeTab === 'traceability' && (
                 <div className="space-y-default">
@@ -806,6 +891,16 @@ export default function AssetDetailPage() {
                 tenantSlug={tenantSlug}
                 open={processWhereUsedOpen}
                 onOpenChange={setProcessWhereUsedOpen}
+            />
+
+            <ConfirmDialog
+                showModal={deleteOpen}
+                setShowModal={setDeleteOpen}
+                tone="danger"
+                title={t('detail.deleteConfirmTitle')}
+                description={t('detail.deleteConfirmDesc')}
+                confirmLabel={t('detail.deleteConfirmLabel')}
+                onConfirm={handleDelete}
             />
         </EntityDetailLayout>
     );

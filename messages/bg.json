@@ -510,7 +510,17 @@
         "convertedRisk": "Уязвимостта е преобразувана в риск",
         "convertedFinding": "Уязвимостта е преобразувана в констатация",
         "convertFailed": "Преобразуването не бе успешно",
-        "seeAll": "Виж всички уязвимости"
+        "seeAll": "Виж всички уязвимости",
+        "scannerTitle": "Констатации от скенер",
+        "scannerSeeAll": "Тестване на сигурността",
+        "scannerEmptyTitle": "Няма констатации от скенер",
+        "scannerEmptyDesc": "Тук се показват констатации от скенер, свързани с този актив.",
+        "scannerSeverity": "Тежест",
+        "scannerFinding": "Констатация",
+        "scannerRule": "Правило",
+        "scannerLocation": "Местоположение",
+        "scannerSource": "Скенер",
+        "scannerStatus": "Статус"
       },
       "activityFeed": {
         "loading": "Зареждане на активността…",
@@ -538,7 +548,11 @@
       "identityHintAction": "Добавяне на идентичност",
       "dependencies": "Зависимости",
       "businessProcesses": "Бизнес процеси",
-      "retention": "Съхранение"
+      "retention": "Съхранение",
+      "deleteAsset": "Изтрий актив",
+      "deleteConfirmTitle": "Изтриване на този актив?",
+      "deleteConfirmDesc": "Активът се архивира и може да бъде възстановен от изгледа „Изтрити активи“.",
+      "deleteConfirmLabel": "Изтрий актив"
     },
     "filters": {
       "type": "Тип",
@@ -641,7 +655,18 @@
       "ownerImported": "импортиран"
     },
     "viewVulnerabilities": "Преглед на уязвимости",
-    "openVulnsAria": "{count} отворени уязвимости"
+    "openVulnsAria": "{count} отворени уязвимости",
+    "deleted": {
+      "toggle": "Изтрити активи",
+      "actions": "Жизнен цикъл",
+      "badge": "Изтрит",
+      "restore": "Възстанови",
+      "purge": "Заличи",
+      "purgeTitle": "Окончателно заличаване на актив",
+      "purgeBody": "Това окончателно изтрива {name} и всички негови данни. Действието е необратимо.",
+      "purgeTypeToConfirm": "Въведете {name}, за да потвърдите",
+      "purgeFailed": "Заличаването на актива е неуспешно. Опитайте отново."
+    }
   },
   "risks": {
     "title": "Регистър на рисковете",

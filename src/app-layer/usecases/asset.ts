@@ -12,44 +12,49 @@ import { createAssignmentNotification } from '../notifications/assignment';
 import { logger } from '@/lib/observability';
 import { criticalityToEnum } from '@/lib/asset-criticality';
 
+/**
+ * Attach the list-row rollups to a set of asset rows: linked-task counts
+ * (TaskLink ASSET) + a per-asset OPEN-vulnerability rollup (count + top
+ * severity). Both are batched over the ≤N row ids — no per-row reads. Shared
+ * by listAssets and listAssetsWithDeleted so the deleted-assets view renders
+ * with the same columns.
+ */
+async function enrichAssetRows<T extends { id: string }>(db: PrismaTx, ctx: RequestContext, rows: T[]) {
+    const ids = rows.map((r) => r.id);
+    const [counts, vulnGroups, topVulns] = await Promise.all([
+        WorkItemRepository.countLinkedToEntities(db, ctx, 'ASSET' as TaskLinkEntityType, ids),
+        ids.length
+            ? db.assetVulnerability.groupBy({
+                  by: ['assetId'],
+                  where: { tenantId: ctx.tenantId, assetId: { in: ids }, status: 'OPEN' },
+                  _count: { _all: true },
+              })
+            : Promise.resolve([] as { assetId: string; _count: { _all: number } }[]),
+        ids.length
+            ? db.assetVulnerability.findMany({ // guardrail-allow: unbounded — bounded by assetId in-list; `distinct` yields ≤1 row per listed asset.
+                  where: { tenantId: ctx.tenantId, assetId: { in: ids }, status: 'OPEN' },
+                  distinct: ['assetId'],
+                  orderBy: [{ assetId: 'asc' }, { cve: { cvssScore: 'desc' } }],
+                  select: { assetId: true, cve: { select: { cvssSeverity: true } } },
+              })
+            : Promise.resolve([] as { assetId: string; cve: { cvssSeverity: string | null } | null }[]),
+    ]);
+    const openVulnByAsset = new Map(vulnGroups.map((g) => [g.assetId, g._count._all]));
+    const topSevByAsset = new Map(topVulns.map((v) => [v.assetId, v.cve?.cvssSeverity ?? null]));
+    return rows.map((r) => ({
+        ...r,
+        taskTotal: counts.get(r.id)?.total ?? 0,
+        taskDone: counts.get(r.id)?.done ?? 0,
+        openVulnCount: openVulnByAsset.get(r.id) ?? 0,
+        maxVulnSeverity: topSevByAsset.get(r.id) ?? null,
+    }));
+}
+
 export async function listAssets(ctx: RequestContext, filters?: AssetFilters) {
     assertCanRead(ctx);
     return runInTenantContext(ctx, async (db) => {
         const rows = await AssetRepository.list(db, ctx, filters);
-        const ids = rows.map((r: { id: string }) => r.id);
-        // B7 — attach unified linked-task counts (TaskLink ASSET) so the
-        // list page can show a Tasks column, matching Controls.
-        // …and a per-asset OPEN-vulnerability rollup (count + top severity) so
-        // the list surfaces a vuln signal that deep-links to the filtered global
-        // Vulnerabilities view. Both are batched over the ≤100 listed ids — no
-        // per-row reads.
-        const [counts, vulnGroups, topVulns] = await Promise.all([
-            WorkItemRepository.countLinkedToEntities(db, ctx, 'ASSET' as TaskLinkEntityType, ids),
-            ids.length
-                ? db.assetVulnerability.groupBy({
-                      by: ['assetId'],
-                      where: { tenantId: ctx.tenantId, assetId: { in: ids }, status: 'OPEN' },
-                      _count: { _all: true },
-                  })
-                : Promise.resolve([] as { assetId: string; _count: { _all: number } }[]),
-            ids.length
-                ? db.assetVulnerability.findMany({ // guardrail-allow: unbounded — bounded by assetId in-list; `distinct` yields ≤1 row per listed asset (≤100).
-                      where: { tenantId: ctx.tenantId, assetId: { in: ids }, status: 'OPEN' },
-                      distinct: ['assetId'],
-                      orderBy: [{ assetId: 'asc' }, { cve: { cvssScore: 'desc' } }],
-                      select: { assetId: true, cve: { select: { cvssSeverity: true } } },
-                  })
-                : Promise.resolve([] as { assetId: string; cve: { cvssSeverity: string | null } | null }[]),
-        ]);
-        const openVulnByAsset = new Map(vulnGroups.map((g) => [g.assetId, g._count._all]));
-        const topSevByAsset = new Map(topVulns.map((v) => [v.assetId, v.cve?.cvssSeverity ?? null]));
-        return rows.map((r) => ({
-            ...r,
-            taskTotal: counts.get(r.id)?.total ?? 0,
-            taskDone: counts.get(r.id)?.done ?? 0,
-            openVulnCount: openVulnByAsset.get(r.id) ?? 0,
-            maxVulnSeverity: topSevByAsset.get(r.id) ?? null,
-        }));
+        return enrichAssetRows(db, ctx, rows);
     });
 }
 
@@ -542,9 +547,19 @@ export async function purgeAsset(ctx: RequestContext, id: string) {
 
 export async function listAssetsWithDeleted(ctx: RequestContext) {
     assertCanAdmin(ctx);
-    return runInTenantContext(ctx, (db) =>
-        db.asset.findMany(withDeleted({ where: { tenantId: ctx.tenantId }, orderBy: { createdAt: 'desc' as const } }))
-    );
+    return runInTenantContext(ctx, async (db) => {
+        const rows = await db.asset.findMany(withDeleted({
+            where: { tenantId: ctx.tenantId },
+            orderBy: { createdAt: 'desc' as const },
+            include: {
+                _count: { select: { controls: true } },
+                ownerUser: { select: { id: true, name: true, email: true } },
+            },
+        }));
+        // Same rollups as listAssets so the deleted-assets view renders with the
+        // identical column set (task counts + open-vuln signal).
+        return enrichAssetRows(db, ctx, rows);
+    });
 }
 
 // ─── Attached Evidence ───
