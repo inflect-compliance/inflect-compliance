@@ -49,8 +49,9 @@ describe('AutomationInspectorPanel', () => {
         expect(screen.getByText('Action type')).toBeInTheDocument();
     });
 
-    it('renders the SLA window field for an slaGate node', () => {
+    it('renders the execution-watchdog field for an slaGate node', () => {
         render(<AutomationInspectorPanel kind="slaGate" ruleId="r1" />);
-        expect(screen.getByText('SLA window (minutes)')).toBeInTheDocument();
+        // PR-E — "SLA window" was relabelled to an honest "execution watchdog".
+        expect(screen.getByText('Execution watchdog (max minutes)')).toBeInTheDocument();
     });
 });

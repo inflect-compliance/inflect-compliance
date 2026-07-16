@@ -34,6 +34,10 @@ import {
     eventOptionsByDomain,
     filterFieldsForEvent,
 } from '@/lib/automation/event-labels';
+import {
+    UPDATE_STATUS_TARGETS,
+    UPDATE_STATUS_ENTITY_TYPES,
+} from '@/lib/automation/status-allowlist';
 import type { AutomationRuleRow } from '@/app/t/[tenantSlug]/(app)/processes/RulesTab';
 
 type ActionType = 'NOTIFY_USER' | 'CREATE_TASK' | 'UPDATE_STATUS' | 'WEBHOOK';
@@ -69,16 +73,25 @@ interface BuilderState {
     logic: 'AND' | 'OR';
     conditions: Condition[];
     actionType: ActionType;
-    notify: { userIds: string[]; message: string };
-    task: { title: string; severity: string; priority: string };
+    notify: { userIds: string[]; message: string; linkUrl: string };
+    task: { title: string; severity: string; priority: string; assigneeUserId: string };
     status: { entityType: string; field: string; toStatus: string };
     webhook: { url: string; method: string };
     /** Optional SLA window in minutes (Epic 5); empty = no SLA. */
     slaWindowMinutes: string;
+    /** PR-E — breach action for the execution watchdog. Only NOTIFY_USER is
+     *  implemented server-side, so that's the only non-empty option offered. */
+    slaBreach: { actionType: '' | 'NOTIFY_USER'; userIds: string[]; message: string };
+    /** SCHEDULE trigger config (PR-E) — only used when triggerEvent === 'SCHEDULE'. */
+    schedule: { target: ScheduleTarget; offsetDays: string };
     /** Optional chain target (Epic 7); empty = terminal rule. */
     nextRuleId: string;
     nextRuleDelay: string;
+    /** PR-E — else-branch: rule to run when conditions FAIL (canvas parity). */
+    elseRuleId: string;
 }
+
+type ScheduleTarget = 'Evidence' | 'ControlException' | 'ControlTestPlan';
 
 const EMPTY: BuilderState = {
     name: '',
@@ -86,13 +99,16 @@ const EMPTY: BuilderState = {
     logic: 'AND',
     conditions: [],
     actionType: 'NOTIFY_USER',
-    notify: { userIds: [], message: '' },
-    task: { title: '', severity: '', priority: '' },
+    notify: { userIds: [], message: '', linkUrl: '' },
+    task: { title: '', severity: '', priority: '', assigneeUserId: '' },
     status: { entityType: 'Risk', field: 'status', toStatus: '' },
     webhook: { url: '', method: 'POST' },
     slaWindowMinutes: '',
+    slaBreach: { actionType: '', userIds: [], message: '' },
+    schedule: { target: 'Evidence', offsetDays: '0' },
     nextRuleId: '',
     nextRuleDelay: '',
+    elseRuleId: '',
 };
 
 function buildActionOptions(
@@ -110,6 +126,46 @@ const triggerOptions: ComboboxOption[] = eventOptionsByDomain().flatMap((g) =>
     g.events.map((ev) => ({ value: ev.name, label: ev.label })),
 );
 
+// PR-E — UPDATE_STATUS entity + status dropdowns (the executor enforces the
+// same allowlist server-side; offering free text let users type a status that
+// would silently fail at runtime).
+const entityTypeOptions: ComboboxOption[] = UPDATE_STATUS_ENTITY_TYPES.map(
+    (e) => ({ value: e, label: e }),
+);
+
+// PR-E — enum values are identifiers (not UI copy), so raw-value labels are
+// fine + ratchet-safe (label is a variable). Aligned with the Zod enums in
+// automation.schemas.ts (CreateTaskConfig / WebhookConfig).
+const TASK_SEVERITY_OPTIONS: ComboboxOption[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map(
+    (v) => ({ value: v, label: v }),
+);
+const TASK_PRIORITY_OPTIONS: ComboboxOption[] = ['P0', 'P1', 'P2', 'P3'].map(
+    (v) => ({ value: v, label: v }),
+);
+const WEBHOOK_METHOD_OPTIONS: ComboboxOption[] = ['POST', 'PUT', 'PATCH'].map(
+    (v) => ({ value: v, label: v }),
+);
+
+// PR-E — SCHEDULE target date fields (must match SCHEDULE_TARGETS in
+// schedule-trigger-sweep.ts + the ScheduleConfig Zod enum).
+function buildScheduleTargetOptions(t: RuleTranslate): ComboboxOption[] {
+    return [
+        { value: 'Evidence', label: t('scheduleTargetEvidence') },
+        { value: 'ControlException', label: t('scheduleTargetException') },
+        { value: 'ControlTestPlan', label: t('scheduleTargetTestPlan') },
+    ];
+}
+
+// PR-E — watchdog breach actions. Only NOTIFY_USER is implemented server-side
+// (sla-monitor.ts), so those are the only two options — no reassign/status-
+// change that would silently no-op.
+function buildSlaBreachActionOptions(t: RuleTranslate): ComboboxOption[] {
+    return [
+        { value: '', label: t('slaBreachNone') },
+        { value: 'NOTIFY_USER', label: t('slaBreachNotify') },
+    ];
+}
+
 export interface RuleBuilderModalProps {
     tenantSlug: string;
     open: boolean;
@@ -122,6 +178,8 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
     const t = useTranslations('automation.ruleBuilder');
     const operatorOptions = useMemo(() => buildOperatorOptions(t), [t]);
     const actionOptions = useMemo(() => buildActionOptions(t), [t]);
+    const scheduleTargetOptions = useMemo(() => buildScheduleTargetOptions(t), [t]);
+    const slaBreachActionOptions = useMemo(() => buildSlaBreachActionOptions(t), [t]);
     const apiUrl = useTenantApiUrl();
     const { mutate } = useSWRConfig();
     // Epic 7 — chain targets (other rules). Excludes the rule being edited.
@@ -138,12 +196,30 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
 
     const patch = (p: Partial<BuilderState>) => setForm((f) => ({ ...f, ...p }));
 
+    // PR-E — status options for the currently-selected UPDATE_STATUS entity.
+    // Plain derivation (React Compiler memoizes); labels are the raw enum
+    // values (identifiers, not UI copy).
+    const statusValueOptions: ComboboxOption[] = (
+        UPDATE_STATUS_TARGETS[form.status.entityType]?.values ?? []
+    ).map((v) => ({ value: v, label: v }));
+
     const availableFields = useMemo(
         () => filterFieldsForEvent(form.triggerEvent),
         [form.triggerEvent],
     );
 
-    const step1Valid = form.name.trim().length > 0 && form.triggerEvent.length > 0;
+    // PR-E — a SCHEDULE rule must carry a valid offset (0..365) so the sweep
+    // can actually fire it; other triggers have no extra step-1 requirement.
+    const scheduleValid =
+        form.triggerEvent !== 'SCHEDULE' ||
+        (() => {
+            const n = Number(form.schedule.offsetDays);
+            return Number.isInteger(n) && n >= 0 && n <= 365;
+        })();
+    const step1Valid =
+        form.name.trim().length > 0 &&
+        form.triggerEvent.length > 0 &&
+        scheduleValid;
     const step3Valid = (() => {
         switch (form.actionType) {
             case 'NOTIFY_USER':
@@ -160,12 +236,21 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
     function buildActionConfig(): Record<string, unknown> {
         switch (form.actionType) {
             case 'NOTIFY_USER':
-                return { userIds: form.notify.userIds, message: form.notify.message.trim() };
+                return {
+                    userIds: form.notify.userIds,
+                    message: form.notify.message.trim(),
+                    ...(form.notify.linkUrl.trim()
+                        ? { linkUrl: form.notify.linkUrl.trim() }
+                        : {}),
+                };
             case 'CREATE_TASK':
                 return {
                     title: form.task.title.trim(),
                     ...(form.task.severity ? { severity: form.task.severity } : {}),
                     ...(form.task.priority ? { priority: form.task.priority } : {}),
+                    ...(form.task.assigneeUserId
+                        ? { assigneeUserId: form.task.assigneeUserId }
+                        : {}),
                 };
             case 'UPDATE_STATUS':
                 return {
@@ -213,8 +298,34 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                 slaWindowMinutes: form.slaWindowMinutes
                     ? Number(form.slaWindowMinutes)
                     : null,
+                // PR-E — breach action (only meaningful with a watchdog window
+                // set). Only NOTIFY_USER is wired server-side.
+                slaBreachActionType:
+                    form.slaWindowMinutes && form.slaBreach.actionType
+                        ? form.slaBreach.actionType
+                        : null,
+                slaBreachConfig:
+                    form.slaWindowMinutes &&
+                    form.slaBreach.actionType === 'NOTIFY_USER'
+                        ? {
+                              userIds: form.slaBreach.userIds,
+                              message: form.slaBreach.message.trim(),
+                          }
+                        : null,
+                // PR-E — a SCHEDULE rule needs a scheduleConfig or the sweep can
+                // never fire it. Build it here; other triggers send null.
+                scheduleConfig:
+                    form.triggerEvent === 'SCHEDULE'
+                        ? {
+                              kind: 'DATE_RELATIVE' as const,
+                              target: form.schedule.target,
+                              offsetDays: Number(form.schedule.offsetDays) || 0,
+                          }
+                        : null,
                 nextRuleId: form.nextRuleId || null,
                 nextRuleDelay: form.nextRuleDelay ? Number(form.nextRuleDelay) : null,
+                // PR-E — else-branch (conditions-fail path), canvas parity.
+                elseRuleId: form.elseRuleId || null,
             };
             const url = editRule
                 ? apiUrl(CACHE_KEYS.automation.rules.detail(editRule.id))
@@ -281,6 +392,58 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                 }
                             />
                         </FormField>
+                        {/* PR-E — SCHEDULE trigger config. Without this a
+                            SCHEDULE rule saves but the sweep can never fire it
+                            (no target date / offset). */}
+                        {form.triggerEvent === 'SCHEDULE' && (
+                            <div className="space-y-default rounded-[8px] border border-border-subtle p-default">
+                                <FormField
+                                    label={t('scheduleTargetLabel')}
+                                    description={t('scheduleTargetHint')}
+                                    required
+                                >
+                                    <Combobox
+                                        options={scheduleTargetOptions}
+                                        selected={
+                                            scheduleTargetOptions.find(
+                                                (o) => o.value === form.schedule.target,
+                                            ) ?? null
+                                        }
+                                        setSelected={(o) =>
+                                            patch({
+                                                schedule: {
+                                                    ...form.schedule,
+                                                    target: (o?.value as ScheduleTarget) ?? 'Evidence',
+                                                },
+                                            })
+                                        }
+                                        forceDropdown
+                                        matchTriggerWidth
+                                    />
+                                </FormField>
+                                <FormField
+                                    label={t('scheduleOffsetLabel')}
+                                    description={t('scheduleOffsetHint')}
+                                    required
+                                >
+                                    <Input
+                                        type="number"
+                                        min={0}
+                                        max={365}
+                                        value={form.schedule.offsetDays}
+                                        onChange={(e) =>
+                                            patch({
+                                                schedule: {
+                                                    ...form.schedule,
+                                                    offsetDays: e.target.value,
+                                                },
+                                            })
+                                        }
+                                        placeholder="0"
+                                    />
+                                </FormField>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -477,44 +640,166 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                             placeholder={t('messagePlaceholder')}
                                         />
                                     </FormField>
+                                    {/* PR-E — optional deep link on the notification. */}
+                                    <FormField label={t('notifyLinkUrl')}>
+                                        <Input
+                                            value={form.notify.linkUrl}
+                                            onChange={(e) =>
+                                                patch({ notify: { ...form.notify, linkUrl: e.target.value } })
+                                            }
+                                            placeholder={t('notifyLinkUrlPlaceholder')}
+                                        />
+                                    </FormField>
                                 </>
                             )}
                             {form.actionType === 'CREATE_TASK' && (
-                                <FormField label={t('taskTitle')} required>
-                                    <Input
-                                        value={form.task.title}
-                                        onChange={(e) =>
-                                            patch({ task: { ...form.task, title: e.target.value } })
-                                        }
-                                        placeholder={t('taskTitlePlaceholder')}
-                                    />
-                                </FormField>
+                                <>
+                                    <FormField label={t('taskTitle')} required>
+                                        <Input
+                                            value={form.task.title}
+                                            onChange={(e) =>
+                                                patch({ task: { ...form.task, title: e.target.value } })
+                                            }
+                                            placeholder={t('taskTitlePlaceholder')}
+                                        />
+                                    </FormField>
+                                    {/* PR-E — task severity / priority / assignee
+                                        (schema-supported, previously unexposed). */}
+                                    <FormField label={t('taskSeverity')}>
+                                        <Combobox
+                                            options={TASK_SEVERITY_OPTIONS}
+                                            selected={
+                                                TASK_SEVERITY_OPTIONS.find(
+                                                    (o) => o.value === form.task.severity,
+                                                ) ?? null
+                                            }
+                                            setSelected={(o) =>
+                                                patch({ task: { ...form.task, severity: o?.value ?? '' } })
+                                            }
+                                            placeholder={t('taskSeverityPlaceholder')}
+                                            forceDropdown
+                                            matchTriggerWidth
+                                        />
+                                    </FormField>
+                                    <FormField label={t('taskPriority')}>
+                                        <Combobox
+                                            options={TASK_PRIORITY_OPTIONS}
+                                            selected={
+                                                TASK_PRIORITY_OPTIONS.find(
+                                                    (o) => o.value === form.task.priority,
+                                                ) ?? null
+                                            }
+                                            setSelected={(o) =>
+                                                patch({ task: { ...form.task, priority: o?.value ?? '' } })
+                                            }
+                                            placeholder={t('taskPriorityPlaceholder')}
+                                            forceDropdown
+                                            matchTriggerWidth
+                                        />
+                                    </FormField>
+                                    <FormField label={t('taskAssignee')}>
+                                        <UserCombobox
+                                            tenantSlug={tenantSlug}
+                                            selectedId={form.task.assigneeUserId || null}
+                                            onChange={(id) =>
+                                                patch({
+                                                    task: {
+                                                        ...form.task,
+                                                        assigneeUserId: id ?? '',
+                                                    },
+                                                })
+                                            }
+                                            forceDropdown
+                                            matchTriggerWidth
+                                        />
+                                    </FormField>
+                                </>
                             )}
                             {form.actionType === 'UPDATE_STATUS' && (
-                                <FormField label={t('newStatus')} required>
-                                    <Input
-                                        value={form.status.toStatus}
-                                        onChange={(e) =>
-                                            patch({ status: { ...form.status, toStatus: e.target.value } })
-                                        }
-                                        placeholder={t('newStatusPlaceholder')}
-                                    />
-                                </FormField>
+                                <>
+                                    <FormField label={t('statusEntityLabel')} required>
+                                        <Combobox
+                                            options={entityTypeOptions}
+                                            selected={
+                                                entityTypeOptions.find(
+                                                    (o) => o.value === form.status.entityType,
+                                                ) ?? null
+                                            }
+                                            setSelected={(o) => {
+                                                const entityType = o?.value ?? 'Risk';
+                                                patch({
+                                                    status: {
+                                                        entityType,
+                                                        field:
+                                                            UPDATE_STATUS_TARGETS[entityType]?.field ??
+                                                            'status',
+                                                        // reset — valid statuses differ per entity
+                                                        toStatus: '',
+                                                    },
+                                                });
+                                            }}
+                                            forceDropdown
+                                            matchTriggerWidth
+                                        />
+                                    </FormField>
+                                    <FormField label={t('newStatus')} required>
+                                        <Combobox
+                                            options={statusValueOptions}
+                                            selected={
+                                                statusValueOptions.find(
+                                                    (o) => o.value === form.status.toStatus,
+                                                ) ?? null
+                                            }
+                                            setSelected={(o) =>
+                                                patch({
+                                                    status: {
+                                                        ...form.status,
+                                                        toStatus: o?.value ?? '',
+                                                    },
+                                                })
+                                            }
+                                            placeholder={t('newStatusPlaceholder')}
+                                            forceDropdown
+                                            matchTriggerWidth
+                                        />
+                                    </FormField>
+                                </>
                             )}
                             {form.actionType === 'WEBHOOK' && (
-                                <FormField label={t('webhookUrl')} required>
-                                    <Input
-                                        value={form.webhook.url}
-                                        onChange={(e) =>
-                                            patch({ webhook: { ...form.webhook, url: e.target.value } })
-                                        }
-                                        placeholder={t('webhookUrlPlaceholder')}
-                                    />
-                                </FormField>
+                                <>
+                                    <FormField label={t('webhookUrl')} required>
+                                        <Input
+                                            value={form.webhook.url}
+                                            onChange={(e) =>
+                                                patch({ webhook: { ...form.webhook, url: e.target.value } })
+                                            }
+                                            placeholder={t('webhookUrlPlaceholder')}
+                                        />
+                                    </FormField>
+                                    {/* PR-E — HTTP method (schema-supported, was hardcoded POST). */}
+                                    <FormField label={t('webhookMethod')}>
+                                        <Combobox
+                                            options={WEBHOOK_METHOD_OPTIONS}
+                                            selected={
+                                                WEBHOOK_METHOD_OPTIONS.find(
+                                                    (o) => o.value === form.webhook.method,
+                                                ) ?? WEBHOOK_METHOD_OPTIONS[0]
+                                            }
+                                            setSelected={(o) =>
+                                                patch({ webhook: { ...form.webhook, method: o?.value ?? 'POST' } })
+                                            }
+                                            forceDropdown
+                                            matchTriggerWidth
+                                        />
+                                    </FormField>
+                                </>
                             )}
                         </div>
 
-                        {/* SLA window (Epic 5) — optional deadline for resolution. */}
+                        {/* Execution watchdog (Epic 5, formerly "SLA window").
+                            Flags a STUCK execution (one that runs past this many
+                            minutes) — a safeguard for hung actions, not a
+                            business-entity deadline. See sla-monitor.ts. */}
                         <div className="border-t border-border-subtle pt-default">
                             <FormField
                                 label={t('slaLabel')}
@@ -528,6 +813,71 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                     placeholder={t('slaPlaceholder')}
                                 />
                             </FormField>
+                            {/* PR-E — breach action. Only shown once a window is
+                                set. Only NOTIFY_USER is implemented server-side
+                                (sla-monitor.ts), so it's the only real option —
+                                we don't offer reassign/status-change that would
+                                silently no-op. */}
+                            {form.slaWindowMinutes && (
+                                <div className="mt-default space-y-default">
+                                    <FormField label={t('slaBreachActionLabel')}>
+                                        <Combobox
+                                            options={slaBreachActionOptions}
+                                            selected={
+                                                slaBreachActionOptions.find(
+                                                    (o) => o.value === form.slaBreach.actionType,
+                                                ) ?? slaBreachActionOptions[0]
+                                            }
+                                            setSelected={(o) =>
+                                                patch({
+                                                    slaBreach: {
+                                                        ...form.slaBreach,
+                                                        actionType:
+                                                            (o?.value as '' | 'NOTIFY_USER') ?? '',
+                                                    },
+                                                })
+                                            }
+                                            forceDropdown
+                                            matchTriggerWidth
+                                        />
+                                    </FormField>
+                                    {form.slaBreach.actionType === 'NOTIFY_USER' && (
+                                        <>
+                                            <FormField label={t('slaBreachRecipients')} required>
+                                                <UserCombobox
+                                                    tenantSlug={tenantSlug}
+                                                    multiple
+                                                    selectedIds={form.slaBreach.userIds}
+                                                    onChange={(ids) =>
+                                                        patch({
+                                                            slaBreach: {
+                                                                ...form.slaBreach,
+                                                                userIds: ids,
+                                                            },
+                                                        })
+                                                    }
+                                                    forceDropdown
+                                                    matchTriggerWidth
+                                                />
+                                            </FormField>
+                                            <FormField label={t('slaBreachMessage')}>
+                                                <Textarea
+                                                    value={form.slaBreach.message}
+                                                    onChange={(e) =>
+                                                        patch({
+                                                            slaBreach: {
+                                                                ...form.slaBreach,
+                                                                message: e.target.value,
+                                                            },
+                                                        })
+                                                    }
+                                                    placeholder={t('slaBreachMessagePlaceholder')}
+                                                />
+                                            </FormField>
+                                        </>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* Chain to next rule (Epic 7) — sequential workflow. */}
@@ -560,6 +910,31 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                     />
                                 </FormField>
                             )}
+                            {/* PR-E — else-branch: canvas parity. The canvas
+                                already forks a `condition-fail` edge to an
+                                elseRuleId; the tabular builder now offers the
+                                same "when conditions fail, run this instead"
+                                target. (INVOKE_SUBFLOW stays canvas-authored:
+                                sub-flow groups are canvas topology — a group
+                                node wrapping rules — with no meaningful tabular
+                                target, so we don't offer a raw-id picker here.) */}
+                            <FormField
+                                label={t('elseLabel')}
+                                description={t('elseDescription')}
+                            >
+                                <Combobox
+                                    options={chainOptions}
+                                    selected={
+                                        form.elseRuleId
+                                            ? chainOptions.find((o) => o.value === form.elseRuleId) ?? null
+                                            : null
+                                    }
+                                    setSelected={(o) => patch({ elseRuleId: o?.value ?? '' })}
+                                    placeholder={t('noElseRule')}
+                                    forceDropdown
+                                    matchTriggerWidth
+                                />
+                            </FormField>
                         </div>
                     </div>
                 )}

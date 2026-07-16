@@ -36,4 +36,17 @@ describe('scheduled triggers', () => {
         expect(job).toMatch(/ControlException:/);
         expect(job).toMatch(/ControlTestPlan:/);
     });
+
+    it('the builder writes scheduleConfig for a SCHEDULE rule (else the sweep can never fire it)', () => {
+        // PR-E — before this, the builder let you pick "On a schedule" and save
+        // a rule with no scheduleConfig, which parseScheduleConfig rejects, so
+        // the rule was inert. Lock that the modal now builds + sends the config
+        // and gates save on a valid offset.
+        const modal = read('src/components/processes/RuleBuilderModal.tsx');
+        expect(modal).toMatch(/triggerEvent === 'SCHEDULE'/);
+        expect(modal).toMatch(/kind: 'DATE_RELATIVE'/);
+        expect(modal).toMatch(/scheduleConfig:/);
+        // Save is gated on a valid schedule (offset 0..365).
+        expect(modal).toMatch(/scheduleValid/);
+    });
 });

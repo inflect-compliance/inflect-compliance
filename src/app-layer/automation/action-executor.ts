@@ -14,6 +14,7 @@
 import { createHmac } from 'node:crypto';
 import type { PrismaClient } from '@prisma/client';
 import { enqueue } from '../jobs/queue';
+import { UPDATE_STATUS_TARGETS } from '@/lib/automation/status-allowlist';
 import { safeFetch, SsrfBlockedError } from './webhook-safety';
 import { isNotificationsEnabled } from '../notifications/settings';
 import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
@@ -59,20 +60,15 @@ const WEBHOOK_TIMEOUT_MS = 8000;
  * canonical `status` field, and only to a legal value for that entity. Without
  * this a rule config could write any column to any string.
  */
-const STATUS_ALLOWLIST: Record<string, { field: string; values: ReadonlySet<string> }> = {
-    Risk: { field: 'status', values: new Set(['OPEN', 'MITIGATING', 'MITIGATED', 'ACCEPTED', 'CLOSED']) },
-    Task: {
-        field: 'status',
-        values: new Set(['OPEN', 'TRIAGED', 'IN_PROGRESS', 'BLOCKED', 'RESOLVED', 'CLOSED', 'CANCELED']),
-    },
-    Control: {
-        field: 'status',
-        values: new Set([
-            'NOT_STARTED', 'PLANNED', 'IN_PROGRESS', 'IMPLEMENTING',
-            'IMPLEMENTED', 'NEEDS_REVIEW', 'NOT_APPLICABLE',
+// PR-E — sourced from the client-safe shared allowlist so the builder's
+// entity + status dropdowns and this server-side enforcement can never drift.
+const STATUS_ALLOWLIST: Record<string, { field: string; values: ReadonlySet<string> }> =
+    Object.fromEntries(
+        Object.entries(UPDATE_STATUS_TARGETS).map(([entity, spec]) => [
+            entity,
+            { field: spec.field, values: new Set(spec.values) },
         ]),
-    },
-};
+    );
 
 /**
  * Execute a rule's action. Never throws — failures are returned as
