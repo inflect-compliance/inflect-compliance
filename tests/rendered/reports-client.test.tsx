@@ -88,6 +88,25 @@ describe('ReportsClient — SoA is ISO-family-only', () => {
     });
 });
 
+describe('ReportsClient — honest metrics + unified risk reporting (PR-I)', () => {
+    it('shows Mapped % distinct from Implemented % in the readiness view', () => {
+        renderClient([ISO, SOC2], 'ISO27001');
+        // next-intl is mocked to echo keys, so the metric labels appear as keys.
+        expect(screen.getByText('mappedPct')).toBeInTheDocument();
+        expect(screen.getByText('implementedPct')).toBeInTheDocument();
+        expect(screen.getByText('readinessScore')).toBeInTheDocument();
+    });
+
+    it('surfaces the mature risk-report engine (templates + link), no thin duplicate', () => {
+        renderClient([ISO, SOC2], 'ISO27001');
+        // The Risk Register card lists the engine's templates and links into it.
+        expect(screen.getByTestId('risk-report-templates')).toBeInTheDocument();
+        expect(screen.getByText(/riskTplPortfolio/)).toBeInTheDocument();
+        // The retired thin hub CSV/PDF export button is gone.
+        expect(document.querySelector('#export-risks-btn')).toBeNull();
+    });
+});
+
 describe('ReportsClient — framework selector switches the rendered report', () => {
     const originalFetch = global.fetch;
     afterEach(() => {

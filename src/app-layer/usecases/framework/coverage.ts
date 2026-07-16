@@ -202,8 +202,15 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
                         tasks: { select: { id: true, status: true, dueAt: true, title: true } },
                         // Evidence↔Control is a many-to-many join now; read the
                         // linked Evidence through it (flattened at the consumer).
+                        // PR-I — exclude soft-deleted evidence at the query
+                        // level so readiness agrees with the SoA rollup (which
+                        // filters `evidence: { deletedAt: null }`). The
+                        // isCoverageQualifyingEvidence predicate below also
+                        // drops deleted rows; this makes the exclusion explicit
+                        // + query-efficient and keeps the two report families
+                        // from diverging on what evidence "counts".
                         evidenceControlLinks: {
-                            where: { tenantId: ctx.tenantId },
+                            where: { tenantId: ctx.tenantId, evidence: { deletedAt: null } },
                             select: { evidence: { select: { id: true, status: true, title: true, expiredAt: true, isArchived: true, deletedAt: true } } },
                         },
                         // In-force exceptions: APPROVED and not yet expired.
@@ -304,6 +311,14 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
         };
     });
 
+    // PR-I — readiness must reward IMPLEMENTATION, not mapping density. The
+    // headline `readinessScore` is based on the implemented-requirement share
+    // (from the shared verdict rollup), not `coveragePercent` (link-existence).
+    // A framework with 80% mapped but 0 implemented reads as ~0 readiness, not
+    // 80. `coveragePercent` remains the separate "Mapped %" metric.
+    const implementedPercent =
+        total > 0 ? Math.round((implementedRequirements / total) * 100) : 0;
+
     return {
         framework: { key: fw.key, name: fw.name, version: fw.version },
         generatedAt: now.toISOString(),
@@ -329,7 +344,7 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
             notApplicableCount: notApplicable.length,
             missingEvidenceCount: missingEvidence.length,
             overdueTaskCount: overdueTasks.length,
-            readinessScore: Math.max(0, coveragePercent - (missingEvidence.length * 2) - (overdueTasks.length * 3)),
+            readinessScore: Math.max(0, implementedPercent - (missingEvidence.length * 2) - (overdueTasks.length * 3)),
         },
     };
 }
