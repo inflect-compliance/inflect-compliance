@@ -106,6 +106,19 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
     const [showAddAsset, setShowAddAsset] = useState(false);
     const [addId, setAddId] = useState('');
     const [addRationale, setAddRationale] = useState('');
+    // ControlAsset link coverage — how fully the asset is covered by the
+    // control. Only meaningful for the asset↔control link (both link
+    // directions POST to `/assets/{id}/controls`); the DB defaults to
+    // UNKNOWN when omitted.
+    const [addCoverageType, setAddCoverageType] = useState('UNKNOWN');
+    const COVERAGE_OPTIONS = useMemo(
+        () => [
+            { value: 'FULL', label: t('trace.coverageFull') },
+            { value: 'PARTIAL', label: t('trace.coveragePartial') },
+            { value: 'UNKNOWN', label: t('trace.coverageUnknown') },
+        ],
+        [t],
+    );
 
     // Available items for dropdown
 
@@ -186,17 +199,20 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
         type: 'risk' | 'control' | 'asset',
         linkedId: string,
         rationale?: string,
+        coverageType?: string,
     ): { url: string; body: Record<string, string | undefined> } => {
         if (entityType === 'control' && type === 'risk')
             return { url: `${apiBase}/controls/${entityId}/risks`, body: { riskId: linkedId, rationale: rationale || undefined } };
+        // Both asset↔control directions create a ControlAsset link — carry
+        // the coverageType the picker chose.
         if (entityType === 'control' && type === 'asset')
-            return { url: `${apiBase}/assets/${linkedId}/controls`, body: { controlId: entityId, rationale: rationale || undefined } };
+            return { url: `${apiBase}/assets/${linkedId}/controls`, body: { controlId: entityId, rationale: rationale || undefined, coverageType } };
         if (entityType === 'risk' && type === 'control')
             return { url: `${apiBase}/controls/${linkedId}/risks`, body: { riskId: entityId, rationale: rationale || undefined } };
         if (entityType === 'risk' && type === 'asset')
             return { url: `${apiBase}/assets/${linkedId}/risks`, body: { riskId: entityId, rationale: rationale || undefined } };
         if (entityType === 'asset' && type === 'control')
-            return { url: `${apiBase}/assets/${entityId}/controls`, body: { controlId: linkedId, rationale: rationale || undefined } };
+            return { url: `${apiBase}/assets/${entityId}/controls`, body: { controlId: linkedId, rationale: rationale || undefined, coverageType } };
         return { url: `${apiBase}/assets/${entityId}/risks`, body: { riskId: linkedId, rationale: rationale || undefined } };
     };
 
@@ -204,13 +220,14 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
         if (!addId) return;
         const linkedId = addId;
         const rationale = addRationale || undefined;
+        const coverageType = addCoverageType;
         const section: TraceSection = type === 'risk' ? 'risks' : type === 'control' ? 'controls' : 'assets';
         setLinking(true);
         try {
             await swrMutate(
                 traceUrl,
                 async () => {
-                    const { url, body } = buildLinkRequest(type, linkedId, rationale);
+                    const { url, body } = buildLinkRequest(type, linkedId, rationale, coverageType);
                     const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
                     if (!res.ok) throw new Error('Link failed');
                     // Return undefined so SWR revalidates to the authoritative row.
@@ -235,6 +252,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
             // old onSuccess — staged sibling forms stay open).
             setAddId('');
             setAddRationale('');
+            setAddCoverageType('UNKNOWN');
             if (type === 'risk') setShowAddRisk(false);
             else if (type === 'control') setShowAddControl(false);
             else if (type === 'asset') setShowAddAsset(false);
@@ -404,6 +422,19 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                                 placeholder={t('trace.selectControl')}
                                 matchTriggerWidth
                             />
+                            {/* ControlAsset coverage — only when an asset is the
+                                subject (asset→control creates the ControlAsset link). */}
+                            {entityType === 'asset' && (
+                                <Combobox
+                                    id="control-coverage-select"
+                                    selected={COVERAGE_OPTIONS.find((o) => o.value === addCoverageType) ?? null}
+                                    setSelected={(opt) => setAddCoverageType(opt?.value ?? 'UNKNOWN')}
+                                    options={COVERAGE_OPTIONS}
+                                    placeholder={t('trace.coverageType')}
+                                    hideSearch
+                                    matchTriggerWidth
+                                />
+                            )}
                             <input type="text" className="input w-full text-sm" placeholder={t('trace.rationaleOptional')} value={addRationale} onChange={e => setAddRationale(e.target.value)} />
                             <Button variant="primary" size="xs" disabled={!addId || linking} onClick={() => handleLink('control')} id="confirm-control-link">
                                 {linking ? t('trace.linking') : t('trace.link')}
@@ -463,6 +494,19 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                                 placeholder={t('trace.selectAsset')}
                                 matchTriggerWidth
                             />
+                            {/* ControlAsset coverage — only when a control is the
+                                subject (control→asset creates the ControlAsset link). */}
+                            {entityType === 'control' && (
+                                <Combobox
+                                    id="asset-coverage-select"
+                                    selected={COVERAGE_OPTIONS.find((o) => o.value === addCoverageType) ?? null}
+                                    setSelected={(opt) => setAddCoverageType(opt?.value ?? 'UNKNOWN')}
+                                    options={COVERAGE_OPTIONS}
+                                    placeholder={t('trace.coverageType')}
+                                    hideSearch
+                                    matchTriggerWidth
+                                />
+                            )}
                             <input type="text" className="input w-full text-sm" placeholder={t('trace.rationaleOptional')} value={addRationale} onChange={e => setAddRationale(e.target.value)} />
                             <Button variant="primary" size="xs" disabled={!addId || linking} onClick={() => handleLink('asset')} id="confirm-asset-link">
                                 {linking ? t('trace.linking') : t('trace.link')}

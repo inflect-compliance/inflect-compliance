@@ -1458,7 +1458,9 @@
       "yes": "Да",
       "categorisedEmpty": "Все още няма категоризирани контроли.",
       "notAssessed": "Не е оценен",
-      "healthColumn": "Здраве"
+      "healthColumn": "Здраве",
+      "flaggedShowing": "Показани {count} маркирани контроли",
+      "flaggedClear": "Изчисти"
     },
     "empty": {
       "filterTitle": "Няма контроли, отговарящи на филтрите",
@@ -1642,7 +1644,11 @@
       "objectiveEmpty": "Няма цел.",
       "activityEmptyDesc": "Промените в статуса, обновяванията на връзки и редакциите се показват тук, щом нещо се промени.",
       "testsVsChecks": "Тестовете са ръчни планове, които изпълнявате по график. Проверките са автоматични интеграционни проверки, изпълнявани от платформата — неуспешна проверка може автоматично да създаде тестово изпълнение.",
-      "checksVsTests": "Проверките са автоматични интеграционни изпълнения (по график). За ръчни тестови планове използвайте раздела „Тестове\". Неуспешна проверка може автоматично да създаде тестово изпълнение."
+      "checksVsTests": "Проверките са автоматични интеграционни изпълнения (по график). За ръчни тестови планове използвайте раздела „Тестове\". Неуспешна проверка може автоматично да създаде тестово изпълнение.",
+      "tabRequirements": "Изисквания",
+      "addContributor": "Добави сътрудник",
+      "addContributorPlaceholder": "Изберете член…",
+      "removeContributor": "Премахни {name}"
     },
     "editModal": {
       "title": "Редактиране на контрол",
@@ -1713,7 +1719,16 @@
       "errorDesc": "Възникна грешка при извличането на съответствията с рамки за този контрол. Презаредете страницата, за да опитате отново.",
       "emptyTitle": "Няма съответствия с рамки",
       "emptyDesc": "Свържете този контрол с конкретни изисквания на рамка, за да проследявате покритието.",
-      "unmapFailed": "Премахването не бе успешно"
+      "unmapFailed": "Премахването не бе успешно",
+      "colApplicability": "Приложимост",
+      "applicabilityInherit": "Наследяване",
+      "applicabilityApplicable": "Приложимо",
+      "applicabilityNotApplicable": "Неприложимо",
+      "applicabilityJustifyTitle": "Маркирай като неприложимо",
+      "applicabilityJustifyLabel": "Защо {requirement} е неприложимо за тази контрола?",
+      "applicabilityJustifyPlaceholder": "Обяснете защо тази контрола не се прилага за това изискване…",
+      "applicabilityJustifySave": "Запази",
+      "cancel": "Отказ"
     },
     "evidenceTab": {
       "colType": "Тип",
@@ -1785,7 +1800,11 @@
       "colCategory": "Категория",
       "colDescription": "Описание",
       "resourcePlural": "шаблона",
-      "resourceSingular": "шаблон"
+      "resourceSingular": "шаблон",
+      "searchPlaceholder": "Търсене на шаблони…",
+      "colPreview": "Преглед",
+      "previewSummary": "{tasks} задачи · {requirements} връзки към изисквания",
+      "installedWithSkipped": "Инсталирани {installed} · пропуснати {skipped} съществуващи"
     },
     "testPlan": {
       "planNotFound": "Планът не е намерен",
@@ -1819,7 +1838,8 @@
       "unknown": "Неизвестен",
       "owner": "Отговорник: {name}",
       "saveFailed": "Планът за тест не можа да се запише. Опитайте отново.",
-      "runFailed": "Изпълнението не можа да се стартира. Опитайте отново."
+      "runFailed": "Изпълнението не можа да се стартира. Опитайте отново.",
+      "crumbControl": "Контрола"
     },
     "filters": {
       "status": "Статус",
@@ -5898,7 +5918,8 @@
       "startTest": "Стартирай теста",
       "completedToast": "Изпълнението на теста е записано",
       "evidenceRecord": "Запис с доказателство",
-      "evidenceRecordPlaceholder": "Изберете доказателство…"
+      "evidenceRecordPlaceholder": "Изберете доказателство…",
+      "plan": "Тестов план"
     },
     "filters": {
       "status": "Статус",
@@ -6592,7 +6613,11 @@
       "assetUnlinked": "Връзката с актива е премахната",
       "undo": "Отмени",
       "loading": "Зареждане на проследимост…",
-      "failed": "Неуспешно зареждане на данните за проследимост"
+      "failed": "Неуспешно зареждане на данните за проследимост",
+      "coverageType": "Тип покритие",
+      "coverageFull": "Пълно",
+      "coveragePartial": "Частично",
+      "coverageUnknown": "Неизвестно"
     },
     "policyTrace": {
       "linkControl": "Свържи контрола",
@@ -6899,7 +6924,11 @@
       "edgeOne": "ребро",
       "edgeMany": "ребра",
       "close": "Затвори",
-      "mapMeta": "{status} · {count} {noun}"
+      "mapMeta": "{status} · {count} {noun}",
+      "requirementsHeading": "Изпълнени изисквания",
+      "risksHeading": "Смекчени рискове",
+      "assetsHeading": "Защитени активи",
+      "processMapsHeading": "Процесни карти"
     },
     "sharepoint": {
       "title": "Импортиране от SharePoint",

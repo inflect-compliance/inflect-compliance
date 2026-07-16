@@ -41,6 +41,7 @@ import {
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
 import { EmptyState } from '@/components/ui/empty-state';
+import { InlineNotice } from '@/components/ui/inline-notice';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
 import {
     FilterProvider,
@@ -257,6 +258,20 @@ function ControlsPageInner({
 
     }, []);
 
+    // ─── Consistency deep-link restriction (?ids=…) ───
+    // The controls dashboard's consistency check deep-links each issue
+    // count to `/controls?ids=<comma-separated control ids>`. When that
+    // param is present we restrict the already-loaded list to exactly
+    // those controls (a client-side row restriction — NOT a server
+    // filter) and surface a dismissable banner. Clearing returns to
+    // `/controls`. Coexists with the FilterToolbar filters/search.
+    const flaggedIds = useMemo(() => {
+        const raw = searchParams?.get('ids');
+        if (!raw) return null;
+        const ids = raw.split(',').map((s) => s.trim()).filter(Boolean);
+        return ids.length > 0 ? new Set(ids) : null;
+    }, [searchParams]);
+
     // ─── API query string from filter state + search ───
     const filtersForQuery = useMemo(() => {
         const params = filterStateToUrlParams(state);
@@ -345,10 +360,16 @@ function ControlsPageInner({
         }),
         [],
     );
-    const controls = useMemo(
-        () => sortRowsByDisplay(rawControls, sortAccessors, sortBy, sortOrder),
-        [rawControls, sortAccessors, sortBy, sortOrder],
-    );
+    const controls = useMemo(() => {
+        const sorted = sortRowsByDisplay(rawControls, sortAccessors, sortBy, sortOrder);
+        // When the consistency deep-link is active, restrict the loaded
+        // rows to the flagged id set — the whole page (table, KPIs, browse
+        // rail) then reflects exactly the offending controls. The id set is
+        // a small, bounded deep-link payload from the consistency report,
+        // not a server-side filter substitute.
+        // guardrail-ignore: bounded deep-link id set, not a list filter
+        return flaggedIds ? sorted.filter((c) => flaggedIds.has(c.id)) : sorted;
+    }, [rawControls, sortAccessors, sortBy, sortOrder, flaggedIds]);
     const sortableColumns = useMemo(
         () => ['code', 'name', 'status', 'category', 'frequency', 'owner'],
         [],
@@ -1219,7 +1240,24 @@ function ControlsPageInner({
         <EntityListPage<ControlListItem>
             className="animate-fadeIn gap-section"
             aside={composedAside}
-            banner={<TruncationBanner truncated={truncated} />}
+            banner={
+                <>
+                    <TruncationBanner truncated={truncated} />
+                    {flaggedIds && (
+                        <InlineNotice variant="info" id="flagged-controls-banner">
+                            {t('list.flaggedShowing', { count: controls.length })}
+                            {' · '}
+                            <Link
+                                href={tenantHref('/controls')}
+                                id="flagged-controls-clear"
+                                className="font-medium underline hover:no-underline"
+                            >
+                                {t('list.flaggedClear')}
+                            </Link>
+                        </InlineNotice>
+                    )}
+                </>
+            }
             header={{
                 breadcrumbs: [
                     // Was `tenantHref('/')` — that resolves to `/t/<slug>/`

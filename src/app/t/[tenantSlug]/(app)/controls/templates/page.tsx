@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { DataTable, createColumns, TableEmptyState } from '@/components/ui/table';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
 import { InlineNotice } from '@/components/ui/inline-notice';
@@ -26,6 +27,9 @@ interface ControlTemplateRow {
     title: string;
     category: string | null;
     description: string | null;
+    // Pre-install preview — what installing this template creates.
+    // `ControlTemplateRepository.list` includes this `_count` select.
+    _count?: { tasks: number; requirementLinks: number };
 }
 
 export default function ControlTemplatesPage() {
@@ -38,10 +42,11 @@ export default function ControlTemplatesPage() {
 
     const [templates, setTemplates] = useState<ControlTemplateRow[]>([]);
     const [loading, setLoading] = useState(true);
-    // R14-PR7 — search state retired. Users find templates via the
-    // global command palette (⌘K) or by scanning the list. The
-    // category dimension lives in `categories` below if a future PR
-    // adopts FilterToolbar.
+    // Live client-side search over the loaded templates (code / title /
+    // category). Typing filters immediately — no Enter. The list is small
+    // enough that a client filter is the right tool; the page has no
+    // FilterToolbar/FilterProvider, so a shared <Input> is the primitive.
+    const [search, setSearch] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [installing, setInstalling] = useState(false);
     const [error, setError] = useState('');
@@ -88,8 +93,17 @@ export default function ControlTemplatesPage() {
                 throw new Error(typeof data.error === 'string' ? data.error : data.message || t('templates.installFailed'));
             }
             const result = await res.json();
-            const count = Array.isArray(result) ? result.length : 1;
-            setSuccess(t('templates.installed', { count }));
+            // Each row carries `skipped: true` when a control with that code
+            // already existed (no-op). Count only real installs; call out any
+            // skipped-existing so the toast never over-reports.
+            const rows: Array<{ skipped?: boolean }> = Array.isArray(result) ? result : [];
+            const installed = rows.filter((r) => !r.skipped).length;
+            const skipped = rows.filter((r) => r.skipped).length;
+            setSuccess(
+                skipped > 0
+                    ? t('templates.installedWithSkipped', { installed, skipped })
+                    : t('templates.installed', { count: installed }),
+            );
             setTimeout(() => router.push(tenantHref('/controls')), 1500);
 
         } catch (e) {
@@ -99,7 +113,17 @@ export default function ControlTemplatesPage() {
         }
     };
 
-    const filtered = templates;
+    // Plain computed value — the React Compiler auto-memoizes; a manual
+    // useMemo here tripped react-hooks/preserve-manual-memoization.
+    const filterQuery = search.trim().toLowerCase();
+    const filtered = !filterQuery
+        ? templates
+        : templates.filter(
+              (tpl) =>
+                  (tpl.code ?? '').toLowerCase().includes(filterQuery) ||
+                  (tpl.title ?? '').toLowerCase().includes(filterQuery) ||
+                  (tpl.category ?? '').toLowerCase().includes(filterQuery),
+          );
 
 
     return (
@@ -138,6 +162,18 @@ export default function ControlTemplatesPage() {
                 </div>
             )}
 
+            {/* Live search — filters the loaded templates as you type. */}
+            <div className="max-w-sm">
+                <Input
+                    id="templates-search"
+                    size="sm"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder={t('templates.searchPlaceholder')}
+                    aria-label={t('templates.searchPlaceholder')}
+                />
+            </div>
+
             {/* Template list */}
             <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                 {loading ? (
@@ -163,6 +199,18 @@ export default function ControlTemplatesPage() {
                             {
                                 accessorKey: 'category', header: t('templates.colCategory'),
                                 cell: ({ getValue }) => getValue() ? <StatusBadge variant="info">{getValue()}</StatusBadge> : null,
+                            },
+                            {
+                                // Pre-install preview — what installing creates.
+                                id: 'preview', header: t('templates.colPreview'),
+                                cell: ({ row }) => {
+                                    const c = row.original._count;
+                                    return (
+                                        <span className="text-xs text-content-subtle whitespace-nowrap">
+                                            {t('templates.previewSummary', { tasks: c?.tasks ?? 0, requirements: c?.requirementLinks ?? 0 })}
+                                        </span>
+                                    );
+                                },
                             },
                             { accessorKey: 'description', header: t('templates.colDescription'), cell: ({ getValue }) => <span className="text-xs text-content-subtle truncate max-w-xs">{getValue() || '—'}</span> },
                         ]);

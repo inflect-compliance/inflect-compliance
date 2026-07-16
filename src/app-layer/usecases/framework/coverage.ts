@@ -251,7 +251,8 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
         const arr = rollupControlsByReq.get(l.requirementId) || [];
         arr.push({
             status: l.control.status,
-            applicability: l.control.applicability,
+            // EFFECTIVE applicability — per-framework link override ?? control global.
+            applicability: l.applicability ?? l.control.applicability,
             hasInForceException: (l.control.exceptions ?? []).length > 0,
         });
         rollupControlsByReq.set(l.requirementId, arr);

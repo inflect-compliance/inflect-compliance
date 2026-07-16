@@ -22,7 +22,10 @@ export async function installControlsFromTemplate(ctx: RequestContext, templateI
     assertCanCreateControl(ctx);
 
     return runInTenantContext(ctx, async (db) => {
-        const results: Array<{ templateCode: string; controlId: string; tasksCreated: number; requirementsLinked: number }> = [];
+        // `skipped` distinguishes a template whose control already existed
+        // (idempotent no-op) from one actually installed — so the "Installed N"
+        // toast counts only real installs, not skipped existing controls.
+        const results: Array<{ templateCode: string; controlId: string; tasksCreated: number; requirementsLinked: number; skipped: boolean }> = [];
 
         for (const templateId of templateIds) {
             const template = await ControlTemplateRepository.getById(db, templateId);
@@ -39,6 +42,7 @@ export async function installControlsFromTemplate(ctx: RequestContext, templateI
                     controlId: existing.id,
                     tasksCreated: 0,
                     requirementsLinked: 0,
+                    skipped: true,
                 });
                 continue;
             }
@@ -115,6 +119,7 @@ export async function installControlsFromTemplate(ctx: RequestContext, templateI
                 controlId: control.id,
                 tasksCreated,
                 requirementsLinked,
+                skipped: false,
             });
         }
 
@@ -193,6 +198,6 @@ export async function listControlMappings(ctx: RequestContext, controlId: string
             where: { id: controlId, tenantId: ctx.tenantId },
         });
         if (!control) throw notFound('Control not found');
-        return ControlRepository.listFrameworkMappings(db, ctx, controlId);
+        return ControlRepository.listControlRequirementLinks(db, ctx, controlId);
     });
 }

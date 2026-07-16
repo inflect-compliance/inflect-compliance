@@ -1458,7 +1458,9 @@
       "yes": "Yes",
       "categorisedEmpty": "No categorised controls yet.",
       "notAssessed": "Not assessed",
-      "healthColumn": "Health"
+      "healthColumn": "Health",
+      "flaggedShowing": "Showing {count} flagged controls",
+      "flaggedClear": "Clear"
     },
     "empty": {
       "filterTitle": "No controls match your filters",
@@ -1642,7 +1644,11 @@
       "objectiveEmpty": "No objective.",
       "activityEmptyDesc": "Status changes, link updates, and edits show up here once anything moves.",
       "testsVsChecks": "Tests are manual test plans you execute on a schedule. Checks are automated integration checks the platform runs for you — a failing check can feed a test run automatically.",
-      "checksVsTests": "Checks are automated integration runs (on a schedule). For manual, human-executed test plans, use the Tests tab. A failing check can create a test run automatically."
+      "checksVsTests": "Checks are automated integration runs (on a schedule). For manual, human-executed test plans, use the Tests tab. A failing check can create a test run automatically.",
+      "tabRequirements": "Requirements",
+      "addContributor": "Add contributor",
+      "addContributorPlaceholder": "Select a member…",
+      "removeContributor": "Remove {name}"
     },
     "editModal": {
       "title": "Edit Control",
@@ -1713,7 +1719,16 @@
       "errorDesc": "Something went wrong fetching this control's framework mappings. Reload the page to try again.",
       "emptyTitle": "No framework mappings",
       "emptyDesc": "Map this control to specific framework requirements to track coverage.",
-      "unmapFailed": "Unmap failed"
+      "unmapFailed": "Unmap failed",
+      "colApplicability": "Applicability",
+      "applicabilityInherit": "Inherit",
+      "applicabilityApplicable": "Applicable",
+      "applicabilityNotApplicable": "Not applicable",
+      "applicabilityJustifyTitle": "Mark not applicable",
+      "applicabilityJustifyLabel": "Why is {requirement} not applicable for this control?",
+      "applicabilityJustifyPlaceholder": "Explain why this control does not apply to this requirement…",
+      "applicabilityJustifySave": "Save",
+      "cancel": "Cancel"
     },
     "evidenceTab": {
       "colType": "Type",
@@ -1785,7 +1800,11 @@
       "colCategory": "Category",
       "colDescription": "Description",
       "resourcePlural": "templates",
-      "resourceSingular": "template"
+      "resourceSingular": "template",
+      "searchPlaceholder": "Search templates…",
+      "colPreview": "Preview",
+      "previewSummary": "{tasks} tasks · {requirements} requirement links",
+      "installedWithSkipped": "Installed {installed} · skipped {skipped} existing"
     },
     "testPlan": {
       "planNotFound": "Plan not found",
@@ -1819,7 +1838,8 @@
       "unknown": "Unknown",
       "owner": "Owner: {name}",
       "saveFailed": "Couldn't save the test plan. Try again.",
-      "runFailed": "Couldn't start the run. Try again."
+      "runFailed": "Couldn't start the run. Try again.",
+      "crumbControl": "Control"
     },
     "filters": {
       "status": "Status",
@@ -5898,7 +5918,8 @@
       "startTest": "Start test",
       "completedToast": "Test run recorded",
       "evidenceRecord": "Evidence record",
-      "evidenceRecordPlaceholder": "Select evidence…"
+      "evidenceRecordPlaceholder": "Select evidence…",
+      "plan": "Test plan"
     },
     "filters": {
       "status": "Status",
@@ -6592,7 +6613,11 @@
       "assetUnlinked": "Asset unlinked",
       "undo": "Undo",
       "loading": "Loading traceability…",
-      "failed": "Failed to load traceability data"
+      "failed": "Failed to load traceability data",
+      "coverageType": "Coverage type",
+      "coverageFull": "Full",
+      "coveragePartial": "Partial",
+      "coverageUnknown": "Unknown"
     },
     "policyTrace": {
       "notice": "A policy links directly to controls; the risks those controls mitigate and the assets they protect are inherited through them. Manage these links on each control.",
@@ -6899,7 +6924,11 @@
       "edgeOne": "edge",
       "edgeMany": "edges",
       "close": "Close",
-      "mapMeta": "{status} · {count} {noun}"
+      "mapMeta": "{status} · {count} {noun}",
+      "requirementsHeading": "Requirements satisfied",
+      "risksHeading": "Risks mitigated",
+      "assetsHeading": "Assets protected",
+      "processMapsHeading": "Process maps"
     },
     "sharepoint": {
       "title": "Import from SharePoint",

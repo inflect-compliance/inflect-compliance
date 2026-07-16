@@ -21,6 +21,7 @@ export {
     setControlStatus,
     setControlApplicability,
     setControlOwner,
+    setRequirementLinkApplicability,
     deleteControl,
     restoreControl,
     purgeControl,

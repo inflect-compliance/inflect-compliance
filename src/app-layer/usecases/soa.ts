@@ -146,6 +146,10 @@ export async function getSoA(ctx: RequestContext, options: SoAOptions = {}): Pro
     // 2. Load all ControlRequirementLinks for this tenant + framework
     interface ControlLinkRow {
         requirementId: string;
+        // Per-framework applicability override on the link — NULL inherits the
+        // control's global value. SoA reads the EFFECTIVE value below.
+        applicability: string | null;
+        applicabilityJustification: string | null;
         control: {
             id: string;
             code: string | null;
@@ -242,8 +246,11 @@ export async function getSoA(ctx: RequestContext, options: SoAOptions = {}): Pro
             code: l.control.code,
             title: l.control.name,
             status: l.control.status,
-            applicability: l.control.applicability,
-            justification: l.control.applicabilityJustification,
+            // EFFECTIVE applicability — the per-framework link override, falling
+            // back to the control's global value. So a control N/A for this
+            // framework doesn't read N/A everywhere.
+            applicability: l.applicability ?? l.control.applicability,
+            justification: l.applicabilityJustification ?? l.control.applicabilityJustification,
             owner: l.control.ownerUserId,
             frequency: l.control.frequency,
         }));
@@ -289,10 +296,10 @@ export async function getSoA(ctx: RequestContext, options: SoAOptions = {}): Pro
         let exceptedUntil: string | null = null;
         if (applicable === true) {
             const rollupControls = reqLinks
-                .filter((l) => l.control.applicability === 'APPLICABLE')
+                .filter((l) => (l.applicability ?? l.control.applicability) === 'APPLICABLE')
                 .map((l) => ({
                     status: l.control.status,
-                    applicability: l.control.applicability,
+                    applicability: l.applicability ?? l.control.applicability,
                     hasInForceException: l.control.exceptions.length > 0,
                 }));
             const rolled = rollUpRequirementVerdict(rollupControls);
@@ -305,7 +312,7 @@ export async function getSoA(ctx: RequestContext, options: SoAOptions = {}): Pro
                 // Excepted until the EARLIEST gapping exception expires — after
                 // that date a control reverts to a real gap.
                 const gapDates = reqLinks
-                    .filter((l) => l.control.applicability === 'APPLICABLE' && !isImplemented(l.control.status))
+                    .filter((l) => (l.applicability ?? l.control.applicability) === 'APPLICABLE' && !isImplemented(l.control.status))
                     .flatMap((l) => l.control.exceptions.map((e) => e.expiresAt))
                     .filter((d): d is Date => d != null);
                 if (gapDates.length > 0) {

@@ -226,6 +226,52 @@ export async function setControlApplicability(
     return result;
 }
 
+/**
+ * Set a PER-FRAMEWORK applicability override on one control↔requirement link.
+ * NULL clears the override (the link reverts to inheriting the control's global
+ * Control.applicability). SoA/coverage read the effective value (link ?? control).
+ */
+export async function setRequirementLinkApplicability(
+    ctx: RequestContext,
+    controlId: string,
+    requirementId: string,
+    applicability: 'APPLICABLE' | 'NOT_APPLICABLE' | null,
+    justification: string | null,
+) {
+    assertCanSetApplicability(ctx);
+    if (applicability === 'NOT_APPLICABLE' && !justification) {
+        throw badRequest('Justification is required when marking a requirement mapping NOT_APPLICABLE');
+    }
+
+    const result = await runInTenantContext(ctx, async (db) => {
+        const link = await db.controlRequirementLink.findFirst({
+            where: { controlId, requirementId, tenantId: ctx.tenantId },
+            select: { id: true, applicability: true },
+        });
+        if (!link) throw notFound('Control–requirement mapping not found');
+
+        const updated = await db.controlRequirementLink.update({
+            where: { id: link.id },
+            data: {
+                applicability,
+                applicabilityJustification: applicability === 'NOT_APPLICABLE' ? justification : null,
+            },
+        });
+
+        await logEvent(db, ctx, {
+            action: 'CONTROL_APPLICABILITY_CHANGED',
+            entityType: 'Control',
+            entityId: controlId,
+            details: `Per-framework applicability changed: ${link.applicability ?? 'INHERIT'} → ${applicability ?? 'INHERIT'}`,
+            detailsJson: { category: 'status_change', entityName: 'Control', fromStatus: link.applicability ?? 'INHERIT', toStatus: applicability ?? 'INHERIT', reason: justification || undefined },
+            metadata: { requirementId, oldApplicability: link.applicability, newApplicability: applicability, justification },
+        });
+        return updated;
+    });
+    await bumpEntityCacheVersion(ctx, 'control');
+    return result;
+}
+
 // ─── Owner ───
 
 export async function setControlOwner(ctx: RequestContext, id: string, ownerUserId: string | null) {

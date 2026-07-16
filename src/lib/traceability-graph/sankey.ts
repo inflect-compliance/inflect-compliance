@@ -5,13 +5,14 @@
  * endpoint, no refetch) and projects it onto Sankey columns. The
  * shape this view tells:
  *
- *   Assets   →   Risks   →   Controls
- *   "exposes"    "mitigates" (reversed direction)
+ *   Assets   →   Risks   →   Controls   →   Requirements
+ *   "exposes"    "mitigates"   "implements"
+ *   (reversed direction on the first two)
  *
  * Why this orientation: it follows the operator's mental model —
  * "an asset exposes us to a risk; that risk is mitigated by
- * controls." Reading left-to-right reads the same as the audit
- * narrative.
+ * controls; those controls implement framework requirements."
+ * Reading left-to-right reads the same as the audit narrative.
  *
  * Cross-framework requirement-mapping is a richer Sankey we may
  * want later (Source-framework requirements → Controls →
@@ -97,14 +98,17 @@ export interface BuildSankeyOptions {
 // ─── Column projection ─────────────────────────────────────────────────
 
 /**
- * The column layout for the asset → risk → control flow.
- * Stable ordering means the renderer never has to think about
- * direction.
+ * The column layout for the asset → risk → control → requirement
+ * flow. Requirements sit downstream of controls: an asset exposes a
+ * risk, controls mitigate the risk, and each control **implements**
+ * one or more framework requirements. Stable ordering means the
+ * renderer never has to think about direction.
  */
 const COLUMN_LAYOUT: ReadonlyArray<{ index: number; kind: TraceabilityNodeKind; label: string }> = [
     { index: 0, kind: 'asset', label: 'Assets' },
     { index: 1, kind: 'risk', label: 'Risks' },
     { index: 2, kind: 'control', label: 'Controls' },
+    { index: 3, kind: 'requirement', label: 'Requirements' },
 ];
 
 /**
@@ -114,9 +118,10 @@ const COLUMN_LAYOUT: ReadonlyArray<{ index: number; kind: TraceabilityNodeKind; 
  *   1. Optionally narrow the graph via `computeSearchHighlight` —
  *      keep nodes that are matched OR adjacent.
  *   2. Place every surviving node into its column based on `kind`.
- *      Drop kinds outside the column layout (today: `requirement`,
- *      `policy` — they're rendered in graph view but not in this
- *      Sankey orientation).
+ *      Drop kinds outside the column layout (today: `policy` — it's
+ *      rendered in graph view but has no Sankey column yet).
+ *      `requirement` now has a column (rightmost), so control→
+ *      requirement `implements` edges render as a real band.
  *   3. Project edges: for each edge whose endpoints both survive,
  *      flip direction if needed so source.column < target.column,
  *      then write a link.
@@ -148,7 +153,7 @@ export function buildSankeyDataset(
     for (const node of graph.nodes) {
         if (!inScope(node.id)) continue;
         const col = colByKind.get(node.kind);
-        if (!col) continue; // kinds outside the layout are dropped
+        if (!col) continue; // kinds outside the layout (e.g. policy) are dropped
         placedNodes.set(node.id, {
             id: node.id,
             label: node.label,

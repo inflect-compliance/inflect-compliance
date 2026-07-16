@@ -106,13 +106,16 @@ describe('Audit S9 — Cross-Framework Traceability', () => {
         });
 
         it('control / risk / asset findMany calls all carry take: nodeCap', () => {
-            // Six findMany calls in the usecase — three entity + three
-            // link. Each must carry a `take:` literal. The structural
-            // detector confirms the absence of any bare findMany.
+            // Eight findMany calls in the usecase — four entity
+            // (control / risk / asset / requirement) + four link
+            // (riskControl / controlAsset / assetRiskLink /
+            // controlRequirementLink). Each must carry a `take:`
+            // literal. The structural detector confirms the absence
+            // of any bare findMany.
             const findManyCount = (src.match(/\.findMany\(/g) ?? []).length;
-            expect(findManyCount).toBe(6);
+            expect(findManyCount).toBe(8);
             const takeCount = (src.match(/take:\s*(nodeCap|linkCap)/g) ?? []).length;
-            expect(takeCount).toBe(6);
+            expect(takeCount).toBe(8);
         });
     });
 

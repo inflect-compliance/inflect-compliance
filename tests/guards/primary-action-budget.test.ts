@@ -68,7 +68,10 @@ const PRIMARY_BUDGET: Record<string, number> = {
     // #102 item 1 dropped 2 (Map Requirement + Map) to the extracted
     // Mappings tab component below.
     "src/app/t/[tenantSlug]/(app)/controls/[controlId]/page.tsx": 8,
-    "src/app/t/[tenantSlug]/(app)/controls/[controlId]/_tabs/ControlMappingsTab.tsx": 2,
+    // Three distinct primary regions, never on screen together: the
+    // header "map requirement" toggle, the inline map-form submit, and
+    // the per-framework-applicability justify modal's confirm (PR3 item 3).
+    "src/app/t/[tenantSlug]/(app)/controls/[controlId]/_tabs/ControlMappingsTab.tsx": 3,
     // Epic G-3 "Send assessment" modal confirm — its own dialog region,
     // never on screen with the page-header CTAs. The legacy in-app "Start"
     // flow (a second primary) was retired when the assessments tab unified

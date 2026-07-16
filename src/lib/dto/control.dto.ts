@@ -92,6 +92,10 @@ export type PolicyLinkDTO = z.infer<typeof PolicyLinkDTOSchema>;
 export const FrameworkMappingDTOSchema = z.object({
     id: z.string(),
     fromRequirementId: z.string().optional(),
+    // Per-framework applicability override on the link (null/absent = inherit
+    // the control's global Control.applicability).
+    applicability: z.enum(['APPLICABLE', 'NOT_APPLICABLE']).nullable().optional(),
+    applicabilityJustification: z.string().nullable().optional(),
     fromRequirement: z.object({
         id: z.string(),
         code: z.string().nullable().optional(),
