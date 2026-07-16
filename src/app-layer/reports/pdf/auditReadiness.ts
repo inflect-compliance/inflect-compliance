@@ -8,6 +8,7 @@ import crypto from 'crypto';
 import type { RequestContext } from '@/app-layer/types';
 import { getSoA } from '@/app-layer/usecases/soa';
 import { runSoAChecks } from '@/app-layer/usecases/soa-checks';
+import { auditReadinessLabels } from './report-labels';
 import { createPdfDocument } from '@/lib/pdf/pdfKitFactory';
 import { addCoverPage, addMetadataPage, applyHeadersAndFooters } from '@/lib/pdf/layout';
 import { renderTable, autoColumnWidths } from '@/lib/pdf/table';
@@ -38,11 +39,18 @@ export async function generateAuditReadinessPdf(
         .update(JSON.stringify({ entries: soaReport.entries.length, summary: soaReport.summary, checks: checks.issues.length }))
         .digest('hex');
 
+    // ─── Framework-derived labels (PR-H) — never an ISO literal (see report-labels.ts) ───
+    const labels = auditReadinessLabels({
+        frameworkName: soaReport.frameworkName,
+        isIsoFamily: soaReport.isIsoFamily,
+        requirementCount: soaReport.summary.total,
+    });
+
     // ─── Meta ───
     const meta: ReportMeta = {
         tenantName: tenant?.name || 'Tenant',
         reportTitle: 'Audit Readiness Report',
-        reportSubtitle: 'Statement of Applicability — ISO 27001:2022',
+        reportSubtitle: labels.reportSubtitle,
         generatedAt: new Date().toISOString(),
         framework: soaReport.framework,
         watermark: options?.watermark || 'NONE',
@@ -50,7 +58,10 @@ export async function generateAuditReadinessPdf(
     };
 
     const dataSources: DataSourceNote[] = [
-        { source: 'Statement of Applicability', description: 'All 93 Annex A controls with mapping, applicability, and implementation status.' },
+        {
+            source: labels.applicabilitySection,
+            description: labels.dataSourceDescription,
+        },
         { source: 'Readiness Checks', description: 'Automated checks for unmapped requirements, missing justifications, and evidence gaps.' },
         { source: 'Control Evidence', description: 'Evidence counts and test results linked to applicable controls.' },
     ];
@@ -90,8 +101,8 @@ export async function generateAuditReadinessPdf(
 
     addSpacer(doc);
 
-    // SoA table
-    addSectionTitle(doc, 'Statement of Applicability');
+    // SoA / requirements table
+    addSectionTitle(doc, labels.tableSectionTitle);
 
     const widths = autoColumnWidths([1, 3, 1.2, 1.2, 1, 2]);
     const columns: TableColumn[] = [

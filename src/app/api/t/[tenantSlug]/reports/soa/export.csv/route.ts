@@ -29,27 +29,48 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params: param
     const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
 
+    // PR-H — scope to the selected framework; the CSV names the real framework.
+    const requestedFramework =
+        new URL(req.url).searchParams.get('framework') || undefined;
     const report = await getSoA(ctx, {
+        framework: requestedFramework,
         includeEvidence: true,
         includeTasks: true,
         includeTests: true,
     });
+    const isIso = report.isIsoFamily;
 
     // ─── Build CSV ───
-    const headers = [
-        'AnnexAKey',
-        'Title',
-        'Section',
-        'Applicable',
-        'Justification',
-        'ImplementationStatus',
-        'ControlRefs',
-        'Owner',
-        'Frequency',
-        'EvidenceCount',
-        'OpenTasks',
-        'LastTestResult',
-    ];
+    // The SoA columns (Annex-A key + Applicability + Justification) are an
+    // ISO-27001 artifact; a non-ISO framework gets a neutral coverage/readiness
+    // CSV that never shows Applicability/Justification.
+    const headers = isIso
+        ? [
+              'AnnexAKey',
+              'Title',
+              'Section',
+              'Applicable',
+              'Justification',
+              'ImplementationStatus',
+              'ControlRefs',
+              'Owner',
+              'Frequency',
+              'EvidenceCount',
+              'OpenTasks',
+              'LastTestResult',
+          ]
+        : [
+              'RequirementKey',
+              'Title',
+              'Section',
+              'ImplementationStatus',
+              'ControlRefs',
+              'Owner',
+              'Frequency',
+              'EvidenceCount',
+              'OpenTasks',
+              'LastTestResult',
+          ];
 
     const rows = report.entries.map(entry => {
         const controlRefs = entry.mappedControls
@@ -72,12 +93,7 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params: param
             : entry.applicable === false ? 'No'
             : 'Unmapped';
 
-        return [
-            escapeCSV(entry.requirementCode),
-            escapeCSV(entry.requirementTitle),
-            escapeCSV(entry.section),
-            escapeCSV(applicable),
-            escapeCSV(entry.justification),
+        const common = [
             escapeCSV(entry.implementationStatus?.replace(/_/g, ' ')),
             escapeCSV(controlRefs),
             escapeCSV(owners),
@@ -85,7 +101,17 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params: param
             String(entry.evidenceCount),
             String(entry.openTaskCount),
             escapeCSV(entry.lastTestResult),
-        ].join(',');
+        ];
+        const lead = [
+            escapeCSV(entry.requirementCode),
+            escapeCSV(entry.requirementTitle),
+            escapeCSV(entry.section),
+        ];
+        return (
+            isIso
+                ? [...lead, escapeCSV(applicable), escapeCSV(entry.justification), ...common]
+                : [...lead, ...common]
+        ).join(',');
     });
 
     const csv = [headers.join(','), ...rows].join('\r\n');
@@ -102,8 +128,11 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params: param
     );
 
     // ─── Response ───
+    // PR-H — filename derives from the resolved framework, not an ISO literal.
     const now = new Date().toISOString().slice(0, 10);
-    const filename = `${ctx.tenantSlug || 'tenant'}_ISO27001_2022_SoA_${now}.csv`;
+    const fwSlug = report.framework.replace(/[^A-Za-z0-9]+/g, '');
+    const kind = isIso ? 'SoA' : 'Coverage';
+    const filename = `${ctx.tenantSlug || 'tenant'}_${fwSlug}_${kind}_${now}.csv`;
 
     return new NextResponse(csv, {
         status: 200,
