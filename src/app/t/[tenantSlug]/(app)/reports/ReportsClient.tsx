@@ -216,13 +216,27 @@ export function ReportsClient({
                     description={tx('cardRiskDesc')}
                     testid="report-card-risk"
                     action={
-                        <Link
-                            href={`/t/${tenantSlug}/risks/reports`}
-                            className={buttonVariants({ variant: 'secondary', size: 'sm' })}
-                            id="report-card-risk-link"
-                        >
-                            {tx('openRiskReports')} <ArrowRight className="w-3.5 h-3.5" />
-                        </Link>
+                        <div className="flex flex-col gap-tight w-full">
+                            {/* PR-I — surface the mature risk-report engine's
+                                templates on the hub (PDF/CSV/PPTX + ReportRun
+                                lifecycle + schedules live at /risks/reports).
+                                The hub no longer offers a thin duplicate. */}
+                            <ul
+                                className="text-xs text-content-subtle space-y-0.5"
+                                data-testid="risk-report-templates"
+                            >
+                                <li>• {tx('riskTplPortfolio')}</li>
+                                <li>• {tx('riskTplDeepDive')}</li>
+                                <li>• {tx('riskTplBia')}</li>
+                            </ul>
+                            <Link
+                                href={`/t/${tenantSlug}/risks/reports`}
+                                className={buttonVariants({ variant: 'secondary', size: 'sm' })}
+                                id="report-card-risk-link"
+                            >
+                                {tx('openRiskReports')} <ArrowRight className="w-3.5 h-3.5" />
+                            </Link>
+                        </div>
                     }
                 />
                 {isIso && (

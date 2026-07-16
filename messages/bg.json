@@ -3332,7 +3332,10 @@
     "gapAnalysisHeading": "Анализ на пропуски — {count} несъпоставени изисквания",
     "noGaps": "Всяко изискване има поне един съпоставен контрол",
     "missingEvidenceHeading": "Контроли без доказателства — {count}",
-    "overdueTasksHeading": "Просрочени задачи — {count}"
+    "overdueTasksHeading": "Просрочени задачи — {count}",
+    "riskTplPortfolio": "Обобщение на портфейлния риск",
+    "riskTplDeepDive": "Задълбочен анализ на риска",
+    "riskTplBia": "Анализ на въздействието върху бизнеса"
   },
   "notifications": {
     "title": "Известия",

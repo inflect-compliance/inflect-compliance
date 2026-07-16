@@ -361,16 +361,17 @@ describe('generateReadinessReport', () => {
         expect(titles).toEqual(['In-Progress Overdue', 'Open Overdue']);
     });
 
-    it('readinessScore formula: coveragePercent - missing×2 - overdue×3 (floored at 0)', async () => {
-        // 1 of 1 mapped → coveragePercent = 100. 1 missing-evidence,
-        // 2 overdue → score = 100 - 2 - 6 = 92.
+    it('readinessScore formula: implementedPercent - missing×2 - overdue×3 (floored at 0)', async () => {
+        // PR-I — the score is now IMPLEMENTATION-based. 1 of 1 requirement
+        // implemented → implementedPercent = 100. 1 missing-evidence, 2 overdue
+        // → score = 100 - 2 - 6 = 92.
         const past = new Date('2020-01-01');
         mockPrisma.framework.findFirst.mockResolvedValueOnce({ id: 'fw-1', key: 'iso', name: 'ISO', version: '2022' });
         mockPrisma.frameworkRequirement.findMany.mockResolvedValueOnce([
             { id: 'r-1', code: 'A', title: 'X', section: 'Org', sortOrder: 1 },
         ]);
         tenantDb.controlRequirementLink.findMany.mockResolvedValueOnce([
-            { requirementId: 'r-1', control: { id: 'c-1', code: 'CC1', name: 'X', status: 'IMPLEMENTED', description: '', evidenceControlLinks: [],
+            { requirementId: 'r-1', control: { id: 'c-1', code: 'CC1', name: 'X', status: 'IMPLEMENTED', applicability: 'APPLICABLE', description: '', evidenceControlLinks: [],
               tasks: [
                   { id: 't-1', status: 'OPEN', dueAt: past, title: 'A' },
                   { id: 't-2', status: 'OPEN', dueAt: past, title: 'B' },
@@ -379,8 +380,49 @@ describe('generateReadinessReport', () => {
 
         const result = await generateReadinessReport(ctx, 'iso');
 
-        // 100 (coverage) - 2 (1 missing × 2) - 6 (2 overdue × 3) = 92
+        // 100 (implemented) - 2 (1 missing × 2) - 6 (2 overdue × 3) = 92
         expect(result.summary.readinessScore).toBe(92);
+    });
+
+    it('PR-I — readiness rewards implementation, not mapping density', async () => {
+        // A requirement fully MAPPED but the control is NOT implemented:
+        // coveragePercent = 100 (mapping density) but readinessScore ≈ 0.
+        mockPrisma.framework.findFirst.mockResolvedValueOnce({ id: 'fw-1', key: 'iso', name: 'ISO', version: '2022' });
+        mockPrisma.frameworkRequirement.findMany.mockResolvedValueOnce([
+            { id: 'r-1', code: 'A', title: 'X', section: 'Org', sortOrder: 1 },
+        ]);
+        tenantDb.controlRequirementLink.findMany.mockResolvedValueOnce([
+            { requirementId: 'r-1', control: { id: 'c-1', code: 'CC1', name: 'X', status: 'NOT_STARTED', applicability: 'APPLICABLE', description: '',
+              evidenceControlLinks: [{ evidenceId: 'e-1', evidence: { id: 'e-1', status: 'APPROVED', expiredAt: null, isArchived: false, deletedAt: null, title: 'E1' } }],
+              tasks: [] } },
+        ]);
+
+        const result = await generateReadinessReport(ctx, 'iso');
+
+        expect(result.coverage.coveragePercent).toBe(100); // mapping density
+        expect(result.summary.implementedRequirements).toBe(0);
+        expect(result.summary.readinessScore).toBe(0); // rewards implementation
+    });
+
+    it('PR-I — soft-deleted evidence is excluded (control reads as missing evidence)', async () => {
+        // A control whose ONLY evidence link points at a soft-deleted row must
+        // count as missing evidence in readiness — agreeing with the SoA rollup
+        // which filters evidence deletedAt:null.
+        mockPrisma.framework.findFirst.mockResolvedValueOnce({ id: 'fw-1', key: 'iso', name: 'ISO', version: '2022' });
+        mockPrisma.frameworkRequirement.findMany.mockResolvedValueOnce([
+            { id: 'r-1', code: 'A', title: 'X', section: 'Org', sortOrder: 1 },
+        ]);
+        tenantDb.controlRequirementLink.findMany.mockResolvedValueOnce([
+            { requirementId: 'r-1', control: { id: 'c-1', code: 'CC1', name: 'Deleted-Ev', status: 'IMPLEMENTED', applicability: 'APPLICABLE', description: '',
+              evidenceControlLinks: [{ evidenceId: 'e-1', evidence: { id: 'e-1', status: 'APPROVED', expiredAt: null, isArchived: false, deletedAt: new Date('2026-01-01'), title: 'Deleted' } }],
+              tasks: [] } },
+        ]);
+
+        const result = await generateReadinessReport(ctx, 'iso');
+
+        expect(result.controlsMissingEvidence).toEqual([
+            { code: 'CC1', name: 'Deleted-Ev', status: 'IMPLEMENTED' },
+        ]);
     });
 
     it('readinessScore floors at 0 (Math.max guard)', async () => {
