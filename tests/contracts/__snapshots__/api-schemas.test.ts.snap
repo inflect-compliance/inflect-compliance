@@ -3846,6 +3846,69 @@ exports[`API contract — per-schema snapshots schema: Requirement 1`] = `
 }"
 `;
 
+exports[`API contract — per-schema snapshots schema: RiskBulkImportRequest 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "risks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "likelihood": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "impact": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "owner": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ownerUserId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "title"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 500
+    }
+  },
+  "required": [
+    "risks"
+  ],
+  "description": "Bulk-create risks from a parsed CSV in a single request. Server dedupes by title and resolves owner names/emails to members."
+}"
+`;
+
 exports[`API contract — per-schema snapshots schema: RiskControlLinkRequest 1`] = `
 "{
   "type": "object",

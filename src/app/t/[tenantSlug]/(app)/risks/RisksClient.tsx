@@ -884,24 +884,29 @@ function RisksPageInner({
             cell: ({ row }) => {
                 const rs = row.original.residualScore;
                 if (rs == null) {
-                    return <span className="text-xs text-content-subtle" title={tx('residualNotAssessed')}>—</span>;
+                    return (
+                        <Tooltip content={tx('residualNotAssessed')}>
+                            <span className="text-xs text-content-subtle">—</span>
+                        </Tooltip>
+                    );
                 }
                 const band = resolveBandForScore(rs, matrixConfig.bands);
                 return (
-                    <span
-                        className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 font-bold tabular-nums text-content-emphasis"
-                        style={{ backgroundColor: `${band.color}33` }}
-                        title={`${band.name} (${rs})`}
-                        data-band={band.name}
-                        data-testid={`risk-residual-${row.original.id}`}
-                    >
+                    <Tooltip content={`${band.name} (${rs})`}>
                         <span
-                            aria-hidden="true"
-                            className="inline-block w-1.5 h-1.5 rounded-full"
-                            style={{ backgroundColor: band.color }}
-                        />
-                        {rs}
-                    </span>
+                            className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 font-bold tabular-nums text-content-emphasis"
+                            style={{ backgroundColor: `${band.color}33` }}
+                            data-band={band.name}
+                            data-testid={`risk-residual-${row.original.id}`}
+                        >
+                            <span
+                                aria-hidden="true"
+                                className="inline-block w-1.5 h-1.5 rounded-full"
+                                style={{ backgroundColor: band.color }}
+                            />
+                            {rs}
+                        </span>
+                    </Tooltip>
                 );
             },
         },

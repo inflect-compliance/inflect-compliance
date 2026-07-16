@@ -17,11 +17,8 @@ const UI_DIR = path.resolve(__dirname, '../../src/components/ui');
 const REPO_FILE = path.resolve(__dirname, '../../src/app-layer/repositories/DashboardRepository.ts');
 
 // i18n: RiskHeatmap routes its user-facing strings through next-intl now, so
-// the source no longer holds the English literals. Resolve the moved keys
-// against the real catalog so these structural checks still pin the intent.
-const EN_CHART = JSON.parse(
-    fs.readFileSync(path.resolve(__dirname, '../../messages/en.json'), 'utf-8'),
-).common.chart;
+// the source no longer holds the English literals. (The EN_CHART catalog
+// lookup was retired in PR-K along with the deleted RiskHeatmap tests.)
 const USECASE_FILE = path.resolve(__dirname, '../../src/app-layer/usecases/dashboard.ts');
 const DASHBOARD_PAGE_FILE = path.resolve(
     __dirname,
@@ -38,78 +35,10 @@ const DASHBOARD_CLIENT_FILE = path.resolve(
 
 // ─── Widget Exports ────────────────────────────────────────────────
 
-describe('RiskHeatmap Widget', () => {
-    const content = fs.readFileSync(path.join(UI_DIR, 'RiskHeatmap.tsx'), 'utf-8');
-
-    test('file exists and is substantial', () => {
-        expect(content.length).toBeGreaterThan(1000);
-    });
-
-    test('exports default component and HeatmapCell type', () => {
-        expect(content).toContain('export default function RiskHeatmap');
-        expect(content).toContain('export interface HeatmapCell');
-    });
-
-    test('renders a 5×5 grid by default', () => {
-        expect(content).toContain('scale = 5');
-        // Should iterate rows and cols
-        expect(content).toContain('Array.from({ length: scale }');
-    });
-
-    test('handles empty state (zero risks)', () => {
-        expect(content).toContain('totalRisks === 0');
-        expect(content).toContain("t('risksEmpty')");
-        expect(EN_CHART.risksEmpty).toBe('No risks registered yet.');
-    });
-
-    test('color-codes by risk score via R21-PR-C useHeatScale', () => {
-        // R21-PR-C replaced the bespoke score-bucket palette
-        // (bg-red-500 / bg-orange-500 / bg-amber-500 / bg-emerald-500)
-        // with a continuous OKLAB ramp driven by `useHeatScale`
-        // from the chart-series 4 (pink) token family. The cells
-        // colour-map via `heat.colorFor(score)` where score is
-        // likelihood × impact.
-        expect(content).toContain('useHeatScale');
-        expect(content).toContain('heat.colorFor(score)');
-        expect(content).toContain('likelihood * impact');
-    });
-
-    test('uses likelihood × impact lookup', () => {
-        expect(content).toContain('likelihood * impact');
-        expect(content).toContain('lookup.get');
-        expect(content).toContain('new Map');
-    });
-
-    test('has axis labels (Likelihood + Impact)', () => {
-        expect(content).toContain("t('likelihood')");
-        expect(content).toContain("t('impact')");
-        expect(EN_CHART.likelihood).toBe('Likelihood');
-        expect(EN_CHART.impact).toBe('Impact');
-    });
-
-    test('has a gradient legend (R21-PR-C ChartLegend)', () => {
-        // R21-PR-C replaced the discrete Low/Medium/High/Critical
-        // 4-swatch legend with a continuous-ramp `<ChartLegend
-        // variant="gradient">` painted from the same tokens the
-        // cells consume.
-        expect(content).toContain('ChartLegend');
-        expect(content).toContain('variant="gradient"');
-        expect(content).toContain('heatScale={heat}');
-    });
-
-    test('supports className and id props', () => {
-        expect(content).toContain("className?: string");
-        expect(content).toContain("id?: string");
-    });
-
-    test('uses the canonical Card primitive surface', () => {
-        // Roadmap-5 PR-1 — the glass-card literal moved into the
-        // Card primitive. Components now compose cardVariants()
-        // (or render `<Card>`) instead of referencing the legacy
-        // class string directly.
-        expect(content).toMatch(/cardVariants\(|<Card\b/);
-    });
-});
+// (RiskHeatmap Widget tests removed in PR-K — the legacy client
+//  <RiskHeatmap> component was deleted, superseded by the config-driven
+//  <RiskMatrix>. The SERVER-side heatmap DTO + DashboardRepository.getRiskHeatmap
+//  are still exercised by the "Dashboard DTO Extensions" describe below.)
 
 describe('ExpiryCalendar Widget', () => {
     const content = fs.readFileSync(path.join(UI_DIR, 'ExpiryCalendar.tsx'), 'utf-8');
@@ -325,33 +254,6 @@ describe('ExpiryCalendar Urgency Logic', () => {
 
 // ─── Risk Heatmap Score Logic Unit Tests ─────────────────────────────
 
-describe('RiskHeatmap Score Logic (post R21-PR-C heatmap rebuild)', () => {
-    const content = fs.readFileSync(path.join(UI_DIR, 'RiskHeatmap.tsx'), 'utf-8');
-
-    // R21-PR-C replaced the discrete score-bucket thresholds with
-    // a continuous OKLAB heat scale over the [1, scale²] domain.
-    // The Low/Medium/High/Critical labels + getScoreLabel function
-    // are gone; the colour gradation IS the severity readout, and
-    // the tooltip shows the raw score plus count.
-
-    test('continuous score domain spans [1, scoreMax]', () => {
-        expect(content).toContain('scoreMax = scale * scale');
-        expect(content).toContain('domain: [1, scoreMax]');
-    });
-
-    test('cell colour interpolates via the heat scale, not a bucket lookup', () => {
-        expect(content).toContain('heat.colorFor(score)');
-    });
-
-    test('cell tooltips include likelihood × impact + count', () => {
-        // The score + cell count are surfaced in the tooltip
-        // string. Severity buckets aren't a separate label any
-        // more — the colour communicates severity directly.
-        expect(content).toContain("t('cellTitle'");
-        expect(EN_CHART.cellTitle).toContain('L{likelihood} × I{impact} = {score}');
-        // The count + pluralized noun now live in the cellTitle ICU message
-        // ("… — {count} {noun}") rather than an inline `${count} risk` string.
-        expect(EN_CHART.cellTitle).toContain('{count}');
-        expect(content).toMatch(/t\('cellTitle',\s*\{[\s\S]*?\bcount\b/);
-    });
-});
+// (RiskHeatmap Score Logic tests removed in PR-K alongside the deleted
+//  client <RiskHeatmap> component — <RiskMatrix> is the config-driven
+//  successor with its own coverage.)
