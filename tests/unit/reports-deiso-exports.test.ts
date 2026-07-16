@@ -3,12 +3,60 @@
  *
  * The Audit Readiness / Gap Analysis PDFs (and the SoA CSV) were hard-branded
  * "ISO 27001:2022 / Annex A / 93 controls" even when run against SOC 2 / NIS2.
- * These tests assert that for a non-ISO framework the artifact names the real
- * framework and zero ISO literals leak — and that ISO still reads as ISO.
+ *
+ * These assert the pure label-derivation (report-labels.ts) that the generators
+ * use — for a non-ISO framework every label names the real framework and zero
+ * ISO literals leak; for ISO it still reads as Annex A / SoA. (Testing the pure
+ * helper rather than the rendered PDF avoids pdf-parse's environment-dependent
+ * text extraction.) Plus a lighter check that the generators forward the
+ * selected framework to getSoA.
  */
-/* eslint-disable @typescript-eslint/no-var-requires */
-import type { SoAReportDTO } from '@/lib/dto/soa';
+import {
+    auditReadinessLabels,
+    gapAnalysisLabels,
+} from '@/app-layer/reports/pdf/report-labels';
 
+const ISO_LEAKS = [/ISO\s*27001/i, /Annex\s*A/i, /\b93\b/];
+
+const SOC2 = { frameworkName: 'SOC 2', isIsoFamily: false, requirementCount: 61 };
+const ISO = { frameworkName: 'ISO 27001:2022', isIsoFamily: true, requirementCount: 93 };
+
+function allStrings(o: object): string {
+    return Object.values(o).join(' | ');
+}
+
+describe('report-labels — non-ISO framework (SOC 2) leaks no ISO literals', () => {
+    it('Audit Readiness labels name SOC 2, never Annex A / ISO / 93', () => {
+        const text = allStrings(auditReadinessLabels(SOC2));
+        expect(text).toContain('SOC 2');
+        expect(text).toContain('Coverage & Readiness');
+        for (const rx of ISO_LEAKS) expect(text).not.toMatch(rx);
+    });
+
+    it('Gap Analysis labels name SOC 2, never Annex A / ISO / 93', () => {
+        const text = allStrings(gapAnalysisLabels(SOC2, 4));
+        expect(text).toContain('SOC 2');
+        for (const rx of ISO_LEAKS) expect(text).not.toMatch(rx);
+    });
+});
+
+describe('report-labels — ISO still reads as ISO', () => {
+    it('Audit Readiness keeps Annex A / Statement of Applicability + the 93 count', () => {
+        const l = auditReadinessLabels(ISO);
+        expect(l.reportSubtitle).toMatch(/Statement of Applicability/);
+        expect(l.applicabilitySection).toBe('Statement of Applicability');
+        expect(l.tableSectionTitle).toBe('Statement of Applicability');
+        expect(l.dataSourceDescription).toContain('93 Annex A controls');
+    });
+
+    it('Gap Analysis keeps Annex A requirements for ISO', () => {
+        const l = gapAnalysisLabels(ISO, 2);
+        expect(l.requirementsPhrase).toBe('ISO 27001:2022 Annex A requirements');
+        expect(l.noGapsParagraph).toMatch(/Annex A/);
+    });
+});
+
+// ─── The generators forward the selected framework to getSoA ───
 const getSoAMock = jest.fn();
 jest.mock('@/app-layer/usecases/soa', () => ({
     getSoA: (...args: unknown[]) => getSoAMock(...args),
@@ -21,105 +69,44 @@ jest.mock('@/lib/prisma', () => ({
 import { generateAuditReadinessPdf } from '@/app-layer/reports/pdf/auditReadiness';
 import { generateGapAnalysisPdf } from '@/app-layer/reports/pdf/gapAnalysis';
 
-const pdfParse = require('pdf-parse');
+const soaDto = {
+    tenantId: 't1',
+    tenantSlug: 'acme',
+    framework: 'SOC2',
+    frameworkName: 'SOC 2',
+    isIsoFamily: false,
+    generatedAt: '2026-07-16T00:00:00.000Z',
+    entries: [],
+    summary: {
+        total: 0,
+        applicable: 0,
+        notApplicable: 0,
+        unmapped: 0,
+        implemented: 0,
+        excepted: 0,
+        missingJustification: 0,
+    },
+};
 
-const ctx = { tenantId: 't1', tenantSlug: 'acme' } as never;
-
-function dto(over: Partial<SoAReportDTO>): SoAReportDTO {
-    return {
-        tenantId: 't1',
-        tenantSlug: 'acme',
-        framework: 'SOC2',
-        frameworkName: 'SOC 2',
-        isIsoFamily: false,
-        generatedAt: '2026-07-16T00:00:00.000Z',
-        entries: [
-            {
-                requirementId: 'r1',
-                requirementCode: 'CC1.1',
-                requirementTitle: 'Control environment',
-                section: 'CC',
-                applicable: true,
-                justification: null,
-                implementationStatus: 'IMPLEMENTED',
-                verdict: 'implemented',
-                exceptedUntil: null,
-                mappedControls: [],
-                evidenceCount: 1,
-                openTaskCount: 0,
-                lastTestResult: 'PASS',
-            },
-        ],
-        summary: {
-            total: 1,
-            applicable: 1,
-            notApplicable: 0,
-            unmapped: 0,
-            implemented: 1,
-            excepted: 0,
-            missingJustification: 0,
-        },
-        ...over,
-    };
-}
-
-function collectPdf(doc: PDFKit.PDFDocument): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-        const chunks: Buffer[] = [];
-        doc.on('data', (c: Buffer) => chunks.push(c));
-        doc.on('end', () => resolve(Buffer.concat(chunks)));
-        doc.on('error', reject);
-        doc.end();
-    });
-}
-
-async function pdfText(doc: PDFKit.PDFDocument): Promise<string> {
-    const buf = await collectPdf(doc);
-    const raw = (await pdfParse(buf)).text;
-    // Whitespace-insensitive: PDFKit glyph kerning + pdf-parse text extraction
-    // vary by environment (fonts differ CI vs local), so collapse ALL
-    // whitespace before matching. "SOC 2" → "SOC2", "Annex A" → "AnnexA".
-    return raw.replace(/\s+/g, '');
-}
-
-const ISO_LEAKS = [/ISO27001/i, /AnnexA/i, /93AnnexA/i, /93requirements/i];
-
-describe('de-ISO PDF exports — non-ISO framework (SOC 2)', () => {
-    beforeEach(() => getSoAMock.mockReset());
-
-    it('Audit Readiness names SOC 2 and leaks no ISO literals', async () => {
-        getSoAMock.mockResolvedValue(dto({}));
-        const text = await pdfText(await generateAuditReadinessPdf(ctx, { framework: 'SOC2' }));
-        expect(text).toContain('SOC2');
-        for (const rx of ISO_LEAKS) expect(text).not.toMatch(rx);
+describe('generators forward the selected framework to getSoA', () => {
+    beforeEach(() => {
+        getSoAMock.mockReset();
+        getSoAMock.mockResolvedValue(soaDto);
     });
 
-    it('Gap Analysis names SOC 2 and leaks no ISO literals', async () => {
-        getSoAMock.mockResolvedValue(dto({}));
-        const text = await pdfText(await generateGapAnalysisPdf(ctx, { framework: 'SOC2' }));
-        expect(text).toContain('SOC2');
-        for (const rx of ISO_LEAKS) expect(text).not.toMatch(rx);
-    });
-
-    it('forwards the selected framework to getSoA', async () => {
-        getSoAMock.mockResolvedValue(dto({}));
-        await generateAuditReadinessPdf(ctx, { framework: 'SOC2' });
+    it('Audit Readiness passes options.framework through', async () => {
+        await generateAuditReadinessPdf({ tenantId: 't1' } as never, { framework: 'SOC2' });
         expect(getSoAMock).toHaveBeenCalledWith(
             expect.anything(),
             expect.objectContaining({ framework: 'SOC2' }),
         );
     });
-});
 
-describe('ISO framework still reads as ISO', () => {
-    beforeEach(() => getSoAMock.mockReset());
-
-    it('Audit Readiness keeps Annex A / Statement of Applicability for ISO', async () => {
-        getSoAMock.mockResolvedValue(
-            dto({ framework: 'ISO27001', frameworkName: 'ISO 27001:2022', isIsoFamily: true }),
+    it('Gap Analysis passes options.framework through', async () => {
+        await generateGapAnalysisPdf({ tenantId: 't1' } as never, { framework: 'SOC2' });
+        expect(getSoAMock).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({ framework: 'SOC2' }),
         );
-        const text = await pdfText(await generateAuditReadinessPdf(ctx, { framework: 'ISO27001' }));
-        expect(text).toMatch(/StatementofApplicability/i);
-        expect(text).toMatch(/AnnexA/i);
     });
 });

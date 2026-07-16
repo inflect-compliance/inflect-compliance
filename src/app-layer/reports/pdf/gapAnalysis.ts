@@ -8,6 +8,7 @@ import crypto from 'crypto';
 import type { RequestContext } from '@/app-layer/types';
 import { getSoA } from '@/app-layer/usecases/soa';
 import { runSoAChecks } from '@/app-layer/usecases/soa-checks';
+import { gapAnalysisLabels } from './report-labels';
 import { createPdfDocument } from '@/lib/pdf/pdfKitFactory';
 import { addCoverPage, addMetadataPage, applyHeadersAndFooters } from '@/lib/pdf/layout';
 import { renderTable, autoColumnWidths } from '@/lib/pdf/table';
@@ -38,16 +39,22 @@ export async function generateGapAnalysisPdf(
         .update(JSON.stringify({ issues: checks.issues.length, pass: checks.pass }))
         .digest('hex');
 
-    // ─── Framework-derived labels (PR-H) — never an ISO literal ───
-    const isIso = soaReport.isIsoFamily;
-    const fwName = soaReport.frameworkName;
-    const requirementsPhrase = isIso ? `${fwName} Annex A requirements` : `${fwName} requirements`;
+    // ─── Framework-derived labels (PR-H) — never an ISO literal (report-labels.ts) ───
+    const labels = gapAnalysisLabels(
+        {
+            frameworkName: soaReport.frameworkName,
+            isIsoFamily: soaReport.isIsoFamily,
+            requirementCount: soaReport.summary.total,
+        },
+        checks.issues.length,
+    );
+    const requirementsPhrase = labels.requirementsPhrase;
 
     // ─── Meta ───
     const meta: ReportMeta = {
         tenantName: tenant?.name || 'Tenant',
         reportTitle: 'Gap Analysis Report',
-        reportSubtitle: `${fwName} — ${checks.issues.length} gaps identified`,
+        reportSubtitle: labels.reportSubtitle,
         generatedAt: new Date().toISOString(),
         framework: soaReport.framework,
         watermark: options?.watermark || 'NONE',
@@ -139,9 +146,7 @@ export async function generateGapAnalysisPdf(
     // No issues at all
     if (checks.issues.length === 0) {
         addSectionTitle(doc, 'No Gaps Found');
-        addParagraph(doc, isIso
-            ? 'All Annex A requirements are fully mapped, justified, and have associated evidence. The SoA is audit-ready.'
-            : `All ${fwName} requirements are fully mapped and have associated evidence. Coverage is audit-ready.`);
+        addParagraph(doc, labels.noGapsParagraph);
     }
 
     // Apply headers/footers/watermarks
