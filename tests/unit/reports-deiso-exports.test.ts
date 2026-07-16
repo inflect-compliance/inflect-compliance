@@ -75,10 +75,14 @@ function collectPdf(doc: PDFKit.PDFDocument): Promise<Buffer> {
 
 async function pdfText(doc: PDFKit.PDFDocument): Promise<string> {
     const buf = await collectPdf(doc);
-    return (await pdfParse(buf)).text;
+    const raw = (await pdfParse(buf)).text;
+    // Whitespace-insensitive: PDFKit glyph kerning + pdf-parse text extraction
+    // vary by environment (fonts differ CI vs local), so collapse ALL
+    // whitespace before matching. "SOC 2" → "SOC2", "Annex A" → "AnnexA".
+    return raw.replace(/\s+/g, '');
 }
 
-const ISO_LEAKS = [/ISO\s*27001/i, /Annex\s*A/i, /\b93\b/];
+const ISO_LEAKS = [/ISO27001/i, /AnnexA/i, /93AnnexA/i, /93requirements/i];
 
 describe('de-ISO PDF exports — non-ISO framework (SOC 2)', () => {
     beforeEach(() => getSoAMock.mockReset());
@@ -86,14 +90,14 @@ describe('de-ISO PDF exports — non-ISO framework (SOC 2)', () => {
     it('Audit Readiness names SOC 2 and leaks no ISO literals', async () => {
         getSoAMock.mockResolvedValue(dto({}));
         const text = await pdfText(await generateAuditReadinessPdf(ctx, { framework: 'SOC2' }));
-        expect(text).toContain('SOC 2');
+        expect(text).toContain('SOC2');
         for (const rx of ISO_LEAKS) expect(text).not.toMatch(rx);
     });
 
     it('Gap Analysis names SOC 2 and leaks no ISO literals', async () => {
         getSoAMock.mockResolvedValue(dto({}));
         const text = await pdfText(await generateGapAnalysisPdf(ctx, { framework: 'SOC2' }));
-        expect(text).toContain('SOC 2');
+        expect(text).toContain('SOC2');
         for (const rx of ISO_LEAKS) expect(text).not.toMatch(rx);
     });
 
@@ -115,7 +119,7 @@ describe('ISO framework still reads as ISO', () => {
             dto({ framework: 'ISO27001', frameworkName: 'ISO 27001:2022', isIsoFamily: true }),
         );
         const text = await pdfText(await generateAuditReadinessPdf(ctx, { framework: 'ISO27001' }));
-        expect(text).toMatch(/Statement of Applicability/i);
-        expect(text).toMatch(/Annex A/i);
+        expect(text).toMatch(/StatementofApplicability/i);
+        expect(text).toMatch(/AnnexA/i);
     });
 });
