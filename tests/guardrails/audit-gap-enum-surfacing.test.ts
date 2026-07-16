@@ -54,10 +54,19 @@ describe('Audit-gap enum surfacing', () => {
             expect(en.risks.bulkStatus.mitigated).toBe('Mitigated');
         });
 
-        it('risk detail STATUS_VALUES includes MITIGATED', () => {
-            const block = detail.slice(
-                detail.indexOf('STATUS_VALUES'),
-                detail.indexOf('STATUS_VALUES') + 400,
+        it('risk detail status combobox surfaces MITIGATED', () => {
+            // PR-J moved the status option set into the shared, localized
+            // RISK_STATUS_VALUES (risks/_shared/risk-options.ts); the detail
+            // page builds its combobox from it via buildRiskStatusOptions.
+            // MITIGATED must still be offered so a reviewer who picks
+            // "Mitigated" in the list filter can land on it here.
+            expect(detail).toMatch(/buildRiskStatusOptions/);
+            const opts = read(
+                'src/app/t/[tenantSlug]/(app)/risks/_shared/risk-options.ts',
+            );
+            const block = opts.slice(
+                opts.indexOf('RISK_STATUS_VALUES'),
+                opts.indexOf('RISK_STATUS_VALUES') + 200,
             );
             expect(block).toMatch(/['"]MITIGATED['"]/);
         });
