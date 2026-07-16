@@ -11,6 +11,7 @@ import {
     ArrowRight,
 } from 'lucide-react';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { FormField } from '@/components/ui/form-field';
 import { KPIStat } from '@/components/ui/metric';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { cardVariants } from '@/components/ui/card';
@@ -157,13 +158,7 @@ export function ReportsClient({
                         </Tooltip>
                     </RequirePermission>
                 </div>
-                <div className="flex items-center gap-tight">
-                    <label
-                        htmlFor="reports-framework-select"
-                        className="text-sm font-medium text-content-default"
-                    >
-                        {tx('frameworkLabel')}
-                    </label>
+                <FormField label={tx('frameworkLabel')} orientation="horizontal">
                     <div className="w-full sm:w-64" id="reports-framework-select">
                         <Combobox
                             options={frameworkOptions}
@@ -175,7 +170,7 @@ export function ReportsClient({
                             matchTriggerWidth
                         />
                     </div>
-                </div>
+                </FormField>
             </div>
 
             {/* ── Report catalog ── */}

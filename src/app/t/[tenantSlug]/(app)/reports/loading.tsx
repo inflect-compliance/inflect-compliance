@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { Skeleton, SkeletonHeading } from '@/components/ui/skeleton';
-import { cardVariants } from '@/components/ui/card';
+import { cardVariants } from '@/components/ui/card-variants';
 
 /**
  * Reports loading skeleton (PR-G) — matches the catalog IA: header + framework

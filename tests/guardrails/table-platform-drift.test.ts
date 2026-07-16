@@ -43,7 +43,9 @@ const MIGRATED_PAGES = [
     'vendors/VendorsClient.tsx',
     'assets/AssetsClient.tsx',
     'findings/FindingsClient.tsx',
-    'reports/ReportsClient.tsx',
+    // PR-G — reports/ReportsClient.tsx is no longer a DataTable list page; it
+    // was rebuilt as a framework-scoped report catalog (cards), so it is no
+    // longer tracked here as a DataTable-migrated page.
     // R13-PR10 — `admin/AdminClient.tsx` was deleted (audit log
     // moved to `/admin/audit-log` with a dedicated client island).
     // The new sub-component takes its place in the registry.
@@ -230,11 +232,15 @@ describe('Excluded page registry', () => {
 // ─── Migration Progress Tracking ─────────────────────────────────────
 
 describe('Migration progress', () => {
-    it('at least 10 pages are fully migrated', () => {
+    it('at least 9 pages are fully migrated', () => {
+        // PR-G — reports/ReportsClient.tsx was intentionally rebuilt from a
+        // DataTable list into a framework-scoped report catalog (cards), so it
+        // left this list; the floor drops from 10 → 9 to match. This is an
+        // architectural transition, not a DataTable regression.
         const existing = MIGRATED_PAGES.filter(rel => {
             try { readClientFile(rel); return true; } catch { return false; }
         });
-        expect(existing.length).toBeGreaterThanOrEqual(10);
+        expect(existing.length).toBeGreaterThanOrEqual(9);
     });
 
     it('migrated pages collectively cover all entity types', () => {
