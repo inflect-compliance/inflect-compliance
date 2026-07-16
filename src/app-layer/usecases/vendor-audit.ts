@@ -139,6 +139,68 @@ export async function listSubprocessors(ctx: RequestContext, vendorId: string) {
     );
 }
 
+export interface SubprocessorChainNode {
+    id: string;
+    name: string;
+    country: string | null;
+    criticality: string;
+    inherentRisk: string | null;
+    depth: number;
+    /** True when this node repeats an ancestor on the path (cycle) — not expanded further. */
+    cyclical?: boolean;
+    subprocessors: SubprocessorChainNode[];
+}
+
+/**
+ * Recursive nth-party (4th-party and beyond) subprocessor chain for a vendor.
+ * Walks the `VendorRelationship` graph transitively, bounded by `maxDepth`
+ * and cycle-safe (a vendor already on the ancestor path is marked `cyclical`
+ * and not expanded). Loads the tenant's relationship edges in ONE query and
+ * builds the tree in memory — no per-node round-trip.
+ */
+export async function listSubprocessorChain(
+    ctx: RequestContext,
+    vendorId: string,
+    maxDepth = 4,
+): Promise<SubprocessorChainNode> {
+    assertCanReadVendors(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const root = await db.vendor.findFirst({
+            where: { id: vendorId, tenantId: ctx.tenantId },
+            select: { id: true, name: true, country: true, criticality: true, inherentRisk: true },
+        });
+        if (!root) throw notFound('Vendor not found');
+
+        const rels = await db.vendorRelationship.findMany({
+            where: { tenantId: ctx.tenantId },
+            include: { subprocessor: { select: { id: true, name: true, country: true, criticality: true, inherentRisk: true } } },
+            take: 5000,
+        });
+        const adjacency = new Map<string, typeof rels>();
+        for (const r of rels) {
+            const list = adjacency.get(r.primaryVendorId) ?? [];
+            list.push(r);
+            adjacency.set(r.primaryVendorId, list);
+        }
+
+        type V = { id: string; name: string; country: string | null; criticality: string; inherentRisk: string | null };
+        const build = (v: V, depth: number, ancestors: Set<string>): SubprocessorChainNode => {
+            const node: SubprocessorChainNode = { ...v, depth, subprocessors: [] };
+            if (depth >= maxDepth) return node;
+            for (const r of adjacency.get(v.id) ?? []) {
+                const child = r.subprocessor;
+                if (ancestors.has(child.id)) {
+                    node.subprocessors.push({ ...child, depth: depth + 1, cyclical: true, subprocessors: [] });
+                    continue;
+                }
+                node.subprocessors.push(build(child, depth + 1, new Set([...ancestors, child.id])));
+            }
+            return node;
+        };
+        return build(root, 0, new Set([root.id]));
+    });
+}
+
 export async function addSubprocessor(ctx: RequestContext, vendorId: string, input: { subprocessorVendorId: string; purpose?: string; dataTypes?: string; country?: string }) {
     assertCanManageVendors(ctx);
     return runInTenantContext(ctx, async (db) => {

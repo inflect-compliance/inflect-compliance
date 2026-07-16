@@ -22,8 +22,7 @@ export function vendorStatusLabels(t: T): Record<string, string> {
     return {
         ONBOARDING: t('filterEnums.status.onboarding'),
         ACTIVE: t('filterEnums.status.active'),
-        UNDER_REVIEW: t('filterEnums.status.underReview'),
-        SUSPENDED: t('filterEnums.status.suspended'),
+        OFFBOARDING: t('filterEnums.status.offboarding'),
         OFFBOARDED: t('filterEnums.status.offboarded'),
     };
 }

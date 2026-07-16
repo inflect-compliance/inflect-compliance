@@ -4662,7 +4662,18 @@
       "subsEmptyTitle": "No subprocessors",
       "subsEmptyDesc": "Add a subprocessor to track downstream data-processing relationships.",
       "docRemovedToast": "Document removed",
-      "undo": "Undo"
+      "undo": "Undo",
+      "bundleItemEntity": "Entity",
+      "bundleNoItems": "No items yet. Add evidence, documents, assessments, or controls before freezing.",
+      "bundleItemTypes": {
+        "VENDOR_DOCUMENT": "Vendor document",
+        "ASSESSMENT": "Assessment",
+        "EVIDENCE": "Evidence",
+        "CONTROL": "Control"
+      },
+      "chainDepth": "Tier {depth}",
+      "subChainTitle": "Subprocessor chain (nth-party)",
+      "subChainHint": "Transitive downstream subprocessors — your vendors' vendors and beyond."
     },
     "monitoring": {
       "loadFailed": "Failed to load monitoring",
@@ -4688,7 +4699,17 @@
       "autoFindings": "auto-findings on",
       "timelineTitle": "Posture timeline",
       "timelineEmpty": "No posture events yet. Run the monitor to check breaches, attestation expiry, and TLS grade.",
-      "loadingAria": "Loading vendors"
+      "loadingAria": "Loading vendors",
+      "settingsTitle": "Monitoring settings",
+      "toggleEnabled": "Monitoring active",
+      "toggleEnabledHint": "Pause or resume all posture checks for this vendor.",
+      "toggleAttestation": "Check attestation expiry",
+      "toggleBreach": "Check breach exposure",
+      "toggleTls": "Check TLS grade",
+      "toggleMaterializeFindings": "Escalate posture into Findings",
+      "materializeFindingsHint": "Automatically turn posture events (breaches, expiries, TLS drops) into Findings.",
+      "settingsSaveFailed": "Failed to update monitoring settings",
+      "stubMode": "Demo"
     },
     "dashboard": {
       "loadFailed": "Failed to load metrics",
@@ -4771,9 +4792,8 @@
       "status": {
         "onboarding": "Onboarding",
         "active": "Active",
-        "underReview": "Under Review",
-        "suspended": "Suspended",
-        "offboarded": "Offboarded"
+        "offboarded": "Offboarded",
+        "offboarding": "Offboarding"
       },
       "criticality": {
         "low": "Low",
@@ -4815,6 +4835,12 @@
       "USES": "Uses",
       "MITIGATES": "Mitigates",
       "STORES_DATA_FOR": "Stores Data"
+    },
+    "criticalityLabel": {
+      "LOW": "Low",
+      "MEDIUM": "Medium",
+      "HIGH": "High",
+      "CRITICAL": "Critical"
     }
   },
   "frameworks": {
