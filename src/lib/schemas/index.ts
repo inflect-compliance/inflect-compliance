@@ -40,6 +40,11 @@ export const CreateAssetSchema = z.object({
     vendor: z.string().optional().nullable(),
     product: z.string().optional().nullable(),
     version: z.string().optional().nullable(),
+    // External-system reference (CMDB id, ticket key, …). Displayed on the
+    // detail page and editable in the create/edit forms — previously the
+    // column existed and rendered but no schema accepted it, so it could
+    // never be written via the API.
+    externalRef: z.string().optional().nullable(),
 }).strip().openapi('AssetCreateRequest', {
     description: 'Payload for creating a tenant asset. CIA scores default to 3 when omitted; classification + owner + location are free-text.',
 });
@@ -63,6 +68,8 @@ export const UpdateAssetSchema = z.object({
     vendor: z.string().optional().nullable(),
     product: z.string().optional().nullable(),
     version: z.string().optional().nullable(),
+    // External-system reference (CMDB id, ticket key, …) — now editable.
+    externalRef: z.string().optional().nullable(),
     // Item 29 — asset lifecycle status. Previously absent here, so the
     // schema's `.strip()` silently dropped any `status` in the body (the
     // edit modal's status field never persisted, and there was no
@@ -71,6 +78,41 @@ export const UpdateAssetSchema = z.object({
     status: z.enum(['ACTIVE', 'RETIRED']).optional(),
 }).strip().openapi('AssetUpdateRequest', {
     description: 'Partial update for an asset. Every field is optional; only provided fields are persisted.',
+});
+
+/**
+ * Bulk asset import — one request instead of N sequential client POSTs.
+ * Each row mirrors CreateAssetSchema minus the derived `criticality`
+ * (the server always derives it from the CIA triad — the CSV never had a
+ * real criticality override, so the column was dead). The import usecase
+ * dedupes by name (in-batch + against existing tenant assets) and resolves
+ * a free-text `owner` to `ownerUserId` against the tenant roster. Capped at
+ * 500 rows per request.
+ */
+export const BulkImportAssetsSchema = z.object({
+    assets: z.array(z.object({
+        name: z.string().min(1),
+        type: z.string().min(1),
+        status: z.enum(['ACTIVE', 'RETIRED']).optional(),
+        classification: z.string().optional().nullable(),
+        owner: z.string().optional().nullable(),
+        ownerUserId: z.string().optional().nullable(),
+        location: z.string().optional().nullable(),
+        confidentiality: z.coerce.number().int().min(1).max(5).optional(),
+        integrity: z.coerce.number().int().min(1).max(5).optional(),
+        availability: z.coerce.number().int().min(1).max(5).optional(),
+        externalRef: z.string().optional().nullable(),
+        dependencies: z.string().optional().nullable(),
+        businessProcesses: z.string().optional().nullable(),
+        dataResidency: z.string().optional().nullable(),
+        retention: z.string().optional().nullable(),
+        cpe: z.string().optional().nullable(),
+        vendor: z.string().optional().nullable(),
+        product: z.string().optional().nullable(),
+        version: z.string().optional().nullable(),
+    }).strip()).min(1).max(500),
+}).strip().openapi('AssetBulkImportRequest', {
+    description: 'Bulk-create assets from a parsed CSV in a single request. Server derives criticality from CIA, dedupes by name, and resolves owner names to members.',
 });
 
 // ─── Risks ───

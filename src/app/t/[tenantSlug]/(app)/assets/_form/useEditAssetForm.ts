@@ -22,14 +22,17 @@ export interface EditAssetFormFields {
     name: string;
     type: string;
     classification: string;
-    owner: string;
-    /** "Assigned to" — real user reference (User.id), '' = unassigned. */
+    /** The owner — real user reference (User.id), '' = unassigned. The legacy
+     *  free-text `owner` is import-only and NOT edited here (see the detail
+     *  page's single "Owner" concept). */
     ownerUserId: string;
     location: string;
-    criticality: string;
     status: string;
     dataResidency: string;
     externalRef: string;
+    dependencies: string;
+    businessProcesses: string;
+    retention: string;
     confidentiality: number;
     integrity: number;
     availability: number;
@@ -62,13 +65,14 @@ const DEFAULTS: EditAssetFormFields = {
     name: '',
     type: 'SYSTEM',
     classification: '',
-    owner: '',
     ownerUserId: '',
     location: '',
-    criticality: '',
     status: 'ACTIVE',
     dataResidency: '',
     externalRef: '',
+    dependencies: '',
+    businessProcesses: '',
+    retention: '',
     confidentiality: 3,
     integrity: 3,
     availability: 3,

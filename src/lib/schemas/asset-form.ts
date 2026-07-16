@@ -47,6 +47,12 @@ export const NewAssetFormSchema = z.object({
     vendor: z.string().trim().max(255).default(''),
     product: z.string().trim().max(255).default(''),
     version: z.string().trim().max(255).default(''),
+    // Context fields — previously accepted by the API + persisted but
+    // surfaced in no form. All optional free text.
+    externalRef: z.string().trim().max(255).default(''),
+    dependencies: z.string().trim().max(2000).default(''),
+    businessProcesses: z.string().trim().max(2000).default(''),
+    retention: z.string().trim().max(2000).default(''),
 });
 
 export type NewAssetFormValues = z.input<typeof NewAssetFormSchema>;

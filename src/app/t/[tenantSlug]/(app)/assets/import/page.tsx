@@ -18,7 +18,6 @@ const ASSET_TYPES = [
     'INFRASTRUCTURE', 'VENDOR', 'PROCESS', 'PEOPLE_PROCESS', 'OTHER',
 ];
 const ASSET_STATUSES = ['ACTIVE', 'RETIRED'];
-const CRITICALITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 
 type ParsedRow = {
     name: string;
@@ -29,7 +28,6 @@ type ParsedRow = {
     confidentiality?: number;
     integrity?: number;
     availability?: number;
-    criticality?: string;
     cpe?: string;
     vendor?: string;
     product?: string;
@@ -48,7 +46,7 @@ export default function AssetImportPage() {
     const fileRef = useRef<HTMLInputElement>(null);
     const [rows, setRows] = useState<ParsedRow[]>([]);
     const [importing, setImporting] = useState(false);
-    const [result, setResult] = useState<{ created: number; errors: string[] } | null>(null);
+    const [result, setResult] = useState<{ created: number; skipped: number; errors: string[] } | null>(null);
 
     const parseCSV = (text: string): ParsedRow[] => {
         const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
@@ -75,7 +73,6 @@ export default function AssetImportPage() {
             const name = cols[nameIdx] ?? '';
             const rawType = col(cols, 'type');
             const rawStatus = col(cols, 'status');
-            const rawCrit = col(cols, 'criticality');
             const c = cia(col(cols, 'confidentiality'));
             const i = cia(col(cols, 'integrity'));
             const a = cia(col(cols, 'availability'));
@@ -83,11 +80,13 @@ export default function AssetImportPage() {
             const errors: string[] = [];
             if (!name) errors.push(t('import.errNameRequired'));
             const type = rawType ? rawType.toUpperCase() : undefined;
-            if (type && !ASSET_TYPES.includes(type)) errors.push(t('import.errType', { value: rawType! }));
+            if (!type) errors.push(t('import.errTypeRequired'));
+            else if (!ASSET_TYPES.includes(type)) errors.push(t('import.errType', { value: rawType! }));
             const status = rawStatus ? rawStatus.toUpperCase() : undefined;
             if (status && !ASSET_STATUSES.includes(status)) errors.push(t('import.errStatus', { value: rawStatus! }));
-            const criticality = rawCrit ? rawCrit.toUpperCase() : undefined;
-            if (criticality && !CRITICALITIES.includes(criticality)) errors.push(t('import.errCriticality', { value: rawCrit! }));
+            // Criticality is NOT imported — the server derives it from the CIA
+            // triad (the single source of truth). The preview column below shows
+            // that derived value; there is no separate CSV criticality override.
             if (c.invalid || i.invalid || a.invalid) errors.push(t('import.errCia'));
 
             return {
@@ -99,7 +98,6 @@ export default function AssetImportPage() {
                 confidentiality: c.value,
                 integrity: i.value,
                 availability: a.value,
-                criticality,
                 cpe: col(cols, 'cpe'),
                 vendor: col(cols, 'vendor'),
                 product: col(cols, 'product'),
@@ -125,44 +123,54 @@ export default function AssetImportPage() {
 
     const doImport = async () => {
         setImporting(true);
-        const errors: string[] = [];
+        // Client-side parse errors (invalid rows never reach the server).
+        const errors: string[] = rows
+            .map((row, i) => ({ row, i }))
+            .filter(({ row }) => row.error)
+            .map(({ row, i }) => `${t('import.rowLabel', { num: i + 1, name: row.name || '—' })}: ${row.error}`);
+
+        // One bulk request instead of N sequential POSTs. The server dedupes by
+        // name (in-batch + against existing assets) and resolves free-text
+        // owners to members; criticality is derived from CIA server-side.
+        const assets = validRows.map((row) => {
+            const a: Record<string, unknown> = { name: row.name, type: row.type };
+            if (row.status) a.status = row.status;
+            if (row.owner) a.owner = row.owner;
+            if (row.classification) a.classification = row.classification;
+            if (row.confidentiality !== undefined) a.confidentiality = row.confidentiality;
+            if (row.integrity !== undefined) a.integrity = row.integrity;
+            if (row.availability !== undefined) a.availability = row.availability;
+            if (row.cpe) a.cpe = row.cpe;
+            if (row.vendor) a.vendor = row.vendor;
+            if (row.product) a.product = row.product;
+            if (row.version) a.version = row.version;
+            return a;
+        });
+
         let created = 0;
-
-        for (let i = 0; i < rows.length; i++) {
-            const row = rows[i];
-            if (row.error) {
-                errors.push(`${t('import.rowLabel', { num: i + 1, name: row.name || '—' })}: ${row.error}`);
-                continue;
-            }
+        let skipped = 0;
+        if (assets.length > 0) {
             try {
-                const payload: Record<string, unknown> = { name: row.name };
-                if (row.type) payload.type = row.type;
-                if (row.status) payload.status = row.status;
-                if (row.owner) payload.owner = row.owner;
-                if (row.classification) payload.classification = row.classification;
-                if (row.confidentiality !== undefined) payload.confidentiality = row.confidentiality;
-                if (row.integrity !== undefined) payload.integrity = row.integrity;
-                if (row.availability !== undefined) payload.availability = row.availability;
-                if (row.cpe) payload.cpe = row.cpe;
-                if (row.vendor) payload.vendor = row.vendor;
-                if (row.product) payload.product = row.product;
-                if (row.version) payload.version = row.version;
-
-                const res = await fetch(apiUrl('/assets'), {
+                const res = await fetch(apiUrl('/assets/bulk/import'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
+                    body: JSON.stringify({ assets }),
                 });
                 if (!res.ok) {
                     const data = await res.json().catch(() => ({}));
                     throw new Error(data.error?.message || data.message || `Status ${res.status}`);
                 }
-                created++;
+                const data = await res.json();
+                created = data.created ?? 0;
+                skipped = data.skipped ?? 0;
+                for (const e of (data.errors ?? []) as { row: number; name: string; message: string }[]) {
+                    errors.push(`${t('import.rowLabel', { num: e.row, name: e.name || '—' })}: ${e.message}`);
+                }
             } catch (err) {
-                errors.push(`${t('import.rowLabel', { num: i + 1, name: row.name })}: ${err instanceof Error ? err.message : String(err)}`);
+                errors.push(err instanceof Error ? err.message : String(err));
             }
         }
-        setResult({ created, errors });
+        setResult({ created, skipped, errors });
         setImporting(false);
     };
 
@@ -192,8 +200,8 @@ export default function AssetImportPage() {
                 <Heading level={3} className="mb-2">{t('import.csvFormat')}</Heading>
                 <p className="text-xs text-content-muted">{t('import.csvDesc')}</p>
                 <pre className="mt-2 text-xs text-content-subtle bg-bg-page/50 p-2 rounded overflow-x-auto">
-                    Name,Type,Status,Owner,Classification,Confidentiality,Integrity,Availability,Criticality,CPE,Vendor,Product,Version{'\n'}
-                    Prod DB,DATA_STORE,ACTIVE,DBA,Confidential,5,5,4,CRITICAL,cpe:2.3:a:postgresql:postgresql:16,postgresql,postgresql,16
+                    Name,Type,Status,Owner,Classification,Confidentiality,Integrity,Availability,CPE,Vendor,Product,Version{'\n'}
+                    Prod DB,DATA_STORE,ACTIVE,DBA,Confidential,5,5,4,cpe:2.3:a:postgresql:postgresql:16,postgresql,postgresql,16
                 </pre>
             </div>
 
@@ -271,6 +279,11 @@ export default function AssetImportPage() {
                     <p className="text-lg font-semibold text-content-success">
                         {t('import.importComplete', { created: result.created, total: rows.length })}
                     </p>
+                    {result.skipped > 0 && (
+                        <p className="text-sm text-content-muted">
+                            {t('import.skippedDuplicates', { count: result.skipped })}
+                        </p>
+                    )}
                     {result.errors.length > 0 && (
                         <div className="space-y-1">
                             <p className="text-sm text-content-error font-medium">{t('import.errors')}:</p>

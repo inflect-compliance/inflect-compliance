@@ -8,6 +8,7 @@ import { useParams } from 'next/navigation';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTenantMembers } from '@/components/ui/user-combobox';
+import { ownerDisplayName } from '@/lib/owner-display';
 import dynamic from 'next/dynamic';
 import LinkedTasksPanel from '@/components/LinkedTasksPanel';
 import { LinkedVendorsPanel } from '@/components/LinkedVendorsPanel';
@@ -48,13 +49,19 @@ export interface AssetDetail {
     name: string;
     type: 'INFORMATION' | 'SYSTEM' | 'SERVICE' | 'DATA_STORE' | 'VENDOR' | 'PEOPLE_PROCESS' | 'APPLICATION' | 'INFRASTRUCTURE' | 'PROCESS' | 'OTHER';
     classification: string | null;
+    /** Legacy free-text owner — import-only fallback, distinct from the assignee. */
     owner: string | null;
     ownerUserId: string | null;
+    /** Resolved assignee (the one Owner concept). */
+    ownerUser: { id: string; name: string | null; email: string | null } | null;
     location: string | null;
     criticality: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | null;
     status: 'ACTIVE' | 'RETIRED';
     dataResidency: string | null;
     externalRef: string | null;
+    dependencies: string | null;
+    businessProcesses: string | null;
+    retention: string | null;
     confidentiality: number | null;
     integrity: number | null;
     availability: number | null;
@@ -126,14 +133,22 @@ export default function AssetDetailPage() {
     const tWhereUsed = useTranslations('panels.processWhereUsed');
     const [processWhereUsedOpen, setProcessWhereUsedOpen] = useState(false);
 
-    // Resolve the "Assigned to" user's display name from the tenant
-    // roster so the read view can show a name, not a raw id.
+    // One owner concept: the resolved assignee (ownerUserId → member). The
+    // server includes `ownerUser`; the tenant roster is a fallback. The legacy
+    // free-text `owner` is import-only and shown separately (labeled) ONLY when
+    // there is no assignee — never a competing second "Owner".
     const { data: members } = useTenantMembers(tenantSlug);
-    const assigneeName = asset?.ownerUserId
-        ? (members?.find((m) => m.id === asset.ownerUserId)?.name ??
-           members?.find((m) => m.id === asset.ownerUserId)?.email ??
-           t('detail.assigned'))
+    const ownerName = asset
+        ? (asset.ownerUser
+              ? ownerDisplayName(asset.ownerUser.name, asset.ownerUser.email)
+              : asset.ownerUserId
+                ? ownerDisplayName(
+                      members?.find((m) => m.id === asset.ownerUserId)?.name,
+                      members?.find((m) => m.id === asset.ownerUserId)?.email,
+                  )
+                : null)
         : null;
+    const importedOwner = asset && !ownerName && asset.owner ? asset.owner : null;
 
     // B6 +1 — canonical 7-tab strip on every detail page. Same shape
     // as Controls / Risks: Overview holds the existing asset body;
@@ -204,18 +219,28 @@ export default function AssetDetailPage() {
     // are computed from the currently-loaded `asset` row at modal
     // open time.
     const [editing, setEditing] = useState(false);
+    // Bumped on every open so <EditAssetModal> remounts and RE-SEEDS from the
+    // current asset row — a reopened form never shows stale values (abandoned
+    // edits from a prior cancel, or another asset's values). Bumped only on
+    // open, so the close animation is preserved (no remount on close).
+    const [editSeed, setEditSeed] = useState(0);
+    const openEdit = () => {
+        setEditSeed((n) => n + 1);
+        setEditing(true);
+    };
     const editInitial = asset
         ? {
               name: asset.name || '',
               type: asset.type || 'SYSTEM',
               classification: asset.classification || '',
-              owner: asset.owner || '',
               ownerUserId: asset.ownerUserId || '',
               location: asset.location || '',
-              criticality: asset.criticality || '',
               status: asset.status || 'ACTIVE',
               dataResidency: asset.dataResidency || '',
               externalRef: asset.externalRef || '',
+              dependencies: asset.dependencies || '',
+              businessProcesses: asset.businessProcesses || '',
+              retention: asset.retention || '',
               confidentiality: asset.confidentiality ?? 3,
               integrity: asset.integrity ?? 3,
               availability: asset.availability ?? 3,
@@ -393,6 +418,7 @@ export default function AssetDetailPage() {
                 modal's own open/close state survives tab switches. */}
             {permissions.canWrite && (
                 <EditAssetModal
+                    key={`edit-${assetId}-${editSeed}`}
                     open={editing}
                     setOpen={setEditing}
                     assetId={assetId}
@@ -662,7 +688,7 @@ export default function AssetDetailPage() {
                         <Button
                             variant="secondary"
                             size="sm"
-                            onClick={() => setEditing(true)}
+                            onClick={openEdit}
                             id="asset-identity-hint-btn"
                         >
                             {t('detail.identityHintAction')}
@@ -681,7 +707,7 @@ export default function AssetDetailPage() {
                             <Button
                                 variant="secondary"
                                 size="icon"
-                                onClick={() => setEditing(true)}
+                                onClick={openEdit}
                                 id="edit-asset-btn"
                                 aria-label={t('detail.editAsset')}
                             >
@@ -693,8 +719,19 @@ export default function AssetDetailPage() {
                 <>
                         {asset.classification && <div><Eyebrow>{t('detail.classification')}</Eyebrow><p className="text-sm">{asset.classification}</p></div>}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
-                            <div><Eyebrow>{t('detail.assignedTo')}</Eyebrow><p className="text-sm">{assigneeName || '—'}</p></div>
-                            <div><Eyebrow>{t('detail.owner')}</Eyebrow><p className="text-sm">{asset.owner || '—'}</p></div>
+                            <div>
+                                <Eyebrow>{t('detail.owner')}</Eyebrow>
+                                {ownerName ? (
+                                    <p className="text-sm">{ownerName}</p>
+                                ) : importedOwner ? (
+                                    <p className="text-sm">
+                                        {importedOwner}{' '}
+                                        <span className="text-xs text-content-subtle">({t('list.ownerImported')})</span>
+                                    </p>
+                                ) : (
+                                    <p className="text-sm">—</p>
+                                )}
+                            </div>
                             <div><Eyebrow>{t('detail.location')}</Eyebrow><p className="text-sm">{asset.location || '—'}</p></div>
                             <div>
                                 <Eyebrow>{t('detail.externalRef')}</Eyebrow>
@@ -712,6 +749,13 @@ export default function AssetDetailPage() {
                                 )}
                             </div>
                             <div><Eyebrow>{t('detail.dataResidency')}</Eyebrow><p className="text-sm">{asset.dataResidency || '—'}</p></div>
+                        </div>
+                        {/* Context — dependencies / business processes / retention.
+                            Persisted by the API; previously surfaced nowhere. */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-default">
+                            <div><Eyebrow>{t('detail.dependencies')}</Eyebrow><p className="text-sm whitespace-pre-wrap">{asset.dependencies || '—'}</p></div>
+                            <div><Eyebrow>{t('detail.businessProcesses')}</Eyebrow><p className="text-sm whitespace-pre-wrap">{asset.businessProcesses || '—'}</p></div>
+                            <div><Eyebrow>{t('detail.retention')}</Eyebrow><p className="text-sm whitespace-pre-wrap">{asset.retention || '—'}</p></div>
                         </div>
                         {/* Product identity — the CVE→asset matching keys. */}
                         <div className="flex items-center gap-1.5 border-t border-border-default/50 pt-4">

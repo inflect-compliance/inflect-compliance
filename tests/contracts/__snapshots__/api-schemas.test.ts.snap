@@ -1,5 +1,139 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
+exports[`API contract — per-schema snapshots schema: AssetBulkImportRequest 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "RETIRED"
+            ]
+          },
+          "classification": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "owner": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ownerUserId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "location": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "confidentiality": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "integrity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "availability": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "externalRef": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dependencies": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "businessProcesses": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dataResidency": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "retention": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cpe": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vendor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "product": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 500
+    }
+  },
+  "required": [
+    "assets"
+  ],
+  "description": "Bulk-create assets from a parsed CSV in a single request. Server derives criticality from CIA, dedupes by name, and resolves owner names to members."
+}"
+`;
+
 exports[`API contract — per-schema snapshots schema: AssetCreateRequest 1`] = `
 "{
   "type": "object",
@@ -95,6 +229,12 @@ exports[`API contract — per-schema snapshots schema: AssetCreateRequest 1`] = 
       ]
     },
     "version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "externalRef": {
       "type": [
         "string",
         "null"
@@ -474,6 +614,12 @@ exports[`API contract — per-schema snapshots schema: AssetUpdateRequest 1`] = 
       ]
     },
     "version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "externalRef": {
       "type": [
         "string",
         "null"
