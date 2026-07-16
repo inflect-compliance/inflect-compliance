@@ -85,6 +85,14 @@ export function EditControlModal({
     onSubmit,
 }: EditControlModalProps) {
     const tx = useTranslations('controls');
+    // Preserve a non-theme current category (legacy free-text / framework-seed
+    // granular / custom) as its own option so it displays honestly and
+    // round-trips — the editor must never silently drop a value it merely
+    // failed to resolve against the four ISO themes.
+    const resolvedCategoryOptions: ComboboxOption[] =
+        form.category && !categoryOptions.some((o) => o.value === form.category)
+            ? [...categoryOptions, { value: form.category, label: form.category }]
+            : categoryOptions;
     const AUTOMATION_TYPE_OPTIONS = buildAutomationTypeOptions(tx);
     const MITIGATION_TYPE_OPTIONS = buildMitigationTypeOptions(tx);
     return (
@@ -189,7 +197,7 @@ export function EditControlModal({
                                     forceDropdown
                                     id="edit-category"
                                     selected={
-                                        categoryOptions.find(
+                                        resolvedCategoryOptions.find(
                                             (o) => o.value === form.category,
                                         ) ?? null
                                     }
@@ -199,7 +207,7 @@ export function EditControlModal({
                                             category: opt?.value ?? '',
                                         }))
                                     }
-                                    options={categoryOptions}
+                                    options={resolvedCategoryOptions}
                                     placeholder={tx('editModal.nonePlaceholder')}
                                     matchTriggerWidth
                                 />

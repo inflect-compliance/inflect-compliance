@@ -115,7 +115,6 @@ describe('Epic 55 — migrated surfaces must not regress to native <select>', ()
         'audits/cycles/page.tsx',
         'risks/NewRiskModal.tsx',
         'controls/NewControlModal.tsx',
-        'controls/ControlDetailSheet.tsx',
         'evidence/UploadEvidenceModal.tsx',
         'evidence/NewEvidenceTextModal.tsx',
         'tasks/new/page.tsx',

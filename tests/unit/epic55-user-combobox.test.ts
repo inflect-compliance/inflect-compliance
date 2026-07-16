@@ -7,10 +7,9 @@
  *      projects them into Combobox options, and exposes a narrow
  *      single-vs-multi API. (Per-tenant cache isolation comes from the
  *      tenantSlug in that URL.)
- *   2. Three free-text UUID inputs are gone — replaced by UserCombobox:
- *        a. ControlDetailSheet   (#sheet-owner-input)
- *        b. NewTaskPage          (#task-assignee-input)
- *        c. TaskDetailPage       (#task-assignee-input)
+ *   2. Free-text UUID inputs are gone — replaced by UserCombobox:
+ *        a. NewTaskPage          (#task-assignee-input)
+ *        b. TaskDetailPage       (#task-assignee-input)
  */
 
 import * as fs from 'fs';
@@ -22,9 +21,6 @@ function read(rel: string): string {
 }
 
 const USER_COMBO_SRC = read('src/components/ui/user-combobox.tsx');
-const SHEET_SRC = read(
-    'src/app/t/[tenantSlug]/(app)/controls/ControlDetailSheet.tsx',
-);
 // Modal-form P1 (2026-05-24) — `tasks/new/page.tsx` was decomposed
 // into page wrapper + `_form/useNewTaskForm.ts` + `_form/NewTaskFields.tsx`.
 // Modal-form P2 (2026-05-24) — `tasks/new/page.tsx` further became
@@ -158,53 +154,6 @@ describe('UserCombobox — contract', () => {
     });
 });
 
-// ─── 2. ControlDetailSheet — owner picker migration ─────────────
-
-describe('ControlDetailSheet — owner UserCombobox', () => {
-    it('imports UserCombobox + FormField', () => {
-        expect(SHEET_SRC).toMatch(
-            /from ["']@\/components\/ui\/user-combobox["']/,
-        );
-        expect(SHEET_SRC).toMatch(
-            /from ["']@\/components\/ui\/form-field["']/,
-        );
-    });
-
-    it('drops the legacy free-text <input id="sheet-owner-input">', () => {
-        expect(SHEET_SRC).not.toMatch(
-            /<input[^>]*\bid=["']sheet-owner-input["']/,
-        );
-    });
-
-    it('UserCombobox preserves id="sheet-owner-input" for E2E selector parity', () => {
-        expect(SHEET_SRC).toMatch(
-            /<UserCombobox[\s\S]{0,300}id=["']sheet-owner-input["']/,
-        );
-    });
-
-    it('passes tenantSlug through (tenant-scoped fetch)', () => {
-        expect(SHEET_SRC).toMatch(
-            /<UserCombobox[\s\S]{0,500}tenantSlug=\{tenantSlug\}/,
-        );
-    });
-
-    it('carries name="ownerUserId" for native form serialisation', () => {
-        expect(SHEET_SRC).toMatch(/name=["']ownerUserId["']/);
-    });
-
-    it('disables the picker when canWrite is false', () => {
-        expect(SHEET_SRC).toMatch(
-            /<UserCombobox[\s\S]{0,500}disabled=\{!canWrite\}/,
-        );
-    });
-
-    it('onChange routes into the existing form.owner reducer', () => {
-        expect(SHEET_SRC).toMatch(
-            /onChange=\{\(userId\)\s*=>\s*[\s\S]{0,80}update\(['"]owner['"],\s*userId\s*\?\?\s*['"]['"]\)/,
-        );
-    });
-});
-
 // ─── 4. NewTaskPage — assignee picker migration ─────────────────
 
 describe('NewTaskPage — assignee UserCombobox', () => {
@@ -295,12 +244,6 @@ describe('TaskDetailPage — inline assign UserCombobox', () => {
 // ─── 6. Drift sentinel — no regression in payload contract ──────
 
 describe('Epic 55 Prompt 5 — payload contracts preserved', () => {
-    it('ControlDetailSheet still POSTs ownerUserId to /controls/:id/owner', () => {
-        expect(SHEET_SRC).toMatch(
-            /ownerUserId:\s*draft\.owner\.trim\(\)\s*\|\|\s*null/,
-        );
-    });
-
     it('TaskDetailPage still PATCHes assigneeUserId via /assign endpoint', () => {
         // #102 item 5 — `handleAssign` derives `assigneeUserId` from
         // the picker's effective value (`assigneeValue || null`) and

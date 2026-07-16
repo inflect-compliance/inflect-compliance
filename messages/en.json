@@ -6701,7 +6701,7 @@
       "requestHeader": "Request control exception",
       "justification": "Justification",
       "justificationPlaceholder": "Explain why this control cannot be implemented as designed.",
-      "riskAcceptedBy": "Risk accepted by (user id)",
+      "riskAcceptedBy": "Risk accepted by",
       "compensatingControl": "Compensating control (optional)",
       "pickCompensating": "Pick a control that mitigates this gap",
       "proposedExpiry": "Proposed expiry (optional)",
@@ -6722,7 +6722,8 @@
       "renewing": "Renewing…",
       "expiryRequired": "Expiry date is required for approval.",
       "exceptionLabel": "Exception",
-      "exceptedUntil": "Excepted until {date}"
+      "exceptedUntil": "Excepted until {date}",
+      "pickRiskAcceptor": "Select who accepts this risk"
     },
     "testPlans": {
       "title": "Test Plans",

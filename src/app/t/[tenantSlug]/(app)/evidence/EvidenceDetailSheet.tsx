@@ -14,8 +14,8 @@
  * mutation pipeline intact) + an "Edit" button that delegates to
  * the parent to mount the EditEvidenceModal.
  *
- * Mirrors the `<ControlDetailSheet>` shape so the surface reads as
- * a sibling of the established controls drill-down.
+ * Mirrors the established controls drill-down surface (an `<AsidePanel>`
+ * quick-view) so it reads as a sibling of that pattern.
  */
 import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { useTranslations } from 'next-intl';
