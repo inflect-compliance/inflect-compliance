@@ -29,7 +29,6 @@ const MIGRATED_FILES: string[] = [
     // Wave 2 — controls
     'app/t/[tenantSlug]/(app)/controls/ControlsClient.tsx',
     'app/t/[tenantSlug]/(app)/controls/NewControlModal.tsx',
-    'app/t/[tenantSlug]/(app)/controls/ControlDetailSheet.tsx',
     // Wave 3 — audits + findings
     'app/t/[tenantSlug]/(app)/audits/AuditsClient.tsx',
     'app/t/[tenantSlug]/(app)/audits/NewAuditModal.tsx',

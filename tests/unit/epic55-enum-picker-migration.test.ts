@@ -1,12 +1,11 @@
 /**
  * Epic 55 Prompt 6 — status/lifecycle/enum migration contract.
  *
- * Asserts the primitive-fit across the five migrated surfaces:
+ * Asserts the primitive-fit across the four migrated surfaces:
  *   1. tasks/new                  → Combobox hideSearch × 3 (type/severity/priority)
  *   2. controls/NewControlModal   → Combobox × 2 (category/frequency, freq hideSearch)
- *   3. controls/ControlDetailSheet → Combobox × 2 (category/frequency, freq hideSearch)
- *   4. risks/NewRiskModal         → Combobox × 1 (category)
- *   5. vendors/new                → RadioGroup × 1 (status) + Combobox hideSearch × 2
+ *   3. risks/NewRiskModal         → Combobox × 1 (category)
+ *   4. vendors/new                → RadioGroup × 1 (status) + Combobox hideSearch × 2
  *
  * Primitive rules verified:
  *   - ≤3 user-choice options with all-visible semantics  → RadioGroup.
@@ -41,9 +40,6 @@ const TASK_NEW_SRC =
     read('src/app/t/[tenantSlug]/(app)/tasks/_form/useNewTaskForm.ts');
 const CONTROL_MODAL_SRC = read(
     'src/app/t/[tenantSlug]/(app)/controls/NewControlModal.tsx',
-);
-const CONTROL_SHEET_SRC = read(
-    'src/app/t/[tenantSlug]/(app)/controls/ControlDetailSheet.tsx',
 );
 const RISK_MODAL_SRC = read(
     'src/app/t/[tenantSlug]/(app)/risks/NewRiskModal.tsx',
@@ -155,48 +151,15 @@ describe('NewControlModal — category + frequency Comboboxes', () => {
     });
 
     it('CATEGORY_OPTIONS + FREQUENCY_OPTIONS are typed ComboboxOption[] (no stale string[] shape)', () => {
-        // FREQUENCY_OPTIONS is now built via an i18n factory returning
-        // ComboboxOption[] (labels resolve through next-intl); CATEGORY_OPTIONS
-        // stays a static value===label const.
+        // Both are now built via i18n factories returning ComboboxOption[]
+        // (labels resolve through next-intl). Category options come from the
+        // shared ISO-27002 theme vocabulary (buildCategoryOptions).
         expect(CONTROL_MODAL_SRC).toMatch(
             /buildFrequencyOptions\s*=\s*\([^)]*\):\s*ComboboxOption\[\]/,
         );
         expect(CONTROL_MODAL_SRC).toMatch(
-            /CATEGORY_OPTIONS:\s*ComboboxOption\[\]/,
+            /buildCategoryOptions\s*=\s*\([^)]*\):\s*ComboboxOption\[\]/,
         );
-    });
-});
-
-// ─── 3. ControlDetailSheet — category + frequency ─────────────────
-
-describe('ControlDetailSheet — category + frequency Comboboxes', () => {
-    it('imports Combobox', () => {
-        expect(CONTROL_SHEET_SRC).toMatch(
-            /from ["']@\/components\/ui\/combobox["']/,
-        );
-    });
-
-    it.each(['sheet-category-input', 'sheet-frequency-input'])(
-        'no native <select id="%s">',
-        (id) => {
-            expect(CONTROL_SHEET_SRC).not.toMatch(
-                new RegExp(`<select[^>]*\\bid=["']${id}["']`),
-            );
-        },
-    );
-
-    it.each(['sheet-category-input', 'sheet-frequency-input'])(
-        'Combobox preserves id="%s"',
-        (id) => {
-            expect(CONTROL_SHEET_SRC).toMatch(
-                new RegExp(`<Combobox[\\s\\S]{0,500}id=["']${id}["']`),
-            );
-        },
-    );
-
-    it('both pickers wire disabled={!canWrite} so RBAC mirrors the rest of the sheet', () => {
-        const hits = CONTROL_SHEET_SRC.match(/disabled=\{!canWrite\}/g) ?? [];
-        expect(hits.length).toBeGreaterThanOrEqual(3); // fieldset + 2 pickers
     });
 });
 
@@ -322,7 +285,6 @@ describe('Epic 55 Prompt 6 — drift sentinels', () => {
         for (const [src, ids] of [
             [TASK_NEW_SRC, ['type', 'severity', 'priority']],
             [CONTROL_MODAL_SRC, ['category', 'frequency']],
-            [CONTROL_SHEET_SRC, ['category', 'frequency']],
             [RISK_MODAL_SRC, ['category']],
             [VENDORS_NEW_SRC, ['criticality', 'dataAccess']],
         ] as const) {
@@ -335,12 +297,11 @@ describe('Epic 55 Prompt 6 — drift sentinels', () => {
     });
 
     it('RadioGroup is only used where semantically appropriate (vendor status, 2 options)', () => {
-        // Only vendors/new should use <RadioGroup> among the five
+        // Only vendors/new should use <RadioGroup> among the four
         // migrated surfaces; the others should stay on <Combobox>.
         expect(VENDORS_NEW_SRC).toMatch(/<RadioGroup\b/);
         expect(TASK_NEW_SRC).not.toMatch(/<RadioGroup\b/);
         expect(CONTROL_MODAL_SRC).not.toMatch(/<RadioGroup\b/);
-        expect(CONTROL_SHEET_SRC).not.toMatch(/<RadioGroup\b/);
         expect(RISK_MODAL_SRC).not.toMatch(/<RadioGroup\b/);
     });
 });

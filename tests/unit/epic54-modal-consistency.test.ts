@@ -131,65 +131,6 @@ describe('Epic 54 — modal surface consistency', () => {
     });
 });
 
-// ─── Sheet surface(s) ────────────────────────────────────────────────
-
-interface SheetSurface {
-    label: string;
-    file: string;
-    expectedSize: 'sm' | 'md' | 'lg' | 'xl';
-    cacheKey: string;
-}
-
-const SHEET_SURFACES: SheetSurface[] = [
-    {
-        label: 'Control detail sheet',
-        file: 'src/app/t/[tenantSlug]/(app)/controls/ControlDetailSheet.tsx',
-        expectedSize: 'md',
-        // SWR migration Wave 2 moved this Sheet off React Query. Its save now
-        // revalidates three SWR keys (detail / list / pageData) via
-        // `detailQuery.mutate()` + `swrMutate(...)`; the `queryKeys.controls.all`
-        // literal is gone. Empty string disables the invalidation assertion;
-        // SWR equivalent is covered by `tests/unit/control-detail-sheet.test.ts`.
-        cacheKey: '',
-    },
-];
-
-describe('Epic 54 — sheet surface consistency', () => {
-    describe.each(SHEET_SURFACES)('$label', (surface) => {
-        const src = read(surface.file);
-
-        it('is a client component', () => {
-            expect(src).toMatch(/^'use client'/);
-        });
-
-        it('imports the shared <Sheet> primitive', () => {
-            expect(src).toMatch(/from ['"]@\/components\/ui\/sheet['"]/);
-        });
-
-        it('composes Sheet.Header + Sheet.Body + Sheet.Actions', () => {
-            expect(src).toMatch(/<Sheet\.Header\b/);
-            expect(src).toMatch(/<Sheet\.Body\b/);
-            expect(src).toMatch(/<Sheet\.Actions\b/);
-        });
-
-        it(`uses size="${surface.expectedSize}"`, () => {
-            expect(src).toMatch(
-                new RegExp(`size=["']${surface.expectedSize}["']`),
-            );
-        });
-
-        if (surface.cacheKey) {
-            it(`invalidates ${surface.cacheKey} on save`, () => {
-                const keyRe = new RegExp(
-                    surface.cacheKey.replace(/\./g, '\\.'),
-                );
-                expect(src).toMatch(keyRe);
-                expect(src).toMatch(/invalidateQueries/);
-            });
-        }
-    });
-});
-
 // ─── Redirect shims ──────────────────────────────────────────────────
 
 describe('Epic 54 — legacy /new routes are server redirect shims', () => {

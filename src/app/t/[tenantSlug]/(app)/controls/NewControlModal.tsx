@@ -43,6 +43,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { CONTROL_CATEGORY_THEMES } from '@/lib/controls/control-categories';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
@@ -80,18 +81,11 @@ const buildMitigationTypeOptions = (t: OptT): ComboboxOption[] => [
     { value: 'COMPENSATING', label: t('mitigationTypeLabels.COMPENSATING') },
 ];
 
-const CATEGORY_OPTIONS: ComboboxOption[] = [
-    { value: 'Access Control', label: 'Access Control' },
-    { value: 'Encryption', label: 'Encryption' },
-    { value: 'Network Security', label: 'Network Security' },
-    { value: 'Physical Security', label: 'Physical Security' },
-    { value: 'HR Security', label: 'HR Security' },
-    { value: 'Operations', label: 'Operations' },
-    { value: 'Compliance', label: 'Compliance' },
-    { value: 'Incident Management', label: 'Incident Management' },
-    { value: 'Business Continuity', label: 'Business Continuity' },
-    { value: 'Other', label: 'Other' },
-];
+// Canonical category vocabulary — the four ISO 27002:2022 themes (shared with
+// the quick-edit panel + the detail edit modal). A create control has no prior
+// value, so no preserved legacy option is needed here.
+const buildCategoryOptions = (t: OptT): ComboboxOption[] =>
+    CONTROL_CATEGORY_THEMES.map((theme) => ({ value: theme, label: t(`categoryLabels.${theme}`) }));
 
 // ─── Schema ──────────────────────────────────────────────────────────
 //
@@ -157,6 +151,7 @@ export function NewControlModal({ open, setOpen, tenantSlug }: NewControlModalPr
     const FREQUENCY_OPTIONS = useMemo(() => buildFrequencyOptions(t), [t]);
     const AUTOMATION_TYPE_OPTIONS = useMemo(() => buildAutomationTypeOptions(t), [t]);
     const MITIGATION_TYPE_OPTIONS = useMemo(() => buildMitigationTypeOptions(t), [t]);
+    const CATEGORY_OPTIONS = useMemo(() => buildCategoryOptions(t), [t]);
     const close = useCallback(() => setOpen(false), [setOpen]);
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();

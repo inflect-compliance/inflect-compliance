@@ -6701,7 +6701,7 @@
       "requestHeader": "Заявка за изключение за контрола",
       "justification": "Обосновка",
       "justificationPlaceholder": "Обяснете защо този контрол не може да бъде внедрен както е проектиран.",
-      "riskAcceptedBy": "Рискът е приет от (потребителски идентификатор)",
+      "riskAcceptedBy": "Рискът е приет от",
       "compensatingControl": "Компенсиращ контрол (по избор)",
       "pickCompensating": "Изберете контрол, който смекчава този пропуск",
       "proposedExpiry": "Предложен срок (по избор)",
@@ -6722,7 +6722,8 @@
       "renewing": "Подновяване…",
       "expiryRequired": "Датата на изтичане е задължителна за одобрение.",
       "exceptionLabel": "Изключение",
-      "exceptedUntil": "Изключен до {date}"
+      "exceptedUntil": "Изключен до {date}",
+      "pickRiskAcceptor": "Изберете кой приема този риск"
     },
     "testPlans": {
       "title": "Планове за тестване",

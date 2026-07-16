@@ -221,12 +221,11 @@ describe('Epic 55 — native <select> ratchet is installed', () => {
         );
     });
 
-    it('enumerates the 11 migrated surfaces that must not regress', () => {
+    it('enumerates the 10 migrated surfaces that must not regress', () => {
         for (const surface of [
             'audits/cycles/page.tsx',
             'risks/NewRiskModal.tsx',
             'controls/NewControlModal.tsx',
-            'controls/ControlDetailSheet.tsx',
             'evidence/UploadEvidenceModal.tsx',
             'evidence/NewEvidenceTextModal.tsx',
             'tasks/new/page.tsx',

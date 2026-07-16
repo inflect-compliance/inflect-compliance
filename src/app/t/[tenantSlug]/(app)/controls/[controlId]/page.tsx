@@ -7,7 +7,7 @@
 import { formatDate, formatDateTime } from '@/lib/format-date';
 import { SkeletonCard, SkeletonDetailPage } from '@/components/ui/skeleton';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -28,6 +28,7 @@ const PencilIcon = ({ size = 14 }: { size?: number }) => (
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { CONTROL_CATEGORY_THEMES } from '@/lib/controls/control-categories';
 import { useTenantMutation } from '@/lib/hooks/use-tenant-mutation';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { extractMutationError } from '@/lib/mutations';
@@ -103,7 +104,7 @@ const buildMitigationTypeLabels = (t: (k: string) => string): Record<string, str
 });
 const FREQ_OPTIONS = ['', 'AD_HOC', 'DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'ANNUALLY'];
 const buildFreqCbOptions = (freqLabels: Record<string, string>): ComboboxOption[] => FREQ_OPTIONS.filter(Boolean).map(fq => ({ value: fq, label: freqLabels[fq] || fq }));
-const CATEGORY_OPTIONS = ['', 'ORGANIZATIONAL', 'PEOPLE', 'PHYSICAL', 'TECHNOLOGICAL'];
+const CATEGORY_OPTIONS = ['', ...CONTROL_CATEGORY_THEMES];
 const buildCategoryLabels = (t: (k: string) => string): Record<string, string> => ({
     ORGANIZATIONAL: t('categoryLabels.ORGANIZATIONAL'), PEOPLE: t('categoryLabels.PEOPLE'), PHYSICAL: t('categoryLabels.PHYSICAL'), TECHNOLOGICAL: t('categoryLabels.TECHNOLOGICAL'),
 });
@@ -199,6 +200,30 @@ export default function ControlDetailPage() {
     );
     const initialSyncStatus = pageDataQuery.data?.syncStatus ?? null;
     const [tab, setTab] = useState<Tab>('overview');
+
+    // ─── Controls roster for the exception panel's compensating-control
+    // picker ─────────────────────────────────────────────────────────
+    //
+    // The detail page has no controls roster in scope, so the
+    // <ControlExceptionsPanel> compensating-control combobox was always
+    // empty. Fetch the tenant's controls via the shared list key. The
+    // unbounded `GET /controls` returns `{ rows, truncated }` (the
+    // applyBackfillCap envelope), so extract `rows` and narrow to the
+    // {id,name,code} shape the panel's ControlOption type expects. The
+    // panel/dialog already filters out the current control by id.
+    interface ControlRosterRow { id: string; name: string; code?: string | null }
+    const rosterQuery = useTenantSWR<{ rows?: ControlRosterRow[] }>(
+        CACHE_KEYS.controls.list(),
+    );
+    const compensatingControlChoices = useMemo<ControlRosterRow[]>(
+        () =>
+            (rosterQuery.data?.rows ?? []).map((c) => ({
+                id: c.id,
+                name: c.name,
+                code: c.code ?? null,
+            })),
+        [rosterQuery.data],
+    );
 
     // ─── Per-tab lazy reads (#102 item 1) ───────────────────────────
     //
@@ -840,7 +865,7 @@ export default function ControlDetailPage() {
         >
             {/* Sync state + exception badges (moved out of meta strip
                 in Polish PR-1). Renders inline above tab content. */}
-            {(syncStatus !== 'NONE' || true) && (
+            {syncStatus !== 'NONE' && (
                 <div className="flex flex-wrap gap-tight" data-testid="control-sync-banner">
                     {syncBanner}
                 </div>
@@ -1142,7 +1167,7 @@ export default function ControlDetailPage() {
                     <ControlExceptionsPanel
                         tenantSlug={tenantSlug}
                         controlId={controlId}
-                        compensatingControlChoices={[]}
+                        compensatingControlChoices={compensatingControlChoices}
                         defaultRiskAcceptedByUserId={control.ownerUserId ?? ''}
                         canWrite={permissions.canWrite}
                         canAdmin={permissions.canAdmin}

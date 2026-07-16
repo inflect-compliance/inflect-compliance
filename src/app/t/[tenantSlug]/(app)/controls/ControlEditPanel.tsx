@@ -12,8 +12,9 @@
  * visible). Replaces the separate quick-edit Sheet, so there's no more table
  * blur and no separate edit button.
  */
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { buildCategoryOptions } from "@/lib/controls/control-categories";
 import { Heading } from "@/components/ui/typography";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
@@ -46,12 +47,6 @@ const buildFrequencyOptions = (tx: (key: string) => string): ComboboxOption[] =>
     { value: "ANNUALLY", label: tx("freq.annually") },
 ];
 
-const CATEGORY_OPTIONS: ComboboxOption[] = [
-    "Access Control", "Encryption", "Network Security", "Physical Security",
-    "HR Security", "Operations", "Compliance", "Incident Management",
-    "Business Continuity", "Other",
-].map((c) => ({ value: c, label: c }));
-
 type Tab = "details" | "activity";
 
 export function ControlEditPanel({
@@ -79,6 +74,13 @@ export function ControlEditPanel({
     // single "Saving…/Saved" status replaces the old Cancel/Save buttons.
     const [name, setName] = useState(control.name ?? "");
     const [category, setCategory] = useState(control.category ?? "");
+    // Canonical ISO 27002 themes + the current value preserved as an option
+    // when it's a legacy/granular/custom string, so a non-theme category shows
+    // honestly and round-trips instead of reading as "—".
+    const CATEGORY_OPTIONS = useMemo(
+        () => buildCategoryOptions(category, (theme) => tx(`categoryLabels.${theme}`)),
+        [category, tx],
+    );
     const [frequency, setFrequency] = useState(control.frequency ?? "");
     const [ownerId, setOwnerId] = useState(control.owner?.id ?? control.ownerUserId ?? "");
     const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");

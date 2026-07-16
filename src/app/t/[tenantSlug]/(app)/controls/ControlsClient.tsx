@@ -10,12 +10,12 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import type { Row, RowSelectionState } from '@tanstack/react-table';
 import { useRouter, useSearchParams } from 'next/navigation';
-// NewControlModal and ControlDetailSheet were previously lazy-loaded
-// via next/dynamic, but the JIT race in `next dev` made the modals
-// occasionally fail to mount in serial-mode E2E runs (Playwright
-// clicked the trigger before the chunk finished compiling). Static
-// imports — the bundle cost is negligible and the E2E suite becomes
-// deterministic.
+// NewControlModal was previously lazy-loaded via next/dynamic, but the JIT
+// race in `next dev` made the modal occasionally fail to mount in serial-mode
+// E2E runs (Playwright clicked the trigger before the chunk finished
+// compiling). Static import — the bundle cost is negligible and the E2E suite
+// becomes deterministic. (The list quick-view is <ControlEditPanel>, mounted
+// in an <AsidePanel>.)
 import { NewControlModal } from './NewControlModal';
 import { ControlTaskRows, type ControlTask } from './ControlTaskRows';
 // One-click on a control name / task opens an EDITABLE side panel (docked

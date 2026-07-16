@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { FormField } from '@/components/ui/form-field';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { UserCombobox } from '@/components/ui/user-combobox';
 import { DatePicker } from '@/components/ui/date-picker';
 import { formatDate, formatDateTime } from '@/lib/format-date';
 import { Heading } from '@/components/ui/typography';
@@ -202,6 +203,7 @@ export function ControlExceptionsPanel({
             {requestOpen ? (
                 <RequestExceptionDialog
                     apiBase={apiBase}
+                    tenantSlug={tenantSlug}
                     controlId={controlId}
                     compensatingControlChoices={compensatingControlChoices}
                     defaultRiskAcceptedByUserId={defaultRiskAcceptedByUserId}
@@ -307,6 +309,7 @@ function ExceptionHeaderBadge({ ex }: { ex?: ExceptionSummary }) {
 
 function RequestExceptionDialog({
     apiBase,
+    tenantSlug,
     controlId,
     compensatingControlChoices,
     defaultRiskAcceptedByUserId,
@@ -314,6 +317,7 @@ function RequestExceptionDialog({
     onSuccess,
 }: {
     apiBase: string;
+    tenantSlug: string;
     controlId: string;
     compensatingControlChoices: readonly ControlOption[];
     defaultRiskAcceptedByUserId: string;
@@ -386,14 +390,16 @@ function RequestExceptionDialog({
                         />
                     </FormField>
                     <FormField label={t('riskAcceptedBy')} required>
-                        <input
-                            className="input"
-                            value={riskAcceptedByUserId}
-                            onChange={(e) =>
-                                setRiskAcceptedByUserId(e.target.value)
-                            }
-                            data-testid="exception-form-risk-acceptor"
-                        />
+                        <div data-testid="exception-form-risk-acceptor">
+                            <UserCombobox
+                                tenantSlug={tenantSlug}
+                                selectedId={riskAcceptedByUserId || null}
+                                onChange={(userId) =>
+                                    setRiskAcceptedByUserId(userId ?? '')
+                                }
+                                placeholder={t('pickRiskAcceptor')}
+                            />
+                        </div>
                     </FormField>
                     <FormField label={t('compensatingControl')}>
                         <Combobox

@@ -2,9 +2,8 @@
  * Roadmap-4 PR-4 — required-field marker discipline.
  *
  * The visual cue for a required form field — a red asterisk next
- * to the label — drifted across seven sites:
+ * to the label — drifted across six sites:
  *
- *   • src/app/t/[tenantSlug]/(app)/controls/ControlDetailSheet.tsx
  *   • src/app/t/[tenantSlug]/(app)/controls/[controlId]/_modals/EditControlModal.tsx
  *   • src/app/t/[tenantSlug]/(app)/admin/integrations/page.tsx        (×2)
  *   • src/app/t/[tenantSlug]/(app)/evidence/UploadEvidenceModal.tsx
