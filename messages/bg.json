@@ -411,7 +411,15 @@
       "cpePlaceholder": "cpe:2.3:a:vendor:product:version",
       "vendor": "Доставчик",
       "product": "Продукт",
-      "version": "Версия"
+      "version": "Версия",
+      "externalRef": "Външна референция",
+      "externalRefPlaceholder": "напр. CMDB ид. или номер на билет",
+      "retention": "Съхранение",
+      "retentionPlaceholder": "напр. 7 години",
+      "dependencies": "Зависимости",
+      "dependenciesPlaceholder": "Системи или услуги, от които зависи",
+      "businessProcesses": "Бизнес процеси",
+      "businessProcessesPlaceholder": "Процеси, които този актив поддържа"
     },
     "crit": {
       "heading": "Критичност на актива",
@@ -524,7 +532,10 @@
       "version": "Версия",
       "identityHintTitle": "Добавете идентичност на продукта",
       "identityHintBody": "Този актив няма зададени CPE, доставчик или продукт, затова новите CVE не могат да бъдат съпоставени с него. Добавете идентичност на продукта, за да активирате автоматичното съпоставяне на уязвимости.",
-      "identityHintAction": "Добавяне на идентичност"
+      "identityHintAction": "Добавяне на идентичност",
+      "dependencies": "Зависимости",
+      "businessProcesses": "Бизнес процеси",
+      "retention": "Съхранение"
     },
     "filters": {
       "type": "Тип",
@@ -619,8 +630,12 @@
       "errNameRequired": "Името е задължително",
       "errType": "Невалиден тип: {value}",
       "errStatus": "Невалидно състояние: {value}",
-      "errCriticality": "Невалидна критичност: {value}",
-      "errCia": "Стойностите на CIA трябва да са между 1 и 5"
+      "errCia": "Стойностите на CIA трябва да са между 1 и 5",
+      "errTypeRequired": "Типът е задължителен",
+      "skippedDuplicates": "Пропуснати {count} дубликат(а) — актив с това име вече съществува"
+    },
+    "list": {
+      "ownerImported": "импортиран"
     }
   },
   "risks": {

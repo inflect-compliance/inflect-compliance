@@ -23,7 +23,10 @@ export class AssetRepository {
         return db.asset.findMany({
             where,
             orderBy: { createdAt: 'desc' },
-            include: { _count: { select: { controls: true } } },
+            include: {
+                _count: { select: { controls: true } },
+                ownerUser: { select: { id: true, name: true, email: true } },
+            },
         });
     }
 
@@ -44,7 +47,10 @@ export class AssetRepository {
             where,
             orderBy: CURSOR_ORDER_BY,
             take: limit + 1,
-            include: { _count: { select: { controls: true } } },
+            include: {
+                _count: { select: { controls: true } },
+                ownerUser: { select: { id: true, name: true, email: true } },
+            },
         });
 
         const { trimmedItems, nextCursor, hasNextPage } = computePageInfo(items, limit);
@@ -61,7 +67,12 @@ export class AssetRepository {
             where.OR = [
                 { name: { contains: filters.q, mode: 'insensitive' } },
                 { classification: { contains: filters.q, mode: 'insensitive' } },
+                // Legacy free-text owner (import fallback) …
                 { owner: { contains: filters.q, mode: 'insensitive' } },
+                // … AND the resolved assignee's name/email, so searching by the
+                // owner set in the UI (ownerUserId) actually matches.
+                { ownerUser: { is: { name: { contains: filters.q, mode: 'insensitive' } } } },
+                { ownerUser: { is: { email: { contains: filters.q, mode: 'insensitive' } } } },
             ];
         }
 
@@ -71,7 +82,10 @@ export class AssetRepository {
     static async getById(db: PrismaTx, ctx: RequestContext, id: string) {
         return db.asset.findFirst({
             where: { id, tenantId: ctx.tenantId },
-            include: { controls: { include: { control: true } } },
+            include: {
+                controls: { include: { control: true } },
+                ownerUser: { select: { id: true, name: true, email: true } },
+            },
         });
     }
 

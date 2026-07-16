@@ -176,6 +176,50 @@ export function EditAssetFields({
             }}
             onChange={(key, value) => form.setField(key, value)}
         />
+        {/* Context — external reference + dependencies / business processes /
+            retention. Persisted by the API; previously surfaced in no form. */}
+        <div className="grid grid-cols-2 gap-default">
+            <div>
+                <label className="input-label">{t('form.externalRef')}</label>
+                <input
+                    className="input"
+                    id="asset-edit-external-ref"
+                    value={form.fields.externalRef ?? ''}
+                    onChange={(e) => form.setField('externalRef', e.target.value)}
+                    placeholder={t('form.externalRefPlaceholder')}
+                />
+            </div>
+            <div>
+                <label className="input-label">{t('form.retention')}</label>
+                <input
+                    className="input"
+                    id="asset-edit-retention"
+                    value={form.fields.retention ?? ''}
+                    onChange={(e) => form.setField('retention', e.target.value)}
+                    placeholder={t('form.retentionPlaceholder')}
+                />
+            </div>
+            <div>
+                <label className="input-label">{t('form.dependencies')}</label>
+                <input
+                    className="input"
+                    id="asset-edit-dependencies"
+                    value={form.fields.dependencies ?? ''}
+                    onChange={(e) => form.setField('dependencies', e.target.value)}
+                    placeholder={t('form.dependenciesPlaceholder')}
+                />
+            </div>
+            <div>
+                <label className="input-label">{t('form.businessProcesses')}</label>
+                <input
+                    className="input"
+                    id="asset-edit-business-processes"
+                    value={form.fields.businessProcesses ?? ''}
+                    onChange={(e) => form.setField('businessProcesses', e.target.value)}
+                    placeholder={t('form.businessProcessesPlaceholder')}
+                />
+            </div>
+        </div>
         </>
     );
 }

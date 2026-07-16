@@ -120,10 +120,10 @@ interface CreateAssetInput {
     name: string;
     type?: string;
     status?: 'ACTIVE' | 'RETIRED';
-    classification?: string;
-    owner?: string;
+    classification?: string | null;
+    owner?: string | null;
     ownerUserId?: string | null;
-    location?: string;
+    location?: string | null;
     confidentiality?: number;
     integrity?: number;
     availability?: number;
@@ -131,6 +131,8 @@ interface CreateAssetInput {
     businessProcesses?: string | null;
     dataResidency?: string | null;
     retention?: string | null;
+    // External-system reference (CMDB id, ticket key, …).
+    externalRef?: string | null;
     // Product-identity fields — power CVE→asset matching.
     cpe?: string | null;
     vendor?: string | null;
@@ -167,6 +169,7 @@ export async function createAsset(ctx: RequestContext, data: CreateAssetInput) {
             businessProcesses: data.businessProcesses,
             dataResidency: data.dataResidency,
             retention: data.retention,
+            externalRef: data.externalRef,
             cpe: data.cpe,
             vendor: data.vendor,
             product: data.product,
@@ -228,6 +231,7 @@ export async function updateAsset(ctx: RequestContext, id: string, data: UpdateA
             businessProcesses: data.businessProcesses,
             dataResidency: data.dataResidency,
             retention: data.retention,
+            externalRef: data.externalRef,
             cpe: data.cpe,
             vendor: data.vendor,
             product: data.product,
@@ -281,6 +285,101 @@ export async function updateAsset(ctx: RequestContext, id: string, data: UpdateA
     }
 
     return updated;
+}
+
+// ─── Bulk import (CSV → one request) ───
+
+export interface AssetImportResult {
+    created: number;
+    skipped: number;
+    createdIds: string[];
+    errors: { row: number; name: string; message: string }[];
+}
+
+/**
+ * Bulk-create assets from a parsed CSV in ONE request (replacing N sequential
+ * client POSTs). Two honesty fixes over the old per-row POST loop:
+ *
+ *   • **Dedupe by name.** Rows whose (case-insensitive) name already exists in
+ *     the tenant — or repeats earlier in the same batch — are skipped, not
+ *     blindly re-created. Re-importing the same CSV is now idempotent.
+ *   • **Owner resolution.** A free-text `owner` cell is resolved to a real
+ *     `ownerUserId` against the tenant roster (by member name OR email,
+ *     case-insensitive). On a match the assignee is set and the free-text is
+ *     dropped; with no match the free-text is kept as a clearly-secondary
+ *     fallback. `criticality` is NOT taken from the CSV — createAsset derives
+ *     it from the CIA triad (the single source of truth).
+ *
+ * Each row is created through `createAsset`, so it inherits derive-on-write
+ * criticality, the per-asset CREATE audit entry, and key minting. Per-row
+ * errors are isolated (one bad row never rolls back the good ones).
+ */
+export async function bulkImportAssets(
+    ctx: RequestContext,
+    rows: CreateAssetInput[],
+): Promise<AssetImportResult> {
+    assertCanWrite(ctx);
+
+    // One up-front read pass: the existing-name set (dedupe) + the member
+    // roster (owner resolution). Everything else is in-memory.
+    const { existingNames, ownerByKey } = await runInTenantContext(ctx, async (db) => {
+        const existing = await db.asset.findMany({ // guardrail-allow: unbounded — dedupe needs the full tenant name set; selects `name` only (tiny rows).
+            where: { tenantId: ctx.tenantId },
+            select: { name: true },
+        });
+        const members = await db.tenantMembership.findMany({
+            where: { tenantId: ctx.tenantId, status: 'ACTIVE' },
+            select: { userId: true, user: { select: { name: true, email: true } } },
+        });
+        const ownerByKey = new Map<string, string>();
+        for (const m of members) {
+            const name = m.user?.name?.trim().toLowerCase();
+            const email = m.user?.email?.trim().toLowerCase();
+            if (name) ownerByKey.set(name, m.userId);
+            if (email) ownerByKey.set(email, m.userId);
+        }
+        return { existingNames: existing.map((a: { name: string }) => a.name), ownerByKey };
+    });
+
+    const seen = new Set(existingNames.map((n) => n.trim().toLowerCase()));
+    const result: AssetImportResult = { created: 0, skipped: 0, createdIds: [], errors: [] };
+
+    let i = 0;
+    for (const row of rows) {
+        i += 1;
+        const nameLc = row.name?.trim().toLowerCase() ?? '';
+        if (!nameLc) {
+            result.errors.push({ row: i, name: row.name ?? '', message: 'Name is required' });
+            continue;
+        }
+        if (seen.has(nameLc)) {
+            result.skipped += 1;
+            continue;
+        }
+        seen.add(nameLc);
+
+        // Resolve a free-text owner to a real member; keep free-text only as a
+        // fallback when it matches no one.
+        let ownerUserId = row.ownerUserId ?? null;
+        let owner = row.owner ?? null;
+        if (!ownerUserId && owner) {
+            const match = ownerByKey.get(owner.trim().toLowerCase());
+            if (match) {
+                ownerUserId = match;
+                owner = null;
+            }
+        }
+
+        try {
+            const asset = await createAsset(ctx, { ...row, owner: owner ?? undefined, ownerUserId });
+            result.created += 1;
+            result.createdIds.push(asset.id);
+        } catch (e) {
+            result.errors.push({ row: i, name: row.name, message: e instanceof Error ? e.message : String(e) });
+        }
+    }
+
+    return result;
 }
 
 // ─── Bulk actions (canonical BulkActionBar — asset rollout) ───

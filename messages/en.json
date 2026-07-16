@@ -411,7 +411,15 @@
       "cpePlaceholder": "cpe:2.3:a:vendor:product:version",
       "vendor": "Vendor",
       "product": "Product",
-      "version": "Version"
+      "version": "Version",
+      "externalRef": "External reference",
+      "externalRefPlaceholder": "e.g. CMDB id or ticket key",
+      "retention": "Retention",
+      "retentionPlaceholder": "e.g. 7 years",
+      "dependencies": "Dependencies",
+      "dependenciesPlaceholder": "Systems or services this depends on",
+      "businessProcesses": "Business processes",
+      "businessProcessesPlaceholder": "Processes this asset supports"
     },
     "crit": {
       "heading": "Asset Criticality",
@@ -524,7 +532,10 @@
       "version": "Version",
       "identityHintTitle": "Add product identity",
       "identityHintBody": "This asset has no CPE, vendor, or product set, so new CVEs can't be matched to it. Add product identity to enable automatic vulnerability matching.",
-      "identityHintAction": "Add identity"
+      "identityHintAction": "Add identity",
+      "dependencies": "Dependencies",
+      "businessProcesses": "Business processes",
+      "retention": "Retention"
     },
     "filters": {
       "type": "Type",
@@ -619,8 +630,12 @@
       "errNameRequired": "Name is required",
       "errType": "Invalid type: {value}",
       "errStatus": "Invalid status: {value}",
-      "errCriticality": "Invalid criticality: {value}",
-      "errCia": "CIA values must be between 1 and 5"
+      "errCia": "CIA values must be between 1 and 5",
+      "errTypeRequired": "Type is required",
+      "skippedDuplicates": "Skipped {count} duplicate(s) — an asset with that name already exists"
+    },
+    "list": {
+      "ownerImported": "imported"
     }
   },
   "risks": {

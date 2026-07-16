@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { ownerDisplayName } from '@/lib/owner-display';
 import { AssetCriticalityBadge } from './_form/AssetCriticalityFields';
 
 export interface AssetPanelRow {
@@ -24,7 +25,11 @@ export interface AssetPanelRow {
     name: string;
     type?: string | null;
     status?: string | null;
+    /** Legacy free-text owner — import-only fallback, distinct from the assignee. */
     owner?: string | null;
+    ownerUserId?: string | null;
+    /** Resolved assignee (the one Owner concept). */
+    ownerUser?: { id: string; name: string | null; email: string | null } | null;
     classification?: string | null;
     confidentiality?: number | null;
     integrity?: number | null;
@@ -75,7 +80,12 @@ export function AssetDetailPanel({
                 <Row label={t('detail.type')}>
                     {asset.type ? asset.type.replace(/_/g, ' ') : '—'}
                 </Row>
-                <Row label={t('detail.owner')}>{asset.owner || '—'}</Row>
+                <Row label={t('detail.owner')}>
+                    {ownerDisplayName(asset.ownerUser?.name, asset.ownerUser?.email) ??
+                        (asset.owner
+                            ? `${asset.owner} (${t('list.ownerImported')})`
+                            : '—')}
+                </Row>
                 <Row label={t('detail.classification')}>{asset.classification || '—'}</Row>
                 <Row label={t('detail.confidentiality')}>{asset.confidentiality ?? '—'}</Row>
                 <Row label={t('detail.integrity')}>{asset.integrity ?? '—'}</Row>

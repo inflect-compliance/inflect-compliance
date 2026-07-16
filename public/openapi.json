@@ -46,6 +46,137 @@
       }
     },
     "schemas": {
+      "AssetBulkImportRequest": {
+        "type": "object",
+        "properties": {
+          "assets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "type": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "ACTIVE",
+                    "RETIRED"
+                  ]
+                },
+                "classification": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "owner": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "ownerUserId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "location": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "confidentiality": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "integrity": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "availability": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "externalRef": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "dependencies": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "businessProcesses": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "dataResidency": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "retention": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "cpe": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "vendor": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "product": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "version": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "type"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 500
+          }
+        },
+        "required": [
+          "assets"
+        ],
+        "description": "Bulk-create assets from a parsed CSV in a single request. Server derives criticality from CIA, dedupes by name, and resolves owner names to members."
+      },
       "AssetCreateRequest": {
         "type": "object",
         "properties": {
@@ -140,6 +271,12 @@
             ]
           },
           "version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "externalRef": {
             "type": [
               "string",
               "null"
@@ -504,6 +641,12 @@
             ]
           },
           "version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "externalRef": {
             "type": [
               "string",
               "null"
@@ -13055,6 +13198,41 @@
     "/api/t/{tenantSlug}/assets/bulk/delete": {
       "post": {
         "summary": "POST /api/t/{tenantSlug}/assets/bulk/delete",
+        "description": "Stub entry — this route exists but its request/response schema is not yet published in the machine-readable contract. The path, method, and required path parameters are accurate; the body and success shape are not yet formally documented. See `docs/api-consumer-guide.md`. (The critical-endpoint set carries full request/response/permission/rate-limit entries.)",
+        "tags": [
+          "assets"
+        ],
+        "x-stub": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "tenantSlug",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Successful response. The success schema is not yet published in the contract."
+          },
+          "default": {
+            "description": "Error — see the ErrorResponse envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/t/{tenantSlug}/assets/bulk/import": {
+      "post": {
+        "summary": "POST /api/t/{tenantSlug}/assets/bulk/import",
         "description": "Stub entry — this route exists but its request/response schema is not yet published in the machine-readable contract. The path, method, and required path parameters are accurate; the body and success shape are not yet formally documented. See `docs/api-consumer-guide.md`. (The critical-endpoint set carries full request/response/permission/rate-limit entries.)",
         "tags": [
           "assets"

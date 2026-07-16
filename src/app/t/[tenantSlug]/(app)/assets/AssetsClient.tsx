@@ -59,7 +59,11 @@ interface AssetListRow {
     name: string;
     type: string;
     classification: string | null;
+    /** Legacy free-text owner — import-only fallback, distinct from the assignee. */
     owner: string | null;
+    ownerUserId: string | null;
+    /** Resolved assignee (the one Owner concept), included by the list query. */
+    ownerUser: { id: string; name: string | null; email: string | null } | null;
     confidentiality: number | null;
     integrity: number | null;
     availability: number | null;
@@ -216,7 +220,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     a.availability ?? 3,
                 ).score,
             classification: (a) => a.classification || '—',
-            owner: (a) => a.owner || '—',
+            owner: (a) => ownerDisplayName(a.ownerUser?.name, a.ownerUser?.email) ?? a.owner ?? '—',
             controls: (a) => a._count?.controls || 0,
             // Cell renders the `done/total` fraction — sort on that, not total.
             tasks: (a) => `${a.taskDone ?? 0}/${a.taskTotal ?? 0}`,
@@ -592,7 +596,25 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         {
             id: 'owner',
             header: t.owner,
-            accessorFn: (a) => a.owner || '—',
+            // Resolve the assignee (ownerUserId → member name/email). The legacy
+            // free-text `owner` is only a labeled fallback when unassigned.
+            accessorFn: (a) =>
+                ownerDisplayName(a.ownerUser?.name, a.ownerUser?.email) ?? a.owner ?? '—',
+            cell: ({ row }) => {
+                const a = row.original;
+                const name = ownerDisplayName(a.ownerUser?.name, a.ownerUser?.email);
+                if (name) return <span className="text-sm">{name}</span>;
+                if (a.owner)
+                    return (
+                        <span className="text-sm">
+                            {a.owner}{' '}
+                            <span className="text-xs text-content-subtle">
+                                ({tx('list.ownerImported')})
+                            </span>
+                        </span>
+                    );
+                return <span className="text-content-muted">—</span>;
+            },
         },
         {
             id: 'controls',

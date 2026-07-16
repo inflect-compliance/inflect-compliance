@@ -211,6 +211,44 @@ export function NewAssetFields({
                 }}
                 onChange={(key, value) => form.setField(key, value)}
             />
+
+            {/* Context — external reference + dependencies / business
+                processes / retention. Persisted by the API but previously
+                surfaced in no form. */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-default">
+                <FormField label={t('form.externalRef')}>
+                    <Input
+                        id="asset-external-ref-input"
+                        value={form.fields.externalRef ?? ''}
+                        onChange={(e) => form.setField('externalRef', e.target.value)}
+                        placeholder={t('form.externalRefPlaceholder')}
+                    />
+                </FormField>
+                <FormField label={t('form.retention')}>
+                    <Input
+                        id="asset-retention-input"
+                        value={form.fields.retention ?? ''}
+                        onChange={(e) => form.setField('retention', e.target.value)}
+                        placeholder={t('form.retentionPlaceholder')}
+                    />
+                </FormField>
+                <FormField label={t('form.dependencies')}>
+                    <Input
+                        id="asset-dependencies-input"
+                        value={form.fields.dependencies ?? ''}
+                        onChange={(e) => form.setField('dependencies', e.target.value)}
+                        placeholder={t('form.dependenciesPlaceholder')}
+                    />
+                </FormField>
+                <FormField label={t('form.businessProcesses')}>
+                    <Input
+                        id="asset-business-processes-input"
+                        value={form.fields.businessProcesses ?? ''}
+                        onChange={(e) => form.setField('businessProcesses', e.target.value)}
+                        placeholder={t('form.businessProcessesPlaceholder')}
+                    />
+                </FormField>
+            </div>
         </>
     );
 }
