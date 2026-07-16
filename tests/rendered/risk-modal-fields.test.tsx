@@ -41,9 +41,17 @@ jest.mock('next/navigation', () => ({
 }));
 
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { TenantProvider, type TenantContextValue } from '@/lib/tenant-context-provider';
 import { CreateRiskSchema } from '@/lib/schemas';
+import { DEFAULT_RISK_MATRIX_CONFIG } from '@/lib/risk-matrix/defaults';
 import { RiskEvaluationFields } from '@/app/t/[tenantSlug]/(app)/risks/_shared/RiskEvaluationFields';
 import { EditRiskModal } from '@/app/t/[tenantSlug]/(app)/risks/[riskId]/_modals/EditRiskModal';
+
+const TENANT_CTX = {
+    userId: 'u1', tenantId: 't1', tenantSlug: 'acme', tenantName: 'Acme',
+    role: 'ADMIN', permissions: { canRead: true, canWrite: true, canAdmin: true, canAudit: false, canExport: true },
+    appPermissions: {},
+} as unknown as TenantContextValue;
 
 beforeEach(() => {
     global.fetch = jest.fn(() =>
@@ -54,7 +62,9 @@ beforeEach(() => {
 function withClient(node: React.ReactNode) {
     return render(
         <SWRConfig value={{ provider: () => new Map() }}>
-            <TooltipProvider>{node}</TooltipProvider>
+            <TenantProvider value={TENANT_CTX}>
+                <TooltipProvider>{node}</TooltipProvider>
+            </TenantProvider>
         </SWRConfig>,
     );
 }
@@ -68,27 +78,27 @@ const EN_MESSAGES = JSON.parse(
 
 describe('RiskEvaluationFields (shared, R5/R6)', () => {
     it('renders the "Risk Evaluation" title, two range sliders, and a live score', () => {
-        const { container } = render(
-            <TooltipProvider>
-                <RiskEvaluationFields
-                    likelihood={4}
-                    impact={3}
-                    onLikelihood={() => {}}
-                    onImpact={() => {}}
-                />
-            </TooltipProvider>,
+        // Pass config explicitly (no fetch). Score 12 falls in the default
+        // High band (10–14) — the old hardcoded ≤12 ladder mislabelled it
+        // "Medium"; config-driven scoring agrees with the tenant matrix.
+        const { container } = withClient(
+            <RiskEvaluationFields
+                likelihood={4}
+                impact={3}
+                onLikelihood={() => {}}
+                onImpact={() => {}}
+                config={DEFAULT_RISK_MATRIX_CONFIG}
+            />,
         );
         expect(screen.getByText('Risk Evaluation')).not.toBeNull();
         expect(container.querySelectorAll('input[type="range"]').length).toBe(2);
         expect(screen.getByText('12')).not.toBeNull(); // 4 × 3
-        expect(screen.getByText('Medium')).not.toBeNull();
+        expect(screen.getByText('High')).not.toBeNull();
     });
 
     it('honours idPrefix for stable element ids', () => {
-        render(
-            <TooltipProvider>
-                <RiskEvaluationFields idPrefix="risk-edit" likelihood={1} impact={1} onLikelihood={() => {}} onImpact={() => {}} />
-            </TooltipProvider>,
+        withClient(
+            <RiskEvaluationFields idPrefix="risk-edit" likelihood={1} impact={1} onLikelihood={() => {}} onImpact={() => {}} config={DEFAULT_RISK_MATRIX_CONFIG} />,
         );
         expect(document.getElementById('risk-edit-likelihood')).not.toBeNull();
         expect(document.getElementById('risk-edit-impact')).not.toBeNull();

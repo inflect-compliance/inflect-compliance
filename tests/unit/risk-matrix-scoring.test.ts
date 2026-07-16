@@ -4,6 +4,7 @@
 
 import {
     resolveBandForScore,
+    resolveBandTone,
     resolveCell,
     bandRangeLabel,
 } from '@/lib/risk-matrix/scoring';
@@ -36,6 +37,43 @@ describe('resolveBandForScore', () => {
             { name: 'Only', minScore: 1, maxScore: 5, color: '#000' },
         ];
         expect(resolveBandForScore(10, partial).name).toBe('Unbanded');
+    });
+});
+
+describe('resolveBandTone', () => {
+    // Ordinal-based over the 4-tier default: lowest → success, highest →
+    // critical, middle → attention. This is the single vocabulary every
+    // non-matrix surface (KPIStat tone, StatusBadge variant, score chip)
+    // consumes, so the same score reads the same severity everywhere.
+    it.each([
+        [4, 'Low', 'success'],
+        [5, 'Medium', 'attention'],
+        [12, 'High', 'attention'],
+        [15, 'Critical', 'critical'],
+        [25, 'Critical', 'critical'],
+    ])('score %i → %s band → %s tone', (score, bandName, tone) => {
+        const r = resolveBandTone(score, bands);
+        expect(r.band.name).toBe(bandName);
+        expect(r.tone).toBe(tone);
+    });
+
+    it('empty bands resolve to the default tone (never throws)', () => {
+        expect(resolveBandTone(10, []).tone).toBe('default');
+    });
+
+    it('honours a custom (non-5×5) band layout — score 30 on a 6×6 top band', () => {
+        // A 6×6 tenant: top band covers 25–36. Score 30 must read critical
+        // even though the legacy ≤18 ladder never reached that far.
+        const sixBySix: RiskMatrixBand[] = [
+            { name: 'Low', minScore: 1, maxScore: 8, color: '#22c55e' },
+            { name: 'Moderate', minScore: 9, maxScore: 18, color: '#f59e0b' },
+            { name: 'Severe', minScore: 19, maxScore: 36, color: '#7c2d12' },
+        ];
+        expect(resolveBandTone(30, sixBySix)).toEqual(
+            expect.objectContaining({ tone: 'critical' }),
+        );
+        expect(resolveBandTone(30, sixBySix).band.name).toBe('Severe');
+        expect(resolveBandTone(4, sixBySix).tone).toBe('success');
     });
 });
 

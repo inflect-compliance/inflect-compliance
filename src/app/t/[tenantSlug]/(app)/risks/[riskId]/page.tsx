@@ -20,8 +20,10 @@ import { MetaStrip } from '@/components/ui/meta-strip';
 import { RiskScoreExplainer } from '@/components/RiskScoreExplainer';
 import {
     RISK_STATUS_VARIANT,
-    getRiskScoreBand,
+    riskSeverityToBadgeVariant,
 } from '@/app-layer/domain/entity-status-mapping';
+import { resolveBandForScore, resolveBandTone } from '@/lib/risk-matrix/scoring';
+import { useRiskMatrixConfig } from '@/lib/hooks/use-risk-matrix-config';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { Button } from '@/components/ui/button';
 import { ProcessNodeReverseLookupModal } from '@/components/processes/ProcessNodeReverseLookupModal';
@@ -29,7 +31,7 @@ import { Pen2 } from '@/components/ui/icons/nucleo';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { useTenantMembers } from '@/components/ui/user-combobox';
-import { buildRiskTreatmentOptions, canonicalTreatmentLabel } from '../_shared/risk-options';
+import { buildRiskTreatmentOptions, canonicalTreatmentLabel, buildRiskStatusOptions } from '../_shared/risk-options';
 import { cn } from '@/lib/cn';
 import { cardVariants } from '@/components/ui/card';
 import { EditRiskModal, type EditRiskForm } from './_modals/EditRiskModal';
@@ -100,14 +102,8 @@ type Risk = {
 // ACCEPTED in the RiskStatus enum. The detail-page status combobox
 // must offer it; otherwise a reviewer who picks "Mitigated" in the
 // list filter cannot land on the corresponding detail-page value.
-const STATUS_VALUES = [
-    'OPEN',
-    'MITIGATING',
-    'MITIGATED',
-    'ACCEPTED',
-    'CLOSED',
-] as const;
-const STATUS_OPTIONS: ComboboxOption[] = STATUS_VALUES.map(s => ({ value: s, label: s }));
+// Options are built inside the component so the labels localize
+// (buildRiskStatusOptions), matching the filter + list badge.
 const CATEGORIES = [
     'Technical', 'Operational', 'Compliance', 'Strategic',
     'Financial', 'Reputational', 'Physical', 'Human Resources',
@@ -124,7 +120,8 @@ function isOverdue(nextReviewAt: string | null): boolean {
     return new Date(nextReviewAt) < new Date();
 }
 
-// getRiskBadge → getRiskScoreBand from shared domain mapping.
+// Risk-score band + tone resolve from the tenant RiskMatrixConfig via
+// resolveBandForScore / resolveBandTone (@/lib/risk-matrix/scoring).
 
 export default function RiskDetailPage() {
     const { riskId } = useParams<{ riskId: string }>();
@@ -133,6 +130,14 @@ export default function RiskDetailPage() {
         () => buildRiskTreatmentOptions((k) => t(k as Parameters<typeof t>[0])),
         [t],
     );
+    // Localized status options — same labels as the filter + list badge.
+    const STATUS_OPTIONS = useMemo(
+        () => buildRiskStatusOptions((k) => t(k as Parameters<typeof t>[0])),
+        [t],
+    );
+    // Tenant matrix config drives the header band chip + the Overview
+    // score-card tone, so a custom matrix reads the same band everywhere.
+    const { config: matrixConfig } = useRiskMatrixConfig();
     const tenant = useTenantContext();
     const apiUrl = useTenantApiUrl();
     const href = useTenantHref();
@@ -314,7 +319,13 @@ export default function RiskDetailPage() {
         );
     }
 
-    const band = getRiskScoreBand(risk.inherentScore);
+    // Config-driven band + tone (PR-J) — agrees with list/assessment/explainer.
+    const bandResolved = resolveBandForScore(risk.inherentScore, matrixConfig.bands);
+    const bandTone = resolveBandTone(risk.inherentScore, matrixConfig.bands).tone;
+    const band = {
+        label: bandResolved.name,
+        variant: riskSeverityToBadgeVariant(bandTone),
+    };
     // RQ2-5 — resolved ALE for the header chip (null = not quantified).
     const riskAleValue = resolveALE({
         fairAle: risk.fairAle,
@@ -637,13 +648,7 @@ export default function RiskDetailPage() {
                     <KPIStat
                         value={risk.inherentScore}
                         label={t('detail.inherentRiskScore')}
-                        tone={
-                            risk.inherentScore > 12
-                                ? 'critical'
-                                : risk.inherentScore > 5
-                                  ? 'attention'
-                                  : 'success'
-                        }
+                        tone={bandTone}
                         description={
                             <>
                                 {t('detail.likelihood')}{' '}

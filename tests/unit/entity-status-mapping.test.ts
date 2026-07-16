@@ -2,15 +2,17 @@
  * Entity Status Mapping — Functional Unit Tests
  *
  * Behavioural coverage for `src/app-layer/domain/entity-status-mapping.ts`.
- * The module shipped at 0% coverage despite carrying real branching
- * logic (`getRiskScoreBand` — a four-band threshold classifier) and a
- * family of status→badge-variant lookup tables that every detail page
- * reads. These maps ARE domain semantics — a wrong tone is a product
- * defect, so they deserve real assertions, not a structural scan.
+ * The hardcoded `getRiskScoreBand` classifier was removed in PR-J — risk
+ * band + tone now resolve through the tenant-configurable
+ * `resolveBandForScore` / `resolveBandTone` (see
+ * `tests/unit/risk-matrix-scoring.test.ts`). What remains here is the
+ * severity-tone → StatusBadge-variant bridge and the family of
+ * status→badge-variant lookup tables every detail page reads. These maps
+ * ARE domain semantics — a wrong tone is a product defect.
  */
 
 import {
-    getRiskScoreBand,
+    riskSeverityToBadgeVariant,
     RISK_STATUS_VARIANT,
     CONTROL_STATUS_VARIANT,
     CONTROL_APPLICABILITY_VARIANT,
@@ -24,50 +26,21 @@ import {
 } from '../../src/app-layer/domain/entity-status-mapping';
 
 // ═════════════════════════════════════════════════════════════════════
-// 1. getRiskScoreBand — four-band threshold classifier
+// 1. riskSeverityToBadgeVariant — config-tone → badge-variant bridge
 // ═════════════════════════════════════════════════════════════════════
 
-describe('getRiskScoreBand', () => {
-    test('score 0 → Low / success', () => {
-        expect(getRiskScoreBand(0)).toEqual({ label: 'Low', variant: 'success' });
+describe('riskSeverityToBadgeVariant', () => {
+    test('success tone → success variant', () => {
+        expect(riskSeverityToBadgeVariant('success')).toBe('success');
     });
-
-    test('boundary 5 is the top of the Low band', () => {
-        expect(getRiskScoreBand(5)).toEqual({ label: 'Low', variant: 'success' });
+    test('attention tone → warning variant', () => {
+        expect(riskSeverityToBadgeVariant('attention')).toBe('warning');
     });
-
-    test('boundary 6 is the bottom of the Medium band', () => {
-        expect(getRiskScoreBand(6)).toEqual({ label: 'Medium', variant: 'warning' });
+    test('critical tone → error variant', () => {
+        expect(riskSeverityToBadgeVariant('critical')).toBe('error');
     });
-
-    test('boundary 12 is the top of the Medium band', () => {
-        expect(getRiskScoreBand(12)).toEqual({ label: 'Medium', variant: 'warning' });
-    });
-
-    test('boundary 13 is the bottom of the High band', () => {
-        expect(getRiskScoreBand(13)).toEqual({ label: 'High', variant: 'warning' });
-    });
-
-    test('boundary 18 is the top of the High band', () => {
-        expect(getRiskScoreBand(18)).toEqual({ label: 'High', variant: 'warning' });
-    });
-
-    test('boundary 19 crosses into the Critical band', () => {
-        expect(getRiskScoreBand(19)).toEqual({ label: 'Critical', variant: 'error' });
-    });
-
-    test('max score 25 → Critical / error', () => {
-        expect(getRiskScoreBand(25)).toEqual({ label: 'Critical', variant: 'error' });
-    });
-
-    test('the band is monotonic — never softens as score rises', () => {
-        const rank = { success: 0, info: 1, neutral: 2, warning: 3, error: 4 } as const;
-        let last = -1;
-        for (let score = 0; score <= 25; score++) {
-            const v = rank[getRiskScoreBand(score).variant];
-            expect(v).toBeGreaterThanOrEqual(last);
-            last = v;
-        }
+    test('default/neutral tone → neutral variant', () => {
+        expect(riskSeverityToBadgeVariant('default')).toBe('neutral');
     });
 });
 

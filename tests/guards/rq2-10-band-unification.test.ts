@@ -84,16 +84,14 @@ describe('RQ2-10 — legacy ladders are frozen', () => {
         expect(importers).toEqual([]);
     });
 
-    test('getRiskScoreBand (static band map) holds at its frozen call-site set', () => {
-        const importers = srcImportersOf('getRiskScoreBand').filter(
-            (p) => p !== 'src/app-layer/domain/entity-status-mapping.ts',
-        );
-        // Frozen holdouts (display-tone usage on surfaces without a
-        // loaded matrix config; the RQ2-3 explainer already shows the
-        // configured bands on these pages):
-        const FROZEN = [
-            'src/app/t/[tenantSlug]/(app)/risks/[riskId]/page.tsx',
-        ].sort();
-        expect(importers).toEqual(FROZEN);
+    test('getRiskScoreBand (static band map) is fully retired', () => {
+        // PR-J migrated the last holdout — the risk detail page — onto
+        // the config-driven resolveBandForScore / resolveBandTone, and
+        // deleted the static `getRiskScoreBand` ladder from
+        // entity-status-mapping.ts. The symbol no longer exists anywhere
+        // in src. See tests/guards/risk-band-threshold-centralization.test.ts
+        // for the forward ratchet that keeps every risk display surface
+        // config-driven.
+        expect(srcImportersOf('getRiskScoreBand')).toEqual([]);
     });
 });

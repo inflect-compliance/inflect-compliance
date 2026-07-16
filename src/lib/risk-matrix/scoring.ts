@@ -71,6 +71,44 @@ export function resolveCell(
 }
 
 /**
+ * Semantic severity tone for a resolved band — the single vocabulary
+ * every NON-matrix surface (KPIStat tone, StatusBadge variant, the
+ * create/edit score chip) speaks. Values line up 1:1 with `MetricTone`
+ * so a KPIStat can consume it directly.
+ */
+export type RiskSeverityTone = 'default' | 'success' | 'attention' | 'critical';
+
+/**
+ * Map a score to a semantic severity tone THROUGH the tenant's
+ * configured bands — the config-driven replacement for every
+ * hardcoded ≤5/≤12/≤18 ladder that used to live scattered across the
+ * risk surfaces.
+ *
+ * Ordinal-based so it honours ANY band layout (4-tier default, a 6×6
+ * clinical matrix, a 3-band supply-chain scheme): the LOWEST band
+ * reads `success`, the HIGHEST `critical`, everything between
+ * `attention`. Because every surface resolves the SAME band for the
+ * SAME score, the tone agrees on list, detail header, Overview card,
+ * assessment, and explainer — the correctness bug this closes.
+ */
+export function resolveBandTone(
+    score: number,
+    bands: ReadonlyArray<RiskMatrixBand>,
+): { band: RiskMatrixBand; tone: RiskSeverityTone } {
+    const band = resolveBandForScore(score, bands);
+    if (!bands || bands.length === 0) return { band, tone: 'default' };
+    const sorted = [...bands].sort((a, b) => a.minScore - b.minScore);
+    const idx = sorted.findIndex(
+        (b) => b.minScore === band.minScore && b.maxScore === band.maxScore && b.name === band.name,
+    );
+    if (idx === -1) return { band, tone: 'default' };
+    if (sorted.length === 1) return { band, tone: 'attention' };
+    if (idx === 0) return { band, tone: 'success' };
+    if (idx === sorted.length - 1) return { band, tone: 'critical' };
+    return { band, tone: 'attention' };
+}
+
+/**
  * Return all bands that intersect a score range. Useful for the
  * legend's "this band covers …" footer.
  */

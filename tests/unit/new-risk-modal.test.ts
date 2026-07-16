@@ -185,14 +185,20 @@ describe('NewRiskModal — scoring UX (shared RiskEvaluationFields)', () => {
         expect(SHARED_SRC).toMatch(
             /id=\{`\$\{idPrefix\}-impact`\}[\s\S]{0,200}type=["']range["']/,
         );
-        expect(SHARED_SRC).toMatch(/min=\{1\}\s+max=\{5\}/);
+        // Slider ranges are config-driven (PR-J) — a 6×6 tenant can enter
+        // their full range, so max reads from the tenant matrix, not a
+        // hardcoded 5.
+        expect(SHARED_SRC).toMatch(/max=\{config\.likelihoodLevels\}/);
+        expect(SHARED_SRC).toMatch(/max=\{config\.impactLevels\}/);
     });
 
-    it('computes the score as likelihood × impact and drives the badge', () => {
+    it('computes the score as likelihood × impact and drives the config-band badge', () => {
         expect(SHARED_SRC).toMatch(
             /const score\s*=\s*likelihood\s*\*\s*impact/,
         );
-        expect(SHARED_SRC).toMatch(/getRiskBadge\(score\)/);
+        // Band + tone resolve through the tenant matrix config, not a
+        // hardcoded ≤5/≤12/≤18 ladder.
+        expect(SHARED_SRC).toMatch(/resolveBandTone\(score,\s*config\.bands\)/);
         expect(SHARED_SRC).toMatch(/data-testid=\{`\$\{idPrefix\}-score-preview`\}/);
     });
 
