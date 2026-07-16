@@ -1337,7 +1337,10 @@
       "quantified": "Quantified",
       "quantifiedDesc": "Filter by whether the risk has a monetary ALE",
       "quantifiedYes": "Quantified",
-      "quantifiedNo": "Not quantified"
+      "quantifiedNo": "Not quantified",
+      "stale": "Stale / overdue",
+      "staleDesc": "Show only stale or overdue risks (multi-signal detector)",
+      "staleYes": "Stale / overdue"
     },
     "treatmentMitigate": "Mitigate",
     "treatmentAccept": "Accept",
