@@ -44,8 +44,12 @@ describe('P2 — create forms carry the risk link', () => {
     it('KRI form sends riskId + direction and renders both controls', () => {
         const src = read(P('kri/page.tsx'));
         expect(src).toMatch(/<RiskPicker\b/);
-        expect(src).toMatch(/id="kri-direction"/);
-        expect(src).toMatch(/riskId,\s*direction/);
+        // PR-L — the create + edit forms share the KriFields renderer, so the
+        // direction control id is composed from the idPrefix ("kri-direction"
+        // at runtime) and the risk link + direction ride in the draft payload.
+        expect(src).toMatch(/id=\{`\$\{idPrefix\}-direction`\}/);
+        expect(src).toMatch(/direction: d\.direction/);
+        expect(src).toMatch(/riskId: d\.riskId/);
     });
 
     it('loss-events form sends riskId and renders the picker', () => {
