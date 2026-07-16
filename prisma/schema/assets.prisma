@@ -171,7 +171,9 @@ model ScannerRun {
   /// `owner/repo@<sha>`). NOT encrypted — a project identifier, not content.
   repoRef      String?
   findingCount Int      @default(0)
-  /// 'API'|'WEBHOOK'|'UPLOAD' — how the SARIF reached IC.
+  /// 'API'|'UPLOAD' — how the SARIF reached IC. ('WEBHOOK' was reserved but
+  /// had no ingest entrypoint; removed from the accepted set until a real
+  /// scanner-webhook route ships.)
   ingestedVia  String
   createdAt    DateTime @default(now())
 

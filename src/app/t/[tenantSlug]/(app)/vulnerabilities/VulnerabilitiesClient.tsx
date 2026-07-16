@@ -16,6 +16,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ShieldAlert } from '@/components/ui/icons/nucleo/shield-alert';
 import { ArrowUpRight } from '@/components/ui/icons/nucleo/arrow-up-right';
+import { Plus } from '@/components/ui/icons/nucleo/plus';
+import { PenWriting } from '@/components/ui/icons/nucleo/pen-writing';
 import { EntityListPage } from '@/components/layout/EntityListPage';
 import { FilterProvider, useFilterContext, useFilters } from '@/components/ui/filter';
 import { createColumns } from '@/components/ui/table';
@@ -27,7 +29,10 @@ import { DatePicker } from '@/components/ui/date-picker/date-picker';
 import { startOfUtcDay, toYMD } from '@/components/ui/date-picker/date-utils';
 import { EmptyState } from '@/components/ui/empty-state';
 import { InfoTooltip } from '@/components/ui/tooltip';
-import { useToast } from '@/components/ui/hooks';
+import { Modal } from '@/components/ui/modal';
+import { Input } from '@/components/ui/input';
+import { FormField } from '@/components/ui/form-field';
+import { useToast, useEnterSubmit } from '@/components/ui/hooks';
 import { useTenantSWR } from '@/lib/hooks';
 import { formatDate } from '@/lib/format-date';
 import { buildVulnFilters, VULN_FILTER_KEYS, buildVulnStatusLabels } from './filter-defs';
@@ -52,6 +57,8 @@ export interface VulnRow {
     remediationDueAt: string | Date | null;
     remediationTaskId: string | null;
     remediationTask: { id: string; key: string | null } | null;
+    /** Free-text analyst note (encrypted at rest; plaintext on the row). */
+    note: string | null;
     cve: {
         id: string;
         cvssScore: number | null;
@@ -66,6 +73,13 @@ interface Props {
     initialRows: VulnRow[];
     tenantSlug: string;
     canWrite: boolean;
+}
+
+/** Minimal asset shape the "Link CVE" picker consumes from GET /assets. */
+interface AssetOption {
+    id: string;
+    name: string;
+    key: string | null;
 }
 
 const SEVERITY_VARIANT: Record<string, StatusBadgeVariant> = {
@@ -205,6 +219,17 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
         },
         [patchVuln],
     );
+
+    const patchNote = useCallback(
+        (id: string, note: string | null) => {
+            const trimmed = note && note.trim().length ? note.trim() : null;
+            return patchVuln(id, { note: trimmed }, { note: trimmed });
+        },
+        [patchVuln],
+    );
+
+    // "Link CVE" modal (manual AssetVulnerability creation).
+    const [linkOpen, setLinkOpen] = useState(false);
 
     const convertToRisk = useCallback(
         async (row: VulnRow) => {
@@ -439,6 +464,21 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
                 );
             },
         },
+        {
+            id: 'note',
+            header: t('colNote'),
+            accessorFn: (r) => r.note ?? '',
+            cell: ({ row }) => (
+                <NoteCell
+                    row={row.original}
+                    canWrite={canWrite}
+                    onSave={patchNote}
+                    emptyLabel={t('addNote')}
+                    editLabel={t('editNote')}
+                    placeholder={t('notePlaceholder')}
+                />
+            ),
+        },
         ...(canWrite
             ? [{
                 id: 'actions',
@@ -472,6 +512,7 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
         patchStatus,
         patchOwner,
         patchDue,
+        patchNote,
         pendingId,
         statusOptions,
         statusLabels,
@@ -496,6 +537,25 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
                 </span>
             )}
             <InfoTooltip content={t('cveSyncHelp')} aria-label={t('cveSyncLabel')} />
+        </div>
+    ) : undefined;
+
+    // Header actions: the sync strip plus a manual "Link CVE" affordance
+    // (write users only) that opens the AssetVulnerability create modal.
+    const headerActions = (syncStrip || canWrite) ? (
+        <div className="flex items-center gap-default">
+            {syncStrip}
+            {canWrite && (
+                <Button
+                    id="vuln-link-cve-trigger"
+                    variant="secondary"
+                    size="sm"
+                    icon={<Plus className="h-4 w-4" />}
+                    onClick={() => setLinkOpen(true)}
+                >
+                    {t('linkCve')}
+                </Button>
+            )}
         </div>
     ) : undefined;
 
@@ -534,7 +594,7 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
                     </>
                 ),
                 description: t('description'),
-                actions: syncStrip,
+                actions: headerActions,
             }}
             filters={{ defs: filterDefs }}
             table={{
@@ -544,6 +604,218 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
                 resourceName: (plural) => (plural ? t('resourcePlural') : t('resourceSingular')),
                 emptyState,
             }}
-        />
+        >
+            {canWrite && linkOpen && (
+                <LinkCveModal
+                    apiUrl={apiUrl}
+                    onClose={() => setLinkOpen(false)}
+                    onSuccess={() => {
+                        setLinkOpen(false);
+                        router.refresh();
+                    }}
+                />
+            )}
+        </EntityListPage>
+    );
+}
+
+/**
+ * Inline-editable Note cell. Read users see the truncated note (or "—");
+ * write users get a click-to-edit affordance that commits via the
+ * optimistic `patchNote` on blur / Enter, and cancels on Escape.
+ */
+function NoteCell({
+    row,
+    canWrite,
+    onSave,
+    emptyLabel,
+    editLabel,
+    placeholder,
+}: {
+    row: VulnRow;
+    canWrite: boolean;
+    onSave: (id: string, note: string | null) => void;
+    emptyLabel: string;
+    editLabel: string;
+    placeholder: string;
+}) {
+    const [editing, setEditing] = useState(false);
+    const [value, setValue] = useState(row.note ?? '');
+    // Bare-Enter commits (single-line note); Escape cancels. Enter goes through
+    // the shared useEnterSubmit hook rather than a hand-rolled key handler.
+    const commit = () => {
+        setEditing(false);
+        const next = value.trim().length ? value.trim() : null;
+        if ((row.note ?? null) !== next) onSave(row.id, next);
+    };
+    const { handleKeyDown } = useEnterSubmit({ modifier: 'always', onSubmit: () => commit() });
+
+    if (!canWrite) {
+        return row.note ? (
+            <span className="block max-w-xs truncate text-content-default">
+                {row.note}
+            </span>
+        ) : (
+            <span className="text-content-muted">—</span>
+        );
+    }
+
+    if (editing) {
+        return (
+            <Input
+                autoFocus
+                size="sm"
+                value={value}
+                placeholder={placeholder}
+                aria-label={editLabel}
+                onChange={(e) => setValue(e.target.value)}
+                onBlur={commit}
+                onKeyDown={(e) => {
+                    handleKeyDown(e);
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        setValue(row.note ?? '');
+                        setEditing(false);
+                    }
+                }}
+            />
+        );
+    }
+
+    return (
+        <button
+            type="button"
+            aria-label={editLabel}
+            onClick={() => {
+                setValue(row.note ?? '');
+                setEditing(true);
+            }}
+            className="group inline-flex max-w-xs items-center gap-tight text-left text-content-default hover:text-content-emphasis"
+        >
+            {row.note ? (
+                <span className="truncate">{row.note}</span>
+            ) : (
+                <span className="text-content-muted">{emptyLabel}</span>
+            )}
+            <PenWriting className="h-3 w-3 shrink-0 text-content-subtle opacity-0 transition-opacity group-hover:opacity-100" />
+        </button>
+    );
+}
+
+/**
+ * Manual "Link a CVE to an asset" modal. Fetches the tenant's assets lazily
+ * (only while mounted), then POSTs { assetId, cveId, note } to the
+ * /vulnerabilities create endpoint, surfacing the server error message on
+ * an unknown-CVE / unknown-asset failure.
+ */
+function LinkCveModal({
+    apiUrl,
+    onClose,
+    onSuccess,
+}: {
+    apiUrl: (path: string) => string;
+    onClose: () => void;
+    onSuccess: () => void;
+}) {
+    const t = useTranslations('vulnerabilities');
+    const tc = useTranslations('common');
+    const toast = useToast();
+    const { data: assets, isLoading } = useTenantSWR<AssetOption[]>('/assets');
+    const [assetId, setAssetId] = useState<string | null>(null);
+    const [cveId, setCveId] = useState('');
+    const [note, setNote] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [submitting, setSubmitting] = useState(false);
+
+    const assetOptions = useMemo<ComboboxOption[]>(
+        () =>
+            (assets ?? []).map((a) => ({
+                value: a.id,
+                label: a.key ? `${a.key} · ${a.name}` : a.name,
+            })),
+        [assets],
+    );
+
+    const valid = Boolean(assetId) && cveId.trim().length > 0;
+
+    const handleSubmit = async () => {
+        if (!valid || !assetId) return;
+        setSubmitting(true);
+        setError(null);
+        try {
+            const res = await fetch(apiUrl('/vulnerabilities'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    assetId,
+                    cveId: cveId.trim(),
+                    note: note.trim().length ? note.trim() : undefined,
+                }),
+            });
+            if (!res.ok) {
+                const body = (await res.json().catch(() => null)) as
+                    | { error?: { message?: string } }
+                    | null;
+                throw new Error(body?.error?.message || t('linkCveFailed'));
+            }
+            toast.success(t('linkCveSuccess'));
+            onSuccess();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : t('linkCveFailed'));
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <Modal showModal setShowModal={(v) => !v && onClose()} size="sm">
+            <Modal.Header title={t('linkCveHeader')} description={t('linkCveDescription')} />
+            <Modal.Body>
+                <div className="space-y-default">
+                    <FormField label={t('linkCveAsset')} required>
+                        <Combobox
+                            id="vuln-link-asset"
+                            options={assetOptions}
+                            selected={assetOptions.find((o) => o.value === assetId) ?? null}
+                            setSelected={(opt) => setAssetId(opt ? String(opt.value) : null)}
+                            placeholder={isLoading ? tc('loading') : t('linkCveAssetPlaceholder')}
+                            disabled={isLoading}
+                        />
+                    </FormField>
+                    <FormField label={t('linkCveId')} required>
+                        <Input
+                            id="vuln-link-cve-id"
+                            value={cveId}
+                            onChange={(e) => setCveId(e.target.value)}
+                            placeholder={t('linkCveIdPlaceholder')}
+                        />
+                    </FormField>
+                    <FormField label={t('linkCveNote')}>
+                        <Input
+                            id="vuln-link-note"
+                            value={note}
+                            onChange={(e) => setNote(e.target.value)}
+                            placeholder={t('linkCveNotePlaceholder')}
+                        />
+                    </FormField>
+                    {error ? (
+                        <p className="text-sm text-content-error">{error}</p>
+                    ) : null}
+                </div>
+            </Modal.Body>
+            <Modal.Actions>
+                <Button variant="secondary" size="sm" onClick={onClose}>
+                    {tc('cancel')}
+                </Button>
+                <Button
+                    variant="primary"
+                    size="sm"
+                    disabled={!valid || submitting}
+                    onClick={() => void handleSubmit()}
+                >
+                    {submitting ? t('linkCveSubmitting') : t('linkCveSubmit')}
+                </Button>
+            </Modal.Actions>
+        </Modal>
     );
 }

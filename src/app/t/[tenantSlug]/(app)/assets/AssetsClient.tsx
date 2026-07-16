@@ -50,6 +50,15 @@ const CRITICALITY_VARIANT: Record<string, StatusBadgeVariant> = {
     success: 'success',
 };
 
+/** CVSS severity → StatusBadge variant (for the per-asset open-vuln badge). */
+function severityVariant(sev: string | null | undefined): StatusBadgeVariant {
+    const s = (sev ?? '').toUpperCase();
+    if (s === 'CRITICAL' || s === 'HIGH') return 'error';
+    if (s === 'MEDIUM') return 'warning';
+    if (s === 'LOW') return 'success';
+    return 'neutral';
+}
+
 // listAssets → AssetRepository.list (full Asset model + _count.controls +
 // usecase-added taskTotal/taskDone). Cells/KPI callbacks stay untyped
 // (file-level disable; the colon-any category) — this types the column factory.
@@ -72,6 +81,9 @@ interface AssetListRow {
     _count: { controls: number };
     taskTotal: number;
     taskDone: number;
+    /** Per-asset OPEN-vulnerability rollup (batched by listAssets). */
+    openVulnCount: number;
+    maxVulnSeverity: string | null;
 }
 
 interface AssetsClientProps {
@@ -493,6 +505,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             { id: 'classification', label: tx('colVis.classification'), defaultVisible: false },
             { id: 'owner', label: tx('colVis.owner') },
             { id: 'controls', label: tx('colVis.controls') },
+            { id: 'vulnerabilities', label: tx('colVis.vulnerabilities') },
             { id: 'tasks', label: tx('colVis.tasks') },
         ],
         [tx],
@@ -623,6 +636,29 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             cell: ({ getValue }) => <span className="text-xs">{getValue()}</span>,
         },
         {
+            // Per-asset OPEN-vulnerability signal — count tinted by the top
+            // severity, deep-linking to the filtered global Vulnerabilities view.
+            id: 'vulnerabilities',
+            header: tx('colHeaders.vulnerabilities'),
+            accessorFn: (a) => a.openVulnCount ?? 0,
+            cell: ({ row }) => {
+                const a = row.original;
+                if (!a.openVulnCount) return <span className="text-content-muted text-xs">—</span>;
+                return (
+                    <Link
+                        href={tenantHref(`/vulnerabilities?assetId=${a.id}`)}
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label={tx('openVulnsAria', { count: a.openVulnCount })}
+                        className="inline-flex"
+                    >
+                        <StatusBadge variant={severityVariant(a.maxVulnSeverity)} size="sm">
+                            {a.openVulnCount}
+                        </StatusBadge>
+                    </Link>
+                );
+            },
+        },
+        {
             // B7 — unified linked-task count (done/total), matching Controls.
             id: 'tasks',
             header: tx('colHeaders.tasks'),
@@ -730,6 +766,9 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                         <>
                             <Tooltip content={tx('coverageTooltip')}>
                                 <Link href={tenantHref('/coverage')} aria-label={tx('coverageTooltip')} className={buttonVariants({ variant: 'secondary', size: 'icon' })}><AppIcon name="shield" size={16} /></Link>
+                            </Tooltip>
+                            <Tooltip content={tx('viewVulnerabilities')}>
+                                <Link href={tenantHref('/vulnerabilities')} aria-label={tx('viewVulnerabilities')} className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="assets-vulnerabilities-link"><AppIcon name="bug" size={16} /></Link>
                             </Tooltip>
                             {permissions.canWrite && (
                                 <Tooltip content={tx('importAssets')}>

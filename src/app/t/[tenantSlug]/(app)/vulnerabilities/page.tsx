@@ -10,12 +10,18 @@ export const dynamic = 'force-dynamic';
  */
 export default async function VulnerabilitiesPage({
     params,
+    searchParams,
 }: {
     params: Promise<{ tenantSlug: string }>;
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
     const resolved = await params;
+    const sp = await searchParams;
     const ctx = await getTenantCtx(resolved);
-    const rows = (await listVulnerabilities(ctx, { take: 500 })) as unknown as VulnRow[];
+    // Deep-link support: the per-asset vuln badge on the assets list links here
+    // with ?assetId=<id>, scoping the global view to that asset's vulnerabilities.
+    const assetId = typeof sp.assetId === 'string' && sp.assetId ? sp.assetId : undefined;
+    const rows = (await listVulnerabilities(ctx, { assetId, take: 500 })) as unknown as VulnRow[];
 
     return (
         <VulnerabilitiesClient

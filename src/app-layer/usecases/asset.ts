@@ -16,18 +16,39 @@ export async function listAssets(ctx: RequestContext, filters?: AssetFilters) {
     assertCanRead(ctx);
     return runInTenantContext(ctx, async (db) => {
         const rows = await AssetRepository.list(db, ctx, filters);
+        const ids = rows.map((r: { id: string }) => r.id);
         // B7 — attach unified linked-task counts (TaskLink ASSET) so the
         // list page can show a Tasks column, matching Controls.
-        const counts = await WorkItemRepository.countLinkedToEntities(
-            db,
-            ctx,
-            'ASSET' as TaskLinkEntityType,
-            rows.map((r: { id: string }) => r.id),
-        );
+        // …and a per-asset OPEN-vulnerability rollup (count + top severity) so
+        // the list surfaces a vuln signal that deep-links to the filtered global
+        // Vulnerabilities view. Both are batched over the ≤100 listed ids — no
+        // per-row reads.
+        const [counts, vulnGroups, topVulns] = await Promise.all([
+            WorkItemRepository.countLinkedToEntities(db, ctx, 'ASSET' as TaskLinkEntityType, ids),
+            ids.length
+                ? db.assetVulnerability.groupBy({
+                      by: ['assetId'],
+                      where: { tenantId: ctx.tenantId, assetId: { in: ids }, status: 'OPEN' },
+                      _count: { _all: true },
+                  })
+                : Promise.resolve([] as { assetId: string; _count: { _all: number } }[]),
+            ids.length
+                ? db.assetVulnerability.findMany({ // guardrail-allow: unbounded — bounded by assetId in-list; `distinct` yields ≤1 row per listed asset (≤100).
+                      where: { tenantId: ctx.tenantId, assetId: { in: ids }, status: 'OPEN' },
+                      distinct: ['assetId'],
+                      orderBy: [{ assetId: 'asc' }, { cve: { cvssScore: 'desc' } }],
+                      select: { assetId: true, cve: { select: { cvssSeverity: true } } },
+                  })
+                : Promise.resolve([] as { assetId: string; cve: { cvssSeverity: string | null } | null }[]),
+        ]);
+        const openVulnByAsset = new Map(vulnGroups.map((g) => [g.assetId, g._count._all]));
+        const topSevByAsset = new Map(topVulns.map((v) => [v.assetId, v.cve?.cvssSeverity ?? null]));
         return rows.map((r) => ({
             ...r,
             taskTotal: counts.get(r.id)?.total ?? 0,
             taskDone: counts.get(r.id)?.done ?? 0,
+            openVulnCount: openVulnByAsset.get(r.id) ?? 0,
+            maxVulnSeverity: topSevByAsset.get(r.id) ?? null,
         }));
     });
 }

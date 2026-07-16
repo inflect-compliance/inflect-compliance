@@ -30,7 +30,14 @@ const mockDb = {
     // 360° Overview roll-ups (getAsset) — default to zero aggregates.
     assetRiskLink: { count: jest.fn().mockResolvedValue(0) },
     controlAsset: { count: jest.fn().mockResolvedValue(0) },
-    assetVulnerability: { count: jest.fn().mockResolvedValue(0), findFirst: jest.fn().mockResolvedValue(null) },
+    // count/findFirst back getAsset's per-asset rollup; groupBy/findMany back
+    // listAssets' batched per-asset OPEN-vuln rollup (count + top severity).
+    assetVulnerability: {
+        count: jest.fn().mockResolvedValue(0),
+        findFirst: jest.fn().mockResolvedValue(null),
+        groupBy: jest.fn().mockResolvedValue([]),
+        findMany: jest.fn().mockResolvedValue([]),
+    },
     // Asset activity feed (getAssetActivity).
     auditLog: { findMany: jest.fn().mockResolvedValue([]) },
 } as any;
@@ -116,8 +123,9 @@ describe('asset reads', () => {
     it('listAssets delegates under read gate', async () => {
         (AssetRepository.list as jest.Mock).mockResolvedValue([{ id: 'a-1' }]);
         const rows = await listAssets(readerCtx);
-        // B7 — listAssets folds in linked-task counts (0/0 with no links).
-        expect(rows).toEqual([{ id: 'a-1', taskTotal: 0, taskDone: 0 }]);
+        // B7 — listAssets folds in linked-task counts (0/0 with no links) and
+        // the batched per-asset OPEN-vuln rollup (0 / null with no vulns).
+        expect(rows).toEqual([{ id: 'a-1', taskTotal: 0, taskDone: 0, openVulnCount: 0, maxVulnSeverity: null }]);
     });
 
     it('listAssetsPaginated delegates', async () => {

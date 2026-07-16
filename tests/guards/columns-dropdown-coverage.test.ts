@@ -41,6 +41,8 @@ const SCAN_DIR = 'src/app/t/[tenantSlug]/(app)';
 const EXEMPTIONS: Record<string, string> = {
     'admin/vendor-assessment-reviews/VendorAssessmentReviewsQueueClient.tsx':
         '(b) results view — cross-vendor review queue with a fixed derived column set (vendor, status, score, risk, submitted); per-column hide/show not meaningful.',
+    'security-testing/SecurityTestingClient.tsx':
+        '(b) multi-table — the primary findings table is an EntityListPage; the secondary scan-history (ScannerRun) table is a read-only fixed-column log (outcome, source, repo, ran, via, findings); per-column hide/show not meaningful.',
     'audits/nis2-gap/Nis2GapLifecycleClient.tsx':
         '(b) results view — run-history + prioritized-gap sub-tables with fixed derived columns; per-column hide/show not meaningful.',
     'frameworks/[frameworkKey]/readiness/Nis2ReadinessClient.tsx':

@@ -1095,10 +1095,21 @@ function RisksPageInner({
                                     <AppIcon name="dashboard" size={16} />
                                 </Button>
                             </Tooltip>
-                            {/* Vulnerabilities is now a first-class
-                                "Security" sidebar destination (see
-                                SidebarNav) — the unlabeled shield icon
-                                that used to link here was retired. */}
+                            {/* In-page entry point to the global Vulnerabilities
+                                view. It is intentionally NOT a sidebar
+                                destination — discoverability comes from inbound
+                                links like this one (the assets list + asset
+                                detail carry the same affordance). */}
+                            <Tooltip content={tx('viewVulnerabilities')}>
+                                <Link
+                                    href={tenantHref('/vulnerabilities')}
+                                    id="risks-view-vulnerabilities"
+                                    aria-label={tx('viewVulnerabilities')}
+                                    className={buttonVariants({ variant: 'secondary', size: 'icon' })}
+                                >
+                                    <AppIcon name="shield" size={16} />
+                                </Link>
+                            </Tooltip>
                             {/* P3 — labeled "Views ▾" menu (was tooltip-only icon
                                 buttons). The analytical views are grouped under
                                 "Analytics"; AI-Systems is re-shelved into its own
