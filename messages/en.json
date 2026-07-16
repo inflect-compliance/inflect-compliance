@@ -3330,7 +3330,7 @@
     "mappedVsImplementedHint": "{mapped} of {total} requirements have a control mapped; {implemented} are implemented. Mapped % is mapping density, not completion.",
     "coverageBySection": "Coverage by section",
     "gapAnalysisHeading": "Gap analysis — {count} unmapped requirements",
-    "noGaps": "Every requirement has at least one mapped control.",
+    "noGaps": "Every requirement has at least one mapped control",
     "missingEvidenceHeading": "Controls missing evidence — {count}",
     "overdueTasksHeading": "Overdue tasks — {count}"
   },

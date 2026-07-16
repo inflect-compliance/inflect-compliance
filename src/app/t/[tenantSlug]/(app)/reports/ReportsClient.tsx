@@ -164,7 +164,7 @@ export function ReportsClient({
                     >
                         {tx('frameworkLabel')}
                     </label>
-                    <div className="w-64" id="reports-framework-select">
+                    <div className="w-full sm:w-64" id="reports-framework-select">
                         <Combobox
                             options={frameworkOptions}
                             selected={selectedOption}
