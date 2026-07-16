@@ -7,20 +7,21 @@
  * points apart from steps, can't anchor governance context on
  * the map, can't drop annotations.
  *
- * This file is the single source of truth for the seven canonical
- * node kinds, the rationale for each, and the visual + interaction
- * metadata that the palette + the typed-node renderer consume.
+ * This file is the single source of truth for the canonical node
+ * kinds (8 document kinds + 4 automation kinds — R30 added `group`
+ * and VR-1 added the automation set), the rationale for each, and
+ * the visual + interaction metadata that the palette + the
+ * typed-node renderer consume.
  *
- * The seven kinds + their justifications:
+ * The document kinds + their justifications:
  *
  *   1. `processStep` — an operational activity in the flow.
  *      The atom. Every other kind exists to give a step
  *      context.
- *   2. `decision` — a branch point. Diamond shape is the
- *      universal symbol for "the flow forks here"; without
- *      this, branches collapse into ambiguous step-to-step
- *      lines and the reader has to infer where the choice
- *      lives.
+ *   2. `decision` — a branch point. R31 retired the diamond
+ *      shape; a decision now renders as a rect with a "?" corner
+ *      sticker (the fork signal moved into the sticker slot so
+ *      the canvas keeps a two-shape vocabulary).
  *   3. `control` — a governance/control element ATTACHED to
  *      a step. PR-D makes controls primarily edge-mounted
  *      (control sits on the connection between two steps),
@@ -345,9 +346,10 @@ export const NODE_TAXONOMY: Record<ProcessNodeKind, NodeTypeMeta> = {
  * steps), not standalone nodes hanging in space. The taxonomy
  * entry stays in `NODE_TAXONOMY` so legacy map data carrying
  * `nodeType: 'control'` still rehydrates correctly, but the
- * palette never offers it as a primary affordance. The "Add
- * control" button on the edge selection is the canonical entry
- * point.
+ * palette never offers it as a primary affordance. Controls are
+ * attached to an edge via the inspector's Control picker (PR-D
+ * retired the ephemeral on-edge "Add control" stamp), which
+ * persists them to `data.controls`.
  *
  * Order otherwise: flow primitives (step + decision) first; then
  * the three context kinds (risk + asset + external); then the

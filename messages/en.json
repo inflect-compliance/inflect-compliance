@@ -5331,7 +5331,7 @@
     "tabRules": "Rules",
     "tabAnalytics": "Analytics",
     "tabMonitor": "Monitor",
-    "governanceLink": "Governance graph →",
+    "governanceLink": "Automation graph →",
     "mobileHint": "Process maps are edited on a larger screen. Open this page on a desktop to design the canvas.",
     "mobileEmpty": "No process maps yet.",
     "steps": "{count, plural, one {# step} other {# steps}}",
@@ -5383,7 +5383,7 @@
       "crumbDashboard": "Dashboard",
       "crumbProcesses": "Processes",
       "crumbGraph": "Governance graph",
-      "heading": "Governance graph",
+      "heading": "Automation governance graph",
       "description": "Every automation map, sized by rule volume and ringed by 30-day execution health, with the sub-flow calls between them.",
       "building": "Building the topology…",
       "empty": "No process maps yet — create an automation workflow to populate the graph.",
@@ -7331,9 +7331,7 @@
       "autoChain": "Chain",
       "autoSlaBreach": "SLA breach",
       "autoOnTime": "On time",
-      "defaultControlLabel": "Control",
-      "variantTooltip": "{description} — click to change",
-      "addControl": "Add control"
+      "variantTooltip": "{description} — click to change"
     },
     "inspector": {
       "ruleTitle": "Rule",

@@ -3,25 +3,22 @@
 /**
  * Roadmap-26 PR-B / Roadmap-27 PR-B — ProcessTypedNode.
  *
- * One xyflow custom node component covering all seven taxonomy
- * kinds (see `node-taxonomy.ts`). Per-kind chrome (icon, accent
- * border, shape) is driven by `data.kind`; per-instance footprint
- * is driven by `data.size`.
+ * One xyflow custom node component covering every taxonomy kind
+ * (see `node-taxonomy.ts` — 8 document kinds + 4 automation kinds).
+ * Per-kind chrome (icon, accent border, surface tone) is driven by
+ * `data.kind`; per-instance footprint is driven by `data.size`.
  *
- * R27-PR-B — the shape vocabulary:
- *   • rect    — process step, control, risk, external. The
- *               workhorse: a rounded card.
- *   • diamond — decision. A REAL diamond (R25 shipped a fake one —
- *               a small rounded rect). Rendered as a 45°-rotated
- *               square so the border, selected ring and elevation
- *               shadow all rotate WITH it and stay diamond-shaped;
- *               the label sits in a separate upright layer.
+ * The shape vocabulary (R31 retired the diamond — decision now
+ * renders as a rect with a "?" corner sticker):
+ *   • rect    — the workhorse card for every flow / context kind
+ *               (step, decision, control, risk, asset, external,
+ *               automation kinds). A rounded card.
  *   • note    — annotation. A flat sticker.
  *
- * Three shapes, seven kinds — the accent + icon do the remaining
- * per-kind work. Three shapes is the curated ceiling: more would
- * make the canvas read like a sticker sheet (see
- * docs/processes-canvas-semantics.md).
+ * Two shapes across all kinds — the accent + icon (+ corner
+ * sticker for decision / external) do the per-kind work. Keeping
+ * the shape count low stops the canvas reading like a sticker
+ * sheet.
  *
  * Size variants (`data.size`: sm | md | lg, default md) scale the
  * footprint so an author can weight a node by importance without a
