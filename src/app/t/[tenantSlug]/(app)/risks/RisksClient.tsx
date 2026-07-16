@@ -24,7 +24,7 @@ import { TruncationBanner } from '@/components/ui/TruncationBanner';
 // import — modal is small, the page bundle cost is negligible, and the
 // E2E suite becomes deterministic.
 import { NewRiskModal } from './NewRiskModal';
-import { canonicalTreatmentLabel } from './_shared/risk-options';
+import { canonicalTreatmentLabel, riskStatusLabel } from './_shared/risk-options';
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
@@ -872,7 +872,7 @@ function RisksPageInner({
                 const status = row.original.status ?? 'OPEN';
                 return (
                     <StatusBadge variant={STATUS_CLASS[status] ?? 'neutral'} size="sm" data-testid={`risk-status-${row.original.id}`}>
-                        {status}
+                        {riskStatusLabel(tx, status)}
                     </StatusBadge>
                 );
             },

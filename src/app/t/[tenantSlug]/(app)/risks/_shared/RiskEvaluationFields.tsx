@@ -6,24 +6,25 @@
  * EditRiskModal (detail) so the evaluation UI is identical on both
  * surfaces. `idPrefix` keeps the existing element ids stable
  * (`risk-*` for create, `risk-edit-*` for edit).
+ *
+ * Config-aware (PR-J): the slider ranges, the severity bands, and the
+ * per-level labels all come from the tenant's `RiskMatrixConfig` — the
+ * same source `RiskAssessmentPanel` reads. A tenant on a 6×6 (or
+ * clinical / supply-chain) matrix can enter their full range and sees
+ * their OWN band names here, exactly as they do on the detail page. The
+ * config is fetched via `useRiskMatrixConfig` unless a caller passes one
+ * in (tests / a parent that already holds it).
  */
 import { useTranslations } from 'next-intl';
 import { InfoTooltip } from '@/components/ui/tooltip';
+import { useRiskMatrixConfig } from '@/lib/hooks/use-risk-matrix-config';
+import { resolveBandTone, type RiskSeverityTone } from '@/lib/risk-matrix/scoring';
+import type { RiskMatrixConfigShape } from '@/lib/risk-matrix/types';
 
-export function getRiskBadge(score: number): {
-    label: string;
-    tone: 'success' | 'warning' | 'danger' | 'critical';
-} {
-    if (score <= 5) return { label: 'Low', tone: 'success' };
-    if (score <= 12) return { label: 'Medium', tone: 'warning' };
-    if (score <= 18) return { label: 'High', tone: 'danger' };
-    return { label: 'Critical', tone: 'critical' };
-}
-
-const TONE_CLASSES: Record<ReturnType<typeof getRiskBadge>['tone'], string> = {
+const TONE_CLASSES: Record<RiskSeverityTone, string> = {
+    default: 'border-border-subtle bg-bg-subtle text-content-default',
     success: 'border-border-success bg-bg-success text-content-success',
-    warning: 'border-border-warning bg-bg-warning text-content-warning',
-    danger: 'border-border-warning bg-bg-warning text-content-warning',
+    attention: 'border-border-warning bg-bg-warning text-content-warning',
     critical: 'border-border-error bg-bg-error text-content-error',
 };
 
@@ -34,6 +35,8 @@ export interface RiskEvaluationFieldsProps {
     onImpact: (v: number) => void;
     /** Element-id prefix — 'risk' (create) or 'risk-edit' (edit). */
     idPrefix?: string;
+    /** Pre-resolved config — skips the fetch (tests / parent already holds it). */
+    config?: RiskMatrixConfigShape;
 }
 
 export function RiskEvaluationFields({
@@ -42,16 +45,19 @@ export function RiskEvaluationFields({
     onLikelihood,
     onImpact,
     idPrefix = 'risk',
+    config: configProp,
 }: RiskEvaluationFieldsProps) {
     const t = useTranslations('risks');
+    // Fetch only when a config wasn't handed in.
+    const { config: fetched } = useRiskMatrixConfig(!configProp);
+    const config = configProp ?? fetched;
+
+    const likelihoodLabel = config.levelLabels?.likelihood?.[likelihood - 1];
+    const impactLabel = config.levelLabels?.impact?.[impact - 1];
+
     const score = likelihood * impact;
-    const badge = getRiskBadge(score);
-    const bandLabel: Record<string, string> = {
-        Low: t('eval.bandLow'),
-        Medium: t('eval.bandMedium'),
-        High: t('eval.bandHigh'),
-        Critical: t('eval.bandCritical'),
-    };
+    const { band, tone } = resolveBandTone(score, config.bands);
+
     return (
         <div className="space-y-default rounded-lg border border-border-subtle bg-bg-subtle p-4">
             <p className="text-sm font-medium text-content-emphasis">
@@ -64,10 +70,13 @@ export function RiskEvaluationFields({
                             className="text-sm text-content-default"
                             htmlFor={`${idPrefix}-likelihood`}
                         >
-                            {t('eval.likelihood')} ·{' '}
+                            {config.axisLikelihoodLabel || t('eval.likelihood')} ·{' '}
                             <span className="font-semibold text-content-emphasis">
                                 {likelihood}
                             </span>
+                            {likelihoodLabel && (
+                                <span className="text-content-muted"> — {likelihoodLabel}</span>
+                            )}
                         </label>
                         <InfoTooltip
                             aria-label={t('eval.aboutLikelihood')}
@@ -79,7 +88,7 @@ export function RiskEvaluationFields({
                         id={`${idPrefix}-likelihood`}
                         type="range"
                         min={1}
-                        max={5}
+                        max={config.likelihoodLevels}
                         value={likelihood}
                         onChange={(e) => onLikelihood(Number(e.target.value))}
                         className="w-full accent-brand-emphasis"
@@ -91,10 +100,13 @@ export function RiskEvaluationFields({
                             className="text-sm text-content-default"
                             htmlFor={`${idPrefix}-impact`}
                         >
-                            {t('eval.impact')} ·{' '}
+                            {config.axisImpactLabel || t('eval.impact')} ·{' '}
                             <span className="font-semibold text-content-emphasis">
                                 {impact}
                             </span>
+                            {impactLabel && (
+                                <span className="text-content-muted"> — {impactLabel}</span>
+                            )}
                         </label>
                         <InfoTooltip
                             aria-label={t('eval.aboutImpact')}
@@ -106,21 +118,22 @@ export function RiskEvaluationFields({
                         id={`${idPrefix}-impact`}
                         type="range"
                         min={1}
-                        max={5}
+                        max={config.impactLevels}
                         value={impact}
                         onChange={(e) => onImpact(Number(e.target.value))}
                         className="w-full accent-brand-emphasis"
                     />
                 </div>
                 <div
-                    className={`shrink-0 rounded-md border px-3 py-2 text-center ${TONE_CLASSES[badge.tone]}`}
+                    className={`shrink-0 rounded-md border px-3 py-2 text-center ${TONE_CLASSES[tone]}`}
                     data-testid={`${idPrefix}-score-preview`}
+                    data-band={band.name}
                 >
                     <p className="text-xs uppercase tracking-wider opacity-75">
                         {t('score')}
                     </p>
                     <p className="text-xl font-bold">{score}</p>
-                    <p className="text-[11px] font-medium">{bandLabel[badge.label] ?? badge.label}</p>
+                    <p className="text-[11px] font-medium">{band.name}</p>
                 </div>
             </div>
         </div>

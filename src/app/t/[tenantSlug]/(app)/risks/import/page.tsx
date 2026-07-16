@@ -9,6 +9,7 @@ import { DataTable, createColumns } from '@/components/ui/table';
 import { Heading } from '@/components/ui/typography';
 import { Card, cardVariants } from '@/components/ui/card';
 import { BackAffordance } from '@/components/nav/BackAffordance';
+import { useRiskMatrixConfig } from '@/lib/hooks/use-risk-matrix-config';
 import { cn } from '@/lib/cn';
 
 type ParsedRow = {
@@ -26,6 +27,9 @@ export default function RiskImportPage() {
     const tenant = useTenantContext();
     const canWrite = tenant.permissions.canWrite;
     const t = useTranslations('riskManager');
+    // Clamp imported L/I to the tenant's configured scale, not a hardcoded
+    // 5 — a 6-level tenant's "6" is valid and must not be silently dropped.
+    const { config: matrixConfig } = useRiskMatrixConfig();
 
     const fileRef = useRef<HTMLInputElement>(null);
     const [rows, setRows] = useState<ParsedRow[]>([]);
@@ -52,13 +56,13 @@ export default function RiskImportPage() {
             const lIdx = headers.indexOf('likelihood');
             if (lIdx >= 0 && cols[lIdx]) {
                 const n = parseInt(cols[lIdx]);
-                if (n >= 1 && n <= 5) row.likelihood = n;
+                if (n >= 1 && n <= matrixConfig.likelihoodLevels) row.likelihood = n;
             }
 
             const iIdx = headers.indexOf('impact');
             if (iIdx >= 0 && cols[iIdx]) {
                 const n = parseInt(cols[iIdx]);
-                if (n >= 1 && n <= 5) row.impact = n;
+                if (n >= 1 && n <= matrixConfig.impactLevels) row.impact = n;
             }
 
             const oIdx = headers.indexOf('owner');

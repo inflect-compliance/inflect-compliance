@@ -12,6 +12,8 @@ import { Heading, textLinkVariants } from '@/components/ui/typography';
 import { Card, cardVariants } from '@/components/ui/card';
 import { KPIStat } from '@/components/ui/metric';
 import { getStatusTone } from '@/lib/design/status-tone';
+import { useRiskMatrixConfig } from '@/lib/hooks/use-risk-matrix-config';
+import { resolveBandTone, type RiskSeverityTone } from '@/lib/risk-matrix/scoring';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { cn } from '@/lib/cn';
 
@@ -63,6 +65,16 @@ function pctTextClass(pct: number): string {
     return getStatusTone(pct, 'pct-0-100').content;
 }
 
+// Risk-score severity → text-content class. The tone itself comes from
+// the tenant's matrix bands (resolveBandTone), so the unmapped-risks
+// mini-table colours a score the same way the register does.
+const RISK_TONE_TEXT_CLASS: Record<RiskSeverityTone, string> = {
+    default: 'text-content-muted',
+    success: 'text-content-success',
+    attention: 'text-content-warning',
+    critical: 'text-content-error',
+};
+
 function statusBadge(status: string): StatusBadgeVariant {
     const colors: Record<string, StatusBadgeVariant> = {
         OPEN: 'warning',
@@ -88,6 +100,7 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
     const t = useTranslations('coverage');
     const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
     const router = useRouter();
+    const { config: matrixConfig } = useRiskMatrixConfig();
 
     // ── Column definitions ────────────────────────────────────────
 
@@ -104,10 +117,9 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
             header: t('colScore'),
             cell: ({ getValue }) => {
                 const score = getValue() as number;
+                const tone = resolveBandTone(score, matrixConfig.bands).tone;
                 return (
-                    <span className={`text-sm font-semibold tabular-nums ${
-                        score >= 15 ? 'text-content-error' : score >= 9 ? 'text-content-warning' : 'text-content-success'
-                    }`}>
+                    <span className={`text-sm font-semibold tabular-nums ${RISK_TONE_TEXT_CLASS[tone]}`}>
                         {score}
                     </span>
                 );
@@ -122,7 +134,7 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
                 </StatusBadge>
             ),
         },
-    ]), [t]);
+    ]), [t, matrixConfig]);
 
     const uncoveredAssetCols = useMemo(() => createColumns<UncoveredAssetRow>([
         {

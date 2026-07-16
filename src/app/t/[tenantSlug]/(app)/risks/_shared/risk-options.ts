@@ -34,6 +34,49 @@ export function buildRiskTreatmentOptions(t: (key: string) => string): ComboboxO
 }
 
 /**
+ * The RiskStatus enum members, in workflow order. Single-sourced here
+ * so the detail status combobox, the list badge, and the filter all
+ * offer the same set.
+ */
+export const RISK_STATUS_VALUES = [
+    'OPEN',
+    'MITIGATING',
+    'MITIGATED',
+    'ACCEPTED',
+    'CLOSED',
+] as const;
+
+export type RiskStatusValue = (typeof RISK_STATUS_VALUES)[number];
+
+// RiskStatus enum → the `risks.bulkStatus.*` i18n key. The filter already
+// localizes status this way; the detail combobox + list badge now reuse it
+// so OPEN/MITIGATING/… never render raw again.
+const RISK_STATUS_LABEL_KEYS: Record<RiskStatusValue, string> = {
+    OPEN: 'bulkStatus.open',
+    MITIGATING: 'bulkStatus.mitigating',
+    MITIGATED: 'bulkStatus.mitigated',
+    ACCEPTED: 'bulkStatus.accepted',
+    CLOSED: 'bulkStatus.closed',
+};
+
+/**
+ * Localized label for a persisted `Risk.status` value. `t =
+ * useTranslations('risks')`. Falls back to the raw value for any
+ * unknown status so the surface never blanks.
+ */
+export function riskStatusLabel(t: (key: string) => string, status: string): string {
+    const key = RISK_STATUS_LABEL_KEYS[status as RiskStatusValue];
+    return key ? t(key) : status;
+}
+
+/** Localized `{ value, label }` options for the status combobox. */
+export function buildRiskStatusOptions(
+    t: (key: string) => string,
+): ComboboxOption[] {
+    return RISK_STATUS_VALUES.map((value) => ({ value, label: riskStatusLabel(t, value) }));
+}
+
+/**
  * Canonical label for a persisted `Risk.treatment` value, for read-only
  * display (Overview, list table). Returns `null` for an unknown/empty
  * value so callers can fall back to their own "untreated" copy.

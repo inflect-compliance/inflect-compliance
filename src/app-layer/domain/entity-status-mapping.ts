@@ -20,6 +20,7 @@
 
 import type { StatusBadgeVariant } from '@/components/ui/status-badge';
 import { TASK_STATUS_BADGE } from '@/lib/task-status-badge';
+import type { RiskSeverityTone } from '@/lib/risk-matrix/scoring';
 
 // ─── Risk status ─────────────────────────────────────────────────────
 
@@ -36,20 +37,21 @@ export const RISK_STATUS_VARIANT: Record<string, StatusBadgeVariant> = {
 
 // ─── Risk score band ─────────────────────────────────────────────────
 
-export interface RiskScoreBand {
-    label: string;
-    variant: StatusBadgeVariant;
-}
-
-/**
- * Map a numeric risk score (0-25 likelihood × impact) to a labelled
- * band. Mirrors the `score-0-25` scale in `@/lib/design/status-tone`.
- */
-export function getRiskScoreBand(score: number): RiskScoreBand {
-    if (score <= 5) return { label: 'Low', variant: 'success' };
-    if (score <= 12) return { label: 'Medium', variant: 'warning' };
-    if (score <= 18) return { label: 'High', variant: 'warning' };
-    return { label: 'Critical', variant: 'error' };
+// The hardcoded ≤5/≤12/≤18 risk-score band ladder was removed (PR-J):
+// it disagreed with the tenant's configured `RiskMatrixConfig` bands, so
+// the detail header chip could label a score differently from the
+// list/assessment/explainer. Every surface now resolves the band via
+// `resolveBandForScore` and the tone via `resolveBandTone` from
+// `@/lib/risk-matrix/scoring`. This helper only maps the config-derived
+// severity tone to a StatusBadge variant so the header chip / KPIStat
+// speak the shared badge vocabulary.
+export function riskSeverityToBadgeVariant(tone: RiskSeverityTone): StatusBadgeVariant {
+    switch (tone) {
+        case 'success': return 'success';
+        case 'attention': return 'warning';
+        case 'critical': return 'error';
+        default: return 'neutral';
+    }
 }
 
 // ─── Control status ──────────────────────────────────────────────────

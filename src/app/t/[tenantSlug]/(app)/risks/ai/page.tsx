@@ -8,6 +8,9 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { RequirePermission } from '@/components/require-permission';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { useRiskMatrixConfig } from '@/lib/hooks/use-risk-matrix-config';
+import { resolveBandForScore, resolveBandTone } from '@/lib/risk-matrix/scoring';
+import { riskSeverityToBadgeVariant } from '@/app-layer/domain/entity-status-mapping';
 import { Heading } from '@/components/ui/typography';
 import { Card, cardVariants } from '@/components/ui/card';
 import { BackAffordance } from '@/components/nav/BackAffordance';
@@ -76,6 +79,7 @@ export default function AIRiskAssessmentPage() {
     const tenantHref = useTenantHref();
     const { permissions } = useTenantContext();
     const tx = useTranslations('risks');
+    const { config: matrixConfig } = useRiskMatrixConfig();
 
     // Phase state
     const [phase, setPhase] = useState<Phase>('form');
@@ -221,12 +225,13 @@ export default function AIRiskAssessmentPage() {
     const cancelEdit = () => { setEditingItem(null); setEditForm({}); };
 
     // ─── Risk Level Badge ───
+    // Config-driven (PR-J): band name + tone come from the tenant matrix,
+    // so an AI-drafted score reads the same band as the register.
     const riskBadge = (l: number, i: number) => {
         const score = l * i;
-        if (score <= 5) return <StatusBadge variant="success">{tx('eval.bandLow')}</StatusBadge>;
-        if (score <= 12) return <StatusBadge variant="warning">{tx('eval.bandMedium')}</StatusBadge>;
-        if (score <= 18) return <StatusBadge variant="error">{tx('eval.bandHigh')}</StatusBadge>;
-        return <StatusBadge variant="error">{tx('eval.bandCritical')}</StatusBadge>;
+        const band = resolveBandForScore(score, matrixConfig.bands);
+        const tone = resolveBandTone(score, matrixConfig.bands).tone;
+        return <StatusBadge variant={riskSeverityToBadgeVariant(tone)}>{band.name}</StatusBadge>;
     };
 
     // Roadmap-2 PR-7 — confidence indicators are tone-mapped pills
