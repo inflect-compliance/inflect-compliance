@@ -30,6 +30,7 @@ import { notFound, badRequest } from '@/lib/errors/types';
 import { bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 import { logEvent } from '../events/audit';
 import { recordScoreEvent } from './risk-score-events';
+import { computeControlEffectivenessMap } from './control-test';
 import {
     combineEffectiveness,
     suggestResidual,
@@ -107,39 +108,22 @@ export async function loadResidualSuggestion(
     const controls = risk.controls.map((l) => l.control);
     const controlIds = controls.map((c) => c.id);
 
-    // MEASURED signal — one grouped query for ALL linked controls
-    // (not per-control; mirrors getControlEffectiveness's window).
-    const measured = new Map<string, { passes: number; total: number }>();
-    if (controlIds.length > 0) {
-        const cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - MEASURED_WINDOW_DAYS);
-        const grouped = await db.controlTestRun.groupBy({
-            by: ['controlId', 'result'],
-            where: {
-                tenantId,
-                controlId: { in: controlIds },
-                status: 'COMPLETED',
-                executedAt: { gte: cutoff },
-            },
-            _count: { _all: true },
-        });
-        for (const g of grouped) {
-            const slot = measured.get(g.controlId) ?? { passes: 0, total: 0 };
-            slot.total += g._count._all;
-            if (g.result === 'PASS') slot.passes += g._count._all;
-            measured.set(g.controlId, slot);
-        }
-    }
+    // MEASURED signal via THE canonical effectiveness function — one grouped
+    // query for ALL linked controls (no per-control N+1). Consolidated: control
+    // health, control ROI, and this residual path now read the same measured
+    // pass rate. MEASURED beats DECLARED; declared falls back to the (now
+    // editable) Control.effectiveness scalar.
+    const effMap = await computeControlEffectivenessMap(db, tenantId, controlIds, MEASURED_WINDOW_DAYS);
 
     const inputs: ControlEffectivenessInput[] = controls.map((c) => {
-        const m = measured.get(c.id);
+        const m = effMap.get(c.id);
         if (m && m.total > 0) {
             return {
                 controlId: c.id,
                 code: c.code,
                 name: c.name,
                 mitigationType: c.mitigationType,
-                effectiveness: Math.round((m.passes / m.total) * 100),
+                effectiveness: m.passRate,
                 source: 'MEASURED' as const,
             };
         }

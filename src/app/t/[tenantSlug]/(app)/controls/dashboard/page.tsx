@@ -18,6 +18,7 @@ import { KPIStat } from '@/components/ui/metric';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SkeletonDashboard } from '@/components/ui/skeleton';
 import { BestValueControls } from '../_components/BestValueControls';
+import { ControlHealthSummary } from '../_components/ControlHealthSummary';
 
 const buildStatusLabels = (t: (k: string) => string): Record<string, string> => ({
     NOT_STARTED: t('statusLabels.NOT_STARTED'), IN_PROGRESS: t('statusLabels.IN_PROGRESS'), IMPLEMENTED: t('statusLabels.IMPLEMENTED'), NEEDS_REVIEW: t('statusLabels.NEEDS_REVIEW'),
@@ -145,6 +146,9 @@ export default function ControlsDashboard() {
                     />
                 </div>
             </div>
+
+            {/* Control health — composite verdict roll-up (client island). */}
+            <ControlHealthSummary />
 
             {/* Status Distribution */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-default">

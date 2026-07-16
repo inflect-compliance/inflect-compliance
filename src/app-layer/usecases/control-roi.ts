@@ -27,8 +27,13 @@ import {
     rankByRoi,
     type ControlRoiVerdict,
 } from '@/lib/control-roi';
+import { computeControlEffectivenessMap } from './control-test';
 
 const BEST_VALUE_HARD_CAP = 25;
+
+/** Where the effectiveness driving ROI came from — measured test history wins,
+ *  else the declared scalar, else nothing. Mirrors the residual suggestion. */
+export type EffectivenessSource = 'MEASURED' | 'DECLARED' | null;
 
 export interface ControlRoiPayload {
     controlId: string;
@@ -36,6 +41,7 @@ export interface ControlRoiPayload {
     name: string;
     annualCost: number | null;
     effectiveness: number | null;
+    effectivenessSource: EffectivenessSource;
     verdict: ControlRoiVerdict;
 }
 
@@ -83,10 +89,24 @@ export async function getControlRoi(
         });
         if (!control) throw notFound('Control not found');
 
+        // MEASURED beats DECLARED — the same reconciliation the residual
+        // suggestion uses. The measured pass rate (THE canonical signal) drives
+        // ROI when there's test history; otherwise the editable declared
+        // Control.effectiveness scalar is the fallback. (Previously ROI read
+        // only the declared scalar, which nothing wrote → always NO_EFFECTIVENESS.)
+        const measured = (await computeControlEffectivenessMap(db, ctx.tenantId, [control.id])).get(control.id);
+        const useMeasured = !!measured && measured.total > 0 && measured.passRate !== null;
+        const effectiveness = useMeasured ? measured!.passRate : control.effectiveness;
+        const effectivenessSource: EffectivenessSource = useMeasured
+            ? 'MEASURED'
+            : control.effectiveness !== null
+              ? 'DECLARED'
+              : null;
+
         const riskAles = control.risks.map((rc) => aleFromRisk(rc.risk));
         const verdict = computeControlRoi({
             annualCost: control.annualCost,
-            effectiveness: control.effectiveness,
+            effectiveness,
             riskAles,
         });
 
@@ -95,7 +115,8 @@ export async function getControlRoi(
             code: control.code,
             name: control.name,
             annualCost: control.annualCost,
-            effectiveness: control.effectiveness,
+            effectiveness,
+            effectivenessSource,
             verdict,
         };
     });
@@ -153,14 +174,23 @@ export async function getBestValueControls(
             take: 500,
         });
 
-        const items = controls.map((c) => ({
-            control: c,
-            verdict: computeControlRoi({
-                annualCost: c.annualCost,
-                effectiveness: c.effectiveness,
-                riskAles: c.risks.map((rc) => aleFromRisk(rc.risk)),
-            }),
-        }));
+        // MEASURED beats DECLARED for every ranked control (one batched
+        // groupBy for the whole set — no N+1), same reconciliation as the
+        // single-control ROI + the residual suggestion.
+        const effMap = await computeControlEffectivenessMap(db, ctx.tenantId, controls.map((c) => c.id));
+
+        const items = controls.map((c) => {
+            const m = effMap.get(c.id);
+            const effectiveness = m && m.total > 0 && m.passRate !== null ? m.passRate : c.effectiveness;
+            return {
+                control: { ...c, effectiveness },
+                verdict: computeControlRoi({
+                    annualCost: c.annualCost,
+                    effectiveness,
+                    riskAles: c.risks.map((rc) => aleFromRisk(rc.risk)),
+                }),
+            };
+        });
 
         return rankByRoi(items, bounded).map(({ control, result }) => ({
             controlId: control.id,

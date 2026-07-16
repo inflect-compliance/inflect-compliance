@@ -23,8 +23,13 @@ import { InlineNotice } from '@/components/ui/inline-notice';
 import { Heading } from '@/components/ui/typography';
 import { formatDate } from '@/lib/format-date';
 import { cn } from '@/lib/cn';
+import {
+    CONTROL_HEALTH_VERDICT_VARIANT,
+    type ControlHealthVerdict,
+} from '@/lib/controls/control-health';
 
 interface ControlHealthDTO {
+    verdict: ControlHealthVerdict;
     status: string;
     applicability: string;
     lastTested: string | null;
@@ -32,7 +37,8 @@ interface ControlHealthDTO {
     latestTestAt: string | null;
     latestCheckStatus: string | null;
     latestCheckAt: string | null;
-    effectiveness: { passRate: number | null; total: number; passes: number; fails: number; windowDays: number };
+    openExceptions: number;
+    effectiveness: { passRate: number | null; total: number; passes: number; fails: number; inconclusive: number; windowDays: number };
     coverage: { requirementCount: number; frameworkCount: number; frameworks: string[] };
 }
 
@@ -85,6 +91,17 @@ export function ControlHealthCard({ controlId }: { controlId: string }) {
             <div className="flex items-center gap-1.5">
                 <Heading level={3}>{t('health.title')}</Heading>
                 <InfoTooltip aria-label={t('health.titleHelp')} content={t('health.titleTooltip')} iconClassName="h-3.5 w-3.5" />
+                {/* Composite verdict — ONE gate over the measured signals,
+                    surfaced prominently so "is this control healthy?" reads
+                    at a glance without assembling the tiles below. */}
+                <StatusBadge
+                    variant={CONTROL_HEALTH_VERDICT_VARIANT[data.verdict]}
+                    tone="solid"
+                    className="ml-auto"
+                    id="control-health-verdict"
+                >
+                    {t(`health.verdict.${data.verdict}` as Parameters<typeof t>[0])}
+                </StatusBadge>
             </div>
             <div className="grid grid-cols-2 gap-default md:grid-cols-3">
                 <Vital label={t('health.status')}>
@@ -138,7 +155,7 @@ export function ControlHealthCard({ controlId }: { controlId: string }) {
                         <span>
                             <span className="font-medium text-content-emphasis">{eff.passRate}%</span>{' '}
                             <span className="text-xs text-content-subtle">
-                                {t('health.effectivenessMeta', { passes: eff.passes, total: eff.total, days: eff.windowDays })}
+                                {t('health.effectivenessMetaFull', { passes: eff.passes, inconclusive: eff.inconclusive, total: eff.total, days: eff.windowDays })}
                             </span>
                         </span>
                     ) : (

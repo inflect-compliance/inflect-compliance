@@ -10,15 +10,27 @@
  * number, but the only path was to read raw rows and compute by
  * eye. `getControlEffectiveness(controlId)` closes that.
  *
- * Locks the three load-bearing pieces:
+ * Effectiveness is now consolidated behind ONE canonical batched
+ * function, `computeControlEffectivenessMap`, which control health,
+ * control ROI, and the residual suggestion all read (each previously
+ * reimplemented or ignored the query). `getControlEffectiveness`
+ * remains the gated single-control convenience wrapper. This ratchet
+ * follows the effectiveness signal to that canonical function so the
+ * honest-null + gate + window + COMPLETED-only invariants still can't
+ * silently regress.
+ *
+ * Locks the load-bearing pieces:
  *
  *   1. The exported `ControlEffectiveness` shape — controlId +
  *      passRate + total + passes + fails + inconclusive +
  *      windowDays.
  *   2. The 90-day default rolling window (matches the audit-
  *      readiness scoring convention).
- *   3. The Prisma `groupBy(['result'])` aggregation shape with
- *      the COMPLETED + executedAt-since-cutoff filters.
+ *   3. The canonical `computeControlEffectivenessMap` is exported and
+ *      uses the Prisma `groupBy(['controlId', 'result'])` aggregation
+ *      shape with the COMPLETED + executedAt-since-cutoff filters.
+ *   4. The honest-null passRate (null on an empty window, never 0%).
+ *   5. The `assertCanReadTests` gate on the single-control wrapper.
  */
 
 import * as fs from "node:fs";
@@ -67,14 +79,36 @@ describe("Audit S9 — control effectiveness scoring (closure lock)", () => {
         });
     });
 
+    describe("Canonical batched function", () => {
+        it("exports computeControlEffectivenessMap as the single source of truth", () => {
+            // Consolidation invariant: control health, ROI, and the
+            // residual suggestion all read THIS function. A refactor
+            // that un-exports it (reverting to per-caller reimplemented
+            // groupBys) trips here.
+            expect(src()).toMatch(
+                /export async function computeControlEffectivenessMap\(/,
+            );
+        });
+
+        it("defaults the window to windowDays = DEFAULT_EFFECTIVENESS_WINDOW_DAYS (90)", () => {
+            // The batched function carries the same 90-day default as
+            // the wrapper — every consolidated caller inherits it.
+            expect(src()).toMatch(
+                /windowDays:\s*number\s*=\s*DEFAULT_EFFECTIVENESS_WINDOW_DAYS/,
+            );
+        });
+    });
+
     describe("Aggregation query", () => {
-        it("uses Prisma groupBy on `result` (not a manual reduce)", () => {
+        it("uses Prisma groupBy on `controlId` + `result` (not a manual reduce)", () => {
             // groupBy pushes the COUNT into SQL — a refactor to
             // findMany + JS reduce would be O(n) over rows that
-            // the DB can aggregate in O(log n).
+            // the DB can aggregate in O(log n). The `controlId` key is
+            // load-bearing: it's what makes the ONE query serve N
+            // controls (no N+1) for health/ROI/residual.
             const s = src();
             expect(s).toMatch(/controlTestRun\.groupBy\(/);
-            expect(s).toMatch(/by:\s*\[['"]result['"]\]/);
+            expect(s).toMatch(/by:\s*\[['"]controlId['"],\s*['"]result['"]\]/);
             expect(s).toMatch(/_count:\s*\{\s*_all:\s*true\s*\}/);
         });
 
@@ -93,15 +127,16 @@ describe("Audit S9 — control effectiveness scoring (closure lock)", () => {
             const s = src();
             // The null case is essential — empty windows must not
             // surface as "0%" (which would read as "all tests
-            // failed", semantically wrong).
+            // failed", semantically wrong). The per-entry reduce keys
+            // off the map value `e`.
             expect(s).toMatch(
-                /total > 0\s*\?\s*Math\.round\(\(passes\s*\/\s*total\)\s*\*\s*100\)\s*:\s*null/,
+                /e\.total > 0\s*\?\s*Math\.round\(\(e\.passes\s*\/\s*e\.total\)\s*\*\s*100\)\s*:\s*null/,
             );
         });
     });
 
     describe("Authorization gate", () => {
-        it("calls assertCanReadTests at the top of the function", () => {
+        it("calls assertCanReadTests at the top of the single-control wrapper", () => {
             // Effectiveness data is sensitive — a refactor that
             // dropped the gate would surface pass rates to any
             // authenticated session.

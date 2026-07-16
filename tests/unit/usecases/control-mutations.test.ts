@@ -56,7 +56,6 @@ import {
     setControlStatus,
     setControlApplicability,
     setControlOwner,
-    markControlTestCompleted,
     deleteControl,
 } from '@/app-layer/usecases/control/mutations';
 import { runInTenantContext } from '@/lib/db-context';
@@ -290,39 +289,9 @@ describe('setControlOwner — user existence validation', () => {
     });
 });
 
-describe('markControlTestCompleted', () => {
-    it('rejects when the control is NOT_APPLICABLE', async () => {
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
-        mockGetById.mockResolvedValueOnce({
-            id: 'c1',
-            tenantId: 'tenant-1',
-            applicability: 'NOT_APPLICABLE',
-            frequency: 'MONTHLY',
-        } as never);
-
-        await expect(
-            markControlTestCompleted(makeRequestContext('EDITOR'), 'c1'),
-        ).rejects.toThrow(/NOT_APPLICABLE/);
-        // Regression: marking NOT_APPLICABLE controls "tested" would
-        // re-introduce them into the audit-readiness scoring (they
-        // would have a recent lastTested) — defeating the whole point
-        // of marking them out-of-scope.
-    });
-
-    it('throws forbidden on global-library controls', async () => {
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
-        mockGetById.mockResolvedValueOnce({
-            id: 'c1',
-            tenantId: null,
-            applicability: 'APPLICABLE',
-            frequency: 'MONTHLY',
-        } as never);
-
-        await expect(
-            markControlTestCompleted(makeRequestContext('EDITOR'), 'c1'),
-        ).rejects.toThrow(/global library/);
-    });
-});
+// (markControlTestCompleted removed — superseded by attestControlTested, which
+// runs on every completed test/check and applies the same NOT_APPLICABLE /
+// global-library guards.)
 
 describe('deleteControl', () => {
     it('rejects EDITOR — delete requires canAdmin (separate from canWrite)', async () => {

@@ -285,7 +285,7 @@ export default function ControlDetailPage() {
 
     // Edit modal state
     const [showEditModal, setShowEditModal] = useState(false);
-    const [editForm, setEditForm] = useState({ name: '', objective: '', successCriteria: '', testingMethodology: '', category: '', frequency: '', owner: '', automationType: '', mitigationType: '', annualCost: '' });
+    const [editForm, setEditForm] = useState({ name: '', objective: '', successCriteria: '', testingMethodology: '', category: '', frequency: '', owner: '', automationType: '', mitigationType: '', annualCost: '', effectiveness: '' });
     const [savingEdit, setSavingEdit] = useState(false);
     const [editError, setEditError] = useState('');
     const [editSuccess, setEditSuccess] = useState(false);
@@ -310,6 +310,10 @@ export default function ControlDetailPage() {
                 control.annualCost === null || control.annualCost === undefined
                     ? ''
                     : String(control.annualCost),
+            effectiveness:
+                control.effectiveness === null || control.effectiveness === undefined
+                    ? ''
+                    : String(control.effectiveness),
         });
         setEditError('');
         setEditSuccess(false);
@@ -353,6 +357,15 @@ export default function ControlDetailPage() {
                             ? null
                             : Number.isFinite(Number(form.annualCost))
                                 ? Number(form.annualCost)
+                                : undefined,
+                    // Declared operating-effectiveness fallback (0–100).
+                    // Empty → null (clears the declared value); measured
+                    // pass rate wins downstream when tests exist.
+                    effectiveness:
+                        form.effectiveness.trim() === ''
+                            ? null
+                            : Number.isFinite(Number(form.effectiveness))
+                                ? Number(form.effectiveness)
                                 : undefined,
                 }),
             });

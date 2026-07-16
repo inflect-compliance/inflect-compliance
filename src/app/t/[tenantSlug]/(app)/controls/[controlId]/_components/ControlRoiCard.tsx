@@ -25,6 +25,13 @@ import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { InlineNotice } from '@/components/ui/inline-notice';
+import { StatusBadge } from '@/components/ui/status-badge';
+
+/** Where the effectiveness driving ROI came from — measured test history
+ *  wins, else the declared scalar, else nothing. Mirrors the server
+ *  `EffectivenessSource` (kept inline so the client bundle never imports
+ *  the usecase). */
+type EffectivenessSource = 'MEASURED' | 'DECLARED' | null;
 
 interface RoiPayload {
     controlId: string;
@@ -32,6 +39,7 @@ interface RoiPayload {
     name: string;
     annualCost: number | null;
     effectiveness: number | null;
+    effectivenessSource: EffectivenessSource;
     verdict: ControlRoiVerdict;
 }
 
@@ -62,15 +70,28 @@ export function ControlRoiCard({ controlId }: { controlId: string }) {
         );
     }
 
-    const { verdict, annualCost, effectiveness } = data;
+    const { verdict, annualCost, effectiveness, effectivenessSource } = data;
 
     return (
         <div
             className={cn(cardVariants(), 'space-y-default')}
             data-testid="control-roi-card"
         >
-            <div>
+            <div className="flex items-center gap-1.5">
                 <span className="text-xs text-content-subtle uppercase">{tx('roi.eyebrow')}</span>
+                {/* Where the effectiveness driving ROI came from — MEASURED
+                    pass rate beats a DECLARED analyst estimate. Shown next to
+                    the value so the number's provenance is never ambiguous. */}
+                {effectivenessSource && (
+                    <StatusBadge
+                        size="sm"
+                        variant={effectivenessSource === 'MEASURED' ? 'success' : 'neutral'}
+                        className="ml-auto"
+                        id="control-roi-effectiveness-source"
+                    >
+                        {tx(`roi.source.${effectivenessSource}` as Parameters<typeof tx>[0])}
+                    </StatusBadge>
+                )}
             </div>
             {verdict.ok ? (
                 <div className="space-y-default">

@@ -62,12 +62,12 @@ describe('Audit S2 — Control Framework & Testing', () => {
             expect(src).toMatch(/DEFAULT_EFFECTIVENESS_WINDOW_DAYS\s*=\s*90/);
         });
 
-        it('groups completed runs by `result` (PASS/FAIL/INCONCLUSIVE)', () => {
-            // Aggregation must be a `groupBy(by: ['result'], ...)`
-            // call so the three result classes are counted in one
-            // round trip.
+        it('groups completed runs by `[controlId, result]` (PASS/FAIL/INCONCLUSIVE)', () => {
+            // Aggregation is the canonical batched `groupBy(by: ['controlId',
+            // 'result'], ...)` — the three result classes counted for N controls
+            // in one round trip (consumed by health, residual, and ROI).
             expect(src).toMatch(/groupBy\(/);
-            expect(src).toMatch(/by:\s*\[['"]result['"]\]/);
+            expect(src).toMatch(/by:\s*\[['"]controlId['"],\s*['"]result['"]\]/);
         });
 
         it('reads only COMPLETED runs and only within the window', () => {

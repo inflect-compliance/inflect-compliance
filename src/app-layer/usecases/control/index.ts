@@ -21,7 +21,6 @@ export {
     setControlStatus,
     setControlApplicability,
     setControlOwner,
-    markControlTestCompleted,
     deleteControl,
     restoreControl,
     purgeControl,
@@ -56,4 +55,10 @@ export {
 export { getControlPageData, type ControlPageDataPayload, type SyncStatusPayload } from './page-data';
 
 // Control health synthesis (R2-P2 — one "is it implemented and operating?" payload)
-export { getControlHealth, type ControlHealthDTO } from './health';
+export {
+    getControlHealth,
+    getControlHealthVerdicts,
+    type ControlHealthDTO,
+    type ControlHealthSummary,
+    type ControlHealthVerdictRow,
+} from './health';

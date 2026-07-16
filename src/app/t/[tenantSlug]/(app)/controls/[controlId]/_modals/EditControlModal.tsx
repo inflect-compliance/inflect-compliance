@@ -39,6 +39,10 @@ export interface EditControlForm {
     /** RQ3-8 — annualCost as a free-text input bridges to a Float?
      *  number on the wire. Empty string → null. */
     annualCost: string;
+    /** Declared operating-effectiveness fallback (0–100). Same
+     *  string-bridge contract as annualCost — empty string → null;
+     *  the measured pass rate wins when test history exists. */
+    effectiveness: string;
 }
 
 type OptT = (key: string) => string;
@@ -324,6 +328,39 @@ export function EditControlModal({
                             />
                             <p className="mt-1 text-xs text-content-subtle">
                                 {tx('editModal.annualCostHelp')}
+                            </p>
+                        </div>
+                        <div data-testid="edit-effectiveness-input">
+                            <label
+                                htmlFor="edit-effectiveness"
+                                className="mb-1 block text-sm text-content-default"
+                            >
+                                {tx('editModal.effectivenessLabel')}
+                            </label>
+                            <NumberStepper
+                                id="edit-effectiveness"
+                                value={
+                                    form.effectiveness.trim() === '' ||
+                                    Number.isNaN(Number(form.effectiveness))
+                                        ? 0
+                                        : Number(form.effectiveness)
+                                }
+                                onChange={(v) =>
+                                    setForm((f) => ({
+                                        ...f,
+                                        // 0 = undeclared (honest null on save);
+                                        // the measured pass rate is the primary
+                                        // signal, this is only the fallback.
+                                        effectiveness: v <= 0 ? '' : String(v),
+                                    }))
+                                }
+                                min={0}
+                                max={100}
+                                step={5}
+                                ariaLabel={tx('editModal.effectivenessAria')}
+                            />
+                            <p className="mt-1 text-xs text-content-subtle">
+                                {tx('editModal.effectivenessHelp')}
                             </p>
                         </div>
                         <div>

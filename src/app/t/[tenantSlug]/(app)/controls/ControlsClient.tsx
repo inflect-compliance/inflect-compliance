@@ -77,6 +77,10 @@ import {
     CONTROL_FILTER_KEYS,
 } from './filter-defs';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import {
+    CONTROL_HEALTH_VERDICT_VARIANT,
+    type ControlHealthVerdict,
+} from '@/lib/controls/control-health';
 
 // ─── Constants ───
 
@@ -301,6 +305,20 @@ function ControlsPageInner({
     const truncated = controlsQuery.data?.truncated ?? false;
     const loading = controlsQuery.isLoading && !controlsQuery.data;
 
+    // ─── Health verdicts (lazy, batched) ────────────────────────────
+    // One tenant-wide read backs the Health column badge. Loaded
+    // independently of the list so the table paints immediately; the
+    // badge fills in when the verdict map resolves (muted '—' until
+    // then). The map keys the per-control verdict by id.
+    const verdictsQuery = useTenantSWR<{
+        verdicts: { controlId: string; verdict: ControlHealthVerdict; passRate: number | null }[];
+    }>('/controls/health-verdicts');
+    const verdictMap = useMemo(() => {
+        const m = new Map<string, ControlHealthVerdict>();
+        for (const v of verdictsQuery.data?.verdicts ?? []) m.set(v.controlId, v.verdict);
+        return m;
+    }, [verdictsQuery.data]);
+
     // ─── PR-1: org-parity sortable headers ───
     // Client-side sort over the loaded controls. The server returns
     // by its canonical order (annexId/code asc); when the user
@@ -461,6 +479,7 @@ function ControlsPageInner({
             { id: 'category', label: t('colVis.category') },
             { id: 'status', label: t('colVis.status') },
             { id: 'applicability', label: t('colVis.applicability') },
+            { id: 'health', label: t('colVis.health') },
             { id: 'owner', label: t('colVis.owner') },
             { id: 'frequency', label: t('colVis.frequency'), defaultVisible: false },
             { id: 'tasks', label: t('colVis.tasks') },
@@ -812,6 +831,25 @@ function ControlsPageInner({
             },
         },
         {
+            // Composite control-health verdict badge — the batched
+            // `/controls/health-verdicts` map keyed by control id. Muted
+            // '—' until the map resolves (or if a control isn't in it).
+            id: 'health',
+            header: t('list.healthColumn'),
+            accessorFn: (c) => verdictMap.get(c.id) ?? '',
+            cell: ({ row }) => {
+                const v = verdictMap.get(row.original.id);
+                if (!v) {
+                    return <span className="text-xs text-content-subtle">—</span>;
+                }
+                return (
+                    <StatusBadge size="sm" variant={CONTROL_HEALTH_VERDICT_VARIANT[v]}>
+                        {t(`health.verdict.${v}` as Parameters<typeof t>[0])}
+                    </StatusBadge>
+                );
+            },
+        },
+        {
             id: 'owner',
             header: t('colHeaders.owner'),
             accessorFn: (c) => ownerDisplayName(c.owner?.name, c.owner?.email) || '—',
@@ -891,7 +929,7 @@ function ControlsPageInner({
                 );
             },
         },
-    ]), [appPermissions, tenantHref, taskStats, openControlQuickView]);
+    ]), [appPermissions, tenantHref, taskStats, openControlQuickView, verdictMap]);
 
     // The bulk-action UI lives in the DataTable's header-row selection
     // toolbar via the canonical <BulkActionBar> (`selectionControls`) — the

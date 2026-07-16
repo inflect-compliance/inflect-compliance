@@ -107,6 +107,58 @@ export interface ControlEffectiveness {
 
 const DEFAULT_EFFECTIVENESS_WINDOW_DAYS = 90;
 
+const emptyEffectiveness = (controlId: string, windowDays: number): ControlEffectiveness => ({
+    controlId, passRate: null, total: 0, passes: 0, fails: 0, inconclusive: 0, windowDays,
+});
+
+/**
+ * THE canonical control-effectiveness signal — the measured pass rate over
+ * COMPLETED test runs in a rolling window, keyed per control. ONE `groupBy`
+ * for N controls (no N+1). This is the single source of truth consumed by
+ * control health, the risk residual-suggestion, and the control ROI/best-value
+ * math (each previously reimplemented — or, for ROI, ignored — this query).
+ *
+ * DB-level: callers already inside a tenant transaction (health, residual, ROI)
+ * pass their own `db`. `getControlEffectiveness` below is the context-opening
+ * single-control convenience wrapper.
+ */
+export async function computeControlEffectivenessMap(
+    db: PrismaTx,
+    tenantId: string,
+    controlIds: string[],
+    windowDays: number = DEFAULT_EFFECTIVENESS_WINDOW_DAYS,
+): Promise<Map<string, ControlEffectiveness>> {
+    const map = new Map<string, ControlEffectiveness>();
+    for (const id of controlIds) map.set(id, emptyEffectiveness(id, windowDays));
+    if (controlIds.length === 0) return map;
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - windowDays);
+    const grouped = await db.controlTestRun.groupBy({
+        by: ['controlId', 'result'],
+        where: {
+            tenantId,
+            controlId: { in: controlIds },
+            status: 'COMPLETED',
+            executedAt: { gte: cutoff },
+        },
+        _count: { _all: true },
+    });
+    for (const g of grouped) {
+        const e = map.get(g.controlId);
+        if (!e) continue;
+        const n = g._count._all;
+        if (g.result === 'PASS') e.passes += n;
+        else if (g.result === 'FAIL') e.fails += n;
+        else if (g.result === 'INCONCLUSIVE') e.inconclusive += n;
+        e.total += n;
+    }
+    for (const e of map.values()) {
+        e.passRate = e.total > 0 ? Math.round((e.passes / e.total) * 100) : null;
+    }
+    return map;
+}
+
 export async function getControlEffectiveness(
     ctx: RequestContext,
     controlId: string,
@@ -114,42 +166,9 @@ export async function getControlEffectiveness(
 ): Promise<ControlEffectiveness> {
     assertCanReadTests(ctx);
     const windowDays = opts.windowDays ?? DEFAULT_EFFECTIVENESS_WINDOW_DAYS;
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - windowDays);
-
     return runInTenantContext(ctx, async (db) => {
-        // Count COMPLETED runs in the window, grouped by `result`.
-        const grouped = await db.controlTestRun.groupBy({
-            by: ['result'],
-            where: {
-                tenantId: ctx.tenantId,
-                controlId,
-                status: 'COMPLETED',
-                executedAt: { gte: cutoff },
-            },
-            _count: { _all: true },
-        });
-        let passes = 0;
-        let fails = 0;
-        let inconclusive = 0;
-        for (const g of grouped) {
-            const n = g._count._all;
-            if (g.result === 'PASS') passes = n;
-            else if (g.result === 'FAIL') fails = n;
-            else if (g.result === 'INCONCLUSIVE') inconclusive = n;
-        }
-        const total = passes + fails + inconclusive;
-        const passRate =
-            total > 0 ? Math.round((passes / total) * 100) : null;
-        return {
-            controlId,
-            passRate,
-            total,
-            passes,
-            fails,
-            inconclusive,
-            windowDays,
-        };
+        const map = await computeControlEffectivenessMap(db, ctx.tenantId, [controlId], windowDays);
+        return map.get(controlId) ?? emptyEffectiveness(controlId, windowDays);
     });
 }
 
