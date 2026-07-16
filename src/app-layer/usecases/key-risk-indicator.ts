@@ -14,6 +14,8 @@ import { runInTenantContext } from '@/lib/db-context';
 import { notFound } from '@/lib/errors/types';
 import { assertCanRead, assertCanWrite } from '../policies/common';
 import { logEvent } from '../events/audit';
+import { createTask, addTaskLink } from './task';
+import { logger } from '@/lib/observability';
 
 export type Rag = 'GREEN' | 'AMBER' | 'RED';
 export type KriDirection = 'HIGHER_IS_WORSE' | 'LOWER_IS_WORSE';
@@ -100,9 +102,9 @@ export async function recordReading(
     ctx: RequestContext,
     kriId: string,
     input: { value: number; note?: string; recordedBy?: string },
-): Promise<{ reading: { id: string; value: number; ragStatus: string | null }; breached: boolean; rag: Rag }> {
+): Promise<{ reading: { id: string; value: number; ragStatus: string | null }; breached: boolean; rag: Rag; remediationTaskId: string | null }> {
     assertCanWrite(ctx);
-    return runInTenantContext(ctx, async (db) => {
+    const { result, redTransition } = await runInTenantContext(ctx, async (db) => {
         const kri = await db.keyRiskIndicator.findFirst({ where: { id: kriId, tenantId: ctx.tenantId } });
         if (!kri) throw notFound('KRI not found');
         const rag = computeRag(input.value, kri.direction as KriDirection, kri.greenMax, kri.amberMax);
@@ -118,8 +120,44 @@ export async function recordReading(
                 detailsJson: { category: 'status_change', toStatus: rag, fromStatus: prev?.ragStatus ?? null, summary: `KRI ${kri.name} → ${rag}` },
             });
         }
-        return { reading: { id: reading.id, value: reading.value, ragStatus: reading.ragStatus }, breached, rag };
+        return {
+            result: { reading: { id: reading.id, value: reading.value, ragStatus: reading.ragStatus }, breached, rag },
+            // A RED transition on a risk-linked KRI drives a remediation task
+            // (RQ3-7 / PR-L) — so a sensor firing RED spawns actual work rather
+            // than depending on a human noticing the chip. Transition-gated via
+            // `breached` (isWorse), so it fires once per crossing-into-RED, not
+            // on every RED reading.
+            redTransition: breached && rag === 'RED' && kri.riskId
+                ? { riskId: kri.riskId, kriName: kri.name, ownerUserId: kri.ownerUserId }
+                : null,
+        };
     });
+
+    let remediationTaskId: string | null = null;
+    if (redTransition) {
+        // Best-effort, out-of-band: a task-spawn failure must never fail the
+        // reading write itself.
+        try {
+            const task = await createTask(ctx, {
+                title: `Remediate breached KRI: ${redTransition.kriName}`,
+                type: 'TASK',
+                priority: 'HIGH',
+                source: 'kri_breach',
+                assigneeUserId: redTransition.ownerUserId ?? undefined,
+                description: `The key risk indicator "${redTransition.kriName}" crossed into RED. Investigate and bring it back within appetite, or re-assess the linked risk.`,
+            });
+            await addTaskLink(ctx, task.id, 'RISK', redTransition.riskId);
+            remediationTaskId = task.id;
+        } catch (err) {
+            logger.warn('kri-breach remediation task spawn failed', {
+                component: 'key-risk-indicator',
+                kriId,
+                error: err instanceof Error ? err.message : String(err),
+            });
+        }
+    }
+
+    return { ...result, remediationTaskId };
 }
 
 export async function batchRecordReadings(ctx: RequestContext, readings: Array<{ kriId: string; value: number; note?: string }>) {

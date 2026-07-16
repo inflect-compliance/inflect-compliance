@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { InfoTooltip } from '@/components/ui/tooltip';
 import { InlineNotice } from '@/components/ui/inline-notice';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
@@ -36,20 +37,40 @@ const TYPES = [
 ] as const;
 // RQ3-OB-A — money speaks the tenant's currency (useMoneyFormatter).
 
-function TreeRow({ node, depth, max }: { node: Agg; depth: number; max: number }) {
+function TreeRow({
+    node, depth, max, onRename, onDelete,
+}: {
+    node: Agg; depth: number; max: number;
+    onRename: (nodeId: string, name: string) => void;
+    onDelete: (node: Agg) => void;
+}) {
     const money = useMoneyFormatter();
     const t = useTranslations('risks');
+    const [renaming, setRenaming] = useState(false);
+    const [draft, setDraft] = useState(node.nodeName);
     return (
         <>
-            <div className="flex items-center gap-default py-tight text-sm" style={{ paddingLeft: `${depth * 16}px` }}>
-                <span className="w-full sm:w-48 truncate text-content-emphasis">{node.nodeName}</span>
+            <div className="group flex items-center gap-default py-tight text-sm" style={{ paddingLeft: `${depth * 16}px` }}>
+                {renaming ? (
+                    <span className="flex w-full sm:w-48 items-center gap-tight">
+                        <Input value={draft} onChange={(e) => setDraft(e.target.value)} className="h-7 py-0" />
+                        <Button size="sm" variant="ghost" onClick={() => { if (draft.trim()) onRename(node.nodeId, draft.trim()); setRenaming(false); }}>{t('edit.save')}</Button>
+                    </span>
+                ) : (
+                    <span className="w-full sm:w-48 truncate text-content-emphasis">{node.nodeName}</span>
+                )}
                 <div className="flex-1">
                     <ProgressBar value={node.totalAle} max={max || 1} aria-label={t('hierarchy.aleShareAria', { name: node.nodeName })} />
                 </div>
                 <span className="w-24 sm:w-28 text-right tabular-nums text-content-muted">{money(node.totalAle)}</span>
                 <span className="w-16 text-right tabular-nums text-content-subtle">{node.riskCount}</span>
+                {/* PR-L — per-node rename / delete so a mis-created node is fixable. */}
+                <span className="flex w-24 justify-end gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+                    <Button size="sm" variant="ghost" onClick={() => { setDraft(node.nodeName); setRenaming((v) => !v); }} data-testid={`node-rename-${node.nodeId}`}>{t('hierarchy.rename')}</Button>
+                    <Button size="sm" variant="ghost" className="text-content-error" onClick={() => onDelete(node)} data-testid={`node-delete-${node.nodeId}`}>{t('hierarchy.deleteNode')}</Button>
+                </span>
             </div>
-            {node.children.map((c) => <TreeRow key={c.nodeId} node={c} depth={depth + 1} max={max} />)}
+            {node.children.map((c) => <TreeRow key={c.nodeId} node={c} depth={depth + 1} max={max} onRename={onRename} onDelete={onDelete} />)}
         </>
     );
 }
@@ -94,6 +115,33 @@ export default function RiskHierarchyPage() {
             else { setLinkMsg({ text: t('hierarchy.linkFailed'), ok: false }); }
         } catch { setLinkMsg({ text: t('hierarchy.linkFailed'), ok: false }); }
         finally { setLinkBusy(false); }
+    };
+
+    // PR-L — undo a mis-attached risk link (same pickers, DELETE method).
+    const unlinkRisk = async () => {
+        if (!linkNodeId || !linkRiskId) return;
+        setLinkBusy(true); setLinkMsg(null);
+        try {
+            const res = await fetch(apiUrl(`/risks/hierarchy/${linkNodeId}/links`), {
+                method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ riskId: linkRiskId }),
+            });
+            if (res.ok) { setLinkMsg({ text: t('hierarchy.unlinkOk'), ok: true }); setLinkRiskId(null); await load(); }
+            else { setLinkMsg({ text: t('hierarchy.linkFailed'), ok: false }); }
+        } catch { setLinkMsg({ text: t('hierarchy.linkFailed'), ok: false }); }
+        finally { setLinkBusy(false); }
+    };
+
+    // PR-L — rename / delete a hierarchy node (updateNode / deleteNode).
+    const renameNode = async (nodeId: string, newName: string) => {
+        await fetch(apiUrl(`/risks/hierarchy/${nodeId}`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newName }) });
+        await load();
+    };
+    const [deletingNode, setDeletingNode] = useState<Agg | null>(null);
+    const deleteNode = async () => {
+        if (!deletingNode) return;
+        await fetch(apiUrl(`/risks/hierarchy/${deletingNode.nodeId}`), { method: 'DELETE' });
+        setDeletingNode(null);
+        await load();
     };
 
     const max = treemap.reduce((m, n) => Math.max(m, n.totalAle), 0);
@@ -142,6 +190,7 @@ export default function RiskHierarchyPage() {
                         />
                     </label>
                     <Button variant="secondary" onClick={linkRisk} disabled={linkBusy || !linkNodeId || !linkRiskId}>{t('hierarchy.linkRisk')}</Button>
+                    <Button variant="ghost" onClick={unlinkRisk} disabled={linkBusy || !linkNodeId || !linkRiskId} data-testid="hierarchy-unlink-risk">{t('hierarchy.unlinkRisk')}</Button>
                 </div>
                 {linkMsg && <InlineNotice variant={linkMsg.ok ? 'success' : 'error'}>{linkMsg.text}</InlineNotice>}
             </Card>
@@ -165,10 +214,21 @@ export default function RiskHierarchyPage() {
                         <div className="flex items-center gap-default border-b border-border-subtle pb-tight text-xs text-content-subtle">
                             <span className="w-full sm:w-48">{t('hierarchy.colNode')}</span><span className="flex-1">{t('hierarchy.colAleShare')}</span><span className="w-24 sm:w-28 text-right">{t('hierarchy.colTotalAle')}</span><span className="w-16 text-right">{t('hierarchy.colRisks')}</span>
                         </div>
-                        {treemap.map((n) => <TreeRow key={n.nodeId} node={n} depth={0} max={max} />)}
+                        {treemap.map((n) => <TreeRow key={n.nodeId} node={n} depth={0} max={max} onRename={renameNode} onDelete={setDeletingNode} />)}
                     </div>
                 </AnalyticsState>
             </Card>
+
+            <ConfirmDialog
+                showModal={deletingNode !== null}
+                setShowModal={(v) => { if (!v) setDeletingNode(null); }}
+                tone="danger"
+                title={t('hierarchy.deleteNodeTitle')}
+                description={t('hierarchy.deleteNodeConfirm', { name: deletingNode?.nodeName ?? '' })}
+                confirmLabel={t('hierarchy.deleteNode')}
+                onConfirm={deleteNode}
+                onCancel={() => setDeletingNode(null)}
+            />
         </div>
     );
 }

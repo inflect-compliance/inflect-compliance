@@ -51,6 +51,9 @@ const BLANK: FairInitial = {
     replacementCost: null,
     secondaryLossEventFrequency: null,
     secondaryLossMagnitude: null,
+    regulatoryFineEstimate: null,
+    reputationDamageEstimate: null,
+    competitiveAdvantageLoss: null,
     fairConfidence: null,
     fairInputsJson: null,
 };

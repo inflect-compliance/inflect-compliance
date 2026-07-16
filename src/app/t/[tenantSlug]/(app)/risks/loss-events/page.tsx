@@ -13,7 +13,8 @@
  *   3. The recent register — descending occurredAt, with the loss
  *      narrative, the source chip, and an ADMIN remove affordance.
  */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +34,7 @@ import { formatDate } from '@/lib/format-date';
 import { useTranslations } from 'next-intl';
 import { RiskPicker } from '../_shared/RiskPicker';
 import { AnalyticsState } from '../_shared/AnalyticsState';
+import { computeLossCalibration } from '@/lib/risk/loss-calibration';
 
 type Source = 'USER' | 'FINDING' | 'INCIDENT';
 interface Row {
@@ -56,6 +58,8 @@ interface Run {
     portfolioMean: number | null;
     portfolioP90: number | null;
     completedAt: string | null;
+    /** RQ3-1 — per-risk tail forecasts, the spine of the calibration back-test. */
+    perRiskResultsJson: Array<{ riskId: string; title: string; aleP50?: number; aleP90?: number }> | null;
 }
 
 const SOURCE_VARIANT: Record<Source, 'info' | 'warning' | 'error'> = {
@@ -134,6 +138,19 @@ export default function LossEventsPage() {
         ? Math.max(...agg.byYear.map((y) => y.total))
         : 0;
 
+    // RQ / PR-L — predicted-vs-actual back-test. Joins the sim's per-risk
+    // P50/P90 forecast with the recorded per-risk actuals; nothing here is
+    // written back to the FAIR inputs — divergence is surfaced, the owner acts.
+    const calibration = useMemo(() => {
+        const forecasts = (run?.perRiskResultsJson ?? [])
+            .filter((r) => typeof r.aleP50 === 'number' && typeof r.aleP90 === 'number')
+            .map((r) => ({ riskId: r.riskId, title: r.title, p50: r.aleP50 as number, p90: r.aleP90 as number }));
+        const actuals = (agg?.byRisk ?? [])
+            .filter((a): a is { riskId: string; total: number; count: number } => a.riskId != null)
+            .map((a) => ({ riskId: a.riskId, total: a.total }));
+        return computeLossCalibration(forecasts, actuals);
+    }, [run, agg]);
+
     return (
         <div className="space-y-section">
             <BackAffordance />
@@ -200,6 +217,56 @@ export default function LossEventsPage() {
                     </>
                 )}
             </Card>
+
+            {/* PR-L — calibration back-test: how did the forecast hold vs actuals? */}
+            {calibration.scored > 0 && (
+                <Card className="space-y-default p-6" data-testid="loss-calibration">
+                    <div className="flex items-center gap-tight">
+                        <Heading level={2}>{t('lossEvents.calibrationTitle')}</Heading>
+                        <InfoTooltip title={t('lossEvents.calibrationConceptTitle')} content={t('lossEvents.calibrationConceptHelp')} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-default md:grid-cols-3">
+                        <div className="rounded-md bg-bg-muted/30 px-default py-default">
+                            <KPIStat
+                                value={calibration.coverageWithinP90 != null ? `${Math.round(calibration.coverageWithinP90 * 100)}%` : '—'}
+                                label={t('lossEvents.coverageLabel')}
+                                tone={calibration.calibrationScore != null && calibration.calibrationScore >= 0.7 ? 'success' : 'attention'}
+                            />
+                        </div>
+                        <div className="rounded-md bg-bg-muted/30 px-default py-default">
+                            <KPIStat value={calibration.underForecast} label={t('lossEvents.underForecastLabel')} tone={calibration.underForecast > 0 ? 'critical' : 'default'} />
+                        </div>
+                        <div className="rounded-md bg-bg-muted/30 px-default py-default">
+                            <KPIStat value={calibration.scored} label={t('lossEvents.scoredLabel')} />
+                        </div>
+                    </div>
+                    <p className="text-xs text-content-muted">{t('lossEvents.coverageHint')}</p>
+                    <ul className="divide-y divide-border-subtle" data-testid="loss-calibration-rows">
+                        {calibration.rows.map((r) => (
+                            <li key={r.riskId} className="flex flex-wrap items-center gap-default py-tight text-sm" data-testid={`calibration-row-${r.riskId}`}>
+                                <StatusBadge variant={r.status === 'within_band' ? 'success' : r.status === 'under_forecast' ? 'error' : 'warning'}>
+                                    {t(`lossEvents.status_${r.status}` as string)}
+                                </StatusBadge>
+                                <span className="font-medium text-content-emphasis truncate max-w-xs">{r.title}</span>
+                                <span className="tabular-nums text-content-muted">
+                                    {t('lossEvents.calibrationCompare', { actual: money(r.actual), p50: money(r.p50), p90: money(r.p90) })}
+                                </span>
+                                {/* Re-estimate nudge — only when the forecast materially missed;
+                                    links to the FAIR tab, never auto-overwrites the inputs. */}
+                                {r.status !== 'within_band' && (
+                                    <Link
+                                        href={tenantHref(`/risks/${r.riskId}?tab=quantification`)}
+                                        className="ml-auto text-xs font-medium text-content-default underline underline-offset-2"
+                                        data-testid={`calibration-reestimate-${r.riskId}`}
+                                    >
+                                        {t('lossEvents.reestimate')}
+                                    </Link>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                </Card>
+            )}
 
             {/* Record loss form */}
             <Card className="space-y-default p-6" data-testid="loss-events-form">

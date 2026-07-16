@@ -20,6 +20,8 @@ const CreateSchema = z.object({
     cadence: z.enum(['WEEKLY', 'MONTHLY', 'QUARTERLY']),
     format: z.enum(['PDF', 'CSV', 'PPTX']).optional(),
     recipients: z.array(z.string().email()).default([]),
+    // PR-L — carry the RISK_DEEP_DIVE single-risk scope into the schedule.
+    parameters: z.object({ confidenceLevel: z.number().optional(), riskId: z.string().optional() }).optional(),
     deliveryDay: z.number().int().optional(),
     sharePointDriveId: z.string().nullable().optional(),
     sharePointFolderId: z.string().nullable().optional(),

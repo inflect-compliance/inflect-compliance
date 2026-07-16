@@ -60,7 +60,13 @@ describe('RQ3-2 — ranges replace point floats in the panel', () => {
             expect(panel).not.toContain(banned);
         }
         const inputCount = (panel.match(/<Input\b/g) ?? []).length;
-        expect(inputCount).toBe(1); // the single bound() renderer
+        // 1 = the single bound() PERT-triple renderer for the loss/frequency
+        // FACTORS (the guard's concern). +1 (PR-L) = the secondary-loss
+        // monetary editor (regulatory fine / reputation / competitive), which
+        // are single POINT estimates by nature — not distributions — so a
+        // plain Input is correct there and does NOT reintroduce point inputs
+        // for the PERT factors this guard protects.
+        expect(inputCount).toBe(2);
     });
 
     test('the calibrated-interval language is the legend', () => {
