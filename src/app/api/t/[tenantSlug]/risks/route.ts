@@ -1,4 +1,5 @@
 import { listRisks, listRisksPaginated, createRisk, listRisksWithDeleted } from '@/app-layer/usecases/risk';
+import { getRiskStaleness } from '@/app-layer/usecases/risk-staleness';
 import { CreateRiskSchema } from '@/lib/schemas';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { requirePermission } from '@/lib/security/permission-middleware';
@@ -15,11 +16,37 @@ const RiskQuerySchema = z.object({
     status: z.string().optional(),
     scoreMin: z.coerce.number().int().min(0).optional(),
     scoreMax: z.coerce.number().int().min(0).optional(),
+    residualScoreMin: z.coerce.number().int().min(0).optional(),
+    residualScoreMax: z.coerce.number().int().min(0).optional(),
+    treatment: z.string().optional(),
+    quantified: z.enum(['yes', 'no']).optional(),
+    stale: z.enum(['true']).optional(),
     category: z.string().optional(),
     ownerUserId: z.string().optional(),
     q: z.string().optional().transform(normalizeQ),
     includeDeleted: z.enum(['true', 'false']).optional(),
 }).strip();
+
+/**
+ * The shared filter projection for both the paginated + backfill reads.
+ * `idIn` is threaded in separately by the handler once the staleness
+ * detector has resolved the stale-risk id set (only when `stale=true`).
+ */
+function toRiskFilters(query: z.infer<typeof RiskQuerySchema>, idIn?: string[]) {
+    return {
+        status: query.status,
+        scoreMin: query.scoreMin,
+        scoreMax: query.scoreMax,
+        residualScoreMin: query.residualScoreMin,
+        residualScoreMax: query.residualScoreMax,
+        treatment: query.treatment,
+        quantified: query.quantified,
+        category: query.category,
+        ownerUserId: query.ownerUserId,
+        q: query.q,
+        ...(idIn !== undefined ? { idIn } : {}),
+    };
+}
 
 export const GET = withApiErrorHandling(requirePermission<{ tenantSlug: string }>('risks.view', async (req, _routeArgs, ctx) => {
     const sp = Object.fromEntries(req.nextUrl.searchParams.entries());
@@ -30,19 +57,20 @@ export const GET = withApiErrorHandling(requirePermission<{ tenantSlug: string }
         return jsonResponse(risks);
     }
 
+    // PR-K — the "stale/overdue" filter runs the multi-signal detector
+    // server-side and restricts the query to the stale-risk id set.
+    let staleIdIn: string[] | undefined;
+    if (query.stale === 'true') {
+        const report = await getRiskStaleness(ctx);
+        staleIdIn = report.staleRisks.map((r) => r.riskId);
+    }
+
     const hasPagination = query.limit || query.cursor;
     if (hasPagination) {
         const result = await listRisksPaginated(ctx, {
             limit: query.limit,
             cursor: query.cursor,
-            filters: {
-                status: query.status,
-                scoreMin: query.scoreMin,
-                scoreMax: query.scoreMax,
-                category: query.category,
-                ownerUserId: query.ownerUserId,
-                q: query.q,
-            },
+            filters: toRiskFilters(query, staleIdIn),
         });
         return jsonResponse(result);
     }
@@ -51,14 +79,7 @@ export const GET = withApiErrorHandling(requirePermission<{ tenantSlug: string }
     // reports `truncated`.
     const risks = await listRisks(
         ctx,
-        {
-            status: query.status,
-            scoreMin: query.scoreMin,
-            scoreMax: query.scoreMax,
-            category: query.category,
-            ownerUserId: query.ownerUserId,
-            q: query.q,
-        },
+        toRiskFilters(query, staleIdIn),
         { take: LIST_BACKFILL_CAP + 1 },
     );
     const result = applyBackfillCap(risks);

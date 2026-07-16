@@ -45,19 +45,26 @@ export default async function RisksPage({
     //     `risks/filter-defs.RISK_API_TRANSFORMS` on the client.
     const clientFilters: Record<string, string> = {};
     const apiFilters: Record<string, string | number> = {};
-    for (const key of ['q', 'status', 'category', 'ownerUserId']) {
+    for (const key of ['q', 'status', 'category', 'ownerUserId', 'treatment', 'quantified']) {
         const val = sp[key];
         if (typeof val === 'string' && val) {
             clientFilters[key] = val;
             apiFilters[key] = val;
         }
     }
-    const scoreToken = sp['score'];
-    if (typeof scoreToken === 'string' && scoreToken.includes('|')) {
-        clientFilters.score = scoreToken;
-        const [min, max] = scoreToken.split('|');
-        if (min && !Number.isNaN(Number(min))) apiFilters.scoreMin = Number(min);
-        if (max && !Number.isNaN(Number(max))) apiFilters.scoreMax = Number(max);
+    // Score + residualScore both carry a `min|max` range token (PR-K adds
+    // the residual band so a reviewer can slice by after-controls posture).
+    for (const [token, minKey, maxKey] of [
+        ['score', 'scoreMin', 'scoreMax'],
+        ['residualScore', 'residualScoreMin', 'residualScoreMax'],
+    ] as const) {
+        const raw = sp[token];
+        if (typeof raw === 'string' && raw.includes('|')) {
+            clientFilters[token] = raw;
+            const [min, max] = raw.split('|');
+            if (min && !Number.isNaN(Number(min))) apiFilters[minKey] = Number(min);
+            if (max && !Number.isNaN(Number(max))) apiFilters[maxKey] = Number(max);
+        }
     }
 
     // SSR payload cache — unfiltered load only; filtered bypasses (list-cache covers it).

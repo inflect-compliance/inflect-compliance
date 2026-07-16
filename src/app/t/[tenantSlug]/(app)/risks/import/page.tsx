@@ -10,6 +10,7 @@ import { Heading } from '@/components/ui/typography';
 import { Card, cardVariants } from '@/components/ui/card';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useRiskMatrixConfig } from '@/lib/hooks/use-risk-matrix-config';
+import { parseCsvRecords } from '@/lib/csv/parse-csv';
 import { cn } from '@/lib/cn';
 
 type ParsedRow = {
@@ -34,42 +35,30 @@ export default function RiskImportPage() {
     const fileRef = useRef<HTMLInputElement>(null);
     const [rows, setRows] = useState<ParsedRow[]>([]);
     const [importing, setImporting] = useState(false);
-    const [result, setResult] = useState<{ created: number; errors: string[] } | null>(null);
+    const [result, setResult] = useState<{ created: number; skipped: number; errors: string[] } | null>(null);
 
     const parseCSV = (text: string): ParsedRow[] => {
-        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-        if (lines.length < 2) return [];
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
-        const titleIdx = headers.indexOf('title');
-        if (titleIdx < 0) return [];
-
-        return lines.slice(1).map(line => {
-            const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-            const row: ParsedRow = { title: cols[titleIdx] };
-
-            const descIdx = headers.indexOf('description');
-            if (descIdx >= 0 && cols[descIdx]) row.description = cols[descIdx];
-
-            const catIdx = headers.indexOf('category');
-            if (catIdx >= 0 && cols[catIdx]) row.category = cols[catIdx];
-
-            const lIdx = headers.indexOf('likelihood');
-            if (lIdx >= 0 && cols[lIdx]) {
-                const n = parseInt(cols[lIdx]);
-                if (n >= 1 && n <= matrixConfig.likelihoodLevels) row.likelihood = n;
-            }
-
-            const iIdx = headers.indexOf('impact');
-            if (iIdx >= 0 && cols[iIdx]) {
-                const n = parseInt(cols[iIdx]);
-                if (n >= 1 && n <= matrixConfig.impactLevels) row.impact = n;
-            }
-
-            const oIdx = headers.indexOf('owner');
-            if (oIdx >= 0 && cols[oIdx]) row.owner = cols[oIdx];
-
-            return row;
-        }).filter(r => r.title);
+        // Robust quoted-CSV parse (handles commas/quotes/newlines inside cells).
+        const records = parseCsvRecords(text);
+        return records
+            .map((rec): ParsedRow | null => {
+                const title = rec.title;
+                if (!title) return null;
+                const row: ParsedRow = { title };
+                if (rec.description) row.description = rec.description;
+                if (rec.category) row.category = rec.category;
+                if (rec.likelihood) {
+                    const n = parseInt(rec.likelihood, 10);
+                    if (n >= 1 && n <= matrixConfig.likelihoodLevels) row.likelihood = n;
+                }
+                if (rec.impact) {
+                    const n = parseInt(rec.impact, 10);
+                    if (n >= 1 && n <= matrixConfig.impactLevels) row.impact = n;
+                }
+                if (rec.owner) row.owner = rec.owner;
+                return row;
+            })
+            .filter((r): r is ParsedRow => r !== null);
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,38 +75,42 @@ export default function RiskImportPage() {
 
     const doImport = async () => {
         setImporting(true);
-        const errors: string[] = [];
-        let created = 0;
-
-        for (let i = 0; i < rows.length; i++) {
-            const row = rows[i];
-            try {
-
-                const payload = {
-                    title: row.title,
-                    description: row.description,
-                    category: row.category,
-                    likelihood: row.likelihood ?? 3,
-                    impact: row.impact ?? 3,
-                    treatmentOwner: row.owner,
-                };
-                const res = await fetch(apiUrl('/risks'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                });
-                if (!res.ok) {
-                    const data = await res.json().catch(() => ({}));
-                    throw new Error(data.message || `Status ${res.status}`);
-                }
-                created++;
-
-            } catch (err) {
-                errors.push(`Row ${i + 1} "${row.title}": ${err instanceof Error ? err.message : String(err)}`);
+        try {
+            // One bulk request — the server dedupes by title, resolves the
+            // free-text owner to a member, and reports per-row errors.
+            const res = await fetch(apiUrl('/risks/bulk/import'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    risks: rows.map((r) => ({
+                        title: r.title,
+                        description: r.description,
+                        category: r.category,
+                        likelihood: r.likelihood,
+                        impact: r.impact,
+                        owner: r.owner,
+                    })),
+                }),
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error?.message || data.message || `Status ${res.status}`);
             }
+            const data = (await res.json()) as {
+                created: number;
+                skipped: number;
+                errors: { row: number; title: string; message: string }[];
+            };
+            setResult({
+                created: data.created,
+                skipped: data.skipped,
+                errors: data.errors.map((e) => `Row ${e.row} "${e.title}": ${e.message}`),
+            });
+        } catch (err) {
+            setResult({ created: 0, skipped: 0, errors: [err instanceof Error ? err.message : String(err)] });
+        } finally {
+            setImporting(false);
         }
-        setResult({ created, errors });
-        setImporting(false);
     };
 
     if (!canWrite) {
@@ -215,6 +208,11 @@ export default function RiskImportPage() {
                     <p className="text-lg font-semibold text-content-success">
                         {t('importComplete', { created: result.created, total: rows.length })}
                     </p>
+                    {result.skipped > 0 && (
+                        <p className="text-sm text-content-muted">
+                            {t('importSkipped', { count: result.skipped })}
+                        </p>
+                    )}
                     {result.errors.length > 0 && (
                         <div className="space-y-1">
                             <p className="text-sm text-content-error font-medium">{t('errors')}:</p>

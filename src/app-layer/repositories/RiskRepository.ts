@@ -12,6 +12,21 @@ export interface RiskFilters {
     category?: string;
     ownerUserId?: string;
     q?: string;
+    // PR-K — after-controls posture + treatment/quant filters so a
+    // reviewer can slice the register by residual score, treatment
+    // decision, and whether a risk is quantified (has an ALE).
+    residualScoreMin?: number;
+    residualScoreMax?: number;
+    treatment?: string;
+    /** 'yes' → has a FAIR ALE or an SLE×ARO pair; 'no' → neither. */
+    quantified?: 'yes' | 'no';
+    /**
+     * Restrict to an explicit id set. PR-K resolves the multi-signal
+     * staleness detector (`getRiskStaleness`) to a stale-risk id list in
+     * the usecase, then passes it here so the "stale/overdue" register
+     * filter runs server-side (respects pagination + no-client-filtering).
+     */
+    idIn?: string[];
 }
 
 export interface RiskListParams {
@@ -109,6 +124,8 @@ export class RiskRepository {
         const where: Prisma.RiskWhereInput = { tenantId: ctx.tenantId };
 
         if (filters.status) where.status = filters.status as RiskStatus;
+        // An empty id set means "no stale risks" — return nothing, not all.
+        if (filters.idIn !== undefined) where.id = { in: filters.idIn };
         if (filters.scoreMin !== undefined || filters.scoreMax !== undefined) {
             where.score = {};
             if (filters.scoreMin !== undefined) where.score.gte = filters.scoreMin;
@@ -116,6 +133,38 @@ export class RiskRepository {
         }
         if (filters.category) where.category = filters.category;
         if (filters.ownerUserId) where.ownerUserId = filters.ownerUserId;
+        if (filters.residualScoreMin !== undefined || filters.residualScoreMax !== undefined) {
+            where.residualScore = {};
+            if (filters.residualScoreMin !== undefined) where.residualScore.gte = filters.residualScoreMin;
+            if (filters.residualScoreMax !== undefined) where.residualScore.lte = filters.residualScoreMax;
+        }
+        if (filters.treatment) {
+            // Multi-select serialises as a comma-joined value; match any.
+            const decisions = filters.treatment.split(',').map((s) => s.trim()).filter(Boolean);
+            where.treatment = (decisions.length > 1
+                ? { in: decisions }
+                : decisions[0]) as Prisma.RiskWhereInput['treatment'];
+        }
+        if (filters.quantified) {
+            // Quantified = a FAIR ALE OR a legacy SLE×ARO pair. Compose via
+            // AND (not top-level OR) so it never clobbers the `q` search OR.
+            const quantifiedClause: Prisma.RiskWhereInput =
+                filters.quantified === 'yes'
+                    ? {
+                          OR: [
+                              { fairAle: { not: null } },
+                              { AND: [{ sleAmount: { not: null } }, { aroAmount: { not: null } }] },
+                          ],
+                      }
+                    : {
+                          fairAle: null,
+                          OR: [{ sleAmount: null }, { aroAmount: null }],
+                      };
+            where.AND = [
+                ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
+                quantifiedClause,
+            ];
+        }
         if (filters.q) {
             where.OR = [
                 { title: { contains: filters.q, mode: 'insensitive' } },

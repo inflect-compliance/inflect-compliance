@@ -696,6 +696,7 @@ export function RiskAssessmentPanel({
                         ownerChoices={ownerChoices}
                         canWrite={canWrite}
                         canAdmin={canAdmin}
+                        treatment={risk.treatment}
                     />
                 </div>
             </div>

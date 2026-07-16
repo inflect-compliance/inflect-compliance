@@ -626,6 +626,24 @@ export const BulkRiskAssignSchema = z.object({
     ownerUserId: z.string().nullable(),
 }).strip();
 
+// PR-K — bulk risk import: replaces the CSV importer's N per-row POSTs with
+// one request. The usecase dedupes by title and resolves free-text owners to
+// members. likelihood/impact are optional (createRisk defaults to 3 and clamps
+// to the tenant scale).
+export const BulkImportRisksSchema = z.object({
+    risks: z.array(z.object({
+        title: z.string().min(1),
+        description: z.string().optional().nullable(),
+        category: z.string().optional().nullable(),
+        likelihood: z.coerce.number().int().min(1).max(10).optional(),
+        impact: z.coerce.number().int().min(1).max(10).optional(),
+        owner: z.string().optional().nullable(),
+        ownerUserId: z.string().optional().nullable(),
+    }).strip()).min(1).max(500),
+}).strip().openapi('RiskBulkImportRequest', {
+    description: 'Bulk-create risks from a parsed CSV in a single request. Server dedupes by title and resolves owner names/emails to members.',
+});
+
 // ─── Control bulk actions (canonical BulkActionBar rollout) ───
 
 export const BulkControlStatusSchema = z.object({

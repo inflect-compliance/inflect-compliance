@@ -28,7 +28,11 @@ import {
 } from '@/components/ui/filter/filter-definitions';
 import type { FilterOption } from '@/components/ui/filter/types';
 import { rangeSplitTransform, type FilterApiTransform } from '@/lib/filters/url-sync';
-import { CircleDot, Tag, Activity, UserCircle2 } from 'lucide-react';
+import { CircleDot, Tag, Activity, UserCircle2, ShieldCheck, Coins } from 'lucide-react';
+import {
+    TREATMENT_DECISION_VALUES,
+    TREATMENT_DECISION_META,
+} from '@/lib/risk-treatment-vocabulary';
 
 /** Surface-namespace resolver (`useTranslations('risks')`). */
 type T = (key: string, values?: Record<string, unknown>) => string;
@@ -47,6 +51,24 @@ function riskStatusLabels(t: T): Record<string, string> {
         ACCEPTED: t('bulkStatus.accepted'),
         CLOSED: t('bulkStatus.closed'),
     };
+}
+
+// TreatmentDecision enum → label. Values are the enum members; labels reuse
+// the canonical `risks.treatment*` vocabulary (Mitigate/Accept/Transfer/Avoid).
+function riskTreatmentLabels(t: T): Record<string, string> {
+    return Object.fromEntries(
+        TREATMENT_DECISION_VALUES.map((v) => [v, t(TREATMENT_DECISION_META[v].labelKey)]),
+    );
+}
+
+// Quantified toggle — has an ALE (FAIR or legacy SLE×ARO) vs not.
+function riskQuantifiedLabels(t: T): Record<string, string> {
+    return { yes: t('filters.quantifiedYes'), no: t('filters.quantifiedNo') };
+}
+
+// Stale/overdue toggle — the server runs the multi-signal detector.
+function riskStaleLabels(t: T): Record<string, string> {
+    return { true: t('filters.staleYes') };
 }
 
 function riskFilterDefsInput(t: T, tGroup: TGroup) {
@@ -97,6 +119,54 @@ function riskFilterDefsInput(t: T, tGroup: TGroup) {
             },
             resetBehavior: 'clearable',
         },
+        // PR-K — after-controls posture: residual score range so a reviewer
+        // can slice the register by residual band, not just inherent.
+        residualScore: {
+            label: t('filters.residualScore'),
+            description: t('filters.residualScoreDesc'),
+            group: tGroup('quantitative'),
+            icon: Activity,
+            options: null,
+            type: 'range',
+            hideOperator: true,
+            rangeNumberStep: 1,
+            formatRangeBound: (n) => String(n),
+            formatRangePillLabel: (token) => {
+                const [min, max] = token.split('|');
+                const fmt = (raw: string) => (raw === '' ? '—' : raw);
+                return t('filters.scorePill', { min: fmt(min), max: fmt(max) });
+            },
+            resetBehavior: 'clearable',
+        },
+        // PR-K — treatment decision (Mitigate/Accept/Transfer/Avoid).
+        treatment: {
+            label: t('filters.treatment'),
+            description: t('filters.treatmentDesc'),
+            group: tGroup('attributes'),
+            icon: ShieldCheck,
+            options: optionsFromEnum(riskTreatmentLabels(t)),
+            multiple: true,
+            resetBehavior: 'clearable',
+        },
+        // PR-K — quantified (has an ALE) vs not. Single-select toggle.
+        quantified: {
+            label: t('filters.quantified'),
+            description: t('filters.quantifiedDesc'),
+            group: tGroup('quantitative'),
+            icon: Coins,
+            options: optionsFromEnum(riskQuantifiedLabels(t)),
+            resetBehavior: 'clearable',
+        },
+        // PR-K — stale/overdue, driven by the real multi-signal detector
+        // (server resolves the stale id set; see the risks GET route).
+        stale: {
+            label: t('filters.stale'),
+            description: t('filters.staleDesc'),
+            group: tGroup('attributes'),
+            icon: CircleDot,
+            options: optionsFromEnum(riskStaleLabels(t)),
+            resetBehavior: 'clearable',
+        },
     } satisfies Record<string, FilterDefInput>;
 }
 
@@ -120,6 +190,8 @@ export const RISK_FILTER_KEYS = buildRiskFilterDefs(IDENTITY, IDENTITY_GROUP).fi
  */
 export const RISK_API_TRANSFORMS: Record<string, FilterApiTransform> = {
     score: rangeSplitTransform('scoreMin', 'scoreMax'),
+    residualScore: rangeSplitTransform('residualScoreMin', 'residualScoreMax'),
+    // treatment + quantified pass through as-is (key === API param).
 };
 
 // ─── Runtime option builders ────────────────────────────────────────
