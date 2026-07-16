@@ -28,6 +28,9 @@ const GenerateSchema = z.object({
     type: z.nativeEnum(ReportType),
     saveToFileRecord: z.boolean().optional().default(false),
     watermark: z.enum(['DRAFT', 'FINAL', 'NONE']).optional().default('NONE'),
+    // PR-H — the selected framework (from the Reports selector). Absent → the
+    // generator falls back to the resolved installed framework.
+    framework: z.string().min(1).optional(),
 }).strip();
 
 const REPORT_TITLES: Record<ReportType, string> = {
@@ -72,13 +75,13 @@ export const POST = withApiErrorHandling(async (req: NextRequest, { params: para
     try {
         switch (body.type) {
             case ReportType.AUDIT_READINESS:
-                pdfDoc = await generateAuditReadinessPdf(ctx, { watermark });
+                pdfDoc = await generateAuditReadinessPdf(ctx, { watermark, framework: body.framework });
                 break;
             case ReportType.RISK_REGISTER:
                 pdfDoc = await generateRiskRegisterPdf(ctx, { watermark });
                 break;
             case ReportType.GAP_ANALYSIS:
-                pdfDoc = await generateGapAnalysisPdf(ctx, { watermark });
+                pdfDoc = await generateGapAnalysisPdf(ctx, { watermark, framework: body.framework });
                 break;
             default:
                 return jsonResponse({ error: 'Unknown report type' }, { status: 400 });

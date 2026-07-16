@@ -57,7 +57,7 @@ export function runSoAChecks(
                 severity: 'error',
                 requirementCode: entry.requirementCode,
                 requirementTitle: entry.requirementTitle,
-                reason: 'No tenant controls mapped to this Annex A requirement.',
+                reason: 'No tenant controls mapped to this requirement.',
                 suggestedAction: 'Map at least one control to this requirement.',
             });
             continue;

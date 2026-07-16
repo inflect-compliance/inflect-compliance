@@ -38,11 +38,21 @@ export async function generateAuditReadinessPdf(
         .update(JSON.stringify({ entries: soaReport.entries.length, summary: soaReport.summary, checks: checks.issues.length }))
         .digest('hex');
 
+    // ─── Framework-derived labels (PR-H) ───
+    // Every label derives from the RESOLVED framework, never an ISO literal.
+    // "Annex A" / "Statement of Applicability" wording is gated behind the
+    // ISO family — a SOC 2 / NIS2 report reads "Coverage & Readiness" /
+    // "Requirements" so the auditor deliverable names its real framework.
+    const isIso = soaReport.isIsoFamily;
+    const fwName = soaReport.frameworkName;
+    const reqCount = soaReport.summary.total;
+    const applicabilitySection = isIso ? 'Statement of Applicability' : 'Coverage & Readiness';
+
     // ─── Meta ───
     const meta: ReportMeta = {
         tenantName: tenant?.name || 'Tenant',
         reportTitle: 'Audit Readiness Report',
-        reportSubtitle: 'Statement of Applicability — ISO 27001:2022',
+        reportSubtitle: `${applicabilitySection} — ${fwName}`,
         generatedAt: new Date().toISOString(),
         framework: soaReport.framework,
         watermark: options?.watermark || 'NONE',
@@ -50,7 +60,12 @@ export async function generateAuditReadinessPdf(
     };
 
     const dataSources: DataSourceNote[] = [
-        { source: 'Statement of Applicability', description: 'All 93 Annex A controls with mapping, applicability, and implementation status.' },
+        {
+            source: applicabilitySection,
+            description: isIso
+                ? `All ${reqCount} Annex A controls with mapping, applicability, and implementation status.`
+                : `All ${reqCount} ${fwName} requirements with mapping and implementation status.`,
+        },
         { source: 'Readiness Checks', description: 'Automated checks for unmapped requirements, missing justifications, and evidence gaps.' },
         { source: 'Control Evidence', description: 'Evidence counts and test results linked to applicable controls.' },
     ];
@@ -90,8 +105,8 @@ export async function generateAuditReadinessPdf(
 
     addSpacer(doc);
 
-    // SoA table
-    addSectionTitle(doc, 'Statement of Applicability');
+    // SoA / requirements table
+    addSectionTitle(doc, isIso ? 'Statement of Applicability' : 'Requirements');
 
     const widths = autoColumnWidths([1, 3, 1.2, 1.2, 1, 2]);
     const columns: TableColumn[] = [

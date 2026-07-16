@@ -17,10 +17,11 @@ import prisma from '@/lib/prisma';
 
 export async function generateGapAnalysisPdf(
     ctx: RequestContext,
-    options?: { watermark?: WatermarkMode },
+    options?: { watermark?: WatermarkMode; framework?: string },
 ): Promise<PDFKit.PDFDocument> {
     // ─── Fetch data ───
     const soaReport = await getSoA(ctx, {
+        framework: options?.framework,
         includeEvidence: true,
         includeTasks: true,
         includeTests: true,
@@ -37,11 +38,16 @@ export async function generateGapAnalysisPdf(
         .update(JSON.stringify({ issues: checks.issues.length, pass: checks.pass }))
         .digest('hex');
 
+    // ─── Framework-derived labels (PR-H) — never an ISO literal ───
+    const isIso = soaReport.isIsoFamily;
+    const fwName = soaReport.frameworkName;
+    const requirementsPhrase = isIso ? `${fwName} Annex A requirements` : `${fwName} requirements`;
+
     // ─── Meta ───
     const meta: ReportMeta = {
         tenantName: tenant?.name || 'Tenant',
         reportTitle: 'Gap Analysis Report',
-        reportSubtitle: `ISO 27001:2022 — ${checks.issues.length} gaps identified`,
+        reportSubtitle: `${fwName} — ${checks.issues.length} gaps identified`,
         generatedAt: new Date().toISOString(),
         framework: soaReport.framework,
         watermark: options?.watermark || 'NONE',
@@ -49,7 +55,7 @@ export async function generateGapAnalysisPdf(
     };
 
     const dataSources: DataSourceNote[] = [
-        { source: 'SoA Readiness Checks', description: 'Automated compliance gap detection against ISO 27001:2022 Annex A requirements.' },
+        { source: 'Readiness Checks', description: `Automated compliance gap detection against ${requirementsPhrase}.` },
         { source: 'Control Mappings', description: 'Requirement-to-control mappings and applicability statuses.' },
         { source: 'Evidence Coverage', description: 'Evidence attachment counts per applicable control.' },
     ];
@@ -78,7 +84,7 @@ export async function generateGapAnalysisPdf(
     addSpacer(doc);
 
     if (checks.pass) {
-        addParagraph(doc, 'No critical gaps detected. The organization meets the minimum compliance requirements for ISO 27001:2022 Annex A. Warnings below are for informational purposes.');
+        addParagraph(doc, `No critical gaps detected. The organization meets the minimum compliance requirements for ${requirementsPhrase}. Warnings below are for informational purposes.`);
     } else {
         addParagraph(doc, 'Critical gaps detected that must be resolved before audit. Errors represent non-compliance issues that require immediate action.');
     }
@@ -133,7 +139,9 @@ export async function generateGapAnalysisPdf(
     // No issues at all
     if (checks.issues.length === 0) {
         addSectionTitle(doc, 'No Gaps Found');
-        addParagraph(doc, 'All Annex A requirements are fully mapped, justified, and have associated evidence. The SoA is audit-ready.');
+        addParagraph(doc, isIso
+            ? 'All Annex A requirements are fully mapped, justified, and have associated evidence. The SoA is audit-ready.'
+            : `All ${fwName} requirements are fully mapped and have associated evidence. Coverage is audit-ready.`);
     }
 
     // Apply headers/footers/watermarks

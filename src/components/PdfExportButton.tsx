@@ -17,6 +17,12 @@ interface PdfExportButtonProps {
     allowSave?: boolean;
     /** Additional CSS classes */
     className?: string;
+    /**
+     * PR-H — the selected framework (from the Reports selector). Forwarded to
+     * the generator so the artifact names the real framework, not the resolved
+     * default. Omit for framework-agnostic reports (e.g. Risk Register).
+     */
+    framework?: string;
 }
 
 /**
@@ -30,6 +36,7 @@ export function PdfExportButton({
     label,
     allowSave = false,
     className = '',
+    framework,
 }: PdfExportButtonProps) {
     const t = useTranslations('panels.pdf');
     const labelText = label ?? t('export');
@@ -47,6 +54,7 @@ export function PdfExportButton({
                 body: JSON.stringify({
                     type: reportType,
                     saveToFileRecord: saveToFile,
+                    ...(framework ? { framework } : {}),
                 }),
             });
 

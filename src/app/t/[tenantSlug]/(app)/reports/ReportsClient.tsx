@@ -203,6 +203,7 @@ export function ReportsClient({
                                 <PdfExportButton
                                     tenantSlug={tenantSlug}
                                     reportType="GAP_ANALYSIS"
+                                    framework={selectedKey}
                                     label={tx('exportPdf')}
                                     allowSave={canEdit}
                                 />
@@ -242,7 +243,7 @@ export function ReportsClient({
                                 </Link>
                                 <RequirePermission resource="reports" action="export">
                                     <a
-                                        href={`/api/t/${tenantSlug}/reports/soa/export.csv`}
+                                        href={`/api/t/${tenantSlug}/reports/soa/export.csv?framework=${encodeURIComponent(selectedKey)}`}
                                         className={buttonVariants({ variant: 'secondary', size: 'sm' })}
                                         download
                                         id="export-soa-btn"
@@ -265,6 +266,7 @@ export function ReportsClient({
                             <PdfExportButton
                                 tenantSlug={tenantSlug}
                                 reportType="AUDIT_READINESS"
+                                    framework={selectedKey}
                                 label={tx('exportPdf')}
                                 allowSave={canEdit}
                             />
