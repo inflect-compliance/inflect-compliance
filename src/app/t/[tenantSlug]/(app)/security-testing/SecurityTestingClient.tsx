@@ -11,18 +11,23 @@
  * Read-only v1 — findings auto-materialise into the Findings register (the
  * triage surface) on ingest; per-row triage status edits are a follow-up.
  */
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { ShieldAlert } from '@/components/ui/icons/nucleo/shield-alert';
 import { CloudUpload } from '@/components/ui/icons/nucleo/cloud-upload';
 import { EntityListPage } from '@/components/layout/EntityListPage';
 import { FilterProvider, useFilterContext, useFilters } from '@/components/ui/filter';
-import { createColumns } from '@/components/ui/table';
+import { createColumns, DataTable } from '@/components/ui/table';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { Card } from '@/components/ui/card';
+import { Heading } from '@/components/ui/typography';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/hooks';
+import { formatDateTime } from '@/lib/format-date';
 import {
     buildScannerFilters,
     SCANNER_FILTER_KEYS,
@@ -77,6 +82,16 @@ const STATUS_VARIANT: Record<string, StatusBadgeVariant> = {
     ACCEPTED: 'neutral',
 };
 
+// Triage status vocabulary for the editable per-finding control.
+const STATUS_ORDER = ['OPEN', 'TRIAGED', 'FIXED', 'FALSE_POSITIVE', 'ACCEPTED'] as const;
+
+// Scanner-run history outcome → StatusBadge tone.
+const RUN_OUTCOME_VARIANT: Record<string, StatusBadgeVariant> = {
+    PASS: 'success',
+    FAIL: 'error',
+    ERROR: 'warning',
+};
+
 export function SecurityTestingClient(props: Props) {
     const tx = useTranslations('securityTesting');
     const tGroup = useTranslations('common.filterGroups');
@@ -103,6 +118,48 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug, canWrite }: P
     const toast = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [uploading, setUploading] = useState(false);
+
+    // Local, optimistic view of the SSR findings so per-row triage edits
+    // render instantly. Whenever a router.refresh() delivers fresh server
+    // rows (new `initialFindings` identity) the local copy resets to server
+    // truth — React's "adjust state during render" pattern, no effect needed.
+    const [findingRows, setFindingRows] = useState(initialFindings);
+    const [prevInitial, setPrevInitial] = useState(initialFindings);
+    if (prevInitial !== initialFindings) {
+        setPrevInitial(initialFindings);
+        setFindingRows(initialFindings);
+    }
+
+    // ─── Optimistic PATCH over /security-testing/findings/[id] ───
+    const patchStatus = useCallback(
+        async (id: string, status: string) => {
+            let prevStatus: string | undefined;
+            setFindingRows((current) =>
+                current.map((r) => {
+                    if (r.id !== id) return r;
+                    prevStatus = r.status;
+                    return { ...r, status };
+                }),
+            );
+            try {
+                const res = await fetch(`/api/t/${tenantSlug}/security-testing/findings/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status }),
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            } catch {
+                // Revert the optimistic edit and surface the failure.
+                setFindingRows((current) =>
+                    current.map((r) =>
+                        r.id === id && prevStatus !== undefined ? { ...r, status: prevStatus } : r,
+                    ),
+                );
+                toast.error(t('updateFailed'));
+            }
+        },
+        [tenantSlug, toast, t],
+    );
 
     // ─── SARIF scan upload — read + parse client-side, POST to the ingest
     //     route, then refresh the SSR list with the newly-materialised rows. ──
@@ -159,6 +216,20 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug, canWrite }: P
             </Button>
         </>
     ) : undefined;
+
+    // Header actions: a link out to the global Vulnerabilities register
+    // alongside the (write-gated) SARIF upload button.
+    const headerActions = (
+        <div className="flex items-center gap-default">
+            <Link
+                href={`/t/${tenantSlug}/vulnerabilities`}
+                className="inline-flex items-center gap-1 text-sm font-medium text-content-link hover:underline"
+            >
+                {t('viewAllVulnerabilities')}
+            </Link>
+            {uploadAction}
+        </div>
+    );
     const tAdapt = (k: string, v?: Record<string, unknown>) =>
         t(k as Parameters<typeof t>[0], v as Parameters<typeof t>[1]);
     const sourceLabels = useMemo(() => buildScannerSourceLabels(tAdapt), [t]);
@@ -173,17 +244,22 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug, canWrite }: P
         const sources = (state.source ?? []) as string[];
         const severities = (state.severity ?? []) as string[];
         const statuses = (state.status ?? []) as string[];
-        return initialFindings.filter((r) => {
+        return findingRows.filter((r) => {
             if (sources.length && !sources.includes(r.scannerRun?.source ?? '')) return false;
             if (severities.length && !severities.includes(r.severity)) return false;
             if (statuses.length && !statuses.includes(r.status)) return false;
             return true;
         });
-    }, [initialFindings, state.source, state.severity, state.status]);
+    }, [findingRows, state.source, state.severity, state.status]);
 
     const openCritical = useMemo(
-        () => initialFindings.filter((r) => r.severity === 'CRITICAL' && r.status === 'OPEN').length,
-        [initialFindings],
+        () => findingRows.filter((r) => r.severity === 'CRITICAL' && r.status === 'OPEN').length,
+        [findingRows],
+    );
+
+    const statusOptions = useMemo<ComboboxOption[]>(
+        () => STATUS_ORDER.map((s) => ({ value: s, label: statusLabels[s] ?? s })),
+        [statusLabels],
     );
 
     const columns = useMemo(
@@ -264,14 +340,111 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug, canWrite }: P
                     id: 'status',
                     header: t('colStatus'),
                     accessorFn: (r) => r.status,
+                    cell: ({ row }) => {
+                        const r = row.original;
+                        if (!canWrite) {
+                            return (
+                                <StatusBadge variant={STATUS_VARIANT[r.status] ?? 'neutral'}>
+                                    {statusLabels[r.status] ?? r.status}
+                                </StatusBadge>
+                            );
+                        }
+                        return (
+                            <Combobox
+                                options={statusOptions}
+                                selected={statusOptions.find((o) => o.value === r.status) ?? null}
+                                setSelected={(opt) => opt && patchStatus(r.id, opt.value)}
+                                hideSearch
+                                matchTriggerWidth
+                                buttonProps={{ size: 'sm', 'aria-label': t('colStatus') }}
+                            />
+                        );
+                    },
+                },
+            ]),
+        [t, canWrite, statusOptions, statusLabels, patchStatus, sourceLabels],
+    );
+
+    // ─── Scanner-run history table (own card, below the findings table) ───
+    const runColumns = useMemo(
+        () =>
+            createColumns<ScannerRunRow>([
+                {
+                    id: 'outcome',
+                    header: t('colOutcome'),
+                    accessorFn: (r) => r.outcome,
                     cell: ({ row }) => (
-                        <StatusBadge variant={STATUS_VARIANT[row.original.status] ?? 'neutral'}>
-                            {statusLabels[row.original.status] ?? row.original.status}
+                        <StatusBadge variant={RUN_OUTCOME_VARIANT[row.original.outcome] ?? 'neutral'}>
+                            {row.original.outcome}
                         </StatusBadge>
                     ),
                 },
+                {
+                    id: 'source',
+                    header: t('colSourceScan'),
+                    accessorFn: (r) => r.source,
+                    cell: ({ row }) => (
+                        <span className="text-content-default">
+                            {sourceLabels[row.original.source] ?? row.original.source}
+                            <span className="text-content-subtle"> · {row.original.scanType}</span>
+                        </span>
+                    ),
+                },
+                {
+                    id: 'repo',
+                    header: t('colRepo'),
+                    accessorFn: (r) => r.repoRef ?? '',
+                    cell: ({ row }) =>
+                        row.original.repoRef ? (
+                            <code className="text-xs text-content-muted font-mono">{row.original.repoRef}</code>
+                        ) : (
+                            <span className="text-content-muted">—</span>
+                        ),
+                },
+                {
+                    id: 'ranAt',
+                    header: t('colRan'),
+                    accessorFn: (r) => new Date(r.ranAt).getTime(),
+                    cell: ({ row }) => (
+                        <span className="tabular-nums text-content-muted">{formatDateTime(row.original.ranAt)}</span>
+                    ),
+                },
+                {
+                    id: 'ingestedVia',
+                    header: t('colVia'),
+                    accessorFn: (r) => r.ingestedVia,
+                    cell: ({ row }) => <span className="text-content-muted">{row.original.ingestedVia}</span>,
+                },
+                {
+                    id: 'findingCount',
+                    header: t('colFindings'),
+                    accessorFn: (r) => r.findingCount,
+                    cell: ({ row }) => (
+                        <span className="tabular-nums text-content-default">{row.original.findingCount}</span>
+                    ),
+                },
             ]),
-        [t],
+        [t, sourceLabels],
+    );
+
+    const runsHistory = (
+        <Card as="section" className="mt-section space-y-default">
+            <Heading level={3}>{t('runsHistoryTitle')}</Heading>
+            <DataTable<ScannerRunRow>
+                fillBody={false}
+                data={runs}
+                columns={runColumns}
+                getRowId={(r) => r.id}
+                resourceName={(plural) => (plural ? t('resourceRuns') : t('resourceRun'))}
+                emptyState={
+                    <EmptyState
+                        icon={ShieldAlert}
+                        title={t('runsEmptyTitle')}
+                        description={t('runsEmptyDesc')}
+                    />
+                }
+            />
+        </Card>
     );
 
     const description =
@@ -292,10 +465,12 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug, canWrite }: P
                     </>
                 ),
                 description,
-                actions: uploadAction,
+                actions: headerActions,
             }}
             filters={{ defs: filterDefs }}
+            tableFooter={runsHistory}
             table={{
+                fillBody: false,
                 data: rows,
                 columns,
                 getRowId: (r) => r.id,

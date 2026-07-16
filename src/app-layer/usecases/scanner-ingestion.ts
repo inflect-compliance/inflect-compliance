@@ -32,7 +32,7 @@ import { z } from 'zod';
 import { RequestContext } from '../types';
 import { assertCanRead, assertCanWrite } from '../policies/common';
 import { runInTenantContext } from '@/lib/db-context';
-import { badRequest } from '@/lib/errors/types';
+import { badRequest, notFound } from '@/lib/errors/types';
 import { logEvent } from '../events/audit';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { createFinding } from './finding';
@@ -77,7 +77,11 @@ export const IngestScannerRunSchema = z.object({
     scanType: z.enum(['SAST', 'SCA', 'DAST', 'SECRETS', 'IAC']).optional(),
     /** Project/repo ref the scan ran against, e.g. `owner/repo@<sha>`. */
     repoRef: z.string().max(500).optional(),
-    ingestedVia: z.enum(['API', 'WEBHOOK', 'UPLOAD']).default('API'),
+    // Only two producers exist today: programmatic API ingest + SARIF UPLOAD.
+    // 'WEBHOOK' was an aspirational enum value with no entrypoint — removed
+    // until a real scanner-webhook ingest route ships (don't advertise a
+    // provenance the product can't actually produce).
+    ingestedVia: z.enum(['API', 'UPLOAD']).default('API'),
     /** The control this scan proves (overrides the tenant mapping). */
     controlId: z.string().optional(),
     /** Min severity that materialises a Finding. Default HIGH. */
@@ -417,4 +421,49 @@ export async function listScannerFindings(
         });
     });
     return rows.map((r) => ({ ...r, frameworks: mapCwes(r.cweIds) }));
+}
+
+/** The analyst-settable triage states for a scanner finding. Ingestion
+ *  preserves these on re-scan (only OPEN/FIXED are auto-managed). */
+export const SCANNER_FINDING_STATUSES = ['OPEN', 'TRIAGED', 'FIXED', 'FALSE_POSITIVE', 'ACCEPTED'] as const;
+export type ScannerFindingStatus = (typeof SCANNER_FINDING_STATUSES)[number];
+
+/**
+ * Triage a scanner finding — set its analyst status (TRIAGED / FALSE_POSITIVE /
+ * ACCEPTED / OPEN / FIXED). Mirrors `updateVulnerabilityStatus`: write-gated,
+ * validated against the allowed set, audit-logged with the from→to transition.
+ * Re-ingestion preserves whatever the analyst set here (see ingestScannerRun's
+ * upsert, which keeps the existing status on update).
+ */
+export async function updateScannerFindingStatus(
+    ctx: RequestContext,
+    id: string,
+    status: string,
+) {
+    assertCanWrite(ctx);
+    if (!SCANNER_FINDING_STATUSES.includes(status as ScannerFindingStatus)) {
+        throw badRequest('INVALID_STATUS', `status must be one of ${SCANNER_FINDING_STATUSES.join(', ')}`);
+    }
+    return runInTenantContext(ctx, async (db) => {
+        const existing = await db.scannerFinding.findFirst({
+            where: { id, tenantId: ctx.tenantId },
+            select: { id: true, status: true, title: true },
+        });
+        if (!existing) throw notFound('Scanner finding not found');
+
+        const updated = await db.scannerFinding.update({
+            where: { id },
+            data: { status },
+        });
+
+        await logEvent(db, ctx, {
+            action: 'SCANNER_FINDING_TRIAGED',
+            entityType: 'ScannerFinding',
+            entityId: id,
+            details: `Scanner finding status ${existing.status} → ${updated.status}`,
+            detailsJson: { category: 'status_change', entityName: 'ScannerFinding', operation: 'updated', summary: 'Scanner finding triaged' },
+            metadata: { from: existing.status, to: updated.status },
+        });
+        return updated;
+    });
 }

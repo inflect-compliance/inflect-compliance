@@ -10,6 +10,7 @@ import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTenantMembers } from '@/components/ui/user-combobox';
 import { ownerDisplayName } from '@/lib/owner-display';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import LinkedTasksPanel from '@/components/LinkedTasksPanel';
 import { LinkedVendorsPanel } from '@/components/LinkedVendorsPanel';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -440,6 +441,17 @@ export default function AssetDetailPage() {
             )}
             {activeTab === 'vulnerabilities' && (
                 <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')} id="asset-vulnerabilities-tab">
+                    {/* Inbound link to the global Vulnerabilities view, scoped to
+                        this asset — the same deep-link the assets-list badge uses. */}
+                    <div className="flex items-center justify-end border-b border-border-subtle p-3">
+                        <Link
+                            href={tenantHref(`/vulnerabilities?assetId=${assetId}`)}
+                            id="asset-see-all-vulns"
+                            className="text-sm text-content-muted hover:text-content-default hover:underline"
+                        >
+                            {t('detail.vuln.seeAll')} →
+                        </Link>
+                    </div>
                     <DataTable<AssetVulnRow>
                         data={vulnRows}
                         loading={vulnLoading}

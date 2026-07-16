@@ -367,7 +367,8 @@
     "colHeaders": {
       "code": "Code",
       "criticality": "Criticality",
-      "tasks": "Tasks"
+      "tasks": "Tasks",
+      "vulnerabilities": "Vulns"
     },
     "colVis": {
       "code": "Code",
@@ -377,7 +378,8 @@
       "classification": "Classification",
       "owner": "Owner",
       "controls": "Controls",
-      "tasks": "Tasks"
+      "tasks": "Tasks",
+      "vulnerabilities": "Vulnerabilities"
     },
     "bulk": {
       "setStatus": "Set status",
@@ -507,7 +509,8 @@
         "convertToFinding": "Convert to finding",
         "convertedRisk": "Vulnerability converted to a risk",
         "convertedFinding": "Vulnerability converted to a finding",
-        "convertFailed": "Conversion failed"
+        "convertFailed": "Conversion failed",
+        "seeAll": "See all vulnerabilities"
       },
       "activityFeed": {
         "loading": "Loading activity…",
@@ -636,7 +639,9 @@
     },
     "list": {
       "ownerImported": "imported"
-    }
+    },
+    "viewVulnerabilities": "View vulnerabilities",
+    "openVulnsAria": "{count} open vulnerabilities"
   },
   "risks": {
     "title": "Risk Register",
@@ -1303,7 +1308,8 @@
     "viewsMenu": "Views",
     "viewsMenuAria": "Analytical views",
     "viewsAnalytics": "Analytics",
-    "viewsRegistry": "Registry"
+    "viewsRegistry": "Registry",
+    "viewVulnerabilities": "View vulnerabilities"
   },
   "controls": {
     "title": "Controls Library",
@@ -6023,7 +6029,20 @@
         "FALSE_POSITIVE": "False positive",
         "ACCEPTED": "Accepted"
       }
-    }
+    },
+    "colOutcome": "Outcome",
+    "colSourceScan": "Source / Scan",
+    "colRepo": "Repo",
+    "colRan": "Ran",
+    "colVia": "Via",
+    "colFindings": "Findings",
+    "runsHistoryTitle": "Scan history",
+    "runsEmptyTitle": "No scan runs yet",
+    "runsEmptyDesc": "Scanner runs appear here once a SARIF report is ingested.",
+    "resourceRun": "run",
+    "resourceRuns": "runs",
+    "updateFailed": "Couldn't update the finding. Please try again.",
+    "viewAllVulnerabilities": "View all vulnerabilities →"
   },
   "calendar": {
     "crumbDashboard": "Dashboard",
@@ -6251,7 +6270,24 @@
         "MEDIUM": "Medium",
         "LOW": "Low"
       }
-    }
+    },
+    "colNote": "Note",
+    "addNote": "Add note",
+    "editNote": "Edit note",
+    "notePlaceholder": "Add a note…",
+    "linkCve": "Link CVE",
+    "linkCveHeader": "Link a CVE to an asset",
+    "linkCveDescription": "Manually associate a known CVE with one of your assets.",
+    "linkCveAsset": "Asset",
+    "linkCveAssetPlaceholder": "Select an asset…",
+    "linkCveId": "CVE ID",
+    "linkCveIdPlaceholder": "CVE-2024-12345",
+    "linkCveNote": "Note",
+    "linkCveNotePlaceholder": "Optional analyst note…",
+    "linkCveSubmit": "Link CVE",
+    "linkCveSubmitting": "Linking…",
+    "linkCveSuccess": "CVE linked to asset",
+    "linkCveFailed": "Could not link CVE"
   },
   "mfa": {
     "invalidCodeFormat": "Please enter a valid 6-digit code",

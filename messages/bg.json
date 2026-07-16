@@ -367,7 +367,8 @@
     "colHeaders": {
       "code": "Код",
       "criticality": "Критичност",
-      "tasks": "Задачи"
+      "tasks": "Задачи",
+      "vulnerabilities": "Уязвимости"
     },
     "colVis": {
       "code": "Код",
@@ -377,7 +378,8 @@
       "classification": "Класификация",
       "owner": "Отговорник",
       "controls": "Контроли",
-      "tasks": "Задачи"
+      "tasks": "Задачи",
+      "vulnerabilities": "Уязвимости"
     },
     "bulk": {
       "setStatus": "Задай статус",
@@ -507,7 +509,8 @@
         "convertToFinding": "Преобразувай в констатация",
         "convertedRisk": "Уязвимостта е преобразувана в риск",
         "convertedFinding": "Уязвимостта е преобразувана в констатация",
-        "convertFailed": "Преобразуването не бе успешно"
+        "convertFailed": "Преобразуването не бе успешно",
+        "seeAll": "Виж всички уязвимости"
       },
       "activityFeed": {
         "loading": "Зареждане на активността…",
@@ -636,7 +639,9 @@
     },
     "list": {
       "ownerImported": "импортиран"
-    }
+    },
+    "viewVulnerabilities": "Преглед на уязвимости",
+    "openVulnsAria": "{count} отворени уязвимости"
   },
   "risks": {
     "title": "Регистър на рисковете",
@@ -1303,7 +1308,8 @@
     "viewsMenu": "Изгледи",
     "viewsMenuAria": "Аналитични изгледи",
     "viewsAnalytics": "Анализи",
-    "viewsRegistry": "Регистър"
+    "viewsRegistry": "Регистър",
+    "viewVulnerabilities": "Преглед на уязвимости"
   },
   "controls": {
     "title": "Библиотека с контроли",
@@ -6023,7 +6029,20 @@
         "FALSE_POSITIVE": "Фалшиво положителна",
         "ACCEPTED": "Приета"
       }
-    }
+    },
+    "colOutcome": "Резултат",
+    "colSourceScan": "Източник / Сканиране",
+    "colRepo": "Хранилище",
+    "colRan": "Изпълнено",
+    "colVia": "Чрез",
+    "colFindings": "Констатации",
+    "runsHistoryTitle": "История на сканиранията",
+    "runsEmptyTitle": "Все още няма сканирания",
+    "runsEmptyDesc": "Сканиранията се появяват тук след импортиране на SARIF отчет.",
+    "resourceRun": "сканиране",
+    "resourceRuns": "сканирания",
+    "updateFailed": "Констатацията не можа да се обнови. Опитайте отново.",
+    "viewAllVulnerabilities": "Виж всички уязвимости →"
   },
   "calendar": {
     "crumbDashboard": "Табло",
@@ -6251,7 +6270,24 @@
         "MEDIUM": "Средна",
         "LOW": "Ниска"
       }
-    }
+    },
+    "colNote": "Бележка",
+    "addNote": "Добави бележка",
+    "editNote": "Редактирай бележка",
+    "notePlaceholder": "Добави бележка…",
+    "linkCve": "Свържи CVE",
+    "linkCveHeader": "Свързване на CVE с актив",
+    "linkCveDescription": "Ръчно свързване на известна CVE с ваш актив.",
+    "linkCveAsset": "Актив",
+    "linkCveAssetPlaceholder": "Изберете актив…",
+    "linkCveId": "CVE ид.",
+    "linkCveIdPlaceholder": "CVE-2024-12345",
+    "linkCveNote": "Бележка",
+    "linkCveNotePlaceholder": "Незадължителна бележка…",
+    "linkCveSubmit": "Свържи CVE",
+    "linkCveSubmitting": "Свързване…",
+    "linkCveSuccess": "CVE е свързана с актива",
+    "linkCveFailed": "CVE не можа да се свърже"
   },
   "mfa": {
     "invalidCodeFormat": "Моля, въведете валиден 6-цифрен код",
