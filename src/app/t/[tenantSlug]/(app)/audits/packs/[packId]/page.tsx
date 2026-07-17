@@ -145,6 +145,22 @@ export default function PackDetailPage() {
         } finally { setResolvingId(null); }
     };
 
+    // feat/audit-cycle-unify — turn a FINDING / EVIDENCE_REQUEST into a real
+    // Finding (+ remediation Task) tied to the cycle, then resolve it.
+    const [materializingId, setMaterializingId] = useState<string | null>(null);
+    const materializeComment = async (id: string) => {
+        setMaterializingId(id);
+        try {
+            const res = await fetch(apiUrl(`/audits/packs/${packId}/share-comments/${id}/materialize`), {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+            });
+            if (res.ok) { toast.success(tx('packs.auditorActivity.findingCreated')); loadComments(); }
+            else toast.error(tx('packs.auditorActivity.materializeError'));
+        } catch {
+            toast.error(tx('packs.auditorActivity.materializeError'));
+        } finally { setMaterializingId(null); }
+    };
+
     const freeze = async () => {
         setFreezing(true);
         try {
@@ -572,15 +588,31 @@ export default function PackDetailPage() {
                                         </div>
                                         {actionable && c.status === 'OPEN' && (
                                             <RequirePermission resource="audits" action="share">
-                                                <Button
-                                                    variant="secondary"
-                                                    size="sm"
-                                                    onClick={() => resolveComment(c.id)}
-                                                    loading={resolvingId === c.id}
-                                                    disabled={resolvingId === c.id}
-                                                >
-                                                    {resolvingId === c.id ? tx('packs.auditorActivity.resolving') : tx('packs.auditorActivity.resolve')}
-                                                </Button>
+                                                <div className="flex gap-tight shrink-0">
+                                                    {/* FINDING / EVIDENCE_REQUEST get a remediation lifecycle,
+                                                        not just a status flip. */}
+                                                    {(c.kind === 'FINDING' || c.kind === 'EVIDENCE_REQUEST') && (
+                                                        <Button
+                                                            variant="secondary"
+                                                            size="sm"
+                                                            onClick={() => materializeComment(c.id)}
+                                                            loading={materializingId === c.id}
+                                                            disabled={materializingId === c.id || resolvingId === c.id}
+                                                            data-testid={`materialize-comment-${c.id}`}
+                                                        >
+                                                            {tx('packs.auditorActivity.createFinding')}
+                                                        </Button>
+                                                    )}
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => resolveComment(c.id)}
+                                                        loading={resolvingId === c.id}
+                                                        disabled={resolvingId === c.id || materializingId === c.id}
+                                                    >
+                                                        {resolvingId === c.id ? tx('packs.auditorActivity.resolving') : tx('packs.auditorActivity.resolve')}
+                                                    </Button>
+                                                </div>
                                             </RequirePermission>
                                         )}
                                     </div>

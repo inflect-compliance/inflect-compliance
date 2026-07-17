@@ -15,6 +15,16 @@ const findingListSelect = {
     status: true,
     assignee: { select: { id: true, name: true, email: true } },
     control: { select: { id: true, code: true, name: true } },
+    // feat/audit-cycle-unify — surface the finding's audit/cycle provenance
+    // in the register (a finding raised during an audit keeps its context).
+    audit: {
+        select: {
+            id: true,
+            title: true,
+            auditCycleId: true,
+            auditCycle: { select: { id: true, name: true } },
+        },
+    },
     _count: { select: { riskLinks: true } },
 } as const;
 

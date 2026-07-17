@@ -29,6 +29,7 @@ import { logEvent } from '../events/audit';
 import { runInTenantContext } from '@/lib/db-context';
 import { notFound } from '@/lib/errors/types';
 import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
+import { NIS2_SOURCE_KIND } from './nis2-readiness';
 import { coverageQualifyingEvidenceWhere } from '@/lib/compliance/coverage-evidence';
 import { policyCountsWhere } from '@/lib/policy/coverage-predicate';
 
@@ -123,14 +124,27 @@ async function loadEffectiveWeights<T extends Record<string, number>>(
  *
  * Bounded (a single `count`, no row materialisation, no N+1).
  */
-async function countOpenCycleFindings(ctx: RequestContext, cycleId: string): Promise<number> {
+async function countOpenCycleFindings(ctx: RequestContext, cycleId: string, frameworkKey: string): Promise<number> {
     return runInTenantContext(ctx, (tdb) =>
         tdb.finding.count({
             where: {
                 tenantId: ctx.tenantId,
                 deletedAt: null,
                 status: { not: 'CLOSED' },
-                audit: { auditCycleId: cycleId },
+                OR: [
+                    // Fieldwork findings reach the cycle via their audit.
+                    { audit: { auditCycleId: cycleId } },
+                    // feat/audit-cycle-unify — NIS2 self-assessment gap-findings
+                    // are materialised with NO fieldwork audit (auditId = null),
+                    // so the audit-join above never sees them. Count them for the
+                    // NIS2 cycle by their provenance sourceKind, so a NIS2 gap
+                    // lowers the NIS2 cycle's readiness. (Chosen over attaching a
+                    // synthetic audit: the finding's framework provenance already
+                    // uniquely identifies the cycle it belongs to.)
+                    ...(frameworkKey === 'NIS2'
+                        ? [{ auditId: null, sourceKind: NIS2_SOURCE_KIND }]
+                        : []),
+                ],
             },
         }),
     );
@@ -337,7 +351,7 @@ async function computeGenericReadiness(
     );
     // feat/audit-cycle-unify — add real open findings on the cycle's
     // audits to the open-issue penalty.
-    const openFindingCount = await countOpenCycleFindings(ctx, cycle.id);
+    const openFindingCount = await countOpenCycleFindings(ctx, cycle.id, cycle.frameworkKey);
     const totalOpenIssues = openIssues + openFindingCount;
     const issuesScore = Math.max(0, 100 - totalOpenIssues * 5);
 
@@ -477,7 +491,7 @@ async function computeISO27001Readiness(ctx: RequestContext, cycle: AuditCycle):
         }));
     // feat/audit-cycle-unify — real open findings on the cycle's audits
     // count as issues alongside the legacy Task-based proxy.
-    const openFindingCount = await countOpenCycleFindings(ctx, cycle.id);
+    const openFindingCount = await countOpenCycleFindings(ctx, cycle.id, cycle.frameworkKey);
     const issueCount = openIssues.length + openFindingCount;
     const issueScore = Math.max(0, 100 - (issueCount * 15));
 
@@ -635,7 +649,7 @@ async function computeNIS2Readiness(ctx: RequestContext, cycle: AuditCycle): Pro
         }));
     // feat/audit-cycle-unify — fold real open findings on this cycle's
     // audits into the issue count.
-    const openFindingCount = await countOpenCycleFindings(ctx, cycle.id);
+    const openFindingCount = await countOpenCycleFindings(ctx, cycle.id, cycle.frameworkKey);
     const issueCount = openIssues.length + openFindingCount;
     const issueScore = Math.max(0, 100 - (issueCount * 10));
 

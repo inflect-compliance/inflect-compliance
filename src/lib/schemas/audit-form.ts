@@ -16,6 +16,9 @@ export const NewAuditFormSchema = z.object({
     // B8 — Framework.key the audit assesses (e.g. "ISO27001"). Empty
     // string = no link; the API treats `''` and `undefined` as null.
     frameworkKey: z.string().trim().max(60).default(''),
+    // feat/audit-cycle-unify — the AuditCycle this audit is fieldwork
+    // within. Empty string = standalone / ad-hoc audit (null on the wire).
+    auditCycleId: z.string().trim().max(60).default(''),
     generateChecklist: z.boolean().default(true),
 });
 

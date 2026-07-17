@@ -59,7 +59,18 @@ export async function getAuditCycle(ctx: RequestContext, cycleId: string) {
     const cycle = await runInTenantContext(ctx, (tdb) =>
         tdb.auditCycle.findFirst({
             where: { id: cycleId, tenantId: ctx.tenantId },
-            include: { packs: true, createdBy: { select: { id: true, name: true, email: true } } },
+            include: {
+                packs: true,
+                createdBy: { select: { id: true, name: true, email: true } },
+                // feat/audit-cycle-unify — the fieldwork audits attached to
+                // this cycle, so the cycle page can show its audits (and the
+                // link is visible end-to-end, not just in the schema).
+                audits: {
+                    where: { deletedAt: null },
+                    select: { id: true, title: true, status: true, frameworkKey: true, schedule: true },
+                    orderBy: { createdAt: 'desc' },
+                },
+            },
         })
     );
     if (!cycle) throw notFound('Audit cycle not found');

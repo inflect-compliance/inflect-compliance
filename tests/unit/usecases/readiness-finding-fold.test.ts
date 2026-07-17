@@ -30,14 +30,14 @@ import { makeRequestContext } from '../../helpers/make-context';
 
 const mockRunInTx = runInTenantContext as jest.MockedFunction<typeof runInTenantContext>;
 
-function fakeTdb(findingCount: number, taskCount: number) {
+function fakeTdb(findingCount: number, taskCount: number, frameworkKey = 'CUSTOMX') {
     return {
         auditCycle: {
             findFirst: jest.fn().mockResolvedValue({
                 id: 'cyc1',
                 tenantId: 't1',
-                // Custom key → GENERIC fallback (coverage/evidence/issues).
-                frameworkKey: 'CUSTOMX',
+                // CUSTOMX → GENERIC fallback; 'NIS2' → NIS2 profile.
+                frameworkKey,
             }),
         },
         tenant: { findUnique: jest.fn().mockResolvedValue({ readinessWeightsJson: null }) },
@@ -46,7 +46,9 @@ function fakeTdb(findingCount: number, taskCount: number) {
         controlRequirementLink: { findMany: jest.fn().mockResolvedValue([]) },
         control: { findMany: jest.fn().mockResolvedValue([]) },
         evidence: { findMany: jest.fn().mockResolvedValue([]) },
-        task: { count: jest.fn().mockResolvedValue(taskCount) },
+        policy: { findMany: jest.fn().mockResolvedValue([]) },
+        // GENERIC uses task.count; NIS2 uses task.findMany.
+        task: { count: jest.fn().mockResolvedValue(taskCount), findMany: jest.fn().mockResolvedValue([]) },
         finding: { count: jest.fn().mockResolvedValue(findingCount) },
         readinessSnapshot: { create: jest.fn().mockResolvedValue({}) },
     };
@@ -63,10 +65,15 @@ describe('computeReadiness folds open Findings into the issue count', () => {
         expect(result.breakdown.issues.open).toBe(2);
         expect(result.breakdown.issues.score).toBe(90);
 
-        // The finding count query targets open findings on the cycle's audits.
+        // The finding count query targets open findings on the cycle's audits
+        // (now via an OR so framework-scoped self-assessment findings can join).
         const whereArg = tdb.finding.count.mock.calls[0][0].where;
         expect(whereArg.status).toEqual({ not: 'CLOSED' });
-        expect(whereArg.audit).toEqual({ auditCycleId: 'cyc1' });
+        expect(whereArg.OR).toContainEqual({ audit: { auditCycleId: 'cyc1' } });
+        // A non-NIS2 cycle does NOT broaden to sourceKind matching.
+        expect(whereArg.OR).not.toContainEqual(
+            expect.objectContaining({ sourceKind: 'NIS2_SELF_ASSESSMENT' }),
+        );
     });
 
     it('zero findings leaves the issue score at 100 (no penalty)', async () => {
@@ -77,5 +84,21 @@ describe('computeReadiness folds open Findings into the issue count', () => {
 
         expect(result.breakdown.issues.open).toBe(0);
         expect(result.breakdown.issues.score).toBe(100);
+    });
+
+    it('a NIS2 cycle also counts NIS2 self-assessment findings (auditId null)', async () => {
+        // feat/audit-cycle-unify — NIS2 gap-findings are materialised with no
+        // fieldwork audit, so the count query must OR in a sourceKind match for
+        // the NIS2 cycle. This is the NIS2-finding → readiness path.
+        const tdb = fakeTdb(/* findings */ 1, /* tasks */ 0, 'NIS2');
+        mockRunInTx.mockImplementation(async (_ctx: any, fn: any) => fn(tdb));
+
+        const result = await computeReadiness(makeRequestContext('ADMIN'), 'cyc1');
+
+        const whereArg = tdb.finding.count.mock.calls[0][0].where;
+        expect(whereArg.OR).toContainEqual({ audit: { auditCycleId: 'cyc1' } });
+        expect(whereArg.OR).toContainEqual({ auditId: null, sourceKind: 'NIS2_SELF_ASSESSMENT' });
+        // The single open finding is folded into the NIS2 issue count.
+        expect(result.breakdown.issues.open).toBe(1);
     });
 });

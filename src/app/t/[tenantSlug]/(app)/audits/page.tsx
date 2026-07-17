@@ -19,10 +19,16 @@ const SSR_PAGE_LIMIT = 100;
  */
 export default async function AuditsPage({
     params,
+    searchParams,
 }: {
     params: Promise<{ tenantSlug: string }>;
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
     const { tenantSlug } = await params;
+    const sp = await searchParams;
+    // feat/audit-cycle-unify — the hub can scope to one cycle's fieldwork
+    // audits via ?cycleId (GET /audits?cycleId already filters).
+    const cycleId = typeof sp.cycleId === 'string' ? sp.cycleId : undefined;
 
     // Translations and tenant context are independent — fetch in parallel
     const [t, tc, ctx] = await Promise.all([
@@ -33,7 +39,9 @@ export default async function AuditsPage({
     // hasNis2 gates the "NIS2 Gap Assessment" entry button — installed = the
     // tenant has run the NIS2 gap self-assessment or has NIS2-mapped controls.
     const [audits, hasNis2] = await Promise.all([
-        listAudits(ctx, { take: SSR_PAGE_LIMIT }),
+        cycleId
+            ? listAudits(ctx, { take: SSR_PAGE_LIMIT, auditCycleId: cycleId })
+            : listAudits(ctx, { take: SSR_PAGE_LIMIT }),
         tenantHasNis2(ctx),
     ]);
 
@@ -42,6 +50,7 @@ export default async function AuditsPage({
             <AuditsClient
                 initialAudits={JSON.parse(JSON.stringify(audits))}
                 tenantSlug={tenantSlug}
+                cycleId={cycleId}
                 hasNis2={hasNis2}
                 canWrite={ctx.permissions.canWrite}
                 translations={{

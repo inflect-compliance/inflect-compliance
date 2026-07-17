@@ -40,6 +40,11 @@ interface FrameworkOption {
     label: string;
 }
 
+interface CycleOption {
+    value: string;
+    label: string;
+}
+
 export function NewAuditFields({
     form,
     labels,
@@ -58,6 +63,12 @@ export function NewAuditFields({
     const [frameworks, setFrameworks] = useState<FrameworkOption[]>([
         noFrameworkOption,
     ]);
+    // feat/audit-cycle-unify — the "standalone" (no-cycle) option.
+    const noCycleOption = useMemo<CycleOption>(
+        () => ({ value: '', label: tx('newModal.noCycle') }),
+        [tx],
+    );
+    const [cycles, setCycles] = useState<CycleOption[]>([noCycleOption]);
 
     // B8 — lazy-load the framework catalog on mount. The list is
     // small (≈5-10 rows today) and the create-audit modal is
@@ -82,6 +93,35 @@ export function NewAuditFields({
                 // Fail-soft — the picker stays usable with just the
                 // "No framework" option so audit creation never
                 // blocks on a catalog GET.
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [apiUrl]);
+
+    // feat/audit-cycle-unify — lazy-load the cycle list so an audit can be
+    // created as fieldwork within a cycle. Fail-soft (picker stays usable
+    // with just "Standalone" if the GET fails).
+    useEffect(() => {
+        let cancelled = false;
+        void (async () => {
+            try {
+                const res = await fetch(apiUrl('/audits/cycles'));
+                if (!res.ok) return;
+                const rows = (await res.json()) as Array<{
+                    id: string;
+                    name: string;
+                    frameworkKey: string;
+                }>;
+                if (cancelled) return;
+                // eslint-disable-next-line react-hooks/set-state-in-effect
+                setCycles([
+                    noCycleOption,
+                    ...rows.map((c) => ({ value: c.id, label: `${c.name} · ${c.frameworkKey}` })),
+                ]);
+            } catch {
+                /* fail-soft */
             }
         })();
         return () => {
@@ -127,6 +167,23 @@ export function NewAuditFields({
                         onChange={(e) =>
                             form.setField('auditors', e.target.value)
                         }
+                    />
+                </FormField>
+                {/* feat/audit-cycle-unify — create this audit as fieldwork
+                    within an audit cycle (or leave standalone). */}
+                <FormField label={tx('newModal.cycle')}>
+                    <Combobox
+                        id="audit-cycle-select"
+                        data-testid="audit-cycle-select"
+                        options={cycles}
+                        selected={
+                            cycles.find((o) => o.value === form.fields.auditCycleId) ?? noCycleOption
+                        }
+                        setSelected={(opt) =>
+                            form.setField('auditCycleId', opt?.value ?? '')
+                        }
+                        placeholder={tx('newModal.noCycle')}
+                        matchTriggerWidth
                     />
                 </FormField>
             </div>

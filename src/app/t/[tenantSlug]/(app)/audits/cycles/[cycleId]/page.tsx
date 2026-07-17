@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
@@ -27,6 +28,12 @@ interface AuditCyclePack {
     name: string;
     status: string;
 }
+interface AuditCycleAudit {
+    id: string;
+    title: string;
+    status: string;
+    frameworkKey: string | null;
+}
 interface AuditCycleDetail {
     id: string;
     name: string;
@@ -34,7 +41,16 @@ interface AuditCycleDetail {
     frameworkVersion: string;
     status: string;
     packs: AuditCyclePack[];
+    audits: AuditCycleAudit[];
 }
+
+const CYCLE_STATUSES = ['PLANNING', 'IN_PROGRESS', 'READY', 'COMPLETE'] as const;
+const CYCLE_STATUS_VARIANT: Record<string, 'neutral' | 'info' | 'warning' | 'success'> = {
+    PLANNING: 'neutral',
+    IN_PROGRESS: 'info',
+    READY: 'warning',
+    COMPLETE: 'success',
+};
 interface DefaultPackSelectionBucket {
     count: number;
     ids: string[];
@@ -113,6 +129,31 @@ export default function CycleDetailPage() {
         } finally { setCreating(false); }
     };
 
+    // feat/audit-cycle-unify — advance the cycle through its lifecycle
+    // (PLANNING → IN_PROGRESS → READY → COMPLETE) so it can be closed.
+    const [savingStatus, setSavingStatus] = useState(false);
+    const changeStatus = async (status: string) => {
+        if (!cycle || status === cycle.status) return;
+        setSavingStatus(true);
+        try {
+            const res = await fetch(apiUrl(`/audits/cycles/${cycleId}`), {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status }),
+            });
+            if (!res.ok) {
+                toast.error(tx('cycleDetail.statusError'));
+                return;
+            }
+            setCycle((prev) => (prev ? { ...prev, status } : prev));
+            toast.success(tx('cycleDetail.statusChanged', { status }));
+        } catch {
+            toast.error(tx('cycleDetail.statusError'));
+        } finally {
+            setSavingStatus(false);
+        }
+    };
+
     const breadcrumbs = [
         { label: tx('crumb.dashboard'), href: `/t/${tenantSlug}/dashboard` },
         { label: tx('crumb.audits'), href: `/t/${tenantSlug}/audits` },
@@ -153,18 +194,30 @@ export default function CycleDetailPage() {
                     items={[
                         { label: tx('cycleDetail.framework'), value: fw.label },
                         { label: tx('cycleDetail.version'), value: `v${cycle.frameworkVersion}` },
-                        { label: tx('cycleDetail.status'), value: cycle.status },
+                        { kind: 'status' as const, label: tx('cycleDetail.status'), value: tx(`cycleStatus.${cycle.status}` as Parameters<typeof tx>[0]), variant: CYCLE_STATUS_VARIANT[cycle.status] ?? 'neutral' },
                     ]}
                 />
             }
             actions={
-                <Link
-                    href={`/t/${tenantSlug}/audits/cycles/${cycleId}/readiness`}
-                    className={buttonVariants({ variant: 'secondary', size: 'sm' })}
-                    id="cycle-readiness-link"
-                >
-                    {tx('cycles.viewReadiness')}
-                </Link>
+                <>
+                    {/* feat/audit-cycle-unify — advance/close the cycle. */}
+                    <Combobox
+                        id="cycle-status-select"
+                        hideSearch
+                        options={CYCLE_STATUSES.map((s): ComboboxOption => ({ value: s, label: tx(`cycleStatus.${s}` as Parameters<typeof tx>[0]) }))}
+                        selected={{ value: cycle.status, label: tx(`cycleStatus.${cycle.status}` as Parameters<typeof tx>[0]) }}
+                        setSelected={(opt) => { if (opt) void changeStatus(opt.value); }}
+                        disabled={savingStatus}
+                        buttonProps={{ variant: 'secondary', className: 'text-sm' }}
+                    />
+                    <Link
+                        href={`/t/${tenantSlug}/audits/cycles/${cycleId}/readiness`}
+                        className={buttonVariants({ variant: 'secondary', size: 'sm' })}
+                        id="cycle-readiness-link"
+                    >
+                        {tx('cycles.viewReadiness')}
+                    </Link>
+                </>
             }
         >
             {/* Default Pack Preview */}
@@ -198,6 +251,31 @@ export default function CycleDetailPage() {
                 <p className="text-xs text-content-subtle">
                     {tx('cycleDetail.totalItems', { count: preview?.totalItems || 0 })}
                 </p>
+            </div>
+
+            {/* feat/audit-cycle-unify — fieldwork audits attached to this cycle. */}
+            <div className="space-y-compact">
+                <div className="flex items-center justify-between">
+                    <Heading level={2}>{tx('cycleDetail.fieldworkAudits')}</Heading>
+                    <Link
+                        href={`/t/${tenantSlug}/audits?cycleId=${cycleId}`}
+                        className="text-xs text-content-muted underline underline-offset-2"
+                        id="cycle-audits-hub-link"
+                    >
+                        {tx('cycleDetail.viewInHub')}
+                    </Link>
+                </div>
+                {cycle.audits?.length > 0 ? (
+                    cycle.audits.map((a) => (
+                        <Link key={a.id} href={`/t/${tenantSlug}/audits/${a.id}`}
+                            className={cn(cardVariants({ density: 'compact' }), 'flex items-center justify-between hover:bg-bg-muted/50 transition block')} id={`cycle-audit-link-${a.id}`}>
+                            <span className="font-medium text-sm">{a.title}</span>
+                            <StatusBadge variant={a.status === 'COMPLETED' ? 'success' : a.status === 'IN_PROGRESS' ? 'info' : 'neutral'} className="ml-2">{a.status}</StatusBadge>
+                        </Link>
+                    ))
+                ) : (
+                    <p className="text-content-muted text-sm" data-testid="cycle-no-audits">{tx('cycleDetail.noFieldwork')}</p>
+                )}
             </div>
 
             {/* Existing Packs */}

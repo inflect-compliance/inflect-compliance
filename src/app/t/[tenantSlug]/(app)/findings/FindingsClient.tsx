@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTenantMutation } from '@/lib/hooks/use-tenant-mutation';
@@ -32,6 +33,13 @@ interface FindingRow {
     owner: string | null;
     assignee: { id: string; name: string | null; email: string | null } | null;
     control: { id: string; code: string | null; name: string } | null;
+    // feat/audit-cycle-unify — audit/cycle provenance.
+    audit: {
+        id: string;
+        title: string;
+        auditCycleId: string | null;
+        auditCycle: { id: string; name: string } | null;
+    } | null;
     _count: { riskLinks: number };
 }
 
@@ -147,6 +155,8 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
             { id: 'title', label: tx('colVis.title') },
             { id: 'severity', label: tx('colVis.severity') },
             { id: 'type', label: tx('colVis.type') },
+            { id: 'control', label: tx('colVis.control') },
+            { id: 'source', label: tx('colVis.source') },
             { id: 'owner', label: tx('colVis.owner') },
             { id: 'status', label: tx('colVis.status') },
         ],
@@ -181,6 +191,45 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
             header: t.type,
 
             cell: ({ row }) => <span className="text-xs">{typeLabel(row.original.type)}</span>,
+        },
+        {
+            // feat/audit-cycle-unify — the control the finding is raised
+            // against (relation was loaded but never rendered).
+            id: 'control',
+            header: tx('colHeaders.control'),
+            accessorFn: (f) => (f.control ? (f.control.code ?? f.control.name) : '—'),
+            cell: ({ row }) => {
+                const c = row.original.control;
+                if (!c) return <span className="text-xs text-content-subtle">—</span>;
+                return (
+                    <Link href={`/t/${tenantSlug}/controls/${c.id}`} className="text-xs text-content-default underline underline-offset-2" onClick={(e) => e.stopPropagation()}>
+                        {c.code ?? c.name}
+                    </Link>
+                );
+            },
+        },
+        {
+            // feat/audit-cycle-unify — provenance: the audit (and its cycle)
+            // the finding was raised under, or "Ad-hoc" for register-created.
+            id: 'source',
+            header: tx('colHeaders.source'),
+            accessorFn: (f) => f.audit?.auditCycle?.name ?? f.audit?.title ?? tx('adHoc'),
+            cell: ({ row }) => {
+                const a = row.original.audit;
+                if (!a) return <span className="text-xs text-content-subtle">{tx('adHoc')}</span>;
+                if (a.auditCycle) {
+                    return (
+                        <Link href={`/t/${tenantSlug}/audits/cycles/${a.auditCycle.id}`} className="text-xs text-content-default underline underline-offset-2" onClick={(e) => e.stopPropagation()}>
+                            {a.auditCycle.name}
+                        </Link>
+                    );
+                }
+                return (
+                    <Link href={`/t/${tenantSlug}/audits/${a.id}`} className="text-xs text-content-default underline underline-offset-2" onClick={(e) => e.stopPropagation()}>
+                        {a.title}
+                    </Link>
+                );
+            },
         },
         {
             id: 'owner',
