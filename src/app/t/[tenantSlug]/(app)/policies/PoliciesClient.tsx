@@ -69,8 +69,16 @@ interface PolicyRow {
     lifecycleVersion: number;
     nextReviewAt: string | null;
     updatedAt: string;
+    /** Current-version acknowledgement rollup (annotatePolicyAcknowledgements). */
+    acknowledgement?: {
+        assignedCount: number;
+        acknowledgedCount: number;
+        outstanding: boolean;
+    };
     /** Derived client-side from nextReviewAt for the review-cycle filter/KPI. */
     reviewBucket?: 'overdue' | 'upcoming';
+    /** Derived client-side from acknowledgement.outstanding for the ack filter/KPI. */
+    ackBucket?: 'outstanding';
 }
 
 interface PoliciesClientProps {
@@ -220,7 +228,8 @@ function PoliciesPageInner({
                 const due = new Date(p.nextReviewAt).getTime();
                 reviewBucket = due < nowMs ? 'overdue' : due <= upcomingMs ? 'upcoming' : undefined;
             }
-            return { ...p, reviewBucket };
+            const ackBucket: 'outstanding' | undefined = p.acknowledgement?.outstanding ? 'outstanding' : undefined;
+            return { ...p, reviewBucket, ackBucket };
         });
     }, [rawPolicies, hydratedNow]);
 
@@ -262,13 +271,27 @@ function PoliciesPageInner({
         [policies, sortAccessors, sortBy, sortOrder],
     );
 
+    // Acknowledgement bucket is not a server query param (the list API has
+    // no such filter), so — like the derived reviewBucket KPI — the
+    // "Outstanding acknowledgements" filter/KPI is applied client-side over
+    // the loaded rows against the shared filter state.
+    const ackFilteredPolicies = useMemo(() => {
+        const want = state['ackBucket'];
+        if (!want || want.length === 0) return sortedPolicies;
+        if (!want.includes('outstanding')) return sortedPolicies;
+        // Derived acknowledgement rollup — the list API has no server-side ack
+        // param (mirrors the reviewBucket derived filter over already-loaded rows).
+        // guardrail-ignore: local sub-filter of the loaded, per-row-annotated rows
+        return sortedPolicies.filter((p) => p.acknowledgement?.outstanding);
+    }, [sortedPolicies, state]);
+
     // Load-on-scroll windowing — render the first batch, append more as
     // the user nears the bottom (DataTable onReachEnd sentinel).
     const {
         visibleRows: visiblePolicies,
         hasMore: hasMorePolicies,
         loadMore: loadMorePolicies,
-    } = useThresholdLoadMore(sortedPolicies);
+    } = useThresholdLoadMore(ackFilteredPolicies);
     const loading = policiesQuery.isLoading && !policiesQuery.data;
 
     // ─── Bulk actions (canonical BulkActionBar — assign + archive) ───
@@ -351,7 +374,7 @@ function PoliciesPageInner({
     );
 
     // ─── R23-PR-F — KPI definitions for the Policies page ───
-    type PolicyKpiId = 'total' | 'draft' | 'inReview' | 'approved' | 'overdueReview';
+    type PolicyKpiId = 'total' | 'draft' | 'inReview' | 'approved' | 'overdueReview' | 'outstandingAck';
     // guardrail-ignore: KPI counts across the loaded page, not a refilter.
     const totalPolicies = policies.length;
 
@@ -386,6 +409,8 @@ function PoliciesPageInner({
     ).length;
     // guardrail-ignore: KPI count, not a refilter.
     const overdueReviewPolicies = policies.filter((p) => p.reviewBucket === 'overdue').length;
+    // guardrail-ignore: KPI count, not a refilter.
+    const outstandingAckPolicies = policies.filter((p) => p.acknowledgement?.outstanding).length;
     const policyKpiDefs: ReadonlyArray<KpiFilterDef<PolicyKpiId>> = useMemo(
         () => [
             {
@@ -417,6 +442,12 @@ function PoliciesPageInner({
                 isActive: (s) => (s.reviewBucket ?? []).includes('overdue'),
                 clear: (ctx) => ctx.removeAll('reviewBucket'),
             },
+            {
+                id: 'outstandingAck',
+                apply: (ctx) => ctx.set('ackBucket', 'outstanding'),
+                isActive: (s) => (s.ackBucket ?? []).includes('outstanding'),
+                clear: (ctx) => ctx.removeAll('ackBucket'),
+            },
         ],
         [],
     );
@@ -432,6 +463,7 @@ function PoliciesPageInner({
             { id: 'owner', label: tx('colHeaders.owner') },
             { id: 'version', label: tx('colHeaders.version') },
             { id: 'nextReviewAt', label: tx('colHeaders.nextReview') },
+            { id: 'acknowledgement', label: tx('colHeaders.acknowledgement') },
             { id: 'updatedAt', label: tx('colHeaders.updated') },
         ],
         [tx],
@@ -583,6 +615,33 @@ function PoliciesPageInner({
             meta: { disableTruncate: true },
         },
         {
+            id: 'acknowledgement',
+            header: tx('colHeaders.acknowledgement'),
+            // Current-version ack rollup: acked/assigned + an "Outstanding"
+            // badge when a published policy has unacknowledged assignees.
+            // Blank when no acknowledgement campaign is assigned.
+            accessorFn: (p) => p.acknowledgement?.assignedCount ?? 0,
+            cell: ({ row }) => {
+                const ack = row.original.acknowledgement;
+                if (!ack || ack.assignedCount === 0) {
+                    return <span className="text-xs text-content-muted">—</span>;
+                }
+                return (
+                    <span className="inline-flex items-center gap-1.5 text-xs">
+                        <span className="font-mono tabular-nums text-content-emphasis">
+                            {ack.acknowledgedCount}/{ack.assignedCount}
+                        </span>
+                        {ack.outstanding && (
+                            <StatusBadge variant="warning" data-testid={`policy-ack-outstanding-${row.original.id}`}>
+                                {tx('list.ackOutstandingBadge')}
+                            </StatusBadge>
+                        )}
+                    </span>
+                );
+            },
+            meta: { disableTruncate: true },
+        },
+        {
             id: 'updatedAt',
             header: tx('colHeaders.updated'),
             accessorFn: (p) => p.updatedAt,
@@ -662,6 +721,13 @@ function PoliciesPageInner({
                         tone={overdueReviewPolicies > 0 ? 'critical' : 'default'}
                         onClick={() => togglePolicyKpi('overdueReview')}
                         selected={activePolicyKpi === 'overdueReview'}
+                    />
+                    <KpiFilterCard
+                        label={tx('list.kpiOutstandingAck')}
+                        value={outstandingAckPolicies}
+                        tone={outstandingAckPolicies > 0 ? 'critical' : 'default'}
+                        onClick={() => togglePolicyKpi('outstandingAck')}
+                        selected={activePolicyKpi === 'outstandingAck'}
                     />
                 </div>
             }

@@ -13,10 +13,12 @@ describe('Audit S4 — Policy Governance & Versioning', () => {
     describe('policy attestation usecase', () => {
         const src = read('src/app-layer/usecases/policy-attestation.ts');
 
-        it('exports attestPolicy / getPolicyAttestation / listPolicyAttestations', () => {
+        it('exports attestPolicy / getPolicyAttestation / getPolicyAcknowledgementRoster', () => {
             expect(src).toMatch(/export async function attestPolicy/);
             expect(src).toMatch(/export async function getPolicyAttestation/);
-            expect(src).toMatch(/export async function listPolicyAttestations/);
+            // The former standalone listPolicyAttestations is subsumed by the
+            // roster's `attestations` log (the reachable auditor who-attested view).
+            expect(src).toMatch(/export async function getPolicyAcknowledgementRoster/);
         });
 
         it('attestPolicy gates on the PUBLISHED status', () => {
@@ -35,9 +37,9 @@ describe('Audit S4 — Policy Governance & Versioning', () => {
             expect(src).toMatch(/category:\s*['"]access['"]/);
         });
 
-        it('listPolicyAttestations is admin-gated', () => {
+        it('getPolicyAcknowledgementRoster (auditor who-attested view) is admin-gated', () => {
             expect(src).toMatch(
-                /export async function listPolicyAttestations[\s\S]{0,400}assertCanAdmin/,
+                /export async function getPolicyAcknowledgementRoster[\s\S]{0,400}assertCanAdmin/,
             );
         });
     });

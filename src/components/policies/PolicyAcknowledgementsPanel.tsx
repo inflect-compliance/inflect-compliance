@@ -13,21 +13,36 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useTenantApiUrl } from '@/lib/tenant-context-provider';
+import { useTenantApiUrl, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Modal } from '@/components/ui/modal';
 import { FormField } from '@/components/ui/form-field';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { UserCombobox } from '@/components/ui/user-combobox';
 import { Heading } from '@/components/ui/typography';
-import { formatDate } from '@/lib/format-date';
+import { formatDate, formatDateTime } from '@/lib/format-date';
+
+type AckStatus = 'ACKNOWLEDGED' | 'ACKNOWLEDGED_SUPERSEDED' | 'OUTSTANDING';
 
 interface RosterEntry {
     userId: string;
     name: string | null;
     email: string | null;
     required: boolean;
+    acknowledgedAt: string | null;
+    status: AckStatus;
+    /** When an ACKNOWLEDGED_SUPERSEDED entry acked the now-stale version. */
+    supersededAckAt: string | null;
+    assignedById: string | null;
+    assignedByName: string | null;
+    assignedAt: string | null;
+}
+interface Attestation {
+    userId: string;
+    name: string | null;
+    email: string | null;
     acknowledgedAt: string | null;
 }
 interface Roster {
@@ -36,6 +51,8 @@ interface Roster {
     acknowledgedCount: number;
     pctComplete: number;
     entries: RosterEntry[];
+    /** Who attested the CURRENT version — the auditor "who attested" view. */
+    attestations: Attestation[];
 }
 
 const ROLE_VALUES = ['OWNER', 'ADMIN', 'EDITOR', 'READER', 'AUDITOR'] as const;
@@ -51,14 +68,16 @@ export function PolicyAcknowledgementsPanel({
 }) {
     const t = useTranslations('policies');
     const apiUrl = useTenantApiUrl();
+    const { tenantSlug } = useTenantContext();
 
     const [ownAttested, setOwnAttested] = useState<boolean | null>(null);
     const [ownAt, setOwnAt] = useState<string | null>(null);
     const [attesting, setAttesting] = useState(false);
     const [roster, setRoster] = useState<Roster | null>(null);
     const [requestOpen, setRequestOpen] = useState(false);
-    const [audienceType, setAudienceType] = useState<'all' | 'role'>('all');
+    const [audienceType, setAudienceType] = useState<'all' | 'role' | 'users'>('all');
     const [role, setRole] = useState<(typeof ROLE_VALUES)[number]>('READER');
+    const [userIds, setUserIds] = useState<string[]>([]);
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
@@ -102,7 +121,12 @@ export function PolicyAcknowledgementsPanel({
         setSubmitting(true);
         setMessage(null);
         try {
-            const audience = audienceType === 'all' ? { type: 'all' } : { type: 'role', role };
+            const audience =
+                audienceType === 'all'
+                    ? { type: 'all' }
+                    : audienceType === 'role'
+                        ? { type: 'role', role }
+                        : { type: 'users', userIds };
             const res = await fetch(apiUrl(`/policies/${policyId}/acknowledgement-requests`), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -121,6 +145,11 @@ export function PolicyAcknowledgementsPanel({
     };
 
     const roleOptions: ComboboxOption[] = ROLE_VALUES.map((r) => ({ value: r, label: t(`ack.role.${r}`) }));
+    const audienceOptions: ComboboxOption[] = [
+        { value: 'all', label: t('ack.audienceAll') },
+        { value: 'role', label: t('ack.audienceRole') },
+        { value: 'users', label: t('ack.audienceUsers') },
+    ];
 
     return (
         <div className="space-y-section" id="policy-acknowledgements">
@@ -172,16 +201,29 @@ export function PolicyAcknowledgementsPanel({
                             </div>
                             <ul className="divide-y divide-border-subtle">
                                 {roster.entries.map((e) => (
-                                    <li key={e.userId} className="flex items-center justify-between py-2 text-sm">
-                                        <span className="min-w-0 truncate">
-                                            <span className="text-content-default">{e.name || e.email || e.userId}</span>
-                                            {!e.required && <span className="ml-2 text-xs text-content-muted">{t('ack.voluntary')}</span>}
+                                    <li key={e.userId} className="flex items-start justify-between gap-default py-2 text-sm">
+                                        <span className="min-w-0">
+                                            <span className="block truncate text-content-default">
+                                                {e.name || e.email || e.userId}
+                                                {!e.required && <span className="ml-2 text-xs text-content-muted">{t('ack.voluntary')}</span>}
+                                            </span>
+                                            {e.assignedByName && e.assignedAt && (
+                                                <span className="block text-xs text-content-muted">
+                                                    {t('ack.requestedByOn', { name: e.assignedByName, date: formatDate(e.assignedAt) })}
+                                                </span>
+                                            )}
                                         </span>
-                                        {e.acknowledgedAt ? (
-                                            <StatusBadge variant="success">{formatDate(e.acknowledgedAt)}</StatusBadge>
-                                        ) : (
-                                            <StatusBadge variant="warning">{t('ack.outstanding')}</StatusBadge>
-                                        )}
+                                        <span className="shrink-0">
+                                            {e.status === 'ACKNOWLEDGED' ? (
+                                                <StatusBadge variant="success">
+                                                    {e.acknowledgedAt ? formatDate(e.acknowledgedAt) : t('ack.statusAcknowledged')}
+                                                </StatusBadge>
+                                            ) : e.status === 'ACKNOWLEDGED_SUPERSEDED' ? (
+                                                <StatusBadge variant="warning">{t('ack.statusSuperseded')}</StatusBadge>
+                                            ) : (
+                                                <StatusBadge variant="error">{t('ack.statusOutstanding')}</StatusBadge>
+                                            )}
+                                        </span>
                                     </li>
                                 ))}
                             </ul>
@@ -189,6 +231,29 @@ export function PolicyAcknowledgementsPanel({
                     ) : (
                         <p className="text-sm text-content-muted">{t('ack.noneRequired')}</p>
                     )}
+
+                    {/* Auditor "who attested the current version" log — newest first. */}
+                    <div className="space-y-tight pt-default border-t border-border-subtle">
+                        <Heading level={3} className="text-xs font-semibold text-content-emphasis">{t('ack.attestationsTitle')}</Heading>
+                        {roster && roster.attestations.length > 0 ? (
+                            <ul className="divide-y divide-border-subtle">
+                                {[...roster.attestations]
+                                    .sort((a, b) => (b.acknowledgedAt ?? '').localeCompare(a.acknowledgedAt ?? ''))
+                                    .map((a) => (
+                                        <li key={a.userId} className="flex items-center justify-between gap-default py-1.5 text-sm">
+                                            <span className="min-w-0 truncate text-content-default">{a.name || a.email || a.userId}</span>
+                                            {a.acknowledgedAt && (
+                                                <span className="shrink-0 text-xs text-content-muted">
+                                                    {t('ack.attestedOn', { date: formatDateTime(a.acknowledgedAt) })}
+                                                </span>
+                                            )}
+                                        </li>
+                                    ))}
+                            </ul>
+                        ) : (
+                            <p className="text-sm text-content-muted">{t('ack.noAttestations')}</p>
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -201,12 +266,9 @@ export function PolicyAcknowledgementsPanel({
                                 <Combobox
                                     hideSearch
                                     id="policy-ack-audience"
-                                    selected={{ value: audienceType, label: audienceType === 'all' ? t('ack.audienceAll') : t('ack.audienceRole') }}
-                                    setSelected={(o) => setAudienceType((o?.value as 'all' | 'role') ?? 'all')}
-                                    options={[
-                                        { value: 'all', label: t('ack.audienceAll') },
-                                        { value: 'role', label: t('ack.audienceRole') },
-                                    ]}
+                                    selected={audienceOptions.find((o) => o.value === audienceType) ?? null}
+                                    setSelected={(o) => setAudienceType((o?.value as 'all' | 'role' | 'users') ?? 'all')}
+                                    options={audienceOptions}
                                     matchTriggerWidth
                                 />
                             </FormField>
@@ -222,11 +284,24 @@ export function PolicyAcknowledgementsPanel({
                                     />
                                 </FormField>
                             )}
+                            {audienceType === 'users' && (
+                                <FormField label={t('ack.usersLabel')}>
+                                    <UserCombobox
+                                        tenantSlug={tenantSlug}
+                                        multiple
+                                        selectedIds={userIds}
+                                        onChange={(ids) => setUserIds(ids)}
+                                        id="policy-ack-users"
+                                        forceDropdown
+                                        matchTriggerWidth
+                                    />
+                                </FormField>
+                            )}
                         </div>
                     </Modal.Body>
                     <Modal.Footer>
                         <Button variant="secondary" onClick={() => setRequestOpen(false)}>{t('ack.cancel')}</Button>
-                        <Button onClick={submitRequest} disabled={submitting} data-testid="policy-ack-request-submit">
+                        <Button onClick={submitRequest} disabled={submitting || (audienceType === 'users' && userIds.length === 0)} data-testid="policy-ack-request-submit">
                             {submitting ? t('ack.requesting') : t('ack.requestConfirm')}
                         </Button>
                     </Modal.Footer>

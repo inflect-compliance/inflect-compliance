@@ -24,10 +24,15 @@ export const POLICY_COUNTS_STATUS = 'PUBLISHED' as const;
  * A policy counts iff it is PUBLISHED and not soft-deleted. DRAFT / IN_REVIEW /
  * APPROVED / ARCHIVED do NOT count.
  *
- * Where a control or framework additionally *requires attestation*, the caller
- * layers an acknowledgement-complete check on top of this base predicate — that
- * refinement is context-specific and is NOT baked in here (a policy still
- * "counts" as issued even before every assignee has acknowledged it).
+ * Acknowledgement refinement (2026-07-17): a policy still "counts" as ISSUED
+ * the moment it is PUBLISHED, even before every assignee has acknowledged it —
+ * this base predicate deliberately does NOT gate on acknowledgement. The
+ * acknowledgement-completeness signal is instead SURFACED (policy-library KPI +
+ * column + "outstanding acknowledgement" filter) via `hasOutstandingAcknowledgement`
+ * below, so ack completion is no longer a leaf node. Auto-gating coverage /
+ * readiness on unmet acknowledgement is a deliberate NON-change here: it would
+ * materially move readiness scores and is a compliance-owner decision, not a
+ * silent default. The helper is ready if that decision is taken.
  */
 export function policyCountsTowardCoverage(p: {
     status: string;
@@ -42,4 +47,19 @@ export function policyCountsTowardCoverage(p: {
  */
 export function policyCountsWhere(tenantId: string): Prisma.PolicyWhereInput {
     return { tenantId, status: POLICY_COUNTS_STATUS, deletedAt: null };
+}
+
+/**
+ * The acknowledgement refinement, as a pure helper. A policy has an OUTSTANDING
+ * (unmet mandatory) acknowledgement when at least one user was required to
+ * acknowledge its current version and fewer have acknowledged than were
+ * assigned. Zero assignments ⇒ no requirement ⇒ not outstanding. Stale acks
+ * (of a superseded version) must already be excluded from `acknowledgedCount`
+ * by the caller (see the roster), so they correctly read as outstanding here.
+ */
+export function hasOutstandingAcknowledgement(counts: {
+    assignedCount: number;
+    acknowledgedCount: number;
+}): boolean {
+    return counts.assignedCount > 0 && counts.acknowledgedCount < counts.assignedCount;
 }

@@ -18,7 +18,7 @@
  *      tenantId) + the @@unique([policyVersionId, userId])
  *      idempotency guard.
  *   2. Usecase — attestPolicy / getPolicyAttestation /
- *      listPolicyAttestations all exported with the documented
+ *      getPolicyAcknowledgementRoster all exported with the documented
  *      signatures.
  *   3. Attestation is GATED on the published version (a DRAFT
  *      or ARCHIVED version is rejected).
@@ -56,7 +56,7 @@ describe("Audit S6 — policy attestation tracking (closure lock)", () => {
         });
 
         it("PolicyVersion exposes the acknowledgements relation", () => {
-            // The relation feeds the listPolicyAttestations query
+            // The relation feeds the acknowledgement roster + attestation log
             // + the attestation-count column in the admin UI.
             expect(src()).toMatch(
                 /acknowledgements\s+PolicyAcknowledgement\[\]/,
@@ -74,11 +74,12 @@ describe("Audit S6 — policy attestation tracking (closure lock)", () => {
             );
         });
 
-        it("exports getPolicyAttestation + listPolicyAttestations", () => {
+        it("exports getPolicyAttestation + getPolicyAcknowledgementRoster", () => {
             const s = src();
             expect(s).toMatch(/export async function getPolicyAttestation/);
+            // listPolicyAttestations is subsumed by the roster's attestation log.
             expect(s).toMatch(
-                /export async function listPolicyAttestations/,
+                /export async function getPolicyAcknowledgementRoster/,
             );
         });
 

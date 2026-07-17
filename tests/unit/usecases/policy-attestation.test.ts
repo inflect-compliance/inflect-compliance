@@ -2,9 +2,9 @@
 /**
  * Unit tests for policy attestation (Audit S4, 2026-05-22).
  *
- * `attestPolicy`, `getPolicyAttestation`, `listPolicyAttestations`
- * — the operational surface on top of the previously-dormant
- * `PolicyAcknowledgement` model.
+ * `attestPolicy`, `getPolicyAttestation`, `requirePolicyAcknowledgement`,
+ * `getPolicyAcknowledgementRoster` — the operational surface on top of
+ * the previously-dormant `PolicyAcknowledgement` model.
  */
 const policyCalls: string[] = [];
 
@@ -32,6 +32,7 @@ const tenantDb: any = {
         createMany: jest.fn(),
         findMany: jest.fn(),
     },
+    policyVersion: { findMany: jest.fn() },
     tenantMembership: { findMany: jest.fn() },
     notification: { create: jest.fn() },
     user: { findMany: jest.fn() },
@@ -47,7 +48,6 @@ jest.mock('@/lib/db-context', () => {
 import {
     attestPolicy,
     getPolicyAttestation,
-    listPolicyAttestations,
     requirePolicyAcknowledgement,
     getPolicyAcknowledgementRoster,
 } from '@/app-layer/usecases/policy-attestation';
@@ -61,6 +61,7 @@ beforeEach(() => {
     tenantDb.policyAcknowledgement.create.mockReset();
     tenantDb.policyAcknowledgementAssignment.createMany.mockReset();
     tenantDb.policyAcknowledgementAssignment.findMany.mockReset();
+    tenantDb.policyVersion.findMany.mockReset().mockResolvedValue([]);
     tenantDb.tenantMembership.findMany.mockReset();
     tenantDb.notification.create.mockReset().mockResolvedValue({ id: 'n1' });
     tenantDb.user.findMany.mockReset();
@@ -213,41 +214,6 @@ describe('getPolicyAttestation', () => {
     });
 });
 
-describe('listPolicyAttestations', () => {
-    it('requires admin', async () => {
-        await expect(
-            listPolicyAttestations(makeRequestContext('EDITOR'), 'p1'),
-        ).rejects.toThrow();
-    });
-
-    it('returns [] when policy has no currentVersionId', async () => {
-        policyRepoGetById.mockResolvedValueOnce({
-            id: 'p1',
-            status: 'DRAFT',
-            currentVersionId: null,
-        });
-        const out = await listPolicyAttestations(makeRequestContext('ADMIN'), 'p1');
-        expect(out).toEqual([]);
-    });
-
-    it('returns rows ordered by acknowledgedAt desc, with user details', async () => {
-        policyRepoGetById.mockResolvedValueOnce({
-            id: 'p1',
-            status: 'PUBLISHED',
-            currentVersionId: 'v1',
-        });
-        tenantDb.policyAcknowledgement.findMany.mockResolvedValueOnce([
-            { id: 'a1', acknowledgedAt: new Date('2026-05-20'), user: { id: 'u1' } },
-            { id: 'a2', acknowledgedAt: new Date('2026-05-10'), user: { id: 'u2' } },
-        ]);
-        const out = await listPolicyAttestations(makeRequestContext('ADMIN'), 'p1');
-        expect(out).toHaveLength(2);
-        const call = tenantDb.policyAcknowledgement.findMany.mock.calls[0][0];
-        expect(call.where.policyVersionId).toBe('v1');
-        expect(call.orderBy).toEqual({ acknowledgedAt: 'desc' });
-    });
-});
-
 describe('requirePolicyAcknowledgement (campaign)', () => {
     it('requires admin', async () => {
         await expect(
@@ -323,6 +289,27 @@ describe('getPolicyAcknowledgementRoster', () => {
     it('returns an empty roster when the policy has no current version', async () => {
         policyRepoGetById.mockResolvedValueOnce({ id: 'p1', status: 'DRAFT', currentVersionId: null, title: 'P' });
         const roster = await getPolicyAcknowledgementRoster(makeRequestContext('ADMIN'), 'p1');
-        expect(roster).toEqual({ policyVersionId: null, assignedCount: 0, acknowledgedCount: 0, pctComplete: 0, entries: [] });
+        expect(roster).toEqual({ policyVersionId: null, assignedCount: 0, acknowledgedCount: 0, pctComplete: 0, entries: [], attestations: [] });
+    });
+
+    it('marks a stale (superseded-version) ack as non-compliant, not acknowledged', async () => {
+        policyRepoGetById.mockResolvedValueOnce({ id: 'p1', status: 'PUBLISHED', currentVersionId: 'v2', title: 'P' });
+        // u1 assigned to current v2; has NOT acked v2 but DID ack the prior v1.
+        tenantDb.policyVersion.findMany.mockResolvedValueOnce([{ id: 'v1' }, { id: 'v2' }]);
+        tenantDb.policyAcknowledgementAssignment.findMany.mockResolvedValueOnce([{ userId: 'u1', assignedById: 'admin', assignedAt: new Date('2026-06-01') }]);
+        tenantDb.policyAcknowledgement.findMany
+            .mockResolvedValueOnce([]) // current version (v2) acks — none
+            .mockResolvedValueOnce([{ userId: 'u1', acknowledgedAt: new Date('2026-05-01') }]); // prior (v1) acks
+        tenantDb.user.findMany.mockResolvedValueOnce([{ id: 'u1', name: 'One', email: 'one@x.com' }]);
+
+        const roster = await getPolicyAcknowledgementRoster(makeRequestContext('ADMIN'), 'p1');
+        // Stale ack does NOT count toward completion.
+        expect(roster.acknowledgedCount).toBe(0);
+        expect(roster.pctComplete).toBe(0);
+        const entry = roster.entries.find((e) => e.userId === 'u1');
+        expect(entry?.status).toBe('ACKNOWLEDGED_SUPERSEDED');
+        expect(entry?.acknowledgedAt).toBeNull();
+        expect(entry?.supersededAckAt).not.toBeNull();
+        expect(entry?.assignedByName).toBe(null); // 'admin' not in the user lookup here
     });
 });

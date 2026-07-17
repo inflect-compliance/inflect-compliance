@@ -13,7 +13,7 @@ import {
     optionsFromEnum,
 } from '@/components/ui/filter/filter-definitions';
 import type { FilterOption } from '@/components/ui/filter/types';
-import { CircleDot, Tag, Clock } from 'lucide-react';
+import { CircleDot, Tag, Clock, UserCheck } from 'lucide-react';
 
 /** Surface-namespace resolver (`useTranslations('policies')`). */
 type T = (key: string, values?: Record<string, unknown>) => string;
@@ -65,6 +65,22 @@ function policyFilterDefsInput(t: T, tGroup: TGroup) {
             options: [
                 { value: 'overdue', label: t('filterEnums.reviewBucket.overdue') },
                 { value: 'upcoming', label: t('filterEnums.reviewBucket.upcoming') },
+            ],
+            multiple: false,
+            resetBehavior: 'clearable',
+        },
+        // Acknowledgement rollup (ack-campaign correctness). Client-side
+        // derived field `ackBucket` on each row (annotatePolicyAcknowledgements
+        // → outstanding); the list API has no server filter for it, so
+        // PoliciesClient post-filters the loaded rows — same shape as the
+        // reviewBucket derived filter.
+        ackBucket: {
+            label: t('filters.acknowledgement'),
+            description: t('filters.acknowledgementDesc'),
+            group: tGroup('attributes'),
+            icon: UserCheck,
+            options: [
+                { value: 'outstanding', label: t('filterEnums.acknowledgement.outstanding') },
             ],
             multiple: false,
             resetBehavior: 'clearable',

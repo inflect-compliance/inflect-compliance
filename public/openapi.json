@@ -3549,6 +3549,25 @@
               }
             ]
           },
+          "acknowledgement": {
+            "type": "object",
+            "properties": {
+              "assignedCount": {
+                "type": "number"
+              },
+              "acknowledgedCount": {
+                "type": "number"
+              },
+              "outstanding": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "assignedCount",
+              "acknowledgedCount",
+              "outstanding"
+            ]
+          },
           "_count": {
             "type": "object",
             "properties": {
