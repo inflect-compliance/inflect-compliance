@@ -128,7 +128,7 @@ export async function recordReading(
             // `breached` (isWorse), so it fires once per crossing-into-RED, not
             // on every RED reading.
             redTransition: breached && rag === 'RED' && kri.riskId
-                ? { riskId: kri.riskId, kriName: kri.name, ownerUserId: kri.ownerUserId }
+                ? { riskId: kri.riskId, kriName: kri.name, ownerUserId: kri.ownerUserId, readingId: reading.id }
                 : null,
         };
     });
@@ -141,13 +141,21 @@ export async function recordReading(
             const task = await createTask(ctx, {
                 title: `Remediate breached KRI: ${redTransition.kriName}`,
                 type: 'TASK',
-                priority: 'HIGH',
-                source: 'kri_breach',
+                priority: 'P1',
+                source: 'RISK_MONITOR',
                 assigneeUserId: redTransition.ownerUserId ?? undefined,
                 description: `The key risk indicator "${redTransition.kriName}" crossed into RED. Investigate and bring it back within appetite, or re-assess the linked risk.`,
             });
             await addTaskLink(ctx, task.id, 'RISK', redTransition.riskId);
             remediationTaskId = task.id;
+            // Pin the task to the breaching reading so task-source-reconcile
+            // can mark the breach addressed when the task closes.
+            await runInTenantContext(ctx, (db) =>
+                db.kriReading.update({
+                    where: { id: redTransition.readingId },
+                    data: { remediationTaskId: task.id },
+                }),
+            );
         } catch (err) {
             logger.warn('kri-breach remediation task spawn failed', {
                 component: 'key-risk-indicator',

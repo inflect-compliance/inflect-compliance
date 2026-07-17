@@ -467,12 +467,22 @@ model KriReading {
   recordedAt DateTime         @default(now())
   recordedBy String?
   note       String?
+  /// The remediation task spawned when this reading crossed into RED
+  /// (one per breach). Soft reference by design — deleting the task
+  /// leaves a dangling id the reconciler treats as "no task". Read by
+  /// task-source-reconcile to mark the breach addressed on task close.
+  remediationTaskId String?
+  /// Stamped when the remediation task reaches a terminal RESOLVED/
+  /// CLOSED state — the loop-closing signal an auditor reads to see the
+  /// breach was actually worked, not just flagged.
+  addressedAt DateTime?
   kri        KeyRiskIndicator @relation(fields: [kriId], references: [id], onDelete: Cascade)
   tenant     Tenant           @relation(fields: [tenantId], references: [id])
 
   @@index([kriId, recordedAt])
   @@index([tenantId, recordedAt])
   @@index([tenantId, kriId])
+  @@index([tenantId, remediationTaskId])
 }
 
 /// RQ-8 — pairwise correlation between two risks, used by the Monte

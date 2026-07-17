@@ -54,6 +54,7 @@ export async function reconcileTaskSource(
         select: {
             id: true,
             type: true,
+            source: true,
             controlId: true,
             findingId: true,
             metadataJson: true,
@@ -67,9 +68,37 @@ export async function reconcileTaskSource(
     // this lookup runs for every terminal task.
     await reconcileVulnerability(db, ctx, taskId);
 
+    // Reconciler 4 — risk-appetite breach. Keyed on the breach's
+    // `remediationTaskId` FK (same shape as vuln — the breach task is a
+    // plain type='TASK', source='RISK_MONITOR'), so it runs for every
+    // terminal task and resolves the breach the task was raised for.
+    await reconcileRiskAppetiteBreach(db, ctx, taskId);
+
+    // Reconciler 5 — KRI breach. Keyed on the breaching KriReading's
+    // `remediationTaskId` FK, marking it addressed on task close.
+    await reconcileKriBreach(db, ctx, taskId);
+
     // Reconciler 1 — CONTROL_GAP → reflect a re-check on the control.
+    // NB NIS2 gap-lifecycle plain-TASK remediations are type='CONTROL_GAP'
+    // with controlId=null (no CONTROL_LINK approval): they intentionally
+    // DO NOT reconcile here — the gap self-assessment answer is the
+    // source of truth, and closing the nudge task must not silently flip
+    // an unanswered self-assessment. Only NIS2 CONTROL_LINK remediations
+    // (real controlId) re-attest their control below.
     if (task.type === 'CONTROL_GAP' && task.controlId) {
         await reconcileControlGap(db, ctx, taskId, task.controlId, metadata);
+    }
+
+    // Reconciler 6 — policy-review reminder. Keyed on source; advances
+    // the linked policy's review cycle (mirrors markPolicyReviewed).
+    if (task.source === 'POLICY_REVIEW') {
+        await reconcilePolicyReview(db, ctx, taskId);
+    }
+
+    // Reconciler 7 — evidence-expiry reminder. Keyed on source; records
+    // the refresh acknowledgement + services the review cadence.
+    if (task.source === 'EVIDENCE_EXPIRY') {
+        await reconcileEvidenceExpiry(db, ctx, taskId);
     }
 
     // Reconciler 3 — close the linked Finding. Keyed on the FK (with a
@@ -255,5 +284,215 @@ async function reconcileFinding(
     logger.info('task-source-reconcile: finding closed', {
         taskId,
         findingId: finding.id,
+    });
+}
+
+// ─── Reconciler 4 — risk-appetite breach → resolve the breach ───────
+//
+// A RISK_MONITOR remediation task raised from a RiskAppetiteBreach pins
+// itself on `breach.remediationTaskId`. Closing that task means the
+// breach was worked, so stamp `resolvedAt` — the admin breach table +
+// telemetry then read the breach as closed instead of silently-open.
+// Never regress an already-resolved breach.
+
+async function reconcileRiskAppetiteBreach(
+    db: PrismaTx,
+    ctx: RequestContext,
+    taskId: string,
+): Promise<void> {
+    const breach = await db.riskAppetiteBreach.findFirst({
+        where: { remediationTaskId: taskId, tenantId: ctx.tenantId, resolvedAt: null },
+        select: { id: true, breachType: true },
+    });
+    if (!breach) return;
+
+    const now = new Date();
+    await db.riskAppetiteBreach.update({
+        where: { id: breach.id },
+        data: { resolvedAt: now },
+    });
+
+    await logEvent(db, ctx, {
+        action: 'RISK_APPETITE_BREACH_RECONCILED',
+        entityType: 'RiskAppetiteBreach',
+        entityId: breach.id,
+        details: `Appetite breach (${breach.breachType}) resolved on remediation-task close`,
+        detailsJson: {
+            category: 'status_change',
+            entityName: 'RiskAppetiteBreach',
+            toStatus: 'RESOLVED',
+        },
+        metadata: { taskId, breachId: breach.id, breachType: breach.breachType },
+    });
+
+    logger.info('task-source-reconcile: risk-appetite breach resolved', {
+        taskId,
+        breachId: breach.id,
+    });
+}
+
+// ─── Reconciler 5 — KRI breach → mark the reading addressed ─────────
+//
+// A RED-transition reading pins its remediation task on
+// `KriReading.remediationTaskId`. Closing the task stamps `addressedAt`
+// — the KRI history + re-assess nudge then reflect that the breach was
+// worked. Non-destructive: never touches the reading value/rag.
+
+async function reconcileKriBreach(
+    db: PrismaTx,
+    ctx: RequestContext,
+    taskId: string,
+): Promise<void> {
+    const reading = await db.kriReading.findFirst({
+        where: { remediationTaskId: taskId, tenantId: ctx.tenantId, addressedAt: null },
+        select: { id: true, kriId: true },
+    });
+    if (!reading) return;
+
+    const now = new Date();
+    await db.kriReading.update({
+        where: { id: reading.id },
+        data: { addressedAt: now },
+    });
+
+    await logEvent(db, ctx, {
+        action: 'KRI_BREACH_RECONCILED',
+        entityType: 'KeyRiskIndicator',
+        entityId: reading.kriId,
+        details: `KRI breach marked addressed on remediation-task close`,
+        detailsJson: {
+            category: 'status_change',
+            entityName: 'KeyRiskIndicator',
+            toStatus: 'ADDRESSED',
+        },
+        metadata: { taskId, kriId: reading.kriId, readingId: reading.id },
+    });
+
+    logger.info('task-source-reconcile: KRI breach addressed', {
+        taskId,
+        kriId: reading.kriId,
+        readingId: reading.id,
+    });
+}
+
+// ─── Reconciler 6 — policy-review reminder → advance the review ─────
+//
+// A POLICY_REVIEW reminder task is linked to its policy via a POLICY
+// TaskLink. Closing the task means the review happened, so advance the
+// policy's review cycle exactly as `markPolicyReviewed` does
+// (lastReviewedAt = now, nextReviewAt = now + reviewFrequencyDays) —
+// inlined on `db` so it commits atomically with the task close.
+
+async function reconcilePolicyReview(
+    db: PrismaTx,
+    ctx: RequestContext,
+    taskId: string,
+): Promise<void> {
+    const link = await db.taskLink.findFirst({
+        where: { taskId, tenantId: ctx.tenantId, entityType: 'POLICY' },
+        select: { entityId: true },
+    });
+    if (!link) return;
+
+    const policy = await db.policy.findFirst({
+        where: { id: link.entityId, tenantId: ctx.tenantId },
+        select: { id: true, reviewFrequencyDays: true },
+    });
+    if (!policy) return;
+
+    const now = new Date();
+    const nextReviewAt = policy.reviewFrequencyDays
+        ? new Date(now.getTime() + policy.reviewFrequencyDays * 86_400_000)
+        : null;
+
+    await db.policy.update({
+        where: { id: policy.id },
+        data: { lastReviewedAt: now, nextReviewAt },
+    });
+
+    await logEvent(db, ctx, {
+        action: 'POLICY_REVIEWED',
+        entityType: 'Policy',
+        entityId: policy.id,
+        details: `Policy review cycle advanced on reminder-task close${nextReviewAt ? `; next review ${nextReviewAt.toISOString().slice(0, 10)}` : ''}`,
+        detailsJson: {
+            category: 'status_change',
+            entityName: 'Policy',
+            operation: 'reviewed',
+            after: {
+                lastReviewedAt: now.toISOString(),
+                nextReviewAt: nextReviewAt?.toISOString() ?? null,
+            },
+            summary: 'Policy marked reviewed on reminder-task close',
+        },
+        metadata: { taskId, policyId: policy.id },
+    });
+
+    logger.info('task-source-reconcile: policy review advanced', {
+        taskId,
+        policyId: policy.id,
+    });
+}
+
+// ─── Reconciler 7 — evidence-expiry reminder → service the review ───
+//
+// An EVIDENCE_EXPIRY reminder task is linked to its evidence via an
+// EVIDENCE TaskLink. Closing the task means the owner attended to the
+// expiring evidence. We record the acknowledgement and — if the evidence
+// carries a review cadence — service that cadence by rolling
+// `nextReviewDate` forward. We deliberately DO NOT touch `retentionUntil`
+// (the real expiry): only a genuine re-upload / extension moves that, so
+// the sweep correctly re-raises if the evidence is still expiring.
+
+const EVIDENCE_CADENCE_DAYS: Record<string, number> = {
+    MONTHLY: 30,
+    QUARTERLY: 91,
+    SEMI_ANNUALLY: 182,
+    ANNUALLY: 365,
+};
+
+async function reconcileEvidenceExpiry(
+    db: PrismaTx,
+    ctx: RequestContext,
+    taskId: string,
+): Promise<void> {
+    const link = await db.taskLink.findFirst({
+        where: { taskId, tenantId: ctx.tenantId, entityType: 'EVIDENCE' },
+        select: { entityId: true },
+    });
+    if (!link) return;
+
+    const evidence = await db.evidence.findFirst({
+        where: { id: link.entityId, tenantId: ctx.tenantId },
+        select: { id: true, reviewCycle: true },
+    });
+    if (!evidence) return;
+
+    const now = new Date();
+    const cadenceDays = evidence.reviewCycle ? EVIDENCE_CADENCE_DAYS[evidence.reviewCycle] : undefined;
+    const nextReviewDate = cadenceDays ? new Date(now.getTime() + cadenceDays * 86_400_000) : undefined;
+
+    if (nextReviewDate) {
+        await db.evidence.update({
+            where: { id: evidence.id },
+            data: { nextReviewDate },
+        });
+    }
+
+    await logEvent(db, ctx, {
+        action: 'EVIDENCE_EXPIRY_RECONCILED',
+        entityType: 'Evidence',
+        entityId: evidence.id,
+        details: `Evidence refresh acknowledged on reminder-task close${nextReviewDate ? `; next review ${nextReviewDate.toISOString().slice(0, 10)}` : ''}`,
+        detailsJson: {
+            category: 'custom',
+            event: 'evidence_expiry_task_reconciled',
+        },
+        metadata: { taskId, evidenceId: evidence.id, nextReviewDate: nextReviewDate?.toISOString() ?? null },
+    });
+
+    logger.info('task-source-reconcile: evidence refresh acknowledged', {
+        taskId,
+        evidenceId: evidence.id,
     });
 }

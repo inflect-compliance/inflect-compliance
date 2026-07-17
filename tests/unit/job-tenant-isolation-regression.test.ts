@@ -47,6 +47,13 @@ beforeEach(() => {
     jest.mock('@/lib/observability/job-runner', () => ({
         runJob: jest.fn(async (_name: string, fn: () => Promise<unknown>) => fn()),
     }));
+    // TP-1 — policyReviewReminder + retention now route task creation through
+    // the canonical createTask (its own tenant context). Mock it so these
+    // isolation guards assert the job's QUERY scoping without reaching prisma.
+    jest.mock('@/app-layer/usecases/task', () => ({
+        createTask: jest.fn().mockResolvedValue({ id: 'task-x', key: 'TSK-1' }),
+        addTaskLink: jest.fn().mockResolvedValue({}),
+    }));
 });
 
 // ═════════════════════════════════════════════════════════════════════

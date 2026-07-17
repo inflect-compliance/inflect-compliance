@@ -34,6 +34,7 @@ import {
     bulkDeleteTestPlan,
     bulkAssignTestPlan,
 } from '@/app-layer/usecases/control-test';
+import { setTaskStatus } from '@/app-layer/usecases/task';
 
 const globalPrisma = new PrismaClient({
     adapter: new PrismaPg({ connectionString: DB_URL }),
@@ -216,6 +217,46 @@ describeFn('control-test usecase — branch coverage (integration)', () => {
         const run2 = await createTestRun(ctx, plan.id);
         const c2 = await completeTestRun(ctx, run2.id, { result: 'FAIL', findingSummary: null, notes: null });
         expect(c2.result).toBe('FAIL');
+    });
+
+    it('a re-run of a failing test reuses the open gap task (idempotent, no duplicate)', async () => {
+        // Dedicated control so the count is isolated from other tests.
+        const idemControl = await globalPrisma.control.create({
+            data: { tenantId: TENANT_ID, code: `CT-IDEM-${randomUUID().slice(0, 6)}`, name: 'Idempotency control' },
+        });
+        const plan = await createTestPlan(ctx, idemControl.id, { name: 'Flaky plan', frequency: 'AD_HOC', ownerUserId });
+
+        // First failing run → one CONTROL_GAP task.
+        const run1 = await createTestRun(ctx, plan.id);
+        await completeTestRun(ctx, run1.id, { result: 'FAIL', findingSummary: 'first fail' });
+
+        // Second failing run on the SAME control+plan → must NOT duplicate.
+        const run2 = await createTestRun(ctx, plan.id);
+        await completeTestRun(ctx, run2.id, { result: 'FAIL', findingSummary: 'second fail' });
+
+        const openGaps = await globalPrisma.task.findMany({
+            where: {
+                tenantId: TENANT_ID,
+                type: 'CONTROL_GAP',
+                controlId: idemControl.id,
+                status: { notIn: ['RESOLVED', 'CLOSED', 'CANCELED'] },
+            },
+        });
+        expect(openGaps.length).toBe(1);
+
+        // Close the gap, then fail again → a fresh task may now be raised.
+        await setTaskStatus(ctx, openGaps[0].id, 'CLOSED', 'remediated');
+        const run3 = await createTestRun(ctx, plan.id);
+        await completeTestRun(ctx, run3.id, { result: 'FAIL', findingSummary: 'third fail' });
+        const openAfter = await globalPrisma.task.findMany({
+            where: {
+                tenantId: TENANT_ID,
+                type: 'CONTROL_GAP',
+                controlId: idemControl.id,
+                status: { notIn: ['RESOLVED', 'CLOSED', 'CANCELED'] },
+            },
+        });
+        expect(openAfter.length).toBe(1);
     });
 
     it('createAutomatedTestRun covers PASS, FAIL+task, and evidence-link branches', async () => {

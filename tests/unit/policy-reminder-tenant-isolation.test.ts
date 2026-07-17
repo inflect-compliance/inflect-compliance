@@ -38,6 +38,14 @@ beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
     jest.mock('@/lib/observability/logger', () => ({ logger: mockLogger }));
+    // TP-1 — processOverdueReminders now routes the review-due task through
+    // the canonical createTask (its own tenant context), not the injected
+    // db. Mock it so these isolation tests exercise the job's QUERY scoping
+    // (policy.findMany, auditLog.create) without reaching real prisma.
+    jest.mock('@/app-layer/usecases/task', () => ({
+        createTask: jest.fn().mockResolvedValue({ id: 'task-x', key: 'TSK-1' }),
+        addTaskLink: jest.fn().mockResolvedValue({}),
+    }));
 });
 
 // ═════════════════════════════════════════════════════════════════════

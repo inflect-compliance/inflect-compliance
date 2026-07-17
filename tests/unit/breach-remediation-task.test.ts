@@ -62,15 +62,18 @@ beforeEach(() => {
 });
 
 describe('createBreachRemediationTask', () => {
-    it('creates a HIGH-priority task with breach-derived content and links the risk', async () => {
+    it('creates a P1 task with breach-derived content and links the risk', async () => {
         (mockDb.riskAppetiteBreach.findFirst as jest.Mock).mockResolvedValue(breach());
 
         const result = await createBreachRemediationTask(editorCtx, 'br-1');
 
         expect(result).toEqual({ taskId: 'task-1', created: true });
         const input = (createTask as jest.Mock).mock.calls[0][1];
-        expect(input.priority).toBe('HIGH');
-        expect(input.source).toBe('risk_appetite_breach');
+        // P1 (a valid WorkItemPriority) — was 'HIGH', which is a severity,
+        // not a priority; the invalid-source 500 used to mask that bug.
+        expect(input.priority).toBe('P1');
+        // RISK_MONITOR — was the invalid free string 'risk_appetite_breach'.
+        expect(input.source).toBe('RISK_MONITOR');
         expect(input.title).toMatch(/€1\.2M/);
         expect(input.title).toMatch(/€500K per-risk cap/);
         expect(addTaskLink).toHaveBeenCalledWith(editorCtx, 'task-1', 'RISK', 'r-1');

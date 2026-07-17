@@ -15,6 +15,7 @@ import {
     checkPortfolioAppetite,
     recordBreaches,
     resolveStaleBreaches,
+    createBreachRemediationTask,
 } from '@/app-layer/usecases/risk-appetite';
 
 const globalPrisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: DB_URL }) });
@@ -42,7 +43,7 @@ describeFn('RQ-2 — appetite monitor (integration)', () => {
 
     afterAll(async () => {
         const t = { tenantId: TENANT_ID };
-        for (const m of ['riskSimulationRun', 'riskAppetiteBreach', 'riskAppetiteConfig', 'auditLog', 'risk', 'tenantMembership'] as const) {
+        for (const m of ['taskLink', 'task', 'riskSimulationRun', 'riskAppetiteBreach', 'riskAppetiteConfig', 'auditLog', 'risk', 'tenantMembership'] as const) {
             try { await (globalPrisma as any)[m].deleteMany({ where: t }); } catch { /* best effort */ }
         }
         try { await globalPrisma.user.deleteMany({ where: { id: adminId } }); } catch { /* best effort */ }
@@ -58,6 +59,30 @@ describeFn('RQ-2 — appetite monitor (integration)', () => {
         expect(created).toBeGreaterThanOrEqual(1);
         const rows = await globalPrisma.riskAppetiteBreach.findMany({ where: { tenantId: TENANT_ID, breachType: 'PORTFOLIO_ALE', resolvedAt: null } });
         expect(rows).toHaveLength(1);
+    });
+
+    it('createBreachRemediationTask spawns a real RISK_MONITOR task (no 500 on invalid source)', async () => {
+        const breach = await globalPrisma.riskAppetiteBreach.create({
+            data: {
+                tenantId: TENANT_ID,
+                breachType: 'SINGLE_RISK_ALE',
+                thresholdValue: 100,
+                actualValue: 300,
+            },
+        });
+
+        // Before the fix this threw a 500 (source:'risk_appetite_breach' is
+        // not a WorkItemSource member, and the call was unguarded).
+        const out = await createBreachRemediationTask(ctx, breach.id);
+        expect(out.taskId).toBeTruthy();
+
+        const task = await globalPrisma.task.findFirstOrThrow({ where: { id: out.taskId, tenantId: TENANT_ID } });
+        expect(task.source).toBe('RISK_MONITOR');
+        expect(task.key).toMatch(/^TSK-\d+$/);
+
+        // The breach is pinned to its remediation task.
+        const after = await globalPrisma.riskAppetiteBreach.findFirstOrThrow({ where: { id: breach.id } });
+        expect(after.remediationTaskId).toBe(out.taskId);
     });
 
     it('does NOT create a duplicate breach on a second scan', async () => {

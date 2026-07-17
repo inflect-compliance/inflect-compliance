@@ -373,6 +373,11 @@ enum WorkItemSource {
   AUDIT
   INTEGRATION
   EVIDENCE_EXPIRY
+  // Risk-monitoring sensors: a KRI crossing into RED or a
+  // risk-appetite threshold breach spawns a remediation task with
+  // this provenance (previously mis-typed as the invalid free
+  // strings 'kri_breach' / 'risk_appetite_breach').
+  RISK_MONITOR
 }
 
 enum TaskLinkEntityType {

@@ -32,7 +32,7 @@ describeFn('RQ-6 — KRI readings (integration)', () => {
 
     afterAll(async () => {
         const t = { tenantId: TENANT_ID };
-        for (const m of ['kriReading', 'keyRiskIndicator', 'riskScoreEvent', 'risk', 'auditLog', 'tenantMembership'] as const) {
+        for (const m of ['taskLink', 'task', 'kriReading', 'keyRiskIndicator', 'riskScoreEvent', 'risk', 'auditLog', 'tenantMembership'] as const) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             try { await (globalPrisma as any)[m].deleteMany({ where: t }); } catch { /* best effort */ }
         }
@@ -63,6 +63,35 @@ describeFn('RQ-6 — KRI readings (integration)', () => {
         // Breach audit rows only on the two worsening crossings.
         const breaches = await globalPrisma.auditLog.count({ where: { tenantId: TENANT_ID, action: 'KRI_THRESHOLD_BREACH' } });
         expect(breaches).toBe(2);
+    });
+
+    it('a RED transition on a risk-linked KRI spawns a real remediation task (no silent swallow)', async () => {
+        const risk = await globalPrisma.risk.create({ data: { tenantId: TENANT_ID, title: 'Vendor concentration' } });
+        const kri = await createKri(ctx, { name: 'Concentration %', riskId: risk.id, direction: 'HIGHER_IS_WORSE', greenMax: 5, amberMax: 10 });
+        await recordReading(ctx, kri.id, { value: 3 });          // GREEN
+        const red = await recordReading(ctx, kri.id, { value: 12 }); // → RED transition
+
+        // Before the fix this task was created with source:'kri_breach' —
+        // an invalid enum member — so the write threw and was swallowed by
+        // the surrounding try/catch: remediationTaskId came back null and no
+        // task existed. Now it is a real RISK_MONITOR task.
+        expect(red.remediationTaskId).toBeTruthy();
+
+        const task = await globalPrisma.task.findFirstOrThrow({
+            where: { id: red.remediationTaskId!, tenantId: TENANT_ID },
+        });
+        expect(task.source).toBe('RISK_MONITOR');
+        expect(task.key).toMatch(/^TSK-\d+$/);
+
+        // The breaching reading is pinned to the task for reconciliation.
+        const reading = await globalPrisma.kriReading.findFirstOrThrow({ where: { id: red.reading.id } });
+        expect(reading.remediationTaskId).toBe(task.id);
+
+        // And it is linked to the originating risk.
+        const link = await globalPrisma.taskLink.findFirst({
+            where: { taskId: task.id, entityType: 'RISK', entityId: risk.id },
+        });
+        expect(link).not.toBeNull();
     });
 
     it('batch records system readings', async () => {

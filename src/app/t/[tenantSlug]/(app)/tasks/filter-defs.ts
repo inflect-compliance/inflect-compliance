@@ -65,6 +65,7 @@ function taskSourceLabels(t: T): Record<string, string> {
         AUDIT: t('filterEnums.source.AUDIT'),
         INTEGRATION: t('filterEnums.source.INTEGRATION'),
         EVIDENCE_EXPIRY: t('filterEnums.source.EVIDENCE_EXPIRY'),
+        RISK_MONITOR: t('filterEnums.source.RISK_MONITOR'),
     };
 }
 

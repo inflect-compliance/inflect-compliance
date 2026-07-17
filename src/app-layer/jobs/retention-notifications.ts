@@ -15,7 +15,26 @@ import { logger } from '@/lib/observability/logger';
 import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
 import { isNotificationsEnabled } from '../notifications/settings';
 import { emitAutomationEvent } from '../automation';
+import { createTask, addTaskLink } from '../usecases/task';
+import { getPermissionsForRole } from '@/lib/permissions';
 import type { RequestContext } from '../types';
+
+/**
+ * System context for an evidence-expiry reminder task, owned by the
+ * resolved actor (evidence owner, else the tenant's first ACTIVE OWNER).
+ * ADMIN permissions clear `assertCanWriteTasks`; the canonical createTask
+ * then mints the TSK-N key + audit + automation event + assignee bell.
+ */
+function buildRetentionCtx(tenantId: string, actorUserId: string): RequestContext {
+    return {
+        requestId: `retention-notifications-${tenantId}`,
+        userId: actorUserId,
+        tenantId,
+        role: 'ADMIN',
+        permissions: { canRead: true, canWrite: true, canAdmin: true, canAudit: true, canExport: false },
+        appPermissions: getPermissionsForRole('ADMIN'),
+    };
+}
 
 /** Fire-and-forget automation trigger — never blocks the notification job. */
 function emitEvidenceTrigger(
@@ -153,35 +172,28 @@ export async function runEvidenceRetentionNotifications(
             skippedNoActor++;
             continue;
         }
-        const task = await prisma.task.create({
-            data: {
-                tenantId: ev.tenantId,
-                // TP-5 — a neutral TASK carrying the EVIDENCE_EXPIRY source
-                // so it lands in the universal /tasks inbox and is filterable
-                // by where it came from.
-                type: 'TASK',
-                source: 'EVIDENCE_EXPIRY',
-                title: `Refresh expiring evidence: ${ev.title}`,
-                description: `Evidence "${ev.title}" expires in ${daysLeft} days (${formatDate(ev.retentionUntil)}). Please upload refreshed evidence or extend the retention date.`,
-                status: 'OPEN',
-                priority: daysLeft <= 7 ? 'P1' : 'P2',
-                createdByUserId,
-                // Assign to the evidence owner when one exists so the
-                // reminder reaches the person responsible for it.
-                ...(ev.ownerUserId ? { assigneeUserId: ev.ownerUserId } : {}),
-                ...(ev.controlId ? { controlId: ev.controlId } : {}),
-            },
+        // TP-1 — route through the canonical createTask so the reminder
+        // task carries a TSK-N key + TASK_CREATED audit/automation event +
+        // assignee bell/email, same as every other task (was a raw
+        // prisma.task.create that produced a keyless, unaudited task).
+        const ctx = buildRetentionCtx(ev.tenantId, createdByUserId);
+        const task = await createTask(ctx, {
+            // TP-5 — a neutral TASK carrying the EVIDENCE_EXPIRY source
+            // so it lands in the universal /tasks inbox and is filterable
+            // by where it came from.
+            type: 'TASK',
+            source: 'EVIDENCE_EXPIRY',
+            title: `Refresh expiring evidence: ${ev.title}`,
+            description: `Evidence "${ev.title}" expires in ${daysLeft} days (${formatDate(ev.retentionUntil)}). Please upload refreshed evidence or extend the retention date.`,
+            priority: daysLeft <= 7 ? 'P1' : 'P2',
+            // Assign to the evidence owner when one exists so the reminder
+            // reaches the person responsible for it.
+            ...(ev.ownerUserId ? { assigneeUserId: ev.ownerUserId } : {}),
+            ...(ev.controlId ? { controlId: ev.controlId } : {}),
         });
 
-        // Create task link to evidence
-        await prisma.taskLink.create({
-            data: {
-                taskId: task.id,
-                tenantId: ev.tenantId,
-                entityType: 'EVIDENCE',
-                entityId: ev.id,
-            },
-        });
+        // Link the task to the evidence it was raised for.
+        await addTaskLink(ctx, task.id, 'EVIDENCE', ev.id);
 
         // Enqueue EVIDENCE_EXPIRING email to tenant admins/editors
         // Tenant notification eligibility — skip if notifications are disabled.

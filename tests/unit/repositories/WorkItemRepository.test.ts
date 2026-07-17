@@ -11,10 +11,32 @@
  * not-found guards on update / setStatus / assign / unlink / remove.
  */
 
-import { WorkItemRepository, TaskLinkRepository, TaskCommentRepository, TaskWatcherRepository } from '@/app-layer/repositories/WorkItemRepository';
+import { WorkItemRepository, TaskLinkRepository, TaskCommentRepository, TaskWatcherRepository, normalizeWorkItemSource } from '@/app-layer/repositories/WorkItemRepository';
 import { makeRequestContext } from '../../helpers/make-context';
 
 const ctx = makeRequestContext('ADMIN');
+
+describe('normalizeWorkItemSource — source validation at the write boundary', () => {
+    it('defaults a missing/empty source to MANUAL', () => {
+        expect(normalizeWorkItemSource(undefined)).toBe('MANUAL');
+        expect(normalizeWorkItemSource(null)).toBe('MANUAL');
+        expect(normalizeWorkItemSource('')).toBe('MANUAL');
+    });
+
+    it('passes valid enum members through', () => {
+        for (const s of ['MANUAL', 'INTEGRATION', 'POLICY_REVIEW', 'EVIDENCE_EXPIRY', 'AUDIT', 'RISK_MONITOR']) {
+            expect(normalizeWorkItemSource(s)).toBe(s);
+        }
+    });
+
+    it('throws LOUDLY on an invalid source (never a silent blind cast)', () => {
+        // The exact bugs this guards: KRI-breach + risk-appetite passed
+        // these free strings, which are not enum members.
+        expect(() => normalizeWorkItemSource('kri_breach')).toThrow(/Invalid task source/);
+        expect(() => normalizeWorkItemSource('risk_appetite_breach')).toThrow(/Invalid task source/);
+        expect(() => normalizeWorkItemSource('bogus')).toThrow(/Invalid task source/);
+    });
+});
 
 // A fresh fake `db` per test — every model method is a jest.fn() so we
 // can inspect call args and stub resolved values per branch.
@@ -294,7 +316,7 @@ describe('WorkItemRepository.create', () => {
             description: 'desc',
             severity: 'HIGH',
             priority: 'P0',
-            source: 'IMPORT',
+            source: 'INTEGRATION',
             dueAt: '2026-01-01T00:00:00.000Z',
             assigneeUserId: 'a1',
             reviewerUserId: 'r1',
@@ -303,6 +325,7 @@ describe('WorkItemRepository.create', () => {
         });
         const data = db.task.create.mock.calls[0][0].data;
         expect(data.type).toBe('BUG');
+        expect(data.source).toBe('INTEGRATION');
         expect(data.description).toBe('desc');
         expect(data.dueAt).toBeInstanceOf(Date);
         expect(data.assigneeUserId).toBe('a1');

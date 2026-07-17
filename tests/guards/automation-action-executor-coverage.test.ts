@@ -44,7 +44,10 @@ describe('action-executor coverage', () => {
     it('the executor produces real side effects (not just an execution row)', () => {
         const src = read(EXECUTOR);
         expect(src).toMatch(/notification\.createMany/); // NOTIFY_USER
-        expect(src).toMatch(/\.task\.create/); // CREATE_TASK
+        // CREATE_TASK routes through the canonical createTask usecase (TP-1)
+        // so the spawned task carries a TSK-N key + audit + automation event
+        // + bell, instead of a raw keyless db.task.create.
+        expect(src).toMatch(/createTaskUsecase\(/); // CREATE_TASK
         expect(src).toMatch(/updateMany/); // UPDATE_STATUS
         expect(src).toMatch(/safeFetch\(/); // WEBHOOK (SSRF-guarded outbound)
     });

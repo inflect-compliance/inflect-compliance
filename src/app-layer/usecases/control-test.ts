@@ -28,7 +28,37 @@ import { runInTenantContext, type PrismaTx } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { computeNextDueAt } from '../utils/cadence';
 import { createTask } from './task';
+import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
 import { bumpEntityCacheVersion } from '@/lib/cache/list-cache';
+
+/**
+ * Idempotency guard for the FAIL → CONTROL_GAP spawn. A re-run of a
+ * failing test on the same control + plan must reuse the existing open
+ * gap task instead of minting a duplicate every run (mirrors the
+ * dedupe in retention-notifications + the automation executor). Scoped
+ * per (control, testPlan) via the metadataJson.testPlanId pointer that
+ * every spawn writes.
+ */
+async function hasOpenGapTask(
+    db: PrismaTx,
+    ctx: RequestContext,
+    controlId: string | null,
+    testPlanId: string,
+): Promise<boolean> {
+    if (!controlId) return false;
+    const existing = await db.task.findFirst({
+        where: {
+            tenantId: ctx.tenantId,
+            type: 'CONTROL_GAP',
+            controlId,
+            status: { notIn: [...TERMINAL_WORK_ITEM_STATUSES] },
+            deletedAt: null,
+            metadataJson: { path: ['testPlanId'], equals: testPlanId },
+        },
+        select: { id: true },
+    });
+    return existing != null;
+}
 
 // Epic D.2 — preserve the three-state contract on update paths.
 function sanitizeOptional(v: string | null | undefined): string | null | undefined {
@@ -425,6 +455,9 @@ export async function completeTestRun(ctx: RequestContext, runId: string, input:
             await emitTestRunFailed(db, ctx, { id: runId, findingSummary: sanitisedInput.findingSummary });
 
             try {
+                // Idempotent: a repeated failing run reuses the open gap
+                // task for this (control, plan) instead of duplicating.
+                if (!(await hasOpenGapTask(db, ctx, run.controlId, run.testPlanId)))
                 await createTask(ctx, {
                     title: `Test failed: ${plan?.name || 'Unknown plan'}`,
                     type: 'CONTROL_GAP',
@@ -624,6 +657,9 @@ export async function createAutomatedTestRun(
             await emitTestRunFailed(db, ctx, { id: run.id, findingSummary: input.notes });
 
             try {
+                // Idempotent: reuse the open gap task for this
+                // (control, plan) instead of duplicating on every run.
+                if (!(await hasOpenGapTask(db, ctx, plan.controlId, plan.id)))
                 await createTask(ctx, {
                     title: `Automated test failed: ${plan.name || 'Unknown plan'}`,
                     type: 'CONTROL_GAP',

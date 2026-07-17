@@ -396,8 +396,8 @@ export async function createBreachRemediationTask(
     const task = await createTask(ctx, {
         title,
         type: 'TASK',
-        priority: 'HIGH',
-        source: 'risk_appetite_breach',
+        priority: 'P1',
+        source: 'RISK_MONITOR',
         // polish #12 — the description carries an admin-page deep
         // link to the originating breach row (the admin page anchors
         // each row by id), so the assignee can verify the breach
