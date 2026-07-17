@@ -62,7 +62,6 @@ export default function TestPlansPanel({ controlId }: { controlId: string }) {
     const [showForm, setShowForm] = useState(false);
     const [name, setName] = useState('');
     const [frequency, setFrequency] = useState('QUARTERLY');
-    const [method, setMethod] = useState('MANUAL');
     const [saving, setSaving] = useState(false);
     const [creatingRunFor, setCreatingRunFor] = useState<string | null>(null);
 
@@ -86,7 +85,7 @@ export default function TestPlansPanel({ controlId }: { controlId: string }) {
             const res = await fetch(apiUrl(`/controls/${controlId}/tests/plans`), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, frequency, method }),
+                body: JSON.stringify({ name, frequency }),
             });
             if (!res.ok) throw new Error(await res.text());
             setShowForm(false);
@@ -164,13 +163,10 @@ export default function TestPlansPanel({ controlId }: { controlId: string }) {
                                 ))}
                             </select>
                         </div>
-                        <div>
-                            <label className="text-xs text-content-muted block mb-1">{t('method')}</label>
-                            <select className="input w-full" value={method} onChange={e => setMethod(e.target.value)} id="test-plan-method-select">
-                                <option value="MANUAL">{t('manual')}</option>
-                                <option value="AUTOMATED">{t('automated')}</option>
-                            </select>
-                        </div>
+                        {/* PR-Q — the MANUAL/AUTOMATED method select was removed here
+                            too: createTestPlan never mapped it to an automationType
+                            or a schedule, so it was inert. Plans create MANUAL;
+                            cadence is configured via the plan's schedule section. */}
                     </div>
                     <Button variant="primary" size="sm" onClick={createPlan} disabled={saving || !name.trim()} id="save-test-plan-btn">
                         {saving ? t('creating') : <><AppIcon name="save" size={14} className="inline-block mr-1" /> {t('createPlan')}</>}

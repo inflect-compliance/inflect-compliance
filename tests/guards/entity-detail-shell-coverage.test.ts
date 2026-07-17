@@ -162,6 +162,9 @@ describe("EntityDetailLayout adoption — PR-4", () => {
     const KNOWN_NON_PRIMARY_DETAIL = new Set<string>([
       "src/app/t/[tenantSlug]/(app)/audits/cycles/[cycleId]/readiness/page.tsx",
       "src/app/t/[tenantSlug]/(app)/controls/[controlId]/tests/[planId]/page.tsx",
+      // PR-Q — tenant-wide test-plan detail; thin wrapper around the shared
+      // <TestPlanDetailView> (same non-primary sub-page as the control-scoped one).
+      "src/app/t/[tenantSlug]/(app)/tests/plans/[planId]/page.tsx",
       "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/diff/page.tsx",
       "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/install/page.tsx",
       "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/templates/page.tsx",

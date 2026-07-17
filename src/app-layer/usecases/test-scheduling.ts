@@ -9,11 +9,6 @@
  *                         Recomputes nextRunAt so the next scheduler
  *                         tick picks the plan up at the right instant.
  *
- *   • getUpcomingTests  — list of due-or-soon scheduled runs anchored
- *                         on the new `nextRunAt` field (NOT the legacy
- *                         `nextDueAt` which still backs the deadline-
- *                         monitor digest UI).
- *
  *   • getTestDashboard  — G-2-specific dashboard slice. Emits an
  *                         `automation` summary, a top-N upcoming
  *                         list, and a per-day pass/fail/inconclusive
@@ -207,17 +202,10 @@ export async function scheduleTestPlan(
     return result;
 }
 
-// ─── 2. getUpcomingTests ───────────────────────────────────────────
-
-export interface UpcomingTestsOptions {
-    /** Lookahead window. Default 30 days, max 365. */
-    windowDays?: number;
-    /** Max rows. Default 50, max 200. */
-    limit?: number;
-    /** Optional control filter for control-detail page widgets. */
-    controlId?: string;
-}
-
+// PR-Q — the standalone `getUpcomingTests` usecase + its `GET /tests/upcoming`
+// route were removed (dead surface — no UI consumer). `getTestDashboard` below
+// still builds its own top-N "upcoming" list from `nextRunAt`; this DTO is the
+// shape of those items and is now used solely by the dashboard.
 export interface UpcomingTestDto {
     planId: string;
     planName: string;
@@ -230,64 +218,6 @@ export interface UpcomingTestDto {
     nextRunAtIso: string;
     /** Negative = overdue. Useful for sort + visual badging. */
     daysUntilRun: number;
-}
-
-export async function getUpcomingTests(
-    ctx: RequestContext,
-    options: UpcomingTestsOptions = {},
-): Promise<{ windowDays: number; items: UpcomingTestDto[] }> {
-    assertCanReadTests(ctx);
-
-    const windowDays = clamp(options.windowDays ?? 30, 1, 365);
-    const limit = clamp(options.limit ?? 50, 1, 200);
-    const now = new Date();
-    const horizon = new Date(now.getTime() + windowDays * 86_400_000);
-
-    const items = await runInTenantContext(ctx, async (db) => {
-        const rows = await db.controlTestPlan.findMany({
-            where: {
-                tenantId: ctx.tenantId,
-                status: 'ACTIVE',
-                schedule: { not: null },
-                nextRunAt: { lte: horizon, not: null },
-                automationType: { in: ['SCRIPT', 'INTEGRATION'] },
-                ...(options.controlId ? { controlId: options.controlId } : {}),
-            },
-            select: {
-                id: true,
-                name: true,
-                controlId: true,
-                automationType: true,
-                schedule: true,
-                scheduleTimezone: true,
-                nextRunAt: true,
-                control: { select: { id: true, name: true } },
-            },
-            orderBy: { nextRunAt: 'asc' },
-            take: limit,
-        });
-
-        return rows.map((p) => {
-            const next = p.nextRunAt as Date;
-            const ms = next.getTime() - now.getTime();
-            return {
-                planId: p.id,
-                planName: p.name,
-                controlId: p.controlId,
-                controlName: p.control?.name ?? 'Unknown',
-                automationType: p.automationType as
-                    | 'MANUAL'
-                    | 'SCRIPT'
-                    | 'INTEGRATION',
-                schedule: p.schedule,
-                scheduleTimezone: p.scheduleTimezone,
-                nextRunAtIso: next.toISOString(),
-                daysUntilRun: Math.floor(ms / 86_400_000),
-            };
-        });
-    });
-
-    return { windowDays, items };
 }
 
 // ─── 3. getTestDashboard (G-2 slice) ───────────────────────────────
@@ -463,11 +393,6 @@ export async function getTestDashboard(
 }
 
 // ─── helpers ───────────────────────────────────────────────────────
-
-function clamp(n: number, min: number, max: number): number {
-    if (Number.isNaN(n)) return min;
-    return Math.max(min, Math.min(max, Math.floor(n)));
-}
 
 function isoDateUTC(d: Date): string {
     // YYYY-MM-DD in UTC — toISOString() always emits Z; slice the date.

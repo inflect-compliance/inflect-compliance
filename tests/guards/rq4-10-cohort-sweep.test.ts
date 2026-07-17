@@ -93,6 +93,16 @@ function fileMountsBackAffordance(file: string): boolean {
     // forwards the prop straight to <PageHeader>, which mounts
     // <BackAffordance>.
     if (/\bback:\s*\{\s*smart:\s*true\s*\}/.test(source)) return true;
+    // PR-Q — the two test-plan detail routes are thin wrappers that delegate the
+    // ENTIRE detail body (breadcrumbs + BackAffordance + content) to the shared
+    // <TestPlanDetailView>. That component isn't a sibling *Client.tsx, so the
+    // directory sweep can't see it — recognise the delegation explicitly.
+    if (/\bTestPlanDetailView\b/.test(source)) {
+        const shared = path.join(APP_PAGES, 'tests/_components/TestPlanDetailView.tsx');
+        if (fs.existsSync(shared) && /<BackAffordance\b/.test(fs.readFileSync(shared, 'utf-8'))) {
+            return true;
+        }
+    }
     if (!/@\/components\/nav\/BackAffordance/.test(source)) return false;
     return /<BackAffordance\b/.test(source);
 }

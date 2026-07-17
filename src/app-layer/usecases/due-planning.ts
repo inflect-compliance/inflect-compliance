@@ -12,6 +12,37 @@ import { assertCanReadTests, assertCanManageTestPlans } from '../policies/test.p
 import { logEvent } from '../events/audit';
 import { runInTenantContext, runInTenantReadContext, type PrismaTx } from '@/lib/db-context';
 
+// ─── Authoritative "due" signal (PR-Q) ───
+//
+// A test plan carries two due clocks that used to be queried separately and
+// disagree:
+//   • `nextDueAt` — derived from the `frequency` enum (incl. AD_HOC).
+//   • `nextRunAt` — derived from the cron `schedule` (Epic G-2).
+// The old queries filtered `frequency != 'AD_HOC'` and never looked at
+// `nextRunAt`, so a plan given a cron cadence (nextRunAt set, frequency still
+// AD_HOC — the NewTestPlanModal default) was permanently invisible in
+// /tests/due and the dashboard overdue count.
+//
+// The reconciliation: a plan is "due" when its EARLIEST real next-occurrence
+// (the min of the two non-null clocks) has reached the threshold. A plan with
+// neither clock (a pure ad-hoc plan) is never due. `effectiveDueAt` is that one
+// authoritative signal; `dueOrBeforeWhere` is the matching Prisma filter. Every
+// due/overdue surface (getDueQueue, runDuePlanning, dashboard overduePlans,
+// listAllTestPlans) is driven from these two so the counts can't diverge.
+
+export function effectiveDueAt(p: { nextDueAt: Date | null; nextRunAt: Date | null }): Date | null {
+    const dates = [p.nextDueAt, p.nextRunAt].filter((d): d is Date => d != null);
+    if (dates.length === 0) return null;
+    return dates.reduce((a, b) => (a <= b ? a : b));
+}
+
+/** Plans whose earliest due-clock is at/before `threshold` (regardless of frequency). */
+function dueOrBeforeWhere(threshold: Date): Prisma.ControlTestPlanWhereInput {
+    return {
+        OR: [{ nextDueAt: { lte: threshold } }, { nextRunAt: { lte: threshold } }],
+    };
+}
+
 // ─── Due Queue ───
 
 export async function getDueQueue(ctx: RequestContext) {
@@ -26,8 +57,7 @@ export async function getDueQueue(ctx: RequestContext) {
             where: {
                 tenantId: ctx.tenantId,
                 status: 'ACTIVE',
-                nextDueAt: { lte: soon },
-                frequency: { not: 'AD_HOC' },
+                ...dueOrBeforeWhere(soon),
             },
             include: {
                 control: { select: { id: true, name: true, code: true } },
@@ -40,15 +70,22 @@ export async function getDueQueue(ctx: RequestContext) {
                 },
                 _count: { select: { runs: true } },
             },
-            orderBy: { nextDueAt: 'asc' },
         });
     });
 
-    return plans.map((p) => ({
-        ...p,
-        isOverdue: p.nextDueAt ? p.nextDueAt <= now : false,
-        hasPendingRun: p.runs?.length > 0,
-    }));
+    // Sort + flag by the reconciled effective-due signal (not nextDueAt alone),
+    // computed in memory because Prisma can't order by min(nextDueAt, nextRunAt).
+    return plans
+        .map((p) => {
+            const due = effectiveDueAt(p);
+            return {
+                ...p,
+                effectiveDueAt: due,
+                isOverdue: due ? due <= now : false,
+                hasPendingRun: p.runs?.length > 0,
+            };
+        })
+        .sort((a, b) => (a.effectiveDueAt?.getTime() ?? Infinity) - (b.effectiveDueAt?.getTime() ?? Infinity));
 }
 
 // ─── Due Planning (Idempotent) ───
@@ -59,13 +96,13 @@ export async function runDuePlanning(ctx: RequestContext) {
     return runInTenantContext(ctx, async (db: PrismaTx) => {
         const now = new Date();
 
-        // Find ACTIVE plans that are due and don't already have a PLANNED/RUNNING run
+        // Find ACTIVE plans that are due and don't already have a PLANNED/RUNNING run.
+        // Reconciled due signal — either clock at/before now (see effectiveDueAt).
         const duePlans = await db.controlTestPlan.findMany({
             where: {
                 tenantId: ctx.tenantId,
                 status: 'ACTIVE',
-                nextDueAt: { lte: now },
-                frequency: { not: 'AD_HOC' },
+                ...dueOrBeforeWhere(now),
             },
             include: {
                 runs: {
@@ -160,13 +197,14 @@ export async function getTestDashboardMetrics(ctx: RequestContext, periodDays: n
         const failRate = completedRuns.length > 0 ? Math.round((failRuns.length / completedRuns.length) * 100) : 0;
         const evidenceRate = completedRuns.length > 0 ? Math.round((runsWithEvidence.length / completedRuns.length) * 100) : 0;
 
-        // Overdue plans
+        // Overdue plans — the ONE authoritative overdue count, reconciled across
+        // both clocks (same signal /tests/due and /tests use). `lt: now` on either
+        // clock = overdue; the `dueOrBeforeWhere(now)` OR includes both.
         const overduePlans = await db.controlTestPlan.count({
             where: {
                 tenantId: ctx.tenantId,
                 status: 'ACTIVE',
-                nextDueAt: { lt: now },
-                frequency: { not: 'AD_HOC' },
+                ...dueOrBeforeWhere(now),
             },
         });
 
@@ -237,12 +275,18 @@ export async function listAllTestPlans(ctx: RequestContext, filters: TestPlanFil
 
         if (filters.status) where.status = filters.status as TestPlanStatus;
         if (filters.controlId) where.controlId = filters.controlId;
+        // Reconciled due filters — either clock (nextDueAt / nextRunAt) counts, so
+        // a cron-scheduled plan is never invisible here either.
         if (filters.due === 'overdue') {
-            where.nextDueAt = { lt: new Date() };
+            const now = new Date();
+            where.OR = [{ nextDueAt: { lt: now } }, { nextRunAt: { lt: now } }];
         } else if (filters.due === 'next7d') {
             const now = new Date();
             const in7 = new Date(now.getTime() + 7 * 86400000);
-            where.nextDueAt = { gte: now, lte: in7 };
+            where.OR = [
+                { nextDueAt: { gte: now, lte: in7 } },
+                { nextRunAt: { gte: now, lte: in7 } },
+            ];
         }
         if (filters.q) {
             where.name = { contains: filters.q, mode: 'insensitive' };

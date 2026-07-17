@@ -1,13 +1,13 @@
 'use client';
-/* TODO(swr-migration): this file has fetch-on-mount + setState
- * patterns flagged by react-hooks/set-state-in-effect. Each call site
- * carries an inline disable directive; collectively they should
- * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
+/* PR-Q — migrated to useTenantSWR (Epic 69 shape); the fetch-on-mount +
+ * setState pattern (and its react-hooks/set-state-in-effect disables) is gone. */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
+import { useTenantHref } from '@/lib/tenant-context-provider';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { CACHE_KEYS } from '@/lib/swr-keys';
 import { TestsSubNav } from '../_components/TestsSubNav';
 import { ProgressBar, type ProgressBarVariant } from '@/components/ui/progress-bar';
 import { ProgressCircle } from '@/components/ui/progress-circle';
@@ -22,6 +22,7 @@ import { SkeletonDashboard } from '@/components/ui/skeleton';
 import { Heading } from '@/components/ui/typography';
 import { textLinkVariants } from '@/components/ui/typography';
 import { cardVariants } from '@/components/ui/card';
+import { cn } from '@/lib/cn';
 
 interface DashboardMetrics {
     periodDays: number;
@@ -82,32 +83,14 @@ function toProgressVariant(color: string): ProgressBarVariant {
 
 export default function TestDashboardPage() {
     const t = useTranslations('controlTests');
-    const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
 
-    const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-    const [readiness, setReadiness] = useState<FrameworkReadiness[]>([]);
     const [period, setPeriod] = useState(30);
-    const [loading, setLoading] = useState(true);
+    const { data: metrics } = useTenantSWR<DashboardMetrics>(CACHE_KEYS.tests.dashboard(period));
+    const { data: readinessData } = useTenantSWR<FrameworkReadiness[]>(CACHE_KEYS.tests.readiness());
+    const readiness = readinessData ?? [];
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const [mRes, rRes] = await Promise.all([
-                fetch(apiUrl(`/tests/dashboard?period=${period}`)),
-                fetch(apiUrl('/tests/readiness')),
-            ]);
-            if (mRes.ok) setMetrics(await mRes.json());
-            if (rRes.ok) setReadiness(await rRes.json());
-        } finally {
-            setLoading(false);
-        }
-    }, [apiUrl, period]);
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    useEffect(() => { fetchData(); }, [fetchData]);
-
-    if (loading || !metrics) return <SkeletonDashboard />;
+    if (!metrics) return <SkeletonDashboard />;
 
     return (
         <DashboardLayout
@@ -148,6 +131,25 @@ export default function TestDashboardPage() {
                 <MetricCard label={t('dashboard.kpi.failRate')} value={`${metrics.failRate}%`} sub={t('dashboard.kpi.failSub', { count: metrics.failRuns })} color={metrics.failRate <= 10 ? 'green' : metrics.failRate <= 30 ? 'amber' : 'red'} />
                 <MetricCard label={t('dashboard.kpi.evidenceRate')} value={`${metrics.evidenceRate}%`} sub={t('dashboard.kpi.evidenceSub', { count: metrics.runsWithEvidence })} color={metrics.evidenceRate >= 80 ? 'green' : metrics.evidenceRate >= 50 ? 'amber' : 'red'} />
             </div>
+
+            {/* PR-Q — the ONE authoritative overdue count (reconciled across both
+                due clocks in getTestDashboardMetrics). It is the same number the
+                /tests and /tests/due surfaces show; this card names it and
+                cross-links to the queue rather than restating a divergent count.
+                The automation section below shows `overdueScheduled` — the SUBSET
+                of these that are on an automation cadence. */}
+            <Link
+                href={tenantHref('/tests/due')}
+                className={cn(cardVariants({ density: 'compact' }), 'flex items-center justify-between hover:border-border-emphasis transition')}
+                id="dashboard-overdue-link"
+            >
+                <KPIStat
+                    value={metrics.overduePlans}
+                    label={t('dashboard.overdueAuthoritative')}
+                    tone={metrics.overduePlans > 0 ? 'critical' : 'success'}
+                />
+                <span className={cn(textLinkVariants(), 'text-xs')}>{t('dashboard.viewQueue')}</span>
+            </Link>
 
             {/* Result Distribution */}
             <div className="grid md:grid-cols-2 gap-section">

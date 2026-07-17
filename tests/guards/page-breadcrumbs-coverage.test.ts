@@ -103,6 +103,9 @@ const EXEMPT_FILES = new Set<string>([
     // an entity detail (control, audit, framework, vendor) and
     // renders inside the parent's `<EntityDetailLayout>` context.
     "src/app/t/[tenantSlug]/(app)/controls/[controlId]/tests/[planId]/page.tsx",
+    // PR-Q — both test-plan detail routes are thin wrappers around
+    // <TestPlanDetailView>, which owns the breadcrumb trail.
+    "src/app/t/[tenantSlug]/(app)/tests/plans/[planId]/page.tsx",
     "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/diff/page.tsx",
     "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/templates/page.tsx",
     "src/app/t/[tenantSlug]/(app)/admin/vendor-assessment-reviews/[assessmentId]/VendorAssessmentReviewClient.tsx",

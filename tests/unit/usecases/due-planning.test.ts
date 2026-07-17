@@ -308,20 +308,23 @@ describe('listAllTestPlans — filter translation', () => {
         expect(where.name).toEqual({ contains: 'firewall', mode: 'insensitive' });
     });
 
-    it('translates due=overdue into a nextDueAt upper bound', async () => {
+    it('translates due=overdue into an either-clock upper bound (PR-Q)', async () => {
         const db = fakeDb();
         db.controlTestPlan.findMany.mockResolvedValue([]);
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn(db as never));
 
         await listAllTestPlans(makeRequestContext('EDITOR'), { due: 'overdue' });
 
+        // PR-Q — reconciled: overdue if EITHER nextDueAt or nextRunAt < now.
         const where = db.controlTestPlan.findMany.mock.calls[0][0].where;
-        expect(where.nextDueAt).toHaveProperty('lt');
-        expect(where.nextDueAt.lt).toBeInstanceOf(Date);
-        expect(where.nextDueAt.gte).toBeUndefined();
+        expect(where.OR).toEqual([
+            { nextDueAt: { lt: expect.any(Date) } },
+            { nextRunAt: { lt: expect.any(Date) } },
+        ]);
+        expect(where.nextDueAt).toBeUndefined();
     });
 
-    it('translates due=next7d into a nextDueAt window (gte + lte)', async () => {
+    it('translates due=next7d into an either-clock window (PR-Q)', async () => {
         const db = fakeDb();
         db.controlTestPlan.findMany.mockResolvedValue([]);
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn(db as never));
@@ -329,8 +332,9 @@ describe('listAllTestPlans — filter translation', () => {
         await listAllTestPlans(makeRequestContext('EDITOR'), { due: 'next7d' });
 
         const where = db.controlTestPlan.findMany.mock.calls[0][0].where;
-        expect(where.nextDueAt.gte).toBeInstanceOf(Date);
-        expect(where.nextDueAt.lte).toBeInstanceOf(Date);
-        expect(where.nextDueAt.lte.getTime()).toBeGreaterThan(where.nextDueAt.gte.getTime());
+        expect(where.OR).toEqual([
+            { nextDueAt: { gte: expect.any(Date), lte: expect.any(Date) } },
+            { nextRunAt: { gte: expect.any(Date), lte: expect.any(Date) } },
+        ]);
     });
 });

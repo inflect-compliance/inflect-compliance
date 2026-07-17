@@ -1,15 +1,15 @@
 'use client';
-/* TODO(swr-migration): this file has fetch-on-mount + setState
- * patterns flagged by react-hooks/set-state-in-effect. Each call site
- * carries an inline disable directive; collectively they should
- * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
+/* PR-Q — migrated to useTenantSWR (Epic 69 shape); the fetch-on-mount +
+ * setState pattern (and its react-hooks/set-state-in-effect disables) is gone. */
 
 import { formatDate } from '@/lib/format-date';
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useToast } from '@/components/ui/hooks/use-toast';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { CACHE_KEYS } from '@/lib/swr-keys';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
@@ -29,6 +29,10 @@ interface DuePlan {
     name: string;
     frequency: string;
     nextDueAt: string | null;
+    nextRunAt: string | null;
+    // PR-Q — reconciled due date (earliest of nextDueAt/nextRunAt), computed
+    // server-side; drives isOverdue + the "next due" column.
+    effectiveDueAt: string | null;
     controlId: string;
     isOverdue: boolean;
     hasPendingRun: boolean;
@@ -51,24 +55,11 @@ export default function DueQueuePage() {
     const router = useRouter();
     const toast = useToast();
 
-    const [queue, setQueue] = useState<DuePlan[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data: queueData, isLoading: loading, mutate } = useTenantSWR<DuePlan[]>(CACHE_KEYS.tests.due());
+    const queue = queueData ?? [];
     const [planning, setPlanning] = useState(false);
     const [planningResult, setPlanningResult] = useState<{ checked: number; created: number; alreadyPending: number } | null>(null);
     const [error, setError] = useState('');
-
-    const fetchQueue = useCallback(async () => {
-        setLoading(true);
-        try {
-            const res = await fetch(apiUrl('/tests/due'));
-            if (res.ok) setQueue(await res.json());
-        } finally {
-            setLoading(false);
-        }
-    }, [apiUrl]);
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    useEffect(() => { fetchQueue(); }, [fetchQueue]);
 
     const handleRunDuePlanning = async () => {
         setPlanning(true);
@@ -79,7 +70,7 @@ export default function DueQueuePage() {
             if (res.ok) {
                 const result = await res.json();
                 setPlanningResult(result);
-                await fetchQueue();
+                await mutate();
             } else {
                 setError(t('due.planningFailed'));
             }
@@ -173,7 +164,7 @@ export default function DueQueuePage() {
                     {
                         id: 'plan', header: t('due.col.plan'), accessorKey: 'name',
                         cell: ({ row }) => (
-                            <Link href={tenantHref(`/controls/${row.original.controlId}/tests/${row.original.id}`)} className="text-content-emphasis font-medium hover:text-[var(--brand-default)] transition">
+                            <Link href={tenantHref(`/tests/plans/${row.original.id}`)} className="text-content-emphasis font-medium hover:text-[var(--brand-default)] transition">
                                 {row.original.name}
                             </Link>
                         ),
@@ -188,10 +179,10 @@ export default function DueQueuePage() {
                     },
                     { id: 'frequency', header: t('due.col.frequency'), accessorFn: (p) => FREQ_LABELS[p.frequency] || p.frequency },
                     {
-                        id: 'dueDate', header: t('due.col.dueDate'), accessorKey: 'nextDueAt',
+                        id: 'dueDate', header: t('due.col.dueDate'), accessorKey: 'effectiveDueAt',
                         cell: ({ row }) => (
                             <span className={row.original.isOverdue ? 'text-content-error font-semibold' : 'text-content-warning'}>
-                                {formatDate(row.original.nextDueAt)}
+                                {formatDate(row.original.effectiveDueAt ?? row.original.nextDueAt)}
                                 {row.original.isOverdue && ' !'}
                             </span>
                         ),

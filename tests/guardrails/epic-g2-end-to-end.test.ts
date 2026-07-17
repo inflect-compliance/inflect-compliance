@@ -75,13 +75,12 @@ describe('Epic G-2 — end-to-end readiness', () => {
         expect(text).toMatch(/ScheduleTestPlanSchema\b/);
     });
 
-    // [5]
-    test('GET /tests/upcoming route exists and uses getUpcomingTests', () => {
-        const rel = 'src/app/api/t/[tenantSlug]/tests/upcoming/route.ts';
-        expect(fileExists(rel)).toBe(true);
-        const text = read(rel);
-        expect(text).toMatch(/export const GET/);
-        expect(text).toMatch(/getUpcomingTests\b/);
+    // [5] PR-Q — the standalone GET /tests/upcoming route + getUpcomingTests
+    // usecase were removed as dead surface (no UI consumer; the dashboard's
+    // "upcoming" list comes from getTestDashboard). Assert they stay gone.
+    test('GET /tests/upcoming route + getUpcomingTests usecase are removed (PR-Q)', () => {
+        expect(fileExists('src/app/api/t/[tenantSlug]/tests/upcoming/route.ts')).toBe(false);
+        expect(read('src/app-layer/usecases/test-scheduling.ts')).not.toMatch(/export async function getUpcomingTests\b/);
     });
 
     // [6]
@@ -101,10 +100,12 @@ describe('Epic G-2 — end-to-end readiness', () => {
         expect(text).toMatch(/trend:\s*g2\.trend/);
     });
 
-    // [7]
-    test('test-plan detail page mounts the schedule picker', () => {
+    // [7] PR-Q — the plan-detail body was extracted into the shared
+    // TestPlanDetailView (mounted by both the control-scoped and the new
+    // tenant-wide /tests/plans/[planId] routes); the schedule picker lives there.
+    test('shared test-plan detail view mounts the schedule picker', () => {
         const text = read(
-            'src/app/t/[tenantSlug]/(app)/controls/[controlId]/tests/[planId]/page.tsx',
+            'src/app/t/[tenantSlug]/(app)/tests/_components/TestPlanDetailView.tsx',
         );
         expect(text).toMatch(/import.+TestPlanScheduleSection.+from\s+'@\/components\/TestPlanScheduleSection'/);
         expect(text).toMatch(/<TestPlanScheduleSection\b/);
@@ -161,9 +162,6 @@ describe('Epic G-2 — end-to-end readiness', () => {
         await expect(
             import('@/app-layer/usecases/test-scheduling'),
         ).resolves.toHaveProperty('scheduleTestPlan');
-        await expect(
-            import('@/app-layer/usecases/test-scheduling'),
-        ).resolves.toHaveProperty('getUpcomingTests');
         await expect(
             import('@/app-layer/usecases/test-scheduling'),
         ).resolves.toHaveProperty('getTestDashboard');

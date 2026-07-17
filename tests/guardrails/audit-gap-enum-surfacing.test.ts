@@ -83,7 +83,8 @@ describe('Audit-gap enum surfacing', () => {
     describe('TestPlanStatus.ARCHIVED (Audit Coherence S2)', () => {
         const enums = read('prisma/schema/enums.prisma');
         const detail = read(
-            'src/app/t/[tenantSlug]/(app)/controls/[controlId]/tests/[planId]/page.tsx',
+            // PR-Q — PLAN_STATUS_OPTIONS moved into the shared detail view.
+            'src/app/t/[tenantSlug]/(app)/tests/_components/TestPlanDetailView.tsx',
         );
         const list = read('src/app/t/[tenantSlug]/(app)/tests/page.tsx');
 

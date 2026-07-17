@@ -82,18 +82,22 @@ describe('getDueQueue', () => {
         expect(queue[1].hasPendingRun).toBe(false);
     });
 
-    it('orders by nextDueAt ascending (soonest first) — verified by passing through repo query', async () => {
+    it('includes any plan with either due clock (no frequency filter) — PR-Q', async () => {
+        // PR-Q — reconciled due signal: a plan is due-eligible when EITHER
+        // nextDueAt or nextRunAt is at/before the horizon, regardless of
+        // frequency. The old `frequency != AD_HOC` filter made a cron-scheduled
+        // AD_HOC plan permanently invisible; it is gone.
         (mockDb.controlTestPlan.findMany as jest.Mock).mockResolvedValue([]);
         await getDueQueue(readerCtx);
         const args = (mockDb.controlTestPlan.findMany as jest.Mock).mock.calls[0][0];
-        expect(args.orderBy).toEqual({ nextDueAt: 'asc' });
-    });
-
-    it('filters out AD_HOC plans (not on a cadence)', async () => {
-        (mockDb.controlTestPlan.findMany as jest.Mock).mockResolvedValue([]);
-        await getDueQueue(readerCtx);
-        const args = (mockDb.controlTestPlan.findMany as jest.Mock).mock.calls[0][0];
-        expect(args.where.frequency).toEqual({ not: 'AD_HOC' });
+        expect(args.where.frequency).toBeUndefined();
+        expect(args.where.OR).toEqual([
+            { nextDueAt: { lte: expect.any(Date) } },
+            { nextRunAt: { lte: expect.any(Date) } },
+        ]);
+        // Ordering is done in-memory by effectiveDueAt (Prisma can't order by
+        // min(nextDueAt, nextRunAt)), so the query itself carries no orderBy.
+        expect(args.orderBy).toBeUndefined();
     });
 });
 
@@ -244,18 +248,24 @@ describe('listAllTestPlans — filter shape', () => {
         expect(args.where.controlId).toBe('c-1');
     });
 
-    it('applies due=overdue (nextDueAt < now)', async () => {
+    it('applies due=overdue (either clock < now) — PR-Q', async () => {
         (mockDb.controlTestPlan.findMany as jest.Mock).mockResolvedValue([]);
         await listAllTestPlans(readerCtx, { due: 'overdue' });
         const args = (mockDb.controlTestPlan.findMany as jest.Mock).mock.calls[0][0];
-        expect(args.where.nextDueAt).toMatchObject({ lt: expect.any(Date) });
+        expect(args.where.OR).toEqual([
+            { nextDueAt: { lt: expect.any(Date) } },
+            { nextRunAt: { lt: expect.any(Date) } },
+        ]);
     });
 
-    it('applies due=next7d (nextDueAt between now and now+7d)', async () => {
+    it('applies due=next7d (either clock between now and now+7d) — PR-Q', async () => {
         (mockDb.controlTestPlan.findMany as jest.Mock).mockResolvedValue([]);
         await listAllTestPlans(readerCtx, { due: 'next7d' });
         const args = (mockDb.controlTestPlan.findMany as jest.Mock).mock.calls[0][0];
-        expect(args.where.nextDueAt).toMatchObject({ gte: expect.any(Date), lte: expect.any(Date) });
+        expect(args.where.OR).toEqual([
+            { nextDueAt: { gte: expect.any(Date), lte: expect.any(Date) } },
+            { nextRunAt: { gte: expect.any(Date), lte: expect.any(Date) } },
+        ]);
     });
 
     it('applies q text search to name (case-insensitive)', async () => {

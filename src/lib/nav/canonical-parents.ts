@@ -175,6 +175,7 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
     // Tests
     '/tests/dashboard': { href: '/tests', label: 'Tests' },
     '/tests/due': { href: '/tests', label: 'Tests' },
+    '/tests/plans/[planId]': { href: '/tests', label: 'Tests' },
     '/tests/runs/[runId]': { href: '/tests', label: 'Tests' },
 
     // Vendors
