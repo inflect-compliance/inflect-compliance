@@ -99,6 +99,9 @@ export const POST = withApiErrorHandling(
       reviewFrequencyDays: body.reviewFrequencyDays,
       language: body.language,
       content: body.content,
+      // Forward the editor's content type so a WYSIWYG (HTML) first version
+      // round-trips as HTML instead of defaulting to MARKDOWN and losing state.
+      contentType: body.contentType,
     });
 
     return jsonResponse(policy, { status: 201 });

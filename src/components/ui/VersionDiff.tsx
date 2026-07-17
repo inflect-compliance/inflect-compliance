@@ -35,7 +35,7 @@
  */
 
 import { diffLines } from 'diff';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/card';
@@ -108,8 +108,19 @@ export function VersionDiff({
     const defaultFrom =
         fromVersionId ?? sorted[1]?.id ?? sorted[0]?.id;
 
-    const fromV = sorted.find((v) => v.id === defaultFrom);
-    const toV = sorted.find((v) => v.id === defaultTo);
+    // Uncontrolled fallback: hold the selection internally, seeded from the
+    // `fromVersionId`/`toVersionId` props (or the previous-vs-current
+    // defaults). When the consumer passes `onSelectionChange` we still call
+    // it (controlled mode), but the picker works standalone without the page
+    // threading state back down — otherwise the `<select>`s were inert.
+    const [fromId, setFromId] = useState<string | undefined>(defaultFrom);
+    const [toId, setToId] = useState<string | undefined>(defaultTo);
+
+    const activeFrom = fromId ?? defaultFrom;
+    const activeTo = toId ?? defaultTo;
+
+    const fromV = sorted.find((v) => v.id === activeFrom);
+    const toV = sorted.find((v) => v.id === activeTo);
 
     const chunks = useMemo(() => {
         if (!fromV || !toV || fromV.id === toV.id) return [];
@@ -130,12 +141,12 @@ export function VersionDiff({
     }
 
     const handleFromChange = (next: string) => {
-        if (!onSelectionChange) return;
-        onSelectionChange({ fromId: next, toId: defaultTo ?? next });
+        setFromId(next);
+        onSelectionChange?.({ fromId: next, toId: activeTo ?? next });
     };
     const handleToChange = (next: string) => {
-        if (!onSelectionChange) return;
-        onSelectionChange({ fromId: defaultFrom ?? next, toId: next });
+        setToId(next);
+        onSelectionChange?.({ fromId: activeFrom ?? next, toId: next });
     };
 
     const sameVersion = fromV?.id === toV?.id;
@@ -152,7 +163,7 @@ export function VersionDiff({
                     <span className="text-content-subtle">{t('from')}</span>
                     <select
                         className="input text-xs"
-                        value={defaultFrom}
+                        value={activeFrom}
                         onChange={(e) => handleFromChange(e.target.value)}
                         aria-label={t('compareFromAria')}
                         data-testid="version-diff-from"
@@ -169,7 +180,7 @@ export function VersionDiff({
                     <span className="text-content-subtle">{t('to')}</span>
                     <select
                         className="input text-xs"
-                        value={defaultTo}
+                        value={activeTo}
                         onChange={(e) => handleToChange(e.target.value)}
                         aria-label={t('compareToAria')}
                         data-testid="version-diff-to"

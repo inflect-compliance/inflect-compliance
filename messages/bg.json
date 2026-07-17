@@ -2711,7 +2711,11 @@
       "relHrAgo": "преди {hrs}ч",
       "relYesterday": "вчера",
       "relDaysAgo": "преди {days}д",
-      "tabTasks": "Задачи"
+      "tabTasks": "Задачи",
+      "sodApproveBlocked": "Разделяне на отговорностите — не можете да одобрите промяна, която сте заявили или създали.",
+      "rollbackConfirmTitle": "Връщане към версия {n}?",
+      "rollbackConfirmBody": "Това публикува отново версия {n} като активна. Текущата версия остава в историята.",
+      "rollbackConfirmLabel": "Връщане към версия {n}"
     },
     "evidence": {
       "title": "Доказателства за съхранение",

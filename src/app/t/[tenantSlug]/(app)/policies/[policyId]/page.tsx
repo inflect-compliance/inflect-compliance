@@ -30,6 +30,7 @@ import { VersionDiff } from '@/components/ui/VersionDiff';
 import { PolicyAcknowledgementsPanel } from '@/components/policies/PolicyAcknowledgementsPanel';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { Modal } from '@/components/ui/modal';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { MetaStrip } from '@/components/ui/meta-strip';
@@ -152,6 +153,8 @@ export default function PolicyDetailPage() {
     // Emergency publish-bypass modal (admin-only "Publish without approval").
     const [bypassOpen, setBypassOpen] = useState(false);
     const [bypassReason, setBypassReason] = useState('');
+    // A4 — rollback confirmation (names the target version before committing).
+    const [rollbackOpen, setRollbackOpen] = useState(false);
 
     const fetchPolicy = useCallback(async () => {
         setLoading(true);
@@ -449,6 +452,10 @@ export default function PolicyDetailPage() {
     const versions = policy.versions || [];
     const canWrite = tenant.permissions.canWrite;
     const canAdmin = tenant.permissions.canAdmin;
+    // A1 — client-side separation-of-duties: a reviewer may not approve a
+    // change they requested OR authored. Mirrors the server-side refusal in
+    // decidePolicyApproval so the button is disabled before the round-trip.
+    const currentUserId = tenant.userId;
 
     // Promoted state-advancing verbs (Prompt-2.4) target the current/displayed
     // version — the same gating the per-version cards use, surfaced in the
@@ -601,6 +608,7 @@ export default function PolicyDetailPage() {
                 <ApprovalBanner
                     approval={pendingApproval}
                     canDecide={canAdmin}
+                    currentUserId={currentUserId}
                     busy={!!actionLoading && actionLoading.startsWith('decide-')}
                     onDecide={(approvalId, decision) =>
                         decideApproval(approvalId, decision)
@@ -796,7 +804,7 @@ export default function PolicyDetailPage() {
                                 {t('detail.rollbackHint', { count: policy.lifecycleHistoryJson!.length })}
                             </span>
                             {canAdmin && (
-                                <Button variant="secondary" size="sm" onClick={rollbackToPrevious} disabled={!!actionLoading} id="policy-rollback-btn">
+                                <Button variant="secondary" size="sm" onClick={() => setRollbackOpen(true)} disabled={!!actionLoading} id="policy-rollback-btn">
                                     {actionLoading === 'rollback' ? '…' : t('detail.rollback')}
                                 </Button>
                             )}
@@ -875,14 +883,30 @@ export default function PolicyDetailPage() {
                                                         {a.decidedAt && ` · ${formatDate(a.decidedAt)}`}
                                                     </span>
                                                 </div>
-                                                {canAdmin && a.status === 'PENDING' && (
-                                                    <div className="flex gap-1">
-                                                        <Button variant="primary" size="xs" onClick={() => decideApproval(a.id, 'APPROVED')} disabled={!!actionLoading} id={`approve-${a.id}`}>
+                                                {canAdmin && a.status === 'PENDING' && (() => {
+                                                    // Client-side SoD mirror: block Approve when the viewer
+                                                    // requested this approval or authored the version. The
+                                                    // requester/author ids come off the nested refs
+                                                    // (`requestedBy.id` / `createdBy.id`).
+                                                    const isSelfApproval =
+                                                        (a.requestedBy?.id != null && a.requestedBy.id === currentUserId) ||
+                                                        (v.createdBy?.id != null && v.createdBy.id === currentUserId);
+                                                    const approveBtn = (
+                                                        <Button variant="primary" size="xs" onClick={isSelfApproval ? undefined : () => decideApproval(a.id, 'APPROVED')} disabled={isSelfApproval || !!actionLoading} id={`approve-${a.id}`}>
                                                             {actionLoading === 'decide-' + a.id ? '...' : t('detail.approve')}
                                                         </Button>
-                                                        <Button variant="destructive" size="xs" onClick={() => decideApproval(a.id, 'REJECTED')} disabled={!!actionLoading}>{t('detail.reject')}</Button>
-                                                    </div>
-                                                )}
+                                                    );
+                                                    return (
+                                                        <div className="flex gap-1">
+                                                            {isSelfApproval ? (
+                                                                <Tooltip content={t('detail.sodApproveBlocked')}>
+                                                                    <span className="inline-flex">{approveBtn}</span>
+                                                                </Tooltip>
+                                                            ) : approveBtn}
+                                                            <Button variant="destructive" size="xs" onClick={() => decideApproval(a.id, 'REJECTED')} disabled={!!actionLoading}>{t('detail.reject')}</Button>
+                                                        </div>
+                                                    );
+                                                })()}
                                             </div>
                                         ))}
                                     </div>
@@ -1063,6 +1087,26 @@ export default function PolicyDetailPage() {
                     </Modal.Footer>
                 </Modal>
             )}
+
+            {/* A4 — rollback confirmation. Names the exact version that will
+                become live (the newest recorded lifecycle-history entry) before
+                committing. tone="warning": rollback re-publishes a prior version,
+                it is not a destructive delete. */}
+            <ConfirmDialog
+                showModal={rollbackOpen}
+                setShowModal={setRollbackOpen}
+                tone="warning"
+                title={t('detail.rollbackConfirmTitle', {
+                    n: policy.lifecycleHistoryJson?.[policy.lifecycleHistoryJson.length - 1]?.versionNumber ?? '',
+                })}
+                description={t('detail.rollbackConfirmBody', {
+                    n: policy.lifecycleHistoryJson?.[policy.lifecycleHistoryJson.length - 1]?.versionNumber ?? '',
+                })}
+                confirmLabel={t('detail.rollbackConfirmLabel', {
+                    n: policy.lifecycleHistoryJson?.[policy.lifecycleHistoryJson.length - 1]?.versionNumber ?? '',
+                })}
+                onConfirm={rollbackToPrevious}
+            />
         </EntityDetailLayout>
     );
 }
