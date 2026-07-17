@@ -63,8 +63,8 @@ const tenantDb: any = {
 
 // The materialize cascade delegates to the ctx-level createFinding / createTask
 // usecases (own tenant contexts); mock them to assert the cascade wiring.
-const createFindingMock = jest.fn(async () => ({ id: 'find-new' }));
-const createTaskMock = jest.fn(async () => ({ id: 'task-new' }));
+const createFindingMock = jest.fn(async (..._args: any[]) => ({ id: 'find-new' }));
+const createTaskMock = jest.fn(async (..._args: any[]) => ({ id: 'task-new' }));
 jest.mock('@/app-layer/usecases/finding', () => ({ createFinding: (...a: any[]) => createFindingMock(...a) }));
 jest.mock('@/app-layer/usecases/task', () => ({ createTask: (...a: any[]) => createTaskMock(...a) }));
 const globalDb: any = {
