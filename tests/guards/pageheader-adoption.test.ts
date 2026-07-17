@@ -62,11 +62,6 @@ const PAGES: PageEntry[] = [
         note: "Audit cycles list page. Pending migration — straightforward shape.",
     },
     {
-        file: "src/app/t/[tenantSlug]/(app)/audits/auditor/page.tsx",
-        adopted: false,
-        note: "Auditor portal page. Pending migration — straightforward shape.",
-    },
-    {
         file: "src/app/t/[tenantSlug]/(app)/mapping/page.tsx",
         adopted: false,
         note: "Framework mapping page. Pending migration.",

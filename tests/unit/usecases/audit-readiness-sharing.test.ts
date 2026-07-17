@@ -54,7 +54,7 @@ const tenantDb: any = {
     auditPackShare: { create: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
     auditPackItem: { findFirst: jest.fn() },
     auditPackShareComment: { create: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
-    auditorAccount: { upsert: jest.fn(), findFirst: jest.fn(), findMany: jest.fn() },
+    auditorAccount: { upsert: jest.fn(), findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
     auditorPackAccess: { create: jest.fn(), deleteMany: jest.fn() },
     // feat/audit-cycle-unify — materialize path reads for the finding cascade.
     finding: { findFirst: jest.fn() },
@@ -94,6 +94,7 @@ import {
     inviteAuditor,
     grantAuditorAccess,
     revokeAuditorAccess,
+    revokeAuditorAccount,
     listAuditors,
     listPackShares,
 } from '@/app-layer/usecases/audit-readiness/sharing';
@@ -113,7 +114,7 @@ beforeEach(() => {
         tenantDb.auditPackItem.findFirst,
         tenantDb.auditPackShareComment.create, tenantDb.auditPackShareComment.findFirst,
         tenantDb.auditPackShareComment.findMany, tenantDb.auditPackShareComment.update,
-        tenantDb.auditorAccount.upsert, tenantDb.auditorAccount.findFirst, tenantDb.auditorAccount.findMany,
+        tenantDb.auditorAccount.upsert, tenantDb.auditorAccount.findUnique, tenantDb.auditorAccount.findFirst, tenantDb.auditorAccount.findMany, tenantDb.auditorAccount.update,
         tenantDb.auditPackShare.findMany,
         tenantDb.auditorPackAccess.create, tenantDb.auditorPackAccess.deleteMany,
         globalDb.auditPackShare.findFirst,
@@ -291,16 +292,67 @@ describe('getPackByShareToken', () => {
 // ──────────────────────────────────────────────────────────────────────
 describe('inviteAuditor', () => {
     it('upserts the auditor account (INVITED on first insert, ACTIVE on re-invite)', async () => {
+        tenantDb.auditorAccount.findUnique.mockResolvedValueOnce(null);
         tenantDb.auditorAccount.upsert.mockResolvedValueOnce({ id: 'a-1', email: 'auditor@ex.com' });
 
         const result = await inviteAuditor(ctx, 'auditor@ex.com', 'Audrey');
 
         expect(result.id).toBe('a-1');
+        expect(result.reactivated).toBe(false);
         expect(policyCalls).toEqual(['manage']);
         const upsertArg = tenantDb.auditorAccount.upsert.mock.calls[0][0];
         expect(upsertArg.create.status).toBe('INVITED');
         expect(upsertArg.update.status).toBe('ACTIVE');
         expect(auditCalls[0].action).toBe('AUDITOR_INVITED');
+    });
+
+    it('surfaces reactivation when a REVOKED auditor is re-invited', async () => {
+        // PR-O — inviting an existing REVOKED account flips it back to ACTIVE.
+        // The usecase must report reactivated=true + log AUDITOR_REACTIVATED so
+        // the state change is visible, not silent.
+        tenantDb.auditorAccount.findUnique.mockResolvedValueOnce({ status: 'REVOKED' });
+        tenantDb.auditorAccount.upsert.mockResolvedValueOnce({ id: 'a-1', email: 'auditor@ex.com' });
+
+        const result = await inviteAuditor(ctx, 'auditor@ex.com', 'Audrey');
+
+        expect(result.reactivated).toBe(true);
+        expect(auditCalls[0].action).toBe('AUDITOR_REACTIVATED');
+    });
+
+    it('does NOT flag reactivation for an already-ACTIVE re-invite', async () => {
+        tenantDb.auditorAccount.findUnique.mockResolvedValueOnce({ status: 'ACTIVE' });
+        tenantDb.auditorAccount.upsert.mockResolvedValueOnce({ id: 'a-1', email: 'auditor@ex.com' });
+
+        const result = await inviteAuditor(ctx, 'auditor@ex.com', 'Audrey');
+
+        expect(result.reactivated).toBe(false);
+        expect(auditCalls[0].action).toBe('AUDITOR_INVITED');
+    });
+});
+
+describe('revokeAuditorAccount', () => {
+    it('throws notFound when the auditor is foreign to the tenant', async () => {
+        tenantDb.auditorAccount.findFirst.mockResolvedValueOnce(null);
+        await expect(revokeAuditorAccount(ctx, 'a-foreign')).rejects.toThrow(/auditor not found/i);
+        expect(policyCalls).toEqual(['manage']);
+    });
+
+    it('throws badRequest when the auditor is already revoked', async () => {
+        tenantDb.auditorAccount.findFirst.mockResolvedValueOnce({ id: 'a-1', email: 'a@ex.com', status: 'REVOKED' });
+        await expect(revokeAuditorAccount(ctx, 'a-1')).rejects.toThrow(/already revoked/i);
+    });
+
+    it('flips the account to REVOKED, drops all pack access, and audits', async () => {
+        tenantDb.auditorAccount.findFirst.mockResolvedValueOnce({ id: 'a-1', email: 'a@ex.com', status: 'ACTIVE' });
+        tenantDb.auditorAccount.update.mockResolvedValueOnce({ id: 'a-1' });
+        tenantDb.auditorPackAccess.deleteMany.mockResolvedValueOnce({ count: 2 });
+
+        const result = await revokeAuditorAccount(ctx, 'a-1');
+
+        expect(result).toEqual({ revoked: true });
+        expect(tenantDb.auditorAccount.update.mock.calls[0][0].data.status).toBe('REVOKED');
+        expect(tenantDb.auditorPackAccess.deleteMany).toHaveBeenCalledWith({ where: { auditorId: 'a-1', tenantId: ctx.tenantId } });
+        expect(auditCalls[0].action).toBe('AUDITOR_ACCOUNT_REVOKED');
     });
 });
 

@@ -359,13 +359,47 @@ export async function inviteAuditor(ctx: RequestContext, email: string, name?: s
     assertCanManageAuditors(ctx);
     return runInTenantContext(ctx, async (tdb) => {
         const emailHash = hashForLookup(email);
+        // PR-O — the upsert `update` silently flips an existing (even REVOKED)
+        // account back to ACTIVE. Surface that state change: detect whether the
+        // account already existed (and whether it was revoked) BEFORE the upsert
+        // so the caller can tell the user "reactivated" vs "invited" rather than
+        // it being an invisible reactivation.
+        const prior = await tdb.auditorAccount.findUnique({
+            where: { tenantId_emailHash: { tenantId: ctx.tenantId, emailHash } },
+            select: { status: true },
+        });
+        const reactivated = prior != null && prior.status === 'REVOKED';
         const auditor = await tdb.auditorAccount.upsert({
             where: { tenantId_emailHash: { tenantId: ctx.tenantId, emailHash } },
             create: { tenantId: ctx.tenantId, email, emailHash, name, status: 'INVITED' },
             update: { name, status: 'ACTIVE' },
         });
-        await logEvent(tdb, ctx, { action: 'AUDITOR_INVITED', entityType: 'AuditorAccount', entityId: auditor.id, details: JSON.stringify({ email }), detailsJson: { category: 'access', operation: 'permission_changed', targetUserId: auditor.id, detail: `Auditor invited: ${email}` } });
-        return auditor;
+        await logEvent(tdb, ctx, {
+            action: reactivated ? 'AUDITOR_REACTIVATED' : 'AUDITOR_INVITED',
+            entityType: 'AuditorAccount', entityId: auditor.id, details: JSON.stringify({ email, reactivated }),
+            detailsJson: { category: 'access', operation: 'permission_changed', targetUserId: auditor.id, detail: reactivated ? `Auditor reactivated: ${email}` : `Auditor invited: ${email}` },
+        });
+        return { ...auditor, reactivated };
+    });
+}
+
+/**
+ * PR-O — account-level revoke. Moves an AuditorAccount to REVOKED (the badge
+ * the management UI could render but nothing could set) AND drops all of the
+ * auditor's pack access in one action. Distinct from `revokeAuditorAccess`
+ * (per-pack). A revoked auditor is re-activated only by an explicit re-invite
+ * (which now surfaces the reactivation).
+ */
+export async function revokeAuditorAccount(ctx: RequestContext, auditorId: string) {
+    assertCanManageAuditors(ctx);
+    return runInTenantContext(ctx, async (tdb) => {
+        const auditor = await tdb.auditorAccount.findFirst({ where: { id: auditorId, tenantId: ctx.tenantId }, select: { id: true, email: true, status: true } });
+        if (!auditor) throw notFound('Auditor not found');
+        if (auditor.status === 'REVOKED') throw badRequest('Auditor is already revoked');
+        await tdb.auditorAccount.update({ where: { id: auditorId }, data: { status: 'REVOKED' } });
+        await tdb.auditorPackAccess.deleteMany({ where: { auditorId, tenantId: ctx.tenantId } });
+        await logEvent(tdb, ctx, { action: 'AUDITOR_ACCOUNT_REVOKED', entityType: 'AuditorAccount', entityId: auditorId, details: 'Auditor account revoked', detailsJson: { category: 'access', operation: 'permission_changed', targetUserId: auditorId, detail: `Auditor account revoked: ${auditor.email}` } });
+        return { revoked: true };
     });
 }
 
