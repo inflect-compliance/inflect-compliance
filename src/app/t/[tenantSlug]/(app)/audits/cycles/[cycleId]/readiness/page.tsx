@@ -10,9 +10,13 @@ import { Heading } from '@/components/ui/typography';
 import { InfoTooltip } from '@/components/ui/tooltip';
 import { cardVariants } from '@/components/ui/card';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
+import { LineChart } from '@/components/ui/charts/line-chart';
+import { chartReady, type TimeSeriesPoint } from '@/components/ui/charts/types';
 import { cn } from '@/lib/cn';
 import { ReadinessLegend } from '../../ReadinessScoreRing';
 import type { ReadinessResult } from '@/app-layer/usecases/audit-readiness-scoring';
+
+interface ReadinessSnapshot { id: string; score: number; gapCount: number; computedAt: string }
 
 function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
     const r = (size - 8) / 2;
@@ -50,13 +54,16 @@ export default function CycleReadinessPage() {
 
     const [result, setResult] = useState<ReadinessResult | null>(null);
     const [cycle, setCycle] = useState<{ name: string } | null>(null);
+    const [history, setHistory] = useState<ReadinessSnapshot[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         Promise.all([
             fetch(apiUrl(`/audits/cycles/${cycleId}/readiness`)).then(r => r.ok ? r.json() : null),
             fetch(apiUrl(`/audits/cycles/${cycleId}`)).then(r => r.ok ? r.json() : null),
-        ]).then(([r, c]) => { setResult(r); setCycle(c); }).finally(() => setLoading(false));
+            // feat/readiness-trend — the ReadinessSnapshot time-series.
+            fetch(apiUrl(`/audits/cycles/${cycleId}/readiness?action=history`)).then(r => r.ok ? r.json() : null),
+        ]).then(([r, c, h]) => { setResult(r); setCycle(c); setHistory(h?.snapshots ?? []); }).finally(() => setLoading(false));
     }, [apiUrl, cycleId]);
 
     const breadcrumbs = [
@@ -106,15 +113,23 @@ export default function CycleReadinessPage() {
                     <div className="flex-shrink-0 text-center">
                         <ScoreRing score={result.score} />
                         <p className="text-xs text-content-muted mt-2 inline-flex items-center gap-tight">
-                            {tx('readiness.frameworkReadiness', { framework: result.frameworkKey })}
+                            {/* readiness-reconcile — this score is CONTROL COVERAGE
+                                (mapping/implementation/evidence), distinct from the
+                                NIS2 self-assessment MATURITY score. Label it so the
+                                two "NIS2 readiness" numbers can't be confused. */}
+                            {result.frameworkKey === 'NIS2'
+                                ? tx('readiness.nis2ControlCoverage')
+                                : tx('readiness.frameworkReadiness', { framework: result.frameworkKey })}
                             <InfoTooltip
                                 aria-label={tx('readinessLegend.aria')}
-                                content={<ReadinessLegend labels={{
-                                    title: tx('readinessLegend.title'),
-                                    green: tx('readinessLegend.green'),
-                                    amber: tx('readinessLegend.amber'),
-                                    red: tx('readinessLegend.red'),
-                                }} />}
+                                content={result.frameworkKey === 'NIS2' ? tx('readiness.nis2CoverageVsMaturity') : (
+                                    <ReadinessLegend labels={{
+                                        title: tx('readinessLegend.title'),
+                                        green: tx('readinessLegend.green'),
+                                        amber: tx('readinessLegend.amber'),
+                                        red: tx('readinessLegend.red'),
+                                    }} />
+                                )}
                             />
                         </p>
                     </div>
@@ -146,6 +161,21 @@ export default function CycleReadinessPage() {
                     </div>
                 </div>
             </div>
+
+            {/* feat/readiness-trend — readiness over time from ReadinessSnapshot. */}
+            {history.length >= 2 && (
+                <div className={cardVariants()} id="readiness-trend">
+                    <Heading level={3} className="mb-3 inline-flex items-center gap-tight"><AppIcon name="clock" size={16} /> {tx('readiness.trendTitle')}</Heading>
+                    <LineChart
+                        testId="readiness-trend-chart"
+                        ariaLabel={tx('readiness.trendAria')}
+                        seriesIndex={1}
+                        showArea
+                        state={chartReady<TimeSeriesPoint[]>(history.map((s) => ({ date: new Date(s.computedAt), value: s.score })))}
+                    />
+                    <p className="text-xs text-content-subtle mt-2">{tx('readiness.trendHint', { count: history.length })}</p>
+                </div>
+            )}
 
             {/* Recommendations */}
             {result.recommendations?.length > 0 && (
