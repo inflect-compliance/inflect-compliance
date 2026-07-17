@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Combobox } from '@/components/ui/combobox';
+import { UserCombobox } from '@/components/ui/user-combobox';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,6 +25,9 @@ const formSchema = z.object({
     rpoHours: optionalHours,
     mtpdHours: optionalHours,
     notes: z.string().optional(),
+    // BIA-lifecycle — the accountable owner (was always "—" because the
+    // create form never captured it, though createBia has accepted it).
+    ownerUserId: z.string().optional(),
 });
 type FormValues = z.infer<typeof formSchema>;
 
@@ -74,6 +78,7 @@ export function NewBiaModal({ tenantSlug, processNodeId, onClose, onCreated }: P
                     rpoHours: values.rpoHours,
                     mtpdHours: values.mtpdHours,
                     notes: values.notes || undefined,
+                    ownerUserId: values.ownerUserId || undefined,
                     processNodeId: processNodeId || undefined,
                     dependencies: dependencies.map((d) => ({ dependsOnType: d.dependsOnType, dependsOnId: d.dependsOnId })),
                 }),
@@ -141,6 +146,23 @@ export function NewBiaModal({ tenantSlug, processNodeId, onClose, onCreated }: P
                                 <Input id="bia-mtpd-input" type="text" inputMode="numeric" placeholder={tx('bia.phMtpd')} {...register('mtpdHours', { setValueAs: numberSetValueAs })} />
                             </FormField>
                         </div>
+                        <FormField label={tx('bia.fieldOwner')}>
+                            <Controller
+                                control={control}
+                                name="ownerUserId"
+                                render={({ field }) => (
+                                    <UserCombobox
+                                        id="bia-owner-input"
+                                        tenantSlug={tenantSlug}
+                                        selectedId={field.value ?? null}
+                                        onChange={(uid) => field.onChange(uid ?? undefined)}
+                                        placeholder={tx('bia.phOwner')}
+                                        forceDropdown
+                                        matchTriggerWidth
+                                    />
+                                )}
+                            />
+                        </FormField>
                         <FormField label={tx('bia.fieldNotes')} error={errors.notes?.message}>
                             <Textarea id="bia-notes-input" rows={3} placeholder={tx('bia.phNotes')} {...register('notes')} />
                         </FormField>

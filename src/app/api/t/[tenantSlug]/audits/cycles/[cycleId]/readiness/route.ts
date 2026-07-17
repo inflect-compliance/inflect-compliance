@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTenantCtx } from '@/app-layer/context';
 import {
-    computeReadiness, exportReadinessJson, exportUnmappedCsv, exportControlGapsCsv,
+    computeReadiness, exportReadinessJson, exportUnmappedCsv, exportControlGapsCsv, getReadinessHistory,
 } from '@/app-layer/usecases/audit-readiness-scoring';
+import { getAuditCycle } from '@/app-layer/usecases/audit-readiness';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
@@ -29,6 +30,15 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params: param
         return new NextResponse(csv, {
             headers: { 'Content-Type': 'text/csv', 'Content-Disposition': `attachment; filename="${filename}"` },
         });
+    }
+
+    // feat/readiness-trend — the ReadinessSnapshot time-series for this cycle,
+    // so the snapshot table (written on every score) stops being write-only.
+    if (action === 'history') {
+        const cycle = await getAuditCycle(ctx, params.cycleId);
+        const rows = await getReadinessHistory(ctx, cycle.frameworkKey, { cycleId: params.cycleId, take: 60 });
+        // Ascending for charting (oldest → newest).
+        return jsonResponse({ snapshots: rows.slice().reverse() });
     }
 
     // Default: compute readiness

@@ -1,21 +1,25 @@
-import { redirect } from 'next/navigation';
+import { ReadinessOverviewClient } from './ReadinessOverviewClient';
+
+export const dynamic = 'force-dynamic';
 
 /**
- * `/audits/readiness` compatibility shim — audit-hub unification.
+ * `/audits/readiness` — the single readiness overview (readiness-reconcile).
  *
- * Readiness stopped being a second, near-duplicate cycle list. The
- * cycle list at `/audits/cycles` now carries BOTH the "Open cycle"
- * and "View readiness" actions per cycle plus each cycle's readiness
- * score ring, so there is nothing left for a standalone readiness
- * overview to show. Bookmarks, the hub's "Readiness" entry, and any
- * deep links continue to resolve — they all land on the unified list.
- * Mirrors the canonical redirect pattern in `/audits/new`.
+ * Previously a redirect shim to `/audits/cycles`. It is now the one surface
+ * that presents all three readiness axes together — control coverage (per
+ * cycle), NIS2 self-assessment maturity, and test readiness — each
+ * unambiguously labelled, instead of surfacing only `computeReadiness`.
+ * No navbar change: the hub's existing "Readiness" entry lands here.
  */
-export default async function ReadinessRedirect({
+export default async function ReadinessOverviewPage({
     params,
 }: {
     params: Promise<{ tenantSlug: string }>;
 }) {
     const { tenantSlug } = await params;
-    redirect(`/t/${tenantSlug}/audits/cycles`);
+    return (
+        <div className="animate-fadeIn">
+            <ReadinessOverviewClient tenantSlug={tenantSlug} />
+        </div>
+    );
 }

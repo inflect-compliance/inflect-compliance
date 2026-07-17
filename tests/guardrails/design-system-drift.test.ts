@@ -20,6 +20,10 @@ const COMPONENTS_DIR = path.resolve(__dirname, '../../src/components');
  * These pages must NOT regress to raw color utilities.
  */
 const MIGRATED_PAGES = [
+    // readiness-reconcile — the audit-hub readiness overview; design-system-
+    // native from birth (semantic tokens + Card/KPIStat/StatusBadge/PageHeader/
+    // InfoTooltip primitives only, no raw colours or legacy btn/badge).
+    'audits/readiness/ReadinessOverviewClient.tsx',
     // Asset CSV import wizard; design-system-native from birth
     // (semantic tokens + Card/Button/DataTable/StatusBadge only).
     'assets/import/page.tsx',

@@ -2969,7 +2969,12 @@
       "exportJson": "Readiness Report (JSON)",
       "exportUnmappedCsv": "Unmapped Requirements (CSV)",
       "exportControlGapsCsv": "Control Gaps (CSV)",
-      "scoreAria": "{label} readiness score"
+      "scoreAria": "{label} readiness score",
+      "trendTitle": "Readiness over time",
+      "trendAria": "Readiness score over time",
+      "trendHint": "Based on {count} scored snapshots.",
+      "nis2ControlCoverage": "NIS2 control coverage",
+      "nis2CoverageVsMaturity": "Control coverage measures how well your controls map, are implemented, and carry evidence for NIS2 — distinct from the NIS2 self-assessment maturity score (your answers to the gap questionnaire)."
     },
     "loadingAria": "Loading audits",
     "packs": {
@@ -3138,7 +3143,9 @@
         "HIGH": "High",
         "MEDIUM": "Medium",
         "LOW": "Low"
-      }
+      },
+      "fieldOwner": "Owner",
+      "phOwner": "Assign an owner…"
     },
     "biaDetail": {
       "metaCriticality": "Criticality",
@@ -3179,7 +3186,24 @@
       "linkControlPlaceholder": "Select a control…",
       "linkControlConfirm": "Link control",
       "linkControlCancel": "Cancel",
-      "linkControlFailed": "Failed to link control."
+      "linkControlFailed": "Failed to link control.",
+      "markReviewed": "Mark reviewed",
+      "edit": "Edit",
+      "delete": "Delete",
+      "metaReviewed": "Reviewed",
+      "neverReviewed": "Never reviewed",
+      "reviewedToast": "Marked as reviewed.",
+      "saveFailed": "Failed to save changes.",
+      "deleteFailed": "Failed to delete BIA.",
+      "deleteTitle": "Delete BIA?",
+      "deleteConfirm": "Delete \"{name}\" and its dependencies? This cannot be undone.",
+      "saveToast": "Changes saved.",
+      "editTitle": "Edit BIA",
+      "save": "Save",
+      "saving": "Saving…",
+      "impactEmpty": "No impact profile yet. Add a point to describe how impact ramps over time.",
+      "impactAddPoint": "Add point",
+      "saveImpact": "Save impact profile"
     },
     "nis2Gap": {
       "loadFailed": "Failed to load NIS2 gap assessment.",
@@ -3191,7 +3215,7 @@
       "rerun": "Re-run assessment",
       "disclaimer": "This is a self-assessment maturity aid, <strong>not a legal compliance determination</strong> of NIS2 conformance. It informs remediation; it does not certify anything or replace an auditor.",
       "loading": "Loading gap assessment…",
-      "kpiReadiness": "Readiness score",
+      "kpiReadiness": "Self-assessment maturity",
       "kpiReadinessDesc": "weighted maturity (0–100)",
       "kpiFineExposure": "Gaps with fine exposure",
       "kpiFineExposureDesc": "regulatory fine / liability risk",
@@ -3242,7 +3266,8 @@
       "baselineDelegateTitle": "Delegate this assessment",
       "baselineDelegateBody": "This is an onboarding baseline run, which can't be delegated. Start a standalone re-assessment to route each part to the person who can answer it.",
       "baselineDelegateAction": "Start re-assessment",
-      "viewCoverage": "View NIS2 coverage"
+      "viewCoverage": "View NIS2 coverage",
+      "kpiReadinessHint": "Your NIS2 gap-questionnaire score — distinct from the cycle control-coverage readiness."
     },
     "respond": {
       "loadFailed": "Failed to load your assignment.",
@@ -3300,6 +3325,26 @@
       "IN_PROGRESS": "In progress",
       "READY": "Ready",
       "COMPLETE": "Complete"
+    },
+    "overview": {
+      "crumb": "Readiness overview",
+      "title": "Readiness overview",
+      "description": "Three complementary readiness axes — they measure different things and are expected to differ.",
+      "coverageTitle": "Control coverage",
+      "coverageHelp": "Per audit cycle: how well your controls map to requirements, are implemented, and carry evidence. Computed from your control library.",
+      "coverageEmpty": "No audit cycles yet.",
+      "viewCoverage": "View coverage",
+      "maturityTitle": "NIS2 self-assessment maturity",
+      "maturityHelp": "Your answers to the NIS2 gap questionnaire — a self-reported maturity score, distinct from the control-coverage score above.",
+      "maturityLabel": "Self-assessment score",
+      "openGapAssessment": "Open gap assessment",
+      "testTitle": "Test readiness",
+      "testHelp": "Test-plan and test-run coverage of your mapped controls, and the pass rate of recent runs.",
+      "openTestDashboard": "Open test dashboard",
+      "testEmpty": "No mapped controls to test yet.",
+      "planCoverage": "{pct}% plan coverage",
+      "runCoverage": "{pct}% run coverage",
+      "passRate": "{pct}% pass rate"
     }
   },
   "findings": {
