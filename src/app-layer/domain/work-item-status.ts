@@ -10,11 +10,12 @@
  *   - notification processing
  *
  * The WorkItemStatus enum values are:
- *   OPEN | TRIAGED | IN_PROGRESS | BLOCKED | RESOLVED | CLOSED | CANCELED
+ *   OPEN | TRIAGED | IN_PROGRESS | IN_REVIEW | BLOCKED | RESOLVED | CLOSED | CANCELED
  *
  * Status lifecycle:
- *   OPEN → TRIAGED → IN_PROGRESS → BLOCKED → IN_PROGRESS → RESOLVED → CLOSED
- *                                                                     → CANCELED
+ *   OPEN → TRIAGED → IN_PROGRESS → IN_REVIEW → RESOLVED → CLOSED
+ *                              ↘ BLOCKED ↗              → CANCELED
+ *   (IN_REVIEW gates close when a reviewerUserId is set — see setTaskStatus)
  *
  * @module app-layer/domain/work-item-status
  */
@@ -32,13 +33,13 @@ export const TERMINAL_WORK_ITEM_STATUSES = ['RESOLVED', 'CLOSED', 'CANCELED'] as
  * This is the inverse of TERMINAL_WORK_ITEM_STATUSES.
  * Includes: OPEN, TRIAGED, IN_PROGRESS, BLOCKED
  */
-export const ACTIVE_WORK_ITEM_STATUSES = ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'BLOCKED'] as const;
+export const ACTIVE_WORK_ITEM_STATUSES = ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED'] as const;
 
 /**
  * All valid work item statuses.
  */
 export const ALL_WORK_ITEM_STATUSES = [
-    'OPEN', 'TRIAGED', 'IN_PROGRESS', 'BLOCKED',
+    'OPEN', 'TRIAGED', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED',
     'RESOLVED', 'CLOSED', 'CANCELED',
 ] as const;
 
@@ -109,10 +110,17 @@ export const WORK_ITEM_TRANSITIONS: Record<
     // UI retired RESOLVED as a redundant intermediate (it stays in the
     // enum + the graph for legacy RESOLVED rows, which can still
     // advance to CLOSED), so an active task closes in one step.
-    OPEN: new Set(['TRIAGED', 'IN_PROGRESS', 'BLOCKED', 'RESOLVED', 'CLOSED', 'CANCELED']),
-    TRIAGED: new Set(['IN_PROGRESS', 'BLOCKED', 'RESOLVED', 'CLOSED', 'CANCELED']),
-    IN_PROGRESS: new Set(['BLOCKED', 'RESOLVED', 'CLOSED', 'CANCELED', 'TRIAGED']),
-    BLOCKED: new Set(['IN_PROGRESS', 'TRIAGED', 'CLOSED', 'CANCELED']),
+    // IN_REVIEW is reachable from every active state (submit for sign-off)
+    // and leads to a terminal close, a bounce back to IN_PROGRESS (reviewer
+    // rejects), or CANCELED. When a task carries a reviewerUserId the
+    // reviewer gate in `setTaskStatus` additionally REQUIRES the close to
+    // pass through IN_REVIEW and be driven by the reviewer — the graph
+    // permits the shapes; the gate enforces the sign-off.
+    OPEN: new Set(['TRIAGED', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'RESOLVED', 'CLOSED', 'CANCELED']),
+    TRIAGED: new Set(['IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'RESOLVED', 'CLOSED', 'CANCELED']),
+    IN_PROGRESS: new Set(['BLOCKED', 'IN_REVIEW', 'RESOLVED', 'CLOSED', 'CANCELED', 'TRIAGED']),
+    IN_REVIEW: new Set(['IN_PROGRESS', 'TRIAGED', 'RESOLVED', 'CLOSED', 'CANCELED']),
+    BLOCKED: new Set(['IN_PROGRESS', 'IN_REVIEW', 'TRIAGED', 'CLOSED', 'CANCELED']),
     RESOLVED: new Set(['CLOSED', 'IN_PROGRESS']),
     CLOSED: new Set(),
     CANCELED: new Set(),

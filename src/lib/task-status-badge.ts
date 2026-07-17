@@ -14,8 +14,8 @@
  * pulled into client components without dragging server-only code.
  *
  * The canonical enum is `WorkItemStatus`
- * (prisma/schema/enums.prisma): OPEN, TRIAGED, IN_PROGRESS, BLOCKED,
- * RESOLVED, CLOSED, CANCELED — exactly seven values, spelling CANCELED
+ * (prisma/schema/enums.prisma): OPEN, TRIAGED, IN_PROGRESS, IN_REVIEW,
+ * BLOCKED, RESOLVED, CLOSED, CANCELED — eight values, spelling CANCELED
  * (one L), and there is NO "DONE".
  */
 
@@ -41,6 +41,7 @@ export const TASK_STATUS_BADGE: Record<WorkItemStatusValue, TaskStatusBadgeSpec>
     OPEN: { variant: 'neutral', labelKey: 'statusLabels.OPEN' },
     TRIAGED: { variant: 'info', labelKey: 'statusLabels.TRIAGED' },
     IN_PROGRESS: { variant: 'info', labelKey: 'statusLabels.IN_PROGRESS' },
+    IN_REVIEW: { variant: 'warning', labelKey: 'statusLabels.IN_REVIEW' },
     BLOCKED: { variant: 'error', labelKey: 'statusLabels.BLOCKED' },
     RESOLVED: { variant: 'success', labelKey: 'statusLabels.RESOLVED' },
     CLOSED: { variant: 'neutral', labelKey: 'statusLabels.CLOSED' },

@@ -6,9 +6,10 @@ import { emitAutomationEvent } from '../automation';
 import { enqueueEmail } from '../notifications/enqueue';
 import { createTaskDueNotification } from '../notifications/task-due';
 import { createAssignmentNotification } from '../notifications/assignment';
+import { createWatcherNotifications, type WatcherActivityKind } from '../notifications/watcher';
 import { runInTenantContext, runInTenantReadContext } from '@/lib/db-context';
 import { env } from '@/env';
-import { notFound, badRequest } from '@/lib/errors/types';
+import { notFound, badRequest, forbidden } from '@/lib/errors/types';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { validateTaskMetadata } from '../schemas/json-columns.schemas';
 import { logger } from '@/lib/observability/logger';
@@ -289,12 +290,14 @@ export async function deleteTask(ctx: RequestContext, taskId: string) {
 
 export async function setTaskStatus(ctx: RequestContext, taskId: string, status: string, resolution?: string | null) {
     assertCanWriteTasks(ctx);
+    let capturedFrom = '';
     const result = await runInTenantContext(ctx, async (db) => {
         // Pre-fetch once so we can both validate + capture fromStatus
         // for the automation event.
         const existing = await WorkItemRepository.getById(db, ctx, taskId);
         if (!existing) throw notFound('Task not found');
         const fromStatus = existing.status;
+        capturedFrom = fromStatus;
 
         // Audit Coherence S8 (2026-05-24) — state-machine gate runs
         // BEFORE the type-relevance check. Catches no-op + illegal
@@ -303,6 +306,30 @@ export async function setTaskStatus(ctx: RequestContext, taskId: string, status:
         // reach the repository write are documented transitions.
         const transitionErr = checkWorkItemTransition(fromStatus, status);
         if (transitionErr) throw badRequest(formatTransitionError(transitionErr));
+
+        // TP-2 — reviewer sign-off gate. When a task carries a
+        // reviewerUserId, it cannot be completed (RESOLVED/CLOSED) directly
+        // from an active state: the close MUST pass through IN_REVIEW and be
+        // driven by the reviewer. CANCELED is exempt (cancelling is not
+        // completing), and RESOLVED→CLOSED bookkeeping is exempt because the
+        // sign-off already happened on the IN_REVIEW→RESOLVED step (fromStatus
+        // is already terminal there).
+        if (
+            existing.reviewerUserId &&
+            !isTerminalStatus(fromStatus) &&
+            (status === 'RESOLVED' || status === 'CLOSED')
+        ) {
+            if (fromStatus !== 'IN_REVIEW') {
+                throw badRequest(
+                    `This task has a reviewer and must pass through IN_REVIEW before it can be ${status}. Move it to IN_REVIEW for sign-off first.`,
+                );
+            }
+            if (ctx.userId !== existing.reviewerUserId) {
+                throw forbidden(
+                    'Only the assigned reviewer can sign off and complete this task.',
+                );
+            }
+        }
 
         // Audit Coherence S8 — every terminal write requires a non-
         // empty `resolution` text. The auditor reads it from the
@@ -361,6 +388,14 @@ export async function setTaskStatus(ctx: RequestContext, taskId: string, status:
         return task;
     });
     await bumpEntityCacheVersion(ctx, 'task');
+    // TP-2 — notify watchers of the status change (bell).
+    await emitTaskWatcherActivity(
+        ctx,
+        taskId,
+        'status_changed',
+        `${capturedFrom}->${status}`,
+        `status changed ${capturedFrom} → ${status}`,
+    );
     return result;
 }
 
@@ -398,6 +433,16 @@ export async function assignTask(ctx: RequestContext, taskId: string, assigneeUs
         await emitTaskAssignedNotification(ctx, result);
     }
     await bumpEntityCacheVersion(ctx, 'task');
+    // TP-2 — notify watchers of the (re)assignment (bell). The assignee
+    // gets their own TASK_ASSIGNED bell above; watchers get the activity
+    // feed entry. Actor-exclusion in the helper avoids self-notifying.
+    await emitTaskWatcherActivity(
+        ctx,
+        taskId,
+        'assigned',
+        assigneeUserId ?? 'unassigned',
+        assigneeUserId ? 'reassigned' : 'unassigned',
+    );
     return result;
 }
 
@@ -553,6 +598,57 @@ async function emitTaskAssignedNotification(
         logger.warn('failed to create task-assigned notification', {
             component: 'notifications',
             taskId: task.id,
+            error: err instanceof Error ? err.message : String(err),
+        });
+    }
+}
+
+/**
+ * TP-2 — fan a task activity out to its WATCHERS' notification bells.
+ *
+ * Loads the task title/key + watcher set itself (only needs the taskId),
+ * so all three call sites (comment-add, status-change, assign) share one
+ * shape. Excludes the actor — you are never notified of your own action.
+ * Same fire-and-forget posture as the assignee emitters: runs AFTER the
+ * task write commits, in its own short transaction, and swallows errors
+ * so a notification failure never surfaces to the task operation.
+ */
+async function emitTaskWatcherActivity(
+    ctx: RequestContext,
+    taskId: string,
+    kind: WatcherActivityKind,
+    discriminator: string,
+    detail: string,
+): Promise<void> {
+    if (!ctx.tenantSlug) return;
+    const tenantSlug = ctx.tenantSlug;
+    try {
+        await runInTenantContext(ctx, async (db) => {
+            const task = await db.task.findFirst({
+                where: { id: taskId, tenantId: ctx.tenantId },
+                select: { id: true, tenantId: true, title: true, key: true },
+            });
+            if (!task) return;
+            const watchers = await TaskWatcherRepository.listByTask(db, ctx, taskId);
+            const targets = watchers
+                .map((w) => w.userId)
+                .filter((uid) => uid !== ctx.userId);
+            if (targets.length === 0) return;
+            await createWatcherNotifications(db, targets, {
+                tenantId: task.tenantId,
+                tenantSlug,
+                taskId: task.id,
+                taskKey: task.key,
+                taskTitle: task.title,
+                kind,
+                discriminator,
+                detail,
+            });
+        });
+    } catch (err) {
+        logger.warn('failed to notify task watchers', {
+            component: 'notifications',
+            taskId,
             error: err instanceof Error ? err.message : String(err),
         });
     }
@@ -738,6 +834,9 @@ export async function addTaskComment(ctx: RequestContext, taskId: string, body: 
         return comment;
     });
     await bumpEntityCacheVersion(ctx, 'task');
+    // TP-2 — notify watchers of the new comment (bell). Keyed on the
+    // comment id so each distinct comment is its own activity entry.
+    await emitTaskWatcherActivity(ctx, taskId, 'commented', result.id, 'new comment added');
     return result;
 }
 

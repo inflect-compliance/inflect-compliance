@@ -24,7 +24,7 @@ export const UPDATE_STATUS_TARGETS: Record<string, StatusTargetSpec> = {
     Task: {
         field: 'status',
         values: [
-            'OPEN', 'TRIAGED', 'IN_PROGRESS', 'BLOCKED', 'RESOLVED', 'CLOSED', 'CANCELED',
+            'OPEN', 'TRIAGED', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'RESOLVED', 'CLOSED', 'CANCELED',
         ],
     },
     Control: {

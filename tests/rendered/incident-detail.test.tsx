@@ -47,6 +47,14 @@ jest.mock('@/lib/hooks/use-tenant-swr', () => ({
     useTenantSWR: (...args: unknown[]) => mockSWR(...args),
 }));
 
+// TP-2 — the page now derives canWrite (for the linked-tasks tab) from the
+// tenant context, so the render harness must provide it.
+jest.mock('@/lib/tenant-context-provider', () => ({
+    useTenantContext: () => ({ permissions: { canWrite: true } }),
+    useTenantApiUrl: () => (path: string) => `/api/t/acme${path.startsWith('/') ? path : `/${path}`}`,
+    useTenantHref: () => (path: string) => `/t/acme${path.startsWith('/') ? path : `/${path}`}`,
+}));
+
 import IncidentDetailPage from '@/app/t/[tenantSlug]/(app)/incidents/[incidentId]/page';
 
 function makeIncident(overrides: Record<string, unknown> = {}) {

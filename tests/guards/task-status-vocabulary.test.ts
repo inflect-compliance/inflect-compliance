@@ -4,7 +4,7 @@
  * Locks three invariants that used to drift across the codebase:
  *
  *   (a) The shared status→badge map (`src/lib/task-status-badge.ts`)
- *       has EXACTLY the seven `WorkItemStatus` enum values — no phantom
+ *       has EXACTLY the eight `WorkItemStatus` enum values — no phantom
  *       "DONE", the spelling is "CANCELED" (one L), and every entry
  *       carries a valid `<StatusBadge>` variant + a `labelKey`.
  *
@@ -13,9 +13,9 @@
  *       had `OPEN: 'warning'`, others `OPEN: 'neutral'`; some carried a
  *       "DONE" tone or the two-L "CANCELLED" spelling).
  *
- *   (c) The Tasks list STATUS filter offers EXACTLY the seven enum
- *       values — no phantom `IN_REVIEW`, and the real `TRIAGED` +
- *       `BLOCKED` states are present.
+ *   (c) The Tasks list STATUS filter offers EXACTLY the eight enum
+ *       values — including the real `IN_REVIEW` (TP-2), `TRIAGED`, and
+ *       `BLOCKED` states.
  *
  * All three read the LIVE sources / schema, so a regression that
  * re-inlines a map, adds a "DONE"/"CANCELLED" spelling, or desyncs the
@@ -65,11 +65,11 @@ function read(rel: string): string {
 }
 
 describe('TP-1 (a) — the shared TASK_STATUS_BADGE map', () => {
-    test('has exactly the seven WorkItemStatus keys', () => {
+    test('has exactly the eight WorkItemStatus keys', () => {
         expect(new Set(Object.keys(TASK_STATUS_BADGE))).toEqual(
             new Set(ENUM_VALUES),
         );
-        expect(Object.keys(TASK_STATUS_BADGE)).toHaveLength(7);
+        expect(Object.keys(TASK_STATUS_BADGE)).toHaveLength(8);
     });
 
     test('spelling is CANCELED (one L), and there is no DONE', () => {
@@ -131,8 +131,9 @@ describe('TP-1 (c) — the Tasks list STATUS filter equals the enum set', () => 
             [...src.matchAll(/filterEnums\.status\.(\w+)/g)].map((m) => m[1]),
         );
         expect(filterStatuses).toEqual(new Set(ENUM_VALUES));
-        // Explicit regression assertions for the exact bug TP-1 fixed.
-        expect(filterStatuses.has('IN_REVIEW')).toBe(false);
+        // IN_REVIEW is now a real reviewer-sign-off state (TP-2); TRIAGED +
+        // BLOCKED remain real states.
+        expect(filterStatuses.has('IN_REVIEW')).toBe(true);
         expect(filterStatuses.has('TRIAGED')).toBe(true);
         expect(filterStatuses.has('BLOCKED')).toBe(true);
     });

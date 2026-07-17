@@ -139,7 +139,7 @@ export function useNewTaskForm({
                 if (findingSource) metadataJson.findingSource = findingSource;
                 if (controlGapType) metadataJson.controlGapType = controlGapType;
 
-                const body: { title: string; type: string; severity: string; priority: string; description?: string; dueAt?: string; assigneeUserId?: string; controlId?: string; metadataJson?: Record<string, string> } = {
+                const body: { title: string; type: string; severity: string; priority: string; description?: string; dueAt?: string; assigneeUserId?: string; reviewerUserId?: string; controlId?: string; metadataJson?: Record<string, string> } = {
                     title: payload.title,
                     type: payload.type,
                     severity: payload.severity,
@@ -147,6 +147,9 @@ export function useNewTaskForm({
                     description: payload.description || undefined,
                     dueAt: payload.dueAt || undefined,
                     assigneeUserId: payload.assigneeUserId || undefined,
+                    // TP-2 — reviewer is settable at create so a reviewed task
+                    // starts its lifecycle with the sign-off gate already armed.
+                    reviewerUserId: payload.reviewerUserId || undefined,
                     controlId: payload.controlId || undefined,
                     metadataJson:
                         Object.keys(metadataJson).length > 0

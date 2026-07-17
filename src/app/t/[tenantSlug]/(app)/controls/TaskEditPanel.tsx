@@ -55,7 +55,7 @@ const buildTypeOptions = (t: OptT): ComboboxOption[] => [
 // commits through the setTaskStatus endpoint (state machine + TP-3
 // source reconciliation), NOT a raw field PATCH. Labels come from the
 // shared task-status map — no local status→variant redeclaration.
-const SELECTABLE_STATUSES = ["OPEN", "TRIAGED", "IN_PROGRESS", "BLOCKED", "CLOSED", "CANCELED"];
+const SELECTABLE_STATUSES = ["OPEN", "TRIAGED", "IN_PROGRESS", "IN_REVIEW", "BLOCKED", "CLOSED", "CANCELED"];
 const buildStatusOptions = (t: OptT): ComboboxOption[] =>
     SELECTABLE_STATUSES.map((value) => ({ value, label: taskStatusLabel(value, t) }));
 type Tab = "details" | "activity";

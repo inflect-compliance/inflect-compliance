@@ -184,6 +184,19 @@ export function NewTaskFields({
                         forceDropdown={false}
                     />
                 </FormField>
+                <FormField label={t('new.reviewer')} hint={t('new.reviewerHint')}>
+                    <UserCombobox
+                        id="task-reviewer-input"
+                        name="reviewerUserId"
+                        tenantSlug={tenantSlug}
+                        selectedId={form.fields.reviewerUserId || null}
+                        onChange={(userId) =>
+                            form.setField('reviewerUserId', userId ?? '')
+                        }
+                        placeholder={t('new.reviewerPlaceholder')}
+                        forceDropdown={false}
+                    />
+                </FormField>
             </div>
 
             <FormField label={t('new.control')}>

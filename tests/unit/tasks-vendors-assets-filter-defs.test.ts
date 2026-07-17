@@ -58,9 +58,9 @@ const tVendors = resolver('vendors');
 const tGroup = (k: string) => resolver('common')(`filterGroups.${k}`);
 
 // Enum VALUE sets (the URL/API contract — unchanged by i18n).
-// The seven WorkItemStatus values (TP-1): no phantom IN_REVIEW,
-// includes the real TRIAGED + BLOCKED states.
-const TASK_STATUS = ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'BLOCKED', 'RESOLVED', 'CLOSED', 'CANCELED'];
+// The eight WorkItemStatus values — IN_REVIEW (TP-2) is a real
+// reviewer-sign-off state alongside TRIAGED + BLOCKED.
+const TASK_STATUS = ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'RESOLVED', 'CLOSED', 'CANCELED'];
 const TASK_TYPE = ['TASK', 'AUDIT_FINDING', 'CONTROL_GAP', 'INCIDENT', 'IMPROVEMENT'];
 const TASK_SEVERITY = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 // TP-5 — the universal-inbox source filter offers EXACTLY the

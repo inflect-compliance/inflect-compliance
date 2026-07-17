@@ -360,6 +360,10 @@ enum WorkItemStatus {
   OPEN
   TRIAGED
   IN_PROGRESS
+  // Awaiting reviewer sign-off. A task with a reviewerUserId must pass
+  // through IN_REVIEW before it can close, and only the reviewer may
+  // move it from IN_REVIEW to a terminal state. Active (non-terminal).
+  IN_REVIEW
   BLOCKED
   RESOLVED
   CLOSED
@@ -390,6 +394,7 @@ enum TaskLinkEntityType {
   FILE
   AUDIT_PACK
   VENDOR
+  INCIDENT
 }
 
 enum TaskLinkRelation {
@@ -530,6 +535,11 @@ enum NotificationType {
   // triggered. Routed to the vendor's `ownerUserId`, deduped per
   // (vendor, signal, day).
   VENDOR_POSTURE_ALERT
+  // TP-2 — task activity (comment / status change / assignment) fanned
+  // out to the task's WATCHERS' bells. Deduped per (task, watcher, kind,
+  // event discriminator). In-app only — watched-task activity is
+  // high-frequency, so it deliberately does NOT blast per-event email.
+  TASK_WATCH_UPDATE
   GENERAL
 }
 

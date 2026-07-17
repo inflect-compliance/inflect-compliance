@@ -40,6 +40,7 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/hooks';
 import { cn } from '@/lib/cn';
 import { InheritedMappingsPanel } from '@/components/InheritedMappingsPanel';
+import LinkedTasksPanel from '@/components/LinkedTasksPanel';
 import { PolicySharePointSection } from './PolicySharePointSection';
 import { PolicyEvidenceChecklist } from './PolicyEvidenceChecklist';
 
@@ -120,7 +121,7 @@ export default function PolicyDetailPage() {
     const [policy, setPolicy] = useState<PolicyDetailDTO | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [tab, setTab] = useState<'current' | 'versions' | 'mappings' | 'traceability' | 'acknowledgements' | 'editor' | 'activity'>('current');
+    const [tab, setTab] = useState<'current' | 'versions' | 'mappings' | 'traceability' | 'acknowledgements' | 'tasks' | 'editor' | 'activity'>('current');
 
     // Editor state
     const [contentMode, setContentMode] = useState<ContentMode>('MARKDOWN');
@@ -461,13 +462,14 @@ export default function PolicyDetailPage() {
     const canPublishNow = canAdmin && !!headerVersion && headerHasApproved && !headerIsPublished;
     const canBypassPublish = canAdmin && !!headerVersion && !headerHasApproved && !headerIsPublished && policy.status !== 'ARCHIVED';
 
-    type PolicyTab = 'current' | 'versions' | 'mappings' | 'traceability' | 'acknowledgements' | 'editor' | 'activity';
+    type PolicyTab = 'current' | 'versions' | 'mappings' | 'traceability' | 'acknowledgements' | 'tasks' | 'editor' | 'activity';
     const tabs: ReadonlyArray<{ key: PolicyTab; label: string }> = [
         { key: 'current', label: t('detail.tabCurrent') },
         { key: 'versions', label: t('detail.tabVersions') },
         { key: 'mappings', label: t('detail.tabMappings') },
         { key: 'traceability', label: t('detail.tabTraceability') },
         { key: 'acknowledgements', label: t('detail.tabAcknowledgements') },
+        { key: 'tasks', label: t('detail.tabTasks') },
         ...(canWrite ? ([{ key: 'editor' as const, label: t('detail.tabEditor') }]) : []),
         { key: 'activity', label: t('detail.tabActivity') },
     ];
@@ -986,6 +988,17 @@ export default function PolicyDetailPage() {
                     canAdmin={canAdmin}
                     isPublished={policy.status === 'PUBLISHED'}
                 />
+            )}
+            {tab === 'tasks' && (
+                <div className={cardVariants()}>
+                    <LinkedTasksPanel
+                        apiBase={apiUrl('')}
+                        entityType="POLICY"
+                        entityId={policyId}
+                        tenantHref={tenantHref}
+                        canWrite={canWrite}
+                    />
+                </div>
             )}
             {tab === 'activity' && (
                 <div className={cardVariants()} id="activity-feed">

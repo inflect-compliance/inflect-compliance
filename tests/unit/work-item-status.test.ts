@@ -28,9 +28,14 @@ describe('Work Item Status Constants', () => {
         );
     });
 
-    test('ACTIVE statuses include OPEN, TRIAGED, IN_PROGRESS, BLOCKED', () => {
+    test('ACTIVE statuses include OPEN, TRIAGED, IN_PROGRESS, IN_REVIEW, BLOCKED', () => {
         const active = [...ACTIVE_WORK_ITEM_STATUSES].sort();
-        expect(active).toEqual(['BLOCKED', 'IN_PROGRESS', 'OPEN', 'TRIAGED']);
+        expect(active).toEqual(['BLOCKED', 'IN_PROGRESS', 'IN_REVIEW', 'OPEN', 'TRIAGED']);
+    });
+
+    test('IN_REVIEW is active, not terminal (TP-2)', () => {
+        expect(isActiveStatus('IN_REVIEW')).toBe(true);
+        expect(isTerminalStatus('IN_REVIEW')).toBe(false);
     });
 
     test('TRIAGED is in ACTIVE statuses (the bug fix)', () => {
