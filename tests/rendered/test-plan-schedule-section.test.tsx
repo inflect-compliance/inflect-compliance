@@ -186,7 +186,7 @@ describe('TestPlanScheduleSection — next-run indicator', () => {
 // ─── 3. Saving via the schedule API ────────────────────────────────
 
 describe('TestPlanScheduleSection — save interaction', () => {
-    test('changing cadence to Daily triggers PUT with cron + SCRIPT', async () => {
+    test('changing cadence to Daily triggers PUT with cron + MANUAL (PR-P)', async () => {
         const onSaved = jest.fn();
         const user = userEvent.setup();
 
@@ -228,7 +228,10 @@ describe('TestPlanScheduleSection — save interaction', () => {
         const body = JSON.parse(init.body as string);
         expect(body).toMatchObject({
             schedule: '0 9 * * *',
-            automationType: 'SCRIPT',
+            // PR-P — a cadence is now a MANUAL plan on a schedule (each tick
+            // instantiates a PLANNED "awaiting manual completion" run). We no
+            // longer force the misleading SCRIPT label when no engine exists.
+            automationType: 'MANUAL',
         });
         // Timezone is auto-detected; just assert it's a non-empty string.
         expect(typeof body.scheduleTimezone).toBe('string');

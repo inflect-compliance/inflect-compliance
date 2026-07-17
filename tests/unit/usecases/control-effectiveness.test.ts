@@ -52,6 +52,7 @@ describe('getControlEffectiveness', () => {
             controlId: 'c-1',
             passRate: null,
             total: 0,
+            scored: 0,
             passes: 0,
             fails: 0,
             inconclusive: 0,
