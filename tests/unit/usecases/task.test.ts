@@ -126,8 +126,16 @@ const mockLog = logEvent as jest.MockedFunction<typeof logEvent>;
  */
 function reconcileNoopDb() {
     return {
-        task: { findFirst: jest.fn().mockResolvedValue({ id: 't1', type: 'TASK', controlId: null, findingId: null, metadataJson: null }) },
+        task: { findFirst: jest.fn().mockResolvedValue({ id: 't1', type: 'TASK', source: 'MANUAL', controlId: null, findingId: null, metadataJson: null }) },
         assetVulnerability: { findFirst: jest.fn().mockResolvedValue(null) },
+        // The vuln + risk-appetite + KRI reconcilers run for every terminal
+        // task (keyed on remediationTaskId, not task.type), so the mock must
+        // stub them; all resolve "no source found" → reconcile no-ops.
+        riskAppetiteBreach: { findFirst: jest.fn().mockResolvedValue(null) },
+        kriReading: { findFirst: jest.fn().mockResolvedValue(null) },
+        // POLICY_REVIEW / EVIDENCE_EXPIRY reconcilers only run when the task
+        // carries that source (here MANUAL), but stub the link lookup anyway.
+        taskLink: { findFirst: jest.fn().mockResolvedValue(null) },
     };
 }
 

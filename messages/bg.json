@@ -5499,7 +5499,8 @@
         "POLICY_REVIEW": "Преглед на политика",
         "AUDIT": "Одит",
         "INTEGRATION": "Интеграция",
-        "EVIDENCE_EXPIRY": "Изтичане на доказателство"
+        "EVIDENCE_EXPIRY": "Изтичане на доказателство",
+        "RISK_MONITOR": "Мониторинг на риска"
       },
       "due": {
         "overdue": "Просрочени",

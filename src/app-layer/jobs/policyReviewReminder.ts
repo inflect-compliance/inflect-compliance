@@ -26,7 +26,26 @@ import { logger } from '@/lib/observability/logger';
 import { emitAutomationEvent } from '../automation';
 import { isNotificationsEnabled } from '../notifications/settings';
 import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
+import { createTask, addTaskLink } from '../usecases/task';
+import { getPermissionsForRole } from '@/lib/permissions';
 import type { RequestContext } from '../types';
+
+/**
+ * System context for a policy-review reminder task, owned by the policy
+ * owner (the reminder is only raised when an owner exists). ADMIN
+ * permissions clear `assertCanWriteTasks`; the canonical createTask then
+ * mints the TSK-N key + audit + automation event + owner bell/email.
+ */
+function buildReminderCtx(tenantId: string, ownerUserId: string): RequestContext {
+    return {
+        requestId: `policy-review-reminder-${tenantId}`,
+        userId: ownerUserId,
+        tenantId,
+        role: 'ADMIN',
+        permissions: { canRead: true, canWrite: true, canAdmin: true, canAudit: true, canExport: false },
+        appPermissions: getPermissionsForRole('ADMIN'),
+    };
+}
 
 export interface OverduePolicy {
     id: string;
@@ -274,29 +293,22 @@ export async function processOverdueReminders(
         // above), and de-duped within this run as new ids are added.
         if (policy.ownerUserId && !policiesWithOpenTask.has(policy.id)) {
             const dueStr = policy.nextReviewAt.toISOString().slice(0, 10);
-            const task = await db.task.create({
-                data: {
-                    tenantId: policy.tenantId,
-                    source: 'POLICY_REVIEW',
-                    type: 'TASK',
-                    title: `Review policy: ${policy.title}`,
-                    description: overdue
-                        ? `Policy "${policy.title}" is ${dOver} day(s) overdue for review. Review the content and mark it reviewed to reset the review cycle.`
-                        : `Policy "${policy.title}" is due for review on ${dueStr}. Review the content and mark it reviewed to reset the review cycle.`,
-                    status: 'OPEN',
-                    priority: overdue ? 'P1' : 'P2',
-                    createdByUserId: policy.ownerUserId,
-                    assigneeUserId: policy.ownerUserId,
-                },
+            // TP-1 — route through the canonical createTask so the reminder
+            // task carries a TSK-N key + TASK_CREATED audit/automation event
+            // + owner bell/email, same as every other task (was a raw
+            // db.task.create that produced a keyless, unaudited task).
+            const ctx = buildReminderCtx(policy.tenantId, policy.ownerUserId);
+            const task = await createTask(ctx, {
+                source: 'POLICY_REVIEW',
+                type: 'TASK',
+                title: `Review policy: ${policy.title}`,
+                description: overdue
+                    ? `Policy "${policy.title}" is ${dOver} day(s) overdue for review. Review the content and mark it reviewed to reset the review cycle.`
+                    : `Policy "${policy.title}" is due for review on ${dueStr}. Review the content and mark it reviewed to reset the review cycle.`,
+                priority: overdue ? 'P1' : 'P2',
+                assigneeUserId: policy.ownerUserId,
             });
-            await db.taskLink.create({
-                data: {
-                    tenantId: policy.tenantId,
-                    taskId: task.id,
-                    entityType: 'POLICY',
-                    entityId: policy.id,
-                },
-            });
+            await addTaskLink(ctx, task.id, 'POLICY', policy.id);
             policiesWithOpenTask.add(policy.id);
         }
 

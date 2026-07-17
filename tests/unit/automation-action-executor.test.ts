@@ -13,6 +13,11 @@ const lookupMock = jest.fn((..._a: unknown[]) =>
     Promise.resolve([{ address: '93.184.216.34', family: 4 }]),
 );
 jest.mock('node:dns', () => ({ promises: { lookup: (...a: unknown[]) => lookupMock(...a) } }));
+// CREATE_TASK now delegates to the canonical createTask usecase (TP-1) so
+// the spawned task carries a TSK-N key + audit + automation event + bell.
+// Mock it to assert the executor calls it with the right shape.
+const createTaskMock = jest.fn().mockResolvedValue({ id: 'task-1', key: 'TSK-1' });
+jest.mock('@/app-layer/usecases/task', () => ({ createTask: (...a: unknown[]) => createTaskMock(...a) }));
 
 import { executeAction } from '@/app-layer/automation/action-executor';
 
@@ -61,17 +66,22 @@ describe('executeAction', () => {
         expect(arg.data[0]).toMatchObject({ tenantId: 't1', userId: 'a', message: 'heads up' });
     });
 
-    it('CREATE_TASK creates a task owned by the actor', async () => {
+    it('CREATE_TASK delegates to the canonical createTask, owned by the actor', async () => {
         const db = makeDb();
         const res = await executeAction(db, {
             id: 'r1', name: 'Remediate', actionType: 'CREATE_TASK', createdByUserId: 'u9',
             actionConfigJson: { title: 'Fix it', severity: 'HIGH' },
         }, baseEvent);
         expect(res.ok).toBe(true);
-        expect(res.detail).toEqual({ taskId: 'task-1' });
-        expect(db.task.create.mock.calls[0][0].data).toMatchObject({
-            tenantId: 't1', title: 'Fix it', severity: 'HIGH', createdByUserId: 'u1', source: 'INTEGRATION',
-        });
+        // The canonical createTask returns a TSK-N key that now surfaces.
+        expect(res.detail).toEqual({ taskId: 'task-1', key: 'TSK-1' });
+        // Routed through the usecase (NOT a raw db.task.create) with a
+        // valid source + the event actor owning the task.
+        expect(db.task.create).not.toHaveBeenCalled();
+        const [ctxArg, inputArg] = createTaskMock.mock.calls[0];
+        expect(ctxArg).toMatchObject({ tenantId: 't1', userId: 'u1' });
+        expect(inputArg).toMatchObject({ title: 'Fix it', severity: 'HIGH', source: 'INTEGRATION' });
+        expect(inputArg.metadataJson).toMatchObject({ automationDedupeKey: 'auto:r1:risk-1', ruleId: 'r1' });
     });
 
     it('UPDATE_STATUS writes the field on the event entity', async () => {

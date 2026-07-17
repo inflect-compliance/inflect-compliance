@@ -4,6 +4,32 @@ import { Prisma, WorkItemStatus, WorkItemType, WorkItemSeverity, WorkItemPriorit
 import { buildCursorWhere, CURSOR_ORDER_BY, computePageInfo, clampLimit } from '@/lib/pagination';
 import type { PaginatedResponse } from '@/lib/dto/pagination';
 import { TERMINAL_WORK_ITEM_STATUSES, isTerminalStatus } from '../domain/work-item-status';
+import { badRequest } from '@/lib/errors/types';
+
+/**
+ * The set of valid `WorkItemSource` enum members, materialised once from
+ * the Prisma-generated enum so validation stays in lock-step with the
+ * schema without a hand-maintained list.
+ */
+const VALID_WORK_ITEM_SOURCES = new Set<string>(Object.values(WorkItemSource));
+
+/**
+ * Validate/normalise a caller-supplied task `source` at the write
+ * boundary. A missing source defaults to MANUAL; an invalid one fails
+ * LOUDLY with a 400 (never a silent Postgres enum rejection swallowed in
+ * a try/catch, and never a blind `as WorkItemSource` cast that lets a
+ * bogus value reach the DB). Every `createTask` path funnels through the
+ * repo, so this is the single choke point that keeps the invariant true.
+ */
+export function normalizeWorkItemSource(source: string | null | undefined): WorkItemSource {
+    if (source == null || source === '') return WorkItemSource.MANUAL;
+    if (!VALID_WORK_ITEM_SOURCES.has(source)) {
+        throw badRequest(
+            `Invalid task source "${source}". Must be one of: ${[...VALID_WORK_ITEM_SOURCES].join(', ')}.`,
+        );
+    }
+    return source as WorkItemSource;
+}
 
 // ─── Filters ───
 
@@ -381,7 +407,7 @@ export class WorkItemRepository {
                 type: (data.type as WorkItemType) ?? WorkItemType.TASK,
                 severity: (data.severity as WorkItemSeverity) ?? WorkItemSeverity.MEDIUM,
                 priority: (data.priority as WorkItemPriority) ?? WorkItemPriority.P2,
-                source: (data.source as WorkItemSource) ?? WorkItemSource.MANUAL,
+                source: normalizeWorkItemSource(data.source),
                 dueAt: data.dueAt ? new Date(data.dueAt) : null,
                 assigneeUserId: data.assigneeUserId || null,
                 reviewerUserId: data.reviewerUserId || null,

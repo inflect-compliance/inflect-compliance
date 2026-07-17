@@ -5499,7 +5499,8 @@
         "POLICY_REVIEW": "Policy Review",
         "AUDIT": "Audit",
         "INTEGRATION": "Integration",
-        "EVIDENCE_EXPIRY": "Evidence Expiry"
+        "EVIDENCE_EXPIRY": "Evidence Expiry",
+        "RISK_MONITOR": "Risk Monitor"
       },
       "due": {
         "overdue": "Overdue",

@@ -18,12 +18,32 @@ import { UPDATE_STATUS_TARGETS } from '@/lib/automation/status-allowlist';
 import { safeFetch, SsrfBlockedError } from './webhook-safety';
 import { isNotificationsEnabled } from '../notifications/settings';
 import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
+import { createTask as createTaskUsecase } from '../usecases/task';
+import { getPermissionsForRole } from '@/lib/permissions';
+import type { RequestContext } from '../types';
 import type {
     NotifyUserActionConfig,
     CreateTaskActionConfig,
     UpdateStatusActionConfig,
     WebhookActionConfig,
 } from './types';
+
+/**
+ * A system RequestContext for an automation-spawned task. The rule's
+ * resolved actor (event actor, else rule author) owns the task; ADMIN
+ * permissions clear `assertCanWriteTasks`. Mirrors the makeSystemCtx
+ * pattern used by the background-job monitors.
+ */
+function buildAutomationCtx(tenantId: string, userId: string): RequestContext {
+    return {
+        requestId: `automation-${tenantId}`,
+        userId,
+        tenantId,
+        role: 'ADMIN',
+        permissions: { canRead: true, canWrite: true, canAdmin: true, canAudit: true, canExport: false },
+        appPermissions: getPermissionsForRole('ADMIN'),
+    };
+}
 
 export interface ActionResult {
     ok: boolean;
@@ -141,38 +161,41 @@ async function createTask(db: Db, rule: ExecutableRule, event: ActionEvent): Pro
         cfg.linkEntityType === 'Control' && cfg.linkEntityIdField
             ? (event.data?.[cfg.linkEntityIdField] as string | undefined) ?? null
             : null;
-    // Dedupe: a rule firing repeatedly on the same entity shouldn't spawn a new
-    // task each time. Skip if a non-terminal task with the deterministic
-    // automation key already exists.
+    // Dedupe: a rule firing repeatedly on the same entity shouldn't spawn a
+    // new task each time. The dedupe key rides `metadataJson` (the canonical
+    // createTask mints the visible TSK-N key, so it can no longer live in
+    // `key`); the execution-claim row already prevents concurrent double-fire
+    // of the same rule+event, so this is the over-time idempotency guard.
     const dedupeKey = `auto:${rule.id}:${event.entityId ?? 'noentity'}`;
     const existing = await db.task.findFirst({
         where: {
             tenantId: event.tenantId,
-            key: dedupeKey,
             status: { notIn: [...TERMINAL_WORK_ITEM_STATUSES] },
             deletedAt: null,
+            metadataJson: { path: ['automationDedupeKey'], equals: dedupeKey },
         },
         select: { id: true },
     });
     if (existing) {
         return { ok: true, summary: `Task already open (${existing.id})`, detail: { taskId: existing.id, deduped: true } };
     }
-    const task = await db.task.create({
-        data: {
-            tenantId: event.tenantId,
-            type: 'TASK',
-            title: cfg.title ?? rule.name,
-            severity: cfg.severity ?? 'MEDIUM',
-            priority: cfg.priority ?? 'P2',
-            status: 'OPEN',
-            source: 'INTEGRATION',
-            key: dedupeKey,
-            createdByUserId,
-            assigneeUserId: cfg.assigneeUserId ?? null,
-            controlId,
-        },
+    // Route through the canonical usecase so an automation-spawned task
+    // carries the same TSK-N key, TASK_CREATED audit row, automation event,
+    // and assignee bell/email as every other task. The executor runs on the
+    // Prisma singleton (not inside a tx), so opening a fresh tenant context
+    // here does not nest transactions.
+    const ctx = buildAutomationCtx(event.tenantId, createdByUserId);
+    const task = await createTaskUsecase(ctx, {
+        type: 'TASK',
+        title: cfg.title ?? rule.name,
+        severity: cfg.severity ?? 'MEDIUM',
+        priority: cfg.priority ?? 'P2',
+        source: 'INTEGRATION',
+        assigneeUserId: cfg.assigneeUserId ?? null,
+        controlId,
+        metadataJson: { automationDedupeKey: dedupeKey, ruleId: rule.id },
     });
-    return { ok: true, summary: `Created task ${task.id}`, detail: { taskId: task.id } };
+    return { ok: true, summary: `Created task ${task.key}`, detail: { taskId: task.id, key: task.key } };
 }
 
 async function updateStatus(db: Db, rule: ExecutableRule, event: ActionEvent): Promise<ActionResult> {

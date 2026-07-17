@@ -23,7 +23,7 @@ import { randomUUID } from 'crypto';
 import { DB_URL, DB_AVAILABLE } from './db-helper';
 import { hashForLookup } from '@/lib/security/encryption';
 import { makeRequestContext } from '../helpers/make-context';
-import { createTask, setTaskStatus } from '@/app-layer/usecases/task';
+import { createTask, setTaskStatus, addTaskLink } from '@/app-layer/usecases/task';
 // Direct import satisfies the usecase-test-coverage guardrail for the
 // new task-source-reconcile.ts module (exercised via setTaskStatus).
 import { reconcileTaskSource } from '@/app-layer/usecases/task-source-reconcile';
@@ -75,6 +75,12 @@ describeFn('task-source reconciliation (integration)', () => {
             await db.$executeRawUnsafe(`DELETE FROM "AssetVulnerability" WHERE "tenantId" = ANY($1)`, ids);
             await db.$executeRawUnsafe(`DELETE FROM "Cve" WHERE "id" LIKE $1`, `CVE-${TAG}%`);
             await db.$executeRawUnsafe(`DELETE FROM "Asset" WHERE "tenantId" = ANY($1)`, ids);
+            await db.$executeRawUnsafe(`DELETE FROM "TaskLink" WHERE "tenantId" = ANY($1)`, ids);
+            await db.$executeRawUnsafe(`DELETE FROM "RiskAppetiteBreach" WHERE "tenantId" = ANY($1)`, ids);
+            await db.$executeRawUnsafe(`DELETE FROM "KriReading" WHERE "tenantId" = ANY($1)`, ids);
+            await db.$executeRawUnsafe(`DELETE FROM "KeyRiskIndicator" WHERE "tenantId" = ANY($1)`, ids);
+            await db.$executeRawUnsafe(`DELETE FROM "Evidence" WHERE "tenantId" = ANY($1)`, ids);
+            await db.$executeRawUnsafe(`DELETE FROM "Policy" WHERE "tenantId" = ANY($1)`, ids);
             await db.$executeRawUnsafe(`DELETE FROM "Task" WHERE "tenantId" = ANY($1)`, ids);
             await db.$executeRawUnsafe(`DELETE FROM "Finding" WHERE "tenantId" = ANY($1)`, ids);
             await db.$executeRawUnsafe(`DELETE FROM "Control" WHERE "tenantId" = ANY($1)`, ids);
@@ -219,6 +225,119 @@ describeFn('task-source reconciliation (integration)', () => {
         const after = await db.finding.findUniqueOrThrow({ where: { id: finding.id } });
         expect(after.status).toBe('CLOSED');
         expect(after.verifiedBy).toBe(userAId);
+    });
+
+    // ─── Reconciler 4 — risk-appetite breach → resolved ─────────────
+
+    it('closing a risk-appetite remediation task resolves the breach', async () => {
+        const breach = await db.riskAppetiteBreach.create({
+            data: {
+                tenantId: TENANT_A,
+                breachType: 'PORTFOLIO_ALE',
+                thresholdValue: 100,
+                actualValue: 250,
+            },
+        });
+        expect(breach.resolvedAt).toBeNull();
+
+        const task = await createTask(ctxA, {
+            title: 'Remediate appetite breach',
+            type: 'TASK',
+            source: 'RISK_MONITOR',
+        });
+        await db.riskAppetiteBreach.update({
+            where: { id: breach.id },
+            data: { remediationTaskId: task.id },
+        });
+
+        await setTaskStatus(ctxA, task.id, 'CLOSED', 'Brought back within appetite');
+
+        const after = await db.riskAppetiteBreach.findUniqueOrThrow({ where: { id: breach.id } });
+        expect(after.resolvedAt).not.toBeNull();
+    });
+
+    // ─── Reconciler 5 — KRI breach → addressed ──────────────────────
+
+    it('closing a KRI remediation task marks the breaching reading addressed', async () => {
+        const kri = await db.keyRiskIndicator.create({
+            data: { tenantId: TENANT_A, name: `KRI ${TAG}` },
+        });
+        const reading = await db.kriReading.create({
+            data: { tenantId: TENANT_A, kriId: kri.id, value: 99, ragStatus: 'RED' },
+        });
+        expect(reading.addressedAt).toBeNull();
+
+        const task = await createTask(ctxA, {
+            title: 'Remediate breached KRI',
+            type: 'TASK',
+            source: 'RISK_MONITOR',
+        });
+        await db.kriReading.update({
+            where: { id: reading.id },
+            data: { remediationTaskId: task.id },
+        });
+
+        await setTaskStatus(ctxA, task.id, 'CLOSED', 'KRI back within appetite');
+
+        const after = await db.kriReading.findUniqueOrThrow({ where: { id: reading.id } });
+        expect(after.addressedAt).not.toBeNull();
+    });
+
+    // ─── Reconciler 6 — policy-review reminder → review advanced ────
+
+    it('closing a POLICY_REVIEW reminder task advances the policy review cycle', async () => {
+        const policy = await db.policy.create({
+            data: {
+                tenantId: TENANT_A,
+                slug: `pol-${TAG}`,
+                title: 'Acceptable Use',
+                reviewFrequencyDays: 90,
+                nextReviewAt: new Date(Date.now() - 86_400_000), // overdue
+            },
+        });
+        expect(policy.lastReviewedAt).toBeNull();
+
+        const task = await createTask(ctxA, {
+            title: 'Review policy: Acceptable Use',
+            type: 'TASK',
+            source: 'POLICY_REVIEW',
+        });
+        await addTaskLink(ctxA, task.id, 'POLICY', policy.id);
+
+        await setTaskStatus(ctxA, task.id, 'CLOSED', 'Reviewed');
+
+        const after = await db.policy.findUniqueOrThrow({ where: { id: policy.id } });
+        expect(after.lastReviewedAt).not.toBeNull();
+        // Review cycle rolled forward ~90 days into the future.
+        expect(after.nextReviewAt).not.toBeNull();
+        expect(after.nextReviewAt!.getTime()).toBeGreaterThan(Date.now());
+    });
+
+    // ─── Reconciler 7 — evidence-expiry reminder → review serviced ──
+
+    it('closing an EVIDENCE_EXPIRY reminder task services the review cadence', async () => {
+        const evidence = await db.evidence.create({
+            data: {
+                tenantId: TENANT_A,
+                type: 'FILE',
+                title: 'SOC 2 report',
+                reviewCycle: 'QUARTERLY',
+            },
+        });
+
+        const task = await createTask(ctxA, {
+            title: 'Refresh expiring evidence: SOC 2 report',
+            type: 'TASK',
+            source: 'EVIDENCE_EXPIRY',
+        });
+        await addTaskLink(ctxA, task.id, 'EVIDENCE', evidence.id);
+
+        await setTaskStatus(ctxA, task.id, 'CLOSED', 'Refreshed');
+
+        const after = await db.evidence.findUniqueOrThrow({ where: { id: evidence.id } });
+        // nextReviewDate rolled forward by the QUARTERLY cadence.
+        expect(after.nextReviewDate).not.toBeNull();
+        expect(after.nextReviewDate!.getTime()).toBeGreaterThan(Date.now());
     });
 
     // ─── Two-tenant isolation ────────────────────────────────────────
