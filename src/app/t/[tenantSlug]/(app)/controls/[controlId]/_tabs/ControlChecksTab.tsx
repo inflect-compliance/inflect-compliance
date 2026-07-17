@@ -151,6 +151,14 @@ export function ControlChecksTab({ controlId }: { controlId: string }) {
 
     return (
         <div className="space-y-default">
+            {/* PR-P (Prompt 1.3) — honest labeling. These are control-scoped
+                automated monitoring checks (keyed to the control's automationKey),
+                NOT plan test runs. They feed control health + open Findings on
+                FAILED, but they are separate telemetry and do NOT count toward the
+                test-run effectiveness pass-rate shown on the plan/run surfaces. */}
+            <p id="checks-telemetry-note" className="text-xs text-content-subtle">
+                {t('checksTab.telemetryNote')}
+            </p>
             {latest && (
                 <div className={cardVariants({ density: 'compact' })}>
                     <div className="flex items-center justify-between gap-default">

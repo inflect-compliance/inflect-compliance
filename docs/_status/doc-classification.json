@@ -1319,6 +1319,9 @@
         "docs/implementation-notes/2026-07-17-auditor-portal-cleanup.md": {
             "class": "historical"
         },
+        "docs/implementation-notes/2026-07-17-automated-test-engine.md": {
+            "class": "historical"
+        },
         "docs/implementation-notes/2026-07-14-ep1-evidence-review-gate.md": {
             "class": "authoritative"
         },

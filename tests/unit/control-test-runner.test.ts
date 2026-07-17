@@ -92,6 +92,20 @@ jest.mock('@/app-layer/repositories/FindingRepository', () => ({
     },
 }));
 
+// PR-P — the runner now stamps effectiveness parity on the handler-completion
+// path (attestControlTested + updateNextDueAt), mirroring completeTestRun.
+const mockUpdateNextDueAt = jest.fn();
+jest.mock('@/app-layer/repositories/TestPlanRepository', () => ({
+    TestPlanRepository: {
+        updateNextDueAt: (...args: unknown[]) => mockUpdateNextDueAt(...args),
+    },
+}));
+
+const mockAttestControlTested = jest.fn();
+jest.mock('@/app-layer/usecases/control-test', () => ({
+    attestControlTested: (...args: unknown[]) => mockAttestControlTested(...args),
+}));
+
 // Events
 const mockEmitTestRunCreated = jest.fn();
 const mockEmitTestRunCompleted = jest.fn();
@@ -147,6 +161,7 @@ function makePlan(overrides: Partial<{
         controlId: 'ctrl-1',
         name: 'Quarterly access review',
         schedule: 'schedule' in overrides ? overrides.schedule! : '0 9 * * MON',
+        frequency: 'QUARTERLY',
         automationType: overrides.automationType ?? 'MANUAL',
         automationConfig: overrides.automationConfig ?? null,
         status: overrides.status ?? 'ACTIVE',
@@ -162,6 +177,8 @@ beforeEach(() => {
     mockTestRunComplete.mockReset();
     mockTestEvidenceLink.mockReset();
     mockFindingCreate.mockReset();
+    mockUpdateNextDueAt.mockReset();
+    mockAttestControlTested.mockReset();
     mockPlanFindFirst.mockReset();
     mockTx.controlTestRun.update.mockReset();
     mockTx.evidence.create.mockReset();
@@ -288,10 +305,16 @@ describe('runControlTestRunner — MANUAL plan', () => {
     });
 });
 
-// ─── 3. SCRIPT branch — no handler registered (forward-decl) ───────
+// ─── 3. SCRIPT/INTEGRATION with no handler → PLANNED awaiting (PR-P) ─
 
 describe('runControlTestRunner — SCRIPT/INTEGRATION without handler', () => {
-    test('falls through to INCONCLUSIVE when no handler is registered', async () => {
+    test('creates a PLANNED "awaiting manual completion" run, NOT an INCONCLUSIVE no-op', async () => {
+        // PR-P — no execution engine is registered, so a scheduled SCRIPT plan
+        // must NOT complete as a jargon INCONCLUSIVE no-op (which polluted the
+        // pass-rate and showed raw "no handler" text as evidence). Instead it
+        // delegates to the MANUAL path: the run stays PLANNED "awaiting manual
+        // completion" and never reaches COMPLETED, so it never enters the
+        // effectiveness denominator.
         mockPlanFindFirst.mockResolvedValueOnce(
             makePlan({ automationType: 'SCRIPT' }),
         );
@@ -301,24 +324,30 @@ describe('runControlTestRunner — SCRIPT/INTEGRATION without handler', () => {
         const result = await runControlTestRunner(PAYLOAD_BASE);
 
         expect(result).toMatchObject({
-            runStatus: 'COMPLETED',
-            runResult: 'INCONCLUSIVE',
+            runStatus: 'PLANNED',
+            runResult: null,
             evidenceAttached: true,
             findingCreated: false,
         });
 
-        // Run completed with INCONCLUSIVE (not FAIL — no Finding).
-        expect(mockTestRunComplete).toHaveBeenCalledTimes(1);
-        const completeArgs = mockTestRunComplete.mock.calls[0][3];
-        expect(completeArgs.result).toBe('INCONCLUSIVE');
-        expect(completeArgs.notes).toContain('No SCRIPT handler registered');
-
-        // Evidence content names the missing-handler signal.
-        const evData = mockTx.evidence.create.mock.calls[0][0].data;
-        expect(evData.content).toContain('No automation handler is registered');
-
-        expect(mockEmitTestRunCompleted).toHaveBeenCalledTimes(1);
+        // The run is NEVER completed — no verdict is fabricated.
+        expect(mockTestRunComplete).not.toHaveBeenCalled();
+        expect(mockEmitTestRunCompleted).not.toHaveBeenCalled();
         expect(mockEmitTestRunFailed).not.toHaveBeenCalled();
+
+        // No effectiveness side-effects — the control is not attested and the
+        // plan cadence is not rolled until a human actually completes the run.
+        expect(mockAttestControlTested).not.toHaveBeenCalled();
+        expect(mockUpdateNextDueAt).not.toHaveBeenCalled();
+
+        // The run is annotated "awaiting manual completion" (the manual path).
+        expect(mockTx.controlTestRun.update).toHaveBeenCalledTimes(1);
+        const updateArgs = mockTx.controlTestRun.update.mock.calls[0][0];
+        expect(updateArgs.data.notes).toContain('Awaiting manual completion');
+
+        // Evidence no longer carries raw "no handler registered" jargon.
+        const evData = mockTx.evidence.create.mock.calls[0][0].data;
+        expect(evData.content).not.toContain('No automation handler is registered');
     });
 });
 
@@ -355,6 +384,16 @@ describe('runControlTestRunner — SCRIPT handler PASS', () => {
         expect(mockFindingCreate).not.toHaveBeenCalled();
         expect(mockTx.findingEvidence.create).not.toHaveBeenCalled();
         expect(mockEmitTestRunFailed).not.toHaveBeenCalled();
+
+        // PR-P — effectiveness parity with the manual completeTestRun path: a
+        // completed automated run stamps Control.lastTested (attestControlTested)
+        // and rolls the plan cadence (updateNextDueAt). Without these, an
+        // automated run would move the pass-rate while lastTested + cadence
+        // went stale.
+        expect(mockAttestControlTested).toHaveBeenCalledTimes(1);
+        expect(mockAttestControlTested.mock.calls[0][2]).toBe('ctrl-1');
+        expect(mockUpdateNextDueAt).toHaveBeenCalledTimes(1);
+        expect(mockUpdateNextDueAt.mock.calls[0][2]).toBe('plan-1');
     });
 });
 

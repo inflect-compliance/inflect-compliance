@@ -123,14 +123,17 @@ describe("Audit S9 — control effectiveness scoring (closure lock)", () => {
             expect(s).toMatch(/cutoff\.setDate\(cutoff\.getDate\(\)\s*-\s*windowDays\)/);
         });
 
-        it("passRate rounds to integer percentage; null when no runs", () => {
+        it("passRate rounds to integer percentage; null when no VERDICT runs (PR-P)", () => {
             const s = src();
-            // The null case is essential — empty windows must not
-            // surface as "0%" (which would read as "all tests
-            // failed", semantically wrong). The per-entry reduce keys
-            // off the map value `e`.
+            // The null case is essential — empty windows must not surface as
+            // "0%" (which would read as "all tests failed", semantically wrong).
+            // PR-P — the denominator is verdict-producing runs only
+            // (`scored = passes + fails`); INCONCLUSIVE runs (no verdict, e.g. a
+            // no-engine scheduled run that errored) are excluded so they can't
+            // silently drag effectiveness down. `null` when `scored === 0`.
+            expect(s).toMatch(/e\.scored\s*=\s*e\.passes\s*\+\s*e\.fails/);
             expect(s).toMatch(
-                /e\.total > 0\s*\?\s*Math\.round\(\(e\.passes\s*\/\s*e\.total\)\s*\*\s*100\)\s*:\s*null/,
+                /e\.scored > 0\s*\?\s*Math\.round\(\(e\.passes\s*\/\s*e\.scored\)\s*\*\s*100\)\s*:\s*null/,
             );
         });
     });

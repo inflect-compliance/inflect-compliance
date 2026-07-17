@@ -170,13 +170,14 @@ export function TestPlanScheduleSection({
             const body = {
                 schedule: target.cron,
                 scheduleTimezone: target.cron === null ? null : browserTz,
-                automationType:
-                    target.cron === null
-                        ? 'MANUAL'
-                        : // Default any scheduled plan to SCRIPT — INTEGRATION
-                          // is reserved for advanced-mode UI that names a
-                          // specific connector. For now, "scheduled" = SCRIPT.
-                          'SCRIPT',
+                // A scheduled plan is a MANUAL plan on a cadence: each tick
+                // instantiates a PLANNED "awaiting manual completion" run. We no
+                // longer force SCRIPT here — no real script/integration engine
+                // exists yet, so labeling a cadence "SCRIPT" would imply an
+                // execution that never happens. SCRIPT/INTEGRATION are reserved
+                // for an advanced-mode UI that names a connector + registers a
+                // real handler.
+                automationType: 'MANUAL',
                 // Preserve any existing automationConfig — the UI
                 // doesn't edit it from this section.
             };
