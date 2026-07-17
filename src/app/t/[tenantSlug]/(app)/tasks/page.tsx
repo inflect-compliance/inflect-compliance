@@ -32,9 +32,14 @@ export default async function TasksPage({
     const sp = await searchParams;
     const ctx = await getTenantCtx({ tenantSlug });
 
-    // Build filters from searchParams for server-side data fetch
+    // Build filters from searchParams for server-side data fetch. The
+    // whitelist mirrors the live filter keys (filter-defs) so a bookmarked
+    // deep link (e.g. ?source=…, ?assigneeUserId=…, ?controlId=…) restores
+    // the filtered view + its chips on SSR, not just q/status/type/severity/due.
+    // (`priority` is intentionally absent — it's in TaskQuerySchema but is not
+    // an actual filter chip, so there's nothing to restore.)
     const filters: Record<string, string> = {};
-    for (const key of ['q', 'status', 'type', 'severity', 'due']) {
+    for (const key of ['q', 'status', 'type', 'severity', 'source', 'due', 'assigneeUserId', 'controlId']) {
         const val = sp[key];
         if (typeof val === 'string' && val) filters[key] = val;
     }

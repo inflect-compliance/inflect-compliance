@@ -10,7 +10,7 @@
  *   - description — optional free text.
  *   - type — one of TASK / IMPROVEMENT / AUDIT_FINDING /
  *     CONTROL_GAP / INCIDENT.
- *   - severity — one of LOW / MEDIUM / HIGH / CRITICAL.
+ *   - severity — one of INFO / LOW / MEDIUM / HIGH / CRITICAL.
  *   - priority — one of P0 / P1 / P2 / P3.
  *   - dueAt — optional `YYYY-MM-DD`.
  *   - assigneeUserId — optional cuid.
@@ -38,7 +38,7 @@ export const NewTaskFormSchema = z.object({
         'CONTROL_GAP',
         'INCIDENT',
     ]),
-    severity: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
+    severity: z.enum(['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
     priority: z.enum(['P0', 'P1', 'P2', 'P3']),
     dueAt: optionalYmd.default(''),
     assigneeUserId: optionalCuid,

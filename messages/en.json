@@ -5571,6 +5571,7 @@
         "IMPROVEMENT": "Improvement"
       },
       "severity": {
+        "INFO": "Info",
         "LOW": "Low",
         "MEDIUM": "Medium",
         "HIGH": "High",

@@ -415,42 +415,29 @@ describe('WorkItemRepository.assign', () => {
 });
 
 describe('WorkItemRepository.metrics', () => {
-    it('aggregates with no top controls and no linked entities (empty branches)', async () => {
+    it('aggregates counts with empty groupBy branches', async () => {
         db.task.count.mockResolvedValue(0);
         db.task.groupBy.mockResolvedValue([]);
-        // topControlsRaw groupBy (4th groupBy call) returns [] → control.findMany skipped.
         const r = await WorkItemRepository.metrics(db as any, ctx);
         expect(r.total).toBe(0);
-        expect(r.topControls).toEqual([]);
-        expect(r.topLinkedEntities).toEqual([]);
+        expect(r.byStatus).toEqual({});
+        // The dead topControls / topLinkedEntities aggregations were trimmed,
+        // so no control.findMany / taskLink.groupBy is issued.
         expect(db.control.findMany).not.toHaveBeenCalled();
     });
 
-    it('maps groupBy results and resolves top controls (found + missing code/name)', async () => {
-        // status/severity/type groupBys then the topControls groupBy.
+    it('maps status/severity/type groupBy results', async () => {
         db.task.groupBy
             .mockResolvedValueOnce([{ status: 'OPEN', _count: 3 }])      // byStatus
             .mockResolvedValueOnce([{ severity: 'HIGH', _count: 2 }])    // bySeverity
-            .mockResolvedValueOnce([{ type: 'TASK', _count: 4 }])        // byType
-            .mockResolvedValueOnce([                                     // topControlsRaw
-                { controlId: 'c1', _count: 9 },
-                { controlId: 'c2', _count: 1 }, // c2 not in control.findMany → empty code/name
-            ]);
+            .mockResolvedValueOnce([{ type: 'TASK', _count: 4 }]);       // byType
         db.task.count.mockResolvedValue(1);
-        db.control.findMany.mockResolvedValueOnce([{ id: 'c1', code: 'AC-1', name: 'Access' }]);
-        db.taskLink.groupBy.mockResolvedValueOnce([
-            { entityType: 'ASSET', entityId: 'a1', _count: 7 },
-        ]);
 
         const r = await WorkItemRepository.metrics(db as any, ctx);
         expect(r.byStatus).toEqual({ OPEN: 3 });
         expect(r.bySeverity).toEqual({ HIGH: 2 });
         expect(r.byType).toEqual({ TASK: 4 });
-        expect(r.topControls).toEqual([
-            { controlId: 'c1', code: 'AC-1', name: 'Access', openTaskCount: 9 },
-            { controlId: 'c2', code: '', name: '', openTaskCount: 1 },
-        ]);
-        expect(r.topLinkedEntities).toEqual([{ entityType: 'ASSET', entityId: 'a1', count: 7 }]);
+        expect(r.trend).toEqual({ created30d: 1, resolved30d: 1 });
     });
 });
 

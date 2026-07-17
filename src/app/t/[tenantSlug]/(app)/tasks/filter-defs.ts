@@ -73,6 +73,9 @@ function taskSourceLabels(t: T): Record<string, string> {
 
 function taskSeverityLabels(t: T): Record<string, string> {
     return {
+        // INFO is a real WorkItemSeverity (automation can raise INFO tasks);
+        // offered here so those tasks are filterable, matching the create form.
+        INFO: t('filterEnums.severity.INFO'),
         LOW: t('filterEnums.severity.LOW'),
         MEDIUM: t('filterEnums.severity.MEDIUM'),
         HIGH: t('filterEnums.severity.HIGH'),
