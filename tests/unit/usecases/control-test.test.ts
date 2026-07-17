@@ -248,6 +248,9 @@ describe('completeTestRun — sanitisation + FAIL fan-out', () => {
                 findFirst: jest.fn().mockResolvedValue({ id: 'c1', frequency: 'MONTHLY', applicability: 'APPLICABLE' }),
                 update: jest.fn().mockResolvedValue({ id: 'c1' }),
             },
+            // FAIL-spawn idempotency guard (hasOpenGapTask) queries for an
+            // existing open gap task first; null → no dup → createTask fires.
+            task: { findFirst: jest.fn().mockResolvedValue(null) },
         } as never));
         mockRunGetById.mockResolvedValueOnce({
             id: 'run-1',
@@ -416,6 +419,8 @@ describe('createAutomatedTestRun', () => {
                 findFirst: jest.fn().mockResolvedValue({ id: 'c1', frequency: 'WEEKLY', applicability: 'APPLICABLE' }),
                 update: jest.fn().mockResolvedValue({ id: 'c1' }),
             },
+            // FAIL-spawn idempotency guard — null → no dup → createTask fires.
+            task: { findFirst: jest.fn().mockResolvedValue(null) },
         } as never));
         mockPlanGetById.mockResolvedValueOnce({
             id: 'plan-1',
