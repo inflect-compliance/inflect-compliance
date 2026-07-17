@@ -9,7 +9,9 @@ import { EntityDetailLayout, type EntityDetailTab } from '@/components/layout/En
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { MetaStrip, type MetaItem } from '@/components/ui/meta-strip';
 import { IncidentBiaContext } from '@/components/bia/IncidentBiaContext';
-import { Card } from '@/components/ui/card';
+import { Card, cardVariants } from '@/components/ui/card';
+import LinkedTasksPanel from '@/components/LinkedTasksPanel';
+import { useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Combobox } from '@/components/ui/combobox';
@@ -92,7 +94,7 @@ const KIND_ORDER: IncidentNotification['kind'][] = [
     'FINAL_1MONTH',
 ];
 
-type TabKey = 'overview' | 'timeline' | 'controls';
+type TabKey = 'overview' | 'timeline' | 'controls' | 'tasks';
 
 function countdown(dueAt: string, now: number): string {
     const ms = new Date(dueAt).getTime() - now;
@@ -128,6 +130,8 @@ export default function IncidentDetailPage() {
     // Tenant-root API base (for cross-resource fetches like the evidence
     // list) — keeps the `/api/` literal out of the fetch call site.
     const tenantApiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
+    const { permissions } = useTenantContext();
+    const canWrite = !!permissions?.canWrite;
     const post = async (
         path: string,
         body: unknown,
@@ -187,6 +191,7 @@ export default function IncidentDetailPage() {
             { key: 'overview', label: tx('detail.tabs.overview') },
             { key: 'timeline', label: tx('detail.tabs.timeline'), count: incident?.timeline.length },
             { key: 'controls', label: tx('detail.tabs.controls'), count: incident?.linkedControlIds.length },
+            { key: 'tasks', label: tx('detail.tabs.tasks') },
         ],
         [tx, incident?.timeline.length, incident?.linkedControlIds.length],
     );
@@ -577,6 +582,18 @@ export default function IncidentDetailPage() {
                             ))}
                         </ul>
                     )}
+                </div>
+            )}
+
+            {activeTab === 'tasks' && (
+                <div className={cardVariants()}>
+                    <LinkedTasksPanel
+                        apiBase={tenantApiUrl('')}
+                        entityType="INCIDENT"
+                        entityId={incidentId}
+                        tenantHref={(p) => `/t/${tenantSlug}${p}`}
+                        canWrite={canWrite}
+                    />
                 </div>
             )}
 

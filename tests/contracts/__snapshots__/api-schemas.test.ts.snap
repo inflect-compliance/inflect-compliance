@@ -4738,7 +4738,8 @@ exports[`API contract — per-schema snapshots schema: TaskLinkAddRequest 1`] = 
         "EVIDENCE",
         "FILE",
         "AUDIT_PACK",
-        "VENDOR"
+        "VENDOR",
+        "INCIDENT"
       ]
     },
     "entityId": {
@@ -4796,6 +4797,7 @@ exports[`API contract — per-schema snapshots schema: TaskSetStatusRequest 1`] 
         "OPEN",
         "TRIAGED",
         "IN_PROGRESS",
+        "IN_REVIEW",
         "BLOCKED",
         "RESOLVED",
         "CLOSED",

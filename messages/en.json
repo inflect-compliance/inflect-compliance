@@ -2709,7 +2709,8 @@
       "relMinAgo": "{mins}m ago",
       "relHrAgo": "{hrs}h ago",
       "relYesterday": "yesterday",
-      "relDaysAgo": "{days}d ago"
+      "relDaysAgo": "{days}d ago",
+      "tabTasks": "Tasks"
     },
     "evidence": {
       "title": "Evidence to Retain",
@@ -4835,7 +4836,8 @@
         "monitoring": "Monitoring",
         "links": "Links",
         "bundles": "Bundles",
-        "subprocessors": "Subprocessors"
+        "subprocessors": "Subprocessors",
+        "tasks": "Tasks"
       },
       "status": "Status",
       "criticality": "Criticality",
@@ -5384,7 +5386,10 @@
       "entityPlaceholder": "Select entity",
       "add": "Add",
       "removeTooltip": "Remove linked item",
-      "removeAria": "Remove link"
+      "removeAria": "Remove link",
+      "reviewer": "Reviewer",
+      "reviewerHint": "A reviewer must sign the task off (via In review) before it can close.",
+      "reviewerPlaceholder": "No reviewer"
     },
     "detail": {
       "notFound": "Task not found",
@@ -5552,6 +5557,7 @@
         "OPEN": "Open",
         "TRIAGED": "Triaged",
         "IN_PROGRESS": "In Progress",
+        "IN_REVIEW": "In review",
         "BLOCKED": "Blocked",
         "RESOLVED": "Resolved",
         "CLOSED": "Closed",
@@ -5588,6 +5594,7 @@
       "OPEN": "Open",
       "TRIAGED": "Triaged",
       "IN_PROGRESS": "In Progress",
+      "IN_REVIEW": "In review",
       "BLOCKED": "Blocked",
       "RESOLVED": "Resolved",
       "CLOSED": "Closed",
@@ -5790,7 +5797,8 @@
       "tabs": {
         "overview": "Overview",
         "timeline": "Timeline",
-        "controls": "Controls"
+        "controls": "Controls",
+        "tasks": "Tasks"
       },
       "notLegalStrong": "Not legal advice.",
       "notLegalBody": "The NIS2 Article 23 reportability threshold and the 24h / 72h / 1-month deadlines below are operational aids. Your DPO/legal team owns the actual reporting determination.",

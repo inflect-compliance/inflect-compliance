@@ -57,7 +57,7 @@ const buildTypeLabels = (t: (k: string) => string): Record<string, string> => ({
     AUDIT_FINDING: t('typeLabels.AUDIT_FINDING'), CONTROL_GAP: t('typeLabels.CONTROL_GAP'),
     INCIDENT: t('typeLabels.INCIDENT'), IMPROVEMENT: t('typeLabels.IMPROVEMENT'), TASK: t('typeLabels.TASK'),
 });
-const ENTITY_TYPE_OPTIONS = ['CONTROL', 'RISK', 'ASSET', 'EVIDENCE', 'FRAMEWORK_REQUIREMENT'];
+const ENTITY_TYPE_OPTIONS = ['CONTROL', 'RISK', 'ASSET', 'EVIDENCE', 'FRAMEWORK_REQUIREMENT', 'POLICY', 'VENDOR', 'FILE', 'AUDIT_PACK', 'INCIDENT'];
 const ENTITY_TYPE_CB_OPTIONS: ComboboxOption[] = ENTITY_TYPE_OPTIONS.map(t => ({ value: t, label: t }));
 const RELATION_OPTIONS = ['RELATES_TO', 'CAUSED_BY', 'MITIGATED_BY', 'EVIDENCE_FOR'];
 const RELATION_CB_OPTIONS: ComboboxOption[] = RELATION_OPTIONS.map(r => ({ value: r, label: r.replace(/_/g, ' ') }));
@@ -65,7 +65,7 @@ const RELATION_CB_OPTIONS: ComboboxOption[] = RELATION_OPTIONS.map(r => ({ value
 // Kept in STATUS_LABELS so a legacy RESOLVED task still shows the right
 // badge; just not offered as a choice (a RESOLVED task is closed via
 // the CLOSED option). CLOSED + CANCELED prompt for a resolution note.
-const SELECTABLE_STATUSES = ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'BLOCKED', 'CLOSED', 'CANCELED'];
+const SELECTABLE_STATUSES = ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'CLOSED', 'CANCELED'];
 const buildTaskStatusCbOptions = (statusLabels: Record<string, string>): ComboboxOption[] => SELECTABLE_STATUSES.map((val) => ({ value: val, label: statusLabels[val] }));
 
 type Tab = 'overview' | 'evidence' | 'links' | 'comments' | 'activity';

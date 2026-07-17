@@ -82,7 +82,7 @@ const buildSourceLabels = (t: (k: string) => string): Record<string, string> => 
 // (CLOSED / CANCELED) require a per-task resolution note (S8), which
 // the bulk bar can't collect — closing is a deliberate single-task
 // action via the task detail page. RESOLVED is retired everywhere.
-const buildBulkStatusCbOptions = (statusLabels: Record<string, string>): ComboboxOption[] => ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'BLOCKED'].map(sv => ({ value: sv, label: statusLabels[sv] || sv }));
+const buildBulkStatusCbOptions = (statusLabels: Record<string, string>): ComboboxOption[] => ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED'].map(sv => ({ value: sv, label: statusLabels[sv] || sv }));
 
 interface TaskListItem {
     id: string;

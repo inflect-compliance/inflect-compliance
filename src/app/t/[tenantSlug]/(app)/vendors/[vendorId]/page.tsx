@@ -39,6 +39,7 @@ import {
     isG3AssessmentStatus,
 } from '@/app-layer/domain/entity-status-mapping';
 import { cardVariants } from '@/components/ui/card';
+import LinkedTasksPanel from '@/components/LinkedTasksPanel';
 import { cn } from '@/lib/cn';
 
 // Polish PR-1 — STATUS_BADGE / CRIT_BADGE moved to shared domain
@@ -73,7 +74,7 @@ const LINK_ENTITY_HREF: Record<string, (id: string) => string> = {
     ISSUE: (id) => `/tasks/${id}`,
 };
 
-type Tab = 'overview' | 'documents' | 'assessments' | 'monitoring' | 'links' | 'bundles' | 'subprocessors';
+type Tab = 'overview' | 'documents' | 'assessments' | 'monitoring' | 'links' | 'bundles' | 'subprocessors' | 'tasks';
 
 // vendor → getVendor → VendorRepository.getById (vendor scalars + owner + _count).
 // owner/_count optional: absent on the scalar-only PATCH/enrich responses that
@@ -515,6 +516,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
         { key: 'links', label: tx('detail.tabs.links') },
         { key: 'bundles', label: tx('detail.tabs.bundles') },
         { key: 'subprocessors', label: tx('detail.tabs.subprocessors') },
+        { key: 'tasks', label: tx('detail.tabs.tasks') },
     ];
 
     return (
@@ -1289,6 +1291,17 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                             </div>
                         </div>
                     )}
+                </div>
+            )}
+            {tab === 'tasks' && (
+                <div className={cardVariants()}>
+                    <LinkedTasksPanel
+                        apiBase={apiUrl('')}
+                        entityType="VENDOR"
+                        entityId={params.vendorId}
+                        tenantHref={tenantHref}
+                        canWrite={!!canWrite}
+                    />
                 </div>
             )}
         </EntityDetailLayout>

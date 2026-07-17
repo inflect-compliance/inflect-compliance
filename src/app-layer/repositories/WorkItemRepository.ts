@@ -715,6 +715,32 @@ export class TaskLinkRepository {
             // Evidence has no per-item detail route — name only.
             for (const r of rows) put('EVIDENCE', r.id, r.title, null);
         }
+        const incidentIds = idsByType.get('INCIDENT');
+        if (incidentIds?.length) {
+            const rows = await db.incident.findMany({ // guardrail-allow: unbounded (bounded by primary-key `in:` list — a task's links)
+                where: { id: { in: incidentIds }, tenantId: tid },
+                select: { id: true, reference: true, title: true },
+            });
+            for (const r of rows) put('INCIDENT', r.id, r.reference ? `${r.reference} — ${r.title}` : r.title, `/incidents/${r.id}`);
+        }
+        const fileIds = idsByType.get('FILE');
+        if (fileIds?.length) {
+            const rows = await db.fileRecord.findMany({ // guardrail-allow: unbounded (bounded by primary-key `in:` list — a task's links)
+                where: { id: { in: fileIds }, tenantId: tid },
+                select: { id: true, originalName: true },
+            });
+            // Files have no standalone detail route — name only.
+            for (const r of rows) put('FILE', r.id, r.originalName, null);
+        }
+        const auditPackIds = idsByType.get('AUDIT_PACK');
+        if (auditPackIds?.length) {
+            const rows = await db.auditPack.findMany({ // guardrail-allow: unbounded (bounded by primary-key `in:` list — a task's links)
+                where: { id: { in: auditPackIds }, tenantId: tid },
+                select: { id: true, name: true },
+            });
+            // Audit packs have no standalone tenant detail route — name only.
+            for (const r of rows) put('AUDIT_PACK', r.id, r.name, null);
+        }
         const reqIds = idsByType.get('FRAMEWORK_REQUIREMENT');
         if (reqIds?.length) {
             const rows = await db.frameworkRequirement.findMany({ // guardrail-allow: unbounded (bounded by primary-key `in:` list — a task's links)
