@@ -27,16 +27,20 @@
  *     • Done. The run lives until a human calls `completeTestRun`
  *       through the existing manual path.
  *
- *   SCRIPT / INTEGRATION  (handler seam, not yet implemented)
+ *   SCRIPT / INTEGRATION  (handler seam)
  *     • Create the run as PLANNED, same as above.
- *     • Look up an executor in `runnerHandlerRegistry`. The next
- *       G-2 prompt registers SCRIPT and INTEGRATION handlers
- *       there; today the registry is empty and these branches fall
- *       through to "no handler registered" — recorded as an
- *       INCONCLUSIVE completion so on-call sees a real signal.
- *     • If a handler exists, await its result, COMPLETE the run
- *       with PASS/FAIL/INCONCLUSIVE, attach handler-produced
- *       evidence, and on FAIL spawn a `Finding`.
+ *     • Look up an executor in `runnerHandlerRegistry`. The registry
+ *       is empty today (no real SCRIPT/INTEGRATION engine exists yet).
+ *       When NO handler is registered, the branch delegates to the
+ *       MANUAL path — the run stays PLANNED "awaiting manual
+ *       completion" instead of completing as a misleading INCONCLUSIVE
+ *       no-op. A no-engine run never reaches COMPLETED, so it never
+ *       enters the effectiveness pass-rate denominator.
+ *     • If a handler IS registered, await its result, COMPLETE the run
+ *       with PASS/FAIL/INCONCLUSIVE, then — for parity with the manual
+ *       completeTestRun path — stamp `Control.lastTested` and roll the
+ *       plan cadence, attach handler-produced evidence, and on FAIL
+ *       spawn a `Finding`.
  *
  * ═══════════════════════════════════════════════════════════════════
  * SYSTEM-ACTOR CONTEXT
@@ -93,9 +97,12 @@ import { getPermissionsForRole } from '@/lib/permissions';
 import type { RequestContext } from '../types';
 import { TestRunRepository } from '../repositories/TestRunRepository';
 import { TestEvidenceRepository } from '../repositories/TestEvidenceRepository';
+import { TestPlanRepository } from '../repositories/TestPlanRepository';
 import { FindingRepository } from '../repositories/FindingRepository';
 import { emitTestRunCreated, emitTestRunCompleted, emitTestRunFailed } from '../events/test.events';
 import { logEvent } from '../events/audit';
+import { attestControlTested } from '../usecases/control-test';
+import { computeNextDueAt } from '../utils/cadence';
 
 // ─── Public types ──────────────────────────────────────────────────
 
@@ -213,6 +220,7 @@ export async function runControlTestRunner(
                     controlId: true,
                     name: true,
                     schedule: true,
+                    frequency: true,
                     automationType: true,
                     automationConfig: true,
                     status: true,
@@ -295,6 +303,7 @@ interface PlanShape {
     controlId: string;
     name: string;
     schedule: string | null;
+    frequency: string;
     automationType: 'MANUAL' | 'SCRIPT' | 'INTEGRATION';
     automationConfig: unknown;
     status: string;
@@ -372,49 +381,48 @@ async function handleAutomatedPlan(
 
     const handler = runnerHandlerRegistry.get(plan.automationType);
 
-    let outcome: AutomationHandlerResult;
     if (!handler) {
-        // Forward-declared seam — the runner is wired but no
-        // SCRIPT/INTEGRATION handler is registered yet. Surface as
-        // INCONCLUSIVE with a clear note so on-call has a real signal
-        // (rather than the executor-registry's "no executor" error
-        // which would happen if the runner itself wasn't registered).
+        // No execution engine is registered for this automation type (the
+        // SCRIPT/INTEGRATION registry is empty today — see the module doc).
+        // Rather than completing the run as a jargon INCONCLUSIVE no-op —
+        // which showed raw "no handler registered" text as evidence and (before
+        // the pass-rate fix) silently dragged effectiveness down — instantiate a
+        // PLANNED "awaiting manual completion" run, exactly as a MANUAL scheduled
+        // plan does. A human finishes it via completeTestRun, which stamps
+        // lastTested + rolls cadence. A no-engine run never reaches COMPLETED,
+        // so it never enters the effectiveness denominator. New scheduled plans
+        // are created as MANUAL until a real engine exists (TestPlanScheduleSection);
+        // this branch keeps legacy SCRIPT/INTEGRATION plans honest too.
+        return await handleManualPlan(db, ctx, plan, runId, scheduledFor, jobRunId);
+    }
+
+    let outcome: AutomationHandlerResult;
+    try {
+        outcome = await handler({
+            tenantId: plan.tenantId,
+            planId: plan.id,
+            controlId: plan.controlId,
+            automationType: plan.automationType,
+            automationConfig: plan.automationConfig,
+            scheduledFor,
+        });
+    } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        logger.error('control-test-runner: handler threw', {
+            component: 'control-test-runner',
+            jobRunId,
+            planId: plan.id,
+            automationType: plan.automationType,
+            err: err instanceof Error ? err : new Error(errMsg),
+        });
         outcome = {
             result: 'INCONCLUSIVE',
-            evidenceTitle: `Scheduled run — ${plan.name} (no handler)`,
+            evidenceTitle: `Scheduled run — ${plan.name} (handler error)`,
             evidenceContent:
-                `No automation handler is registered for ${plan.automationType}. ` +
+                `Handler raised: ${errMsg}\n` +
                 `Plan: ${plan.name}. Scheduled for: ${scheduledFor.toISOString()}.`,
-            notes: `[Auto-scheduled by Epic G-2] No ${plan.automationType} handler registered.`,
+            notes: `[Auto-scheduled by Epic G-2] Handler error: ${errMsg}`,
         };
-    } else {
-        try {
-            outcome = await handler({
-                tenantId: plan.tenantId,
-                planId: plan.id,
-                controlId: plan.controlId,
-                automationType: plan.automationType,
-                automationConfig: plan.automationConfig,
-                scheduledFor,
-            });
-        } catch (err) {
-            const errMsg = err instanceof Error ? err.message : String(err);
-            logger.error('control-test-runner: handler threw', {
-                component: 'control-test-runner',
-                jobRunId,
-                planId: plan.id,
-                automationType: plan.automationType,
-                err: err instanceof Error ? err : new Error(errMsg),
-            });
-            outcome = {
-                result: 'INCONCLUSIVE',
-                evidenceTitle: `Scheduled run — ${plan.name} (handler error)`,
-                evidenceContent:
-                    `Handler raised: ${errMsg}\n` +
-                    `Plan: ${plan.name}. Scheduled for: ${scheduledFor.toISOString()}.`,
-                notes: `[Auto-scheduled by Epic G-2] Handler error: ${errMsg}`,
-            };
-        }
     }
 
     // Complete the run with the handler's outcome.
@@ -428,6 +436,19 @@ async function handleAutomatedPlan(
         result: outcome.result,
         testPlanId: plan.id,
     });
+
+    // Effectiveness parity with the manual completeTestRun path — a completed
+    // automated run must stamp Control.lastTested and roll the plan cadence,
+    // exactly as completeTestRun does. One completion path, one set of side
+    // effects. (Dormant until a SCRIPT/INTEGRATION handler is registered, but
+    // wired now so parity holds the moment one is.)
+    await attestControlTested(db, ctx, plan.controlId);
+    await TestPlanRepository.updateNextDueAt(
+        db,
+        ctx,
+        plan.id,
+        computeNextDueAt(plan.frequency, new Date()),
+    );
 
     // Auto-evidence with handler-supplied content.
     const evidenceId = await createScheduledRunEvidence(db, ctx, {

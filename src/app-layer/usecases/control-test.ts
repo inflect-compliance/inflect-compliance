@@ -122,11 +122,18 @@ export async function listRunEvidence(ctx: RequestContext, runId: string) {
 
 export interface ControlEffectiveness {
     controlId: string;
-    /// Rolling pass rate over the window — `passes / total` rounded
-    /// to a percentage 0–100. `null` if no completed runs in window.
+    /// Rolling pass rate over the window — `passes / scored` rounded to a
+    /// percentage 0–100, where `scored = passes + fails`. INCONCLUSIVE runs
+    /// (no verdict — e.g. a no-engine scheduled run that errored, or a handler
+    /// that couldn't reach a decision) are EXCLUDED from the denominator so a
+    /// run that never produced a pass/fail can't silently drag effectiveness
+    /// down. `null` if no PASS/FAIL runs in window.
     passRate: number | null;
     /// Count of completed runs (PASS + FAIL + INCONCLUSIVE) in window.
     total: number;
+    /// Count of runs that produced a verdict (PASS + FAIL) — the pass-rate
+    /// denominator. `total - scored` is the inconclusive count.
+    scored: number;
     passes: number;
     fails: number;
     inconclusive: number;
@@ -138,7 +145,7 @@ export interface ControlEffectiveness {
 const DEFAULT_EFFECTIVENESS_WINDOW_DAYS = 90;
 
 const emptyEffectiveness = (controlId: string, windowDays: number): ControlEffectiveness => ({
-    controlId, passRate: null, total: 0, passes: 0, fails: 0, inconclusive: 0, windowDays,
+    controlId, passRate: null, total: 0, scored: 0, passes: 0, fails: 0, inconclusive: 0, windowDays,
 });
 
 /**
@@ -184,7 +191,11 @@ export async function computeControlEffectivenessMap(
         e.total += n;
     }
     for (const e of map.values()) {
-        e.passRate = e.total > 0 ? Math.round((e.passes / e.total) * 100) : null;
+        // Pass-rate denominator is verdict-producing runs only (PASS + FAIL).
+        // INCONCLUSIVE runs stay in `total` (for display) but are excluded here
+        // so a no-verdict run can't drag measured effectiveness down.
+        e.scored = e.passes + e.fails;
+        e.passRate = e.scored > 0 ? Math.round((e.passes / e.scored) * 100) : null;
     }
     return map;
 }
@@ -211,7 +222,7 @@ export async function getControlEffectiveness(
  * finally advances the control's tested-state and feeds the health summary.
  * Skips NOT_APPLICABLE controls and global-library rows (no tenantId match).
  */
-async function attestControlTested(
+export async function attestControlTested(
     db: PrismaTx,
     ctx: RequestContext,
     controlId: string | null | undefined,

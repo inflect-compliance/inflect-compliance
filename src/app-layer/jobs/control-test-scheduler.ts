@@ -138,7 +138,13 @@ export async function findDueTestPlans(
 ): Promise<DuePlan[]> {
     const plans = await prisma.controlTestPlan.findMany({
         where: {
-            automationType: { in: ['SCRIPT', 'INTEGRATION'] },
+            // Any ACTIVE plan carrying a cron `schedule` is due-eligible,
+            // regardless of automationType. A MANUAL plan on a cadence is the
+            // honest shape while no SCRIPT/INTEGRATION engine exists — each tick
+            // instantiates a PLANNED "awaiting manual completion" run (the runner
+            // routes MANUAL and no-handler SCRIPT/INTEGRATION plans through the
+            // same manual path). The old `automationType IN (SCRIPT, INTEGRATION)`
+            // filter excluded scheduled MANUAL plans entirely.
             status: 'ACTIVE',
             schedule: { not: null },
             OR: [{ nextRunAt: { lte: now } }, { nextRunAt: null }],

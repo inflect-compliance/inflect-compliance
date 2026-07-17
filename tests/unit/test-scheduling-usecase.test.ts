@@ -102,13 +102,34 @@ describe('scheduleTestPlan — permissions', () => {
 });
 
 describe('scheduleTestPlan — cross-field invariants', () => {
-    test('MANUAL with non-null schedule is rejected', async () => {
-        await expect(
-            scheduleTestPlan(makeCtx(), 'plan-1', {
-                schedule: '0 9 * * *',
-                automationType: 'MANUAL',
-            }),
-        ).rejects.toThrow(/MANUAL plans cannot carry a schedule/);
+    test('MANUAL with a non-null schedule is now ACCEPTED (scheduled manual review) (PR-P)', async () => {
+        // PR-P — a MANUAL plan MAY carry a cron. Each scheduler tick instantiates
+        // a PLANNED "awaiting manual completion" run. This is the honest shape
+        // while no SCRIPT/INTEGRATION engine exists; a cadence no longer forces
+        // the misleading SCRIPT label.
+        mockTx.controlTestPlan.findFirst.mockResolvedValueOnce({
+            id: 'plan-1',
+            tenantId: 'tenant-1',
+            automationType: 'MANUAL',
+            schedule: null,
+            scheduleTimezone: null,
+            nextRunAt: null,
+        });
+        mockTx.controlTestPlan.update.mockResolvedValueOnce({ id: 'plan-1', automationType: 'MANUAL' });
+
+        await scheduleTestPlan(makeCtx(), 'plan-1', {
+            schedule: '0 9 * * MON',
+            scheduleTimezone: 'UTC',
+            automationType: 'MANUAL',
+        });
+
+        const updateCall = mockTx.controlTestPlan.update.mock.calls[0][0];
+        expect(updateCall.data).toMatchObject({
+            automationType: 'MANUAL',
+            schedule: '0 9 * * MON',
+        });
+        // A cron was supplied, so nextRunAt is computed (not nulled).
+        expect(updateCall.data.nextRunAt).toBeInstanceOf(Date);
     });
 
     test('SCRIPT with null schedule is rejected', async () => {

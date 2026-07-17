@@ -67,9 +67,12 @@ export interface ScheduleTestPlanInput {
  *     a cron the scheduler never picks the plan up — silently
  *     accepting null would create plans that look automated but
  *     never run.
- *   • MANUAL ⇒ `schedule` MUST be null. Manual plans never auto-
- *     execute; storing a cron there would be a misleading data
- *     state if the plan is ever flipped to SCRIPT.
+ *   • MANUAL ⇒ `schedule` is OPTIONAL. A MANUAL plan MAY carry a cron
+ *     (a "scheduled manual review": each tick instantiates a PLANNED
+ *     "awaiting manual completion" run — see control-test-runner's
+ *     MANUAL / no-handler path) OR omit it (pure ad-hoc). This is the
+ *     honest shape while no SCRIPT/INTEGRATION engine exists; a cadence
+ *     no longer forces the misleading SCRIPT label.
  *   • `schedule`, when present, MUST parse via cron-parser.
  *   • `scheduleTimezone`, when present, MUST be accepted by the
  *     ECMAScript Intl tz tables (we test with `toLocaleString`).
@@ -91,11 +94,10 @@ export async function scheduleTestPlan(
     assertCanManageTestPlans(ctx);
 
     // ─── Cross-field validation ────────────────────────────────────
-    if (input.automationType === 'MANUAL' && input.schedule !== null) {
-        throw badRequest(
-            'MANUAL plans cannot carry a schedule. Pass schedule=null or change automationType to SCRIPT/INTEGRATION.',
-        );
-    }
+    // MANUAL plans MAY carry a cron (scheduled manual review) or omit it
+    // (ad-hoc) — both are valid. Only SCRIPT/INTEGRATION require a cron, since
+    // without one the scheduler never picks them up and they'd look automated
+    // but never run.
     if (input.automationType !== 'MANUAL' && input.schedule === null) {
         throw badRequest(
             `${input.automationType} plans require a non-null cron schedule.`,

@@ -59,7 +59,11 @@ describe('getControlEffectiveness', () => {
         });
     });
 
-    it('computes pass rate correctly from PASS/FAIL/INCONCLUSIVE groups', async () => {
+    it('excludes INCONCLUSIVE from the pass-rate denominator (PR-P)', async () => {
+        // PR-P — a no-verdict (INCONCLUSIVE) run must NOT drag the pass-rate
+        // down. `total` still counts every completed run (for display), but the
+        // pass-rate denominator is verdict-producing runs only (`scored = passes
+        // + fails`). 7 PASS + 2 FAIL + 1 INCONCLUSIVE → 7/9, not 7/10.
         tenantDb.controlTestRun.groupBy.mockResolvedValueOnce([
             { controlId: 'c-1', result: 'PASS', _count: { _all: 7 } },
             { controlId: 'c-1', result: 'FAIL', _count: { _all: 2 } },
@@ -69,8 +73,21 @@ describe('getControlEffectiveness', () => {
         expect(out.passes).toBe(7);
         expect(out.fails).toBe(2);
         expect(out.inconclusive).toBe(1);
-        expect(out.total).toBe(10);
-        expect(out.passRate).toBe(70); // 7/10 = 70%
+        expect(out.total).toBe(10);   // all completed runs
+        expect(out.scored).toBe(9);   // PASS + FAIL only
+        expect(out.passRate).toBe(78); // 7/9 = 77.8 → 78 (INCONCLUSIVE excluded)
+    });
+
+    it('all-INCONCLUSIVE window → passRate null (no verdict to score)', async () => {
+        // A control whose only runs are inconclusive has no measured
+        // effectiveness — null, not a misleading 0%.
+        tenantDb.controlTestRun.groupBy.mockResolvedValueOnce([
+            { controlId: 'c-1', result: 'INCONCLUSIVE', _count: { _all: 3 } },
+        ]);
+        const out = await getControlEffectiveness(ctx, 'c-1');
+        expect(out.total).toBe(3);
+        expect(out.scored).toBe(0);
+        expect(out.passRate).toBeNull();
     });
 
     it('all PASS → passRate 100', async () => {

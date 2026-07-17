@@ -140,13 +140,16 @@ describe('runControlTestScheduler — happy path', () => {
 // ─── 2. Scan filter ────────────────────────────────────────────────
 
 describe('runControlTestScheduler — scan filter', () => {
-    test('filters by automationType IN (SCRIPT, INTEGRATION)', async () => {
+    test('does NOT restrict by automationType — any scheduled plan is due-eligible (PR-P)', async () => {
+        // PR-P — a MANUAL plan on a cadence must be enqueued too (it instantiates
+        // a PLANNED "awaiting manual completion" run each tick). The old
+        // `automationType IN (SCRIPT, INTEGRATION)` filter excluded scheduled
+        // MANUAL plans entirely, making them permanently un-ticked. Due-eligibility
+        // is now driven solely by status=ACTIVE + a non-null schedule.
         mockFindMany.mockResolvedValueOnce([]);
         await runControlTestScheduler({ now: NOW });
         const where = mockFindMany.mock.calls[0][0].where;
-        expect(where.automationType).toEqual({
-            in: ['SCRIPT', 'INTEGRATION'],
-        });
+        expect(where.automationType).toBeUndefined();
     });
 
     test('filters by status=ACTIVE and non-null schedule', async () => {
