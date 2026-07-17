@@ -39,6 +39,9 @@ interface AuditListRow {
 interface AuditsClientProps {
     initialAudits: AuditListRow[];
     tenantSlug: string;
+    /** feat/audit-cycle-unify — when set, the list is scoped to one cycle's
+     *  fieldwork audits (?cycleId), and a "viewing cycle" banner shows. */
+    cycleId?: string;
     /** True when NIS2 is an installed framework — gates the NIS2 Gap Assessment
      *  entry button (absent, not disabled, when false). */
     hasNis2: boolean;
@@ -92,7 +95,7 @@ interface AuditDetail {
  * Client island for audits — handles master/detail, create form, checklist interactions.
  * Data is pre-fetched server-side and passed via props.
  */
-export function AuditsClient({ initialAudits, tenantSlug, hasNis2, canWrite, translations: t }: AuditsClientProps) {
+export function AuditsClient({ initialAudits, tenantSlug, cycleId, hasNis2, canWrite, translations: t }: AuditsClientProps) {
     // `tx` covers strings not threaded through the server `translations` prop
     // (nav links, list counters) — mirrors the assets/risks island pattern.
     const tx = useTranslations('audits');
@@ -125,10 +128,11 @@ export function AuditsClient({ initialAudits, tenantSlug, hasNis2, canWrite, tra
 
     // PR-5 — API returns `{ rows, truncated }`; SSR initial wraps
     // with `truncated: false` (SSR cap < backfill cap).
-    // `/audits` is fetched whole and filtered client-side, so the key is
-    // static — the SSR payload always matches and seeds the cache directly.
+    // feat/audit-cycle-unify — when scoped to a cycle, the SWR key carries
+    // ?cycleId so the background revalidation stays filtered (not the whole
+    // list); otherwise the static key seeds directly from the SSR payload.
     const auditsQuery = useTenantSWR<CappedList<AuditListRow>>(
-        CACHE_KEYS.audits.list(),
+        cycleId ? `${CACHE_KEYS.audits.list()}?cycleId=${cycleId}` : CACHE_KEYS.audits.list(),
         { fallbackData: { rows: initialAudits, truncated: false } },
     );
     const audits = auditsQuery.data?.rows ?? [];
@@ -320,6 +324,18 @@ export function AuditsClient({ initialAudits, tenantSlug, hasNis2, canWrite, tra
                 </div>
             </section>
 
+            {/* feat/audit-cycle-unify — scoped-to-cycle context banner. */}
+            {cycleId && (
+                <div
+                    className="flex items-center justify-between rounded-md border border-border-emphasis bg-bg-info/10 px-3 py-2 text-sm"
+                    data-testid="audits-cycle-filter-banner"
+                >
+                    <span className="text-content-default">{tx('hub.cycleFilterActive')}</span>
+                    <Link href={`/t/${tenantSlug}/audits`} className="text-xs text-content-muted underline underline-offset-2" id="audits-clear-cycle-filter">
+                        {tx('hub.clearCycleFilter')}
+                    </Link>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-default">
                 <div className="space-y-tight">

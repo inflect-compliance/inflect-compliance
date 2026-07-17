@@ -44,6 +44,8 @@ const INITIAL: NewAuditFormFields = {
     // B8 — empty string = no framework. The hook trims + null-coerces
     // before POSTing so the API receives `null` not `""`.
     frameworkKey: '',
+    // feat/audit-cycle-unify — empty string = standalone audit (no cycle).
+    auditCycleId: '',
     generateChecklist: true,
 };
 
@@ -66,6 +68,9 @@ export function useNewAuditForm({
                     // string fields that exceed their cap but accepts
                     // null for an unbound audit.
                     frameworkKey: payload.frameworkKey?.trim() || null,
+                    // feat/audit-cycle-unify — null-coerce so a standalone
+                    // audit posts `null`, and fieldwork posts the cycle id.
+                    auditCycleId: payload.auditCycleId?.trim() || null,
                     generateChecklist: payload.generateChecklist,
                 }),
             });

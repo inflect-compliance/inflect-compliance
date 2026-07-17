@@ -35,6 +35,7 @@ export {
     addShareComment,
     listShareComments,
     resolveShareComment,
+    materializeShareCommentFinding,
     inviteAuditor,
     grantAuditorAccess,
     revokeAuditorAccess,

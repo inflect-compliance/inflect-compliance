@@ -6,6 +6,8 @@ import {
     assertCanSharePack, assertCanManageAuditors, assertCanViewPack,
 } from '../../policies/audit-readiness.policies';
 import { logEvent } from '../../events/audit';
+import { createFinding } from '../finding';
+import { createTask } from '../task';
 import { runInTenantContext, runInGlobalContext, withTenantDb } from '@/lib/db-context';
 import { notFound, badRequest, forbidden } from '@/lib/errors/types';
 import { hashForLookup } from '@/lib/security/encryption';
@@ -246,6 +248,109 @@ export async function resolveShareComment(ctx: RequestContext, packId: string, c
         });
         return updated;
     });
+}
+
+// Provenance key for auditor-raised findings — the idempotency guard so
+// materialising the same return-channel comment twice is a no-op.
+const AUDITOR_SHARE_COMMENT_SOURCE = 'AUDITOR_SHARE_COMMENT';
+
+/**
+ * feat/audit-cycle-unify — turn an external auditor's return-channel entry
+ * into a real Finding (+ remediation Task), tied to the pack's cycle
+ * fieldwork audit, then mark the comment RESOLVED with a link to the
+ * created finding. Mirrors the internal checklist-FAIL cascade
+ * (`cascadeChecklistFailure`): an auditor-raised FINDING must get the same
+ * remediation lifecycle as an internal one, not just a status flip.
+ *
+ *   - FINDING          → Finding(NONCONFORMITY) + remediation Task.
+ *   - EVIDENCE_REQUEST → Finding(OBSERVATION) + follow-up Task (the
+ *                        auditor is asking for something; it needs an owner).
+ *   - COMMENT/QUESTION → not materialisable (use resolveShareComment).
+ *
+ * Idempotent on (sourceKind, sourceRef=commentId): a second call returns
+ * the already-created finding instead of duplicating it.
+ */
+export async function materializeShareCommentFinding(ctx: RequestContext, packId: string, commentId: string) {
+    assertCanSharePack(ctx);
+
+    // One read pass: the comment, an existing materialisation, the pack's
+    // cycle → a fieldwork audit (so readiness's audit.auditCycleId join sees
+    // it), and the linked control if the comment targets a control item.
+    const loaded = await runInTenantContext(ctx, async (tdb) => {
+        const comment = await tdb.auditPackShareComment.findFirst({
+            where: { id: commentId, tenantId: ctx.tenantId, auditPackId: packId },
+            select: { id: true, kind: true, body: true, status: true, auditPackItemId: true },
+        });
+        if (!comment) throw notFound('Return-channel entry not found');
+        if (comment.status === 'RESOLVED') throw badRequest('Entry already resolved');
+        if (comment.kind !== 'FINDING' && comment.kind !== 'EVIDENCE_REQUEST') {
+            throw badRequest('Only a FINDING or EVIDENCE_REQUEST can be turned into a finding');
+        }
+        const existing = await tdb.finding.findFirst({
+            where: { tenantId: ctx.tenantId, sourceKind: AUDITOR_SHARE_COMMENT_SOURCE, sourceRef: commentId, deletedAt: null },
+            select: { id: true },
+        });
+        const pack = await tdb.auditPack.findFirst({ where: { id: packId, tenantId: ctx.tenantId }, select: { auditCycleId: true } });
+        const audit = pack
+            ? await tdb.audit.findFirst({ where: { tenantId: ctx.tenantId, auditCycleId: pack.auditCycleId, deletedAt: null }, select: { id: true }, orderBy: { createdAt: 'asc' } })
+            : null;
+        let controlId: string | null = null;
+        if (comment.auditPackItemId) {
+            const item = await tdb.auditPackItem.findFirst({ where: { id: comment.auditPackItemId, tenantId: ctx.tenantId }, select: { entityType: true, entityId: true } });
+            if (item?.entityType === 'CONTROL') controlId = item.entityId;
+        }
+        return { comment, existingFindingId: existing?.id ?? null, auditId: audit?.id ?? null, controlId };
+    });
+
+    const markResolved = (findingId: string) =>
+        runInTenantContext(ctx, async (tdb) => {
+            await tdb.auditPackShareComment.update({
+                where: { id: commentId },
+                data: { status: 'RESOLVED', resolvedAt: new Date(), resolvedByUserId: ctx.userId },
+            });
+            await logEvent(tdb, ctx, {
+                action: 'AUDIT_SHARE_COMMENT_MATERIALIZED',
+                entityType: 'AuditPackShareComment',
+                entityId: commentId,
+                details: `Auditor ${loaded.comment.kind} → Finding ${findingId}`,
+                detailsJson: { category: 'entity_lifecycle', operation: 'created', entityName: 'Finding', after: { findingId }, summary: `Auditor ${loaded.comment.kind} materialised into finding ${findingId}` },
+            });
+        });
+
+    // Already materialised — ensure the comment is resolved, return the link.
+    if (loaded.existingFindingId) {
+        await markResolved(loaded.existingFindingId);
+        return { findingId: loaded.existingFindingId, alreadyExisted: true };
+    }
+
+    const body = loaded.comment.body ?? '';
+    const short = body.length > 120 ? `${body.slice(0, 117)}…` : (body || `Auditor ${loaded.comment.kind}`);
+    const findingType = loaded.comment.kind === 'FINDING' ? 'NONCONFORMITY' : 'OBSERVATION';
+
+    const finding = await createFinding(ctx, {
+        auditId: loaded.auditId,
+        controlId: loaded.controlId,
+        severity: 'MEDIUM',
+        type: findingType,
+        title: short,
+        description: body || undefined,
+        sourceKind: AUDITOR_SHARE_COMMENT_SOURCE,
+        sourceRef: commentId,
+    });
+
+    await createTask(ctx, {
+        title: `Remediate auditor ${loaded.comment.kind === 'FINDING' ? 'finding' : 'request'}: ${short}`,
+        type: 'AUDIT_FINDING',
+        description: body || undefined,
+        severity: 'MEDIUM',
+        source: 'AUDIT',
+        findingId: finding.id,
+        ...(loaded.controlId ? { controlId: loaded.controlId } : {}),
+        metadataJson: { findingId: finding.id, auditId: loaded.auditId, shareCommentId: commentId },
+    });
+
+    await markResolved(finding.id);
+    return { findingId: finding.id, alreadyExisted: false };
 }
 
 // РІвЂќР‚РІвЂќР‚РІвЂќР‚ Auditor Accounts РІвЂќР‚РІвЂќР‚РІвЂќР‚

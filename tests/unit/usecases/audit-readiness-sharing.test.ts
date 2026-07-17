@@ -56,7 +56,17 @@ const tenantDb: any = {
     auditPackShareComment: { create: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
     auditorAccount: { upsert: jest.fn(), findFirst: jest.fn(), findMany: jest.fn() },
     auditorPackAccess: { create: jest.fn(), deleteMany: jest.fn() },
+    // feat/audit-cycle-unify — materialize path reads for the finding cascade.
+    finding: { findFirst: jest.fn() },
+    audit: { findFirst: jest.fn() },
 };
+
+// The materialize cascade delegates to the ctx-level createFinding / createTask
+// usecases (own tenant contexts); mock them to assert the cascade wiring.
+const createFindingMock = jest.fn(async (..._args: any[]) => ({ id: 'find-new' }));
+const createTaskMock = jest.fn(async (..._args: any[]) => ({ id: 'task-new' }));
+jest.mock('@/app-layer/usecases/finding', () => ({ createFinding: (...a: any[]) => createFindingMock(...a) }));
+jest.mock('@/app-layer/usecases/task', () => ({ createTask: (...a: any[]) => createTaskMock(...a) }));
 const globalDb: any = {
     auditPackShare: { findFirst: jest.fn() },
 };
@@ -80,6 +90,7 @@ import {
     addShareComment,
     listShareComments,
     resolveShareComment,
+    materializeShareCommentFinding,
     inviteAuditor,
     grantAuditorAccess,
     revokeAuditorAccess,
@@ -557,5 +568,57 @@ describe('resolveShareComment', () => {
         expect(updateArg.data.status).toBe('RESOLVED');
         expect(updateArg.data.resolvedByUserId).toBe(ctx.userId);
         expect(auditCalls[0].action).toBe('AUDIT_SHARE_COMMENT_RESOLVED');
+    });
+});
+
+describe('materializeShareCommentFinding — auditor FINDING → real Finding+Task', () => {
+    beforeEach(() => {
+        createFindingMock.mockClear();
+        createTaskMock.mockClear();
+        createFindingMock.mockResolvedValue({ id: 'find-new' });
+        tenantDb.finding.findFirst.mockReset();
+        tenantDb.audit.findFirst.mockReset();
+    });
+
+    it('rejects a plain COMMENT / QUESTION (only FINDING & EVIDENCE_REQUEST)', async () => {
+        tenantDb.auditPackShareComment.findFirst.mockResolvedValueOnce({ id: 'c-1', kind: 'QUESTION', status: 'OPEN', body: 'hi', auditPackItemId: null });
+        await expect(materializeShareCommentFinding(ctx, 'p-1', 'c-1')).rejects.toThrow(/FINDING or EVIDENCE_REQUEST/i);
+        expect(createFindingMock).not.toHaveBeenCalled();
+    });
+
+    it('a FINDING creates a Finding + Task tied to the cycle audit and resolves the comment', async () => {
+        tenantDb.auditPackShareComment.findFirst.mockResolvedValueOnce({ id: 'c-1', kind: 'FINDING', status: 'OPEN', body: 'Control X is not implemented', auditPackItemId: 'item-1' });
+        tenantDb.finding.findFirst.mockResolvedValueOnce(null); // no existing materialisation
+        tenantDb.auditPack.findFirst.mockResolvedValueOnce({ auditCycleId: 'cyc-1' });
+        tenantDb.audit.findFirst.mockResolvedValueOnce({ id: 'aud-1' }); // a fieldwork audit exists
+        tenantDb.auditPackItem.findFirst.mockResolvedValueOnce({ entityType: 'CONTROL', entityId: 'ctrl-9' });
+        tenantDb.auditPackShareComment.update.mockResolvedValueOnce({ id: 'c-1', status: 'RESOLVED' });
+
+        const result = await materializeShareCommentFinding(ctx, 'p-1', 'c-1');
+
+        expect(result.findingId).toBe('find-new');
+        // Finding is tied to the cycle's fieldwork audit + the control the item targets.
+        expect(createFindingMock).toHaveBeenCalledWith(
+            ctx,
+            expect.objectContaining({ auditId: 'aud-1', controlId: 'ctrl-9', type: 'NONCONFORMITY', sourceKind: 'AUDITOR_SHARE_COMMENT', sourceRef: 'c-1' }),
+        );
+        // A remediation Task links the finding.
+        expect(createTaskMock).toHaveBeenCalledWith(ctx, expect.objectContaining({ findingId: 'find-new', type: 'AUDIT_FINDING' }));
+        // The comment is resolved + a materialization audit entry fires.
+        expect(tenantDb.auditPackShareComment.update.mock.calls[0][0].data.status).toBe('RESOLVED');
+        expect(auditCalls.some((e) => e.action === 'AUDIT_SHARE_COMMENT_MATERIALIZED')).toBe(true);
+    });
+
+    it('is idempotent — an already-materialised comment returns the existing finding without a duplicate', async () => {
+        tenantDb.auditPackShareComment.findFirst.mockResolvedValueOnce({ id: 'c-1', kind: 'FINDING', status: 'OPEN', body: 'x', auditPackItemId: null });
+        tenantDb.finding.findFirst.mockResolvedValueOnce({ id: 'find-existing' });
+        tenantDb.auditPack.findFirst.mockResolvedValueOnce({ auditCycleId: 'cyc-1' });
+        tenantDb.audit.findFirst.mockResolvedValueOnce(null);
+        tenantDb.auditPackShareComment.update.mockResolvedValueOnce({ id: 'c-1', status: 'RESOLVED' });
+
+        const result = await materializeShareCommentFinding(ctx, 'p-1', 'c-1');
+
+        expect(result).toEqual({ findingId: 'find-existing', alreadyExisted: true });
+        expect(createFindingMock).not.toHaveBeenCalled();
     });
 });

@@ -2845,7 +2845,9 @@
       "step5Desc": "Record and triage what the audit surfaces.",
       "step6Title": "Remediate",
       "step6Desc": "Assign tasks and close out the actions.",
-      "auditorManagement": "Auditor management"
+      "auditorManagement": "Auditor management",
+      "cycleFilterActive": "Showing fieldwork audits for one cycle.",
+      "clearCycleFilter": "Clear filter"
     },
     "readinessLegend": {
       "aria": "How the readiness score works",
@@ -2863,7 +2865,9 @@
       "creating": "Creating…",
       "discardConfirm": "Discard audit? Any details you entered will be lost.",
       "framework": "Framework",
-      "noFramework": "No framework"
+      "noFramework": "No framework",
+      "cycle": "Audit cycle",
+      "noCycle": "Standalone (no cycle)"
     },
     "findingModal": {
       "trigger": "Finding",
@@ -2934,7 +2938,12 @@
       "totalItems": "Total: {count} items will be included in the default pack.",
       "packs": "Packs",
       "createPackError": "Could not create the default pack. Please try again.",
-      "addItemsError": "Pack created, but some items could not be added."
+      "addItemsError": "Pack created, but some items could not be added.",
+      "fieldworkAudits": "Fieldwork audits",
+      "viewInHub": "View in hub →",
+      "noFieldwork": "No fieldwork audits yet",
+      "statusError": "Failed to update cycle status.",
+      "statusChanged": "Cycle status changed to {status}."
     },
     "readiness": {
       "cycleFallback": "Cycle",
@@ -3003,7 +3012,10 @@
           "QUESTION": "Question"
         },
         "statusOPEN": "Open",
-        "statusRESOLVED": "Resolved"
+        "statusRESOLVED": "Resolved",
+        "createFinding": "Create finding",
+        "findingCreated": "Finding created and linked to the cycle.",
+        "materializeError": "Failed to create finding from this entry."
       },
       "shareCreated": "Share link created",
       "shareError": "Could not create the share link. Please try again.",
@@ -3282,6 +3294,12 @@
       "revokeAccessTitle": "Revoke pack access?",
       "revokeAccessDesc": "The auditor will immediately lose access to this pack.",
       "revokeAccessConfirm": "Revoke access"
+    },
+    "cycleStatus": {
+      "PLANNING": "Planning",
+      "IN_PROGRESS": "In progress",
+      "READY": "Ready",
+      "COMPLETE": "Complete"
     }
   },
   "findings": {
@@ -3319,7 +3337,9 @@
       "severity": "Severity",
       "type": "Type",
       "owner": "Owner",
-      "status": "Status"
+      "status": "Status",
+      "control": "Control",
+      "source": "Source"
     },
     "list": {
       "crumbDashboard": "Dashboard",
@@ -3373,7 +3393,12 @@
       "NONCONFORMITY": "Nonconformity",
       "OBSERVATION": "Observation",
       "OPPORTUNITY": "Opportunity"
-    }
+    },
+    "colHeaders": {
+      "control": "Control",
+      "source": "Source"
+    },
+    "adHoc": "Ad-hoc"
   },
   "mapping": {
     "title": "Framework Mapping",
