@@ -1,16 +1,17 @@
 'use client';
 
 /**
- * Read-only traceability for the Policy detail page.
+ * Traceability for the Policy detail page.
  *
  * A policy links DIRECTLY to controls (`PolicyControlLink`); the risks
  * those controls mitigate and the assets they protect are INHERITED
  * through the controls. So this panel surfaces three sections —
  * linked Controls, then the Risks and Assets reachable via them (each
- * tagged "via N controls"). There is no add/unlink affordance: controls
- * are managed through the policy↔control link flow, and risk/asset
- * coverage is purely derived. The shape mirrors the Asset/Risk inherited
- * data panels for visual consistency.
+ * tagged "via N controls"). In `editable` mode the Controls section
+ * carries a link picker + per-row unlink (undo-toast) that drive the
+ * policy↔control link flow; the derived Risks and Assets sections stay
+ * read-only (coverage is purely inherited). The shape mirrors the
+ * Asset/Risk inherited data panels for visual consistency.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';

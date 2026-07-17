@@ -148,7 +148,7 @@ export default function CycleReadinessPage() {
                         )}
                         {bd.policies && (
                             <BreakdownBar label={tx('readiness.keyPolicies')} score={bd.policies.score}
-                                detail={tx('readiness.policiesDetail', { found: bd.policies.found?.length || 0, expected: bd.policies.expected?.length || 0 })} weight={bd.policies.weight} />
+                                detail={tx('readiness.policiesDetail', { withPolicy: bd.policies.withPolicy, total: bd.policies.total })} weight={bd.policies.weight} />
                         )}
                         {bd.tasks && (
                             <BreakdownBar label={tx('readiness.taskCompletion')} score={bd.tasks.score}

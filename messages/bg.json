@@ -1726,7 +1726,10 @@
       "tabRequirements": "Изисквания",
       "addContributor": "Добави сътрудник",
       "addContributorPlaceholder": "Изберете член…",
-      "removeContributor": "Премахни {name}"
+      "removeContributor": "Премахни {name}",
+      "policiesTitle": "Политики",
+      "policiesEmptyTitle": "Все още няма свързани политики",
+      "policiesEmptyDesc": "Тук ще се показват политиките, свързани с този контрол."
     },
     "editModal": {
       "title": "Редактиране на контрол",

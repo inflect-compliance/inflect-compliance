@@ -238,8 +238,9 @@ export async function createPolicyFromTemplate(ctx: RequestContext, templateId: 
 /**
  * Mark a policy as reviewed (periodic re-validation — distinct from
  * PolicyApproval's initial sign-off). Stamps lastReviewedAt = now and
- * recomputes nextReviewAt = now + reviewFrequencyDays (cleared if no
- * cadence is set). Audited.
+ * recomputes nextReviewAt = now + reviewFrequencyDays. A policy with no
+ * cadence keeps whatever nextReviewAt it already has — a manually-set
+ * review date must survive a "mark reviewed" click, not be wiped. Audited.
  */
 export async function markPolicyReviewed(ctx: RequestContext, policyId: string) {
     assertCanWrite(ctx);
@@ -249,9 +250,11 @@ export async function markPolicyReviewed(ctx: RequestContext, policyId: string) 
         if (!policy) throw notFound('Policy not found');
 
         const now = new Date();
+        // With a cadence, recompute the next review date. Without one,
+        // PRESERVE any explicitly-set nextReviewAt rather than clearing it.
         const nextReviewAt = policy.reviewFrequencyDays
             ? new Date(now.getTime() + policy.reviewFrequencyDays * 86_400_000)
-            : null;
+            : policy.nextReviewAt;
 
         await PolicyRepository.updateMetadata(db, ctx, policyId, {
             lastReviewedAt: now,

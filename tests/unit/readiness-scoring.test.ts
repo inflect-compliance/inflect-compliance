@@ -248,12 +248,6 @@ describe('Readiness Scoring', () => {
             expect(mod.NIS2_WEIGHTS.policies).toBe(0.15);
         });
 
-        it('exports NIS2 key policies list', () => {
-            const mod = require('../../src/app-layer/usecases/audit-readiness-scoring');
-            expect(mod.NIS2_KEY_POLICIES.length).toBe(6);
-            expect(mod.NIS2_KEY_POLICIES.map((p: any) => p.keyword)).toContain('incident');
-            expect(mod.NIS2_KEY_POLICIES.map((p: any) => p.keyword)).toContain('supplier');
-        });
     });
 
     describe('Structural', () => {

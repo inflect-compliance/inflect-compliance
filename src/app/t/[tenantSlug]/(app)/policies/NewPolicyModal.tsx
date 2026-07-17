@@ -15,13 +15,14 @@
 import { useCallback, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { useTenantHref } from '@/lib/tenant-context-provider';
+import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { FormField } from '@/components/ui/form-field';
 import { useNewPolicyForm } from './_form/useNewPolicyForm';
 import { NewPolicyFields } from './_form/NewPolicyFields';
+import { TemplateControlSuggestModal, type SuggestionResultDTO } from './templates/TemplateControlSuggestModal';
 
 export interface NewPolicyModalProps {
     open: boolean;
@@ -36,8 +37,18 @@ export function NewPolicyModal({
     isTemplateMode = false,
 }: NewPolicyModalProps) {
     const tenantHref = useTenantHref();
+    const apiUrl = useTenantApiUrl();
     const router = useRouter();
     const t = useTranslations('policies');
+
+    // Framework-aware template creates return `suggestedControlLinks`; when
+    // there are matches we surface the confirm-and-link panel BEFORE
+    // navigating (parity with the retired /policies/templates page).
+    const [suggest, setSuggest] = useState<{
+        policyId: string;
+        policyTitle: string;
+        result: SuggestionResultDTO;
+    } | null>(null);
 
     // Prompt-3.3 — "Start with" is now internal state so "From template" opens
     // the in-modal template picker (carrying the typed title forward) instead of
@@ -56,6 +67,15 @@ export function NewPolicyModal({
     const form = useNewPolicyForm({
         isTemplateMode: templateMode,
         onSuccess: (policy) => {
+            if (policy.suggestedControlLinks && policy.suggestedControlLinks.totalSuggested > 0) {
+                setOpen(false);
+                setSuggest({
+                    policyId: policy.id,
+                    policyTitle: policy.title ?? '',
+                    result: policy.suggestedControlLinks,
+                });
+                return;
+            }
             setOpen(false);
             router.push(tenantHref(`/policies/${policy.id}`));
         },
@@ -90,6 +110,7 @@ export function NewPolicyModal({
     };
 
     return (
+        <>
         <Modal
             showModal={open}
             setShowModal={guardedSetOpen}
@@ -165,5 +186,27 @@ export function NewPolicyModal({
                 </Modal.Actions>
             </Modal.Form>
         </Modal>
+        {suggest && (
+            <TemplateControlSuggestModal
+                policyTitle={suggest.policyTitle}
+                result={suggest.result}
+                onConfirm={async (controlIds) => {
+                    if (controlIds.length) {
+                        await fetch(apiUrl(`/policies/${suggest.policyId}/control-links`), {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ controlIds }),
+                        });
+                    }
+                    setSuggest(null);
+                    router.push(tenantHref(`/policies/${suggest.policyId}`));
+                }}
+                onSkip={() => {
+                    setSuggest(null);
+                    router.push(tenantHref(`/policies/${suggest.policyId}`));
+                }}
+            />
+        )}
+        </>
     );
 }

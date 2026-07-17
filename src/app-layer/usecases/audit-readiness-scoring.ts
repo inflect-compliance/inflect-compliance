@@ -13,7 +13,7 @@
  * NIS2 Directive weights:
  *   - Coverage (NIS2 requirements mapped to controls): 40%
  *   - Evidence (mapped controls with >=1 evidence): 30%
- *   - Policies (presence of key NIS2 policies: IR/BCP/Supplier): 15%
+ *   - Policies (in-scope controls with a linked governing policy): 15%
  *   - Issues (penalty for open incidents/issues): 15%
  *
  * RETENTION HARDENING: Evidence queries route through the shared
@@ -31,7 +31,6 @@ import { notFound } from '@/lib/errors/types';
 import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
 import { NIS2_SOURCE_KIND } from './nis2-readiness';
 import { coverageQualifyingEvidenceWhere } from '@/lib/compliance/coverage-evidence';
-import { policyCountsWhere } from '@/lib/policy/coverage-predicate';
 
 
 // ─── Types ───
@@ -40,7 +39,7 @@ export interface ReadinessBreakdown {
     coverage: { score: number; weight: number; mapped: number; total: number };
     implementation?: { score: number; weight: number; implemented: number; total: number };
     evidence: { score: number; weight: number; withEvidence: number; total: number };
-    policies?: { score: number; weight: number; found: string[]; expected: string[] };
+    policies?: { score: number; weight: number; withPolicy: number; total: number };
     tasks?: { score: number; weight: number; overdue: number };
     issues: { score: number; weight: number; open: number };
 }
@@ -67,16 +66,6 @@ const ISO_WEIGHTS = { coverage: 0.35, implementation: 0.25, evidence: 0.25, task
 
 // ─── NIS2 Weights ───
 const NIS2_WEIGHTS = { coverage: 0.40, evidence: 0.30, policies: 0.15, issues: 0.15 };
-
-// ─── NIS2 Key Policies ───
-const NIS2_KEY_POLICIES = [
-    { keyword: 'incident', label: 'Incident Response' },
-    { keyword: 'business continuity', label: 'Business Continuity' },
-    { keyword: 'disaster recovery', label: 'Disaster Recovery' },
-    { keyword: 'supplier', label: 'Supplier Security' },
-    { keyword: 'supply chain', label: 'Supply Chain Security' },
-    { keyword: 'access control', label: 'Access Control' },
-];
 
 // ─── Compute Readiness ───
 
@@ -597,7 +586,10 @@ async function computeNIS2Readiness(ctx: RequestContext, cycle: AuditCycle): Pro
             select: { id: true, code: true, name: true, evidenceControlLinks: {
                 where: { evidence: coverageQualifyingEvidenceWhere(nowNis2) },
                 select: { id: true },
-            } },
+            },
+            // Governing-policy linkage (PolicyControlLink) for the NIS2
+            // policy-readiness signal — counted structurally, not by title.
+            _count: { select: { policyLinks: true } } },
         }));
     const totalControls = controlsWithEv.length;
     const withEvidence = controlsWithEv.filter((c) => c.evidenceControlLinks?.length > 0).length;
@@ -611,31 +603,22 @@ async function computeNIS2Readiness(ctx: RequestContext, cycle: AuditCycle): Pro
             title: `${c.code}: ${c.name}`, details: 'No active evidence for this control (archived/expired excluded)', entityId: c.id,
         }));
 
-    // 3) Key policies check — only PUBLISHED (issued) policies count toward
-    // readiness. A DRAFT matching a key-policy keyword is NOT governance, so it
-    // no longer satisfies the NIS2 policy check. Uses the shared predicate.
-    const policies = await runInTenantContext(ctx, (tdb) =>
-        tdb.policy.findMany({
-            where: policyCountsWhere(ctx.tenantId),
-            select: { id: true, title: true, category: true },
-        }));
+    // 3) Policy governance — a NIS2-scoped control should be backed by a
+    // governing policy. Linkage-based (PolicyControlLink), NOT a title-keyword
+    // guess: a control counts only if a policy is actually LINKED to it, so
+    // the signal reflects operationalised governance rather than a policy that
+    // merely happens to have the right word in its title. Mirrors the
+    // evidence-completeness shape above (withEvidence/total → withPolicy/total).
+    const withPolicy = controlsWithEv.filter((c) => (c._count?.policyLinks ?? 0) > 0).length;
+    const policyScore = totalControls > 0 ? (withPolicy / totalControls) * 100 : 0;
 
-    const foundPolicies: string[] = [];
-    const expectedPolicies = NIS2_KEY_POLICIES.map((p) => p.label);
-
-    for (const kp of NIS2_KEY_POLICIES) {
-        const found = policies.some((p) => {
-            const text = `${p.title} ${p.category || ''}`.toLowerCase();
-            return text.includes(kp.keyword);
-        });
-        if (found) foundPolicies.push(kp.label);
-        else gaps.push({
+    controlsWithEv
+        .filter((c) => !c._count?.policyLinks)
+        .slice(0, 10)
+        .forEach((c) => gaps.push({
             type: 'MISSING_POLICY', severity: 'MEDIUM',
-            title: kp.label, details: `No policy found matching "${kp.keyword}"`,
-        });
-    }
-
-    const policyScore = expectedPolicies.length > 0 ? (foundPolicies.length / expectedPolicies.length) * 100 : 0;
+            title: `${c.code}: ${c.name}`, details: 'No governing policy linked to this control', entityId: c.id,
+        }));
 
     // 4) Open issues
     const openIssues = await runInTenantContext(ctx, (tdb) =>
@@ -678,7 +661,7 @@ async function computeNIS2Readiness(ctx: RequestContext, cycle: AuditCycle): Pro
         breakdown: {
             coverage: { score: Math.round(coverageScore), weight: weights.coverage, mapped: mappedReqs, total: totalReqs },
             evidence: { score: Math.round(evidenceScore), weight: weights.evidence, withEvidence, total: totalControls },
-            policies: { score: Math.round(policyScore), weight: weights.policies, found: foundPolicies, expected: expectedPolicies },
+            policies: { score: Math.round(policyScore), weight: weights.policies, withPolicy, total: totalControls },
             issues: { score: Math.round(issueScore), weight: weights.issues, open: issueCount },
         },
         gaps,
@@ -708,8 +691,8 @@ function generateNIS2Recommendations(coverage: number, evidence: number, policie
     if (coverage < 50) recs.push('Map NIS2 requirements (Art.21 measures) to controls — coverage below 50%');
     else if (coverage < 80) recs.push('Continue mapping NIS2 requirements — aim for full Art.21 coverage');
     if (evidence < 50) recs.push('Attach evidence to mapped controls — NIS2 requires demonstrable measures');
-    if (policies < 50) recs.push('Create key NIS2 policies: Incident Response, Business Continuity, Supplier Security');
-    else if (policies < 100) recs.push('Complete missing NIS2 policy areas to demonstrate full compliance');
+    if (policies < 50) recs.push('Link governing policies to your NIS2 controls — most in-scope controls have no policy attached');
+    else if (policies < 100) recs.push('Attach policies to the remaining unlinked NIS2 controls to demonstrate governance');
     if (issues > 3) recs.push(`Address ${issues} open issues to reduce compliance risk`);
     if (recs.length === 0) recs.push('NIS2 readiness is strong — prepare for notification to competent authority');
     return recs;
@@ -805,4 +788,4 @@ export async function addReadinessToPack(ctx: RequestContext, packId: string, cy
 }
 
 // ─── Exported weights for tests ───
-export { ISO_WEIGHTS, NIS2_WEIGHTS, NIS2_KEY_POLICIES };
+export { ISO_WEIGHTS, NIS2_WEIGHTS };

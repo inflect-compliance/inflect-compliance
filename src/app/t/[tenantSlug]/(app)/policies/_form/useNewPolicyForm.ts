@@ -14,6 +14,7 @@
 import { useEffect, useState } from 'react';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { useFormTelemetry } from '@/lib/telemetry/form-telemetry';
+import type { SuggestionResultDTO } from '../templates/TemplateControlSuggestModal';
 
 export interface PolicyTemplate {
     id: string;
@@ -58,8 +59,16 @@ export interface NewPolicyFormReturn {
 export interface UseNewPolicyFormOptions {
     /** When true, the form is in template-picker mode. */
     isTemplateMode?: boolean;
-    /** Called after a successful POST with the created policy row. */
-    onSuccess: (policy: { id: string }) => void;
+    /**
+     * Called after a successful POST with the created policy row. For a
+     * template create the response also carries `title` and
+     * `suggestedControlLinks` (framework-aware control suggestions).
+     */
+    onSuccess: (policy: {
+        id: string;
+        title?: string;
+        suggestedControlLinks?: SuggestionResultDTO | null;
+    }) => void;
 }
 
 export function useNewPolicyForm({
