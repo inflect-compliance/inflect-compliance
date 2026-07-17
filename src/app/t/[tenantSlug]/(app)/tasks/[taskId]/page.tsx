@@ -770,6 +770,11 @@ export default function TaskDetailPage() {
                 </div>
             )}
 
+            {/* Assignee / reviewer / watcher cards belong to the Overview
+                tab — previously they rendered on every tab (evidence, links,
+                comments, activity). Guarded here so they only show on Overview. */}
+            {tab === 'overview' && (
+            <>
             {/* Assignment controls */}
             {permissions.canWrite && (
                 <div className={cardVariants({ density: 'compact' })}>
@@ -877,6 +882,8 @@ export default function TaskDetailPage() {
                     )}
                 </div>
             </div>
+            </>
+            )}
 
             {/* Overview Tab */}
             {tab === 'overview' && (
@@ -915,10 +922,9 @@ export default function TaskDetailPage() {
                             <span className="text-xs text-content-subtle uppercase">{t('detail.assignee')}</span>
                             <p className="text-sm text-content-default mt-1">{task.assignee?.name || '—'}</p>
                         </div>
-                        <div>
-                            <span className="text-xs text-content-subtle uppercase">{t('detail.reporter')}</span>
-                            <p className="text-sm text-content-default mt-1">{task.createdBy?.name || '—'}</p>
-                        </div>
+                        {/* "Reporter" removed — it bound the same createdBy.name
+                            as "Created By" below (no separate reporter concept on
+                            the Task model), so the row was a pure duplicate. */}
                         <div>
                             <span className="text-xs text-content-subtle uppercase">{t('detail.dueDate')}</span>
                             <p className="text-sm text-content-default mt-1">{task.dueAt ? formatDate(task.dueAt) : '—'}</p>
@@ -1082,6 +1088,12 @@ export default function TaskDetailPage() {
                         tenantHref={tenantHref}
                     />
                     <div className="border-t border-border-subtle pt-default">
+                        {/* entityType="ISSUE" is CORRECT here, not a bug: the
+                            vendor-link system keys tasks under ISSUE (issue ids
+                            ARE task ids — issues redirect to tasks), and
+                            VendorLinkEntityType has no TASK member. Passing "TASK"
+                            would 400 at the /vendors/linked route. Verified against
+                            vendor.ts (type==='ISSUE' → db.task.findMany). */}
                         <LinkedVendorsPanel entityType="ISSUE" entityId={taskId} />
                     </div>
                 </div>

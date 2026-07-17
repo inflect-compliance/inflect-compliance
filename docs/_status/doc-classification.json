@@ -1532,6 +1532,9 @@
         "docs/implementation-notes/2026-07-16-control-linkage-analytics-completion.md": {
             "class": "historical"
         },
+        "docs/implementation-notes/2026-07-17-task-surface-defects.md": {
+            "class": "historical"
+        },
         "docs/implementation-notes/2026-07-17-task-sourcing-correctness.md": {
             "class": "historical"
         },

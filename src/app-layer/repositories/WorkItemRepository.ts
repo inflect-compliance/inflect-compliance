@@ -500,46 +500,13 @@ export class WorkItemRepository {
             db.task.count({ where: { tenantId, completedAt: { gte: ago30d } } }),
         ]);
 
-        // Top controls with most open tasks (via controlId)
-        const topControlsRaw = await db.task.groupBy({
-            by: ['controlId'],
-            where: { tenantId, controlId: { not: null }, status: openFilter },
-            _count: true,
-            orderBy: { _count: { controlId: 'desc' } },
-            take: 5,
-        });
-        const controlIds = topControlsRaw.map(r => r.controlId).filter(Boolean) as string[];
-        const controls = controlIds.length > 0
-            ? await db.control.findMany({ where: { id: { in: controlIds } }, select: { id: true, code: true, name: true } })
-            : [];
-        const controlMap = new Map(controls.map(c => [c.id, c]));
-        const topControls = topControlsRaw.map(r => ({
-            controlId: r.controlId!,
-            code: controlMap.get(r.controlId!)?.code || '',
-            name: controlMap.get(r.controlId!)?.name || '',
-            openTaskCount: r._count,
-        }));
-
-        // Top linked entities (ASSET / RISK) with most open tasks.
-        // Pushdown: groupBy + take 5 instead of loading every TaskLink
-        // and aggregating in JS. The (`tenantId`, `entityType`,
-        // `entityId`) composite index already on TaskLink covers this.
-        const topLinkedRaw = await db.taskLink.groupBy({
-            by: ['entityType', 'entityId'],
-            where: {
-                tenantId,
-                entityType: { in: [TaskLinkEntityType.ASSET, TaskLinkEntityType.RISK] },
-                task: { status: openFilter },
-            },
-            _count: true,
-            orderBy: { _count: { entityId: 'desc' } },
-            take: 5,
-        });
-        const topLinkedEntities = topLinkedRaw.map((r) => ({
-            entityType: r.entityType as string,
-            entityId: r.entityId,
-            count: r._count,
-        }));
+        // NB `topControls` (open tasks per control) + `topLinkedEntities`
+        // (open tasks per ASSET/RISK link) were computed here — 1 groupBy +
+        // 1 findMany, and 1 groupBy respectively — but NO surface ever read
+        // them, so the four queries ran on every tasks-list load for nothing.
+        // Trimmed. A "top controls by open tasks" widget is a worthwhile
+        // follow-up; the aggregation can be re-added cheaply when a consumer
+        // exists (see 2026-07-17-task-surface-defects impl note).
 
         return {
             total,
@@ -550,8 +517,6 @@ export class WorkItemRepository {
             dueIn7d: due7dCount,
             dueIn30d: due30dCount,
             trend: { created30d: recentCreated, resolved30d: recentResolved },
-            topControls,
-            topLinkedEntities,
         };
     }
 

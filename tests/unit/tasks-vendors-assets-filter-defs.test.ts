@@ -62,7 +62,9 @@ const tGroup = (k: string) => resolver('common')(`filterGroups.${k}`);
 // reviewer-sign-off state alongside TRIAGED + BLOCKED.
 const TASK_STATUS = ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'RESOLVED', 'CLOSED', 'CANCELED'];
 const TASK_TYPE = ['TASK', 'AUDIT_FINDING', 'CONTROL_GAP', 'INCIDENT', 'IMPROVEMENT'];
-const TASK_SEVERITY = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+// INFO is a real WorkItemSeverity (automation raises INFO tasks) and is
+// now filterable, matching the create form.
+const TASK_SEVERITY = ['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 // TP-5 — the universal-inbox source filter offers EXACTLY the
 // WorkItemSource enum members (RISK_MONITOR added for KRI-breach +
 // risk-appetite-breach spawned tasks).
