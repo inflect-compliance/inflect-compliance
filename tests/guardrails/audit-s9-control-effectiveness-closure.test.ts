@@ -8,16 +8,16 @@
  * aggregation over `ControlTestRun` rows — auditors evaluating
  * operating effectiveness want a "pass rate over the last N runs"
  * number, but the only path was to read raw rows and compute by
- * eye. `getControlEffectiveness(controlId)` closes that.
+ * eye. `computeControlEffectivenessMap` closes that.
  *
- * Effectiveness is now consolidated behind ONE canonical batched
- * function, `computeControlEffectivenessMap`, which control health,
- * control ROI, and the residual suggestion all read (each previously
- * reimplemented or ignored the query). `getControlEffectiveness`
- * remains the gated single-control convenience wrapper. This ratchet
- * follows the effectiveness signal to that canonical function so the
- * honest-null + gate + window + COMPLETED-only invariants still can't
- * silently regress.
+ * Effectiveness is consolidated behind ONE canonical batched function,
+ * `computeControlEffectivenessMap`, which control health, control ROI,
+ * and the residual suggestion all read (each previously reimplemented
+ * or ignored the query). PR-R removed the gated single-control
+ * `getControlEffectiveness` convenience wrapper (zero callers); the
+ * read gate now lives at those call sites. This ratchet follows the
+ * effectiveness signal to the canonical function so the honest-null +
+ * window + COMPLETED-only invariants still can't silently regress.
  *
  * Locks the load-bearing pieces:
  *
@@ -30,7 +30,8 @@
  *      uses the Prisma `groupBy(['controlId', 'result'])` aggregation
  *      shape with the COMPLETED + executedAt-since-cutoff filters.
  *   4. The honest-null passRate (null on an empty window, never 0%).
- *   5. The `assertCanReadTests` gate on the single-control wrapper.
+ *   5. The read gate lives at the call sites (the single-control
+ *      wrapper was removed in PR-R).
  */
 
 import * as fs from "node:fs";
@@ -58,9 +59,11 @@ describe("Audit S9 — control effectiveness scoring (closure lock)", () => {
             expect(s).toMatch(/windowDays:\s*number/);
         });
 
-        it("getControlEffectiveness is exported with the canonical signature", () => {
+        it("computeControlEffectivenessMap is exported with the canonical batched signature", () => {
+            // PR-R — the gated single-control getControlEffectiveness wrapper was
+            // removed; the batched map function is the live source of truth.
             expect(src()).toMatch(
-                /export async function getControlEffectiveness\(\s*ctx:\s*RequestContext,\s*controlId:\s*string,\s*opts:\s*\{\s*windowDays\?:\s*number\s*\}\s*=\s*\{\},?\s*\):\s*Promise<ControlEffectiveness>/,
+                /export async function computeControlEffectivenessMap\(\s*db:\s*PrismaTx,\s*tenantId:\s*string,\s*controlIds:\s*string\[\]/,
             );
         });
     });
@@ -73,8 +76,11 @@ describe("Audit S9 — control effectiveness scoring (closure lock)", () => {
             expect(src()).toMatch(
                 /const DEFAULT_EFFECTIVENESS_WINDOW_DAYS\s*=\s*90/,
             );
+            // PR-R — the default now rides computeControlEffectivenessMap's own
+            // `windowDays` parameter default (the deleted wrapper's `opts.windowDays
+            // ?? DEFAULT` form is gone).
             expect(src()).toMatch(
-                /opts\.windowDays\s*\?\?\s*DEFAULT_EFFECTIVENESS_WINDOW_DAYS/,
+                /windowDays:\s*number\s*=\s*DEFAULT_EFFECTIVENESS_WINDOW_DAYS/,
             );
         });
     });
@@ -139,17 +145,17 @@ describe("Audit S9 — control effectiveness scoring (closure lock)", () => {
     });
 
     describe("Authorization gate", () => {
-        it("calls assertCanReadTests at the top of the single-control wrapper", () => {
-            // Effectiveness data is sensitive — a refactor that
-            // dropped the gate would surface pass rates to any
-            // authenticated session.
+        it("effectiveness reads are gated at the call sites (PR-R)", () => {
+            // PR-R — the gated single-control getControlEffectiveness wrapper was
+            // removed. computeControlEffectivenessMap is a lower-level batched
+            // query (takes an explicit tenantId); the read-permission gate now
+            // lives at the real call sites — control-roi, control/health, and
+            // risk-residual-suggestion each assert/authorize before calling it.
+            // This test documents that the ungated batched function is
+            // intentional and never itself reached without a caller-side gate.
             const s = src();
-            const start = s.indexOf("export async function getControlEffectiveness");
-            const end = s.indexOf("return runInTenantContext", start);
-            expect(start).toBeGreaterThan(-1);
-            expect(end).toBeGreaterThan(start);
-            const head = s.slice(start, end);
-            expect(head).toMatch(/assertCanReadTests\(ctx\)/);
+            expect(s).toMatch(/export async function computeControlEffectivenessMap/);
+            expect(s).not.toMatch(/export async function getControlEffectiveness\b/);
         });
     });
 });

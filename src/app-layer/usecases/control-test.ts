@@ -200,18 +200,10 @@ export async function computeControlEffectivenessMap(
     return map;
 }
 
-export async function getControlEffectiveness(
-    ctx: RequestContext,
-    controlId: string,
-    opts: { windowDays?: number } = {},
-): Promise<ControlEffectiveness> {
-    assertCanReadTests(ctx);
-    const windowDays = opts.windowDays ?? DEFAULT_EFFECTIVENESS_WINDOW_DAYS;
-    return runInTenantContext(ctx, async (db) => {
-        const map = await computeControlEffectivenessMap(db, ctx.tenantId, [controlId], windowDays);
-        return map.get(controlId) ?? emptyEffectiveness(controlId, windowDays);
-    });
-}
+// PR-R — the `getControlEffectiveness(ctx, controlId)` single-control convenience
+// wrapper was removed (zero prod callers). `computeControlEffectivenessMap` is the
+// live source of truth — every real consumer (control-roi, risk-residual-suggestion,
+// control/health) calls it directly inside its own tenant-gated context.
 
 /**
  * Attest that a control was exercised by a completed test/check run —
@@ -571,9 +563,25 @@ export async function linkEvidenceToRun(ctx: RequestContext, runId: string, inpu
         const run = await TestRunRepository.getById(db, ctx, runId);
         if (!run) throw notFound('Test run not found');
 
+        // PR-R — freeze the file's integrity hash at link time for FILE-kind
+        // evidence, sourced from FileRecord.sha256 (the trustworthy checksum
+        // computed at upload). verifyRunEvidence later recomputes the bytes from
+        // storage and compares against this frozen value, so tampering is
+        // detectable — the previously-dead linkEvidenceWithHash never populated
+        // this, so integrity checks were trivially "ok".
+        let sha256Hash: string | null = null;
+        if (input.kind === 'FILE' && input.fileId) {
+            const file = await db.fileRecord.findFirst({
+                where: { id: input.fileId, tenantId: ctx.tenantId },
+                select: { sha256: true },
+            });
+            sha256Hash = file?.sha256 ?? null;
+        }
+
         const link = await TestEvidenceRepository.link(db, ctx, {
             testRunId: runId,
             ...input,
+            sha256Hash,
         });
 
         await emitTestEvidenceLinked(db, ctx, { id: link.id, testRunId: runId, kind: input.kind });

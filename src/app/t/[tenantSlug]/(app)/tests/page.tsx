@@ -132,6 +132,14 @@ export default function TestsRollupPage() {
 function TestsRollupContent() {
     const t = useTranslations('controlTests');
     const FREQ_LABELS = useMemo(() => freqLabels(t), [t]);
+    // PR-R — localized enum→label maps for the plan-status + last-result badges
+    // (mirrors the already-localized method/frequency/checkStatus pattern).
+    const PLAN_STATUS_LABELS = useMemo<Record<string, string>>(() => ({
+        ACTIVE: t('planStatus.ACTIVE'), PAUSED: t('planStatus.PAUSED'), ARCHIVED: t('planStatus.ARCHIVED'),
+    }), [t]);
+    const RESULT_LABELS = useMemo<Record<string, string>>(() => ({
+        PASS: t('result.PASS'), FAIL: t('result.FAIL'), INCONCLUSIVE: t('result.INCONCLUSIVE'),
+    }), [t]);
     const tGroup = useTranslations('common.filterGroups');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
@@ -401,7 +409,7 @@ function TestsRollupContent() {
                     id: 'status', header: t('colHeaders.status'), accessorKey: 'status',
                     cell: ({ row }) => (
                         <StatusBadge variant={PLAN_STATUS_BADGE[row.original.status] ?? 'neutral'} size="sm">
-                            {row.original.status}
+                            {PLAN_STATUS_LABELS[row.original.status] ?? row.original.status}
                         </StatusBadge>
                     ),
                 },
@@ -446,7 +454,7 @@ function TestsRollupContent() {
                     cell: ({ row }) => {
                         const result = getLastResult(row.original);
                         return result ? (
-                            <StatusBadge variant={RESULT_BADGE[result] || 'neutral'} size="sm">{result}</StatusBadge>
+                            <StatusBadge variant={RESULT_BADGE[result] || 'neutral'} size="sm">{RESULT_LABELS[result] ?? result}</StatusBadge>
                         ) : <span className="text-content-subtle text-xs">{t('list.noRuns')}</span>;
                     },
                 },
@@ -456,7 +464,7 @@ function TestsRollupContent() {
                     cell: ({ getValue }) => <span className="text-content-subtle">{getValue() as number}</span>,
                 },
             ])),
-        [t, tenantHref, orderColumns, FREQ_LABELS],
+        [t, tenantHref, orderColumns, FREQ_LABELS, PLAN_STATUS_LABELS, RESULT_LABELS],
     );
 
     // R3-P1 — columns for the Automated checks view.

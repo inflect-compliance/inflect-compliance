@@ -1,53 +1,41 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- test mocks. */
 /**
- * Unit tests for `getControlEffectiveness` (Audit S2, 2026-05-22).
+ * Unit tests for `computeControlEffectivenessMap` (Audit S2, 2026-05-22).
  *
- * Rolling pass-rate metric over a configurable window. Aggregates
- * COMPLETED runs grouped by `result` (PASS / FAIL / INCONCLUSIVE) and
- * returns the percentage with the count breakdown.
+ * Rolling pass-rate metric over a configurable window. Aggregates COMPLETED
+ * runs grouped by `result` (PASS / FAIL / INCONCLUSIVE) and returns the
+ * percentage with the count breakdown.
+ *
+ * PR-R — the `getControlEffectiveness(ctx, controlId)` gated single-control
+ * wrapper was removed (zero prod callers). These tests now exercise the live
+ * `computeControlEffectivenessMap(db, tenantId, controlIds[])` directly; the
+ * read-permission gate lives at the real call sites (control-roi, control/health,
+ * risk-residual-suggestion), not on this lower-level batched query.
  */
-const policyCalls: string[] = [];
-
-jest.mock('@/app-layer/policies/test.policies', () => ({
-    assertCanReadTests: jest.fn(() => policyCalls.push('read-tests')),
-    assertCanManageTestPlans: jest.fn(),
-    assertCanExecuteTests: jest.fn(),
-    assertCanLinkTestEvidence: jest.fn(),
-}));
-
 const tenantDb: any = {
     controlTestRun: { groupBy: jest.fn() },
 };
-jest.mock('@/lib/db-context', () => {
-    const actual = jest.requireActual('@/lib/db-context');
-    return {
-        ...actual,
-        runInTenantContext: jest.fn(async (_ctx: any, cb: any) => cb(tenantDb)),
-    };
-});
 
-import { getControlEffectiveness } from '@/app-layer/usecases/control-test';
-import { assertCanReadTests } from '@/app-layer/policies/test.policies';
+import { computeControlEffectivenessMap } from '@/app-layer/usecases/control-test';
 import { makeRequestContext } from '../../helpers/make-context';
 
 beforeEach(() => {
-    policyCalls.length = 0;
     tenantDb.controlTestRun.groupBy.mockReset();
 });
 
 const ctx = makeRequestContext('READER');
+const effectivenessFor = async (controlId: string, windowDays?: number) => {
+    const map = await computeControlEffectivenessMap(tenantDb, ctx.tenantId, [controlId], windowDays);
+    return map.get(controlId)!;
+};
 
-describe('getControlEffectiveness', () => {
-    it('invokes assertCanReadTests before the DB read', async () => {
-        tenantDb.controlTestRun.groupBy.mockResolvedValueOnce([]);
-        await getControlEffectiveness(ctx, 'c-1');
-        expect(assertCanReadTests).toHaveBeenCalledWith(ctx);
-        expect(policyCalls).toEqual(['read-tests']);
-    });
+describe('computeControlEffectivenessMap', () => {
+    // PR-R — the read gate moved to the call sites; this lower-level batched
+    // query is intentionally ungated, so there is no assertCanReadTests test here.
 
     it('returns passRate: null when no completed runs in window', async () => {
         tenantDb.controlTestRun.groupBy.mockResolvedValueOnce([]);
-        const out = await getControlEffectiveness(ctx, 'c-1');
+        const out = await effectivenessFor('c-1');
         expect(out).toEqual({
             controlId: 'c-1',
             passRate: null,
@@ -61,16 +49,16 @@ describe('getControlEffectiveness', () => {
     });
 
     it('excludes INCONCLUSIVE from the pass-rate denominator (PR-P)', async () => {
-        // PR-P — a no-verdict (INCONCLUSIVE) run must NOT drag the pass-rate
-        // down. `total` still counts every completed run (for display), but the
-        // pass-rate denominator is verdict-producing runs only (`scored = passes
-        // + fails`). 7 PASS + 2 FAIL + 1 INCONCLUSIVE → 7/9, not 7/10.
+        // A no-verdict (INCONCLUSIVE) run must NOT drag the pass-rate down.
+        // `total` still counts every completed run (for display), but the
+        // pass-rate denominator is verdict-producing runs only (`scored`).
+        // 7 PASS + 2 FAIL + 1 INCONCLUSIVE → 7/9, not 7/10.
         tenantDb.controlTestRun.groupBy.mockResolvedValueOnce([
             { controlId: 'c-1', result: 'PASS', _count: { _all: 7 } },
             { controlId: 'c-1', result: 'FAIL', _count: { _all: 2 } },
             { controlId: 'c-1', result: 'INCONCLUSIVE', _count: { _all: 1 } },
         ]);
-        const out = await getControlEffectiveness(ctx, 'c-1');
+        const out = await effectivenessFor('c-1');
         expect(out.passes).toBe(7);
         expect(out.fails).toBe(2);
         expect(out.inconclusive).toBe(1);
@@ -80,12 +68,10 @@ describe('getControlEffectiveness', () => {
     });
 
     it('all-INCONCLUSIVE window → passRate null (no verdict to score)', async () => {
-        // A control whose only runs are inconclusive has no measured
-        // effectiveness — null, not a misleading 0%.
         tenantDb.controlTestRun.groupBy.mockResolvedValueOnce([
             { controlId: 'c-1', result: 'INCONCLUSIVE', _count: { _all: 3 } },
         ]);
-        const out = await getControlEffectiveness(ctx, 'c-1');
+        const out = await effectivenessFor('c-1');
         expect(out.total).toBe(3);
         expect(out.scored).toBe(0);
         expect(out.passRate).toBeNull();
@@ -95,7 +81,7 @@ describe('getControlEffectiveness', () => {
         tenantDb.controlTestRun.groupBy.mockResolvedValueOnce([
             { controlId: 'c-1', result: 'PASS', _count: { _all: 5 } },
         ]);
-        const out = await getControlEffectiveness(ctx, 'c-1');
+        const out = await effectivenessFor('c-1');
         expect(out.passRate).toBe(100);
     });
 
@@ -104,7 +90,7 @@ describe('getControlEffectiveness', () => {
             { controlId: 'c-1', result: 'FAIL', _count: { _all: 3 } },
             { controlId: 'c-1', result: 'INCONCLUSIVE', _count: { _all: 1 } },
         ]);
-        const out = await getControlEffectiveness(ctx, 'c-1');
+        const out = await effectivenessFor('c-1');
         expect(out.passRate).toBe(0);
     });
 
@@ -113,14 +99,14 @@ describe('getControlEffectiveness', () => {
             { controlId: 'c-1', result: 'PASS', _count: { _all: 2 } },
             { controlId: 'c-1', result: 'FAIL', _count: { _all: 1 } },
         ]);
-        const out = await getControlEffectiveness(ctx, 'c-1');
+        const out = await effectivenessFor('c-1');
         // 2/3 = 66.66… → 67
         expect(out.passRate).toBe(67);
     });
 
     it('respects the windowDays option (custom value surfaces in result)', async () => {
         tenantDb.controlTestRun.groupBy.mockResolvedValueOnce([]);
-        const out = await getControlEffectiveness(ctx, 'c-1', { windowDays: 30 });
+        const out = await effectivenessFor('c-1', 30);
         expect(out.windowDays).toBe(30);
         // The cutoff in the query is also derived from windowDays.
         const call = tenantDb.controlTestRun.groupBy.mock.calls[0][0];
@@ -133,18 +119,17 @@ describe('getControlEffectiveness', () => {
 
     it('queries only COMPLETED runs for this tenant + control', async () => {
         tenantDb.controlTestRun.groupBy.mockResolvedValueOnce([]);
-        await getControlEffectiveness(ctx, 'ctrl-X');
+        await effectivenessFor('ctrl-X');
         const call = tenantDb.controlTestRun.groupBy.mock.calls[0][0];
         expect(call.where.status).toBe('COMPLETED');
         expect(call.where.tenantId).toBe('tenant-1');
-        // Canonical batched shape: the single-control wrapper passes a
-        // one-element `in` list to `computeControlEffectivenessMap`.
+        // Canonical batched shape: a one-element `in` list.
         expect(call.where.controlId.in).toEqual(['ctrl-X']);
     });
 
     it('default window is 90 days', async () => {
         tenantDb.controlTestRun.groupBy.mockResolvedValueOnce([]);
-        const out = await getControlEffectiveness(ctx, 'c-1');
+        const out = await effectivenessFor('c-1');
         expect(out.windowDays).toBe(90);
     });
 });

@@ -2,7 +2,7 @@
  * Audit Coherence S2 (2026-05-22) — structural ratchet locking the
  * three Control Framework & Testing gap closures:
  *
- *   1. Rolling pass-rate metric (`getControlEffectiveness`).
+ *   1. Rolling pass-rate metric (`computeControlEffectivenessMap`).
  *   2. `ARCHIVED` terminal state on `TestPlanStatus`.
  *   3. Inline OVERDUE-semantics documentation in `control-test.ts`.
  *
@@ -42,8 +42,11 @@ describe('Audit S2 — Control Framework & Testing', () => {
     describe('control-effectiveness usecase', () => {
         const src = read('src/app-layer/usecases/control-test.ts');
 
-        it('exports `getControlEffectiveness`', () => {
-            expect(src).toMatch(/export async function getControlEffectiveness/);
+        it('exports `computeControlEffectivenessMap` (the live rolling pass-rate metric)', () => {
+            // PR-R — the gated single-control getControlEffectiveness wrapper was
+            // removed; computeControlEffectivenessMap is the batched source of
+            // truth consumed by health / residual / ROI.
+            expect(src).toMatch(/export async function computeControlEffectivenessMap/);
         });
 
         it('declares the `ControlEffectiveness` return shape', () => {
@@ -79,10 +82,13 @@ describe('Audit S2 — Control Framework & Testing', () => {
             expect(src).toMatch(/Math\.round\([\s\S]{0,80}100\)/);
         });
 
-        it('policy: assertCanReadTests gates the read', () => {
-            // The function must be permission-gated at the read tier.
+        it('exposes the canonical batched signature (tenantId + controlIds)', () => {
+            // PR-R — the read-permission gate moved to the real call sites
+            // (control-roi / control/health / risk-residual-suggestion); this
+            // lower-level batched query takes an explicit tenantId + controlIds
+            // and is intentionally ungated.
             expect(src).toMatch(
-                /export async function getControlEffectiveness[\s\S]{0,400}assertCanReadTests/,
+                /export async function computeControlEffectivenessMap\([\s\S]{0,200}tenantId:\s*string,[\s\S]{0,80}controlIds:\s*string\[\]/,
             );
         });
     });

@@ -21,7 +21,7 @@ import {
     getTestPlan,
     getTestRun,
     listRunEvidence,
-    getControlEffectiveness,
+    computeControlEffectivenessMap,
     createTestPlan,
     updateTestPlan,
     createTestRun,
@@ -287,20 +287,23 @@ describeFn('control-test usecase — branch coverage (integration)', () => {
         expect(inc.result).toBe('INCONCLUSIVE');
     });
 
-    it('getControlEffectiveness rolls up pass rate and returns null on empty', async () => {
-        const eff = await getControlEffectiveness(ctx, effControlId);
+    it('computeControlEffectivenessMap rolls up pass rate and returns null on empty', async () => {
+        // PR-R — the gated getControlEffectiveness wrapper was removed; call the
+        // live batched map function directly (gating happens at the real call
+        // sites). globalPrisma is a valid PrismaTx for the groupBy read.
+        const eff = (await computeControlEffectivenessMap(globalPrisma as never, TENANT_ID, [effControlId])).get(effControlId)!;
         expect(eff.total).toBeGreaterThanOrEqual(2);
         expect(eff.passRate).not.toBeNull();
         expect(eff.windowDays).toBe(90);
 
         // custom window + a control with no completed runs → null passRate.
-        const empty = await getControlEffectiveness(ctx, controlId, { windowDays: 7 });
+        const empty = (await computeControlEffectivenessMap(globalPrisma as never, TENANT_ID, [controlId], 7)).get(controlId)!;
         // controlId may have completed runs from earlier tests; assert shape only.
         expect(empty).toHaveProperty('passRate');
         const fresh = await globalPrisma.control.create({
             data: { tenantId: TENANT_ID, code: 'CT-3', name: 'Fresh' },
         });
-        const none = await getControlEffectiveness(ctx, fresh.id);
+        const none = (await computeControlEffectivenessMap(globalPrisma as never, TENANT_ID, [fresh.id])).get(fresh.id)!;
         expect(none.passRate).toBeNull();
         expect(none.total).toBe(0);
     });
