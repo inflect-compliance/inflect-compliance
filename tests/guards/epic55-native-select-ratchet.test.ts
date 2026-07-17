@@ -127,7 +127,8 @@ describe('Epic 55 — migrated surfaces must not regress to native <select>', ()
         'assets/[id]/page.tsx',
         'assets/AssetsClient.tsx',
         'controls/[controlId]/page.tsx',
-        'controls/[controlId]/tests/[planId]/page.tsx',
+        // PR-Q — the test-plan edit form's raw inputs moved into this shared view.
+        'tests/_components/TestPlanDetailView.tsx',
         'tasks/TasksClient.tsx',
         'tasks/[taskId]/page.tsx',
         'admin/members/page.tsx',

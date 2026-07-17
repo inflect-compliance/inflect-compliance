@@ -35,7 +35,9 @@ describe('R3-P1 (2) unified /tests surface', () => {
     it('offers a Plans vs Automated-checks view toggle', () => {
         expect(src).toMatch(/'plans' \| 'checks'/);
         expect(src).toMatch(/unified\.tabChecks/);
-        expect(src).toMatch(/\/tests\/checks/);
+        // PR-Q — the /tests/checks endpoint literal moved into the canonical
+        // CACHE_KEYS.tests.checks() SWR key during the useTenantSWR migration.
+        expect(src).toMatch(/CACHE_KEYS\.tests\.checks\(\)|\/tests\/checks/);
     });
     it('explains tests-vs-checks at the global level', () => {
         expect(src).toMatch(/unified\.explanation/);

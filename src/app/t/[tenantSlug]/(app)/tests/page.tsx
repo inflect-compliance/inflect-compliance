@@ -5,9 +5,11 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { formatDate } from '@/lib/format-date';
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { CACHE_KEYS } from '@/lib/swr-keys';
 import { DataTable, createColumns, useColumnsDropdown, sortRowsByDisplay, type SortAccessors } from '@/components/ui/table';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { useRouter } from 'next/navigation';
@@ -47,6 +49,8 @@ interface TestPlanSummary {
     frequency: string;
     status: string;
     nextDueAt: string | null;
+    // PR-Q — the cron-derived clock, so overdue reconciles both signals.
+    nextRunAt: string | null;
     controlId: string;
     method: string;
     control: { id: string; name: string; code: string | null };
@@ -96,9 +100,17 @@ const PLAN_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     ARCHIVED: 'neutral',
 };
 
-const isOverdue = (d: string | null) => {
-    if (!d) return false;
-    return new Date(d) < new Date();
+// PR-Q — reconciled due signal: the earliest of the two clocks (nextDueAt from
+// frequency, nextRunAt from a cron schedule). Mirrors the server-side
+// effectiveDueAt so /tests overdue matches /tests/due and the dashboard.
+const effectiveDue = (p: { nextDueAt: string | null; nextRunAt: string | null }): string | null => {
+    const ds = [p.nextDueAt, p.nextRunAt].filter((d): d is string => d != null);
+    if (ds.length === 0) return null;
+    return ds.reduce((a, b) => (new Date(a) <= new Date(b) ? a : b));
+};
+const isOverdue = (p: { nextDueAt: string | null; nextRunAt: string | null }) => {
+    const d = effectiveDue(p);
+    return d ? new Date(d) < new Date() : false;
 };
 
 const getLastResult = (plan: TestPlanSummary) => {
@@ -127,42 +139,23 @@ function TestsRollupContent() {
     const router = useRouter();
     const { state, search, hasActive } = useFilters();
 
-    const [plans, setPlans] = useState<TestPlanSummary[]>([]);
-    const [loading, setLoading] = useState(true);
+    // PR-Q — canonical useTenantSWR reads (Epic 69). `mutate` refetches after
+    // bulk mutations; the old fetch-on-mount + setState pattern is gone.
+    const { data: plansData, isLoading: loading, mutate } = useTenantSWR<TestPlanSummary[]>(CACHE_KEYS.tests.plans());
+    const plans = useMemo(() => plansData ?? [], [plansData]);
+    const fetchData = mutate;
 
     // R3-P1 — segmented view: manual/scheduled Test plans vs Automated checks.
     // "Show me all my control testing" now has ONE place.
     const [view, setView] = useState<'plans' | 'checks'>('plans');
-    const [checks, setChecks] = useState<ControlCheck[]>([]);
-    const [checksLoading, setChecksLoading] = useState(false);
-    const [checksLoaded, setChecksLoaded] = useState(false);
     const [createOpen, setCreateOpen] = useState(false);
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const res = await fetch(apiUrl('/tests/plans'));
-            if (res.ok) setPlans(await res.json());
-        } finally {
-            setLoading(false);
-        }
-    }, [apiUrl]);
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    useEffect(() => { fetchData(); }, [fetchData]);
-
-    // Lazy-load automated checks the first time the Checks view is opened.
-    useEffect(() => {
-        if (view !== 'checks' || checksLoaded) return;
-        let cancelled = false;
-        setChecksLoading(true);
-        fetch(apiUrl('/tests/checks'))
-            .then((r) => (r.ok ? r.json() : { checks: [] }))
-            .then((d) => { if (!cancelled) { setChecks(d.checks ?? []); setChecksLoaded(true); } })
-            .catch(() => { if (!cancelled) setChecksLoaded(true); })
-            .finally(() => { if (!cancelled) setChecksLoading(false); });
-        return () => { cancelled = true; };
-    }, [view, checksLoaded, apiUrl]);
+    // Lazy-load automated checks the first time the Checks view is opened
+    // (null SWR key until then — the conventional lazy-fetch idiom).
+    const { data: checksData, isLoading: checksLoading } = useTenantSWR<{ checks: ControlCheck[] }>(
+        view === 'checks' ? CACHE_KEYS.tests.checks() : null,
+    );
+    const checks = useMemo(() => checksData?.checks ?? [], [checksData]);
 
     // ─── Bulk actions (canonical BulkActionBar) ───
     const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -289,10 +282,7 @@ function TestsRollupContent() {
             const result = getLastResult(p) ?? 'NONE';
             if (resultSel.length && !resultSel.includes(result)) return false;
             if (freqSel.length && !freqSel.includes(p.frequency)) return false;
-            if (
-                dueSel.includes('overdue') &&
-                !(p.nextDueAt && isOverdue(p.nextDueAt))
-            ) {
+            if (dueSel.includes('overdue') && !isOverdue(p)) {
                 return false;
             }
             if (q && !p.name.toLowerCase().includes(q)) return false;
@@ -318,7 +308,7 @@ function TestsRollupContent() {
             status: (p) => p.status ?? '',
             control: (p) => p.control?.code || p.control?.name || '',
             frequency: (p) => FREQ_LABELS[p.frequency] || p.frequency || '',
-            nextDue: (p) => p.nextDueAt ?? '',
+            nextDue: (p) => effectiveDue(p) ?? '',
             lastResult: (p) => getLastResult(p) || '',
             runs: (p) => p._count?.runs ?? 0,
         }),
@@ -353,7 +343,6 @@ function TestsRollupContent() {
         };
     }, [trendsQuery.data]);
     // Distinct sparkline colour per card (canonical allocator).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     const sparkColors = useMemo(
         () => assignSparklineVariants(['total', 'active', 'paused', 'archived']),
         [],
@@ -401,7 +390,7 @@ function TestsRollupContent() {
                     id: 'name', header: t('colHeaders.name'), accessorKey: 'name',
                     cell: ({ row }) => (
                         <Link
-                            href={tenantHref(`/controls/${row.original.control.id}/tests/${row.original.id}`)}
+                            href={tenantHref(`/tests/plans/${row.original.id}`)}
                             className="text-content-emphasis font-medium hover:text-[var(--brand-default)] transition"
                         >
                             {row.original.name}
@@ -442,11 +431,14 @@ function TestsRollupContent() {
                 { id: 'frequency', header: t('colHeaders.frequency'), accessorFn: (p) => FREQ_LABELS[p.frequency] || p.frequency },
                 {
                     id: 'nextDue', header: t('colHeaders.nextDue'), accessorKey: 'nextDueAt',
-                    cell: ({ row }) => row.original.nextDueAt ? (
-                        <span className={isOverdue(row.original.nextDueAt) ? 'text-content-error font-semibold' : 'text-content-muted'}>
-                            {formatDate(row.original.nextDueAt)}
-                        </span>
-                    ) : <span className="text-content-subtle">—</span>,
+                    cell: ({ row }) => {
+                        const due = effectiveDue(row.original);
+                        return due ? (
+                            <span className={isOverdue(row.original) ? 'text-content-error font-semibold' : 'text-content-muted'}>
+                                {formatDate(due)}
+                            </span>
+                        ) : <span className="text-content-subtle">—</span>;
+                    },
                 },
                 {
                     id: 'lastResult', header: t('colHeaders.lastResult'),
@@ -674,9 +666,7 @@ function TestsRollupContent() {
                     // open the plan), matching every other list table.
                     onRowClick={(row) =>
                         router.push(
-                            tenantHref(
-                                `/controls/${row.original.control.id}/tests/${row.original.id}`,
-                            ),
+                            tenantHref(`/tests/plans/${row.original.id}`),
                         )
                     }
                 />

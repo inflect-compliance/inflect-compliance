@@ -17,7 +17,6 @@ import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
-import { ToggleGroup } from '@/components/ui/toggle-group';
 import { TestStepsEditor, type TestStepDraft, serializeSteps } from './TestStepsEditor';
 
 interface ControlOption { id: string; code: string | null; name: string }
@@ -40,7 +39,6 @@ export function NewTestPlanModal({
     const [controls, setControls] = useState<ControlOption[]>([]);
     const [controlId, setControlId] = useState('');
     const [name, setName] = useState('');
-    const [method, setMethod] = useState<'MANUAL' | 'AUTOMATED'>('MANUAL');
     const [frequency, setFrequency] = useState('AD_HOC');
     const [steps, setSteps] = useState<TestStepDraft[]>([]);
     const [saving, setSaving] = useState(false);
@@ -49,7 +47,6 @@ export function NewTestPlanModal({
         if (!open) return;
         fetch(apiUrl('/controls'))
             .then((r) => (r.ok ? r.json() : { items: [] }))
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             .then((d) => setControls((d.items ?? d ?? []) as ControlOption[]))
             .catch(() => {});
     }, [open, apiUrl]);
@@ -64,7 +61,7 @@ export function NewTestPlanModal({
     }));
 
     const reset = () => {
-        setControlId(''); setName(''); setMethod('MANUAL'); setFrequency('AD_HOC'); setSteps([]);
+        setControlId(''); setName(''); setFrequency('AD_HOC'); setSteps([]);
     };
 
     const submit = async () => {
@@ -74,7 +71,7 @@ export function NewTestPlanModal({
             const res = await fetch(apiUrl(`/controls/${controlId}/tests/plans`), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name.trim(), method, frequency, steps: serializeSteps(steps) }),
+                body: JSON.stringify({ name: name.trim(), frequency, steps: serializeSteps(steps) }),
             });
             if (!res.ok) throw new Error('create failed');
             toast.success(t('unified.createSuccess'));
@@ -111,18 +108,14 @@ export function NewTestPlanModal({
                     <FormField label={t('unified.createName')}>
                         <Input id="new-test-plan-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('unified.createNamePlaceholder')} />
                     </FormField>
-                    <FormField label={t('colHeaders.method')}>
-                        <ToggleGroup
-                            ariaLabel={t('colHeaders.method')}
-                            selected={method}
-                            selectAction={(v) => setMethod(v as 'MANUAL' | 'AUTOMATED')}
-                            options={[
-                                { value: 'MANUAL', label: t('method.MANUAL') },
-                                { value: 'AUTOMATED', label: t('method.AUTOMATED') },
-                            ]}
-                        />
-                    </FormField>
-                    <FormField label={t('colHeaders.frequency')}>
+                    {/* PR-Q — the MANUAL/AUTOMATED toggle was removed. It POSTed
+                        a `method` that createTestPlan never mapped to an
+                        automationType or a schedule, so "AUTOMATED" plans were
+                        inert and the badge lied. No SCRIPT/INTEGRATION engine
+                        exists yet (see PR-P); a plan is created MANUAL and a
+                        cadence is configured afterward via the plan's schedule
+                        section, which instantiates awaiting-completion runs. */}
+                    <FormField label={t('colHeaders.frequency')} hint={t('unified.frequencyHint')}>
                         <Combobox
                             id="new-test-plan-frequency"
                             options={freqOptions}

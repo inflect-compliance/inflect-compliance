@@ -114,7 +114,10 @@ const PRIMARY_BUDGET: Record<string, number> = {
     // PR-L — KRI page: the create-form primary + the edit-modal save primary
     // (modal-action-order requires a modal's confirm action to be primary).
     "src/app/t/[tenantSlug]/(app)/risks/kri/page.tsx": 2,
-    "src/app/t/[tenantSlug]/(app)/controls/[controlId]/tests/[planId]/page.tsx": 3,
+    // PR-Q — the test-plan detail body (edit + run + new-run primaries) was
+    // extracted into this shared view; the control-scoped + tenant-wide pages
+    // are now thin wrappers with no primaries of their own.
+    "src/app/t/[tenantSlug]/(app)/tests/_components/TestPlanDetailView.tsx": 3,
     "src/app/t/[tenantSlug]/(app)/admin/members/page.tsx": 3,
     "src/app/t/[tenantSlug]/(app)/admin/api-keys/page.tsx": 3,
 

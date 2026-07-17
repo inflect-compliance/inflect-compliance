@@ -5,8 +5,6 @@
  *
  *   • scheduleTestPlan — cross-field invariants, cron + IANA-tz
  *     parsing, mutation shape, audit log, permission gate.
- *   • getUpcomingTests — windowDays/limit clamping, filter shape,
- *     daysUntilRun arithmetic, optional controlId scoping.
  *   • getTestDashboard — Promise.all aggregations, top-10 upcoming
  *     ordering, per-day trend bucketing.
  *
@@ -51,7 +49,6 @@ jest.mock('@/lib/security/sanitize', () => ({
 
 import {
     scheduleTestPlan,
-    getUpcomingTests,
     getTestDashboard,
 } from '@/app-layer/usecases/test-scheduling';
 
@@ -246,97 +243,10 @@ describe('scheduleTestPlan — happy path', () => {
     });
 });
 
-// ═══════════════════════════════════════════════════════════════════
-// 2. getUpcomingTests
-// ═══════════════════════════════════════════════════════════════════
-
-describe('getUpcomingTests', () => {
-    test('rejects callers without canRead', async () => {
-        await expect(
-            getUpcomingTests(makeCtx({ canRead: false })),
-        ).rejects.toThrow(/permission/i);
-    });
-
-    test('clamps windowDays and limit + filters to SCRIPT/INTEGRATION + ACTIVE', async () => {
-        mockTx.controlTestPlan.findMany.mockResolvedValueOnce([]);
-
-        const result = await getUpcomingTests(makeCtx(), {
-            windowDays: 99999,
-            limit: 99999,
-        });
-
-        expect(result.windowDays).toBe(365); // clamped
-        const findManyCall = mockTx.controlTestPlan.findMany.mock.calls[0][0];
-        expect(findManyCall.take).toBe(200); // clamped
-        expect(findManyCall.where).toMatchObject({
-            tenantId: 'tenant-1',
-            status: 'ACTIVE',
-            schedule: { not: null },
-            automationType: { in: ['SCRIPT', 'INTEGRATION'] },
-        });
-        expect(findManyCall.where.nextRunAt).toMatchObject({ not: null });
-    });
-
-    test('builds DTOs with daysUntilRun arithmetic', async () => {
-        // The fixture and production code each call Date.now()
-        // independently. With `Math.floor(diff / 86_400_000)`, even
-        // 1ms of elapsed time between the two calls collapses
-        // `daysUntilRun` from 3 to 2 — a known flake on slow CI.
-        // Freeze the clock here so both calls observe the same
-        // reference point.
-        jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
-        const now = new Date('2026-05-07T00:00:00Z').getTime();
-        jest.setSystemTime(now);
-        mockTx.controlTestPlan.findMany.mockResolvedValueOnce([
-            {
-                id: 'p-1',
-                name: 'Plan 1',
-                controlId: 'c-1',
-                automationType: 'SCRIPT',
-                schedule: '0 9 * * *',
-                scheduleTimezone: 'UTC',
-                // 3 days in the future
-                nextRunAt: new Date(now + 3 * 86_400_000),
-                control: { id: 'c-1', name: 'Control One' },
-            },
-            {
-                id: 'p-2',
-                name: 'Plan 2',
-                controlId: 'c-2',
-                automationType: 'INTEGRATION',
-                schedule: '*/15 * * * *',
-                scheduleTimezone: null,
-                // 1 day in the past — overdue
-                nextRunAt: new Date(now - 86_400_000),
-                control: { id: 'c-2', name: 'Control Two' },
-            },
-        ]);
-
-        const result = await getUpcomingTests(makeCtx());
-
-        expect(result.items).toHaveLength(2);
-        expect(result.items[0]).toMatchObject({
-            planId: 'p-1',
-            planName: 'Plan 1',
-            controlId: 'c-1',
-            controlName: 'Control One',
-            automationType: 'SCRIPT',
-            schedule: '0 9 * * *',
-            scheduleTimezone: 'UTC',
-            daysUntilRun: 3,
-        });
-        expect(result.items[1].daysUntilRun).toBe(-1); // overdue → negative
-
-        jest.useRealTimers();
-    });
-
-    test('controlId option scopes the query', async () => {
-        mockTx.controlTestPlan.findMany.mockResolvedValueOnce([]);
-        await getUpcomingTests(makeCtx(), { controlId: 'c-42' });
-        const findManyCall = mockTx.controlTestPlan.findMany.mock.calls[0][0];
-        expect(findManyCall.where.controlId).toBe('c-42');
-    });
-});
+// PR-Q — `getUpcomingTests` (and its `/tests/upcoming` route) was removed as
+// dead surface (no UI consumer; the dashboard's "upcoming" comes from
+// getTestDashboard). The reconciled due/upcoming signal now lives in
+// due-planning.ts (effectiveDueAt over both clocks) and is covered there.
 
 // ═══════════════════════════════════════════════════════════════════
 // 3. getTestDashboard

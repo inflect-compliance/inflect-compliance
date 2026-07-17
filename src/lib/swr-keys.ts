@@ -190,6 +190,17 @@ export const CACHE_KEYS = {
     coverage: {
         home: () => '/coverage' as const,
     },
+    // Control test plans / runs — the tenant-wide /tests surfaces (PR-Q SWR
+    // migration). `detail` is the tenant-wide plan-detail key the leaf
+    // /controls/{id}/tests/{planId} page already reads.
+    tests: {
+        plans: () => '/tests/plans' as const,
+        detail: (planId: string) => `/tests/plans/${planId}` as const,
+        due: () => '/tests/due' as const,
+        dashboard: (periodDays: number) => `/tests/dashboard?period=${periodDays}` as const,
+        readiness: () => '/tests/readiness' as const,
+        checks: () => '/tests/checks' as const,
+    },
 
     // ─── Cross-cutting ──────────────────────────────────────────
     auditLog: {

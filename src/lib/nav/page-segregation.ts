@@ -273,6 +273,7 @@ export const SUBPAGES: readonly string[] = [
     // Tests
     '/tests/dashboard',
     '/tests/due',
+    '/tests/plans/[planId]',
     '/tests/runs/[runId]',
 
     // Vendors

@@ -42,9 +42,9 @@ const CARDHEADER_PAGES: CardHeaderEntry[] = [
         note: "B4 (2026-06-07): the only CardHeader (the legacy 'Control tasks' table) was removed when the Tasks tab was aligned to Asset/Risk (a single LinkedTasksPanel).",
     },
     {
-        file: "src/app/t/[tenantSlug]/(app)/controls/[controlId]/tests/[planId]/page.tsx",
+        file: "src/app/t/[tenantSlug]/(app)/tests/_components/TestPlanDetailView.tsx",
         adopted: true,
-        note: "Control test plan detail — Test Procedure section header migrated R9-PR2.",
+        note: "Shared test-plan detail view (PR-Q, extracted from the control-scoped page) — Test Procedure section header, CardHeader adopter since R9-PR2.",
     },
 ];
 
