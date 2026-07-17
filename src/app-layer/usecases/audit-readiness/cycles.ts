@@ -19,8 +19,17 @@ export async function createAuditCycle(
     data: { frameworkKey: string; frameworkVersion: string; name: string; periodStartAt?: string; periodEndAt?: string }
 ) {
     assertCanManageAuditCycles(ctx);
-    if (!['ISO27001', 'NIS2'].includes(data.frameworkKey)) {
-        throw badRequest('frameworkKey must be ISO27001 or NIS2');
+    // PR-O — a cycle can be created for ANY installed framework, not just
+    // ISO27001 / NIS2. The scorer already dispatches non-ISO/NIS2 keys to
+    // computeGenericReadiness (coverage + evidence + issues), so the only
+    // thing that gated custom frameworks was this allowlist. We still require
+    // the framework to be installed for the tenant so a cycle can't reference
+    // a key with no requirements to score.
+    const installed = await runInTenantContext(ctx, (tdb) =>
+        tdb.framework.findFirst({ where: { key: data.frameworkKey }, select: { key: true } }),
+    );
+    if (!data.frameworkKey || !installed) {
+        throw badRequest('frameworkKey must be an installed framework');
     }
 
     const cycle = await runInTenantContext(ctx, async (tdb) => {

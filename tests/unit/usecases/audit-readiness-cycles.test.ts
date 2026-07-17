@@ -13,7 +13,10 @@
  * external audit readiness. The narrow load-bearing assertions:
  *
  *   1. createAuditCycle: assertCanManageAuditCycles gate; rejects
- *      framework keys outside the supported list (ISO27001 / NIS2).
+ *      a frameworkKey that is not installed for the tenant (PR-O — a
+ *      cycle can be created for ANY installed framework, not just the
+ *      hardcoded ISO27001 / NIS2 pair; the generic scorer handles the
+ *      rest).
  *   2. listAuditCycles: assertCanViewPack (READER + AUDITOR allowed).
  *   3. getAuditCycle / updateAuditCycle: notFound when the row is not
  *      in the caller tenant.
@@ -63,13 +66,18 @@ describe('createAuditCycle', () => {
         ).rejects.toThrow();
     });
 
-    it('rejects unsupported frameworkKey with badRequest', async () => {
+    it('rejects a frameworkKey that is not installed with badRequest', async () => {
+        // PR-O — the installed-framework lookup returns null for an
+        // unknown key, so the create is rejected before any row is written.
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({ framework: { findFirst: jest.fn().mockResolvedValue(null) } } as never),
+        );
         await expect(
             createAuditCycle(makeRequestContext('ADMIN'), {
                 ...validInput,
                 frameworkKey: 'NOT-A-FRAMEWORK',
             }),
-        ).rejects.toThrow(/ISO27001 or NIS2/);
+        ).rejects.toThrow(/installed framework/);
         // Regression: a refactor that loosened the framework-key
         // validation would let typos like "ISO 27001" through and
         // those rows would never match the framework-pack join in
@@ -77,18 +85,46 @@ describe('createAuditCycle', () => {
         // signal as to why.
     });
 
+    it('accepts any installed framework (not just ISO27001 / NIS2)', async () => {
+        // PR-O — a custom / non-ISO-NIS2 framework that is installed for
+        // the tenant must be allowed; the generic scorer handles it.
+        let capturedArgs: any;
+        mockRunInTx
+            .mockImplementationOnce(async (_ctx, fn) =>
+                fn({ framework: { findFirst: jest.fn().mockResolvedValue({ key: 'SOC2' }) } } as never),
+            )
+            .mockImplementationOnce(async (_ctx, fn) =>
+                fn({
+                    auditCycle: {
+                        create: jest.fn().mockImplementation((args: any) => {
+                            capturedArgs = args;
+                            return Promise.resolve({ id: 'cyc-1' });
+                        }),
+                    },
+                } as never),
+            );
+
+        await createAuditCycle(makeRequestContext('ADMIN'), { ...validInput, frameworkKey: 'SOC2' });
+
+        expect(capturedArgs.data.frameworkKey).toBe('SOC2');
+    });
+
     it('persists tenantId from ctx (input cannot override)', async () => {
         let capturedArgs: any;
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
-            fn({
-                auditCycle: {
-                    create: jest.fn().mockImplementation((args: any) => {
-                        capturedArgs = args;
-                        return Promise.resolve({ id: 'cyc-1' });
-                    }),
-                },
-            } as never),
-        );
+        mockRunInTx
+            .mockImplementationOnce(async (_ctx, fn) =>
+                fn({ framework: { findFirst: jest.fn().mockResolvedValue({ key: 'ISO27001' }) } } as never),
+            )
+            .mockImplementationOnce(async (_ctx, fn) =>
+                fn({
+                    auditCycle: {
+                        create: jest.fn().mockImplementation((args: any) => {
+                            capturedArgs = args;
+                            return Promise.resolve({ id: 'cyc-1' });
+                        }),
+                    },
+                } as never),
+            );
 
         await createAuditCycle(
             makeRequestContext('ADMIN', { tenantId: 'tenant-A' }),
@@ -101,11 +137,15 @@ describe('createAuditCycle', () => {
     });
 
     it('emits AUDIT_CYCLE_CREATED audit', async () => {
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
-            fn({
-                auditCycle: { create: jest.fn().mockResolvedValue({ id: 'cyc-1' }) },
-            } as never),
-        );
+        mockRunInTx
+            .mockImplementationOnce(async (_ctx, fn) =>
+                fn({ framework: { findFirst: jest.fn().mockResolvedValue({ key: 'ISO27001' }) } } as never),
+            )
+            .mockImplementationOnce(async (_ctx, fn) =>
+                fn({
+                    auditCycle: { create: jest.fn().mockResolvedValue({ id: 'cyc-1' }) },
+                } as never),
+            );
 
         await createAuditCycle(makeRequestContext('ADMIN'), validInput);
 

@@ -50,17 +50,13 @@ const FW_META: Record<string, { icon: AppIconName; label: string; color: string 
 // (include the version / full regulation name) because the Combobox
 // search index benefits from the extra tokens ("ISO", "27001", "NIS2",
 // "EU 2022/2555" all become fuzzy-matchable).
-const FW_OPTIONS: ComboboxOption<{ version: string }>[] = [
-    {
-        value: 'ISO27001',
-        label: 'ISO/IEC 27001:2022',
-        meta: { version: '2022' },
-    },
-    {
-        value: 'NIS2',
-        label: 'NIS2 Directive (EU 2022/2555)',
-        meta: { version: 'EU_2022_2555' },
-    },
+// PR-O — fallback options until the installed-framework catalog loads. A
+// cycle can be created for ANY installed framework now (non-ISO/NIS2 keys
+// score via computeGenericReadiness), so the picker is data-driven; these
+// two just seed the control before the /frameworks fetch resolves.
+const DEFAULT_FW_OPTIONS: ComboboxOption<{ version: string }>[] = [
+    { value: 'ISO27001', label: 'ISO/IEC 27001:2022', meta: { version: '2022' } },
+    { value: 'NIS2', label: 'NIS2 Directive (EU 2022/2555)', meta: { version: 'EU_2022_2555' } },
 ];
 
 const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
@@ -99,6 +95,8 @@ export default function AuditCyclesPage() {
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState({ frameworkKey: 'ISO27001', frameworkVersion: '2022', name: '' });
+    // PR-O — installed frameworks drive the picker (custom-framework cycles).
+    const [fwOptions, setFwOptions] = useState<ComboboxOption<{ version: string }>[]>(DEFAULT_FW_OPTIONS);
     // Epic 58 — the period is stored as a nullable DateRangeValue so
     // half-open ranges ("from X, open-ended") are representable. The
     // backend accepts both `periodStartAt` / `periodEndAt` as
@@ -125,12 +123,30 @@ export default function AuditCyclesPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [apiUrl]);
 
+    // PR-O — load the installed frameworks so a cycle can target any of them
+    // (not just ISO27001/NIS2). Fail-soft: the picker keeps the two defaults.
+    useEffect(() => {
+        fetch(apiUrl('/frameworks'))
+            .then((r) => (r.ok ? r.json() : null))
+            .then((rows: Array<{ key: string; name: string; version: string | null }> | null) => {
+                if (!Array.isArray(rows) || rows.length === 0) return;
+                // eslint-disable-next-line react-hooks/set-state-in-effect
+                setFwOptions(rows.map((f) => ({
+                    value: f.key,
+                    label: f.version ? `${f.name} (${f.version})` : f.name,
+                    meta: { version: f.version ?? '' },
+                })));
+            })
+            .catch(() => { /* keep defaults */ });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [apiUrl]);
+
     const create = async (e: React.FormEvent) => {
         e.preventDefault();
-        const version = form.frameworkKey === 'NIS2' ? 'EU_2022_2555' : '2022';
+        // The version rides the selected framework option (no hardcoded ternary).
         const body: Record<string, unknown> = {
             ...form,
-            frameworkVersion: version,
+            frameworkVersion: form.frameworkVersion,
         };
         // Submit the audit period only when the user picked one.
         // Either side may be open-ended; the backend already accepts
@@ -203,9 +219,9 @@ export default function AuditCyclesPage() {
                             <Combobox<false, { version: string }>
                                 id="fw-select"
                                 name="frameworkKey"
-                                options={FW_OPTIONS}
+                                options={fwOptions}
                                 selected={
-                                    FW_OPTIONS.find(
+                                    fwOptions.find(
                                         (o) => o.value === form.frameworkKey,
                                     ) ?? null
                                 }
@@ -214,6 +230,8 @@ export default function AuditCyclesPage() {
                                     setForm((f) => ({
                                         ...f,
                                         frameworkKey: option.value,
+                                        // Carry the framework's version from the picker.
+                                        frameworkVersion: option.meta?.version ?? '',
                                     }));
                                 }}
                                 placeholder={tx('cycles.selectFramework')}

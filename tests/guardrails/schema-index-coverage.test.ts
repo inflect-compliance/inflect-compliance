@@ -568,8 +568,6 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
         'append-only audit trail — read tenant-scoped and time-ordered via [tenantId, createdAt]; Layers A/B cover it; no curated composite index needed.',
     AuditPack:
         'filtered only by tenantId plus leading-indexed FK / status columns — Layers A/B cover its query shapes; no curated composite index needed today.',
-    AuditorPackAccess:
-        'join table — fetched by tenantId plus a leading-indexed FK; Layers A/B cover its query shapes; no curated composite index needed.',
     AutomationExecution:
         'filtered only by tenantId plus leading-indexed FK / status columns — Layers A/B cover its query shapes; no curated composite index needed today.',
     AutomationRule:

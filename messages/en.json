@@ -2829,7 +2829,7 @@
       "lifecycleSubtitle": "Plan, build, measure, and share an audit from end to end.",
       "cycles": "Cycles",
       "readiness": "Readiness",
-      "auditorPortal": "Auditor portal",
+      "related": "Related",
       "startTitle": "Start an audit",
       "startSubtitle": "Follow the sequence — each step opens the surface where it happens.",
       "stepLabel": "Step {n}",
@@ -3302,6 +3302,7 @@
       "packFallback": "Pack",
       "loadError": "Could not load auditors. Please try again.",
       "inviteSuccess": "Auditor invited",
+      "reactivateSuccess": "Auditor reactivated",
       "inviteError": "Could not invite the auditor. Please try again.",
       "grantSuccess": "Access granted",
       "grantError": "Could not grant access. Please try again.",
@@ -3318,7 +3319,13 @@
       "inviting": "Inviting…",
       "revokeAccessTitle": "Revoke pack access?",
       "revokeAccessDesc": "The auditor will immediately lose access to this pack.",
-      "revokeAccessConfirm": "Revoke access"
+      "revokeAccessConfirm": "Revoke access",
+      "revokeAccount": "Revoke account",
+      "revokeAccountTitle": "Revoke auditor account?",
+      "revokeAccountDesc": "{name} will lose access to every pack and can no longer sign in. Inviting them again reactivates the account.",
+      "revokeAccountConfirm": "Revoke account",
+      "revokeAccountSuccess": "Auditor account revoked",
+      "revokeAccountError": "Could not revoke the auditor account. Please try again."
     },
     "cycleStatus": {
       "PLANNING": "Planning",

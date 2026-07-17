@@ -189,49 +189,10 @@ export function AuditsClient({ initialAudits, tenantSlug, cycleId, hasNis2, canW
                 title={t.title}
                 description={t.listDescription || undefined}
                 actions={
-                    <div className="flex flex-wrap gap-tight">
-                        <Link
-                            href={`/t/${tenantSlug}/frameworks`}
-                            className={cn(buttonVariants({ variant: 'secondary' }))}
-                            id="audits-frameworks-link"
-                        >
-                            {tx('nav.frameworks')}
-                        </Link>
-                        {/* Scans (security-testing / scanner ingestion) moved off
-                            the primary nav onto the Audit surface — scan findings
-                            are audit evidence, so the entry-point belongs beside
-                            Frameworks/Findings here. */}
-                        <Link
-                            href={`/t/${tenantSlug}/security-testing`}
-                            className={cn(buttonVariants({ variant: 'secondary' }))}
-                            id="audits-scans-link"
-                        >
-                            {tx('nav.scans')}
-                        </Link>
-                        {/* Findings moved off the Tests page header onto
-                            the Audit surface — findings are raised and
-                            tracked against audit cycles, so they belong
-                            next to Frameworks/Clauses here. */}
-                        <Link
-                            href={`/t/${tenantSlug}/findings`}
-                            className={cn(buttonVariants({ variant: 'secondary' }))}
-                            id="findings-link-btn"
-                        >
-                            {t.findingsTab}
-                        </Link>
-                        {/* Incidents (NIS2 Article 23) is a subpage of Internal
-                            Audit — reached via this text button. */}
-                        <Link
-                            href={`/t/${tenantSlug}/incidents`}
-                            className={cn(buttonVariants({ variant: 'secondary' }))}
-                            id="audits-incidents-link"
-                        >
-                            {tx('nav.incidents')}
-                        </Link>
-                        {/* NIS2 Gap Assessment lifecycle — shown ONLY when NIS2
-                            is an installed framework (absent, not disabled,
-                            otherwise). Navigational entry to the lifecycle home;
-                            bare noun label, no Plus glyph. */}
+                    <div className="flex flex-wrap items-center gap-tight">
+                        {/* PR-O — the actual /audits/* children of Internal Audit
+                            (NIS2 Gap, Business Continuity). These live under
+                            /audits and are true subpages. */}
                         {hasNis2 && (
                             <Link
                                 href={`/t/${tenantSlug}/audits/nis2-gap`}
@@ -241,9 +202,6 @@ export function AuditsClient({ initialAudits, tenantSlug, cycleId, hasNis2, canW
                                 {tx('nav.nis2Gap')}
                             </Link>
                         )}
-                        {/* Business Continuity (BIA) sits beside Incidents — NIS2/DORA
-                            pair incident handling with continuity as sibling
-                            operational-resilience obligations. */}
                         <Link
                             href={`/t/${tenantSlug}/audits/business-continuity`}
                             className={cn(buttonVariants({ variant: 'secondary' }))}
@@ -251,6 +209,45 @@ export function AuditsClient({ initialAudits, tenantSlug, cycleId, hasNis2, canW
                         >
                             {tx('nav.businessContinuity')}
                         </Link>
+
+                        {/* PR-O — "Related" cross-links. These are SEPARATE
+                            top-level routes (/frameworks, /security-testing,
+                            /findings, /incidents), NOT subpages of Internal Audit
+                            — they're surfaced here as useful shortcuts because
+                            their data feeds the audit story (framework clauses,
+                            scan findings as evidence, findings raised against
+                            cycles, NIS2 Art.23 incidents), but they are not
+                            /audits children. */}
+                        <span className="ml-1 text-xs text-content-subtle">{tx('hub.related')}</span>
+                        <Link
+                            href={`/t/${tenantSlug}/frameworks`}
+                            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}
+                            id="audits-frameworks-link"
+                        >
+                            {tx('nav.frameworks')}
+                        </Link>
+                        <Link
+                            href={`/t/${tenantSlug}/security-testing`}
+                            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}
+                            id="audits-scans-link"
+                        >
+                            {tx('nav.scans')}
+                        </Link>
+                        <Link
+                            href={`/t/${tenantSlug}/findings`}
+                            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}
+                            id="findings-link-btn"
+                        >
+                            {t.findingsTab}
+                        </Link>
+                        <Link
+                            href={`/t/${tenantSlug}/incidents`}
+                            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}
+                            id="audits-incidents-link"
+                        >
+                            {tx('nav.incidents')}
+                        </Link>
+
                         <Button variant="primary" icon={<Plus className="-ml-0.5 -mr-2.5" />} onClick={() => setIsCreateOpen(true)} id="new-audit-btn">{t.newAudit}</Button>
                     </div>
                 }
@@ -259,9 +256,10 @@ export function AuditsClient({ initialAudits, tenantSlug, cycleId, hasNis2, canW
             <TruncationBanner truncated={truncated} />
 
             {/* Audit lifecycle — the PRIMARY path into the cycle → pack →
-                readiness → share → findings → remediate flow. The pills in
-                the header (Frameworks / Scans / Incidents / NIS2 / BCM) are
-                tangential entry points; this band is where an audit starts. */}
+                readiness → share → findings → remediate flow. The header's
+                "Related" pills (Frameworks / Scans / Findings / Incidents) are
+                separate top-level surfaces cross-linked for convenience; this
+                band is where an audit actually starts. */}
             <section className={cn(cardVariants(), 'space-y-default')} aria-labelledby="audit-lifecycle-heading" id="audit-lifecycle">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-compact">
                     <div>
@@ -275,9 +273,11 @@ export function AuditsClient({ initialAudits, tenantSlug, cycleId, hasNis2, canW
                         <Link href={`/t/${tenantSlug}/audits/readiness`} className={cn(buttonVariants({ variant: 'secondary' }))} id="audits-readiness-link">
                             {tx('hub.readiness')}
                         </Link>
-                        <Link href={`/t/${tenantSlug}/audits/auditor`} className={cn(buttonVariants({ variant: 'secondary' }))} id="audits-auditor-link">
-                            {tx('hub.auditorPortal')}
-                        </Link>
+                        {/* PR-O — the internal auditor PORTAL was retired (it always
+                            returned an empty state for invited auditors). External
+                            review runs through the login-less /audit/shared/[token]
+                            page; internal reviewers use the pack pages. Only auditor
+                            MANAGEMENT (invite/grant/revoke) remains. */}
                         <Link href={`/t/${tenantSlug}/audits/auditors`} className={cn(buttonVariants({ variant: 'secondary' }))} id="audits-auditors-manage-link">
                             {tx('hub.auditorManagement')}
                         </Link>

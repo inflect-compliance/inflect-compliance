@@ -56,16 +56,13 @@ import {
     computeFileHash,
     storeExportArtifact,
     clonePackForRetest,
-    getAuditorAssignedPacks,
 } from '@/app-layer/usecases/audit-hardening';
 import { runInTenantContext } from '@/lib/db-context';
-import { prisma } from '@/lib/prisma';
 import { logEvent } from '@/app-layer/events/audit';
 import { getStorageProvider } from '@/lib/storage';
 import { makeRequestContext } from '../../helpers/make-context';
 
 const mockRunInTx = runInTenantContext as jest.MockedFunction<typeof runInTenantContext>;
-const mockUserFindUnique = prisma.user.findUnique as jest.MockedFunction<typeof prisma.user.findUnique>;
 const mockLog = logEvent as jest.MockedFunction<typeof logEvent>;
 const mockGetStorage = getStorageProvider as jest.MockedFunction<typeof getStorageProvider>;
 
@@ -366,40 +363,6 @@ describe('clonePackForRetest', () => {
     });
 });
 
-describe('getAuditorAssignedPacks', () => {
-    it('rejects ADMIN — auditor-only view', async () => {
-        await expect(
-            getAuditorAssignedPacks(makeRequestContext('ADMIN')),
-        ).rejects.toThrow(/Only auditors/);
-        // Regression: an admin could otherwise impersonate the auditor
-        // view and pull a list of every external auditor's pack
-        // assignments.
-    });
-
-    it('rejects EDITOR + READER', async () => {
-        await expect(
-            getAuditorAssignedPacks(makeRequestContext('EDITOR')),
-        ).rejects.toThrow();
-        await expect(
-            getAuditorAssignedPacks(makeRequestContext('READER')),
-        ).rejects.toThrow();
-    });
-
-    it('returns [] when the user has no email row (placeholder mid-onboarding)', async () => {
-        mockUserFindUnique.mockResolvedValueOnce(null);
-        const result = await getAuditorAssignedPacks(
-            makeRequestContext('AUDITOR'),
-        );
-        expect(result).toEqual([]);
-    });
-
-    it('returns [] when the user has no AuditorAccount in this tenant', async () => {
-        mockUserFindUnique.mockResolvedValueOnce({ email: 'a@b.com' } as never);
-        mockRunInTx.mockImplementationOnce(async () => null as never);
-
-        const result = await getAuditorAssignedPacks(
-            makeRequestContext('AUDITOR'),
-        );
-        expect(result).toEqual([]);
-    });
-});
+// PR-O — the auditor portal (and its `getAuditorAssignedPacks` usecase) was
+// retired. External auditors work through share links, not an in-app portal,
+// so the auditor-assigned-packs view no longer exists to test.

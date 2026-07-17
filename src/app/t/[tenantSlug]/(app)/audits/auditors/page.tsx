@@ -55,6 +55,7 @@ export default function AuditorsManagementPage() {
     const [selectedPack, setSelectedPack] = useState<Record<string, string>>({});
     const [busyAuditor, setBusyAuditor] = useState<string | null>(null);
     const [revokeTarget, setRevokeTarget] = useState<{ auditorId: string; packId: string } | null>(null);
+    const [revokeAccountTarget, setRevokeAccountTarget] = useState<AuditorRow | null>(null);
 
     const loadAuditors = useCallback(() => {
         return fetch(apiUrl('/audits/auditors'))
@@ -92,11 +93,15 @@ export default function AuditorsManagementPage() {
                 body: JSON.stringify({ email: inviteEmail, name: inviteName || undefined }),
             });
             if (res.ok) {
+                // PR-O — surface reactivation: inviting an existing/REVOKED
+                // auditor flips them back to ACTIVE. Say so, rather than a
+                // generic "invited" that hides the state change.
+                const data = await res.json().catch(() => null);
                 setInviteOpen(false);
                 setInviteEmail('');
                 setInviteName('');
                 await loadAuditors();
-                toast.success(tx('auditorsAdmin.inviteSuccess'));
+                toast.success(data?.reactivated ? tx('auditorsAdmin.reactivateSuccess') : tx('auditorsAdmin.inviteSuccess'));
             } else {
                 toast.error(tx('auditorsAdmin.inviteError'));
             }
@@ -142,6 +147,18 @@ export default function AuditorsManagementPage() {
             toast.success(tx('auditorsAdmin.revokeSuccess'));
         } else {
             toast.error(tx('auditorsAdmin.revokeError'));
+        }
+    };
+
+    // PR-O — account-level revoke: flip the whole AuditorAccount to REVOKED and
+    // drop every pack grant in one action (distinct from removing a single pack).
+    const revokeAccount = async (auditorId: string) => {
+        const res = await fetch(apiUrl(`/audits/auditors/${auditorId}`), { method: 'DELETE' });
+        if (res.ok) {
+            await loadAuditors();
+            toast.success(tx('auditorsAdmin.revokeAccountSuccess'));
+        } else {
+            toast.error(tx('auditorsAdmin.revokeAccountError'));
         }
     };
 
@@ -205,6 +222,16 @@ export default function AuditorsManagementPage() {
                                     <div className="flex items-center gap-tight">
                                         <StatusBadge variant={STATUS_BADGE[a.status]}>{tx(`auditorsAdmin.status${a.status}`)}</StatusBadge>
                                         <span className="text-xs text-content-subtle">{tx('auditorsAdmin.invitedOn', { date: formatDate(a.createdAt) })}</span>
+                                        {a.status !== 'REVOKED' && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setRevokeAccountTarget(a)}
+                                                id={`revoke-account-${a.id}`}
+                                            >
+                                                {tx('auditorsAdmin.revokeAccount')}
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
 
@@ -310,6 +337,21 @@ export default function AuditorsManagementPage() {
                 onConfirm={async () => {
                     if (revokeTarget) await revokeAccess(revokeTarget.auditorId, revokeTarget.packId);
                     setRevokeTarget(null);
+                }}
+            />
+
+            {/* Account-level revoke confirmation */}
+            <ConfirmDialog
+                showModal={revokeAccountTarget !== null}
+                setShowModal={(open) => { if (!open) setRevokeAccountTarget(null); }}
+                tone="danger"
+                title={tx('auditorsAdmin.revokeAccountTitle')}
+                description={tx('auditorsAdmin.revokeAccountDesc', { name: revokeAccountTarget?.name || revokeAccountTarget?.email || '' })}
+                confirmLabel={tx('auditorsAdmin.revokeAccountConfirm')}
+                cancelLabel={tx('auditorsAdmin.cancel')}
+                onConfirm={async () => {
+                    if (revokeAccountTarget) await revokeAccount(revokeAccountTarget.id);
+                    setRevokeAccountTarget(null);
                 }}
             />
         </div>

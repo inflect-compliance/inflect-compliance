@@ -13,9 +13,8 @@ import {
 } from '../policies/audit-readiness.policies';
 import { logEvent } from '../events/audit';
 import { runInTenantContext } from '@/lib/db-context';
-import { notFound, badRequest, forbidden } from '@/lib/errors/types';
+import { notFound, badRequest } from '@/lib/errors/types';
 import { getStorageProvider, buildTenantObjectKey } from '@/lib/storage';
-import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 
 // ─── Evidence Integrity ───
@@ -246,47 +245,11 @@ export async function clonePackForRetest(
 }
 
 // ─── Auditor Pack Access ───
-
-export async function getAuditorAssignedPacks(ctx: RequestContext): Promise<Array<{
-    id: string; name: string; status: string; tenantId: string; auditCycleId: string;
-    cycle: { name: string; frameworkKey: string; frameworkVersion: string } | null;
-    items: Array<{ id: string; entityType: string }>;
-}>> {
-    if (ctx.role !== 'AUDITOR') throw forbidden('Only auditors can access this view');
-
-    // Look up user email from userId
-    const user = await prisma.user.findUnique({ where: { id: ctx.userId }, select: { email: true } });
-    if (!user) return [];
-
-    // Find auditor account for this user
-    const auditor = await runInTenantContext(ctx, (tdb) =>
-        tdb.auditorAccount.findFirst({
-            where: { tenantId: ctx.tenantId, email: user.email, status: 'ACTIVE' },
-        })
-    );
-    if (!auditor) return [];
-
-    // Get pack IDs assigned to this auditor
-    const accesses = await runInTenantContext(ctx, (tdb) =>
-        tdb.auditorPackAccess.findMany({
-            where: { auditorId: auditor.id },
-            select: { auditPackId: true },
-        })
-    );
-
-    const packIds = accesses.map((a) => a.auditPackId);
-    if (packIds.length === 0) return [];
-
-    // Fetch packs
-    const packs = await runInTenantContext(ctx, (tdb) =>
-        tdb.auditPack.findMany({
-            where: { id: { in: packIds }, tenantId: ctx.tenantId },
-            include: {
-                cycle: { select: { name: true, frameworkKey: true, frameworkVersion: true } },
-                items: { select: { id: true, entityType: true } },
-            },
-        })
-    );
-
-    return packs;
-}
+//
+// PR-O — `getAuditorAssignedPacks` (the internal /audits/auditor portal's
+// data source) was removed. The portal required an AUDITOR-role platform
+// User whose email matched an ACTIVE AuditorAccount, but `inviteAuditor`
+// only ever creates an AuditorAccount (never a User), so for a normally-
+// invited auditor the portal always returned []. Real external review runs
+// through the login-less /audit/shared/[token] page; internal reviewers use
+// the pack pages. The dead portal + its route + this usecase were retired.

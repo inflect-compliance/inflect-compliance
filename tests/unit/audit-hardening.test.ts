@@ -177,7 +177,6 @@ describe('Audit Hardening', () => {
             expect(typeof mod.verifyFileIntegrity).toBe('function');
             expect(typeof mod.storeExportArtifact).toBe('function');
             expect(typeof mod.clonePackForRetest).toBe('function');
-            expect(typeof mod.getAuditorAssignedPacks).toBe('function');
         });
 
         it('file verify route does NOT import prisma directly', () => {
@@ -189,14 +188,6 @@ describe('Audit Hardening', () => {
             expect(content).not.toMatch(/from\s+['"]@\/lib\/prisma['"]/);
         });
 
-        it('auditor packs route does NOT import prisma directly', () => {
-            const fs = require('fs');
-            const path = require('path');
-            const file = path.resolve(__dirname, '../../src/app/api/t/[tenantSlug]/audits/auditor/packs/route.ts');
-            if (!fs.existsSync(file)) return;
-            const content = fs.readFileSync(file, 'utf8');
-            expect(content).not.toMatch(/from\s+['"]@\/lib\/prisma['"]/);
-        });
     });
 
     describe('Events', () => {

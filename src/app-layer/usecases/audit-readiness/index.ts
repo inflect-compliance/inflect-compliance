@@ -39,6 +39,7 @@ export {
     inviteAuditor,
     grantAuditorAccess,
     revokeAuditorAccess,
+    revokeAuditorAccount,
     listAuditors,
     listPackShares,
 } from './sharing';
