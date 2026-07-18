@@ -262,3 +262,98 @@ export async function sendAssessment(
         };
     });
 }
+
+/**
+ * PR-S — resend the invite for an in-flight (SENT / IN_PROGRESS) assessment.
+ *
+ * The original share link is unrecoverable — only its SHA-256 hash is stored —
+ * so a true "resend" MINTS A FRESH token (invalidating the old one), re-stamps
+ * the expiry + sentAt, and re-queues the invitation email with a working link.
+ * Returns the new raw link so the admin surface can reveal it (the one-time
+ * link shown at send is no longer the only artifact). canRunAssessment gate.
+ */
+export async function resendAssessmentInvite(
+    ctx: RequestContext,
+    assessmentId: string,
+    input: { expiresInDays?: number; appOriginOverride?: string } = {},
+): Promise<SendAssessmentResult> {
+    assertCanRunAssessment(ctx);
+
+    const expiresInDays = clamp(input.expiresInDays ?? 14, 1, 90);
+    const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
+
+    return runInTenantContext(ctx, async (db) => {
+        const assessment = await db.vendorAssessment.findFirst({
+            where: { id: assessmentId, tenantId: ctx.tenantId },
+            select: {
+                id: true,
+                status: true,
+                respondentEmail: true,
+                vendor: { select: { id: true, name: true } },
+                templateVersion: { select: { name: true } },
+            },
+        });
+        if (!assessment) throw notFound('Assessment not found');
+        if (assessment.status !== 'SENT' && assessment.status !== 'IN_PROGRESS') {
+            throw badRequest(
+                `Cannot resend an assessment in status ${assessment.status}. ` +
+                    `Only SENT or IN_PROGRESS assessments can be resent.`,
+            );
+        }
+        if (!assessment.respondentEmail) {
+            throw badRequest('This assessment has no respondent email to resend to.');
+        }
+
+        // Mint a FRESH token — the old link is invalidated.
+        const { raw: rawToken, hash: tokenHash } = mintExternalAccessToken();
+        await db.vendorAssessment.update({
+            where: { id: assessment.id },
+            data: {
+                externalAccessTokenHash: tokenHash,
+                externalAccessTokenExpiresAt: expiresAt,
+                sentAt: new Date(),
+                sentByUserId: ctx.userId,
+            },
+        });
+
+        const origin = resolveAppOrigin(input.appOriginOverride);
+        const responseUrl = `${origin}/vendor-assessment/${assessment.id}?t=${rawToken}`;
+
+        const outboxResult = await enqueueEmail(db, {
+            tenantId: ctx.tenantId,
+            type: 'VENDOR_ASSESSMENT_INVITATION',
+            toEmail: assessment.respondentEmail,
+            entityId: assessment.id,
+            payload: {
+                recipientName: 'Vendor team',
+                vendorName: assessment.vendor?.name ?? '',
+                templateName: assessment.templateVersion?.name ?? '',
+                responseUrl,
+                expiresAtIso: expiresAt.toISOString(),
+                inviterName: ctx.userId,
+            },
+            requestId: ctx.requestId,
+        });
+
+        await logEvent(db, ctx, {
+            action: 'VENDOR_ASSESSMENT_RESENT',
+            entityType: 'VendorAssessment',
+            entityId: assessment.id,
+            details: `Resent assessment invite to ${assessment.respondentEmail} (fresh link, expires ${expiresAt.toISOString()})`,
+            detailsJson: {
+                category: 'entity_lifecycle',
+                entityName: 'VendorAssessment',
+                operation: 'sent',
+                after: { respondentEmail: assessment.respondentEmail, expiresAt: expiresAt.toISOString(), notificationQueued: outboxResult !== null },
+                summary: 'Vendor assessment invitation resent',
+            },
+        });
+
+        return {
+            assessmentId: assessment.id,
+            externalAccessToken: rawToken,
+            expiresAt,
+            notificationQueued: outboxResult !== null,
+        };
+    });
+}

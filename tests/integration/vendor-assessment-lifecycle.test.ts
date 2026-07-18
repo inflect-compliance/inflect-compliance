@@ -33,6 +33,7 @@ import { submitResponse } from '@/app-layer/usecases/vendor-assessment-response'
 import {
     reviewAssessment,
     closeAssessment,
+    listVendorAssessments,
 } from '@/app-layer/usecases/vendor-assessment-review';
 
 // Route writes through the PII-encryption-enabled client (emailHash on
@@ -267,7 +268,7 @@ describeFn('Epic G-3 — vendor assessment lifecycle (integration)', () => {
         // send → submit → review(HIGH) for `wbVendor`, returning the
         // assessment id. Forces a HIGH rating via the finalRiskRating
         // override so the outcome is deterministic regardless of scoring.
-        async function sendSubmitReviewHigh(): Promise<void> {
+        async function sendSubmitReviewHigh() {
             const sent = await sendAssessment(ctx, wbVendor.id, templateId, {
                 respondentEmail: 'respondent@example.test',
                 respondentName: 'Vendor Team',
@@ -280,10 +281,11 @@ describeFn('Epic G-3 — vendor assessment lifecycle (integration)', () => {
                 finalRiskRating: 'HIGH',
             });
             expect(reviewed.riskRating).toBe('HIGH');
+            return reviewed;
         }
 
         // ── First review → writeback + auto-risk ──
-        await sendSubmitReviewHigh();
+        const reviewed1 = await sendSubmitReviewHigh();
 
         const vendorAfter1 = await prisma.vendor.findUnique({
             where: { id: wbVendor.id },
@@ -293,13 +295,18 @@ describeFn('Epic G-3 — vendor assessment lifecycle (integration)', () => {
         expect(vendorAfter1?.lastAssessmentReviewedAt).toBeTruthy();
         // residualRisk stays manually-owned — untouched by the writeback.
         expect(vendorAfter1?.residualRisk).toBeNull();
+        // PR-S — nextReviewAt is rolled forward from the review (was unset).
+        expect(vendorAfter1?.nextReviewAt).toBeTruthy();
 
         const linksAfter1 = await prisma.vendorLink.findMany({
             where: { tenantId, vendorId: wbVendor.id, entityType: 'RISK' },
         });
-        // (b) exactly one Risk + one RISK VendorLink created.
+        // (b) exactly one Risk + one RISK VendorLink created, marked as
+        // assessment-sourced (PR-S), and surfaced back to the reviewer.
         expect(linksAfter1).toHaveLength(1);
+        expect(linksAfter1[0].relation).toBe('ASSESSMENT_SOURCED');
         const riskId = linksAfter1[0].entityId;
+        expect(reviewed1.autoCreatedRiskId).toBe(riskId);
         const risk = await prisma.risk.findUnique({ where: { id: riskId } });
         expect(risk).toBeTruthy();
         expect(risk?.category).toBe('Third-party');
@@ -321,5 +328,63 @@ describeFn('Epic G-3 — vendor assessment lifecycle (integration)', () => {
             where: { tenantId, title: { contains: wbVendor.name } },
         });
         expect(riskCount).toBe(1);
+    });
+
+    test('PR-S idempotency fix: an UNRELATED manual RISK link does NOT suppress assessment-sourced auto-risk', async () => {
+        const ctx = makeRequestContext(Role.ADMIN, { userId, tenantId });
+        const vendor = await prisma.vendor.create({
+            data: { tenantId, name: `G-3 Manual-link Vendor ${runId}` },
+        });
+
+        // A manual, UNRELATED risk linked to the vendor (relation RELATED).
+        const manualRisk = await prisma.risk.create({
+            data: { tenantId, title: `Manual unrelated risk ${runId}`, category: 'Operational' },
+        });
+        await prisma.vendorLink.create({
+            data: { tenantId, vendorId: vendor.id, entityType: 'RISK', entityId: manualRisk.id, relation: 'RELATED' },
+        });
+
+        // Under the OLD "any RISK link" check this would suppress the auto-risk.
+        const sent = await sendAssessment(ctx, vendor.id, templateId, {
+            respondentEmail: 'respondent@example.test',
+            respondentName: 'Vendor Team',
+            appOriginOverride: 'http://localhost:3000',
+        });
+        await submitResponse(sent.externalAccessToken, sent.assessmentId, [
+            { questionId, answerJson: { value: 'no' } },
+        ]);
+        const reviewed = await reviewAssessment(ctx, sent.assessmentId, { finalRiskRating: 'HIGH' });
+
+        // The auto-risk IS materialized despite the unrelated manual link.
+        expect(reviewed.autoCreatedRiskId).toBeTruthy();
+        const riskLinks = await prisma.vendorLink.findMany({
+            where: { tenantId, vendorId: vendor.id, entityType: 'RISK' },
+        });
+        expect(riskLinks).toHaveLength(2); // the manual one + the assessment-sourced one
+        const sourced = riskLinks.filter((l: { relation: string; entityId: string }) => l.relation === 'ASSESSMENT_SOURCED');
+        expect(sourced).toHaveLength(1);
+        expect(sourced[0].entityId).toBe(reviewed.autoCreatedRiskId);
+    });
+
+    test('PR-S listVendorAssessments: returns all statuses with the template name resolved via templateVersion', async () => {
+        const ctx = makeRequestContext(Role.ADMIN, { userId, tenantId });
+        const vendor = await prisma.vendor.create({
+            data: { tenantId, name: `G-3 List Vendor ${runId}` },
+        });
+        // A G-3 row: templateId null, templateVersionId set → name via templateVersion.
+        await sendAssessment(ctx, vendor.id, templateId, {
+            respondentEmail: 'respondent@example.test',
+            respondentName: 'Vendor Team',
+            appOriginOverride: 'http://localhost:3000',
+        });
+
+        const rows = await listVendorAssessments(ctx, vendor.id);
+        expect(rows.length).toBeGreaterThanOrEqual(1);
+        const g3 = rows[0];
+        expect(g3.status).toBe('SENT');
+        // The regression showed "—"; the fix resolves the G-3 name.
+        expect(g3.templateName).toBeTruthy();
+        expect(g3.sentAt).toBeTruthy();
+        expect(g3.respondentEmail).toBe('respondent@example.test');
     });
 });
