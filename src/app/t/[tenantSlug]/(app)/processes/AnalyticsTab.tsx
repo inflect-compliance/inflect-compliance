@@ -88,7 +88,7 @@ export function AnalyticsTab() {
                 <Stat label={t('analytics.executions', { days })} value={data?.totalExecutions ?? 0} />
                 <Stat label={t('analytics.successRate')} value={`${100 - (data?.errorRate ?? 0)}%`} />
                 <Stat label={t('analytics.avgDuration')} value={`${data?.avgDurationMs ?? 0}ms`} />
-                <Stat label={t('analytics.slaBreaches')} value={data?.slaBreaches ?? 0} />
+                <Stat label={t('analytics.stuckExecutionBreaches')} value={data?.slaBreaches ?? 0} />
                 <Stat label={t('analytics.errorRate')} value={`${data?.errorRate ?? 0}%`} />
             </div>
 

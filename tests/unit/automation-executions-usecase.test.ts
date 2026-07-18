@@ -114,4 +114,23 @@ describe('reTriggerRule', () => {
         expect((out as { reason?: string }).reason).toBe('no_prior_execution');
         expect(enqueueMock).not.toHaveBeenCalled();
     });
+
+    it('refuses to replay an UPDATE_STATUS rule (entity target not replayable)', async () => {
+        // Honesty — a replay carries a synthetic entityId (= ruleId) and the
+        // original entityId is not persisted, so an UPDATE_STATUS action would
+        // no-op ("No <entity> matched <ruleId>") while the panel said "Fired".
+        // Refuse instead of enqueuing a guaranteed-FAIL execution.
+        ruleRepo.getById.mockResolvedValue({
+            id: 'r1',
+            status: 'ENABLED',
+            triggerEvent: 'RISK_CREATED',
+            actionType: 'UPDATE_STATUS',
+        } as any);
+        execRepo.listForRule.mockResolvedValue([{ triggerPayloadJson: { severity: 'HIGH' } }] as any);
+        const ctx = makeRequestContext('EDITOR');
+        const out = await reTriggerRule(ctx, 'r1');
+        expect(out.enqueued).toBe(false);
+        expect((out as { reason?: string }).reason).toBe('entity_target_not_replayable');
+        expect(enqueueMock).not.toHaveBeenCalled();
+    });
 });

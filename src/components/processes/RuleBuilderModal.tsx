@@ -15,7 +15,7 @@
  * list cache. Server-side Zod (automation.schemas.ts) is the authoritative
  * validation; the modal does light client-side gating to drive Next/Save.
  */
-import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSWRConfig } from 'swr';
 import { Modal } from '@/components/ui/modal';
@@ -111,6 +111,173 @@ const EMPTY: BuilderState = {
     elseRuleId: '',
 };
 
+/**
+ * Full rule detail as returned by GET /automation/rules/{id} — the raw
+ * AutomationRule row (JSON columns keep their `*Json` names). The list row
+ * (`AutomationRuleRow`) is a thin projection, so edit mode fetches this to
+ * repopulate the builder; without it, Save would PUT the blank `EMPTY`
+ * defaults over the stored config.
+ */
+export interface RuleDetail {
+    name: string;
+    triggerEvent: string;
+    actionType: ActionType;
+    triggerFilterJson: {
+        logic?: 'AND' | 'OR';
+        conditions?: Array<{ field: string; operator: Operator; value: string | string[] }>;
+    } | null;
+    actionConfigJson: Record<string, unknown> | null;
+    slaWindowMinutes: number | null;
+    slaBreachActionType: 'NOTIFY_USER' | null;
+    slaBreachConfigJson: { userIds?: string[]; message?: string } | null;
+    scheduleConfigJson: { kind?: string; target?: ScheduleTarget; offsetDays?: number } | null;
+    nextRuleId: string | null;
+    nextRuleDelay: number | null;
+    elseRuleId: string | null;
+}
+
+/** Reverse of `buildRulePayload` — repopulates BuilderState so editing then
+ *  saving with no changes is a no-op (config preserved). */
+export function detailToBuilderState(d: RuleDetail): BuilderState {
+    const ac = (d.actionConfigJson ?? {}) as Record<string, string | string[] | undefined>;
+    const str = (v: unknown): string => (typeof v === 'string' ? v : v == null ? '' : String(v));
+    const arr = (v: unknown): string[] => (Array.isArray(v) ? (v as string[]) : []);
+    return {
+        name: d.name ?? '',
+        triggerEvent: d.triggerEvent ?? '',
+        logic: d.triggerFilterJson?.logic ?? 'AND',
+        conditions: (d.triggerFilterJson?.conditions ?? []).map((c) => ({
+            field: c.field,
+            operator: c.operator,
+            // in/not_in store a value set; the builder edits it as CSV.
+            value: Array.isArray(c.value) ? c.value.join(',') : str(c.value),
+        })),
+        actionType: d.actionType,
+        notify:
+            d.actionType === 'NOTIFY_USER'
+                ? { userIds: arr(ac.userIds), message: str(ac.message), linkUrl: str(ac.linkUrl) }
+                : { ...EMPTY.notify },
+        task:
+            d.actionType === 'CREATE_TASK'
+                ? {
+                      title: str(ac.title),
+                      severity: str(ac.severity),
+                      priority: str(ac.priority),
+                      assigneeUserId: str(ac.assigneeUserId),
+                  }
+                : { ...EMPTY.task },
+        status:
+            d.actionType === 'UPDATE_STATUS'
+                ? {
+                      entityType: str(ac.entityType) || 'Risk',
+                      field: str(ac.field) || 'status',
+                      toStatus: str(ac.toStatus),
+                  }
+                : { ...EMPTY.status },
+        webhook:
+            d.actionType === 'WEBHOOK'
+                ? { url: str(ac.url), method: str(ac.method) || 'POST' }
+                : { ...EMPTY.webhook },
+        slaWindowMinutes: d.slaWindowMinutes != null ? String(d.slaWindowMinutes) : '',
+        slaBreach: {
+            actionType: d.slaBreachActionType === 'NOTIFY_USER' ? 'NOTIFY_USER' : '',
+            userIds: d.slaBreachConfigJson?.userIds ?? [],
+            message: d.slaBreachConfigJson?.message ?? '',
+        },
+        schedule: {
+            target: d.scheduleConfigJson?.target ?? 'Evidence',
+            offsetDays:
+                d.scheduleConfigJson?.offsetDays != null
+                    ? String(d.scheduleConfigJson.offsetDays)
+                    : '0',
+        },
+        nextRuleId: d.nextRuleId ?? '',
+        nextRuleDelay: d.nextRuleDelay != null ? String(d.nextRuleDelay) : '',
+        elseRuleId: d.elseRuleId ?? '',
+    };
+}
+
+function buildActionConfig(form: BuilderState): Record<string, unknown> {
+    switch (form.actionType) {
+        case 'NOTIFY_USER':
+            return {
+                userIds: form.notify.userIds,
+                message: form.notify.message.trim(),
+                ...(form.notify.linkUrl.trim() ? { linkUrl: form.notify.linkUrl.trim() } : {}),
+            };
+        case 'CREATE_TASK':
+            return {
+                title: form.task.title.trim(),
+                ...(form.task.severity ? { severity: form.task.severity } : {}),
+                ...(form.task.priority ? { priority: form.task.priority } : {}),
+                ...(form.task.assigneeUserId ? { assigneeUserId: form.task.assigneeUserId } : {}),
+            };
+        case 'UPDATE_STATUS':
+            return {
+                entityType: form.status.entityType,
+                field: form.status.field,
+                toStatus: form.status.toStatus.trim(),
+            };
+        case 'WEBHOOK':
+            return { url: form.webhook.url.trim(), method: form.webhook.method };
+    }
+}
+
+function buildTriggerFilter(form: BuilderState):
+    | { logic: 'AND' | 'OR'; conditions: Array<{ field: string; operator: Operator; value: string | string[] }> }
+    | null {
+    const valid = form.conditions.filter((c) => c.field && c.value !== '');
+    if (valid.length === 0) return null;
+    return {
+        logic: form.logic,
+        conditions: valid.map((c) => ({
+            field: c.field,
+            operator: c.operator,
+            // in/not_in take a value set — split the comma-separated input.
+            value:
+                c.operator === 'in' || c.operator === 'not_in'
+                    ? c.value.split(',').map((s) => s.trim()).filter(Boolean)
+                    : c.value,
+        })),
+    };
+}
+
+/**
+ * Build the create/update payload from builder state. Pure + exported so the
+ * edit round-trip is unit-testable: `buildRulePayload(detailToBuilderState(d))`
+ * must reproduce `d`'s config (editing + saving with no changes is a no-op).
+ */
+export function buildRulePayload(form: BuilderState) {
+    return {
+        name: form.name.trim(),
+        triggerEvent: form.triggerEvent,
+        triggerFilter: buildTriggerFilter(form),
+        actionType: form.actionType,
+        actionConfig: buildActionConfig(form),
+        slaWindowMinutes: form.slaWindowMinutes ? Number(form.slaWindowMinutes) : null,
+        // Breach action is only meaningful with a watchdog window set; only
+        // NOTIFY_USER is wired server-side.
+        slaBreachActionType:
+            form.slaWindowMinutes && form.slaBreach.actionType ? form.slaBreach.actionType : null,
+        slaBreachConfig:
+            form.slaWindowMinutes && form.slaBreach.actionType === 'NOTIFY_USER'
+                ? { userIds: form.slaBreach.userIds, message: form.slaBreach.message.trim() }
+                : null,
+        // A SCHEDULE rule needs a scheduleConfig or the sweep can never fire it.
+        scheduleConfig:
+            form.triggerEvent === 'SCHEDULE'
+                ? {
+                      kind: 'DATE_RELATIVE' as const,
+                      target: form.schedule.target,
+                      offsetDays: Number(form.schedule.offsetDays) || 0,
+                  }
+                : null,
+        nextRuleId: form.nextRuleId || null,
+        nextRuleDelay: form.nextRuleDelay ? Number(form.nextRuleDelay) : null,
+        elseRuleId: form.elseRuleId || null,
+    };
+}
+
 function buildActionOptions(
     t: RuleTranslate,
 ): ReadonlyArray<{ value: ActionType; label: string; hint: string }> {
@@ -194,6 +361,36 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Edit mode repopulates the builder from the FULL rule detail — the list
+    // row (`editRule`) is a thin projection with no config. Fetch it only while
+    // editing; hydrate ONCE per open (keyed on rule id) so SWR revalidation
+    // never clobbers in-progress edits, and reset to EMPTY on a create open.
+    // Without this, Save PUTs the blank EMPTY defaults over the stored rule.
+    const editId = open && editRule ? editRule.id : null;
+    const { data: editDetail } = useTenantSWR<RuleDetail>(
+        editId ? CACHE_KEYS.automation.rules.detail(editId) : null,
+    );
+    const hydratedForRef = useRef<string | null>(null);
+    useEffect(() => {
+        if (!open) {
+            hydratedForRef.current = null;
+            return;
+        }
+        if (!editRule) {
+            if (hydratedForRef.current !== '__create__') {
+                setForm(EMPTY);
+                setStep(1);
+                hydratedForRef.current = '__create__';
+            }
+            return;
+        }
+        if (editDetail && hydratedForRef.current !== editRule.id) {
+            setForm(detailToBuilderState(editDetail));
+            setStep(1);
+            hydratedForRef.current = editRule.id;
+        }
+    }, [open, editRule, editDetail]);
+
     const patch = (p: Partial<BuilderState>) => setForm((f) => ({ ...f, ...p }));
 
     // PR-E — status options for the currently-selected UPDATE_STATUS entity.
@@ -233,100 +430,11 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
         }
     })();
 
-    function buildActionConfig(): Record<string, unknown> {
-        switch (form.actionType) {
-            case 'NOTIFY_USER':
-                return {
-                    userIds: form.notify.userIds,
-                    message: form.notify.message.trim(),
-                    ...(form.notify.linkUrl.trim()
-                        ? { linkUrl: form.notify.linkUrl.trim() }
-                        : {}),
-                };
-            case 'CREATE_TASK':
-                return {
-                    title: form.task.title.trim(),
-                    ...(form.task.severity ? { severity: form.task.severity } : {}),
-                    ...(form.task.priority ? { priority: form.task.priority } : {}),
-                    ...(form.task.assigneeUserId
-                        ? { assigneeUserId: form.task.assigneeUserId }
-                        : {}),
-                };
-            case 'UPDATE_STATUS':
-                return {
-                    entityType: form.status.entityType,
-                    field: form.status.field,
-                    toStatus: form.status.toStatus.trim(),
-                };
-            case 'WEBHOOK':
-                return { url: form.webhook.url.trim(), method: form.webhook.method };
-        }
-    }
-
-    function buildTriggerFilter():
-        | {
-              logic: 'AND' | 'OR';
-              conditions: Array<{ field: string; operator: Operator; value: string | string[] }>;
-          }
-        | null {
-        const valid = form.conditions.filter((c) => c.field && c.value !== '');
-        if (valid.length === 0) return null;
-        return {
-            logic: form.logic,
-            conditions: valid.map((c) => ({
-                field: c.field,
-                operator: c.operator,
-                // in/not_in take a value set — split the comma-separated input.
-                value:
-                    c.operator === 'in' || c.operator === 'not_in'
-                        ? c.value.split(',').map((s) => s.trim()).filter(Boolean)
-                        : c.value,
-            })),
-        };
-    }
-
     async function handleSave() {
         setSubmitting(true);
         setError(null);
         try {
-            const payload = {
-                name: form.name.trim(),
-                triggerEvent: form.triggerEvent,
-                triggerFilter: buildTriggerFilter(),
-                actionType: form.actionType,
-                actionConfig: buildActionConfig(),
-                slaWindowMinutes: form.slaWindowMinutes
-                    ? Number(form.slaWindowMinutes)
-                    : null,
-                // PR-E — breach action (only meaningful with a watchdog window
-                // set). Only NOTIFY_USER is wired server-side.
-                slaBreachActionType:
-                    form.slaWindowMinutes && form.slaBreach.actionType
-                        ? form.slaBreach.actionType
-                        : null,
-                slaBreachConfig:
-                    form.slaWindowMinutes &&
-                    form.slaBreach.actionType === 'NOTIFY_USER'
-                        ? {
-                              userIds: form.slaBreach.userIds,
-                              message: form.slaBreach.message.trim(),
-                          }
-                        : null,
-                // PR-E — a SCHEDULE rule needs a scheduleConfig or the sweep can
-                // never fire it. Build it here; other triggers send null.
-                scheduleConfig:
-                    form.triggerEvent === 'SCHEDULE'
-                        ? {
-                              kind: 'DATE_RELATIVE' as const,
-                              target: form.schedule.target,
-                              offsetDays: Number(form.schedule.offsetDays) || 0,
-                          }
-                        : null,
-                nextRuleId: form.nextRuleId || null,
-                nextRuleDelay: form.nextRuleDelay ? Number(form.nextRuleDelay) : null,
-                // PR-E — else-branch (conditions-fail path), canvas parity.
-                elseRuleId: form.elseRuleId || null,
-            };
+            const payload = buildRulePayload(form);
             const url = editRule
                 ? apiUrl(CACHE_KEYS.automation.rules.detail(editRule.id))
                 : apiUrl(CACHE_KEYS.automation.rules.list());

@@ -33,6 +33,31 @@ describe('CreateAutomationRuleSchema', () => {
         }
     });
 
+    it('accepts an UPDATE_STATUS rule targeting a server-implemented entity', () => {
+        const res = CreateAutomationRuleSchema.safeParse({
+            name: 'Auto-close risk',
+            triggerEvent: 'RISK_CREATED',
+            actionType: 'UPDATE_STATUS',
+            actionConfig: { entityType: 'Risk', field: 'status', toStatus: 'CLOSED' },
+        });
+        expect(res.success).toBe(true);
+    });
+
+    it('rejects an UPDATE_STATUS rule targeting Issue (no executor handler)', () => {
+        // Schema↔executor drift: the executor's STATUS_ALLOWLIST only implements
+        // Risk/Task/Control, so an 'Issue' rule is unrunnable and must not persist.
+        const res = CreateAutomationRuleSchema.safeParse({
+            name: 'Auto-close issue',
+            triggerEvent: 'RISK_CREATED',
+            actionType: 'UPDATE_STATUS',
+            actionConfig: { entityType: 'Issue', field: 'status', toStatus: 'CLOSED' },
+        });
+        expect(res.success).toBe(false);
+        if (!res.success) {
+            expect(res.error.issues.some((i) => i.path.includes('actionConfig'))).toBe(true);
+        }
+    });
+
     it('rejects an empty name', () => {
         const res = CreateAutomationRuleSchema.safeParse({
             name: '',
