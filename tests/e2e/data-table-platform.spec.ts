@@ -213,16 +213,7 @@ test.describe('DataTable Platform — Row click navigation', () => {
         const rows = page.locator('[data-testid="policies-table"] tbody tr');
         await expect(rows.first()).toBeVisible({ timeout: 15_000 });
 
-        // Target a NON-interactive cell (same rule as the Controls case
-        // above). DataTable's row double-click ignores clicks on
-        // interactive children (the select checkbox is an <input>), so a
-        // whole-row `dblclick()` lands on the row centre — which shifts
-        // onto a different cell whenever the column set changes (the
-        // acknowledgement column moved it onto the select checkbox). The
-        // Category cell (nth 3: select=0, name=1, status=2, category=3) is
-        // plain text, so double-clicking it reliably fires the row's
-        // navigate handler.
-        await rows.first().locator('td').nth(3).dblclick();
+        await rows.first().dblclick();
         await page.waitForURL(/\/policies\/[a-zA-Z0-9-]+$/, { timeout: 10_000 });
     });
 });
