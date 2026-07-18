@@ -227,7 +227,9 @@ describeFn('policy usecase — branch coverage (integration)', () => {
 
     it('decidePolicyApproval: APPROVED, REJECTED, and already-decided conflict', async () => {
         const policy = await createPolicy(ctx, { title: `Decide ${randomUUID().slice(0, 6)}` });
-        const v = await createPolicyVersion(ctx, policy.id, { contentType: 'MARKDOWN', contentText: 'body' });
+        // Authored by the EDITOR so the OWNER (ctx) can APPROVE without tripping
+        // the authorship SoD guard (they neither requested nor authored it).
+        const v = await createPolicyVersion(editor, policy.id, { contentType: 'MARKDOWN', contentText: 'body' });
         await globalPrisma.policy.update({ where: { id: policy.id }, data: { status: 'IN_REVIEW' } });
 
         // APPROVED branch → policy APPROVED
@@ -311,16 +313,46 @@ describeFn('policy usecase — branch coverage (integration)', () => {
         expect(p.lifecycleHistoryJson).toHaveLength(1);
         expect((p.lifecycleHistoryJson as Array<{ versionId: string }>)[0].versionId).toBe(v1);
 
-        // Rollback → v1 is current again, history popped, lifecycleVersion bumped.
+        // Rollback → v1 is current again; the OUTGOING v2 is SNAPSHOTTED into
+        // history (reversible), not discarded, and lifecycleVersion is bumped.
         await rollbackPolicy(ctx, policy.id);
         p = await getPolicy(ctx, policy.id);
         expect(p.currentVersionId).toBe(v1);
         expect(p.status).toBe('PUBLISHED');
-        expect(p.lifecycleHistoryJson ?? []).toHaveLength(0);
+        expect(p.lifecycleHistoryJson).toHaveLength(1);
+        expect((p.lifecycleHistoryJson as Array<{ versionId: string }>)[0].versionId).toBe(v2.id);
         expect(p.lifecycleVersion).toBe(4);
 
-        // Nothing left to roll back to.
-        await expect(rollbackPolicy(ctx, policy.id)).rejects.toThrow(/No previous published/i);
+        // Rollback is REVERSIBLE — a second rollback rolls FORWARD to v2 (history
+        // no longer drains to empty while the counter keeps climbing).
+        await rollbackPolicy(ctx, policy.id);
+        p = await getPolicy(ctx, policy.id);
+        expect(p.currentVersionId).toBe(v2.id);
+        expect((p.lifecycleHistoryJson as Array<{ versionId: string }>)[0].versionId).toBe(v1);
+        expect(p.lifecycleVersion).toBe(5);
+    });
+
+    it('rollbackPolicy: refuses to roll back an ARCHIVED policy', async () => {
+        const policy = await createPolicy(ctx, { title: `Arch ${randomUUID().slice(0, 6)}`, content: '# v1' });
+        const full = await getPolicy(ctx, policy.id);
+        await publishPolicy(ctx, policy.id, full.currentVersion!.id, { bypassApprovalReason: 'seed' });
+        const v2 = await createPolicyVersion(ctx, policy.id, { contentType: 'MARKDOWN', contentText: '# v2' });
+        await publishPolicy(ctx, policy.id, v2.id, { bypassApprovalReason: 'v2' });
+        await globalPrisma.policy.update({ where: { id: policy.id }, data: { status: 'ARCHIVED' } });
+        await expect(rollbackPolicy(ctx, policy.id)).rejects.toThrow(/ARCHIVED/i);
+    });
+
+    it('decidePolicyApproval: SoD covers AUTHORSHIP — the version author cannot approve, even when another user requested it', async () => {
+        const admin = makeRequestContext('ADMIN', { tenantId: TENANT_ID, tenantSlug: SUITE_TAG, userId: adminUserId });
+        const policy = await createPolicy(admin, { title: `AuthorSoD ${randomUUID().slice(0, 6)}` });
+        // Version AUTHORED by the admin.
+        const v = await createPolicyVersion(admin, policy.id, { contentType: 'MARKDOWN', contentText: 'body' });
+        await globalPrisma.policy.update({ where: { id: policy.id }, data: { status: 'IN_REVIEW' } });
+        // Requested by a DIFFERENT user (the owner) — so requester-SoD would NOT
+        // fire for the admin; only the authorship guard catches this.
+        const approval = await seedApproval(policy.id, v.id, 'PENDING', ownerUserId);
+        await expect(decidePolicyApproval(admin, approval.id, { decision: 'APPROVED' })).rejects.toThrow(/[Ss]eparation of duties|authored/);
+        expect((await globalPrisma.policyApproval.findUnique({ where: { id: approval.id } }))?.status).toBe('PENDING');
     });
 
     it('createPolicyVersion proposeOnly (Prompt-3.2): does NOT demote a live PUBLISHED policy', async () => {

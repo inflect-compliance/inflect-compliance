@@ -2712,7 +2712,11 @@
       "relHrAgo": "{hrs}h ago",
       "relYesterday": "yesterday",
       "relDaysAgo": "{days}d ago",
-      "tabTasks": "Tasks"
+      "tabTasks": "Tasks",
+      "sodApproveBlocked": "Separation of duties — you can't approve a change you requested or authored.",
+      "rollbackConfirmTitle": "Roll back to v{n}?",
+      "rollbackConfirmBody": "This republishes v{n} as the live version. The current version stays in the history.",
+      "rollbackConfirmLabel": "Roll back to v{n}"
     },
     "evidence": {
       "title": "Evidence to Retain",

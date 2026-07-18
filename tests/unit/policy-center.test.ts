@@ -94,6 +94,10 @@ beforeEach(() => {
     mockPolicyRepo.getBySlug.mockResolvedValue(null);
     // publishPolicy writes lifecycle fields directly on the tenant db (Prompt-3.1).
     mockDb.policy = { update: jest.fn() };
+    // decidePolicyApproval's author-aware SoD reads the target version's
+    // author off the tenant db. Default to an author who is NOT the approver
+    // so approval is allowed; individual tests can override.
+    mockDb.policyVersion = { findFirst: jest.fn().mockResolvedValue({ createdById: 'author-not-approver' }) };
 });
 
 // ─── Authorization Matrix ───

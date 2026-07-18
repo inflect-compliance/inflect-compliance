@@ -129,6 +129,17 @@ export class PolicyRepository {
                         },
                     },
                 },
+                // Top-level approvals so `policy.approvals` is defined — the
+                // IN_REVIEW ApprovalBanner reads the pending approval off the
+                // detail payload, not the per-version nesting (previously
+                // undefined, so the banner never rendered).
+                approvals: {
+                    orderBy: { createdAt: 'desc' },
+                    include: {
+                        requestedBy: { select: { id: true, name: true } },
+                        approvedBy: { select: { id: true, name: true } },
+                    },
+                },
                 controlLinks: {
                     include: {
                         control: { select: { id: true, name: true, annexId: true } },

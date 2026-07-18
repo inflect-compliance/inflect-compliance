@@ -521,6 +521,22 @@ export async function decidePolicyApproval(ctx: RequestContext, approvalId: stri
             );
         }
 
+        // SoD also covers AUTHORSHIP: when the version author differs from the
+        // requester, an admin who WROTE the version must not approve it either.
+        // (Previously only the requester was blocked, so a self-authored version
+        // requested by someone else could be self-approved.)
+        if (decision.decision === 'APPROVED') {
+            const version = await db.policyVersion.findFirst({
+                where: { id: approval.policyVersionId, tenantId: ctx.tenantId },
+                select: { createdById: true },
+            });
+            if (version?.createdById === ctx.userId) {
+                throw forbidden(
+                    'Separation of duties: you cannot approve a policy version you authored. Another administrator must approve it.',
+                );
+            }
+        }
+
         const result = await PolicyApprovalRepository.decide(
             db, ctx, approvalId, decision.decision, decision.comment || undefined
         );
@@ -769,9 +785,15 @@ export async function publishPolicy(
  */
 export async function rollbackPolicy(ctx: RequestContext, policyId: string) {
     assertCanAdmin(ctx);
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const policy = await PolicyRepository.getById(db, ctx, policyId);
         if (!policy) throw notFound('Policy not found');
+
+        // Status guard — an ARCHIVED policy is retired; rolling it straight to
+        // PUBLISHED would resurrect it silently. Restore it first.
+        if (policy.status === 'ARCHIVED') {
+            throw badRequest('Cannot roll back an ARCHIVED policy. Restore it before rolling back.');
+        }
 
         const history: PolicyLifecycleSnapshot[] = Array.isArray(policy.lifecycleHistoryJson)
             ? (policy.lifecycleHistoryJson as unknown as PolicyLifecycleSnapshot[])
@@ -786,14 +808,39 @@ export async function rollbackPolicy(ctx: RequestContext, policyId: string) {
             throw badRequest('The previous published version no longer exists.');
         }
 
-        const remaining = history.slice(0, -1);
+        // Snapshot the OUTGOING version (the one being rolled away from) into
+        // history — mirroring publishPolicy — so the rollback is REVERSIBLE
+        // (you can roll forward again) and lifecycleHistoryJson doesn't drain to
+        // empty while lifecycleVersion keeps climbing. Pop the target, push the
+        // outgoing. Skip the push if the outgoing IS the target (self-rollback).
+        const withoutTarget = history.slice(0, -1);
+        const pushOutgoing =
+            policy.currentVersionId &&
+            policy.currentVersion &&
+            policy.currentVersionId !== target.versionId;
+        const nextHistory = (
+            pushOutgoing
+                ? [
+                      ...withoutTarget,
+                      {
+                          version: policy.lifecycleVersion,
+                          versionId: policy.currentVersionId!,
+                          versionNumber: policy.currentVersion!.versionNumber,
+                          changeSummary: policy.currentVersion!.changeSummary ?? null,
+                          supersededAt: new Date().toISOString(),
+                          supersededByUserId: ctx.userId,
+                      },
+                  ]
+                : withoutTarget
+        ).slice(-MAX_LIFECYCLE_HISTORY);
+
         await PolicyRepository.setCurrentVersion(db, ctx, policyId, target.versionId);
         await PolicyRepository.updateStatus(db, ctx, policyId, 'PUBLISHED');
         await db.policy.update({
             where: { id: policyId },
             data: {
                 lifecycleVersion: policy.lifecycleVersion + 1,
-                lifecycleHistoryJson: remaining as unknown as Prisma.InputJsonValue,
+                lifecycleHistoryJson: nextHistory as unknown as Prisma.InputJsonValue,
             },
         });
 
@@ -814,6 +861,23 @@ export async function rollbackPolicy(ctx: RequestContext, policyId: string) {
 
         return PolicyRepository.getById(db, ctx, policyId);
     });
+
+    // Push the restored content to a linked SharePoint file exactly as
+    // publishPolicy does, so the external doc doesn't go stale. Best-effort,
+    // OUTSIDE the transaction — a SharePoint hiccup must never fail the rollback.
+    try {
+        const { pushPolicyToSharePoint } = await import('./policy-sharepoint-sync');
+        await pushPolicyToSharePoint(ctx, policyId);
+    } catch (err) {
+        const { edgeLogger } = await import('@/lib/observability/edge-logger');
+        edgeLogger.error('Policy rollback: SharePoint push failed', {
+            component: 'sharepoint',
+            policyId,
+            error: err instanceof Error ? err.message : String(err),
+        });
+    }
+
+    return result;
 }
 
 export async function archivePolicy(ctx: RequestContext, policyId: string) {
