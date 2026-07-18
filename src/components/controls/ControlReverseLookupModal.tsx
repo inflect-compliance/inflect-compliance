@@ -41,8 +41,10 @@ interface MapRef {
     mapId: string;
     mapName: string;
     mapStatus: string;
-    edgeKey: string;
-    edgeLabel: string | null;
+    // A control is placed on a map via an edge (gate) OR a `control` node.
+    via: "edge" | "node";
+    locationKey: string;
+    label: string | null;
 }
 
 // control↔requirement link rows (GET /controls/{id}/requirements).
@@ -165,29 +167,29 @@ export function ControlReverseLookupModal({
         };
     }, [open, tenantSlug, controlId, t]);
 
-    // Group process-map rows by map — multiple edges within the same
-    // map collapse into one row with a count.
+    // Group process-map rows by map — multiple placements (edges + control
+    // nodes) within the same map collapse into one row with a count.
     const groups: Array<{
         mapId: string;
         mapName: string;
         mapStatus: string;
-        edgeCount: number;
+        placementCount: number;
     }> = (() => {
         if (!maps) return [];
         const m = new Map<
             string,
-            { mapId: string; mapName: string; mapStatus: string; edgeCount: number }
+            { mapId: string; mapName: string; mapStatus: string; placementCount: number }
         >();
         for (const row of maps) {
             const prev = m.get(row.mapId);
             if (prev) {
-                prev.edgeCount += 1;
+                prev.placementCount += 1;
             } else {
                 m.set(row.mapId, {
                     mapId: row.mapId,
                     mapName: row.mapName,
                     mapStatus: row.mapStatus,
-                    edgeCount: 1,
+                    placementCount: 1,
                 });
             }
         }
@@ -347,8 +349,8 @@ export function ControlReverseLookupModal({
                                             <span className="text-[11px] text-content-subtle">
                                                 {t("mapMeta", {
                                                     status: g.mapStatus,
-                                                    count: g.edgeCount,
-                                                    noun: g.edgeCount === 1 ? t("edgeOne") : t("edgeMany"),
+                                                    count: g.placementCount,
+                                                    noun: g.placementCount === 1 ? t("placementOne") : t("placementMany"),
                                                 })}
                                             </span>
                                         </div>

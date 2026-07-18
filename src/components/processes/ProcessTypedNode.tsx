@@ -28,9 +28,24 @@
 import { Handle, Position, useReactFlow, type NodeProps } from "@xyflow/react";
 import { memo, useCallback, type MouseEvent } from "react";
 import { useTranslations } from "next-intl";
+import { useParams } from "next/navigation";
 import { Link4 } from "@/components/ui/icons/nucleo/link4";
 import { ChevronRight } from "@/components/ui/icons/nucleo/chevron-right";
 import { cn } from "@/lib/cn";
+import {
+    useTenantControls,
+    findTenantControl,
+    formatControlLabel,
+} from "@/lib/processes/use-tenant-controls";
+import {
+    useTenantRisks,
+    findTenantRisk,
+} from "@/lib/processes/use-tenant-risks";
+import {
+    useTenantAssets,
+    findTenantAsset,
+    formatAssetLabel,
+} from "@/lib/processes/use-tenant-assets";
 import {
     useNodeOverlayStatus,
     overlayClassFor,
@@ -152,6 +167,17 @@ function ProcessTypedNodeImpl({ id, data, selected }: NodeProps) {
     // than a wider data-model migration.
     const collapsed = (nodeData as { collapsed?: boolean }).collapsed === true;
     const { setNodes } = useReactFlow();
+    // PR-D+ — the linked-entity badge resolves names against the tenant's
+    // control / risk / asset lists. The slug comes from the `/t/[tenantSlug]`
+    // route param (not `useTenantContext`, which throws outside a
+    // TenantProvider — a node renders standalone in tests + storybook).
+    // Empty slug → the resolver hooks no-op and the badge shows its fallback.
+    const routeParams = useParams();
+    const tenantSlug =
+        typeof (routeParams as { tenantSlug?: unknown } | null)?.tenantSlug ===
+        "string"
+            ? ((routeParams as { tenantSlug?: string }).tenantSlug as string)
+            : "";
     const size: ProcessNodeSize = isProcessNodeSize(nodeData.size)
         ? nodeData.size
         : DEFAULT_NODE_SIZE;
@@ -299,14 +325,26 @@ function ProcessTypedNodeImpl({ id, data, selected }: NodeProps) {
                     {cornerSticker}
                 </span>
             )}
-            {showLinkedBadge && (
-                <span
-                    className="absolute -bottom-1.5 -right-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full border border-canvas-border bg-canvas-frame text-[color:var(--brand-default)]"
-                    aria-hidden="true"
-                    data-node-linked-entity={kind}
-                >
-                    <Link4 className="h-2.5 w-2.5" />
-                </span>
+            {showLinkedBadge && linkedEntityId && kind === "control" && (
+                <ControlLinkBadge
+                    tenantSlug={tenantSlug}
+                    entityId={linkedEntityId}
+                    fallbackLabel={label}
+                />
+            )}
+            {showLinkedBadge && linkedEntityId && kind === "risk" && (
+                <RiskLinkBadge
+                    tenantSlug={tenantSlug}
+                    entityId={linkedEntityId}
+                    fallbackLabel={label}
+                />
+            )}
+            {showLinkedBadge && linkedEntityId && kind === "asset" && (
+                <AssetLinkBadge
+                    tenantSlug={tenantSlug}
+                    entityId={linkedEntityId}
+                    fallbackLabel={label}
+                />
             )}
             {meta.hasHandles && (
                 <Handle
@@ -347,6 +385,137 @@ function ProcessTypedNodeImpl({ id, data, selected }: NodeProps) {
                 />
             )}
         </div>
+    );
+}
+
+// ── PR-D+ — enriched linked-entity badge ─────────────────────────────
+//
+// The node face resolves its bound compliance entity
+// (`data.linkedEntityId`) to a live ref·title + status, mirroring the
+// ControlOnEdge treatment on ProcessEdge. Three thin per-kind resolvers
+// each call exactly ONE tenant-list hook — an unlinked node (or a node
+// of another kind) never fetches a list it doesn't need — then hand a
+// resolved label + status to the shared pill. The stored node label is
+// the graceful fallback while the list loads or the entity was archived
+// out of it.
+
+interface LinkBadgeProps {
+    tenantSlug: string;
+    entityId: string;
+    /** Shown while the entity list loads or the entity is missing. */
+    fallbackLabel: string;
+}
+
+/**
+ * Map a resolved entity status to an icon tone. Green when the entity
+ * reads as satisfied / settled, amber while in flight, brand otherwise.
+ * Decorative — an unknown status falls through to the brand tone.
+ * Mirrors ProcessEdge's `controlStatusTone`, widened to the shared
+ * control / risk / asset status vocabulary.
+ */
+function linkedStatusTone(status: string | null | undefined): string {
+    const s = (status ?? "").toUpperCase();
+    if (
+        s === "IMPLEMENTED" ||
+        s === "PASSING" ||
+        s === "OPERATING" ||
+        s === "OPERATIONAL" ||
+        s === "ACTIVE" ||
+        s === "MITIGATED" ||
+        s === "ACCEPTED" ||
+        s === "CLOSED" ||
+        s === "RESOLVED" ||
+        s === "COMPLIANT"
+    ) {
+        return "text-[color:var(--status-success,var(--brand-default))]";
+    }
+    if (
+        s === "IN_PROGRESS" ||
+        s === "PARTIAL" ||
+        s === "OPEN" ||
+        s === "PENDING" ||
+        s === "IN_REVIEW" ||
+        s === "MONITORING"
+    ) {
+        return "text-[color:var(--status-warning,var(--brand-default))]";
+    }
+    return "text-[color:var(--brand-default)]";
+}
+
+/**
+ * The rendered badge. Sits just below the node's right edge so it
+ * never collides with the top-right kind sticker. NOT `aria-hidden`:
+ * the sr-only prefix names the linkage kind and the visible text is
+ * the resolved entity, so a screen reader announces the whole thing
+ * ("Linked control: AC-1 · Access reviews"). The icon alone stays
+ * `aria-hidden` — it carries no information beyond its tone.
+ */
+function LinkedBadgePill({
+    kind,
+    srLabel,
+    text,
+    status,
+}: {
+    kind: "control" | "risk" | "asset";
+    srLabel: string;
+    text: string;
+    status: string | null;
+}) {
+    return (
+        <span
+            className="absolute right-0 top-full z-10 mt-1 inline-flex max-w-full items-center gap-1 rounded-[4px] border border-canvas-border bg-canvas-frame px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-content-emphasis"
+            data-node-linked-entity={kind}
+            data-node-linked-status={status ?? undefined}
+        >
+            <Link4
+                className={cn("h-2.5 w-2.5 shrink-0", linkedStatusTone(status))}
+                aria-hidden="true"
+            />
+            <span className="sr-only">{srLabel}</span>
+            <span className="max-w-trunc-tight truncate">{text}</span>
+        </span>
+    );
+}
+
+function ControlLinkBadge({ tenantSlug, entityId, fallbackLabel }: LinkBadgeProps) {
+    const t = useTranslations("automation.node");
+    const state = useTenantControls(tenantSlug, { pollMs: 30000 });
+    const resolved = findTenantControl(state, entityId);
+    return (
+        <LinkedBadgePill
+            kind="control"
+            srLabel={t("linkedControl")}
+            text={resolved ? formatControlLabel(resolved) : fallbackLabel}
+            status={resolved?.status ?? null}
+        />
+    );
+}
+
+function RiskLinkBadge({ tenantSlug, entityId, fallbackLabel }: LinkBadgeProps) {
+    const t = useTranslations("automation.node");
+    const state = useTenantRisks(tenantSlug, { pollMs: 30000 });
+    const resolved = findTenantRisk(state, entityId);
+    return (
+        <LinkedBadgePill
+            kind="risk"
+            srLabel={t("linkedRisk")}
+            text={resolved ? resolved.title : fallbackLabel}
+            status={resolved?.status ?? null}
+        />
+    );
+}
+
+function AssetLinkBadge({ tenantSlug, entityId, fallbackLabel }: LinkBadgeProps) {
+    const t = useTranslations("automation.node");
+    const state = useTenantAssets(tenantSlug, { pollMs: 30000 });
+    const resolved = findTenantAsset(state, entityId);
+    return (
+        <LinkedBadgePill
+            kind="asset"
+            srLabel={t("linkedAsset")}
+            text={resolved ? formatAssetLabel(resolved) : fallbackLabel}
+            status={resolved?.status ?? null}
+        />
     );
 }
 

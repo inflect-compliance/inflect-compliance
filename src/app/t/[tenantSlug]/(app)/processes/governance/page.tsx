@@ -68,9 +68,9 @@ export default function GovernanceGraphPage() {
                 ]}
             />
             <div>
-                <Heading level={1}>{t('governance.heading')}</Heading>
+                <Heading level={1}>{t('governance.topologyHeading')}</Heading>
                 <p className="text-sm text-content-muted">
-                    {t('governance.description')}
+                    {t('governance.topologyDescription')}
                 </p>
             </div>
 
@@ -93,7 +93,7 @@ export default function GovernanceGraphPage() {
                         <div className="flex items-center justify-between">
                             <span className="font-medium text-content-emphasis">{n.name}</span>
                             <StatusBadge variant={n.canvasMode === 'AUTOMATION' ? 'info' : 'neutral'}>
-                                {n.canvasMode}
+                                {t(`governance.canvasMode.${n.canvasMode === 'AUTOMATION' ? 'AUTOMATION' : 'DOCUMENT'}`)}
                             </StatusBadge>
                         </div>
                         <div className="mt-2 flex items-center gap-default text-xs text-content-muted tabular-nums">

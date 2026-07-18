@@ -91,7 +91,11 @@ import { CanvasEmphasisProvider } from "@/lib/processes/canvas-emphasis-context"
 import { inferEdgeKind } from "@/lib/processes/edge-kind-inference";
 import { RunModeProvider, useRunMode } from "@/lib/processes/run-mode-context";
 import { CanvasOverlayProvider } from "@/lib/processes/canvas-execution-overlay";
-import { patchCanvasMode } from "@/lib/processes/switch-canvas-mode";
+import {
+    patchCanvasMode,
+    patchProcessStatus,
+    deleteProcessMap,
+} from "@/lib/processes/switch-canvas-mode";
 import {
     alignNodes,
     distributeNodes,
@@ -1003,6 +1007,40 @@ function Inner({
             setError(err instanceof Error ? err.message : "Mode switch failed");
         }
     }, [activeId, activeProcess, tenantSlug, processes, onProcessesChange]);
+
+    // Lifecycle — transition the active map's status (DRAFT ⇄ ACTIVE ⇄
+    // ARCHIVED). The PATCH lives in the helper; patch the parent list in
+    // place so the selector reflects the new value.
+    const handleChangeStatus = useCallback(
+        async (status: ProcessMapSummary["status"]) => {
+            if (!activeId || !activeProcess || activeProcess.status === status)
+                return;
+            try {
+                await patchProcessStatus(tenantSlug, activeId, status);
+                onProcessesChange(
+                    processes.map((p) =>
+                        p.id === activeId ? { ...p, status } : p,
+                    ),
+                );
+            } catch (err) {
+                setError(
+                    err instanceof Error ? err.message : "Status change failed",
+                );
+            }
+        },
+        [activeId, activeProcess, tenantSlug, processes, onProcessesChange],
+    );
+
+    // Lifecycle — soft-delete the active map. Throws on failure so the
+    // typed-confirmation modal surfaces the error inline; on success the
+    // map drops out and selection falls back to the next map (or empty).
+    const handleDelete = useCallback(async () => {
+        if (!activeId) return;
+        await deleteProcessMap(tenantSlug, activeId);
+        const remaining = processes.filter((p) => p.id !== activeId);
+        onProcessesChange(remaining);
+        onActiveIdChange(remaining[0]?.id ?? null);
+    }, [activeId, tenantSlug, processes, onProcessesChange, onActiveIdChange]);
 
     // ─── Canvas plumbing (xyflow change handlers + drop) ───────────
     //
@@ -1956,6 +1994,8 @@ function Inner({
                     handleRedo,
                     setSnapEnabled,
                     onSwitchMode: handleSwitchMode,
+                    onChangeStatus: handleChangeStatus,
+                    onDelete: handleDelete,
                 }}
                 exportSlot={
                     activeId && activeProcess ? (

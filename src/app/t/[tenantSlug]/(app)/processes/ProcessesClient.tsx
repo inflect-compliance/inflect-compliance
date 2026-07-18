@@ -26,7 +26,7 @@
  *     Splitting keeps the page chrome simple and lets the canvas
  *     own its xyflow state without prop-drilling.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
@@ -91,8 +91,7 @@ export function ProcessesClient({
     // P2 reverse-lookup deep link — `/processes?activeId=<mapId>` opens
     // straight to a specific map (the "Where used" modals on control / risk /
     // asset detail link here). Honour the param when it names a map the tenant
-    // can see; otherwise fall back to the first map. Read once on mount: a
-    // deep link is a fresh route mount, so the initializer captures it.
+    // can see; otherwise fall back to the first map.
     const searchParams = useSearchParams();
     const requestedId = searchParams.get("activeId");
     const [activeId, setActiveId] = useState<string | null>(
@@ -100,6 +99,16 @@ export function ProcessesClient({
             ? requestedId
             : (initialProcesses[0]?.id ?? null),
     );
+    // Re-target on a CLIENT-SIDE `?activeId` change too — a second "Where used"
+    // link navigated to while already on /processes only pushes a new param,
+    // not a fresh mount, so the initializer above wouldn't fire. Read the live
+    // param (not just the once-run initializer) and follow it when it names a
+    // visible map.
+    useEffect(() => {
+        if (requestedId && processes.some((p) => p.id === requestedId)) {
+            setActiveId(requestedId);
+        }
+    }, [requestedId, processes]);
 
     // Automation Epic 1 — the Process page gains a tab bar. "Canvas" is
     // the existing process-map editor; "Rules" is the automation-rule
