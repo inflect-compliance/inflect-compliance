@@ -12,6 +12,7 @@
  * lands; the Edit button opens the builder modal from Epic 3.
  */
 import { useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { Sheet } from '@/components/ui/sheet';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -19,10 +20,12 @@ import { NumberStepper } from '@/components/ui/number-stepper';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
 import { useTenantMutation } from '@/lib/hooks/use-tenant-mutation';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { ExecutionsPanel } from '@/components/processes/ExecutionsPanel';
 import type { AutomationRuleRow } from '@/app/t/[tenantSlug]/(app)/processes/RulesTab';
+import type { RuleDetail } from '@/components/processes/RuleBuilderModal';
 import { buildRuleActionLabels } from '@/app/t/[tenantSlug]/(app)/processes/automation-filter-defs';
 import { useTranslations } from 'next-intl';
 
@@ -32,6 +35,20 @@ function humanizeEvent(name: string): string {
         .split('_')
         .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
         .join(' ');
+}
+
+const asStr = (v: unknown): string => (typeof v === 'string' ? v : v == null ? '' : String(v));
+const asArr = (v: unknown): string[] => (Array.isArray(v) ? (v as string[]) : []);
+
+/** One read-only label → value line in the Configuration card. Values that are
+ *  identifiers (status enums, entity types, operators) render as raw data. */
+function ConfigRow({ label, value }: { label: string; value: ReactNode }) {
+    return (
+        <div className="flex items-start justify-between gap-default">
+            <span className="text-sm text-content-muted">{label}</span>
+            <span className="text-sm text-content-emphasis text-right break-all">{value}</span>
+        </div>
+    );
 }
 
 export interface RuleDetailSheetProps {
@@ -77,12 +94,31 @@ export function RuleDetailSheet({ rule, open, onOpenChange, onEdit }: RuleDetail
             ),
     });
 
+    // Full config detail — the list row is a thin projection, so the read-only
+    // Configuration card fetches the raw AutomationRule columns. Gated on
+    // `open && rule` so the sheet only hits the API while it is visible.
+    const { data: detail } = useTenantSWR<RuleDetail>(
+        open && rule ? CACHE_KEYS.automation.rules.detail(rule.id) : null,
+    );
+    // Rules list resolves chain rule ids → names (falls back to the id).
+    const { data: rulesList } = useTenantSWR<AutomationRuleRow[]>(
+        open ? CACHE_KEYS.automation.rules.list() : null,
+    );
+    const ruleName = (id: string): string =>
+        rulesList?.find((r) => r.id === id)?.name ?? id;
+
     const isArchived = rule?.status === 'ARCHIVED';
     const isEnabled = rule?.status === 'ENABLED';
 
     const triggerSummary = useMemo(
         () => (rule ? humanizeEvent(rule.triggerEvent) : ''),
         [rule],
+    );
+
+    const actionConfig = (detail?.actionConfigJson ?? {}) as Record<string, unknown>;
+    const filterConditions = detail?.triggerFilterJson?.conditions ?? [];
+    const webhookHeaders = Object.keys(
+        (actionConfig.headers as Record<string, string> | undefined) ?? {},
     );
 
     return (
@@ -145,6 +181,238 @@ export function RuleDetailSheet({ rule, open, onOpenChange, onEdit }: RuleDetail
                                     </p>
                                 </div>
                             </Card>
+
+                            {/* Full read-only configuration */}
+                            {detail && (
+                                <Card>
+                                    <div className="space-y-default">
+                                        <p className="text-[11px] uppercase tracking-wide text-content-subtle">
+                                            {t('ruleDetail.configuration')}
+                                        </p>
+
+                                        {/* Trigger filter */}
+                                        {filterConditions.length > 0 && (
+                                            <div className="space-y-tight">
+                                                <p className="text-xs font-medium text-content-muted">
+                                                    {t('ruleDetail.triggerFilter')}
+                                                </p>
+                                                {detail.triggerFilterJson?.logic && (
+                                                    <ConfigRow
+                                                        label={t('ruleDetail.matchLogic')}
+                                                        value={detail.triggerFilterJson.logic}
+                                                    />
+                                                )}
+                                                <ul className="space-y-tight">
+                                                    {filterConditions.map((c, i) => (
+                                                        <li
+                                                            key={i}
+                                                            className="text-sm text-content-emphasis break-all"
+                                                        >
+                                                            {c.field} {c.operator}{' '}
+                                                            {Array.isArray(c.value)
+                                                                ? c.value.join(', ')
+                                                                : c.value}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        {/* Action config */}
+                                        <div className="space-y-tight">
+                                            <p className="text-xs font-medium text-content-muted">
+                                                {t('ruleDetail.actionConfig')}
+                                            </p>
+                                            {detail.actionType === 'NOTIFY_USER' && (
+                                                <>
+                                                    {asStr(actionConfig.message) && (
+                                                        <ConfigRow
+                                                            label={t('ruleDetail.message')}
+                                                            value={asStr(actionConfig.message)}
+                                                        />
+                                                    )}
+                                                    {asArr(actionConfig.userIds).length > 0 && (
+                                                        <ConfigRow
+                                                            label={t('ruleDetail.recipients')}
+                                                            value={asArr(actionConfig.userIds).length}
+                                                        />
+                                                    )}
+                                                    {asStr(actionConfig.linkUrl) && (
+                                                        <ConfigRow
+                                                            label={t('ruleDetail.linkUrl')}
+                                                            value={asStr(actionConfig.linkUrl)}
+                                                        />
+                                                    )}
+                                                </>
+                                            )}
+                                            {detail.actionType === 'CREATE_TASK' && (
+                                                <>
+                                                    {asStr(actionConfig.title) && (
+                                                        <ConfigRow
+                                                            label={t('ruleDetail.title')}
+                                                            value={asStr(actionConfig.title)}
+                                                        />
+                                                    )}
+                                                    {asStr(actionConfig.severity) && (
+                                                        <ConfigRow
+                                                            label={t('ruleDetail.severity')}
+                                                            value={asStr(actionConfig.severity)}
+                                                        />
+                                                    )}
+                                                    {asStr(actionConfig.priority) && (
+                                                        <ConfigRow
+                                                            label={t('ruleDetail.priority')}
+                                                            value={asStr(actionConfig.priority)}
+                                                        />
+                                                    )}
+                                                    {asStr(actionConfig.assigneeUserId) && (
+                                                        <ConfigRow
+                                                            label={t('ruleDetail.assignee')}
+                                                            value={asStr(actionConfig.assigneeUserId)}
+                                                        />
+                                                    )}
+                                                    {asStr(actionConfig.linkEntityType) && (
+                                                        <ConfigRow
+                                                            label={t('ruleDetail.linkEntity')}
+                                                            value={asStr(actionConfig.linkEntityType)}
+                                                        />
+                                                    )}
+                                                    {asStr(actionConfig.linkEntityIdField) && (
+                                                        <ConfigRow
+                                                            label={t('ruleDetail.linkEntityField')}
+                                                            value={asStr(
+                                                                actionConfig.linkEntityIdField,
+                                                            )}
+                                                        />
+                                                    )}
+                                                </>
+                                            )}
+                                            {detail.actionType === 'UPDATE_STATUS' && (
+                                                <>
+                                                    {(asStr(actionConfig.entityType) ||
+                                                        asStr(actionConfig.field)) && (
+                                                        <ConfigRow
+                                                            label={t('ruleDetail.statusTarget')}
+                                                            value={`${asStr(actionConfig.entityType)} · ${asStr(actionConfig.field)}`}
+                                                        />
+                                                    )}
+                                                    {asStr(actionConfig.toStatus) && (
+                                                        <ConfigRow
+                                                            label={t('ruleDetail.newStatus')}
+                                                            value={asStr(actionConfig.toStatus)}
+                                                        />
+                                                    )}
+                                                </>
+                                            )}
+                                            {detail.actionType === 'WEBHOOK' && (
+                                                <>
+                                                    {asStr(actionConfig.method) && (
+                                                        <ConfigRow
+                                                            label={t('ruleDetail.method')}
+                                                            value={asStr(actionConfig.method)}
+                                                        />
+                                                    )}
+                                                    {asStr(actionConfig.url) && (
+                                                        <ConfigRow
+                                                            label={t('ruleDetail.url')}
+                                                            value={asStr(actionConfig.url)}
+                                                        />
+                                                    )}
+                                                    {webhookHeaders.length > 0 && (
+                                                        <ConfigRow
+                                                            label={t('ruleDetail.headers')}
+                                                            value={webhookHeaders.join(', ')}
+                                                        />
+                                                    )}
+                                                    {asStr(actionConfig.secretRef) && (
+                                                        <ConfigRow
+                                                            label={t('ruleDetail.signingSecret')}
+                                                            value={t('ruleDetail.secretSet')}
+                                                        />
+                                                    )}
+                                                </>
+                                            )}
+                                            {detail.actionType === 'INVOKE_SUBFLOW' &&
+                                                asStr(actionConfig.targetGroupId) && (
+                                                    <ConfigRow
+                                                        label={t('ruleDetail.subflowTarget')}
+                                                        value={asStr(actionConfig.targetGroupId)}
+                                                    />
+                                                )}
+                                        </div>
+
+                                        {/* Schedule */}
+                                        {detail.scheduleConfigJson && (
+                                            <div className="space-y-tight">
+                                                <p className="text-xs font-medium text-content-muted">
+                                                    {t('ruleDetail.schedule')}
+                                                </p>
+                                                {detail.scheduleConfigJson.target && (
+                                                    <ConfigRow
+                                                        label={t('ruleDetail.scheduleTarget')}
+                                                        value={detail.scheduleConfigJson.target}
+                                                    />
+                                                )}
+                                                {detail.scheduleConfigJson.offsetDays != null && (
+                                                    <ConfigRow
+                                                        label={t('ruleDetail.offsetDays')}
+                                                        value={String(
+                                                            detail.scheduleConfigJson.offsetDays,
+                                                        )}
+                                                    />
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Stuck-execution timeout (reframed SLA) */}
+                                        {detail.slaWindowMinutes != null && (
+                                            <div className="space-y-tight">
+                                                <p className="text-xs font-medium text-content-muted">
+                                                    {t('ruleDetail.stuckTimeout')}
+                                                </p>
+                                                <ConfigRow
+                                                    label={t('ruleDetail.timeoutWindow')}
+                                                    value={String(detail.slaWindowMinutes)}
+                                                />
+                                                {detail.slaBreachActionType && (
+                                                    <ConfigRow
+                                                        label={t('ruleDetail.breachAction')}
+                                                        value={detail.slaBreachActionType}
+                                                    />
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Chain */}
+                                        {(detail.nextRuleId || detail.elseRuleId) && (
+                                            <div className="space-y-tight">
+                                                <p className="text-xs font-medium text-content-muted">
+                                                    {t('ruleDetail.chain')}
+                                                </p>
+                                                {detail.nextRuleId && (
+                                                    <ConfigRow
+                                                        label={t('ruleDetail.nextRule')}
+                                                        value={ruleName(detail.nextRuleId)}
+                                                    />
+                                                )}
+                                                {detail.nextRuleId &&
+                                                    detail.nextRuleDelay != null && (
+                                                        <ConfigRow
+                                                            label={t('ruleDetail.delay')}
+                                                            value={String(detail.nextRuleDelay)}
+                                                        />
+                                                    )}
+                                                {detail.elseRuleId && (
+                                                    <ConfigRow
+                                                        label={t('ruleDetail.elseRule')}
+                                                        value={ruleName(detail.elseRuleId)}
+                                                    />
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </Card>
+                            )}
 
                             {/* Priority */}
                             <div className="flex items-center justify-between gap-default">
