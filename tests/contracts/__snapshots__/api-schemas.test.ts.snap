@@ -210,6 +210,12 @@ exports[`API contract — per-schema snapshots schema: AssetCreateRequest 1`] = 
         "null"
       ]
     },
+    "retentionUntil": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "cpe": {
       "type": [
         "string",
@@ -590,6 +596,12 @@ exports[`API contract — per-schema snapshots schema: AssetUpdateRequest 1`] = 
       ]
     },
     "retention": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "retentionUntil": {
       "type": [
         "string",
         "null"
