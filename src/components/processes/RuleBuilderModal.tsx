@@ -40,7 +40,7 @@ import {
 } from '@/lib/automation/status-allowlist';
 import type { AutomationRuleRow } from '@/app/t/[tenantSlug]/(app)/processes/RulesTab';
 
-type ActionType = 'NOTIFY_USER' | 'CREATE_TASK' | 'UPDATE_STATUS' | 'WEBHOOK';
+type ActionType = 'NOTIFY_USER' | 'CREATE_TASK' | 'UPDATE_STATUS' | 'WEBHOOK' | 'INVOKE_SUBFLOW';
 
 type Operator = 'eq' | 'neq' | 'in' | 'not_in' | 'gt' | 'lt' | 'contains';
 
@@ -74,9 +74,22 @@ interface BuilderState {
     conditions: Condition[];
     actionType: ActionType;
     notify: { userIds: string[]; message: string; linkUrl: string };
-    task: { title: string; severity: string; priority: string; assigneeUserId: string };
+    task: {
+        title: string;
+        severity: string;
+        priority: string;
+        assigneeUserId: string;
+        // PR2 — link the spawned task back to its source entity (executor
+        // reads the id from the trigger payload at `linkEntityIdField`).
+        linkEntityType: string;
+        linkEntityIdField: string;
+    };
     status: { entityType: string; field: string; toStatus: string };
-    webhook: { url: string; method: string };
+    // PR2 — headers (one `Name: value` per line) + HMAC secretRef; both
+    // honored by the executor's webhook action.
+    webhook: { url: string; method: string; headersText: string; secretRef: string };
+    /** PR2 — INVOKE_SUBFLOW target group (a ProcessNode.nodeKey). */
+    subflow: { targetGroupId: string };
     /** Optional SLA window in minutes (Epic 5); empty = no SLA. */
     slaWindowMinutes: string;
     /** PR-E — breach action for the execution watchdog. Only NOTIFY_USER is
@@ -100,9 +113,10 @@ const EMPTY: BuilderState = {
     conditions: [],
     actionType: 'NOTIFY_USER',
     notify: { userIds: [], message: '', linkUrl: '' },
-    task: { title: '', severity: '', priority: '', assigneeUserId: '' },
+    task: { title: '', severity: '', priority: '', assigneeUserId: '', linkEntityType: '', linkEntityIdField: '' },
     status: { entityType: 'Risk', field: 'status', toStatus: '' },
-    webhook: { url: '', method: 'POST' },
+    webhook: { url: '', method: 'POST', headersText: '', secretRef: '' },
+    subflow: { targetGroupId: '' },
     slaWindowMinutes: '',
     slaBreach: { actionType: '', userIds: [], message: '' },
     schedule: { target: 'Evidence', offsetDays: '0' },
@@ -139,7 +153,7 @@ export interface RuleDetail {
 /** Reverse of `buildRulePayload` — repopulates BuilderState so editing then
  *  saving with no changes is a no-op (config preserved). */
 export function detailToBuilderState(d: RuleDetail): BuilderState {
-    const ac = (d.actionConfigJson ?? {}) as Record<string, string | string[] | undefined>;
+    const ac = (d.actionConfigJson ?? {}) as Record<string, unknown>;
     const str = (v: unknown): string => (typeof v === 'string' ? v : v == null ? '' : String(v));
     const arr = (v: unknown): string[] => (Array.isArray(v) ? (v as string[]) : []);
     return {
@@ -164,6 +178,8 @@ export function detailToBuilderState(d: RuleDetail): BuilderState {
                       severity: str(ac.severity),
                       priority: str(ac.priority),
                       assigneeUserId: str(ac.assigneeUserId),
+                      linkEntityType: str(ac.linkEntityType),
+                      linkEntityIdField: str(ac.linkEntityIdField),
                   }
                 : { ...EMPTY.task },
         status:
@@ -176,8 +192,19 @@ export function detailToBuilderState(d: RuleDetail): BuilderState {
                 : { ...EMPTY.status },
         webhook:
             d.actionType === 'WEBHOOK'
-                ? { url: str(ac.url), method: str(ac.method) || 'POST' }
+                ? {
+                      url: str(ac.url),
+                      method: str(ac.method) || 'POST',
+                      headersText: stringifyHeaders(
+                          ac.headers as Record<string, string> | undefined,
+                      ),
+                      secretRef: str(ac.secretRef),
+                  }
                 : { ...EMPTY.webhook },
+        subflow:
+            d.actionType === 'INVOKE_SUBFLOW'
+                ? { targetGroupId: str(ac.targetGroupId) }
+                : { ...EMPTY.subflow },
         slaWindowMinutes: d.slaWindowMinutes != null ? String(d.slaWindowMinutes) : '',
         slaBreach: {
             actionType: d.slaBreachActionType === 'NOTIFY_USER' ? 'NOTIFY_USER' : '',
@@ -197,6 +224,26 @@ export function detailToBuilderState(d: RuleDetail): BuilderState {
     };
 }
 
+/** Parse a `Name: value` per-line textarea into a header record (skips blanks
+ *  + lines without a colon). Inverse of `stringifyHeaders`. */
+function parseHeaders(text: string): Record<string, string> {
+    const out: Record<string, string> = {};
+    for (const line of text.split('\n')) {
+        const i = line.indexOf(':');
+        if (i <= 0) continue;
+        const k = line.slice(0, i).trim();
+        const v = line.slice(i + 1).trim();
+        if (k) out[k] = v;
+    }
+    return out;
+}
+
+function stringifyHeaders(rec: Record<string, string> | undefined): string {
+    return Object.entries(rec ?? {})
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('\n');
+}
+
 function buildActionConfig(form: BuilderState): Record<string, unknown> {
     switch (form.actionType) {
         case 'NOTIFY_USER':
@@ -211,6 +258,10 @@ function buildActionConfig(form: BuilderState): Record<string, unknown> {
                 ...(form.task.severity ? { severity: form.task.severity } : {}),
                 ...(form.task.priority ? { priority: form.task.priority } : {}),
                 ...(form.task.assigneeUserId ? { assigneeUserId: form.task.assigneeUserId } : {}),
+                ...(form.task.linkEntityType.trim() ? { linkEntityType: form.task.linkEntityType.trim() } : {}),
+                ...(form.task.linkEntityIdField.trim()
+                    ? { linkEntityIdField: form.task.linkEntityIdField.trim() }
+                    : {}),
             };
         case 'UPDATE_STATUS':
             return {
@@ -218,8 +269,17 @@ function buildActionConfig(form: BuilderState): Record<string, unknown> {
                 field: form.status.field,
                 toStatus: form.status.toStatus.trim(),
             };
-        case 'WEBHOOK':
-            return { url: form.webhook.url.trim(), method: form.webhook.method };
+        case 'WEBHOOK': {
+            const headers = parseHeaders(form.webhook.headersText);
+            return {
+                url: form.webhook.url.trim(),
+                method: form.webhook.method,
+                ...(Object.keys(headers).length ? { headers } : {}),
+                ...(form.webhook.secretRef.trim() ? { secretRef: form.webhook.secretRef.trim() } : {}),
+            };
+        }
+        case 'INVOKE_SUBFLOW':
+            return { targetGroupId: form.subflow.targetGroupId.trim() };
     }
 }
 
@@ -286,6 +346,7 @@ function buildActionOptions(
         { value: 'CREATE_TASK', label: t('actionCreateTask'), hint: t('actionCreateTaskHint') },
         { value: 'UPDATE_STATUS', label: t('actionUpdateStatus'), hint: t('actionUpdateStatusHint') },
         { value: 'WEBHOOK', label: t('actionWebhook'), hint: t('actionWebhookHint') },
+        { value: 'INVOKE_SUBFLOW', label: t('actionInvokeSubflow'), hint: t('actionInvokeSubflowHint') },
     ];
 }
 
@@ -427,6 +488,8 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                 return form.status.toStatus.trim().length > 0;
             case 'WEBHOOK':
                 return /^https?:\/\//.test(form.webhook.url.trim());
+            case 'INVOKE_SUBFLOW':
+                return form.subflow.targetGroupId.trim().length > 0;
         }
     })();
 
@@ -821,6 +884,27 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                             matchTriggerWidth
                                         />
                                     </FormField>
+                                    {/* PR2 — link the spawned task back to its source entity.
+                                        The executor reads the entity id from the trigger
+                                        payload at `linkEntityIdField`. */}
+                                    <FormField label={t('taskLinkEntityType')} description={t('taskLinkEntityHint')}>
+                                        <Input
+                                            value={form.task.linkEntityType}
+                                            onChange={(e) =>
+                                                patch({ task: { ...form.task, linkEntityType: e.target.value } })
+                                            }
+                                            placeholder={t('taskLinkEntityTypePlaceholder')}
+                                        />
+                                    </FormField>
+                                    <FormField label={t('taskLinkEntityIdField')}>
+                                        <Input
+                                            value={form.task.linkEntityIdField}
+                                            onChange={(e) =>
+                                                patch({ task: { ...form.task, linkEntityIdField: e.target.value } })
+                                            }
+                                            placeholder={t('taskLinkEntityIdFieldPlaceholder')}
+                                        />
+                                    </FormField>
                                 </>
                             )}
                             {form.actionType === 'UPDATE_STATUS' && (
@@ -900,7 +984,39 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                             matchTriggerWidth
                                         />
                                     </FormField>
+                                    {/* PR2 — custom headers (one `Name: value` per line)
+                                        + HMAC secret ref, both honored by the executor. */}
+                                    <FormField label={t('webhookHeaders')} description={t('webhookHeadersHint')}>
+                                        <Textarea
+                                            rows={3}
+                                            value={form.webhook.headersText}
+                                            onChange={(e) =>
+                                                patch({ webhook: { ...form.webhook, headersText: e.target.value } })
+                                            }
+                                            placeholder={t('webhookHeadersPlaceholder')}
+                                        />
+                                    </FormField>
+                                    <FormField label={t('webhookSecretRef')} description={t('webhookSecretRefHint')}>
+                                        <Input
+                                            value={form.webhook.secretRef}
+                                            onChange={(e) =>
+                                                patch({ webhook: { ...form.webhook, secretRef: e.target.value } })
+                                            }
+                                            placeholder={t('webhookSecretRefPlaceholder')}
+                                        />
+                                    </FormField>
                                 </>
+                            )}
+                            {form.actionType === 'INVOKE_SUBFLOW' && (
+                                <FormField label={t('subflowTargetLabel')} description={t('subflowTargetHint')} required>
+                                    <Input
+                                        value={form.subflow.targetGroupId}
+                                        onChange={(e) =>
+                                            patch({ subflow: { ...form.subflow, targetGroupId: e.target.value } })
+                                        }
+                                        placeholder={t('subflowTargetPlaceholder')}
+                                    />
+                                </FormField>
                             )}
                         </div>
 
