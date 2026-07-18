@@ -51,8 +51,10 @@ const buildDocTypeLabels = (t: (k: string) => string): Record<string, string> =>
 const DOC_TYPES = [...DOC_TYPE_KEYS];
 
 const ASSESSMENT_STATUS_BADGE = VENDOR_ASSESSMENT_VARIANT;
-const VENDOR_STATUS_OPTIONS: ComboboxOption[] = ['ACTIVE', 'ONBOARDING', 'OFFBOARDING', 'OFFBOARDED'].map(s => ({ value: s, label: s }));
-const VENDOR_CRIT_OPTIONS: ComboboxOption[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map(c => ({ value: c, label: c }));
+// PR-T — vendor status/criticality edit options are built localized inside the
+// component (STATUS_OPTIONS_L / CRIT_OPTIONS_L); the old raw-label module consts
+// were removed. dataAccess enum → its localized value-label key.
+const DATA_ACCESS_LABEL_KEY: Record<string, string> = { NONE: 'dataNone', LOW: 'dataLow', MEDIUM: 'dataMedium', HIGH: 'dataHigh' };
 const buildDocTypeCbOptions = (docTypeLabels: Record<string, string>): ComboboxOption[] => DOC_TYPES.map(ty => ({ value: ty, label: docTypeLabels[ty] || ty }));
 // B4 — Document filter options. Prepended "All types" sentinel so
 // clearing the type filter is a single click.
@@ -194,6 +196,16 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     const DOC_TYPE_CB_OPTIONS = buildDocTypeCbOptions(DOC_TYPE_LABELS);
     const VENDOR_LINK_TYPE_OPTIONS = useMemo(() => buildVendorLinkTypeOptions(tx), [tx]);
     const VENDOR_LINK_RELATION_OPTIONS = useMemo(() => buildVendorLinkRelationOptions(tx), [tx]);
+    // PR-T — localized edit-form option arrays (the module-level consts used raw
+    // enum values as labels). Reuse the read-view keys: statusOption.* / criticalityLabel.*.
+    const STATUS_OPTIONS_L = useMemo<ComboboxOption[]>(
+        () => ['ACTIVE', 'ONBOARDING', 'OFFBOARDING', 'OFFBOARDED'].map((s) => ({ value: s, label: tx('statusOption.' + s) })),
+        [tx],
+    );
+    const CRIT_OPTIONS_L = useMemo<ComboboxOption[]>(
+        () => ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((c) => ({ value: c, label: tx('criticalityLabel.' + c) })),
+        [tx],
+    );
     const DOC_TYPE_FILTER_OPTIONS = buildDocTypeFilterOptions(tx, DOC_TYPE_CB_OPTIONS);
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
@@ -254,7 +266,9 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     const BUNDLE_ITEM_TYPE_OPTIONS = useMemo(() => buildBundleItemTypeOptions(tx), [tx]);
     // Subprocessors
     const [subs, setSubs] = useState<VendorSubprocessorRow[]>([]);
-    const [subForm, setSubForm] = useState({ subprocessorVendorId: '', purpose: '' });
+    // PR-T — dataTypes + country are the 4th-party data-residency fields; the
+    // route/usecase/model already accept them, the form just never collected them.
+    const [subForm, setSubForm] = useState({ subprocessorVendorId: '', purpose: '', dataTypes: '', country: '' });
     // P3.7b — recursive subprocessor chain.
     const [chain, setChain] = useState<SubprocessorChainNode | null>(null);
 
@@ -602,7 +616,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         <div><span className="text-content-muted">{tx('detail.website')}:</span> <span className="ml-2">{normaliseHref(vendor.websiteUrl) ? <a href={normaliseHref(vendor.websiteUrl)!} target="_blank" rel="noopener noreferrer" className="text-content-info underline">{vendor.websiteUrl}</a> : '—'}</span></div>
                         <div><span className="text-content-muted">{tx('detail.country')}:</span> <span className="ml-2">{vendor.country || '—'}</span></div>
                         <div><span className="text-content-muted">{tx('detail.owner')}:</span> <span className="ml-2">{vendor.owner?.name || '—'}</span></div>
-                        <div><span className="text-content-muted">{tx('detail.dataAccess')}:</span> <span className="ml-2">{vendor.dataAccess || '—'}</span></div>
+                        <div><span className="text-content-muted">{tx('detail.dataAccess')}:</span> <span className="ml-2">{vendor.dataAccess ? tx('form.' + (DATA_ACCESS_LABEL_KEY[vendor.dataAccess] ?? 'dataNone')) : '—'}</span></div>
                         <div><span className="text-content-muted">{tx('detail.subprocessor')}:</span> <span className="ml-2">{vendor.isSubprocessor ? tx('detail.yes') : tx('detail.no')}</span></div>
                         <div>
                             <span className="text-content-muted">{tx('detail.inherentRisk')}:</span>
@@ -644,11 +658,11 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         </div>
                         <div>
                             <label className="block text-sm text-content-muted mb-1">{tx('detail.status')}</label>
-                            <Combobox hideSearch selected={VENDOR_STATUS_OPTIONS.find(o => o.value === editForm.status) ?? null} setSelected={(opt) => setEditForm((p) => ({ ...p, status: opt?.value ?? p.status }))} options={VENDOR_STATUS_OPTIONS} matchTriggerWidth />
+                            <Combobox hideSearch selected={STATUS_OPTIONS_L.find(o => o.value === editForm.status) ?? null} setSelected={(opt) => setEditForm((p) => ({ ...p, status: opt?.value ?? p.status }))} options={STATUS_OPTIONS_L} matchTriggerWidth />
                         </div>
                         <div>
                             <label className="block text-sm text-content-muted mb-1">{tx('detail.criticality')}</label>
-                            <Combobox hideSearch selected={VENDOR_CRIT_OPTIONS.find(o => o.value === editForm.criticality) ?? null} setSelected={(opt) => setEditForm((p) => ({ ...p, criticality: opt?.value ?? p.criticality }))} options={VENDOR_CRIT_OPTIONS} matchTriggerWidth />
+                            <Combobox hideSearch selected={CRIT_OPTIONS_L.find(o => o.value === editForm.criticality) ?? null} setSelected={(opt) => setEditForm((p) => ({ ...p, criticality: opt?.value ?? p.criticality }))} options={CRIT_OPTIONS_L} matchTriggerWidth />
                         </div>
                         <div>
                             <label className="block text-sm text-content-muted mb-1">{tx('detail.residualRisk')}</label>
@@ -657,11 +671,11 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                 hideSearch
                                 selected={
                                     editForm.residualRisk
-                                        ? { value: editForm.residualRisk, label: editForm.residualRisk }
+                                        ? { value: editForm.residualRisk, label: tx('criticalityLabel.' + editForm.residualRisk) }
                                         : { value: '', label: tx('detail.residualRiskNone') }
                                 }
                                 setSelected={(opt) => setEditForm((p) => ({ ...p, residualRisk: opt?.value ?? '' }))}
-                                options={[{ value: '', label: tx('detail.residualRiskNone') }, ...VENDOR_CRIT_OPTIONS]}
+                                options={[{ value: '', label: tx('detail.residualRiskNone') }, ...CRIT_OPTIONS_L]}
                                 matchTriggerWidth
                             />
                         </div>
@@ -1197,11 +1211,27 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                     {detail && detail.items.length === 0 && (
                                         <p className="text-xs text-content-muted">{tx('detail.bundleNoItems')}</p>
                                     )}
-                                    {detail?.items.map((it) => (
+                                    {detail?.items.map((it) => {
+                                        // Hydrate the frozen snapshot's display name (VENDOR_DOCUMENT
+                                        // freezes `title`); fall back to the raw id when no snapshot
+                                        // name is available. Hyperlink only entity types with a real
+                                        // tenant detail route (CONTROL via LINK_ENTITY_HREF).
+                                        const snap = it.snapshotJson as { title?: string; name?: string } | undefined;
+                                        const snapName = snap?.title ?? snap?.name ?? null;
+                                        const buildItemHref = LINK_ENTITY_HREF[it.entityType];
+                                        return (
                                         <div key={it.id} className="flex items-center justify-between text-sm border-b border-border-subtle py-1">
                                             <span className="flex items-center gap-tight min-w-0">
                                                 <StatusBadge variant="neutral">{tx('detail.bundleItemTypes.' + it.entityType)}</StatusBadge>
-                                                <code className="text-xs text-content-muted truncate">{it.entityId}</code>
+                                                {buildItemHref ? (
+                                                    <Link href={tenantHref(buildItemHref(it.entityId))} className="text-content-info hover:underline truncate">
+                                                        {snapName ?? it.entityId}
+                                                    </Link>
+                                                ) : snapName ? (
+                                                    <span className="truncate">{snapName}</span>
+                                                ) : (
+                                                    <code className="text-xs text-content-muted truncate">{it.entityId}</code>
+                                                )}
                                             </span>
                                             {canWrite && !detail.frozenAt && (
                                                 <button
@@ -1211,7 +1241,8 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                                 >{tx('detail.remove')}</button>
                                             )}
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                     {/* Add-item control — hidden once frozen. */}
                                     {canWrite && detail && !detail.frozenAt && (
                                         <div className="flex flex-wrap items-end gap-compact pt-1">
@@ -1309,12 +1340,23 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                 <input className="input w-48" value={subForm.purpose}
                                     onChange={e => setSubForm(p => ({ ...p, purpose: e.target.value }))} id="sub-purpose" placeholder={tx('detail.purposePlaceholder')} />
                             </div>
+                            {/* PR-T — 4th-party data-residency fields. */}
+                            <div>
+                                <label className="block text-sm text-content-muted mb-1">{tx('detail.subDataTypes')}</label>
+                                <input className="input w-48" value={subForm.dataTypes}
+                                    onChange={e => setSubForm(p => ({ ...p, dataTypes: e.target.value }))} id="sub-data-types" placeholder={tx('detail.subDataTypesPlaceholder')} />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-content-muted mb-1">{tx('detail.subCountry')}</label>
+                                <input className="input w-48" value={subForm.country}
+                                    onChange={e => setSubForm(p => ({ ...p, country: e.target.value }))} id="sub-country" placeholder={tx('detail.subCountryPlaceholder')} />
+                            </div>
                             <Button variant="primary" disabled={!subForm.subprocessorVendorId} id="add-subprocessor-btn" onClick={async () => {
                                 await fetch(apiUrl(`/vendors/${params.vendorId}/subprocessors`), {
                                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify(subForm),
                                 });
-                                setSubForm({ subprocessorVendorId: '', purpose: '' }); fetchSubs();
+                                setSubForm({ subprocessorVendorId: '', purpose: '', dataTypes: '', country: '' }); fetchSubs();
                             }}>{tx('detail.add')}</Button>
                         </div>
                     )}

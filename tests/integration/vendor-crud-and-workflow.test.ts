@@ -10,7 +10,7 @@
  *   - getVendor         (not-found)
  *   - setVendorReviewDates (happy path + not-found)
  *   - addVendorLink / removeVendorLink (relation default branch + not-found)
- *   - updateVendorStatusWithGate (gate-blocks, gate-passes, already-active,
+ *   - updateVendor activation gate (gate-blocks, gate-passes, already-active,
  *                        non-ACTIVE transition, not-found)
  *   - getVendorMetrics  (every counter branch)
  *   - enrichVendor      (domain branch, websiteUrl-derived branch, no-domain
@@ -33,7 +33,6 @@ import {
     addVendorLink,
     removeVendorLink,
     listVendorLinks,
-    updateVendorStatusWithGate,
     getVendorMetrics,
     enrichVendor,
 } from '@/app-layer/usecases/vendor';
@@ -280,12 +279,12 @@ describeFn('vendor CRUD + workflow — integration', () => {
         await expect(removeVendorLink(adminCtx(), 'no-link')).rejects.toBeInstanceOf(NotFoundError);
     });
 
-    // ── updateVendorStatusWithGate ───────────────────────────────
+    // ── activation gate via the live updateVendor edit path (PR-T) ──
 
     it('gate blocks ACTIVE without an approved assessment', async () => {
         const v = await createVendor(adminCtx(), { name: 'Gated', status: 'ONBOARDING' });
         await expect(
-            updateVendorStatusWithGate(adminCtx(), v.id, 'ACTIVE'),
+            updateVendor(adminCtx(), v.id, { status: 'ACTIVE' }),
         ).rejects.toBeInstanceOf(ValidationError);
     });
 
@@ -300,26 +299,26 @@ describeFn('vendor CRUD + workflow — integration', () => {
                 riskRating: 'LOW',
             },
         });
-        const updated = await updateVendorStatusWithGate(adminCtx(), v.id, 'ACTIVE');
+        const updated = await updateVendor(adminCtx(), v.id, { status: 'ACTIVE' });
         expect(updated.status).toBe('ACTIVE');
     });
 
     it('gate is skipped when vendor already ACTIVE', async () => {
         const v = await createVendor(adminCtx(), { name: 'AlreadyActive', status: 'ACTIVE' });
         // No approved assessment, but vendor.status === ACTIVE so the gate `if` is false.
-        const updated = await updateVendorStatusWithGate(adminCtx(), v.id, 'ACTIVE');
+        const updated = await updateVendor(adminCtx(), v.id, { status: 'ACTIVE' });
         expect(updated.status).toBe('ACTIVE');
     });
 
     it('gate is skipped for a non-ACTIVE target status', async () => {
         const v = await createVendor(adminCtx(), { name: 'Offboard', status: 'ACTIVE' });
-        const updated = await updateVendorStatusWithGate(adminCtx(), v.id, 'OFFBOARDING');
+        const updated = await updateVendor(adminCtx(), v.id, { status: 'OFFBOARDING' });
         expect(updated.status).toBe('OFFBOARDING');
     });
 
-    it('updateVendorStatusWithGate throws NotFoundError for unknown vendor', async () => {
+    it('updateVendor throws NotFoundError for unknown vendor status change', async () => {
         await expect(
-            updateVendorStatusWithGate(adminCtx(), 'nope', 'ACTIVE'),
+            updateVendor(adminCtx(), 'nope', { status: 'ACTIVE' }),
         ).rejects.toBeInstanceOf(NotFoundError);
     });
 
