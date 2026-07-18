@@ -7,13 +7,10 @@
  * The renderer takes a discriminated `(chartType, config)` payload
  * and routes to the right primitive:
  *
- *   - kpi       → `<KpiCard>`           (`@/components/ui/KpiCard`)
- *   - donut     → `<DonutChart>`        (`@/components/ui/DonutChart`)
- *   - gauge     → `<ProgressCircle>`    (`@/components/ui/progress-circle`)
- *   - sparkline → `<MiniAreaChart>`     (`@/components/ui/mini-area-chart`)
- *   - line      → `<TimeSeriesChart type="area">` with thin overlay
- *   - area      → `<TimeSeriesChart type="area">` with `<Areas>`
- *   - bar       → `<TimeSeriesChart type="bar">`  with `<Bars>`
+ *   - kpi    → `<KpiCard>`      (`@/components/ui/KpiCard`)
+ *   - donut  → `<DonutChart>`   (`@/components/ui/DonutChart`)
+ *   - area   → `<TimeSeriesChart type="area">` with `<Areas>`
+ *              (+ optional `<TargetLine>` overlay)
  *
  * Why no Recharts: a CI guardrail
  * (`tests/guardrails/chart-platform-foundation.test.ts`) explicitly
@@ -35,15 +32,10 @@
  * never crash because one widget's payload is wrong.
  */
 
-import { type ReactNode } from 'react';
-
 import KpiCard from '@/components/ui/KpiCard';
 import DonutChart from '@/components/ui/DonutChart';
-import { MiniAreaChart } from '@/components/ui/mini-area-chart';
-import { ProgressCircle } from '@/components/ui/progress-circle';
 import {
     Areas,
-    Bars,
     TimeSeriesChart,
     XAxis,
     YAxis,
@@ -197,61 +189,23 @@ export function ChartRenderer(props: ChartRendererProps) {
             );
         }
 
-        case 'gauge': {
-            const c = props.config;
-            if (typeof c.progress !== 'number' || Number.isNaN(c.progress)) {
-                return <EmptyStateInline />;
-            }
-            return (
-                <ProgressCircle
-                    progress={c.progress}
-                    label={c.label}
-                    variant={c.variant}
-                    size={c.size}
-                    aria-label={props['aria-label']}
-                    className={props.className}
-                />
-            );
-        }
-
-        case 'sparkline': {
-            const c = props.config;
-            return (
-                <MiniAreaChart
-                    data={c.points}
-                    variant={c.variant}
-                    aria-label={
-                        c.ariaLabel ?? props['aria-label'] ?? 'Sparkline'
-                    }
-                    className={props.className}
-                />
-            );
-        }
-
-        case 'line':
-        case 'area':
-        case 'bar': {
+        case 'area': {
             const c = props.config;
             const data = buildTimeSeriesData(c.points);
             const series = buildTimeSeriesSeries(
                 c.seriesId ?? 'series',
                 c.seriesColorClassName,
             );
-            // The platform supports `area | bar`; `line` is rendered
-            // as area today (visual differentiation is a future Areas
-            // variant). The dispatcher accepts `line` so callers
-            // express intent; the underlying primitive is the same.
-            const isBar = props.chartType === 'bar';
             return (
                 <TimeSeriesChart<TimeSeriesPoint>
                     data={data}
                     series={series}
-                    type={isBar ? 'bar' : 'area'}
+                    type="area"
                     emptyState={c.emptyState}
                     className={props.className}
                 >
                     <YAxis showGridLines />
-                    {isBar ? <Bars /> : <Areas />}
+                    <Areas />
                     {/* Optional target-line overlay. Renders inside
                      *  the chart's SVG via the chart context. The
                      *  TargetLine component is a no-op-cheap import
@@ -286,9 +240,3 @@ export function ChartRenderer(props: ChartRendererProps) {
 // `@/components/ui/dashboard-widgets`.
 export type { ChartRendererProps } from './types';
 export type { ChartType, ChartRenderState } from './types';
-
-// Helper for callers that want to wrap arbitrary content in the same
-// dimension surface (useful when a widget is a list, not a chart).
-export function ChartContentSurface({ children }: { children: ReactNode }) {
-    return <div className="h-full w-full min-h-[160px]">{children}</div>;
-}

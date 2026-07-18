@@ -41,7 +41,7 @@
  * field that failed.
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { Modal } from '@/components/ui/modal';
@@ -53,9 +53,19 @@ import { Label } from '@/components/ui/label';
 import type {
     CreateOrgDashboardWidgetInput,
     OrgDashboardWidgetDto,
+    UpdateOrgDashboardWidgetInput,
     WidgetPosition,
     WidgetSize,
 } from '@/app-layer/schemas/org-dashboard-widget.schemas';
+
+const INITIATIVE_STATUSES = [
+    'PLANNED',
+    'IN_PROGRESS',
+    'BLOCKED',
+    'COMPLETED',
+    'CANCELLED',
+] as const;
+type InitiativeStatus = (typeof INITIATIVE_STATUSES)[number];
 
 // ─── Variant catalogues ─────────────────────────────────────────────
 //
@@ -225,6 +235,21 @@ export interface WidgetPickerProps {
      * provides a sane starting point. Default `(0, 0)`.
      */
     defaultPosition?: WidgetPosition;
+    /**
+     * When set, the picker opens in EDIT mode pre-filled from this
+     * widget: the type is locked (immutable — changing it is delete +
+     * recreate), and submit PATCHes title/chartType/config via
+     * `onUpdate` instead of creating a new widget.
+     */
+    editWidget?: OrgDashboardWidgetDto | null;
+    /**
+     * Persistence callback for EDIT mode. Required when `editWidget`
+     * is provided. Resolves with the updated widget.
+     */
+    onUpdate?: (
+        id: string,
+        patch: UpdateOrgDashboardWidgetInput,
+    ) => Promise<OrgDashboardWidgetDto>;
 }
 
 export function WidgetPicker({
@@ -233,8 +258,11 @@ export function WidgetPicker({
     onSubmit,
     onCreated,
     defaultPosition = { x: 0, y: 0 },
+    editWidget,
+    onUpdate,
 }: WidgetPickerProps) {
     const t = useTranslations('widgets');
+    const isEdit = Boolean(editWidget);
     const widgetTypes = useMemo(
         () => buildWidgetTypes((k) => t(k as Parameters<typeof t>[0])),
         [t],
@@ -259,8 +287,20 @@ export function WidgetPicker({
     const [maturityView, setMaturityView] = useState<'radar' | 'trend'>('radar');
     const [maturityCoverageHint, setMaturityCoverageHint] = useState<boolean>(false);
     const [initiativesTopN, setInitiativesTopN] = useState<number>(5);
+    // Item 6 — previously-omitted optional config knobs.
+    const [donutMaxSegments, setDonutMaxSegments] = useState<string>('');
+    const [tenantLimit, setTenantLimit] = useState<string>('');
+    const [initiativesStatus, setInitiativesStatus] = useState<InitiativeStatus[]>([]);
+    // Item 1 — TREND target line.
+    const [targetEnabled, setTargetEnabled] = useState<boolean>(false);
+    const [targetValue, setTargetValue] = useState<string>('');
+    const [targetLabel, setTargetLabel] = useState<string>('');
+    const [targetPolarity, setTargetPolarity] = useState<'above-good' | 'below-good' | ''>('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    // Edit-mode hydration guard — hydrate once per (open, widget id) so a
+    // user's mid-edit changes aren't clobbered by a re-render.
+    const [hydratedFor, setHydratedFor] = useState<string | null>(null);
 
     const meta = useMemo(
         () => widgetTypes.find((w) => w.type === type) ?? widgetTypes[0],
@@ -283,9 +323,54 @@ export function WidgetPicker({
         setMaturityView('radar');
         setMaturityCoverageHint(false);
         setInitiativesTopN(5);
+        setDonutMaxSegments('');
+        setTenantLimit('');
+        setInitiativesStatus([]);
+        setTargetEnabled(false);
+        setTargetValue('');
+        setTargetLabel('');
+        setTargetPolarity('');
+        setHydratedFor(null);
         setError(null);
         setSubmitting(false);
     }
+
+    // ── Edit-mode hydration ──
+    //
+    // Reverse-map the persisted widget's config back into the form
+    // state so an operator can reconfigure it (title / chartType /
+    // config) without delete + re-add. Runs once per open per widget.
+    useEffect(() => {
+        if (!open || !editWidget) return;
+        if (hydratedFor === editWidget.id) return;
+        const w = editWidget;
+        const c = (w.config ?? {}) as Record<string, unknown>;
+        setType(w.type as WidgetTypeKey);
+        setChartType(w.chartType);
+        setTitle(w.title ?? '');
+        if (typeof c.format === 'string') setKpiFormat(c.format === 'number' ? 'number' : 'percent');
+        if (typeof c.days === 'number') setDays(c.days);
+        if (typeof c.showLegend === 'boolean') setShowLegend(c.showLegend);
+        if (typeof c.sortBy === 'string') setTenantSort(c.sortBy as 'rag' | 'name' | 'coverage');
+        if (typeof c.showHistory === 'boolean') setOrgShowHistory(c.showHistory);
+        if (typeof c.view === 'string') setMaturityView(c.view as 'radar' | 'trend');
+        if (typeof c.showCoverageHint === 'boolean') setMaturityCoverageHint(c.showCoverageHint);
+        if (typeof c.topN === 'number') setInitiativesTopN(c.topN);
+        setDonutMaxSegments(typeof c.maxSegments === 'number' ? String(c.maxSegments) : '');
+        setTenantLimit(typeof c.limit === 'number' ? String(c.limit) : '');
+        setInitiativesStatus(
+            Array.isArray(c.statusFilter) ? (c.statusFilter as InitiativeStatus[]) : [],
+        );
+        const target = c.target as
+            | { value?: number; label?: string; polarity?: 'above-good' | 'below-good' }
+            | undefined;
+        setTargetEnabled(Boolean(target && typeof target.value === 'number'));
+        setTargetValue(target && typeof target.value === 'number' ? String(target.value) : '');
+        setTargetLabel(target?.label ?? '');
+        setTargetPolarity(target?.polarity ?? '');
+        setHydratedFor(w.id);
+        setError(null);
+    }, [open, editWidget, hydratedFor]);
 
     function handleTypeChange(next: string) {
         const nextType = next as WidgetTypeKey;
@@ -300,12 +385,29 @@ export function WidgetPicker({
         switch (type) {
             case 'KPI':
                 return { ...base, format: kpiFormat };
-            case 'TREND':
-                return { ...base, days };
-            case 'DONUT':
-                return { ...base, showLegend };
-            case 'TENANT_LIST':
-                return { ...base, sortBy: tenantSort };
+            case 'TREND': {
+                const cfg: Record<string, unknown> = { ...base, days };
+                const num = Number.parseFloat(targetValue);
+                if (targetEnabled && Number.isFinite(num)) {
+                    const target: Record<string, unknown> = { value: num };
+                    if (targetLabel.trim()) target.label = targetLabel.trim();
+                    if (targetPolarity) target.polarity = targetPolarity;
+                    cfg.target = target;
+                }
+                return cfg;
+            }
+            case 'DONUT': {
+                const cfg: Record<string, unknown> = { ...base, showLegend };
+                const max = Number.parseInt(donutMaxSegments, 10);
+                if (Number.isFinite(max)) cfg.maxSegments = Math.min(8, Math.max(2, max));
+                return cfg;
+            }
+            case 'TENANT_LIST': {
+                const cfg: Record<string, unknown> = { ...base, sortBy: tenantSort };
+                const lim = Number.parseInt(tenantLimit, 10);
+                if (Number.isFinite(lim)) cfg.limit = Math.min(200, Math.max(1, lim));
+                return cfg;
+            }
             case 'DRILLDOWN_CTAS':
                 return base;
             // Org configs are `.strict()` in the schema — emit ONLY the
@@ -314,8 +416,11 @@ export function WidgetPicker({
                 return { showHistory: orgShowHistory };
             case 'ORG_MATURITY':
                 return { view: maturityView, showCoverageHint: maturityCoverageHint };
-            case 'ORG_INITIATIVES':
-                return { topN: initiativesTopN };
+            case 'ORG_INITIATIVES': {
+                const cfg: Record<string, unknown> = { topN: initiativesTopN };
+                if (initiativesStatus.length > 0) cfg.statusFilter = initiativesStatus;
+                return cfg;
+            }
         }
     }
 
@@ -324,16 +429,27 @@ export function WidgetPicker({
         setSubmitting(true);
         setError(null);
         try {
-            const input = {
-                type,
-                chartType,
-                config: buildConfig(),
-                title: title.trim().length > 0 ? title.trim() : null,
-                position: defaultPosition,
-                size: meta.defaultSize,
-                enabled: true,
-            } as CreateOrgDashboardWidgetInput;
-            const widget = await onSubmit(input);
+            const trimmedTitle = title.trim().length > 0 ? title.trim() : null;
+            let widget: OrgDashboardWidgetDto;
+            if (isEdit && editWidget && onUpdate) {
+                // Type is immutable; PATCH title + chartType + config.
+                widget = await onUpdate(editWidget.id, {
+                    title: trimmedTitle,
+                    chartType,
+                    config: buildConfig(),
+                } as UpdateOrgDashboardWidgetInput);
+            } else {
+                const input = {
+                    type,
+                    chartType,
+                    config: buildConfig(),
+                    title: trimmedTitle,
+                    position: defaultPosition,
+                    size: meta.defaultSize,
+                    enabled: true,
+                } as CreateOrgDashboardWidgetInput;
+                widget = await onSubmit(input);
+            }
             onCreated?.(widget);
             onOpenChange(false);
             resetState();
@@ -341,7 +457,9 @@ export function WidgetPicker({
             setError(
                 e instanceof Error
                     ? e.message
-                    : t('couldNotCreate'),
+                    : isEdit
+                        ? t('couldNotUpdate')
+                        : t('couldNotCreate'),
             );
         } finally {
             setSubmitting(false);
@@ -361,8 +479,8 @@ export function WidgetPicker({
             }}
         >
             <Modal.Header
-                title={t('addWidget')}
-                description={t('addWidgetDescription')}
+                title={isEdit ? t('editWidget') : t('addWidget')}
+                description={isEdit ? t('editWidgetDescription') : t('addWidgetDescription')}
             />
             <Modal.Body>
                 <div className="space-y-section">
@@ -375,16 +493,18 @@ export function WidgetPicker({
                             value={type}
                             onValueChange={handleTypeChange}
                             data-testid="widget-picker-type"
+                            disabled={isEdit}
                         >
                             {widgetTypes.map((opt) => (
                                 <div
                                     key={opt.type}
-                                    className="flex items-start gap-compact rounded-md border border-border-subtle p-3 hover:border-border-default"
+                                    className={`flex items-start gap-compact rounded-md border border-border-subtle p-3 ${isEdit ? 'opacity-60' : 'hover:border-border-default'}`}
                                 >
                                     <RadioGroupItem
                                         value={opt.type}
                                         id={`widget-type-${opt.type}`}
                                         aria-label={opt.label}
+                                        disabled={isEdit}
                                     />
                                     <div className="min-w-0">
                                         <Label
@@ -415,7 +535,7 @@ export function WidgetPicker({
                             value={chartType}
                             onChange={(e) => setChartType(e.target.value)}
                             data-testid="widget-picker-chart-type"
-                            className="block w-full rounded-md border border-border-default bg-bg-default px-3 py-2 text-sm text-content-emphasis focus:outline-none focus:ring-2 focus:ring-ring"
+                            className="block w-full rounded-md border border-border-subtle bg-bg-default px-3 py-2 text-sm text-content-emphasis focus:outline-none focus:ring-2 focus:ring-ring"
                         >
                             {variants.map((v) => (
                                 <option key={v.value} value={v.value}>
@@ -483,13 +603,73 @@ export function WidgetPicker({
                                     if (Number.isFinite(next)) setDays(next);
                                 }}
                                 data-testid="widget-picker-trend-days"
-                                className="block w-full rounded-md border border-border-default bg-bg-default px-3 py-2 text-sm text-content-emphasis focus:outline-none focus:ring-2 focus:ring-ring"
+                                className="block w-full rounded-md border border-border-subtle bg-bg-default px-3 py-2 text-sm text-content-emphasis focus:outline-none focus:ring-2 focus:ring-ring"
                             />
+                        </FormField>
+                    )}
+
+                    {type === 'TREND' && (
+                        <FormField
+                            label={t('targetLine')}
+                            description={t('targetLineDescription')}
+                        >
+                          <div className="space-y-tight">
+                            <label className="flex items-center gap-tight text-sm text-content-emphasis">
+                                <input
+                                    type="checkbox"
+                                    checked={targetEnabled}
+                                    onChange={(e) => setTargetEnabled(e.target.checked)}
+                                    data-testid="widget-picker-target-enabled"
+                                    className="size-4 rounded border-border-default focus:ring-ring"
+                                />
+                                {t('showTargetLine')}
+                            </label>
+                            {targetEnabled && (
+                                <div className="mt-tight space-y-tight">
+                                    <input
+                                        type="number"
+                                        step="any"
+                                        value={targetValue}
+                                        onChange={(e) => setTargetValue(e.target.value)}
+                                        placeholder={t('targetValuePlaceholder')}
+                                        aria-label={t('targetValue')}
+                                        data-testid="widget-picker-target-value"
+                                        className="block w-full rounded-md border border-border-subtle bg-bg-default px-3 py-2 text-sm text-content-emphasis focus:outline-none focus:ring-2 focus:ring-ring"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={targetLabel}
+                                        onChange={(e) => setTargetLabel(e.target.value)}
+                                        maxLength={60}
+                                        placeholder={t('targetLabelPlaceholder')}
+                                        aria-label={t('targetLabel')}
+                                        data-testid="widget-picker-target-label"
+                                        className="block w-full rounded-md border border-border-subtle bg-bg-default px-3 py-2 text-sm text-content-emphasis placeholder:text-content-subtle focus:outline-none focus:ring-2 focus:ring-ring"
+                                    />
+                                    <select
+                                        value={targetPolarity}
+                                        onChange={(e) =>
+                                            setTargetPolarity(
+                                                e.target.value as 'above-good' | 'below-good' | '',
+                                            )
+                                        }
+                                        aria-label={t('targetPolarity')}
+                                        data-testid="widget-picker-target-polarity"
+                                        className="block w-full rounded-md border border-border-subtle bg-bg-default px-3 py-2 text-sm text-content-emphasis focus:outline-none focus:ring-2 focus:ring-ring"
+                                    >
+                                        <option value="">{t('targetPolarityNone')}</option>
+                                        <option value="above-good">{t('targetAboveGood')}</option>
+                                        <option value="below-good">{t('targetBelowGood')}</option>
+                                    </select>
+                                </div>
+                            )}
+                          </div>
                         </FormField>
                     )}
 
                     {type === 'DONUT' && (
                         <FormField label={t('options')}>
+                          <div className="space-y-tight">
                             <label className="flex items-center gap-tight text-sm text-content-emphasis">
                                 <input
                                     type="checkbox"
@@ -502,6 +682,19 @@ export function WidgetPicker({
                                 />
                                 {t('showLegend')}
                             </label>
+                            <input
+                                type="number"
+                                min={2}
+                                max={8}
+                                step={1}
+                                value={donutMaxSegments}
+                                onChange={(e) => setDonutMaxSegments(e.target.value)}
+                                placeholder={t('maxSegmentsPlaceholder')}
+                                aria-label={t('maxSegments')}
+                                data-testid="widget-picker-donut-max-segments"
+                                className="block w-full rounded-md border border-border-subtle bg-bg-default px-3 py-2 text-sm text-content-emphasis placeholder:text-content-subtle focus:outline-none focus:ring-2 focus:ring-ring"
+                            />
+                          </div>
                         </FormField>
                     )}
 
@@ -510,6 +703,7 @@ export function WidgetPicker({
                             label={t('sortBy')}
                             description={t('sortByDescription')}
                         >
+                          <div className="space-y-tight">
                             <select
                                 value={tenantSort}
                                 onChange={(e) =>
@@ -521,12 +715,25 @@ export function WidgetPicker({
                                     )
                                 }
                                 data-testid="widget-picker-tenant-sort"
-                                className="block w-full rounded-md border border-border-default bg-bg-default px-3 py-2 text-sm text-content-emphasis focus:outline-none focus:ring-2 focus:ring-ring"
+                                className="block w-full rounded-md border border-border-subtle bg-bg-default px-3 py-2 text-sm text-content-emphasis focus:outline-none focus:ring-2 focus:ring-ring"
                             >
                                 <option value="rag">{t('sortRag')}</option>
                                 <option value="name">{t('sortName')}</option>
                                 <option value="coverage">{t('sortCoverage')}</option>
                             </select>
+                            <input
+                                type="number"
+                                min={1}
+                                max={200}
+                                step={1}
+                                value={tenantLimit}
+                                onChange={(e) => setTenantLimit(e.target.value)}
+                                placeholder={t('rowLimitPlaceholder')}
+                                aria-label={t('rowLimit')}
+                                data-testid="widget-picker-tenant-limit"
+                                className="block w-full rounded-md border border-border-subtle bg-bg-default px-3 py-2 text-sm text-content-emphasis placeholder:text-content-subtle focus:outline-none focus:ring-2 focus:ring-ring"
+                            />
+                          </div>
                         </FormField>
                     )}
 
@@ -557,7 +764,7 @@ export function WidgetPicker({
                                         setMaturityView(e.target.value as 'radar' | 'trend')
                                     }
                                     data-testid="widget-picker-maturity-view"
-                                    className="block w-full rounded-md border border-border-default bg-bg-default px-3 py-2 text-sm text-content-emphasis focus:outline-none focus:ring-2 focus:ring-ring"
+                                    className="block w-full rounded-md border border-border-subtle bg-bg-default px-3 py-2 text-sm text-content-emphasis focus:outline-none focus:ring-2 focus:ring-ring"
                                 >
                                     <option value="radar">{t('radar')}</option>
                                     <option value="trend">{t('trend')}</option>
@@ -596,8 +803,42 @@ export function WidgetPicker({
                                     }
                                 }}
                                 data-testid="widget-picker-initiatives-topn"
-                                className="block w-full rounded-md border border-border-default bg-bg-default px-3 py-2 text-sm text-content-emphasis focus:outline-none focus:ring-2 focus:ring-ring"
+                                className="block w-full rounded-md border border-border-subtle bg-bg-default px-3 py-2 text-sm text-content-emphasis focus:outline-none focus:ring-2 focus:ring-ring"
                             />
+                        </FormField>
+                    )}
+
+                    {type === 'ORG_INITIATIVES' && (
+                        <FormField
+                            label={t('statusFilter')}
+                            description={t('statusFilterDescription')}
+                        >
+                            <div
+                                className="flex flex-wrap gap-default"
+                                data-testid="widget-picker-initiatives-status"
+                            >
+                                {INITIATIVE_STATUSES.map((s) => (
+                                    <label
+                                        key={s}
+                                        className="flex items-center gap-tight text-sm text-content-emphasis"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={initiativesStatus.includes(s)}
+                                            onChange={(e) =>
+                                                setInitiativesStatus((prev) =>
+                                                    e.target.checked
+                                                        ? [...prev, s]
+                                                        : prev.filter((x) => x !== s),
+                                                )
+                                            }
+                                            data-testid={`widget-picker-initiatives-status-${s}`}
+                                            className="size-4 rounded border-border-default focus:ring-ring"
+                                        />
+                                        {t(`initiativeStatus.${s}`)}
+                                    </label>
+                                ))}
+                            </div>
                         </FormField>
                     )}
 
@@ -613,7 +854,7 @@ export function WidgetPicker({
                             maxLength={120}
                             placeholder={meta.label}
                             data-testid="widget-picker-title"
-                            className="block w-full rounded-md border border-border-default bg-bg-default px-3 py-2 text-sm text-content-emphasis placeholder:text-content-subtle focus:outline-none focus:ring-2 focus:ring-ring"
+                            className="block w-full rounded-md border border-border-subtle bg-bg-default px-3 py-2 text-sm text-content-emphasis placeholder:text-content-subtle focus:outline-none focus:ring-2 focus:ring-ring"
                         />
                     </FormField>
 
@@ -647,7 +888,13 @@ export function WidgetPicker({
                     data-testid="widget-picker-submit"
                     disabled={submitting}
                 >
-                    {submitting ? t('adding') : t('addWidget')}
+                    {isEdit
+                        ? submitting
+                            ? t('saving')
+                            : t('saveChanges')
+                        : submitting
+                            ? t('adding')
+                            : t('addWidget')}
                 </Button>
             </Modal.Actions>
         </Modal>
