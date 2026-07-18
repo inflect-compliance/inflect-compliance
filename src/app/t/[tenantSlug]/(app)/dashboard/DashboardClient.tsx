@@ -548,7 +548,7 @@ function ChartFocusWrapper({
 
 // ─── KPI drill-through tile ───────────────────────────────────────────
 //
-// Wraps a <KpiCard> (which owns the R17 focus-on-click interaction) with
+// Wraps a KpiCard (which owns the R17 focus-on-click interaction) with
 // a corner drill-through link so a click can NAVIGATE to the KPI's
 // filtered entity list. The link is a sibling overlay — NOT nested in
 // the KpiCard's focus button (invalid) and NOT a dependency of the
