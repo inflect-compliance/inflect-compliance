@@ -6,12 +6,12 @@ import { useRouter } from 'next/navigation';
 import {
     FilterX, Link2, FileText, AlertTriangle,
     CheckCircle2, XCircle, HelpCircle,
-    Plus, MessageSquare,
+    Plus, MessageSquare, Printer,
 } from 'lucide-react';
 import type { SoAReportDTO, SoAEntryDTO } from '@/lib/dto/soa';
 import { Modal } from '@/components/ui/modal';
 import { Tooltip } from '@/components/ui/tooltip';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/hooks/use-toast';
 import { textLinkVariants } from '@/components/ui/typography';
@@ -50,8 +50,10 @@ function StatusBadge({ value }: { value: string | null }) {
     if (!value) return <span className="text-content-subtle text-xs">—</span>;
     const cls: Record<string, StatusBadgeVariant> = {
         IMPLEMENTED: 'success',
+        IMPLEMENTING: 'info',
         IN_PROGRESS: 'info',
         NEEDS_REVIEW: 'warning',
+        PLANNED: 'neutral',
         NOT_STARTED: 'neutral',
     };
     return <StatusBadgePrimitive variant={cls[value] || 'neutral'}>{value.replace(/_/g, ' ')}</StatusBadgePrimitive>;
@@ -294,6 +296,19 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
                         <FilterX className="w-3.5 h-3.5" /> {t('soaView.clear')}
                     </Button>
                 )}
+
+                {/* Print / Save as PDF — opens the chrome-less print view.
+                    Forwards the framework so the printed SoA matches the one
+                    on screen (the print page applies the same ISO-only guard). */}
+                <a
+                    href={`/t/${tenantSlug}/reports/soa/print?framework=${encodeURIComponent(report.framework)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={buttonVariants({ variant: 'ghost' })}
+                    id="soa-print-link"
+                >
+                    <Printer className="w-3.5 h-3.5" /> {t('soaView.print')}
+                </a>
 
                 <span className="text-xs text-content-subtle ml-auto">
                     {t('soaView.filteredCount', { filtered: filteredEntries.length, total: report.entries.length })}

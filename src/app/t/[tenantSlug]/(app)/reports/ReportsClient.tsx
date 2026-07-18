@@ -249,7 +249,7 @@ export function ReportsClient({
                         action={
                             <div className="flex items-center gap-tight">
                                 <Link
-                                    href={`/t/${tenantSlug}/reports/soa`}
+                                    href={`/t/${tenantSlug}/reports/soa?framework=${encodeURIComponent(selectedKey)}`}
                                     className={buttonVariants({ variant: 'secondary', size: 'sm' })}
                                     id="report-card-soa-link"
                                 >
@@ -315,7 +315,7 @@ export function ReportsClient({
                             </div>
                             <div className={cardVariants({ density: 'none' })}>
                                 <KPIStat
-                                    value={s.readinessScore}
+                                    value={`${s.readinessScore}/100`}
                                     label={tx('readinessScore')}
                                     tone="default"
                                 />

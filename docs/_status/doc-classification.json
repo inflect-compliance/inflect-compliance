@@ -1651,6 +1651,9 @@
         },
         "docs/implementation-notes/2026-07-18-reports-readiness-spine.md": {
             "class": "historical"
+        },
+        "docs/implementation-notes/2026-07-18-reports-soa-cleanup.md": {
+            "class": "historical"
         }
     }
 }

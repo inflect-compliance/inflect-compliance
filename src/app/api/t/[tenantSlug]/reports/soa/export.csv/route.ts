@@ -8,12 +8,19 @@ import { runInTenantContext } from '@/lib/db-context';
 /**
  * SoA CSV Export
  *
- * Columns (stable, documented):
- *   AnnexAKey | Title | Section | Applicable | Justification |
- *   ImplementationStatus | ControlRefs | Owner | Frequency |
- *   EvidenceCount | OpenTasks | LastTestResult
+ * Columns are framework-family-dependent — the Applicability/Justification
+ * pair is an ISO-27001 Annex-A construct, so only the ISO family gets them:
  *
- * No internal IDs are exposed — uses control codes and titles only.
+ *   ISO family:
+ *     AnnexAKey | Title | Section | Applicable | Justification |
+ *     ImplementationStatus | ControlRefs | Owner | Frequency |
+ *     EvidenceCount | OpenTasks | LastTestResult
+ *   Non-ISO family (neutral coverage/readiness CSV):
+ *     RequirementKey | Title | Section | ImplementationStatus |
+ *     ControlRefs | Owner | Frequency | EvidenceCount | OpenTasks |
+ *     LastTestResult
+ *
+ * No internal IDs are exposed — uses requirement/control codes and titles only.
  */
 
 function escapeCSV(value: string | null | undefined): string {

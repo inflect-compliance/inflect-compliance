@@ -3490,21 +3490,7 @@
   },
   "reports": {
     "title": "Reports & Exports",
-    "subtitle": "Statement of Applicability & Risk Register",
-    "loading": "Loading reports...",
     "soa": "Statement of Applicability",
-    "control": "Control",
-    "name": "Name",
-    "applicable": "Applicable",
-    "status": "Status",
-    "evidence": "Evidence",
-    "overdue": "Overdue",
-    "risk": "Risk",
-    "threat": "Threat",
-    "score": "Score",
-    "treatment": "Treatment",
-    "owner": "Owner",
-    "controls": "Controls",
     "loadingAria": "Loading reports",
     "crumbDashboard": "Dashboard",
     "exportCsv": "Export CSV",
@@ -3557,7 +3543,8 @@
       "nonIsoNotice": "The Statement of Applicability is an ISO 27001 Annex A artifact. {framework} is not an ISO-family framework —",
       "nonIsoLink": "view its coverage & readiness instead",
       "excepted": "Excepted",
-      "exceptedUntil": "Excepted until {date}"
+      "exceptedUntil": "Excepted until {date}",
+      "print": "Print"
     },
     "soaPrint": {
       "printPreview": "SoA Print Preview",
