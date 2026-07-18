@@ -7,7 +7,12 @@ import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
-import { useTenantMembers } from '@/components/ui/user-combobox';
+import { useTenantMembers, UserCombobox, type Member } from '@/components/ui/user-combobox';
+import { DatePicker } from '@/components/ui/date-picker/date-picker';
+import { toYMD } from '@/components/ui/date-picker/date-utils';
+import { Input } from '@/components/ui/input';
+import { useEnterSubmit } from '@/components/ui/hooks';
+import { PenWriting } from '@/components/ui/icons/nucleo/pen-writing';
 import { ownerDisplayName } from '@/lib/owner-display';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -91,6 +96,8 @@ interface AssetVulnRow {
     status: string;
     matchedVia: string;
     remediationDueAt: string | null;
+    note: string | null;
+    ownerUserId: string | null;
     cve: { id: string; cvssScore: number | null; cvssSeverity: string | null; summary: string } | null;
     ownerUser: { id: string; name: string | null; email: string | null } | null;
 }
@@ -125,6 +132,24 @@ function vulnStatusVariant(status: string): StatusBadgeVariant {
         default: return 'neutral';
     }
 }
+
+/** Scanner-finding triage status → StatusBadge variant (was hardcoded neutral). */
+function scannerStatusVariant(status: string): StatusBadgeVariant {
+    switch (status) {
+        case 'OPEN': return 'error';
+        case 'TRIAGED': return 'warning';
+        case 'FIXED': return 'success';
+        case 'ACCEPTED': return 'info';
+        case 'FALSE_POSITIVE': return 'neutral';
+        default: return 'neutral';
+    }
+}
+
+// Client-safe copies of the server triage enums — do NOT import the server
+// usecase consts (VULN_STATUSES / SCANNER_FINDING_STATUSES) into this client
+// component; that would bundle server code.
+const VULN_STATUS_VALUES = ['OPEN', 'MITIGATING', 'MITIGATED', 'ACCEPTED', 'FALSE_POSITIVE'] as const;
+const SCANNER_STATUS_VALUES = ['OPEN', 'TRIAGED', 'FIXED', 'FALSE_POSITIVE', 'ACCEPTED'] as const;
 
 export default function AssetDetailPage() {
     const params = useParams();
@@ -192,7 +217,7 @@ export default function AssetDetailPage() {
     // ─── Activity feed (lazy, only while the Activity tab is open) ───
     // Asset mutations log with entity='Asset'; these are the action
     // types surfaced with a friendly label (unknown falls back to raw).
-    const ASSET_EVENT_KEYS = ['CREATE', 'UPDATE', 'SOFT_DELETE', 'ASSET_EVIDENCE_LINKED', 'ASSET_EVIDENCE_UNLINKED'] as const;
+    const ASSET_EVENT_KEYS = ['CREATE', 'UPDATE', 'SOFT_DELETE', 'ENTITY_RESTORED', 'ASSET_EVIDENCE_LINKED', 'ASSET_EVIDENCE_UNLINKED'] as const;
     const EVENT_LABELS: Record<string, string> = Object.fromEntries(
         ASSET_EVENT_KEYS.map((k) => [k, t(`detail.eventLabels.${k}`)]),
     );
@@ -233,6 +258,66 @@ export default function AssetDetailPage() {
             setConvertingId(null);
         }
     };
+
+    // ─── Inline triage (subpoint 5): optimistic overrides + OPEN-scoped feeds ───
+    // The two feeds default to OPEN — matching the "open vulnerabilities" framing
+    // of the list column — with a toggle to reveal resolved rows. Edits reuse the
+    // same PATCH endpoints the global Vulnerabilities / Security-testing pages use.
+    const [showResolved, setShowResolved] = useState(false);
+    const [vulnOverrides, setVulnOverrides] = useState<Record<string, Partial<AssetVulnRow>>>({});
+    const [scannerOverrides, setScannerOverrides] = useState<Record<string, Partial<AssetScannerFindingRow>>>({});
+
+    const patchVulnRow = async (id: string, body: Record<string, unknown>, optimistic: Partial<AssetVulnRow>) => {
+        setVulnOverrides((p) => ({ ...p, [id]: { ...p[id], ...optimistic } }));
+        try {
+            const res = await fetch(apiUrl(`/vulnerabilities/${id}`), {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            vulnQuery.mutate();
+        } catch {
+            setVulnOverrides((p) => { const n = { ...p }; delete n[id]; return n; });
+            setError(t('detail.vuln.updateFailed'));
+            router.refresh();
+        }
+    };
+    const patchScannerRow = async (id: string, status: string) => {
+        setScannerOverrides((p) => ({ ...p, [id]: { ...p[id], status } }));
+        try {
+            const res = await fetch(apiUrl(`/security-testing/findings/${id}`), {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status }),
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            scannerQuery.mutate();
+        } catch {
+            setScannerOverrides((p) => { const n = { ...p }; delete n[id]; return n; });
+            setError(t('detail.vuln.updateFailed'));
+            router.refresh();
+        }
+    };
+
+    const visibleVulnRows = useMemo(() => {
+        const merged = vulnRows.map((r) => ({ ...r, ...vulnOverrides[r.id] }));
+        return showResolved ? merged : merged.filter((r) => r.status === 'OPEN');
+    }, [vulnRows, vulnOverrides, showResolved]);
+    const visibleScannerRows = useMemo(() => {
+        const merged = scannerRows.map((r) => ({ ...r, ...scannerOverrides[r.id] }));
+        return showResolved ? merged : merged.filter((r) => r.status === 'OPEN');
+    }, [scannerRows, scannerOverrides, showResolved]);
+
+    const vulnStatusOptions = useMemo<ComboboxOption[]>(
+        () => VULN_STATUS_VALUES.map((s) => ({ value: s, label: s.replace(/_/g, ' ') })),
+        [],
+    );
+    const scannerStatusOptions = useMemo<ComboboxOption[]>(
+        () => SCANNER_STATUS_VALUES.map((s) => ({ value: s, label: s.replace(/_/g, ' ') })),
+        [],
+    );
+
     // Modal-form P2 — the inline-edit panel is replaced by an
     // EditAssetModal launched from the detail header. The page URL
     // stays canonical; modal state is purely overlay. Seeding values
@@ -490,8 +575,17 @@ export default function AssetDetailPage() {
               <div className="space-y-section">
                 <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')} id="asset-vulnerabilities-tab">
                     {/* Inbound link to the global Vulnerabilities view, scoped to
-                        this asset — the same deep-link the assets-list badge uses. */}
-                    <div className="flex items-center justify-end border-b border-border-subtle p-3">
+                        this asset — the same deep-link the assets-list badge uses.
+                        The Open/Resolved toggle governs BOTH feeds (CVE + scanner). */}
+                    <div className="flex items-center justify-between gap-compact border-b border-border-subtle p-3">
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            id="asset-vulns-show-resolved"
+                            aria-pressed={showResolved}
+                            onClick={() => setShowResolved((v) => !v)}
+                            text={showResolved ? t('detail.vuln.showingResolved') : t('detail.vuln.showResolved')}
+                        />
                         <Link
                             href={tenantHref(`/vulnerabilities?assetId=${assetId}`)}
                             id="asset-see-all-vulns"
@@ -501,7 +595,7 @@ export default function AssetDetailPage() {
                         </Link>
                     </div>
                     <DataTable<AssetVulnRow>
-                        data={vulnRows}
+                        data={visibleVulnRows}
                         loading={vulnLoading}
                         getRowId={(v) => v.id}
                         resourceName={(plural) => (plural ? t('detail.tabs.vulnerabilities') : t('detail.tabs.vulnerabilities'))}
@@ -536,11 +630,26 @@ export default function AssetDetailPage() {
                             {
                                 id: 'status',
                                 header: t('detail.vuln.status'),
-                                cell: ({ row }) => (
-                                    <StatusBadge variant={vulnStatusVariant(row.original.status)} size="sm">
-                                        {row.original.status}
-                                    </StatusBadge>
-                                ),
+                                cell: ({ row }) => {
+                                    const r = row.original;
+                                    if (!permissions.canWrite) {
+                                        return (
+                                            <StatusBadge variant={vulnStatusVariant(r.status)} size="sm">
+                                                {r.status}
+                                            </StatusBadge>
+                                        );
+                                    }
+                                    return (
+                                        <Combobox
+                                            options={vulnStatusOptions}
+                                            selected={vulnStatusOptions.find((o) => o.value === r.status) ?? null}
+                                            setSelected={(opt) => opt && patchVulnRow(r.id, { status: opt.value }, { status: opt.value })}
+                                            hideSearch
+                                            matchTriggerWidth
+                                            buttonProps={{ size: 'sm', 'aria-label': t('detail.vuln.status') }}
+                                        />
+                                    );
+                                },
                             },
                             {
                                 id: 'matchedVia',
@@ -550,19 +659,75 @@ export default function AssetDetailPage() {
                             {
                                 id: 'owner',
                                 header: t('detail.vuln.owner'),
-                                cell: ({ row }) => (
-                                    <span className="text-sm text-content-muted">
-                                        {row.original.ownerUser?.name || row.original.ownerUser?.email || t('detail.vuln.unassigned')}
-                                    </span>
-                                ),
+                                cell: ({ row }) => {
+                                    const r = row.original;
+                                    if (!permissions.canWrite) {
+                                        return (
+                                            <span className="text-sm text-content-muted">
+                                                {r.ownerUser?.name || r.ownerUser?.email || t('detail.vuln.unassigned')}
+                                            </span>
+                                        );
+                                    }
+                                    return (
+                                        <UserCombobox
+                                            tenantSlug={tenantSlug}
+                                            size="sm"
+                                            matchTriggerWidth
+                                            selectedId={r.ownerUserId}
+                                            onChange={(userId, member: Member | null) =>
+                                                patchVulnRow(
+                                                    r.id,
+                                                    { ownerUserId: userId },
+                                                    {
+                                                        ownerUserId: userId,
+                                                        ownerUser: userId && member ? { id: member.id, name: member.name, email: member.email } : null,
+                                                    },
+                                                )
+                                            }
+                                            placeholder={t('detail.vuln.assignOwner')}
+                                        />
+                                    );
+                                },
                             },
                             {
                                 id: 'due',
                                 header: t('detail.vuln.due'),
+                                cell: ({ row }) => {
+                                    const r = row.original;
+                                    if (!permissions.canWrite) {
+                                        return (
+                                            <span className="text-sm text-content-muted">
+                                                {r.remediationDueAt ? formatDate(r.remediationDueAt) : t('detail.vuln.none')}
+                                            </span>
+                                        );
+                                    }
+                                    return (
+                                        <DatePicker
+                                            clearable
+                                            align="start"
+                                            placeholder={t('detail.vuln.setDue')}
+                                            value={r.remediationDueAt ? new Date(r.remediationDueAt) : null}
+                                            onChange={(next) => {
+                                                const ymd = toYMD(next);
+                                                patchVulnRow(r.id, { remediationDueAt: ymd }, { remediationDueAt: ymd ?? null });
+                                            }}
+                                            aria-label={t('detail.vuln.due')}
+                                        />
+                                    );
+                                },
+                            },
+                            {
+                                id: 'note',
+                                header: t('detail.vuln.note'),
                                 cell: ({ row }) => (
-                                    <span className="text-sm text-content-muted">
-                                        {row.original.remediationDueAt ? formatDate(row.original.remediationDueAt) : t('detail.vuln.none')}
-                                    </span>
+                                    <VulnNoteCell
+                                        row={row.original}
+                                        canWrite={permissions.canWrite}
+                                        onSave={(id, note) => patchVulnRow(id, { note }, { note })}
+                                        emptyLabel={t('detail.vuln.addNote')}
+                                        editLabel={t('detail.vuln.editNote')}
+                                        placeholder={t('detail.vuln.notePlaceholder')}
+                                    />
                                 ),
                             },
                             ...(permissions.canWrite
@@ -608,7 +773,7 @@ export default function AssetDetailPage() {
                         </Link>
                     </div>
                     <DataTable<AssetScannerFindingRow>
-                        data={scannerRows}
+                        data={visibleScannerRows}
                         loading={scannerLoading}
                         getRowId={(r) => r.id}
                         resourceName={() => t('detail.vuln.scannerTitle')}
@@ -626,7 +791,22 @@ export default function AssetDetailPage() {
                             { id: 'rule', header: t('detail.vuln.scannerRule'), accessorFn: (r: AssetScannerFindingRow) => r.ruleId, cell: ({ row }: { row: { original: AssetScannerFindingRow } }) => <span className="text-xs text-content-muted">{row.original.ruleId}</span> },
                             { id: 'location', header: t('detail.vuln.scannerLocation'), accessorFn: (r: AssetScannerFindingRow) => r.location ?? '—', cell: ({ row }: { row: { original: AssetScannerFindingRow } }) => <span className="text-xs text-content-muted">{row.original.location ?? '—'}</span> },
                             { id: 'source', header: t('detail.vuln.scannerSource'), accessorFn: (r: AssetScannerFindingRow) => r.scannerRun?.source ?? '—', cell: ({ row }: { row: { original: AssetScannerFindingRow } }) => <span className="text-xs text-content-muted">{row.original.scannerRun?.source ?? '—'}</span> },
-                            { id: 'status', header: t('detail.vuln.scannerStatus'), accessorFn: (r: AssetScannerFindingRow) => r.status, cell: ({ row }: { row: { original: AssetScannerFindingRow } }) => <StatusBadge variant="neutral" size="sm">{row.original.status}</StatusBadge> },
+                            { id: 'status', header: t('detail.vuln.scannerStatus'), accessorFn: (r: AssetScannerFindingRow) => r.status, cell: ({ row }: { row: { original: AssetScannerFindingRow } }) => {
+                                const r = row.original;
+                                if (!permissions.canWrite) {
+                                    return <StatusBadge variant={scannerStatusVariant(r.status)} size="sm">{r.status.replace(/_/g, ' ')}</StatusBadge>;
+                                }
+                                return (
+                                    <Combobox
+                                        options={scannerStatusOptions}
+                                        selected={scannerStatusOptions.find((o) => o.value === r.status) ?? null}
+                                        setSelected={(opt) => opt && patchScannerRow(r.id, opt.value)}
+                                        hideSearch
+                                        matchTriggerWidth
+                                        buttonProps={{ size: 'sm', 'aria-label': t('detail.vuln.scannerStatus') }}
+                                    />
+                                );
+                            } },
                         ] as ColumnDef<AssetScannerFindingRow, unknown>[]}
                     />
                 </div>
@@ -903,5 +1083,85 @@ export default function AssetDetailPage() {
                 onConfirm={handleDelete}
             />
         </EntityDetailLayout>
+    );
+}
+
+/**
+ * Inline-editable analyst-note cell for a CVE vulnerability row. Read users see
+ * the truncated note (or an em dash); write users click-to-edit, committing via
+ * the optimistic `onSave` on blur / Enter and cancelling on Escape. Mirrors the
+ * global Vulnerabilities page NoteCell so the two triage surfaces feel identical.
+ */
+function VulnNoteCell({
+    row,
+    canWrite,
+    onSave,
+    emptyLabel,
+    editLabel,
+    placeholder,
+}: {
+    row: AssetVulnRow;
+    canWrite: boolean;
+    onSave: (id: string, note: string | null) => void;
+    emptyLabel: string;
+    editLabel: string;
+    placeholder: string;
+}) {
+    const [editing, setEditing] = useState(false);
+    const [value, setValue] = useState(row.note ?? '');
+    const commit = () => {
+        setEditing(false);
+        const next = value.trim().length ? value.trim() : null;
+        if ((row.note ?? null) !== next) onSave(row.id, next);
+    };
+    const { handleKeyDown } = useEnterSubmit({ modifier: 'always', onSubmit: () => commit() });
+
+    if (!canWrite) {
+        return row.note ? (
+            <span className="block max-w-xs truncate text-content-default">{row.note}</span>
+        ) : (
+            <span className="text-content-muted">—</span>
+        );
+    }
+
+    if (editing) {
+        return (
+            <Input
+                autoFocus
+                size="sm"
+                value={value}
+                placeholder={placeholder}
+                aria-label={editLabel}
+                onChange={(e) => setValue(e.target.value)}
+                onBlur={commit}
+                onKeyDown={(e) => {
+                    handleKeyDown(e);
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        setValue(row.note ?? '');
+                        setEditing(false);
+                    }
+                }}
+            />
+        );
+    }
+
+    return (
+        <button
+            type="button"
+            aria-label={editLabel}
+            onClick={() => {
+                setValue(row.note ?? '');
+                setEditing(true);
+            }}
+            className="group inline-flex max-w-xs items-center gap-tight text-left text-content-default hover:text-content-emphasis"
+        >
+            {row.note ? (
+                <span className="truncate">{row.note}</span>
+            ) : (
+                <span className="text-content-muted">{emptyLabel}</span>
+            )}
+            <PenWriting className="h-3 w-3 shrink-0 text-content-subtle opacity-0 transition-opacity group-hover:opacity-100" />
+        </button>
     );
 }

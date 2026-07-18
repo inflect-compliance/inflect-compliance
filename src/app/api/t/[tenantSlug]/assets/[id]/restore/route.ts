@@ -1,12 +1,15 @@
-import { NextRequest } from 'next/server';
-import { getTenantCtx } from '@/app-layer/context';
 import { restoreAsset } from '@/app-layer/usecases/asset';
 import { withApiErrorHandling } from '@/lib/errors/api';
+import { requirePermission } from '@/lib/security/permission-middleware';
 import { jsonResponse } from '@/lib/api-response';
 
-export const POST = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string }> }) => {
-    const params = await paramsPromise;
-    const ctx = await getTenantCtx(params, req);
-    const result = await restoreAsset(ctx, params.id);
+type AssetDetailParams = { tenantSlug: string; id: string };
+
+// Restore reverses a soft-delete — gated like every other asset mutation
+// (matches the DELETE handler's `assets.edit`) so the denial audits cleanly
+// via the Epic C.1 permission guard instead of a bare tenant-context check.
+export const POST = withApiErrorHandling(requirePermission<AssetDetailParams>('assets.edit', async (_req, { params }, ctx) => {
+    const { id } = await params;
+    const result = await restoreAsset(ctx, id);
     return jsonResponse(result);
-});
+}));

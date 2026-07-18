@@ -586,7 +586,16 @@
         "scannerRule": "Rule",
         "scannerLocation": "Location",
         "scannerSource": "Scanner",
-        "scannerStatus": "Status"
+        "scannerStatus": "Status",
+        "updateFailed": "Couldn't save your change",
+        "showResolved": "Show resolved",
+        "showingResolved": "Showing resolved",
+        "assignOwner": "Assign owner",
+        "setDue": "Set due date",
+        "note": "Note",
+        "addNote": "Add note",
+        "editNote": "Edit note",
+        "notePlaceholder": "Add a note…"
       },
       "activityFeed": {
         "loading": "Loading activity…",
@@ -598,6 +607,7 @@
         "CREATE": "Created",
         "UPDATE": "Updated",
         "SOFT_DELETE": "Deleted",
+        "ENTITY_RESTORED": "Restored",
         "ASSET_EVIDENCE_LINKED": "Evidence linked",
         "ASSET_EVIDENCE_UNLINKED": "Evidence unlinked"
       },
@@ -731,7 +741,9 @@
       "purgeTitle": "Permanently purge asset",
       "purgeBody": "This permanently deletes {name} and all of its data. This action cannot be undone.",
       "purgeTypeToConfirm": "Type {name} to confirm",
-      "purgeFailed": "Failed to purge asset. Please try again."
+      "purgeFailed": "Failed to purge asset. Please try again.",
+      "emptyTitle": "No deleted assets",
+      "emptyDesc": "Deleted assets appear here and can be restored."
     }
   },
   "risks": {

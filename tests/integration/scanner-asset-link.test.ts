@@ -98,6 +98,18 @@ describeFn('scanner→asset linkage + soft-delete lifecycle (integration)', () =
         expect(row?.assetId).toBeNull();
     });
 
+    it('prefers an externalRef match over a name match (deterministic resolution)', async () => {
+        // Two assets collide on the same repo string — one matches by NAME, the
+        // other by externalRef. externalRef is the harder key, so it must win
+        // regardless of insert order / DB row order.
+        const byName = await prisma.asset.create({ data: { tenantId: ctxA.tenantId, name: 'collide/repo', type: 'APPLICATION' } });
+        const byRef = await prisma.asset.create({ data: { tenantId: ctxA.tenantId, name: 'Collide App', type: 'APPLICATION', externalRef: 'collide/repo' } });
+        await ingestScannerRun(ctxA, { sarif: sarif('js/collide'), repoRef: 'collide/repo@zzz', materializeFindings: false });
+        const row = await prisma.scannerFinding.findFirst({ where: { tenantId: ctxA.tenantId, ruleId: 'js/collide' } });
+        expect(row?.assetId).toBe(byRef.id);
+        expect(row?.assetId).not.toBe(byName.id);
+    });
+
     it('supports the soft-delete → restore → purge lifecycle', async () => {
         const asset = await prisma.asset.create({ data: { tenantId: ctxA.tenantId, name: `Doomed ${stamp}`, type: 'SYSTEM' } });
 
@@ -107,8 +119,13 @@ describeFn('scanner→asset linkage + soft-delete lifecycle (integration)', () =
         expect(found?.deletedAt).not.toBeNull();
 
         await restoreAsset(ctxA, asset.id);
-        const afterRestore = (await listAssetsWithDeleted(ctxA)).find((a: { id: string }) => a.id === asset.id) as { deletedAt: Date | null } | undefined;
-        expect(afterRestore?.deletedAt).toBeNull();
+        // The deleted view is now scoped to soft-deleted rows only, so a
+        // restored (live-again) asset must NOT appear there; confirm the
+        // restore cleared deletedAt via a direct read.
+        const stillInDeletedView = (await listAssetsWithDeleted(ctxA)).some((a: { id: string }) => a.id === asset.id);
+        expect(stillInDeletedView).toBe(false);
+        const restored = await prisma.asset.findFirst({ where: { id: asset.id } });
+        expect(restored?.deletedAt ?? null).toBeNull();
 
         // Purge requires a soft-deleted row → delete again, then hard-purge.
         await deleteAsset(ctxA, asset.id);

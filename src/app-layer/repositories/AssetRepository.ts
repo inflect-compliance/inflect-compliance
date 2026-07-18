@@ -3,6 +3,7 @@ import { RequestContext } from '../types';
 import { Prisma, AssetType, AssetStatus, Criticality } from '@prisma/client';
 import { buildCursorWhere, CURSOR_ORDER_BY, computePageInfo, clampLimit } from '@/lib/pagination';
 import type { PaginatedResponse } from '@/lib/dto/pagination';
+import { withDeleted } from '@/lib/soft-delete';
 
 export interface AssetFilters {
     type?: string;
@@ -28,6 +29,26 @@ export class AssetRepository {
                 ownerUser: { select: { id: true, name: true, email: true } },
             },
         });
+    }
+
+    /**
+     * Deleted-assets view: ONLY soft-deleted rows, honouring the same
+     * type/status/criticality/q filters as the live list. `withDeleted` opts
+     * out of the soft-delete read-filter; the explicit `deletedAt: { not: null }`
+     * then narrows to just the deleted set (opting out alone would return
+     * everything). Includes the who/when lifecycle columns.
+     */
+    static async listDeleted(db: PrismaTx, ctx: RequestContext, filters?: AssetFilters) {
+        const where = AssetRepository._buildWhere(ctx, filters);
+        where.deletedAt = { not: null };
+        return db.asset.findMany(withDeleted({
+            where,
+            orderBy: { deletedAt: 'desc' as const },
+            include: {
+                _count: { select: { controls: true } },
+                ownerUser: { select: { id: true, name: true, email: true } },
+            },
+        }));
     }
 
     static async listPaginated(db: PrismaTx, ctx: RequestContext, params: AssetListParams): Promise<PaginatedResponse<unknown>> {

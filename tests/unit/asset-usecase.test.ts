@@ -38,6 +38,12 @@ const mockDb = {
         groupBy: jest.fn().mockResolvedValue([]),
         findMany: jest.fn().mockResolvedValue([]),
     },
+    // enrichAssetRows now also folds OPEN scanner findings into the rollup.
+    scannerFinding: {
+        count: jest.fn().mockResolvedValue(0),
+        groupBy: jest.fn().mockResolvedValue([]),
+        findMany: jest.fn().mockResolvedValue([]),
+    },
     // Asset activity feed (getAssetActivity).
     auditLog: { findMany: jest.fn().mockResolvedValue([]) },
 } as any;
@@ -49,6 +55,7 @@ jest.mock('@/lib/db-context', () => ({
 jest.mock('@/app-layer/repositories/AssetRepository', () => ({
     AssetRepository: {
         list: jest.fn(),
+        listDeleted: jest.fn(),
         listPaginated: jest.fn(),
         getById: jest.fn(),
         create: jest.fn(),
@@ -333,11 +340,12 @@ describe('purgeAsset', () => {
 });
 
 describe('listAssetsWithDeleted', () => {
-    it('admin-gated + uses withDeleted wrapper', async () => {
-        (mockDb.asset.findMany as jest.Mock).mockResolvedValue([{ id: 'a-1' }]);
-        await listAssetsWithDeleted(adminCtx);
-        const args = (mockDb.asset.findMany as jest.Mock).mock.calls[0][0];
-        expect(args._withDeleted).toBe(true);
+    it('admin-gated + delegates to AssetRepository.listDeleted (deleted-scope query)', async () => {
+        (AssetRepository.listDeleted as jest.Mock).mockResolvedValue([{ id: 'a-1' }]);
+        await listAssetsWithDeleted(adminCtx, { q: 'srv' });
+        // The deleted-only scoping + withDeleted wrapper now live in the
+        // repository; the usecase must delegate there and forward the filters.
+        expect(AssetRepository.listDeleted).toHaveBeenCalledWith(mockDb, adminCtx, { q: 'srv' });
     });
 
     it('rejects AUDITOR', async () => {

@@ -13,40 +13,81 @@ import { logger } from '@/lib/observability';
 import { criticalityToEnum } from '@/lib/asset-criticality';
 
 /**
+ * CVSS-severity / scanner-finding-severity labels ranked so the two OPEN
+ * vulnerability sources (CVE `AssetVulnerability` + `ScannerFinding`) fold
+ * into one "worst OPEN severity" per asset. Unknown / null labels rank 0.
+ */
+const SEVERITY_RANK: Record<string, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
+
+/** Return whichever of two severity labels is worse (higher-ranked); null when both are absent. */
+function worseSeverity(a: string | null | undefined, b: string | null | undefined): string | null {
+    const ra = a ? SEVERITY_RANK[a] ?? 0 : 0;
+    const rb = b ? SEVERITY_RANK[b] ?? 0 : 0;
+    return rb > ra ? b ?? null : a ?? null;
+}
+
+/**
  * Attach the list-row rollups to a set of asset rows: linked-task counts
  * (TaskLink ASSET) + a per-asset OPEN-vulnerability rollup (count + top
- * severity). Both are batched over the ≤N row ids — no per-row reads. Shared
- * by listAssets and listAssetsWithDeleted so the deleted-assets view renders
- * with the same columns.
+ * severity). The vuln rollup folds BOTH sources the asset detail tab shows —
+ * CVE `AssetVulnerability` rows AND scanner `ScannerFinding` rows resolved to
+ * the asset — so the list column matches the detail tab. Everything is batched
+ * over the ≤N row ids — no per-row reads. Shared by listAssets and
+ * listAssetsWithDeleted so the deleted-assets view renders with the same columns.
  */
 async function enrichAssetRows<T extends { id: string }>(db: PrismaTx, ctx: RequestContext, rows: T[]) {
     const ids = rows.map((r) => r.id);
-    const [counts, vulnGroups, topVulns] = await Promise.all([
+    if (ids.length === 0) {
+        return rows.map((r) => ({ ...r, taskTotal: 0, taskDone: 0, openVulnCount: 0, maxVulnSeverity: null as string | null }));
+    }
+    const [counts, cveGroups, cveTop, scanGroups, scanSevs] = await Promise.all([
         WorkItemRepository.countLinkedToEntities(db, ctx, 'ASSET' as TaskLinkEntityType, ids),
-        ids.length
-            ? db.assetVulnerability.groupBy({
-                  by: ['assetId'],
-                  where: { tenantId: ctx.tenantId, assetId: { in: ids }, status: 'OPEN' },
-                  _count: { _all: true },
-              })
-            : Promise.resolve([] as { assetId: string; _count: { _all: number } }[]),
-        ids.length
-            ? db.assetVulnerability.findMany({ // guardrail-allow: unbounded — bounded by assetId in-list; `distinct` yields ≤1 row per listed asset.
-                  where: { tenantId: ctx.tenantId, assetId: { in: ids }, status: 'OPEN' },
-                  distinct: ['assetId'],
-                  orderBy: [{ assetId: 'asc' }, { cve: { cvssScore: 'desc' } }],
-                  select: { assetId: true, cve: { select: { cvssSeverity: true } } },
-              })
-            : Promise.resolve([] as { assetId: string; cve: { cvssSeverity: string | null } | null }[]),
+        db.assetVulnerability.groupBy({
+            by: ['assetId'],
+            where: { tenantId: ctx.tenantId, assetId: { in: ids }, status: 'OPEN' },
+            _count: { _all: true },
+        }),
+        // Top OPEN CVE per asset by score. `nulls: 'last'` keeps a null-scored
+        // CVE from sorting AHEAD of a real CRITICAL (the DESC default is NULLS
+        // FIRST) and greying the badge.
+        db.assetVulnerability.findMany({ // guardrail-allow: unbounded — distinct ['assetId'] yields ≤1 row per listed asset.
+            where: { tenantId: ctx.tenantId, assetId: { in: ids }, status: 'OPEN' },
+            distinct: ['assetId'],
+            orderBy: [{ assetId: 'asc' }, { cve: { cvssScore: { sort: 'desc', nulls: 'last' } } }],
+            select: { assetId: true, cve: { select: { cvssSeverity: true } } },
+        }),
+        db.scannerFinding.groupBy({
+            by: ['assetId'],
+            where: { tenantId: ctx.tenantId, assetId: { in: ids }, status: 'OPEN' },
+            _count: { _all: true },
+        }),
+        db.scannerFinding.findMany({ // guardrail-allow: unbounded — distinct ['assetId','severity'] yields ≤4 rows per listed asset.
+            where: { tenantId: ctx.tenantId, assetId: { in: ids }, status: 'OPEN' },
+            distinct: ['assetId', 'severity'],
+            select: { assetId: true, severity: true },
+        }),
     ]);
-    const openVulnByAsset = new Map(vulnGroups.map((g) => [g.assetId, g._count._all]));
-    const topSevByAsset = new Map(topVulns.map((v) => [v.assetId, v.cve?.cvssSeverity ?? null]));
+
+    // OPEN-vuln count = CVE vulnerabilities + scanner findings.
+    const cveCountByAsset = new Map(cveGroups.map((g) => [g.assetId, g._count._all]));
+    const scanCountByAsset = new Map(
+        scanGroups.filter((g) => g.assetId).map((g) => [g.assetId as string, g._count._all]),
+    );
+
+    // Worst OPEN severity per asset, folded across both sources.
+    const sevByAsset = new Map<string, string | null>();
+    for (const v of cveTop) sevByAsset.set(v.assetId, v.cve?.cvssSeverity ?? null);
+    for (const s of scanSevs) {
+        if (!s.assetId) continue;
+        sevByAsset.set(s.assetId, worseSeverity(sevByAsset.get(s.assetId) ?? null, s.severity));
+    }
+
     return rows.map((r) => ({
         ...r,
         taskTotal: counts.get(r.id)?.total ?? 0,
         taskDone: counts.get(r.id)?.done ?? 0,
-        openVulnCount: openVulnByAsset.get(r.id) ?? 0,
-        maxVulnSeverity: topSevByAsset.get(r.id) ?? null,
+        openVulnCount: (cveCountByAsset.get(r.id) ?? 0) + (scanCountByAsset.get(r.id) ?? 0),
+        maxVulnSeverity: sevByAsset.get(r.id) ?? null,
     }));
 }
 
@@ -83,24 +124,34 @@ async function computeAssetRollups(
     ctx: RequestContext,
     assetId: string,
 ): Promise<AssetRollups> {
-    const [riskCount, controlCount, openVulnCount, topOpenVuln, taskCounts] = await Promise.all([
+    const [riskCount, controlCount, cveOpenCount, topOpenVuln, scanOpenCount, scanSevs, taskCounts] = await Promise.all([
         db.assetRiskLink.count({ where: { tenantId: ctx.tenantId, assetId } }),
         db.controlAsset.count({ where: { tenantId: ctx.tenantId, assetId } }),
         db.assetVulnerability.count({ where: { tenantId: ctx.tenantId, assetId, status: 'OPEN' } }),
         db.assetVulnerability.findFirst({
             where: { tenantId: ctx.tenantId, assetId, status: 'OPEN' },
-            orderBy: [{ cve: { cvssScore: 'desc' } }],
+            // `nulls: 'last'` — a null-scored CVE must not outrank a real CRITICAL.
+            orderBy: [{ cve: { cvssScore: { sort: 'desc', nulls: 'last' } } }],
             select: { cve: { select: { cvssSeverity: true, cvssScore: true } } },
+        }),
+        db.scannerFinding.count({ where: { tenantId: ctx.tenantId, assetId, status: 'OPEN' } }),
+        db.scannerFinding.findMany({ // guardrail-allow: unbounded — distinct ['severity'] yields ≤4 rows for one asset.
+            where: { tenantId: ctx.tenantId, assetId, status: 'OPEN' },
+            distinct: ['severity'],
+            select: { severity: true },
         }),
         WorkItemRepository.countLinkedToEntities(db, ctx, 'ASSET' as TaskLinkEntityType, [assetId]),
     ]);
     const tc = taskCounts.get(assetId) ?? { total: 0, done: 0 };
+    // Fold the worst scanner-finding severity into the CVE max so the detail
+    // rollup reflects the true worst OPEN vuln from either source.
+    const scanWorst = scanSevs.reduce<string | null>((acc, s) => worseSeverity(acc, s.severity), null);
     return {
         risks: { count: riskCount },
         controls: { count: controlCount },
         vulnerabilities: {
-            openCount: openVulnCount,
-            maxSeverity: topOpenVuln?.cve?.cvssSeverity ?? null,
+            openCount: cveOpenCount + scanOpenCount,
+            maxSeverity: worseSeverity(topOpenVuln?.cve?.cvssSeverity ?? null, scanWorst),
             maxScore: topOpenVuln?.cve?.cvssScore ?? null,
         },
         tasks: { openCount: tc.total - tc.done, total: tc.total },
@@ -535,7 +586,6 @@ export async function deleteAsset(ctx: RequestContext, id: string) {
 // ─── Restore / Purge / Include Deleted ───
 
 import { restoreEntity, purgeEntity } from './soft-delete-operations';
-import { withDeleted } from '@/lib/soft-delete';
 
 export async function restoreAsset(ctx: RequestContext, id: string) {
     return restoreEntity(ctx, 'Asset', id);
@@ -545,17 +595,12 @@ export async function purgeAsset(ctx: RequestContext, id: string) {
     return purgeEntity(ctx, 'Asset', id);
 }
 
-export async function listAssetsWithDeleted(ctx: RequestContext) {
+export async function listAssetsWithDeleted(ctx: RequestContext, filters?: AssetFilters) {
     assertCanAdmin(ctx);
     return runInTenantContext(ctx, async (db) => {
-        const rows = await db.asset.findMany(withDeleted({
-            where: { tenantId: ctx.tenantId },
-            orderBy: { createdAt: 'desc' as const },
-            include: {
-                _count: { select: { controls: true } },
-                ownerUser: { select: { id: true, name: true, email: true } },
-            },
-        }));
+        // ONLY soft-deleted rows (the repository adds `deletedAt: { not: null }`),
+        // honouring the same type/status/criticality/q filters as the live list.
+        const rows = await AssetRepository.listDeleted(db, ctx, filters);
         // Same rollups as listAssets so the deleted-assets view renders with the
         // identical column set (task counts + open-vuln signal).
         return enrichAssetRows(db, ctx, rows);

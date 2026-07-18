@@ -22,7 +22,13 @@ export const GET = withApiErrorHandling(requirePermission<{ tenantSlug: string }
     const query = AssetQuerySchema.parse(sp);
 
     if (query.includeDeleted === 'true') {
-        const assets = await listAssetsWithDeleted(ctx);
+        // Honour the same toolbar filters the client keeps active in deleted mode.
+        const assets = await listAssetsWithDeleted(ctx, {
+            type: query.type,
+            status: query.status,
+            criticality: query.criticality,
+            q: query.q,
+        });
         return jsonResponse(assets);
     }
 
