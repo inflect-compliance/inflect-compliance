@@ -103,7 +103,7 @@ describeFn('bulkImportAssets (integration)', () => {
             where: { tenantId, name: { startsWith: `Batch ${runId}-` } },
             select: { key: true },
         });
-        const uniqueKeys = new Set(keys.map((k) => k.key));
+        const uniqueKeys = new Set(keys.map((k: { key: string | null }) => k.key));
         expect(uniqueKeys.size).toBe(5);
     });
 });

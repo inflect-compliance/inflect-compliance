@@ -245,8 +245,11 @@ export default function AssetImportPage() {
                 <Heading level={3} className="mb-2">{t('import.csvFormat')}</Heading>
                 <p className="text-xs text-content-muted">{t('import.csvDesc')}</p>
                 <pre className="mt-2 text-xs text-content-subtle bg-bg-page/50 p-2 rounded overflow-x-auto">
-                    Name,Type,Status,Owner,Classification,Location,Confidentiality,Integrity,Availability,ExternalRef,Dependencies,BusinessProcesses,Retention,DataResidency,CPE,Vendor,Product,Version{'\n'}
-                    Prod DB,DATA_STORE,ACTIVE,DBA,Confidential,eu-west-1,5,5,4,CMDB-1042,"Auth service, Billing",Checkout,7 years,EU,cpe:2.3:a:postgresql:postgresql:16,postgresql,postgresql,16
+                    {/* Template-literal so the quoted-CSV example's `"` stay plain
+                        text (react/no-unescaped-entities) — and it doubles as a
+                        demo of the quoted-field parsing the importer now supports. */}
+                    {`Name,Type,Status,Owner,Classification,Location,Confidentiality,Integrity,Availability,ExternalRef,Dependencies,BusinessProcesses,Retention,DataResidency,CPE,Vendor,Product,Version
+Prod DB,DATA_STORE,ACTIVE,DBA,Confidential,eu-west-1,5,5,4,CMDB-1042,"Auth service, Billing",Checkout,7 years,EU,cpe:2.3:a:postgresql:postgresql:16,postgresql,postgresql,16`}
                 </pre>
             </div>
 
