@@ -1654,6 +1654,9 @@
         },
         "docs/implementation-notes/2026-07-18-reports-soa-cleanup.md": {
             "class": "historical"
+        },
+        "docs/implementation-notes/2026-07-18-deleted-assets-and-vuln-column.md": {
+            "class": "historical"
         }
     }
 }

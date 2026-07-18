@@ -202,23 +202,28 @@ export async function ingestScannerRun(
         // Resolve the scanned target to an asset so its findings hang off the
         // asset's vuln surface. RULE: normalize the run's repoRef (strip any
         // '@<ref>' suffix) and match it case-insensitively against
-        // Asset.externalRef, then Asset.name. First match wins. No match →
-        // leave findings UNLINKED (logged, never guessed). Resolved once per
-        // run since a run targets a single repo.
+        // Asset.externalRef FIRST, then Asset.name — an externalRef match is
+        // strictly preferred over a name match (a name is a soft, collision-prone
+        // key). Each lookup carries a stable tiebreak (oldest, then id) so a
+        // collision resolves to the SAME asset every run instead of flipping on
+        // DB row order. No match → leave findings UNLINKED (logged, never
+        // guessed). Resolved once per run since a run targets a single repo.
         let resolvedAssetId: string | null = null;
         if (input.repoRef) {
             const target = input.repoRef.split('@')[0].trim();
             if (target) {
-                const asset = await db.asset.findFirst({
-                    where: {
-                        tenantId: ctx.tenantId,
-                        OR: [
-                            { externalRef: { equals: target, mode: 'insensitive' } },
-                            { name: { equals: target, mode: 'insensitive' } },
-                        ],
-                    },
-                    select: { id: true },
-                });
+                const stableOrder = [{ createdAt: 'asc' as const }, { id: 'asc' as const }];
+                const asset =
+                    (await db.asset.findFirst({
+                        where: { tenantId: ctx.tenantId, externalRef: { equals: target, mode: 'insensitive' } },
+                        orderBy: stableOrder,
+                        select: { id: true },
+                    })) ??
+                    (await db.asset.findFirst({
+                        where: { tenantId: ctx.tenantId, name: { equals: target, mode: 'insensitive' } },
+                        orderBy: stableOrder,
+                        select: { id: true },
+                    }));
                 resolvedAssetId = asset?.id ?? null;
                 if (!resolvedAssetId) {
                     logger.info('scanner-ingestion: scan target did not resolve to an asset — findings left unlinked', {

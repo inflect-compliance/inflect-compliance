@@ -817,7 +817,12 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                 {/* R23-PR-D — KPI strip above the filter toolbar.
                     Mirrors the Risks-page reference layout exactly:
                     same grid, same gap, same KpiFilterCard primitive,
-                    KPIs derived from filter state via useKpiFilter. */}
+                    KPIs derived from filter state via useKpiFilter.
+                    Hidden in the Deleted view — the Total/Active/Critical/
+                    Retired counts + their click-to-filter (which sets status
+                    filters) describe the LIVE set, not the deleted one, so
+                    surfacing them over soft-deleted rows would mislead. */}
+                {!showDeleted && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
                     {visibleKpiCards.map((card) => {
                         const cfg: Record<
@@ -867,6 +872,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                         );
                     })}
                 </div>
+                )}
                 <FilterToolbar
                     filters={liveFilters}
                     searchId="assets-search"
@@ -954,7 +960,17 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     }
                     onRowPrefetch={(row) => { router.prefetch(tenantHref(`/assets/${row.original.id}`)); prefetchData(`/assets/${row.original.id}`); }}
                     emptyState={
-                        hasActive ? (
+                        showDeleted && !hasActive ? (
+                            // Deleted view with nothing soft-deleted — a distinct
+                            // empty state (no "Add asset" CTA; you don't create a
+                            // deleted asset).
+                            <EmptyState
+                                size="sm"
+                                variant="no-records"
+                                title={tx('deleted.emptyTitle')}
+                                description={tx('deleted.emptyDesc')}
+                            />
+                        ) : hasActive ? (
                             <EmptyState
                                 size="sm"
                                 variant="no-results"
