@@ -40,9 +40,10 @@ export const dynamic = 'force-dynamic';
  *        - subsequent visits hit SWR cache,
  *        - tab focus / network reconnect trigger a background
  *          refetch with no UI flash (the hook keeps previous data),
- *        - any future mutation site can call
- *          `mutate(CACHE_KEYS.dashboard.executive())` to refresh
- *          this card stack precisely — no `router.refresh()` needed.
+ *        - the control-status, risk-bulk, and evidence-upload
+ *          mutation sites call `mutate(CACHE_KEYS.dashboard.executive())`
+ *          to refresh this card stack precisely — no `router.refresh()`
+ *          needed.
  *
  *   3. `RecentActivityCard` stays a server component (no API route
  *      yet). It's rendered HERE and passed as `children` to

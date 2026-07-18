@@ -18,7 +18,7 @@
  * Six load-bearing invariants:
  *
  *   1. The reusable wrapper exists and reads `selectedKpi` via
- *      `useDashboardChartFilter`. Future chart consumers wire
+ *      `useDashboardChartFocus`. Future chart consumers wire
  *      with one prop (`kpiKey`) — no per-section duplication of
  *      the focus / dim logic.
  *
@@ -61,7 +61,7 @@ describe('R17-PR9 — charts subscribe via ChartFocusWrapper', () => {
 
     it('wrapper reads selectedKpi from the chart-filter hook', () => {
         expect(SRC).toMatch(
-            /function\s+ChartFocusWrapper[\s\S]*?const\s+\{\s*selectedKpi\s*\}\s*=\s*useDashboardChartFilter\(\)/,
+            /function\s+ChartFocusWrapper[\s\S]*?const\s+\{\s*selectedKpi\s*\}\s*=\s*useDashboardChartFocus\(\)/,
         );
     });
 

@@ -22,13 +22,14 @@
  *     `keepPreviousData: true` default means the cards never
  *     flash to a skeleton during the background fetch.
  *
- *   - **Programmatic invalidation by mutation sites.** Any future
- *     `useTenantMutation({ key, invalidate: [
- *         CACHE_KEYS.dashboard.executive(),
- *     ] })` call elsewhere in the app (a control status flip, a
- *     risk close, an evidence upload) will trigger a background
- *     refetch of just this card stack — the right granularity,
- *     no coarse `router.refresh()` needed.
+ *   - **Programmatic invalidation by mutation sites.** The control
+ *     status flip (control detail page), the risk bulk status/delete
+ *     (RisksClient), and the evidence upload (UploadEvidenceModal)
+ *     each invalidate `CACHE_KEYS.dashboard.executive()`, so those
+ *     mutations trigger a background refetch of just this card stack
+ *     — the right granularity, no coarse `router.refresh()` needed.
+ *     New mutation sites that shift a headline KPI should add the
+ *     same key to their `invalidate` list.
  *
  *   - **Zero loading flash on first paint.** The server still
  *     fetches and serialises the initial payload, so SWR's
@@ -53,6 +54,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import {
@@ -63,6 +65,7 @@ import {
     Bug,
     FileText,
     TrendingUp,
+    ArrowUpRight,
 } from 'lucide-react';
 
 import OnboardingBanner from '@/components/onboarding/OnboardingBanner';
@@ -104,12 +107,13 @@ import { apiPost } from '@/lib/api-client';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { HeroMetric } from '@/components/ui/HeroMetric';
+import { KPIStat } from '@/components/ui/metric';
 import { NextBestActionCard } from '@/components/ui/NextBestActionCard';
 import { PostureHeroCard } from './PostureHeroCard';
 import type { PostureSummaryDto } from '@/app-layer/usecases/compliance-posture';
 import {
     DashboardChartProvider,
-    useDashboardChartFilter,
+    useDashboardChartFocus,
     type DashboardKpiKey,
 } from './DashboardChartContext';
 
@@ -206,7 +210,10 @@ export default function DashboardClient({
     // is fixed across the dashboard's lifetime, so it's safe to bake
     // into the cache key.
     const { data: trends } = useTenantSWR<TrendPayload | null>(
-        `${CACHE_KEYS.dashboard.trends()}?days=30`,
+        // The 30-day window is baked into the key itself (see swr-keys),
+        // so a mutation-site `mutate(CACHE_KEYS.dashboard.trends())`
+        // targets exactly this entry.
+        CACHE_KEYS.dashboard.trends(),
         // Pre-Epic-69 the server-fetched trend was passed as
         // `null` when the snapshot history was too short to plot;
         // the type allows that and the SWR cache treats null as a
@@ -290,7 +297,7 @@ export default function DashboardClient({
             {(postureSummary ?? initialPostureSummary) ? (
                 <PostureHeroCard
                     summary={(postureSummary ?? initialPostureSummary)!}
-                    canRegenerate={perms.reports.export}
+                    canRegenerate={perms.controls.edit}
                     onRegenerate={handleRegeneratePosture}
                     regenerating={regenerating}
                 />
@@ -404,6 +411,17 @@ export default function DashboardClient({
                 />
             </div>
 
+            {/* ─── Exception Inventory + Treatment-Plan Status (G-5/G-7) ───
+                 These two health cards surface data getExecutiveDashboard
+                 already computes (exec.exceptions / exec.treatmentPlans).
+                 Neither entity has a dedicated list page — exceptions are
+                 managed per-control and treatment plans per-risk — so each
+                 card drills through to its parent-entity list. */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-default">
+                <ExceptionSummaryCard exec={exec} href={href} />
+                <TreatmentPlanCard exec={exec} href={href} />
+            </div>
+
             {/* ─── Risk Heatmap + Evidence Expiry ─── */}
             {/* B1 — heatmap subscribes to risks KPI; expiry calendar
                 subscribes to evidence KPI. Pre-B1 these were not in
@@ -507,7 +525,7 @@ function ChartFocusWrapper({
         chart that has no inner id of its own (e.g. the trend cards). */
     id?: string;
 }) {
-    const { selectedKpi } = useDashboardChartFilter();
+    const { selectedKpi } = useDashboardChartFocus();
     const isFocused = selectedKpi === kpiKey;
     const isDimmed = selectedKpi !== null && !isFocused;
     return (
@@ -524,6 +542,39 @@ function ChartFocusWrapper({
             )}
         >
             {children}
+        </div>
+    );
+}
+
+// ─── KPI drill-through tile ───────────────────────────────────────────
+//
+// Wraps a KpiCard (which owns the R17 focus-on-click interaction) with
+// a corner drill-through link so a click can NAVIGATE to the KPI's
+// filtered entity list. The link is a sibling overlay — NOT nested in
+// the KpiCard's focus button (invalid) and NOT a dependency of the
+// shared KpiCard primitive (which stays lean). Focus stays on the card
+// body; the arrow navigates.
+
+function KpiTile({
+    drillHref,
+    drillLabel,
+    children,
+}: {
+    drillHref: string;
+    drillLabel: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <div className="relative">
+            {children}
+            <Link
+                href={drillHref}
+                aria-label={drillLabel}
+                data-kpi-drill
+                className="absolute right-1.5 top-1.5 z-10 inline-flex size-6 items-center justify-center rounded-md text-content-subtle opacity-60 transition hover:bg-bg-muted hover:text-content-default hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            >
+                <ArrowUpRight className="size-3.5" aria-hidden="true" />
+            </Link>
         </div>
     );
 }
@@ -578,7 +629,8 @@ function InteractiveKpiGrid({
     trendBundle: KpiTrendBundle | undefined;
     t: (key: string, values?: Record<string, string | number | Date>) => string;
 }) {
-    const { selectedKpi, toggleSelectedKpi } = useDashboardChartFilter();
+    const { selectedKpi, toggleSelectedKpi } = useDashboardChartFocus();
+    const href = useTenantHref();
     const isSelected = (kpi: DashboardKpiKey) => selectedKpi === kpi;
     // Every tile is chart-bound now: a click focuses its chart. When
     // focusing (not clearing), also scroll that chart into view if it's
@@ -597,74 +649,86 @@ function InteractiveKpiGrid({
             className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-default"
             id="kpi-grid"
         >
-            <KpiCard
-                id="kpi-coverage"
-                label={t('controls')}
-                value={exec.controlCoverage.coveragePercent}
-                format="percent"
-                icon={ShieldCheck}
-                gradient="from-emerald-500 to-teal-500"
-                subtitle={`${exec.controlCoverage.implemented} of ${exec.controlCoverage.applicable} implemented`}
-                trend={trendBundle?.coverage}
-                trendVariant="success"
-                onClick={click('coverage')}
-                selected={isSelected('coverage')}
-            />
-            <KpiCard
-                id="kpi-risks"
-                label={t('risks')}
-                value={exec.stats.risks}
-                icon={AlertTriangle}
-                gradient="from-amber-500 to-orange-500"
-                subtitle={t('highCritical', { count: exec.stats.highRisks })}
-                trend={trendBundle?.risks}
-                trendVariant="warning"
-                onClick={click('risks')}
-                selected={isSelected('risks')}
-            />
-            <KpiCard
-                id="kpi-evidence"
-                label={t('evidence')}
-                value={exec.stats.evidence}
-                icon={Paperclip}
-                gradient="from-purple-500 to-pink-500"
-                subtitle={`${exec.evidenceExpiry.overdue} overdue`}
-                trend={trendBundle?.evidence}
-                trendVariant="error"
-                onClick={click('evidence')}
-                selected={isSelected('evidence')}
-            />
-            <KpiCard
-                id="kpi-tasks"
-                label={t('openTasks')}
-                value={exec.stats.openTasks}
-                icon={CheckCircle2}
-                gradient="from-indigo-500 to-blue-500"
-                subtitle={`${exec.taskSummary.overdue} overdue`}
-                onClick={click('tasks')}
-                selected={isSelected('tasks')}
-            />
-            <KpiCard
-                id="kpi-policies"
-                label={t("policies")}
-                value={exec.policySummary.total}
-                icon={FileText}
-                gradient="from-sky-500 to-cyan-500"
-                subtitle={`${exec.policySummary.published} published`}
-                onClick={click('policies')}
-                selected={isSelected('policies')}
-            />
-            <KpiCard
-                id="kpi-findings"
-                label={t('openFindings')}
-                value={exec.stats.openFindings}
-                icon={Bug}
-                gradient="from-red-500 to-rose-500"
-                trend={trendBundle?.findings}
-                trendVariant="error"
-                onClick={click('findings')}
-                selected={isSelected('findings')}
-            />
+            <KpiTile drillHref={href('/controls')} drillLabel={t('openList', { label: t('controls') })}>
+                <KpiCard
+                    id="kpi-coverage"
+                    label={t('controls')}
+                    value={exec.controlCoverage.coveragePercent}
+                    format="percent"
+                    icon={ShieldCheck}
+                    gradient="from-emerald-500 to-teal-500"
+                    subtitle={`${exec.controlCoverage.implemented} of ${exec.controlCoverage.applicable} implemented`}
+                    trend={trendBundle?.coverage}
+                    trendVariant="success"
+                    onClick={click('coverage')}
+                    selected={isSelected('coverage')}
+                />
+            </KpiTile>
+            <KpiTile drillHref={href('/risks')} drillLabel={t('openList', { label: t('risks') })}>
+                <KpiCard
+                    id="kpi-risks"
+                    label={t('risks')}
+                    value={exec.stats.risks}
+                    icon={AlertTriangle}
+                    gradient="from-amber-500 to-orange-500"
+                    subtitle={t('highCritical', { count: exec.stats.highRisks })}
+                    trend={trendBundle?.risks}
+                    trendVariant="warning"
+                    onClick={click('risks')}
+                    selected={isSelected('risks')}
+                />
+            </KpiTile>
+            <KpiTile drillHref={href('/evidence')} drillLabel={t('openList', { label: t('evidence') })}>
+                <KpiCard
+                    id="kpi-evidence"
+                    label={t('evidence')}
+                    value={exec.stats.evidence}
+                    icon={Paperclip}
+                    gradient="from-purple-500 to-pink-500"
+                    subtitle={`${exec.evidenceExpiry.overdue} overdue`}
+                    trend={trendBundle?.evidence}
+                    trendVariant="error"
+                    onClick={click('evidence')}
+                    selected={isSelected('evidence')}
+                />
+            </KpiTile>
+            <KpiTile drillHref={href('/tasks?status=OPEN,TRIAGED,IN_PROGRESS,IN_REVIEW,BLOCKED')} drillLabel={t('openList', { label: t('openTasks') })}>
+                <KpiCard
+                    id="kpi-tasks"
+                    label={t('openTasks')}
+                    value={exec.stats.openTasks}
+                    icon={CheckCircle2}
+                    gradient="from-indigo-500 to-blue-500"
+                    subtitle={`${exec.taskSummary.overdue} overdue`}
+                    onClick={click('tasks')}
+                    selected={isSelected('tasks')}
+                />
+            </KpiTile>
+            <KpiTile drillHref={href('/policies')} drillLabel={t('openList', { label: t('policies') })}>
+                <KpiCard
+                    id="kpi-policies"
+                    label={t("policies")}
+                    value={exec.policySummary.total}
+                    icon={FileText}
+                    gradient="from-sky-500 to-cyan-500"
+                    subtitle={`${exec.policySummary.published} published`}
+                    onClick={click('policies')}
+                    selected={isSelected('policies')}
+                />
+            </KpiTile>
+            <KpiTile drillHref={href('/findings')} drillLabel={t('openList', { label: t('openFindings') })}>
+                <KpiCard
+                    id="kpi-findings"
+                    label={t('openFindings')}
+                    value={exec.stats.openFindings}
+                    icon={Bug}
+                    gradient="from-red-500 to-rose-500"
+                    trend={trendBundle?.findings}
+                    trendVariant="error"
+                    onClick={click('findings')}
+                    selected={isSelected('findings')}
+                />
+            </KpiTile>
         </div>
     );
 }
@@ -686,7 +750,7 @@ function RiskDistributionSection({
 }) {
     const t = useTranslations('dashboard');
     const { riskBySeverity, riskByStatus } = exec;
-    const { selectedKpi } = useDashboardChartFilter();
+    const { selectedKpi } = useDashboardChartFocus();
     const isFocused = selectedKpi === 'risks';
     const isDimmed = selectedKpi !== null && !isFocused;
     return (
@@ -791,7 +855,7 @@ function StatusDonutSection({
     centerSub: string;
     segments: DonutStatusSegment[];
 }) {
-    const { selectedKpi } = useDashboardChartFilter();
+    const { selectedKpi } = useDashboardChartFocus();
     const isFocused = selectedKpi === kpiKey;
     const isDimmed = selectedKpi !== null && !isFocused;
     const total = segments.reduce((sum, s) => sum + s.value, 0);
@@ -956,6 +1020,125 @@ function ComplianceAlerts({ exec, t }: { exec: ExecutiveDashboardPayload; t: (ke
                 )}
             </div>
         </Card>
+    );
+}
+
+// ─── Exception Inventory (Epic G-5) ──────────────────────────────────
+//
+// Surfaces exec.exceptions — control-exception health at a glance.
+// No dedicated exceptions list page exists (exceptions live on the
+// control detail page), so the card drills through to /controls.
+
+function DrillHealthCard({
+    id,
+    title,
+    headline,
+    headlineLabel,
+    rows,
+    drillHref,
+    drillLabel,
+}: {
+    id: string;
+    title: string;
+    headline: number;
+    headlineLabel: string;
+    rows: { label: string; value: number; color: string }[];
+    drillHref: string;
+    drillLabel: string;
+}) {
+    return (
+        <Card id={id} className="h-full flex flex-col">
+            <div className="flex items-baseline justify-between mb-3 gap-tight">
+                <Heading level={3}>{title}</Heading>
+                <Link
+                    href={drillHref}
+                    data-drill-link
+                    className="text-xs text-content-link hover:underline whitespace-nowrap"
+                >
+                    {drillLabel}
+                </Link>
+            </div>
+            <div className="mb-default">
+                <KPIStat value={headline} label={headlineLabel} size="sm" />
+            </div>
+            <div className="space-y-tight">
+                {rows.map((item) => (
+                    <div
+                        key={item.label}
+                        className="flex items-center justify-between text-xs"
+                    >
+                        <div className="flex items-center gap-1.5">
+                            <span
+                                className={`w-2 h-2 rounded-full ${item.color} shrink-0`}
+                            />
+                            <span className="text-content-muted">{item.label}</span>
+                        </div>
+                        <span className="text-content-default font-medium tabular-nums">
+                            {item.value}
+                        </span>
+                    </div>
+                ))}
+            </div>
+        </Card>
+    );
+}
+
+function ExceptionSummaryCard({
+    exec,
+    href,
+}: {
+    exec: ExecutiveDashboardPayload;
+    href: (path: string) => string;
+}) {
+    const t = useTranslations('dashboard');
+    const { exceptions } = exec;
+    return (
+        <DrillHealthCard
+            id="exception-summary"
+            title={t('exceptions.title')}
+            headline={exceptions.activeApproved}
+            headlineLabel={t('exceptions.active')}
+            drillHref={href('/controls')}
+            drillLabel={t('exceptions.viewAll')}
+            rows={[
+                { label: t('exceptions.pending'), value: exceptions.pendingRequest, color: 'bg-bg-warning-emphasis' },
+                { label: t('exceptions.expiring7'), value: exceptions.expiringWithin7, color: 'bg-orange-500' },
+                { label: t('exceptions.expiring30'), value: exceptions.expiringWithin30, color: 'bg-bg-warning-emphasis' },
+                { label: t('exceptions.expired'), value: exceptions.expired, color: 'bg-bg-error-emphasis' },
+            ]}
+        />
+    );
+}
+
+// ─── Treatment-Plan Status (Epic G-7) ────────────────────────────────
+//
+// Surfaces exec.treatmentPlans — risk treatment-plan health. Plans
+// live on the risk detail page, so the card drills through to /risks.
+
+function TreatmentPlanCard({
+    exec,
+    href,
+}: {
+    exec: ExecutiveDashboardPayload;
+    href: (path: string) => string;
+}) {
+    const t = useTranslations('dashboard');
+    const { treatmentPlans } = exec;
+    return (
+        <DrillHealthCard
+            id="treatment-plan-status"
+            title={t('treatmentPlans.title')}
+            headline={treatmentPlans.activeOnTrack}
+            headlineLabel={t('treatmentPlans.onTrack')}
+            drillHref={href('/risks')}
+            drillLabel={t('treatmentPlans.viewAll')}
+            rows={[
+                { label: t('treatmentPlans.overdue'), value: treatmentPlans.overdue, color: 'bg-bg-error-emphasis' },
+                { label: t('treatmentPlans.due7'), value: treatmentPlans.dueWithin7, color: 'bg-orange-500' },
+                { label: t('treatmentPlans.due30'), value: treatmentPlans.dueWithin30, color: 'bg-bg-warning-emphasis' },
+                { label: t('treatmentPlans.completed'), value: treatmentPlans.completed, color: 'bg-bg-success-emphasis' },
+            ]}
+        />
     );
 }
 

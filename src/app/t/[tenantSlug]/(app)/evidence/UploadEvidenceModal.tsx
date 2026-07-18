@@ -340,6 +340,9 @@ export function UploadEvidenceModal({
                 truncated: current?.truncated ?? false,
             };
         },
+        // A new evidence item shifts the dashboard's Evidence KPI +
+        // status/expiry cards — refresh the executive card stack.
+        invalidate: [CACHE_KEYS.dashboard.executive()],
     });
 
     // Dropzone's `onUpload` — invoked once per file at submit time.

@@ -3,10 +3,10 @@
  *
  * The provider holds the currently-focused KPI key (or null). The
  * hook returns `{selectedKpi, setSelectedKpi, toggleSelectedKpi}`.
- * These tests lock in the four behaviours future filter consumers
+ * These tests lock in the four behaviours future focus consumers
  * will rely on:
  *
- *   1. Default state is null (dashboard renders the unfiltered
+ *   1. Default state is null (dashboard renders the unfocused
  *      baseline — byte-for-byte same as today before any consumer
  *      wires up).
  *   2. setSelectedKpi sets / clears the focus directly.
@@ -18,7 +18,7 @@
 import { act, render, renderHook } from '@testing-library/react';
 import {
     DashboardChartProvider,
-    useDashboardChartFilter,
+    useDashboardChartFocus,
 } from '@/app/t/[tenantSlug]/(app)/dashboard/DashboardChartContext';
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -27,14 +27,14 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 
 describe('DashboardChartContext', () => {
     it('default state is null (no tile selected)', () => {
-        const { result } = renderHook(() => useDashboardChartFilter(), {
+        const { result } = renderHook(() => useDashboardChartFocus(), {
             wrapper,
         });
         expect(result.current.selectedKpi).toBeNull();
     });
 
     it('setSelectedKpi sets and clears the focus directly', () => {
-        const { result } = renderHook(() => useDashboardChartFilter(), {
+        const { result } = renderHook(() => useDashboardChartFocus(), {
             wrapper,
         });
 
@@ -49,7 +49,7 @@ describe('DashboardChartContext', () => {
     });
 
     it('toggleSelectedKpi toggles same-key off and sets different-key', () => {
-        const { result } = renderHook(() => useDashboardChartFilter(), {
+        const { result } = renderHook(() => useDashboardChartFocus(), {
             wrapper,
         });
 
@@ -73,9 +73,9 @@ describe('DashboardChartContext', () => {
     it('throws if the hook is used outside the provider', () => {
         // The hook's `if (!ctx) throw` is the fail-fast guard.
         // Without it, a misplaced consumer would silently see
-        // "no filter ever fires" — much harder to debug.
+        // "no focus ever fires" — much harder to debug.
         const Consumer = () => {
-            useDashboardChartFilter();
+            useDashboardChartFocus();
             return null;
         };
 
@@ -83,7 +83,7 @@ describe('DashboardChartContext', () => {
         const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
         try {
             expect(() => render(<Consumer />)).toThrow(
-                /useDashboardChartFilter must be used inside <DashboardChartProvider>/,
+                /useDashboardChartFocus must be used inside <DashboardChartProvider>/,
             );
         } finally {
             spy.mockRestore();
@@ -91,7 +91,7 @@ describe('DashboardChartContext', () => {
     });
 
     it('setter identity is stable across renders (effect-dep safe)', () => {
-        const { result, rerender } = renderHook(() => useDashboardChartFilter(), {
+        const { result, rerender } = renderHook(() => useDashboardChartFocus(), {
             wrapper,
         });
 

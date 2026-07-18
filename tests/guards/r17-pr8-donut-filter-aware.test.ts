@@ -18,7 +18,7 @@
  *
  * Four load-bearing invariants:
  *
- *   1. The section calls `useDashboardChartFilter()` to read
+ *   1. The section calls `useDashboardChartFocus()` to read
  *      `selectedKpi`. No prop-drilling — keeps the context as
  *      the single source of truth.
  *
@@ -49,12 +49,12 @@ const SRC = fs.readFileSync(
 );
 
 describe('R17-PR8 — Risk Distribution donut filter-aware', () => {
-    it('section reads selectedKpi via useDashboardChartFilter', () => {
+    it('section reads selectedKpi via useDashboardChartFocus', () => {
         // Pattern match scoped to the function body — the import
         // is shared with PR-7, but this assertion proves the
         // donut section ITSELF subscribes.
         expect(SRC).toMatch(
-            /function\s+RiskDistributionSection[\s\S]*?const\s+\{\s*selectedKpi\s*\}\s*=\s*useDashboardChartFilter\(\)/,
+            /function\s+RiskDistributionSection[\s\S]*?const\s+\{\s*selectedKpi\s*\}\s*=\s*useDashboardChartFocus\(\)/,
         );
     });
 

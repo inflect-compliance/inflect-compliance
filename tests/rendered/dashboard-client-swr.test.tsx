@@ -34,8 +34,8 @@ jest.mock('@/lib/tenant-context-provider', () => ({
         () => (path: string) =>
             `/api/t/acme${path.startsWith('/') ? path : `/${path}`}`,
     useTenantHref: () => (path: string) => `/t/acme${path}`,
-    // Posture hero reads `perms.reports.export` to gate the Regenerate button.
-    usePermissions: () => ({ reports: { export: true } }),
+    // Posture hero reads `perms.controls.edit` to gate the Regenerate button.
+    usePermissions: () => ({ controls: { edit: true } }),
 }));
 
 jest.mock('next-intl', () => {
@@ -100,7 +100,6 @@ beforeEach(() => {
 function buildExec(overrides: Partial<ExecutiveDashboardPayload> = {}): ExecutiveDashboardPayload {
     return {
         stats: {
-            assets: 1,
             risks: 5,
             controls: 50,
             evidence: 100,
@@ -109,9 +108,6 @@ function buildExec(overrides: Partial<ExecutiveDashboardPayload> = {}): Executiv
             highRisks: 1,
             pendingEvidence: 0,
             overdueEvidence: 0,
-            clausesReady: 10,
-            totalClauses: 20,
-            unreadNotifications: 0,
         },
         controlCoverage: {
             total: 50,
@@ -123,7 +119,6 @@ function buildExec(overrides: Partial<ExecutiveDashboardPayload> = {}): Executiv
             needsReview: 0,
             coveragePercent: 75,
         },
-        controlsByStatus: [],
         riskBySeverity: { low: 1, medium: 2, high: 1, critical: 1 },
         riskByStatus: { open: 3, mitigating: 1, accepted: 0, closed: 1 },
         evidenceExpiry: {

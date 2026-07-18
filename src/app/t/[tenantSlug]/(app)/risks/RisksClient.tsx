@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { mutate as globalMutate } from 'swr';
 import { useTenantSWR, usePrefetchTenant } from '@/lib/hooks/use-tenant-swr';
 import { ownerDisplayName } from '@/lib/owner-display';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
@@ -384,6 +385,10 @@ function RisksPageInner({
             });
             if (!res.ok) throw new Error('Bulk action failed');
             await risksQuery.mutate();
+            // A bulk status change / delete shifts the dashboard's Risk
+            // KPI + severity distribution — refresh the executive card
+            // stack (exact-key match on the SWR entry the dashboard reads).
+            await globalMutate(apiUrl(CACHE_KEYS.dashboard.executive()));
             setSelected(new Set());
         } finally {
             setBulkApplying(false);

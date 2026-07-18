@@ -132,7 +132,7 @@ describe('R17 capstone — Dashboard Reimagined rollout', () => {
                 /export\s+type\s+DashboardKpiKey\s*=[\s\S]*coverage[\s\S]*risks[\s\S]*evidence[\s\S]*tasks[\s\S]*policies[\s\S]*findings/,
             );
             expect(DASHBOARD_CONTEXT).toMatch(/export\s+function\s+DashboardChartProvider/);
-            expect(DASHBOARD_CONTEXT).toMatch(/export\s+function\s+useDashboardChartFilter/);
+            expect(DASHBOARD_CONTEXT).toMatch(/export\s+function\s+useDashboardChartFocus/);
         });
 
         it('PR-7: dashboard wraps in provider + wires all 6 KPI tiles', () => {
@@ -153,7 +153,7 @@ describe('R17 capstone — Dashboard Reimagined rollout', () => {
 
         it('PR-8: Risk Distribution donut subscribes to selectedKpi', () => {
             expect(DASHBOARD_CLIENT).toMatch(
-                /function\s+RiskDistributionSection[\s\S]*?useDashboardChartFilter\(\)/,
+                /function\s+RiskDistributionSection[\s\S]*?useDashboardChartFocus\(\)/,
             );
             expect(DASHBOARD_CLIENT).toMatch(
                 /const\s+isFocused\s*=\s*selectedKpi\s*===\s*'risks'/,

@@ -1,7 +1,15 @@
+import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
+
 import { formatDateTime } from '@/lib/format-date';
 import { getTenantCtx } from '@/app-layer/context';
 import { runInTenantContext } from '@/lib/db-context';
 import { DashboardRepository } from '@/app-layer/repositories/DashboardRepository';
+import {
+    activityEntityMeta,
+    activityVerbToken,
+    humanizeSnakeCase,
+} from '@/lib/audit/activity-humanize';
 import { Heading } from '@/components/ui/typography';
 import { Card } from '@/components/ui/card';
 
@@ -12,9 +20,14 @@ interface RecentActivityCardProps {
 }
 
 /**
- * Async server component that independently fetches and renders recent activity.
- * Designed to be wrapped in <Suspense> so the rest of the dashboard streams immediately
- * while this potentially slower query completes.
+ * Async server component that independently fetches and renders recent
+ * activity. Designed to be wrapped in <Suspense> so the rest of the
+ * dashboard streams immediately while this potentially slower query
+ * completes.
+ *
+ * Each row is humanised (localized verb + entity noun instead of raw
+ * lowercased enums), identified (the changed entity's resolved title),
+ * and linked to the changed item when it has a navigable surface.
  */
 export default async function RecentActivityCard({
     tenantSlug,
@@ -22,9 +35,10 @@ export default async function RecentActivityCard({
     noActivityLabel,
 }: RecentActivityCardProps) {
     const ctx = await getTenantCtx({ tenantSlug });
+    const t = await getTranslations('dashboard.activity');
 
     const recentActivity = await runInTenantContext(ctx, async (db) => {
-        return DashboardRepository.getRecentActivity(db, ctx);
+        return DashboardRepository.getRecentActivityDetailed(db, ctx);
     });
 
     return (
@@ -45,16 +59,66 @@ export default async function RecentActivityCard({
                 role="region"
                 aria-labelledby="recent-activity-heading"
             >
-                {recentActivity.map((log) => (
-                    <div key={log.id} className="flex flex-col sm:flex-row items-start gap-1 sm:gap-tight text-xs">
-                        <span className="text-content-subtle whitespace-nowrap">{formatDateTime(log.createdAt)}</span>
-                        <span className="text-content-muted">
-                            <span className="text-content-default font-medium">{log.user?.name}</span>{' '}
-                            {log.action.toLowerCase()} {log.entity.toLowerCase()}
-                        </span>
-                    </div>
-                ))}
-                {recentActivity.length === 0 && <p className="text-content-subtle text-xs">{noActivityLabel}</p>}
+                {recentActivity.map((log) => {
+                    const meta = activityEntityMeta(log.entity);
+                    const verb = activityVerbToken(log.action);
+                    const verbText = verb.token
+                        ? t(`verb.${verb.token}`)
+                        : verb.fallback;
+                    const nounText = meta
+                        ? t(`entity.${meta.nounKey}`)
+                        : humanizeSnakeCase(log.entity);
+                    const href =
+                        meta?.path && log.entityId
+                            ? `/t/${tenantSlug}${meta.path(log.entityId)}`
+                            : null;
+
+                    // The identifying text: the resolved title when we
+                    // have one, otherwise the noun stands in as the
+                    // link target. `linkPart` is what carries the href.
+                    const linkPart = log.title ?? nounText;
+                    const body = (
+                        <>
+                            <span className="text-content-default font-medium">
+                                {log.actorName ?? t('systemActor')}
+                            </span>{' '}
+                            {verbText} {log.title ? nounText + ' ' : ''}
+                            <span
+                                className={
+                                    href
+                                        ? 'text-content-link hover:underline'
+                                        : 'text-content-default'
+                                }
+                            >
+                                {log.title ? `“${linkPart}”` : linkPart}
+                            </span>
+                        </>
+                    );
+
+                    return (
+                        <div
+                            key={log.id}
+                            className="flex flex-col sm:flex-row items-start gap-1 sm:gap-tight text-xs"
+                        >
+                            <span className="text-content-subtle whitespace-nowrap">
+                                {formatDateTime(log.createdAt)}
+                            </span>
+                            {href ? (
+                                <Link
+                                    href={href}
+                                    className="text-content-muted rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                                >
+                                    {body}
+                                </Link>
+                            ) : (
+                                <span className="text-content-muted">{body}</span>
+                            )}
+                        </div>
+                    );
+                })}
+                {recentActivity.length === 0 && (
+                    <p className="text-content-subtle text-xs">{noActivityLabel}</p>
+                )}
             </div>
         </Card>
     );

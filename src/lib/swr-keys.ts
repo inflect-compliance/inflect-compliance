@@ -184,7 +184,12 @@ export const CACHE_KEYS = {
     dashboard: {
         home: () => '/dashboard' as const,
         executive: () => '/dashboard/executive' as const,
-        trends: () => '/dashboard/trends' as const,
+        // The query window is part of the cache identity: the consumer
+        // fetches `?days=<n>` and the key MUST carry the same suffix, or
+        // a `mutate(CACHE_KEYS.dashboard.trends())` would target a
+        // different (bare) key and never match the live entry. Defaults
+        // to the dashboard's fixed 30-day window.
+        trends: (days = 30) => `/dashboard/trends?days=${days}` as const,
         postureSummary: () => '/dashboard/posture-summary' as const,
     },
     coverage: {
