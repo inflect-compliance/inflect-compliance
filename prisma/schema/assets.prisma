@@ -30,7 +30,6 @@ model Asset {
   criticality         Criticality?
   status              AssetStatus          @default(ACTIVE)
   externalRef         String?
-  tags                String?
   /// Structured product identity for CVE matching (vuln integration).
   /// Optional + best-effort: tenants populate these to turn the global
   /// CVE catalog into a targeted "you are affected" signal. Without
@@ -44,7 +43,6 @@ model Asset {
   version             String?
   deletedAt           DateTime?
   deletedByUserId     String?
-  retentionUntil      DateTime?
   ownerUser           User?                @relation("AssetOwner", fields: [ownerUserId], references: [id])
   tenant              Tenant               @relation(fields: [tenantId], references: [id])
   risks               AssetRiskLink[]

@@ -208,6 +208,7 @@ export function EditAssetFields({
                     onChange={(e) => form.setField('dependencies', e.target.value)}
                     placeholder={t('form.dependenciesPlaceholder')}
                 />
+                <p className="mt-1 text-xs text-content-subtle">{t('form.dependenciesNote')}</p>
             </div>
             <div>
                 <label className="input-label">{t('form.businessProcesses')}</label>
@@ -218,6 +219,7 @@ export function EditAssetFields({
                     onChange={(e) => form.setField('businessProcesses', e.target.value)}
                     placeholder={t('form.businessProcessesPlaceholder')}
                 />
+                <p className="mt-1 text-xs text-content-subtle">{t('form.businessProcessesNote')}</p>
             </div>
         </div>
         </>

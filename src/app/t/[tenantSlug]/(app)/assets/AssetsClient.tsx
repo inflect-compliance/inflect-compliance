@@ -33,7 +33,8 @@ import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
 import { useKpiTrends, buildKpiSparklines, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
-import { UserCombobox } from '@/components/ui/user-combobox';
+import { UserCombobox, useTenantMembers } from '@/components/ui/user-combobox';
+import { formatDateTime } from '@/lib/format-date';
 import { Combobox } from '@/components/ui/combobox';
 import { ownerDisplayName } from '@/lib/owner-display';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
@@ -87,9 +88,17 @@ interface AssetListRow {
     /** Per-asset OPEN-vulnerability rollup (batched by listAssets). */
     openVulnCount: number;
     maxVulnSeverity: string | null;
-    /** Soft-delete timestamp — non-null only in the "Deleted assets" view
+    /** Soft-delete who/when — non-null only in the "Deleted assets" view
      *  (rows fetched with `?includeDeleted=true`). */
     deletedAt: string | null;
+    deletedByUserId: string | null;
+    /** Context fields the list query returns — surfaced in the quick-look panel. */
+    location: string | null;
+    dataResidency: string | null;
+    externalRef: string | null;
+    dependencies: string | null;
+    businessProcesses: string | null;
+    retention: string | null;
 }
 
 interface AssetsClientProps {
@@ -152,6 +161,18 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     // list to soft-deleted rows (fetched with `?includeDeleted=true`) so
     // an admin can Restore or permanently Purge them.
     const [showDeleted, setShowDeleted] = useState(false);
+    // Resolve `deletedByUserId` → a display name for the Deleted view's
+    // who/when column. Fetched only while the deleted view is open.
+    const { data: deletedMembers } = useTenantMembers(tenantSlug, { enabled: showDeleted });
+    const memberById = useMemo(
+        () => new Map((deletedMembers ?? []).map((m) => [m.id, m])),
+        [deletedMembers],
+    );
+    const deletedByLabel = (id: string | null): string => {
+        if (!id) return tx('deleted.byUnknown');
+        const m = memberById.get(id);
+        return (m?.name || m?.email) ?? tx('deleted.byUnknown');
+    };
     // Typed-confirm purge modal — Purge is irreversible, so it uses the
     // sanctioned type-to-confirm pattern (mirrors the org TenantsTable
     // remove flow), NOT the undo-toast.
@@ -761,30 +782,39 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                               return <span className="text-content-muted">—</span>;
                           }
                           return (
-                              <div className="flex items-center gap-tight">
-                                  <StatusBadge variant="neutral" size="sm">
-                                      {tx('deleted.badge')}
-                                  </StatusBadge>
-                                  <Button
-                                      type="button"
-                                      variant="secondary"
-                                      size="xs"
-                                      onClick={(e) => {
-                                          e.stopPropagation();
-                                          void handleRestore(a.id);
-                                      }}
-                                      text={tx('deleted.restore')}
-                                  />
-                                  <Button
-                                      type="button"
-                                      variant="destructive"
-                                      size="xs"
-                                      onClick={(e) => {
-                                          e.stopPropagation();
-                                          setPurgeTarget(a);
-                                      }}
-                                      text={tx('deleted.purge')}
-                                  />
+                              <div className="flex flex-col gap-tight">
+                                  <div className="flex items-center gap-tight">
+                                      <StatusBadge variant="neutral" size="sm">
+                                          {tx('deleted.badge')}
+                                      </StatusBadge>
+                                      <Button
+                                          type="button"
+                                          variant="secondary"
+                                          size="xs"
+                                          onClick={(e) => {
+                                              e.stopPropagation();
+                                              void handleRestore(a.id);
+                                          }}
+                                          text={tx('deleted.restore')}
+                                      />
+                                      <Button
+                                          type="button"
+                                          variant="destructive"
+                                          size="xs"
+                                          onClick={(e) => {
+                                              e.stopPropagation();
+                                              setPurgeTarget(a);
+                                          }}
+                                          text={tx('deleted.purge')}
+                                      />
+                                  </div>
+                                  {/* Who / when — the lifecycle audit trail for the row. */}
+                                  <span className="text-xs text-content-subtle">
+                                      {tx('deleted.byWhen', {
+                                          who: deletedByLabel(a.deletedByUserId),
+                                          when: formatDateTime(a.deletedAt),
+                                      })}
+                                  </span>
                               </div>
                           );
                       },

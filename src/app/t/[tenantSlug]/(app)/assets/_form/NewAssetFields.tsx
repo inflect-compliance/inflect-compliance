@@ -232,7 +232,7 @@ export function NewAssetFields({
                         placeholder={t('form.retentionPlaceholder')}
                     />
                 </FormField>
-                <FormField label={t('form.dependencies')}>
+                <FormField label={t('form.dependencies')} hint={t('form.dependenciesNote')}>
                     <Input
                         id="asset-dependencies-input"
                         value={form.fields.dependencies ?? ''}
@@ -240,7 +240,7 @@ export function NewAssetFields({
                         placeholder={t('form.dependenciesPlaceholder')}
                     />
                 </FormField>
-                <FormField label={t('form.businessProcesses')}>
+                <FormField label={t('form.businessProcesses')} hint={t('form.businessProcessesNote')}>
                     <Input
                         id="asset-business-processes-input"
                         value={form.fields.businessProcesses ?? ''}
