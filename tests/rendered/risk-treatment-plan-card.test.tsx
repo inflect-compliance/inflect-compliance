@@ -172,7 +172,7 @@ describe('RiskTreatmentPlanCard', () => {
         );
         await screen.findByTestId('treatment-plan-block-plan_1');
         expect(screen.getByTestId('treatment-plan-strategy-badge').textContent).toBe(
-            'MITIGATE',
+            'Mitigate',
         );
         // 1/2 done → progress label "1/2"
         expect(

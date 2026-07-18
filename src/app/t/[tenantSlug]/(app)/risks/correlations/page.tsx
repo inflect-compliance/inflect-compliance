@@ -15,7 +15,7 @@ import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTranslations } from 'next-intl';
 import { AnalyticsState } from '../_shared/AnalyticsState';
 
-interface Matrix { riskIds: string[]; riskTitles: string[]; matrix: number[][]; isPositiveSemiDefinite: boolean }
+interface Matrix { riskIds: string[]; riskTitles: string[]; matrix: number[][]; isPositiveSemiDefinite: boolean; isPositiveDefinite: boolean; minEigenvalue: number }
 interface Suggestion { riskAId: string; riskBId: string; suggestedCoefficient: number; reason: string }
 
 // Discrete heat bands → semantic background tokens (no raw colours).
@@ -92,9 +92,25 @@ export default function CorrelationMatrixPage() {
                 >
                     {m && (
                     <>
+                    {/* Three-way gate. Green ONLY when strictly positive-
+                        definite (Cholesky-safe). A merely-PSD matrix (min
+                        eigenvalue ≈ 0) earns a warning, not a green tick,
+                        because the sim will drop it (see below). */}
                     <div className="flex items-center gap-default">
-                        <StatusBadge variant={m.isPositiveSemiDefinite ? 'success' : 'error'}>
-                            {m.isPositiveSemiDefinite ? t('correlations.isPsd') : t('correlations.notPsd')}
+                        <StatusBadge
+                            variant={
+                                m.isPositiveDefinite
+                                    ? 'success'
+                                    : m.isPositiveSemiDefinite
+                                        ? 'warning'
+                                        : 'error'
+                            }
+                        >
+                            {m.isPositiveDefinite
+                                ? t('correlations.isPsd')
+                                : m.isPositiveSemiDefinite
+                                    ? t('correlations.borderlinePd')
+                                    : t('correlations.notPsd')}
                         </StatusBadge>
                         <InfoTooltip title={t('correlations.psdTitle')} content={t('correlations.psdHelp')} />
                         <span className="text-xs text-content-subtle">{t('correlations.clickHint')}</span>
@@ -110,6 +126,19 @@ export default function CorrelationMatrixPage() {
                             data-testid="correlations-non-psd-warning"
                         >
                             {t('correlations.nonPsdWarning')}
+                        </div>
+                    )}
+                    {/* PSD-but-not-PD: the matrix passes the semi-definite
+                        tolerance yet Cholesky needs STRICT positive-
+                        definiteness, so the sim drops it just the same.
+                        Warn BEFORE the operator relies on the correlations. */}
+                    {m.isPositiveSemiDefinite && !m.isPositiveDefinite && (
+                        <div
+                            className="rounded-md border border-border-warning bg-bg-warning/15 p-3 text-sm text-content-warning"
+                            role="alert"
+                            data-testid="correlations-non-pd-warning"
+                        >
+                            {t('correlations.notPdWarning')}
                         </div>
                     )}
                     <div className="overflow-auto">

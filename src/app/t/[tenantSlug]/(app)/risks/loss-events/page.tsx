@@ -59,7 +59,7 @@ interface Run {
     portfolioP90: number | null;
     completedAt: string | null;
     /** RQ3-1 — per-risk tail forecasts, the spine of the calibration back-test. */
-    perRiskResultsJson: Array<{ riskId: string; title: string; aleP50?: number; aleP90?: number }> | null;
+    perRiskResultsJson: Array<{ riskId: string; title: string; aleMean?: number; aleP50?: number; aleP90?: number }> | null;
 }
 
 const SOURCE_VARIANT: Record<Source, 'info' | 'warning' | 'error'> = {
@@ -143,12 +143,30 @@ export default function LossEventsPage() {
     // written back to the FAIR inputs — divergence is surfaced, the owner acts.
     const calibration = useMemo(() => {
         const forecasts = (run?.perRiskResultsJson ?? [])
-            .filter((r) => typeof r.aleP50 === 'number' && typeof r.aleP90 === 'number')
+            // Only risks with a REAL tail band — mean-only rows
+            // (aleP50===aleP90===aleMean, the >200-risk sim fallback)
+            // carry no distribution, so `aleP90 > aleMean` excludes them
+            // before they falsely flag as over/under-forecast (mirrors
+            // `tail-language.ts`'s hasTail predicate).
+            .filter(
+                (r) =>
+                    typeof r.aleP50 === 'number' &&
+                    typeof r.aleP90 === 'number' &&
+                    typeof r.aleMean === 'number' &&
+                    (r.aleP90 as number) > (r.aleMean as number),
+            )
             .map((r) => ({ riskId: r.riskId, title: r.title, p50: r.aleP50 as number, p90: r.aleP90 as number }));
         const actuals = (agg?.byRisk ?? [])
             .filter((a): a is { riskId: string; total: number; count: number } => a.riskId != null)
             .map((a) => ({ riskId: a.riskId, total: a.total }));
-        return computeLossCalibration(forecasts, actuals);
+        // Annualize the cumulative actuals against the observed loss
+        // window (calendar span of the recorded years) so a multi-year
+        // total is compared to the per-YEAR forecast band, not treated
+        // as a single bad year.
+        const years = agg?.byYear?.length
+            ? agg.byYear[agg.byYear.length - 1].year - agg.byYear[0].year + 1
+            : 1;
+        return computeLossCalibration(forecasts, actuals, years);
     }, [run, agg]);
 
     return (
@@ -219,7 +237,7 @@ export default function LossEventsPage() {
             </Card>
 
             {/* PR-L — calibration back-test: how did the forecast hold vs actuals? */}
-            {calibration.scored > 0 && (
+            {(calibration.scored > 0 || calibration.insufficientDistribution > 0) && (
                 <Card className="space-y-default p-6" data-testid="loss-calibration">
                     <div className="flex items-center gap-tight">
                         <Heading level={2}>{t('lossEvents.calibrationTitle')}</Heading>
@@ -241,6 +259,13 @@ export default function LossEventsPage() {
                         </div>
                     </div>
                     <p className="text-xs text-content-muted">{t('lossEvents.coverageHint')}</p>
+                    {calibration.insufficientDistribution > 0 && (
+                        <p className="text-xs text-content-muted" data-testid="loss-calibration-insufficient">
+                            {t('lossEvents.insufficientDistributionNote', {
+                                count: calibration.insufficientDistribution,
+                            })}
+                        </p>
+                    )}
                     <ul className="divide-y divide-border-subtle" data-testid="loss-calibration-rows">
                         {calibration.rows.map((r) => (
                             <li key={r.riskId} className="flex flex-wrap items-center gap-default py-tight text-sm" data-testid={`calibration-row-${r.riskId}`}>

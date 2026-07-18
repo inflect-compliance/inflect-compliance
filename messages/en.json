@@ -885,6 +885,7 @@
       "applyStatus": "Set {status}",
       "recommendAccepted": "Recommended: mark this risk Accepted.",
       "recommendMitigating": "Recommended: mark this risk Mitigating while treatment is in flight.",
+      "recommendClosed": "Transfer/Avoid decision — mark this risk Closed when its plan completes.",
       "recommendAssessFirst": "Assess the residual risk to advance the workflow status.",
       "recommendDecideFirst": "Choose a treatment decision to advance the workflow status.",
       "statusAutoNote": "Status finalizes automatically when the treatment plan completes."
@@ -1226,6 +1227,7 @@
       "autoSuggest": "Auto-suggest",
       "isPsd": "Matrix is positive semi-definite",
       "notPsd": "Not PSD — adjust cells",
+      "borderlinePd": "Borderline — not positive-definite",
       "clickHint": "Click a cell in the upper triangle to edit a pair.",
       "coefficient": "Coefficient (−1..1)",
       "apply": "Apply",
@@ -1237,7 +1239,8 @@
       "psdHelp": "A valid correlation matrix must be positive semi-definite — otherwise the coefficients are mutually contradictory and the simulation cannot sample from them. Auto-suggest keeps it valid.",
       "loadError": "Couldn't load the correlation matrix.",
       "suggestError": "Couldn't suggest correlations.",
-      "nonPsdWarning": "This matrix is not positive semi-definite, so it will be dropped from Monte Carlo simulations (risks sampled independently). Adjust the coefficients until the matrix is valid."
+      "nonPsdWarning": "This matrix is not positive semi-definite, so it will be dropped from Monte Carlo simulations (risks sampled independently). Adjust the coefficients until the matrix is valid.",
+      "notPdWarning": "This matrix is positive semi-definite but not strictly positive-definite (smallest eigenvalue ≈ 0 — usually a ±1.0 or otherwise dependent coefficient). The Monte Carlo needs strict positive-definiteness for its Cholesky step, so it will drop these correlations and sample risks independently until you adjust them."
     },
     "hierarchy": {
       "breadcrumb": "Hierarchy",
@@ -1365,6 +1368,7 @@
       "underForecastLabel": "Under-forecast",
       "scoredLabel": "Risks scored",
       "coverageHint": "A well-calibrated model keeps ~90% of risks at or under their P90 forecast. Big misses suggest the FAIR inputs need a fresh look.",
+      "insufficientDistributionNote": "{count} risk(s) excluded from the back-test — the simulation produced a mean-only band (no tail data) for them.",
       "status_within_band": "Within band",
       "status_under_forecast": "Under-forecast",
       "status_over_forecast": "Over-forecast",
@@ -7072,6 +7076,18 @@
     },
     "treatment": {
       "title": "Treatment Plan",
+      "status": {
+        "DRAFT": "Draft",
+        "ACTIVE": "Active",
+        "COMPLETED": "Completed",
+        "OVERDUE": "Overdue"
+      },
+      "strategy": {
+        "MITIGATE": "Mitigate",
+        "ACCEPT": "Accept",
+        "TRANSFER": "Transfer",
+        "AVOID": "Avoid"
+      },
       "create": "Create treatment plan",
       "emptyPrefix": "No treatment plan yet. Click",
       "emptySuffix": "to record strategy, owner, target date, and milestones.",
