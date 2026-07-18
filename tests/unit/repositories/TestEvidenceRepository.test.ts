@@ -45,6 +45,8 @@ describe('link', () => {
             url: null,
             integrationResultId: null,
             note: null,
+            // PR-R — evidence links carry a frozen integrity hash (null when absent).
+            sha256Hash: null,
             createdByUserId: 'user-1',
         });
     });
@@ -52,21 +54,23 @@ describe('link', () => {
     it('passes through provided optional fields (value branch)', async () => {
         await TestEvidenceRepository.link(db as any, ctx, {
             testRunId: 'r1',
-            kind: 'EVIDENCE',
+            kind: 'FILE',
             fileId: 'f1',
             evidenceId: 'e1',
             url: 'https://x',
             integrationResultId: 'ir1',
             note: 'n',
+            sha256Hash: 'deadbeef',
         });
         const arg = db.controlTestEvidenceLink.create.mock.calls[0][0];
         expect(arg.data).toMatchObject({
-            kind: 'EVIDENCE',
+            kind: 'FILE',
             fileId: 'f1',
             evidenceId: 'e1',
             url: 'https://x',
             integrationResultId: 'ir1',
             note: 'n',
+            sha256Hash: 'deadbeef',
         });
     });
 });

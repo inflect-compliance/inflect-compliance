@@ -113,6 +113,54 @@ export default function TestRunPage() {
 
     const [retesting, setRetesting] = useState(false);
 
+    // PR-R — hardening surface: integrity verify, evidence-bundle export,
+    // and snapshot-to-audit-pack (all previously routed but unsurfaced).
+    const [verifying, setVerifying] = useState(false);
+    const [integrity, setIntegrity] = useState<null | {
+        integrityOk: boolean; fileLinks: number; verified: number; mismatches: number; unverifiable: number;
+    }>(null);
+    const [snapshotPackId, setSnapshotPackId] = useState('');
+    const [snapshotting, setSnapshotting] = useState(false);
+
+    // Draft audit packs a completed run can be snapshotted into.
+    const { data: packsData } = useTenantSWR<Array<{ id: string; name: string; status: string }>>('/audits/packs');
+    const draftPackOptions = useMemo<ComboboxOption[]>(
+        () => (packsData ?? []).filter((p) => p.status === 'DRAFT').map((p) => ({ value: p.id, label: p.name })),
+        [packsData],
+    );
+
+    const verifyIntegrity = async () => {
+        setVerifying(true);
+        try {
+            const res = await fetch(apiUrl(`/tests/runs/${runId}/verify-evidence`));
+            if (!res.ok) throw new Error(await res.text());
+            setIntegrity(await res.json());
+        } catch {
+            toast.error(t('run.integrity.error'));
+        } finally {
+            setVerifying(false);
+        }
+    };
+
+    const snapshotToPack = async () => {
+        if (!snapshotPackId) return;
+        setSnapshotting(true);
+        try {
+            const res = await fetch(apiUrl(`/tests/runs/${runId}/snapshot`), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ auditPackId: snapshotPackId }),
+            });
+            if (!res.ok) throw new Error(await res.text());
+            toast.success(t('run.snapshot.success'));
+            setSnapshotPackId('');
+        } catch {
+            toast.error(t('run.snapshot.failed'));
+        } finally {
+            setSnapshotting(false);
+        }
+    };
+
     const handleRetest = async () => {
         setRetesting(true);
         try {
@@ -181,6 +229,10 @@ export default function TestRunPage() {
         setEvError('');
         try {
             let evidenceId = evEvidenceId;
+            // PR-R — when a real file is uploaded we link it to the run as
+            // kind:'FILE' with its fileId, so the backend freezes the file's
+            // SHA-256 on the link and verifyRunEvidence can detect tampering.
+            let uploadedFileId: string | null = null;
 
             if (evKind === 'FILE_UPLOAD') {
                 if (!evFile) return;
@@ -197,7 +249,9 @@ export default function TestRunPage() {
                 if (!uploadRes.ok) {
                     throw new Error((await uploadRes.text()) || t('run.errors.uploadFailed'));
                 }
-                evidenceId = (await uploadRes.json()).id;
+                const uploaded = await uploadRes.json();
+                evidenceId = uploaded.id;
+                uploadedFileId = uploaded.fileRecordId ?? null;
             } else if (evKind === 'LINK') {
                 if (!evUrl) return;
                 // Create a LINK evidence record in the library, linked to
@@ -219,12 +273,16 @@ export default function TestRunPage() {
                 evidenceId = (await createRes.json()).id;
             }
 
-            // Link the evidence record (newly-created or pre-existing) to
-            // this test run.
+            // Link to the run. An uploaded file links as FILE-kind (with
+            // fileId → hashed for integrity); library picks / URLs link as
+            // EVIDENCE-kind pointing at the library record.
+            const linkBody = uploadedFileId
+                ? { kind: 'FILE', fileId: uploadedFileId, note: evNote || null }
+                : { kind: 'EVIDENCE', evidenceId, note: evNote || null };
             const linkRes = await fetch(apiUrl(`/tests/runs/${runId}/evidence`), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ kind: 'EVIDENCE', evidenceId, note: evNote || null }),
+                body: JSON.stringify(linkBody),
             });
             if (!linkRes.ok) throw new Error(t('run.errors.linkFailed'));
 
@@ -354,6 +412,9 @@ export default function TestRunPage() {
             {!isCompleted && steps.length > 0 && (
                 <Card className="space-y-default">
                     <Heading level={3}>{t('run.procedureHeading')}</Heading>
+                    {/* PR-R — honest labeling: the checkboxes are a working aid, not
+                        a recorded verdict. Only the overall result is persisted. */}
+                    <p className="text-xs text-content-subtle">{t('run.stepsGuidanceNote')}</p>
                     <ol className="space-y-tight">
                         {steps.map((step, i) => {
                             const checked = checkedSteps.has(step.id);
@@ -647,6 +708,89 @@ export default function TestRunPage() {
                                 )}
                             </div>
                         ))}
+                    </div>
+                )}
+            </div>
+
+            {/* PR-R — Audit & integrity: verify evidence hashes, export the
+                evidence bundle, and snapshot a completed run into an audit pack.
+                All three were routed but had no UI. No navbar change. */}
+            <div className={cn(cardVariants({ density: 'compact' }), 'space-y-default')} id="run-hardening-section">
+                <Heading level={3}>{t('run.hardening.heading')}</Heading>
+
+                {/* Integrity */}
+                <div className="flex flex-wrap items-center gap-compact">
+                    <Button variant="secondary" size="sm" onClick={verifyIntegrity} disabled={verifying} id="verify-integrity-btn">
+                        {verifying ? t('run.integrity.verifying') : t('run.integrity.verify')}
+                    </Button>
+                    {integrity && (
+                        <>
+                            <StatusBadge
+                                variant={integrity.fileLinks === 0 ? 'neutral' : integrity.integrityOk ? 'success' : 'error'}
+                                size="sm"
+                            >
+                                {integrity.fileLinks === 0
+                                    ? t('run.integrity.none')
+                                    : integrity.integrityOk
+                                      ? t('run.integrity.ok')
+                                      : t('run.integrity.failed')}
+                            </StatusBadge>
+                            <span className="text-xs text-content-subtle">
+                                {t('run.integrity.counts', {
+                                    verified: integrity.verified,
+                                    mismatches: integrity.mismatches,
+                                    unverifiable: integrity.unverifiable,
+                                })}
+                            </span>
+                        </>
+                    )}
+                </div>
+
+                {/* Export bundle */}
+                <div className="flex flex-wrap items-center gap-compact">
+                    <span className="text-xs text-content-muted">{t('run.export.label')}</span>
+                    <a
+                        href={apiUrl(`/tests/export?controlId=${run.controlId}&format=csv`)}
+                        className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                        id="export-bundle-csv"
+                    >
+                        {t('run.export.csv')}
+                    </a>
+                    <a
+                        href={apiUrl(`/tests/export?controlId=${run.controlId}&format=json`)}
+                        className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        id="export-bundle-json"
+                    >
+                        {t('run.export.json')}
+                    </a>
+                </div>
+
+                {/* Snapshot to audit pack — completed runs only */}
+                {isCompleted && permissions.canWrite && (
+                    <div className="flex flex-wrap items-end gap-compact">
+                        <div className="w-full sm:w-64">
+                            <label className="text-xs text-content-muted block mb-1">{t('run.snapshot.label')}</label>
+                            <Combobox
+                                id="snapshot-pack-select"
+                                options={draftPackOptions}
+                                selected={draftPackOptions.find((o) => o.value === snapshotPackId) ?? null}
+                                setSelected={(opt) => setSnapshotPackId(opt?.value ?? '')}
+                                placeholder={draftPackOptions.length === 0 ? t('run.snapshot.noPacks') : t('run.snapshot.choose')}
+                                disabled={draftPackOptions.length === 0}
+                                matchTriggerWidth
+                            />
+                        </div>
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={snapshotToPack}
+                            disabled={!snapshotPackId || snapshotting}
+                            id="snapshot-to-pack-btn"
+                        >
+                            {snapshotting ? t('run.snapshot.snapshotting') : t('run.snapshot.confirm')}
+                        </Button>
                     </div>
                 )}
             </div>

@@ -6080,6 +6080,33 @@
       "procedureHeading": "Test procedure",
       "stepExpected": "Expected: {output}",
       "stepsProgress": "{done} of {total} steps done",
+      "stepsGuidanceNote": "The checklist is a working aid to walk through the procedure — the individual checks are not saved. Only the overall result you record below is stored.",
+      "hardening": {
+        "heading": "Audit & integrity"
+      },
+      "integrity": {
+        "verify": "Verify integrity",
+        "verifying": "Verifying…",
+        "ok": "Integrity verified",
+        "failed": "Integrity failed",
+        "none": "No file evidence to verify",
+        "counts": "{verified} verified · {mismatches} failed · {unverifiable} unverifiable",
+        "error": "Could not verify integrity. Please try again."
+      },
+      "export": {
+        "label": "Export evidence bundle:",
+        "csv": "CSV",
+        "json": "JSON"
+      },
+      "snapshot": {
+        "label": "Snapshot to audit pack",
+        "choose": "Choose a draft audit pack…",
+        "noPacks": "No draft audit packs",
+        "confirm": "Snapshot",
+        "snapshotting": "Snapshotting…",
+        "success": "Test run snapshotted to the audit pack.",
+        "failed": "Could not snapshot the run. Please try again."
+      },
       "startHeading": "Start this run",
       "startHint": "Begin the guided execution — walk the procedure, then record the result.",
       "starting": "Starting…",
@@ -6139,6 +6166,16 @@
     "method": {
       "MANUAL": "Manual",
       "AUTOMATED": "Automated"
+    },
+    "planStatus": {
+      "ACTIVE": "Active",
+      "PAUSED": "Paused",
+      "ARCHIVED": "Archived"
+    },
+    "result": {
+      "PASS": "Pass",
+      "FAIL": "Fail",
+      "INCONCLUSIVE": "Inconclusive"
     },
     "checkStatus": {
       "PASSED": "Passed",

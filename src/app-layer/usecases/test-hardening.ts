@@ -1,13 +1,18 @@
 /**
  * Test Hardening — Evidence integrity, audit pack snapshots, secure exports
  *
- * linkEvidenceWithHash()       — links evidence with SHA-256 hash stored at link-time
  * verifyRunEvidence()          — re-computes hashes and checks against stored values
  * snapshotTestRun()            — creates immutable AuditPackItem for a test run
  * exportTestEvidenceBundle()   — generates CSV/JSON export of runs + evidence
+ *
+ * PR-R — evidence linking + hashing now lives on the live path in
+ * `control-test.ts::linkEvidenceToRun` (which freezes FileRecord.sha256 on the
+ * link). The previously-dead `linkEvidenceWithHash` here was removed — it
+ * duplicated the linker and had a broken hash source (it passed a FileRecord id
+ * where verifyFileIntegrity wants a storage pathKey).
  */
 import { RequestContext } from '../types';
-import { assertCanReadTests, assertCanLinkTestEvidence } from '../policies/test.policies';
+import { assertCanReadTests } from '../policies/test.policies';
 import { assertCanManageAuditPacks } from '../policies/audit-readiness.policies';
 import { logEvent } from '../events/audit';
 import { runInTenantContext, type PrismaTx } from '@/lib/db-context';
@@ -15,74 +20,6 @@ import { notFound, badRequest } from '@/lib/errors/types';
 import { verifyFileIntegrity } from './audit-hardening';
 
 // ─── Evidence Integrity ───
-
-/**
- * Link evidence to a test run with SHA-256 hash for FILE-kind.
- * Wraps the standard link flow, adds integrity metadata.
- */
-export async function linkEvidenceWithHash(
-    ctx: RequestContext,
-    runId: string,
-    input: {
-        kind: 'FILE' | 'EVIDENCE' | 'LINK' | 'INTEGRATION_RESULT';
-        fileId?: string | null;
-        evidenceId?: string | null;
-        url?: string | null;
-        integrationResultId?: string | null;
-        note?: string | null;
-    },
-) {
-    assertCanLinkTestEvidence(ctx);
-
-    return runInTenantContext(ctx, async (db: PrismaTx) => {
-        const run = await db.controlTestRun.findFirst({
-            where: { id: runId, tenantId: ctx.tenantId },
-        });
-        if (!run) throw notFound('Test run not found');
-
-        // Compute hash for FILE-kind evidence
-        let sha256Hash: string | null = null;
-        if (input.kind === 'FILE' && input.fileId) {
-            try {
-                const result = await verifyFileIntegrity(ctx, input.fileId);
-                sha256Hash = result.computedHash;
-            } catch {
-                // File may not exist yet or not be accessible; proceed without hash
-                sha256Hash = null;
-            }
-        }
-
-        const link = await db.controlTestEvidenceLink.create({
-            data: {
-                tenantId: ctx.tenantId,
-                testRunId: runId,
-                kind: input.kind,
-                fileId: input.fileId ?? null,
-                evidenceId: input.evidenceId ?? null,
-                url: input.url ?? null,
-                integrationResultId: input.integrationResultId ?? null,
-                note: input.note ?? null,
-                sha256Hash,
-                createdByUserId: ctx.userId,
-            },
-        });
-
-        await logEvent(db, ctx, {
-            action: 'TEST_EVIDENCE_LINKED_WITH_HASH',
-            entityType: 'ControlTestEvidenceLink',
-            entityId: link.id,
-            details: JSON.stringify({
-            detailsJson: { category: 'relationship', operation: 'linked', sourceEntity: 'ControlTestEvidenceLink' },
-                testRunId: runId,
-                kind: input.kind,
-                sha256Hash,
-                fileId: input.fileId,
-            }),
-        });
-
-        return link;
-    });
-}
 
 /**
  * Verify all FILE-kind evidence on a test run by re-computing SHA-256.
@@ -112,10 +49,30 @@ export async function verifyRunEvidence(ctx: RequestContext, runId: string) {
 
         const results: VerificationResult[] = [];
 
+        // PR-R — verifyFileIntegrity reads storage by pathKey, so resolve the
+        // FileRecords up front in ONE query (the old code passed the FileRecord
+        // id as a storage key → the read always threw → integrity was trivially
+        // "ok"). Batched to avoid an N+1 read inside the loop below.
+        const fileIds = run.evidence
+            .filter((ev) => ev.kind === 'FILE' && ev.fileId)
+            .map((ev) => ev.fileId as string);
+        const pathKeyById = new Map<string, string>();
+        if (fileIds.length > 0) {
+            const files = await db.fileRecord.findMany({
+                where: { tenantId: ctx.tenantId, id: { in: fileIds } },
+                select: { id: true, pathKey: true },
+            });
+            for (const f of files) pathKeyById.set(f.id, f.pathKey);
+        }
+
         for (const ev of run.evidence) {
             if (ev.kind === 'FILE' && ev.fileId) {
+                const pathKey = pathKeyById.get(ev.fileId);
                 try {
-                    const integrity = await verifyFileIntegrity(ctx, ev.fileId);
+                    if (!pathKey) throw notFound('File record not found');
+                    // Recompute the bytes from storage and compare to the hash
+                    // frozen on the link at link time.
+                    const integrity = await verifyFileIntegrity(ctx, pathKey, ev.sha256Hash ?? undefined);
                     results.push({
                         linkId: ev.id,
                         kind: ev.kind,
@@ -132,7 +89,10 @@ export async function verifyRunEvidence(ctx: RequestContext, runId: string) {
                         fileId: ev.fileId,
                         storedHash: ev.sha256Hash,
                         computedHash: null,
-                        matches: null,
+                        // A FILE link with a frozen hash we can no longer verify
+                        // (file gone / unreadable) is an integrity FAILURE, not a
+                        // pass — only a link that never had a hash stays null.
+                        matches: ev.sha256Hash ? false : null,
                         error: e instanceof Error ? e.message : 'Unknown error',
                     });
                 }

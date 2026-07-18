@@ -35,11 +35,12 @@ import { DB_URL, DB_AVAILABLE } from './db-helper';
 import { hashForLookup } from '@/lib/security/encryption';
 import { makeRequestContext } from '../helpers/make-context';
 import {
-    linkEvidenceWithHash,
     verifyRunEvidence,
     snapshotTestRun,
     exportTestEvidenceBundle,
 } from '@/app-layer/usecases/test-hardening';
+// PR-R — hashing on evidence link moved to the live linkEvidenceToRun path.
+import { linkEvidenceToRun } from '@/app-layer/usecases/control-test';
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: DB_URL }) });
 const describeFn = DB_AVAILABLE ? describe : describe.skip;
@@ -118,25 +119,46 @@ describeFn('test-hardening usecases (real DB)', () => {
         await prisma.controlTestRun.deleteMany({ where: { tenantId: TENANT } });
     });
 
-    // ── linkEvidenceWithHash ─────────────────────────────────────────
-    it('linkEvidenceWithHash throws notFound for a missing run', async () => {
-        await expect(linkEvidenceWithHash(ctx, 'nope', { kind: 'LINK' })).rejects.toThrow(/not found/i);
+    // ── linkEvidenceToRun (hashing on the live path — PR-R) ──────────
+    it('linkEvidenceToRun throws notFound for a missing run', async () => {
+        await expect(linkEvidenceToRun(ctx, 'nope', { kind: 'LINK' })).rejects.toThrow(/not found/i);
     });
 
-    it('linkEvidenceWithHash FILE with unreadable fileId proceeds with null hash', async () => {
+    it('linkEvidenceToRun FILE with unknown fileId proceeds with null hash', async () => {
         const runId = await makeRun();
-        const link = await linkEvidenceWithHash(ctx, runId, { kind: 'FILE', fileId: 'missing-file' });
+        const link = await linkEvidenceToRun(ctx, runId, { kind: 'FILE', fileId: 'missing-file' });
         expect(link.kind).toBe('FILE');
-        expect(link.sha256Hash).toBeNull(); // catch arm
+        expect(link.sha256Hash).toBeNull(); // no FileRecord → no frozen hash
         expect(link.fileId).toBe('missing-file');
     });
 
-    it('linkEvidenceWithHash LINK kind creates without hashing', async () => {
+    it('linkEvidenceToRun LINK kind creates without hashing', async () => {
         const runId = await makeRun();
-        const link = await linkEvidenceWithHash(ctx, runId, { kind: 'LINK', url: 'https://x' });
+        const link = await linkEvidenceToRun(ctx, runId, { kind: 'LINK', url: 'https://x' });
         expect(link.kind).toBe('LINK');
         expect(link.sha256Hash).toBeNull();
         expect(link.url).toBe('https://x');
+    });
+
+    it('linkEvidenceToRun FILE with a real FileRecord freezes its sha256 on the link (PR-R)', async () => {
+        const runId = await makeRun();
+        const file = await prisma.fileRecord.create({
+            data: {
+                tenantId: TENANT,
+                pathKey: `t/${TENANT}/${randomUUID()}.txt`,
+                originalName: 'evidence.txt',
+                mimeType: 'text/plain',
+                sizeBytes: 12,
+                sha256: 'a'.repeat(64),
+                storageProvider: 'local',
+                uploadedByUserId: ctx.userId,
+            },
+        });
+        const link = await linkEvidenceToRun(ctx, runId, { kind: 'FILE', fileId: file.id });
+        expect(link.kind).toBe('FILE');
+        // The integrity hash is frozen from FileRecord.sha256 — not null.
+        expect(link.sha256Hash).toBe('a'.repeat(64));
+        await prisma.fileRecord.delete({ where: { id: file.id } });
     });
 
     // ── verifyRunEvidence ────────────────────────────────────────────
@@ -144,8 +166,10 @@ describeFn('test-hardening usecases (real DB)', () => {
         await expect(verifyRunEvidence(ctx, 'nope')).rejects.toThrow(/not found/i);
     });
 
-    it('verifyRunEvidence captures FILE recompute error + non-FILE null rows', async () => {
+    it('verifyRunEvidence FAILS integrity when a hashed FILE can no longer be verified (PR-R)', async () => {
         const runId = await makeRun();
+        // A FILE link with a FROZEN hash whose file/record is gone → the integrity
+        // check can no longer confirm it → this is a FAILURE, not a trivial pass.
         await prisma.controlTestEvidenceLink.create({
             data: { tenant: { connect: { id: TENANT } }, testRun: { connect: { id: runId } }, kind: 'FILE', fileId: 'missing', sha256Hash: 'abc', createdBy: { connect: { id: ctx.userId } } },
         });
@@ -155,14 +179,27 @@ describeFn('test-hardening usecases (real DB)', () => {
         const res = await verifyRunEvidence(ctx, runId);
         expect(res.totalLinks).toBe(2);
         expect(res.fileLinks).toBe(1);
-        // FILE recompute threw (no storage) → unverifiable, matches null.
-        expect(res.unverifiable).toBe(1);
         const fileRow = res.details.find((d) => d.kind === 'FILE')!;
         expect(fileRow.error).toBeTruthy();
+        expect(fileRow.matches).toBe(false); // frozen hash, unverifiable → fail
+        expect(res.mismatches).toBe(1);
+        expect(res.unverifiable).toBe(0);
+        // Non-FILE links carry no file integrity → matches null, never fail.
         const linkRow = res.details.find((d) => d.kind === 'LINK')!;
         expect(linkRow.matches).toBeNull();
         expect(linkRow.error).toBeNull();
-        // integrityOk: FILE matches===null counts as ok.
+        // A FILE link that failed verification drops integrityOk to false.
+        expect(res.integrityOk).toBe(false);
+    });
+
+    it('verifyRunEvidence stays OK when a FILE link has no frozen hash (legacy, unverifiable)', async () => {
+        const runId = await makeRun();
+        await prisma.controlTestEvidenceLink.create({
+            data: { tenant: { connect: { id: TENANT } }, testRun: { connect: { id: runId } }, kind: 'FILE', fileId: 'missing2', createdBy: { connect: { id: ctx.userId } } },
+        });
+        const res = await verifyRunEvidence(ctx, runId);
+        // No stored hash → nothing to compare → unverifiable (null), not a failure.
+        expect(res.unverifiable).toBe(1);
         expect(res.integrityOk).toBe(true);
     });
 

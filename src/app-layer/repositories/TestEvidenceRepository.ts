@@ -13,6 +13,9 @@ export const TestEvidenceRepository = {
         url?: string | null;
         integrationResultId?: string | null;
         note?: string | null;
+        // PR-R — SHA-256 of the linked file's bytes, frozen at link time, so
+        // verifyRunEvidence can recompute from storage and detect tampering.
+        sha256Hash?: string | null;
     }) {
         return db.controlTestEvidenceLink.create({
             data: {
@@ -24,6 +27,7 @@ export const TestEvidenceRepository = {
                 url: data.url ?? null,
                 integrationResultId: data.integrationResultId ?? null,
                 note: data.note ?? null,
+                sha256Hash: data.sha256Hash ?? null,
                 createdByUserId: ctx.userId,
             },
         });
