@@ -3609,7 +3609,7 @@
     "mappedPct": "Съпоставени %",
     "implementedPct": "Внедрени %",
     "readinessScore": "Оценка на готовност",
-    "gaps": "Пропуски",
+    "gapsMappedNotImplemented": "Картографирани, неприложени",
     "excepted": "С изключение",
     "mappedVsImplementedHint": "{mapped} от {total} изисквания имат съпоставен контрол; {implemented} са внедрени. Съпоставени % е плътност на съпоставяне, не завършеност.",
     "coverageBySection": "Покритие по раздел",

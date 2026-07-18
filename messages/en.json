@@ -3609,7 +3609,7 @@
     "mappedPct": "Mapped %",
     "implementedPct": "Implemented %",
     "readinessScore": "Readiness score",
-    "gaps": "Gaps",
+    "gapsMappedNotImplemented": "Mapped, not implemented",
     "excepted": "Excepted",
     "mappedVsImplementedHint": "{mapped} of {total} requirements have a control mapped; {implemented} are implemented. Mapped % is mapping density, not completion.",
     "coverageBySection": "Coverage by section",

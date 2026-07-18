@@ -1,13 +1,21 @@
 /**
  * Audit Readiness PDF Generator
  *
- * Produces a branded ISO27001 SoA report with:
- *   Cover page → Metadata page → Summary metrics → Full SoA table → Readiness checks
+ * PR-U — computed off the SAME readiness spine (`generateReadinessReport`) the
+ * on-screen readiness view uses, so the exported headline numbers (coverage %,
+ * readiness score, implemented / gap / excepted, per-section breakdown) MATCH
+ * what the user saw for the selected framework. The old SoA engine
+ * (getSoA + runSoAChecks) — with its ISO Annex-A Applicability/Justification
+ * columns and "SoA is audit-ready" verdict — is gone; the SoA remains a separate
+ * ISO-only artifact (/reports/soa + the SoA CSV export). Non-ISO exports carry
+ * zero SoA/Applicability/Justification constructs as a result.
+ *
+ *   Cover page → Metadata page → Summary metrics → Coverage by section → Unmapped
  */
 import crypto from 'crypto';
 import type { RequestContext } from '@/app-layer/types';
-import { getSoA } from '@/app-layer/usecases/soa';
-import { runSoAChecks } from '@/app-layer/usecases/soa-checks';
+import { generateReadinessReport } from '@/app-layer/usecases/framework/coverage';
+import { resolveInstalledFrameworkKey } from '@/app-layer/usecases/soa';
 import { auditReadinessLabels } from './report-labels';
 import { createPdfDocument } from '@/lib/pdf/pdfKitFactory';
 import { addCoverPage, addMetadataPage, applyHeadersAndFooters } from '@/lib/pdf/layout';
@@ -20,14 +28,12 @@ export async function generateAuditReadinessPdf(
     ctx: RequestContext,
     options?: { framework?: string; watermark?: WatermarkMode },
 ): Promise<PDFKit.PDFDocument> {
-    // ─── Fetch data ───
-    const soaReport = await getSoA(ctx, {
-        framework: options?.framework,
-        includeEvidence: true,
-        includeTasks: true,
-        includeTests: true,
-    });
-    const checks = runSoAChecks(soaReport.entries);
+    // ─── Fetch data — the readiness spine (same payload the view renders) ───
+    const frameworkKey = options?.framework && options.framework.length > 0
+        ? options.framework
+        : await resolveInstalledFrameworkKey(ctx);
+    const report = await generateReadinessReport(ctx, frameworkKey);
+    const s = report.summary;
 
     const tenant = await prisma.tenant.findUnique({
         where: { id: ctx.tenantId },
@@ -36,14 +42,19 @@ export async function generateAuditReadinessPdf(
 
     // ─── Content hash for auditability ───
     const dataHash = crypto.createHash('sha256')
-        .update(JSON.stringify({ entries: soaReport.entries.length, summary: soaReport.summary, checks: checks.issues.length }))
+        .update(JSON.stringify({ framework: report.framework.key, summary: s, sections: report.bySection.length }))
         .digest('hex');
 
-    // ─── Framework-derived labels (PR-H) — never an ISO literal (see report-labels.ts) ───
+    const frameworkName = report.framework.version
+        ? `${report.framework.name} ${report.framework.version}`
+        : report.framework.name;
+
+    // ─── Framework-derived labels (PR-H) — SoA/Annex-A wording is gated behind
+    // the ISO family, so a SOC 2 / NIS2 report never leaks an ISO literal. ───
     const labels = auditReadinessLabels({
-        frameworkName: soaReport.frameworkName,
-        isIsoFamily: soaReport.isIsoFamily,
-        requirementCount: soaReport.summary.total,
+        frameworkName,
+        isIsoFamily: report.isIsoFamily,
+        requirementCount: s.totalRequirements,
     });
 
     // ─── Meta ───
@@ -51,126 +62,87 @@ export async function generateAuditReadinessPdf(
         tenantName: tenant?.name || 'Tenant',
         reportTitle: 'Audit Readiness Report',
         reportSubtitle: labels.reportSubtitle,
-        generatedAt: new Date().toISOString(),
-        framework: soaReport.framework,
+        generatedAt: report.generatedAt,
+        framework: report.framework.key,
         watermark: options?.watermark || 'NONE',
         contentHash: dataHash,
     };
 
     const dataSources: DataSourceNote[] = [
-        {
-            source: labels.applicabilitySection,
-            description: labels.dataSourceDescription,
-        },
-        { source: 'Readiness Checks', description: 'Automated checks for unmapped requirements, missing justifications, and evidence gaps.' },
-        { source: 'Control Evidence', description: 'Evidence counts and test results linked to applicable controls.' },
+        { source: labels.applicabilitySection, description: labels.dataSourceDescription },
+        { source: 'Implementation Verdict', description: 'Per-requirement implemented / gap / excepted rollup across its applicable mapped controls.' },
+        { source: 'Control Evidence', description: 'Evidence counts and overdue-task signals feeding the readiness score.' },
     ];
 
     // ─── Build PDF ───
     const doc = createPdfDocument(meta);
-
-    // Cover
     addCoverPage(doc, meta);
-
-    // Metadata page
     addMetadataPage(doc, meta, dataSources);
-
-    // Content page
     doc.addPage();
 
-    // Summary metrics
+    // Summary metrics — readiness spine numbers (match the on-screen view).
     addSectionTitle(doc, 'Summary');
     addSummaryMetrics(doc, [
-        { label: 'Total Controls', value: soaReport.summary.total },
-        { label: 'Applicable', value: soaReport.summary.applicable },
-        { label: 'Not Applicable', value: soaReport.summary.notApplicable },
-        { label: 'Unmapped', value: soaReport.summary.unmapped },
-        { label: 'Implemented', value: soaReport.summary.implemented },
-        { label: 'Missing Just.', value: soaReport.summary.missingJustification },
+        { label: 'Total Requirements', value: s.totalRequirements },
+        { label: 'Mapped', value: s.mappedRequirements },
+        { label: 'Coverage', value: `${s.coveragePercent}%` },
+        { label: 'Implemented', value: s.implementedRequirements },
+        { label: 'Gaps', value: s.gapRequirements },
+        { label: 'Excepted', value: s.exceptedRequirements },
+        { label: 'Readiness', value: `${s.readinessScore}/100` },
     ]);
 
     addSpacer(doc);
 
-    // Readiness status
+    // Readiness status — a readiness verdict, NOT an ISO "SoA is audit-ready" line.
     addSectionTitle(doc, 'Readiness Status');
-    if (checks.pass) {
-        addParagraph(doc, '✓ SoA is audit-ready. All requirements are mapped and justified.');
+    if (s.gapRequirements === 0 && report.coverage.unmapped === 0) {
+        addParagraph(doc, `Audit-ready — readiness score ${s.readinessScore}/100. Every requirement is mapped and implemented.`);
     } else {
-        addParagraph(doc, `✗ SoA is NOT audit-ready. ${checks.errorCount} error(s), ${checks.warningCount} warning(s) found.`);
+        addParagraph(doc, `Readiness score ${s.readinessScore}/100. ${s.gapRequirements} mapped requirement(s) not yet implemented; ${report.coverage.unmapped} unmapped.`);
     }
 
     addSpacer(doc);
 
-    // SoA / requirements table
-    addSectionTitle(doc, labels.tableSectionTitle);
-
-    const widths = autoColumnWidths([1, 3, 1.2, 1.2, 1, 2]);
-    const columns: TableColumn[] = [
-        { key: 'code', header: 'Code', width: widths[0] },
-        { key: 'title', header: 'Requirement', width: widths[1] },
-        { key: 'applicable', header: 'Applicable', width: widths[2], align: 'center' },
-        { key: 'status', header: 'Status', width: widths[3], align: 'center' },
-        { key: 'controls', header: 'Controls', width: widths[4], align: 'center' },
-        { key: 'justification', header: 'Justification', width: widths[5] },
+    // Coverage by section — the same per-section breakdown the hub shows.
+    addSectionTitle(doc, 'Coverage by Section');
+    const secWidths = autoColumnWidths([3, 1, 1, 1.2]);
+    const secColumns: TableColumn[] = [
+        { key: 'section', header: 'Section', width: secWidths[0] },
+        { key: 'total', header: 'Requirements', width: secWidths[1], align: 'center' },
+        { key: 'mapped', header: 'Mapped', width: secWidths[2], align: 'center' },
+        { key: 'coverage', header: 'Coverage', width: secWidths[3], align: 'center' },
     ];
-
-    // Deterministic order: by requirement code
-    const sortedEntries = [...soaReport.entries].sort((a, b) =>
-        a.requirementCode.localeCompare(b.requirementCode, undefined, { numeric: true })
-    );
-
-    const rows = sortedEntries.map(e => ({
-        code: e.requirementCode,
-        title: e.requirementTitle,
-        applicable: e.applicable === true ? 'Yes' : e.applicable === false ? 'No' : 'Unmapped',
-        status: e.implementationStatus ? e.implementationStatus.replace(/_/g, ' ') : '—',
-        controls: String(e.mappedControls.length),
-        justification: e.justification || '—',
-    }));
-
-    renderTable(doc, columns, rows, undefined, {
-        values: {
-            code: 'TOTAL',
-            title: `${soaReport.summary.total} requirements`,
-            applicable: `${soaReport.summary.applicable} yes`,
-            status: `${soaReport.summary.implemented} impl.`,
-            controls: '',
-            justification: '',
-        },
+    const sectionRows = [...report.bySection]
+        .sort((a, b) => a.section.localeCompare(b.section))
+        .map((sec) => ({
+            section: sec.section,
+            total: String(sec.total),
+            mapped: String(sec.mapped),
+            coverage: `${sec.coveragePercent}%`,
+        }));
+    renderTable(doc, secColumns, sectionRows, undefined, {
+        values: { section: 'TOTAL', total: String(s.totalRequirements), mapped: String(s.mappedRequirements), coverage: `${s.coveragePercent}%` },
     });
 
-    // Issues table (if any)
-    if (checks.issues.length > 0) {
+    // Unmapped requirements — the readiness view's gap population (matches the
+    // hub "Gap analysis — N unmapped" card exactly).
+    if (report.unmappedRequirements.length > 0) {
         addSpacer(doc, 24);
-        addSectionTitle(doc, 'Readiness Issues');
-
-        const issueWidths = autoColumnWidths([1, 1.5, 3, 3]);
-        const issueColumns: TableColumn[] = [
-            { key: 'severity', header: 'Severity', width: issueWidths[0], align: 'center' },
-            { key: 'code', header: 'Requirement', width: issueWidths[1] },
-            { key: 'reason', header: 'Issue', width: issueWidths[2] },
-            { key: 'action', header: 'Suggested Action', width: issueWidths[3] },
+        addSectionTitle(doc, `Unmapped Requirements (${report.unmappedRequirements.length})`);
+        const gapWidths = autoColumnWidths([1.2, 4, 2]);
+        const gapColumns: TableColumn[] = [
+            { key: 'code', header: 'Code', width: gapWidths[0] },
+            { key: 'title', header: 'Requirement', width: gapWidths[1] },
+            { key: 'section', header: 'Section', width: gapWidths[2] },
         ];
-
-        // Deterministic order: errors first, then by code
-        const sortedIssues = [...checks.issues].sort((a, b) => {
-            if (a.severity !== b.severity) return a.severity === 'error' ? -1 : 1;
-            return a.requirementCode.localeCompare(b.requirementCode, undefined, { numeric: true });
-        });
-
-        const issueRows = sortedIssues.map(i => ({
-            severity: i.severity.toUpperCase(),
-            code: i.requirementCode,
-            reason: i.reason,
-            action: i.suggestedAction,
-        }));
-
-        renderTable(doc, issueColumns, issueRows);
+        const gapRows = [...report.unmappedRequirements]
+            .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }))
+            .map((r) => ({ code: r.code, title: r.title, section: r.section || '—' }));
+        renderTable(doc, gapColumns, gapRows);
     }
 
-    // Apply headers/footers/watermarks to all pages
     applyHeadersAndFooters(doc, meta);
-
     // NOTE: doc.end() is NOT called here — the route calls it after attaching listeners
     return doc;
 }

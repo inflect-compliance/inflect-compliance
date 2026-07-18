@@ -9,7 +9,7 @@
  * ISO literals leak; for ISO it still reads as Annex A / SoA. (Testing the pure
  * helper rather than the rendered PDF avoids pdf-parse's environment-dependent
  * text extraction.) Plus a lighter check that the generators forward the
- * selected framework to getSoA.
+ * selected framework to the readiness spine (generateReadinessReport).
  */
 import {
     auditReadinessLabels,
@@ -56,10 +56,14 @@ describe('report-labels — ISO still reads as ISO', () => {
     });
 });
 
-// ─── The generators forward the selected framework to getSoA ───
-const getSoAMock = jest.fn();
+// ─── The generators forward the selected framework to the readiness spine ───
+const generateReadinessReportMock = jest.fn();
+const resolveInstalledFrameworkKeyMock = jest.fn();
+jest.mock('@/app-layer/usecases/framework/coverage', () => ({
+    generateReadinessReport: (...args: unknown[]) => generateReadinessReportMock(...args),
+}));
 jest.mock('@/app-layer/usecases/soa', () => ({
-    getSoA: (...args: unknown[]) => getSoAMock(...args),
+    resolveInstalledFrameworkKey: (...args: unknown[]) => resolveInstalledFrameworkKeyMock(...args),
 }));
 jest.mock('@/lib/prisma', () => ({
     __esModule: true,
@@ -69,44 +73,53 @@ jest.mock('@/lib/prisma', () => ({
 import { generateAuditReadinessPdf } from '@/app-layer/reports/pdf/auditReadiness';
 import { generateGapAnalysisPdf } from '@/app-layer/reports/pdf/gapAnalysis';
 
-const soaDto = {
-    tenantId: 't1',
-    tenantSlug: 'acme',
-    framework: 'SOC2',
-    frameworkName: 'SOC 2',
+const readinessDto = {
+    framework: { key: 'SOC2', name: 'SOC 2', version: null },
     isIsoFamily: false,
     generatedAt: '2026-07-16T00:00:00.000Z',
-    entries: [],
+    coverage: { total: 0, mapped: 0, unmapped: 0, coveragePercent: 0 },
+    bySection: [],
+    unmappedRequirements: [],
+    notApplicableControls: [],
+    controlsMissingEvidence: [],
+    overdueTasks: [],
     summary: {
-        total: 0,
-        applicable: 0,
-        notApplicable: 0,
-        unmapped: 0,
-        implemented: 0,
-        excepted: 0,
-        missingJustification: 0,
+        totalRequirements: 0,
+        mappedRequirements: 0,
+        coveragePercent: 0,
+        implementedRequirements: 0,
+        gapRequirements: 0,
+        exceptedRequirements: 0,
+        notApplicableCount: 0,
+        missingEvidenceCount: 0,
+        overdueTaskCount: 0,
+        readinessScore: 0,
     },
 };
 
-describe('generators forward the selected framework to getSoA', () => {
+describe('generators forward the selected framework to the readiness spine', () => {
     beforeEach(() => {
-        getSoAMock.mockReset();
-        getSoAMock.mockResolvedValue(soaDto);
+        generateReadinessReportMock.mockReset();
+        generateReadinessReportMock.mockResolvedValue(readinessDto);
+        resolveInstalledFrameworkKeyMock.mockReset();
+        resolveInstalledFrameworkKeyMock.mockResolvedValue('ISO27001');
     });
 
-    it('Audit Readiness passes options.framework through', async () => {
+    it('Audit Readiness passes options.framework through, bypassing the resolver', async () => {
         await generateAuditReadinessPdf({ tenantId: 't1' } as never, { framework: 'SOC2' });
-        expect(getSoAMock).toHaveBeenCalledWith(
-            expect.anything(),
-            expect.objectContaining({ framework: 'SOC2' }),
-        );
+        expect(generateReadinessReportMock).toHaveBeenCalledWith(expect.anything(), 'SOC2');
+        expect(resolveInstalledFrameworkKeyMock).not.toHaveBeenCalled();
     });
 
-    it('Gap Analysis passes options.framework through', async () => {
+    it('Gap Analysis passes options.framework through, bypassing the resolver', async () => {
         await generateGapAnalysisPdf({ tenantId: 't1' } as never, { framework: 'SOC2' });
-        expect(getSoAMock).toHaveBeenCalledWith(
-            expect.anything(),
-            expect.objectContaining({ framework: 'SOC2' }),
-        );
+        expect(generateReadinessReportMock).toHaveBeenCalledWith(expect.anything(), 'SOC2');
+        expect(resolveInstalledFrameworkKeyMock).not.toHaveBeenCalled();
+    });
+
+    it('Audit Readiness resolves the installed framework when none is passed', async () => {
+        await generateAuditReadinessPdf({ tenantId: 't1' } as never);
+        expect(resolveInstalledFrameworkKeyMock).toHaveBeenCalled();
+        expect(generateReadinessReportMock).toHaveBeenCalledWith(expect.anything(), 'ISO27001');
     });
 });
