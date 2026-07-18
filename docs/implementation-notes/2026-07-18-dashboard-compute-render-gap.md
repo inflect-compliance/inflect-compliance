@@ -25,11 +25,13 @@ context filtered nothing. Six remediations closed the gap between what
      scan initially flagged them as dead, but `assistant.ts` reads both
      via `getDashboardData`.
 
-2. **KPI drill-through.** `<KpiCard>` gained an optional `href`; when
-   set it renders an `ArrowUpRight` link as a SIBLING overlay (not a
-   wrapper) of the R17 focus button — nesting an `<a>` inside the
-   `role="button"` chassis would be invalid. The focus-on-click
-   interaction is untouched; the corner link navigates.
+2. **KPI drill-through.** A `<KpiTile>` wrapper in `DashboardClient`
+   renders an `ArrowUpRight` `next/link` as a SIBLING overlay (not a
+   wrapper) of each `<KpiCard>`'s R17 focus button — nesting an `<a>`
+   inside the `role="button"` chassis would be invalid, and the shared
+   `KpiCard` primitive stays lean (its import allow-list forbids
+   `next/link`). The focus-on-click interaction is untouched; the corner
+   link navigates.
 
 3. **"Filter" → "focus".** Per-resource data filtering has no coherent
    meaning ("filter the evidence donut to the risks KPI"?), so the
@@ -68,8 +70,7 @@ context filtered nothing. Six remediations closed the gap between what
 | `src/app/t/[tenantSlug]/(app)/dashboard/RecentActivityCard.tsx` | Humanised + identified + linked rows |
 | `src/app/t/[tenantSlug]/(app)/dashboard/DashboardChartContext.tsx` | Filter → focus rename + honest docstring |
 | `src/app/t/[tenantSlug]/(app)/dashboard/DashboardClient.tsx` | Exception/treatment cards, KPI hrefs, permission, focus rename |
-| `src/app/t/[tenantSlug]/(app)/dashboard/DashboardSkeleton.tsx` | New — layout-matching loading skeleton |
-| `src/components/ui/KpiCard.tsx` | Optional `href` drill-through affordance |
+| `src/components/ui/skeleton.tsx` | New `DashboardSkeleton` — layout-matching loading skeleton |
 | `src/lib/swr-keys.ts` | `trends(days=30)` carries its window |
 | `src/app/.../controls/[controlId]/page.tsx`, `.../evidence/UploadEvidenceModal.tsx`, `.../risks/RisksClient.tsx` | Invalidate the executive dashboard key on mutation |
 | `src/app/api/.../posture-summary/regenerate/route.ts` | Gate on `controls.edit` |

@@ -65,6 +65,7 @@ import {
     Bug,
     FileText,
     TrendingUp,
+    ArrowUpRight,
 } from 'lucide-react';
 
 import OnboardingBanner from '@/components/onboarding/OnboardingBanner';
@@ -106,6 +107,7 @@ import { apiPost } from '@/lib/api-client';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { HeroMetric } from '@/components/ui/HeroMetric';
+import { KPIStat } from '@/components/ui/metric';
 import { NextBestActionCard } from '@/components/ui/NextBestActionCard';
 import { PostureHeroCard } from './PostureHeroCard';
 import type { PostureSummaryDto } from '@/app-layer/usecases/compliance-posture';
@@ -544,6 +546,39 @@ function ChartFocusWrapper({
     );
 }
 
+// ─── KPI drill-through tile ───────────────────────────────────────────
+//
+// Wraps a <KpiCard> (which owns the R17 focus-on-click interaction) with
+// a corner drill-through link so a click can NAVIGATE to the KPI's
+// filtered entity list. The link is a sibling overlay — NOT nested in
+// the KpiCard's focus button (invalid) and NOT a dependency of the
+// shared KpiCard primitive (which stays lean). Focus stays on the card
+// body; the arrow navigates.
+
+function KpiTile({
+    drillHref,
+    drillLabel,
+    children,
+}: {
+    drillHref: string;
+    drillLabel: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <div className="relative">
+            {children}
+            <Link
+                href={drillHref}
+                aria-label={drillLabel}
+                data-kpi-drill
+                className="absolute right-1.5 top-1.5 z-10 inline-flex size-6 items-center justify-center rounded-md text-content-subtle opacity-60 transition hover:bg-bg-muted hover:text-content-default hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            >
+                <ArrowUpRight className="size-3.5" aria-hidden="true" />
+            </Link>
+        </div>
+    );
+}
+
 // ─── Interactive KPI Grid (R17-PR7) ──────────────────────────────────
 //
 // Sits inside <DashboardChartProvider> so it can subscribe to the
@@ -614,86 +649,86 @@ function InteractiveKpiGrid({
             className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-default"
             id="kpi-grid"
         >
-            <KpiCard
-                id="kpi-coverage"
-                label={t('controls')}
-                value={exec.controlCoverage.coveragePercent}
-                format="percent"
-                icon={ShieldCheck}
-                gradient="from-emerald-500 to-teal-500"
-                subtitle={`${exec.controlCoverage.implemented} of ${exec.controlCoverage.applicable} implemented`}
-                trend={trendBundle?.coverage}
-                trendVariant="success"
-                onClick={click('coverage')}
-                selected={isSelected('coverage')}
-                href={href('/controls')}
-                hrefLabel={t('openList', { label: t('controls') })}
-            />
-            <KpiCard
-                id="kpi-risks"
-                label={t('risks')}
-                value={exec.stats.risks}
-                icon={AlertTriangle}
-                gradient="from-amber-500 to-orange-500"
-                subtitle={t('highCritical', { count: exec.stats.highRisks })}
-                trend={trendBundle?.risks}
-                trendVariant="warning"
-                onClick={click('risks')}
-                selected={isSelected('risks')}
-                href={href('/risks')}
-                hrefLabel={t('openList', { label: t('risks') })}
-            />
-            <KpiCard
-                id="kpi-evidence"
-                label={t('evidence')}
-                value={exec.stats.evidence}
-                icon={Paperclip}
-                gradient="from-purple-500 to-pink-500"
-                subtitle={`${exec.evidenceExpiry.overdue} overdue`}
-                trend={trendBundle?.evidence}
-                trendVariant="error"
-                onClick={click('evidence')}
-                selected={isSelected('evidence')}
-                href={href('/evidence')}
-                hrefLabel={t('openList', { label: t('evidence') })}
-            />
-            <KpiCard
-                id="kpi-tasks"
-                label={t('openTasks')}
-                value={exec.stats.openTasks}
-                icon={CheckCircle2}
-                gradient="from-indigo-500 to-blue-500"
-                subtitle={`${exec.taskSummary.overdue} overdue`}
-                onClick={click('tasks')}
-                selected={isSelected('tasks')}
-                href={href('/tasks?status=OPEN,TRIAGED,IN_PROGRESS,IN_REVIEW,BLOCKED')}
-                hrefLabel={t('openList', { label: t('openTasks') })}
-            />
-            <KpiCard
-                id="kpi-policies"
-                label={t("policies")}
-                value={exec.policySummary.total}
-                icon={FileText}
-                gradient="from-sky-500 to-cyan-500"
-                subtitle={`${exec.policySummary.published} published`}
-                onClick={click('policies')}
-                selected={isSelected('policies')}
-                href={href('/policies')}
-                hrefLabel={t('openList', { label: t('policies') })}
-            />
-            <KpiCard
-                id="kpi-findings"
-                label={t('openFindings')}
-                value={exec.stats.openFindings}
-                icon={Bug}
-                gradient="from-red-500 to-rose-500"
-                trend={trendBundle?.findings}
-                trendVariant="error"
-                onClick={click('findings')}
-                selected={isSelected('findings')}
-                href={href('/findings')}
-                hrefLabel={t('openList', { label: t('openFindings') })}
-            />
+            <KpiTile drillHref={href('/controls')} drillLabel={t('openList', { label: t('controls') })}>
+                <KpiCard
+                    id="kpi-coverage"
+                    label={t('controls')}
+                    value={exec.controlCoverage.coveragePercent}
+                    format="percent"
+                    icon={ShieldCheck}
+                    gradient="from-emerald-500 to-teal-500"
+                    subtitle={`${exec.controlCoverage.implemented} of ${exec.controlCoverage.applicable} implemented`}
+                    trend={trendBundle?.coverage}
+                    trendVariant="success"
+                    onClick={click('coverage')}
+                    selected={isSelected('coverage')}
+                />
+            </KpiTile>
+            <KpiTile drillHref={href('/risks')} drillLabel={t('openList', { label: t('risks') })}>
+                <KpiCard
+                    id="kpi-risks"
+                    label={t('risks')}
+                    value={exec.stats.risks}
+                    icon={AlertTriangle}
+                    gradient="from-amber-500 to-orange-500"
+                    subtitle={t('highCritical', { count: exec.stats.highRisks })}
+                    trend={trendBundle?.risks}
+                    trendVariant="warning"
+                    onClick={click('risks')}
+                    selected={isSelected('risks')}
+                />
+            </KpiTile>
+            <KpiTile drillHref={href('/evidence')} drillLabel={t('openList', { label: t('evidence') })}>
+                <KpiCard
+                    id="kpi-evidence"
+                    label={t('evidence')}
+                    value={exec.stats.evidence}
+                    icon={Paperclip}
+                    gradient="from-purple-500 to-pink-500"
+                    subtitle={`${exec.evidenceExpiry.overdue} overdue`}
+                    trend={trendBundle?.evidence}
+                    trendVariant="error"
+                    onClick={click('evidence')}
+                    selected={isSelected('evidence')}
+                />
+            </KpiTile>
+            <KpiTile drillHref={href('/tasks?status=OPEN,TRIAGED,IN_PROGRESS,IN_REVIEW,BLOCKED')} drillLabel={t('openList', { label: t('openTasks') })}>
+                <KpiCard
+                    id="kpi-tasks"
+                    label={t('openTasks')}
+                    value={exec.stats.openTasks}
+                    icon={CheckCircle2}
+                    gradient="from-indigo-500 to-blue-500"
+                    subtitle={`${exec.taskSummary.overdue} overdue`}
+                    onClick={click('tasks')}
+                    selected={isSelected('tasks')}
+                />
+            </KpiTile>
+            <KpiTile drillHref={href('/policies')} drillLabel={t('openList', { label: t('policies') })}>
+                <KpiCard
+                    id="kpi-policies"
+                    label={t("policies")}
+                    value={exec.policySummary.total}
+                    icon={FileText}
+                    gradient="from-sky-500 to-cyan-500"
+                    subtitle={`${exec.policySummary.published} published`}
+                    onClick={click('policies')}
+                    selected={isSelected('policies')}
+                />
+            </KpiTile>
+            <KpiTile drillHref={href('/findings')} drillLabel={t('openList', { label: t('openFindings') })}>
+                <KpiCard
+                    id="kpi-findings"
+                    label={t('openFindings')}
+                    value={exec.stats.openFindings}
+                    icon={Bug}
+                    gradient="from-red-500 to-rose-500"
+                    trend={trendBundle?.findings}
+                    trendVariant="error"
+                    onClick={click('findings')}
+                    selected={isSelected('findings')}
+                />
+            </KpiTile>
         </div>
     );
 }
@@ -1023,11 +1058,8 @@ function DrillHealthCard({
                     {drillLabel}
                 </Link>
             </div>
-            <div className="flex items-end gap-tight mb-default">
-                <span className="text-3xl font-semibold tabular-nums text-content-emphasis">
-                    {headline}
-                </span>
-                <span className="text-xs text-content-muted mb-1">{headlineLabel}</span>
+            <div className="mb-default">
+                <KPIStat value={headline} label={headlineLabel} size="sm" />
             </div>
             <div className="space-y-tight">
                 {rows.map((item) => (

@@ -1,4 +1,4 @@
-import { DashboardSkeleton } from './DashboardSkeleton';
+import { DashboardSkeleton } from '@/components/ui/skeleton';
 
 /**
  * Route-level loading.tsx for /t/[tenantSlug]/dashboard.

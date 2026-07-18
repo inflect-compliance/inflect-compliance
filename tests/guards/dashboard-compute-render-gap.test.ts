@@ -74,14 +74,18 @@ describe('1. unrendered compute — surfaced or removed', () => {
 });
 
 describe('2. KPI tiles can navigate', () => {
-    it('KpiCard accepts an href + renders the drill link outside the button', () => {
-        expect(KPI_CARD).toMatch(/href\?:\s*string/);
-        expect(KPI_CARD).toMatch(/data-kpi-drill/);
+    it('renders a drill-through link per tile (sibling overlay, KpiCard stays lean)', () => {
+        // The drill link lives in DashboardClient's <KpiTile> wrapper, NOT
+        // inside the shared KpiCard primitive (which must not grow a
+        // next/link dependency — locked by dashboard-widgets.test.ts).
+        expect(CLIENT).toMatch(/function KpiTile/);
+        expect(CLIENT).toMatch(/data-kpi-drill/);
+        expect(KPI_CARD).not.toMatch(/next\/link/);
     });
 
     it('every KPI tile is given a drill-through href', () => {
         for (const target of ['/controls', '/risks', '/evidence', '/tasks', '/policies', '/findings']) {
-            expect(CLIENT).toMatch(new RegExp(`href=\\{href\\('${target}`));
+            expect(CLIENT).toMatch(new RegExp(`drillHref=\\{href\\('${target}`));
         }
     });
 });
