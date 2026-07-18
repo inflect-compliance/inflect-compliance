@@ -92,6 +92,14 @@ export interface DonutSegment {
      * New consumers should reach for `seriesIndex` instead.
      */
     color: string;
+    /**
+     * Optional drill-through target for this slice. When set (and the
+     * chart is given `onSegmentClick`), clicking the arc navigates —
+     * e.g. the "Critical" severity slice → the risks list filtered to
+     * critical. Purely a data carry; the chart primitive itself does
+     * NOT import a router (nav stays with the caller's handler).
+     */
+    href?: string;
 }
 
 export interface DonutChartProps {
@@ -118,6 +126,13 @@ export interface DonutChartProps {
      * renders the "No data" empty state.
      */
     loading?: boolean;
+    /**
+     * Drill-through handler. When provided, each slice that carries an
+     * `href` becomes a keyboard-accessible link (Enter/Space + click)
+     * that calls this with the clicked segment. The caller owns the
+     * actual navigation so this shared primitive stays router-free.
+     */
+    onSegmentClick?: (segment: DonutSegment) => void;
 }
 
 // ─── Component ──────────────────────────────────────────────────────
@@ -132,6 +147,7 @@ export default function DonutChart({
     className = '',
     id,
     loading = false,
+    onSegmentClick,
 }: DonutChartProps) {
     const t = useTranslations('common.chart');
     // useId provides a unique-per-instance gradient id prefix so
@@ -591,6 +607,20 @@ export default function DonutChart({
                                         onFocus={() => setHoveredKey(seg.label)}
                                         onBlur={() => setHoveredKey(null)}
                                         tabIndex={0}
+                                        // Mouse convenience only — clicking the
+                                        // slice navigates. It is deliberately NOT
+                                        // an interactive ARIA role: making an SVG
+                                        // arc a `role="link"` inside the chart's
+                                        // `role="img"` trips axe `nested-interactive`.
+                                        // The keyboard-accessible drill-through is
+                                        // the legend row (`<DonutLegendRow>` → a
+                                        // real <Link>), so this stays a plain
+                                        // clickable image region.
+                                        onClick={
+                                            onSegmentClick && seg.href
+                                                ? () => onSegmentClick(seg)
+                                                : undefined
+                                        }
                                         style={{
                                             outline: 'none',
                                             cursor: 'pointer',
