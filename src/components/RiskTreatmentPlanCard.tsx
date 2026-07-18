@@ -284,13 +284,13 @@ function ActivePlanBlock({
             <div className="flex items-center justify-between gap-compact">
                 <div className="flex items-center gap-tight">
                     <StatusBadge variant={STATUS_VARIANT[plan.status]}>
-                        {plan.status}
+                        {t(`status.${plan.status}` as Parameters<typeof t>[0])}
                     </StatusBadge>
                     <StatusBadge
                         variant={STRATEGY_VARIANT[plan.strategy]}
                         data-testid="treatment-plan-strategy-badge"
                     >
-                        {plan.strategy}
+                        {t(`strategy.${plan.strategy}` as Parameters<typeof t>[0])}
                     </StatusBadge>
                     <span className="text-sm text-content-muted">
                         {t('target', { date: formatDate(plan.targetDate) })}

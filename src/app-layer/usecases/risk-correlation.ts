@@ -51,6 +51,23 @@ function symmetricEigenvalues(input: number[][]): number[] {
 
 export interface PSDResult { valid: boolean; minEigenvalue: number }
 
+/**
+ * Cholesky (used to correlate the Monte Carlo draws) needs a STRICTLY
+ * positive-definite matrix, not merely positive-SEMI-definite. A
+ * rank-deficient matrix (e.g. a ±1.0 coefficient making two rows
+ * linearly dependent) has a minimum eigenvalue at ~0: it passes the
+ * PSD tolerance below but its Cholesky pivot hits `d <= 1e-12` and the
+ * sim silently drops the correlations. `PD_EPSILON` is the margin the
+ * correlations page uses to WARN before that happens — a minimum
+ * eigenvalue at or below it means "not reliably positive-definite".
+ */
+export const PD_EPSILON = 1e-8;
+
+/** True when the matrix is strictly positive-definite (Cholesky-safe). */
+export function isPositiveDefinite(minEigenvalue: number): boolean {
+    return minEigenvalue > PD_EPSILON;
+}
+
 /** A correlation matrix must be positive semi-definite for Cholesky. */
 export function validatePSD(matrix: number[][]): PSDResult {
     if (matrix.length === 0) return { valid: true, minEigenvalue: 0 };
@@ -92,6 +109,14 @@ export interface CorrelationMatrixData {
     riskTitles: string[];
     matrix: number[][];
     isPositiveSemiDefinite: boolean;
+    /** Smallest eigenvalue — surfaced so the page can distinguish a
+     *  strictly positive-definite matrix from a merely PSD (borderline)
+     *  one that Cholesky will drop at sim time. */
+    minEigenvalue: number;
+    /** True only when strictly positive-definite (`minEigenvalue > PD_EPSILON`).
+     *  A PSD-but-not-PD matrix (this false, `isPositiveSemiDefinite` true)
+     *  is the case the sim silently drops. */
+    isPositiveDefinite: boolean;
 }
 
 /** Build the NxN correlation matrix over all active risks (diagonal 1, missing 0). */
@@ -108,7 +133,15 @@ export async function getCorrelationMatrix(ctx: RequestContext): Promise<Correla
             if (i == null || j == null) continue;
             matrix[i][j] = p.coefficient; matrix[j][i] = p.coefficient;
         }
-        return { riskIds: risks.map((r) => r.id), riskTitles: risks.map((r) => r.title), matrix, isPositiveSemiDefinite: validatePSD(matrix).valid };
+        const psd = validatePSD(matrix);
+        return {
+            riskIds: risks.map((r) => r.id),
+            riskTitles: risks.map((r) => r.title),
+            matrix,
+            isPositiveSemiDefinite: psd.valid,
+            minEigenvalue: psd.minEigenvalue,
+            isPositiveDefinite: isPositiveDefinite(psd.minEigenvalue),
+        };
     });
 }
 

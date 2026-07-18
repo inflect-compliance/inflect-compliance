@@ -3,7 +3,7 @@
  * and shared-asset/control suggestions. No DB.
  */
 import { choleskyDecompose, generateCorrelatedUniforms, createPRNG, sampleFairALEFromUniform } from '@/app-layer/usecases/monte-carlo';
-import { validatePSD, computeSuggestions } from '@/app-layer/usecases/risk-correlation';
+import { validatePSD, isPositiveDefinite, PD_EPSILON, computeSuggestions } from '@/app-layer/usecases/risk-correlation';
 import type { FairDistributions } from '@/app-layer/usecases/fair-calculator';
 
 // Pearson correlation of two equal-length samples.
@@ -45,6 +45,33 @@ describe('validatePSD', () => {
         const r = validatePSD([[1, 1.5], [1.5, 1]]);
         expect(r.valid).toBe(false);
         expect(r.minEigenvalue).toBeLessThan(0);
+    });
+});
+
+describe('PD gate — PSD-but-not-PD detection', () => {
+    it('a rank-deficient (±1.0, dependent rows) matrix is PSD but NOT positive-definite', () => {
+        // Perfectly-correlated rows → one zero eigenvalue → min ≈ 0.
+        // validatePSD accepts it (>= -1e-8) but Cholesky needs strict PD,
+        // so the page must warn: PSD true, PD false.
+        const rankDeficient = [
+            [1, 1, 0],
+            [1, 1, 0],
+            [0, 0, 1],
+        ];
+        const r = validatePSD(rankDeficient);
+        expect(r.valid).toBe(true); // passes the PSD tolerance
+        expect(Math.abs(r.minEigenvalue)).toBeLessThanOrEqual(PD_EPSILON);
+        expect(isPositiveDefinite(r.minEigenvalue)).toBe(false); // but NOT PD
+
+        // Cholesky (the sim's step) actually fails on it → correlations dropped.
+        expect(() => choleskyDecompose(rankDeficient)).toThrow();
+    });
+
+    it('a strictly positive-definite matrix is flagged PD', () => {
+        const pd = validatePSD([[1, 0.3], [0.3, 1]]);
+        expect(pd.minEigenvalue).toBeGreaterThan(PD_EPSILON);
+        expect(isPositiveDefinite(pd.minEigenvalue)).toBe(true);
+        expect(() => choleskyDecompose([[1, 0.3], [0.3, 1]])).not.toThrow();
     });
 });
 

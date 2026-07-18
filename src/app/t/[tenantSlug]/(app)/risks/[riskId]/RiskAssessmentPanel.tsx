@@ -42,6 +42,7 @@ import { calculateRiskScore } from '@/lib/risk-scoring';
 import { resolveBandForScore } from '@/lib/risk-matrix/scoring';
 import {
     buildRiskTreatmentOptions,
+    riskStatusLabel,
     type TreatmentDecisionValue,
 } from '../_shared/risk-options';
 import type { RiskMatrixConfigShape } from '@/lib/risk-matrix/types';
@@ -354,7 +355,15 @@ export function RiskAssessmentPanel({
         if (decision === 'TOLERATE') {
             return risk.status === 'ACCEPTED' ? null : { status: 'ACCEPTED', messageKey: 'assessment.recommendAccepted' };
         }
-        // TREAT / TRANSFER / AVOID are in-flight until their plan completes.
+        // TRANSFER / AVOID resolve to CLOSED when their plan completes —
+        // recommending MITIGATING would contradict the decision. Nudge
+        // toward CLOSED (the status their completed plan maps to); once
+        // there (or already terminal) there's nothing to nudge.
+        if (decision === 'TRANSFER' || decision === 'AVOID') {
+            const settled = risk.status === 'CLOSED' || risk.status === 'MITIGATED';
+            return settled ? null : { status: 'CLOSED', messageKey: 'assessment.recommendClosed' };
+        }
+        // TREAT is in-flight (MITIGATING) until its plan completes.
         const inFlight = risk.status === 'MITIGATING' || risk.status === 'MITIGATED' || risk.status === 'CLOSED';
         return inFlight ? null : { status: 'MITIGATING', messageKey: 'assessment.recommendMitigating' };
     })();
@@ -665,7 +674,7 @@ export function RiskAssessmentPanel({
                     <div className="flex items-center justify-between gap-tight">
                         <Eyebrow>{t('assessment.guidedStatusTitle')}</Eyebrow>
                         <span className="text-xs text-content-muted">
-                            {t('assessment.currentStatus', { status: risk.status })}
+                            {t('assessment.currentStatus', { status: riskStatusLabel(t, risk.status) })}
                         </span>
                     </div>
                     {recommendedStatus && (
@@ -679,7 +688,7 @@ export function RiskAssessmentPanel({
                                     id="apply-status-btn"
                                     onClick={() => onStatusChange(recommendedStatus.status)}
                                 >
-                                    {t('assessment.applyStatus', { status: recommendedStatus.status })}
+                                    {t('assessment.applyStatus', { status: riskStatusLabel(t, recommendedStatus.status) })}
                                 </Button>
                             )}
                         </div>

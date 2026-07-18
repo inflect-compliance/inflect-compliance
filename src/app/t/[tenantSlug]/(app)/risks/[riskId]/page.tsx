@@ -31,7 +31,7 @@ import { Pen2 } from '@/components/ui/icons/nucleo';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { useTenantMembers } from '@/components/ui/user-combobox';
-import { buildRiskTreatmentOptions, canonicalTreatmentLabel, buildRiskStatusOptions } from '../_shared/risk-options';
+import { buildRiskTreatmentOptions, canonicalTreatmentLabel, buildRiskStatusOptions, riskStatusLabel } from '../_shared/risk-options';
 import { cn } from '@/lib/cn';
 import { cardVariants } from '@/components/ui/card';
 import { EditRiskModal, type EditRiskForm } from './_modals/EditRiskModal';
@@ -359,7 +359,7 @@ export default function RiskDetailPage() {
                         {
                             kind: 'status',
                             label: t('detail.status'),
-                            value: risk.status,
+                            value: riskStatusLabel(t, risk.status),
                             variant: RISK_STATUS_VARIANT[risk.status] ?? 'neutral',
                         },
                         {
