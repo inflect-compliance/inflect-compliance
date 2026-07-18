@@ -2533,7 +2533,9 @@
       "emptyFilterTitle": "No policies match your filters",
       "emptyFilterDesc": "Try widening your search or clearing one of the active filters.",
       "clearFilters": "Clear filters",
-      "emptyDesc": "Author the documents that govern how your organisation operates — security, privacy, acceptable use, incident response."
+      "emptyDesc": "Author the documents that govern how your organisation operates — security, privacy, acceptable use, incident response.",
+      "kpiOutstandingAck": "Outstanding acknowledgements",
+      "ackOutstandingBadge": "Outstanding"
     },
     "colHeaders": {
       "title": "Title",
@@ -2542,7 +2544,8 @@
       "owner": "Owner",
       "version": "Version",
       "nextReview": "Next Review",
-      "updated": "Updated"
+      "updated": "Updated",
+      "acknowledgement": "Acknowledgements"
     },
     "bulk": {
       "assignOwner": "Assign owner",
@@ -2608,7 +2611,16 @@
         "EDITOR": "Editor",
         "READER": "Reader",
         "AUDITOR": "Auditor"
-      }
+      },
+      "audienceUsers": "Specific users",
+      "usersLabel": "Users",
+      "statusAcknowledged": "Acknowledged",
+      "statusSuperseded": "Acknowledged old version",
+      "statusOutstanding": "Outstanding",
+      "requestedByOn": "Requested by {name} on {date}",
+      "attestationsTitle": "Attestation log",
+      "attestedOn": "Attested {date}",
+      "noAttestations": "No attestations of the current version yet"
     },
     "detail": {
       "notFound": "Policy not found",
@@ -2777,7 +2789,9 @@
       "category": "Category",
       "categoryDesc": "Policy domain / taxonomy bucket.",
       "reviewBucket": "Review cycle",
-      "reviewBucketDesc": "Whether the policy is overdue or due soon for periodic review."
+      "reviewBucketDesc": "Whether the policy is overdue or due soon for periodic review.",
+      "acknowledgement": "Acknowledgements",
+      "acknowledgementDesc": "Published policies with assignees who have not acknowledged the current version"
     },
     "filterEnums": {
       "status": {
@@ -2790,6 +2804,9 @@
       "reviewBucket": {
         "overdue": "Overdue for review",
         "upcoming": "Due within 30 days"
+      },
+      "acknowledgement": {
+        "outstanding": "Outstanding"
       }
     }
   },

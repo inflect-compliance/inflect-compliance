@@ -11,8 +11,9 @@
  *     Idempotent on the `(policyVersionId, userId)` unique constraint.
  *   - `getPolicyAttestation(ctx, policyId, userId?)` — has the user
  *     attested the current version? Returns the row or null.
- *   - `listPolicyAttestations(ctx, policyId)` — admin/audit view of
- *     who has attested.
+ *   - `getPolicyAcknowledgementRoster(ctx, policyId)` — admin/audit
+ *     roster: who was required, who acknowledged the current version
+ *     (stale acks excluded), provenance, and the "who attested" log.
  *
  * Only PUBLISHED policies can be attested; attesting a DRAFT or
  * ARCHIVED version doesn't satisfy the ISO control.
@@ -152,30 +153,11 @@ export async function getPolicyAttestation(
     });
 }
 
-/**
- * List every attestation for a policy's current version. Admin-only.
- * Surfaces the auditor report: "show me who has attested this policy".
- */
-export async function listPolicyAttestations(
-    ctx: RequestContext,
-    policyId: string,
-) {
-    assertCanAdmin(ctx);
-
-    return runInTenantContext(ctx, async (db) => {
-        const policy = await PolicyRepository.getById(db, ctx, policyId);
-        if (!policy) throw notFound('Policy not found');
-        if (!policy.currentVersionId) return [];
-
-        return db.policyAcknowledgement.findMany({
-            where: { policyVersionId: policy.currentVersionId },
-            orderBy: { acknowledgedAt: 'desc' },
-            include: {
-                user: { select: { id: true, name: true, email: true } },
-            },
-        });
-    });
-}
+// The former standalone `listPolicyAttestations` (a flat "who attested the
+// current version" list) was orphaned — no route ever called it. Its data is
+// now surfaced through `getPolicyAcknowledgementRoster().attestations` (the
+// auditor log), which the acknowledgements panel renders, so the auditor
+// "who has attested" view is reachable without a second round-trip.
 
 // ─── Required-acknowledgement campaign (assign + roster) ─────────────────
 
@@ -283,23 +265,52 @@ export async function requirePolicyAcknowledgement(
     });
 }
 
+/**
+ * Per-user acknowledgement status for the CURRENT published version.
+ *   - ACKNOWLEDGED            — acknowledged the current version (compliant).
+ *   - ACKNOWLEDGED_SUPERSEDED — acknowledged an EARLIER version but not the
+ *                               current one; a stale ack that must NOT read as
+ *                               compliant (they owe a fresh acknowledgement).
+ *   - OUTSTANDING             — never acknowledged any version.
+ */
+export type AcknowledgementStatus = 'ACKNOWLEDGED' | 'ACKNOWLEDGED_SUPERSEDED' | 'OUTSTANDING';
+
 export interface AcknowledgementRosterEntry {
     userId: string;
     name: string | null;
     email: string | null;
     /** True when this user was REQUIRED to acknowledge (has an assignment). */
     required: boolean;
-    /** When they acknowledged the current version, or null if outstanding. */
+    /** When they acknowledged the CURRENT version, or null if not (outstanding or stale). */
     acknowledgedAt: Date | null;
+    /** Status against the current version — stale acks read as non-compliant. */
+    status: AcknowledgementStatus;
+    /** When they acknowledged a SUPERSEDED version (informational), else null. */
+    supersededAckAt: Date | null;
+    /** Provenance — who requested this user's acknowledgement, and when. */
+    assignedById: string | null;
+    assignedByName: string | null;
+    assignedAt: Date | null;
+}
+
+/** Flat auditor "who has attested the current version" log entry. */
+export interface AttestationLogEntry {
+    userId: string;
+    name: string | null;
+    email: string | null;
+    acknowledgedAt: Date;
 }
 
 export interface AcknowledgementRoster {
     policyVersionId: string | null;
     assignedCount: number;
+    /** REQUIRED users who acknowledged the CURRENT version (stale acks excluded). */
     acknowledgedCount: number;
     /** % of REQUIRED users who have acknowledged the current version. */
     pctComplete: number;
     entries: AcknowledgementRosterEntry[];
+    /** Auditor log: everyone who has attested the current version, newest first. */
+    attestations: AttestationLogEntry[];
 }
 
 /**
@@ -317,33 +328,76 @@ export async function getPolicyAcknowledgementRoster(
         const policy = await PolicyRepository.getById(db, ctx, policyId);
         if (!policy) throw notFound('Policy not found');
         if (!policy.currentVersionId) {
-            return { policyVersionId: null, assignedCount: 0, acknowledgedCount: 0, pctComplete: 0, entries: [] };
+            return { policyVersionId: null, assignedCount: 0, acknowledgedCount: 0, pctComplete: 0, entries: [], attestations: [] };
         }
         const policyVersionId = policy.currentVersionId;
 
+        // All version ids for this policy — the SUPERSEDED ones let us
+        // distinguish a stale ack (acknowledged an earlier version) from a
+        // genuinely-current one, so stale acks don't read as compliant.
+        const versions = await db.policyVersion.findMany({ where: { policyId }, select: { id: true } });
+        const priorVersionIds = versions.map((v) => v.id).filter((id) => id !== policyVersionId);
+
         const [assignments, acknowledgements] = await Promise.all([
-            db.policyAcknowledgementAssignment.findMany({ where: { policyVersionId }, select: { userId: true }, take: 5000 }),
+            db.policyAcknowledgementAssignment.findMany({
+                where: { policyVersionId },
+                select: { userId: true, assignedById: true, assignedAt: true },
+                take: 5000,
+            }),
             db.policyAcknowledgement.findMany({ where: { policyVersionId }, select: { userId: true, acknowledgedAt: true }, take: 5000 }),
         ]);
 
         const assignedUserIds = new Set(assignments.map((a) => a.userId));
+        const assignmentByUser = new Map(assignments.map((a) => [a.userId, a]));
         const ackByUser = new Map(acknowledgements.map((a) => [a.userId, a.acknowledgedAt]));
 
-        // Union of required + voluntary acknowledgers → resolve display info.
+        // For assigned users WITHOUT a current-version ack, look up whether they
+        // acknowledged a superseded version (informational; still non-compliant).
+        const outstandingIds = [...assignedUserIds].filter((id) => !ackByUser.has(id));
+        const supersededAckByUser = new Map<string, Date>();
+        if (priorVersionIds.length > 0 && outstandingIds.length > 0) {
+            const priorAcks = await db.policyAcknowledgement.findMany({
+                where: { policyVersionId: { in: priorVersionIds }, userId: { in: outstandingIds } },
+                select: { userId: true, acknowledgedAt: true },
+                orderBy: { acknowledgedAt: 'desc' },
+                take: 5000,
+            });
+            for (const a of priorAcks) {
+                if (!supersededAckByUser.has(a.userId)) supersededAckByUser.set(a.userId, a.acknowledgedAt);
+            }
+        }
+
+        // Union of required + voluntary acknowledgers + assigners → display info.
         const allUserIds = [...new Set([...assignedUserIds, ...ackByUser.keys()])];
-        const users = allUserIds.length
-            ? await db.user.findMany({ where: { id: { in: allUserIds } }, select: { id: true, name: true, email: true } })
+        const lookupIds = [...new Set([...allUserIds, ...assignments.map((a) => a.assignedById)])];
+        const users = lookupIds.length
+            ? await db.user.findMany({ where: { id: { in: lookupIds } }, select: { id: true, name: true, email: true } })
             : [];
         const userById = new Map(users.map((u) => [u.id, u]));
 
-        const entries: AcknowledgementRosterEntry[] = allUserIds.map((userId) => ({
-            userId,
-            name: userById.get(userId)?.name ?? null,
-            email: userById.get(userId)?.email ?? null,
-            required: assignedUserIds.has(userId),
-            acknowledgedAt: ackByUser.get(userId) ?? null,
-        }));
-        // Outstanding (required, not acknowledged) first, then acknowledged.
+        const entries: AcknowledgementRosterEntry[] = allUserIds.map((userId) => {
+            const currentAck = ackByUser.get(userId) ?? null;
+            const supersededAckAt = supersededAckByUser.get(userId) ?? null;
+            const status: AcknowledgementStatus = currentAck
+                ? 'ACKNOWLEDGED'
+                : supersededAckAt
+                    ? 'ACKNOWLEDGED_SUPERSEDED'
+                    : 'OUTSTANDING';
+            const assignment = assignmentByUser.get(userId);
+            return {
+                userId,
+                name: userById.get(userId)?.name ?? null,
+                email: userById.get(userId)?.email ?? null,
+                required: assignedUserIds.has(userId),
+                acknowledgedAt: currentAck,
+                status,
+                supersededAckAt,
+                assignedById: assignment?.assignedById ?? null,
+                assignedByName: assignment ? (userById.get(assignment.assignedById)?.name ?? null) : null,
+                assignedAt: assignment?.assignedAt ?? null,
+            };
+        });
+        // Outstanding/stale (required, not current-acked) first, then acknowledged.
         entries.sort((a, b) => {
             const aOut = a.required && !a.acknowledgedAt ? 0 : 1;
             const bOut = b.required && !b.acknowledgedAt ? 0 : 1;
@@ -352,9 +406,20 @@ export async function getPolicyAcknowledgementRoster(
         });
 
         const assignedCount = assignedUserIds.size;
+        // Stale (superseded) acks are excluded — only a CURRENT-version ack counts.
         const acknowledgedCount = [...assignedUserIds].filter((id) => ackByUser.has(id)).length;
         const pctComplete = assignedCount > 0 ? Math.round((acknowledgedCount / assignedCount) * 100) : 0;
 
-        return { policyVersionId, assignedCount, acknowledgedCount, pctComplete, entries };
+        // Auditor log — everyone who attested the current version, newest first.
+        const attestations: AttestationLogEntry[] = [...acknowledgements]
+            .sort((a, b) => b.acknowledgedAt.getTime() - a.acknowledgedAt.getTime())
+            .map((a) => ({
+                userId: a.userId,
+                name: userById.get(a.userId)?.name ?? null,
+                email: userById.get(a.userId)?.email ?? null,
+                acknowledgedAt: a.acknowledgedAt,
+            }));
+
+        return { policyVersionId, assignedCount, acknowledgedCount, pctComplete, entries, attestations };
     });
 }

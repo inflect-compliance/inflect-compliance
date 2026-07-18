@@ -3666,6 +3666,25 @@ exports[`API contract — per-schema snapshots schema: PolicyListItem 1`] = `
         }
       ]
     },
+    "acknowledgement": {
+      "type": "object",
+      "properties": {
+        "assignedCount": {
+          "type": "number"
+        },
+        "acknowledgedCount": {
+          "type": "number"
+        },
+        "outstanding": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "assignedCount",
+        "acknowledgedCount",
+        "outstanding"
+      ]
+    },
     "_count": {
       "type": "object",
       "properties": {

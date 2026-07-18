@@ -84,6 +84,15 @@ export const PolicyListItemDTOSchema = z.object({
     updatedAt: z.string().optional(),
     currentVersion: PolicyVersionDTOSchema.nullable().optional(),
     owner: UserRefSchema.nullable().optional(),
+    // Per-policy acknowledgement rollup for the CURRENT published version
+    // (annotatePolicyAcknowledgements). `outstanding` is true when a
+    // published policy has ≥1 assignee who has not acknowledged the
+    // current version — drives the library KPI / column / filter.
+    acknowledgement: z.object({
+        assignedCount: z.number(),
+        acknowledgedCount: z.number(),
+        outstanding: z.boolean(),
+    }).optional(),
     _count: z.object({
         versions: z.number().optional(),
         controlLinks: z.number().optional(),

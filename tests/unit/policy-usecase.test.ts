@@ -126,7 +126,9 @@ describe('listPolicies', () => {
     it('delegates to PolicyRepository.list under the read gate', async () => {
         (PolicyRepository.list as jest.Mock).mockResolvedValue([{ id: 'p-1' }]);
         const rows = await listPolicies(readerCtx, { status: 'PUBLISHED' } as any);
-        expect(rows).toEqual([{ id: 'p-1' }]);
+        // Rows are annotated with a current-version acknowledgement rollup; a
+        // non-PUBLISHED / version-less row annotates to a zero, not-outstanding summary.
+        expect(rows).toEqual([{ id: 'p-1', acknowledgement: { assignedCount: 0, acknowledgedCount: 0, outstanding: false } }]);
         expect(PolicyRepository.list).toHaveBeenCalledWith(mockDb, readerCtx, { status: 'PUBLISHED' }, {});
     });
 });

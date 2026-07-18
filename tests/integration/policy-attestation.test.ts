@@ -14,7 +14,7 @@ import { randomUUID } from 'crypto';
 import { DB_URL, DB_AVAILABLE } from './db-helper';
 import { hashForLookup } from '@/lib/security/encryption';
 import { makeRequestContext } from '../helpers/make-context';
-import { createPolicy, getPolicy, publishPolicy } from '@/app-layer/usecases/policy';
+import { createPolicy, getPolicy, publishPolicy, createPolicyVersion } from '@/app-layer/usecases/policy';
 import {
     attestPolicy,
     requirePolicyAcknowledgement,
@@ -121,5 +121,55 @@ describeFn('policy attestation loop (integration)', () => {
         const cov = (await coverageSummary(admin)) as { totalPolicies: number };
         // Exactly one policy counts: the published one (the draft is excluded).
         expect(cov.totalPolicies).toBe(1);
+    });
+
+    it('a named-user audience assigns exactly the named active members', async () => {
+        const p = await createPolicy(admin, { title: `NamedAudience ${SUITE_TAG}`, content: '# v1' });
+        const full = await getPolicy(admin, p.id);
+        await publishPolicy(admin, p.id, full.currentVersion?.id ?? full.versions[0].id, { bypassApprovalReason: 'test' });
+
+        // Name the reader plus a bogus id — the bogus id is dropped (not active).
+        const res = await requirePolicyAcknowledgement(admin, p.id, {
+            audience: { type: 'users', userIds: [readerUserId, 'ghost-user-id'] },
+        });
+        expect(res.assignedCount).toBe(1);
+        const roster = await getPolicyAcknowledgementRoster(admin, p.id);
+        expect(roster.entries.filter((e) => e.required).map((e) => e.userId)).toEqual([readerUserId]);
+        // Provenance: the admin requested it.
+        expect(roster.entries.find((e) => e.userId === readerUserId)?.assignedById).toBe(adminUserId);
+    });
+
+    it('re-publishing a revised policy carries the acknowledgement requirement forward; stale acks do not count', async () => {
+        const p = await createPolicy(admin, { title: `Carryforward ${SUITE_TAG}`, content: '# v1' });
+        const full = await getPolicy(admin, p.id);
+        const v1 = full.currentVersion?.id ?? full.versions[0].id;
+        await publishPolicy(admin, p.id, v1, { bypassApprovalReason: 'test' });
+
+        // Require the reader, and have them acknowledge v1.
+        await requirePolicyAcknowledgement(admin, p.id, { audience: { type: 'users', userIds: [readerUserId] } });
+        await attestPolicy(reader, p.id);
+        let roster = await getPolicyAcknowledgementRoster(admin, p.id);
+        expect(roster.acknowledgedCount).toBe(1);
+
+        // Revise → create + publish v2. Clear the v1 notifications first so the
+        // re-notify assertion below isn't confused by the original campaign.
+        const v2 = await createPolicyVersion(admin, p.id, { contentType: 'MARKDOWN', contentText: '# v2', changeSummary: 'revised' });
+        await globalPrisma.notification.deleteMany({ where: { tenantId: TENANT_ID, userId: readerUserId } });
+        await publishPolicy(admin, p.id, v2.id, { bypassApprovalReason: 'test' });
+
+        // The requirement carried forward to v2; the reader is assigned again,
+        // but their v1 ack is now STALE and does NOT count toward completion.
+        roster = await getPolicyAcknowledgementRoster(admin, p.id);
+        expect(roster.assignedCount).toBe(1);
+        expect(roster.acknowledgedCount).toBe(0);
+        const entry = roster.entries.find((e) => e.userId === readerUserId);
+        expect(entry?.status).toBe('ACKNOWLEDGED_SUPERSEDED');
+        expect(entry?.supersededAckAt).not.toBeNull();
+
+        // The carried assignee was re-notified (dedupeKey scoped to the new version).
+        const notif = await globalPrisma.notification.findFirst({
+            where: { tenantId: TENANT_ID, userId: readerUserId, dedupeKey: `POLICY_ACK_REQUIRED:${v2.id}:${readerUserId}` },
+        });
+        expect(notif).not.toBeNull();
     });
 });
