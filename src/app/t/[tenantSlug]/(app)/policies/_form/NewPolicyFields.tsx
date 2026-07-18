@@ -79,6 +79,27 @@ export function NewPolicyFields({ form }: { form: NewPolicyFormReturn }) {
                             ))}
                         </div>
                     )}
+                    {/* ciso-toolkit attribution (licensing obligation) — the
+                      * template library credit moved here from the retired
+                      * /policies/templates page. Rendered once below the grid
+                      * (the template tiles are buttons, so a link can't nest
+                      * inside them). */}
+                    {form.templates.some((tpl) => tpl.source === 'ciso-toolkit') && (
+                        <p className="text-[10px] text-content-subtle italic" data-testid="template-source-credit">
+                            {t.rich('templates.adaptedFrom', {
+                                link: (c) => (
+                                    <a
+                                        href="https://github.com/D4d0/ciso-toolkit"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="underline hover:text-content-muted"
+                                    >
+                                        {c}
+                                    </a>
+                                ),
+                            })}
+                        </p>
+                    )}
                 </div>
             )}
 
