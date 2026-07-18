@@ -781,6 +781,10 @@ enum VendorLinkRelation {
   PROVIDES_SERVICE_TO
   MITIGATES
   RELATED
+  // PR-S — marks a RISK link the assessment-review writeback auto-created, so
+  // idempotency keys on THIS marker instead of "any RISK link" (an unrelated
+  // manual risk link no longer suppresses assessment-sourced materialization).
+  ASSESSMENT_SOURCED
 }
 
 enum AuditCycleStatus {

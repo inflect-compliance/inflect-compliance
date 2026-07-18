@@ -283,14 +283,31 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
             const rows = (await gRes.json()) as SendTemplateRow[];
             setSendTemplates(rows.filter((t) => t.isPublished));
         }
-        // We get assessments from vendor detail, but need a separate list
-        // For now, we'll use a simple approach
-        const aRes = await fetch(apiUrl(`/vendors/${params.vendorId}`));
+        // PR-S — the vendor getById payload never carried the assessments
+        // relation (a regression that left this tab always empty); fetch the
+        // dedicated list endpoint instead.
+        const aRes = await fetch(apiUrl(`/vendors/${params.vendorId}/assessments`));
         if (aRes.ok) {
-            const v = await aRes.json();
-            setAssessments(v.assessments || []);
+            setAssessments((await aRes.json()) as VendorAssessmentRow[]);
         }
     }, [apiUrl, params.vendorId]);
+
+    // PR-S — resend an in-flight invite. Mints a FRESH link server-side (the
+    // original is unrecoverable) and reveals it via the same CopyText affordance
+    // the send flow uses, so the one-time link is no longer the only artifact.
+    const handleResend = useCallback(async (assessmentId: string) => {
+        try {
+            const res = await fetch(apiUrl(`/vendor-assessment-reviews/${assessmentId}/resend`), { method: 'POST' });
+            if (!res.ok) { toast.error(tx('detail.resendFailed')); return; }
+            const result = (await res.json()) as { assessmentId: string; externalAccessToken: string };
+            setSendLink(`${window.location.origin}/vendor-assessment/${result.assessmentId}?t=${result.externalAccessToken}`);
+            toast.success(tx('detail.resendToast'));
+            fetchAssessments();
+        } catch {
+            toast.error(tx('detail.resendFailed'));
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [apiUrl]);
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { fetchVendor(); }, [fetchVendor]);
@@ -866,6 +883,46 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                             </CopyText>
                         </div>
                     )}
+                    {/* PR-S — Outstanding / awaiting-response: SENT + IN_PROGRESS
+                        assessments the review queue excludes. Each carries a
+                        resend action (fresh link) + the sent date, so an admin can
+                        see what's outstanding and chase it. */}
+                    {(() => {
+                        const outstanding = assessments.filter(
+                            (a) => a.status === 'SENT' || a.status === 'IN_PROGRESS',
+                        );
+                        if (outstanding.length === 0) return null;
+                        return (
+                            <div className={cn(cardVariants({ density: 'compact' }), 'space-y-default')} id="outstanding-assessments">
+                                <Heading level={3}>{tx('detail.outstandingTitle')}</Heading>
+                                <div className="space-y-tight">
+                                    {outstanding.map((a) => (
+                                        <div key={a.id} className="flex flex-wrap items-center justify-between gap-compact border-b border-border-subtle pb-2 last:border-0 last:pb-0">
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-medium truncate">{a.templateName || '—'}</p>
+                                                <p className="text-xs text-content-muted truncate">
+                                                    {a.respondentEmail || '—'}
+                                                    {' · '}
+                                                    {tx('detail.sentOn', { date: a.sentAt ? formatDate(a.sentAt) : '—' })}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-tight">
+                                                {/* Quiet status text (not a loud badge) — the section header
+                                                    already says these are awaiting a response; the main table
+                                                    below carries the one loud status badge per assessment. */}
+                                                <span className="text-xs text-content-subtle">
+                                                    {tx(vendorAssessmentStatusLabelKey(a.status))}
+                                                </span>
+                                                <Button variant="secondary" size="xs" onClick={() => handleResend(a.id)} id={`resend-assessment-${a.id}`}>
+                                                    {tx('detail.resendInvite')}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })()}
                     <VendorAssessmentsTable
                         assessments={assessments}
                         vendorId={params.vendorId}
@@ -1188,11 +1245,11 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                                         options={
                                                             bundleItemType === 'VENDOR_DOCUMENT'
                                                                 ? docs.map((d) => ({ value: d.id, label: d.title || DOC_TYPE_LABELS[d.type] || d.type }))
-                                                                : assessments.map((a) => ({ value: a.id, label: a.template?.name || a.id }))
+                                                                : assessments.map((a) => ({ value: a.id, label: a.templateName || a.id }))
                                                         }
                                                         selected={(bundleItemType === 'VENDOR_DOCUMENT'
                                                             ? docs.map((d) => ({ value: d.id, label: d.title || DOC_TYPE_LABELS[d.type] || d.type }))
-                                                            : assessments.map((a) => ({ value: a.id, label: a.template?.name || a.id }))
+                                                            : assessments.map((a) => ({ value: a.id, label: a.templateName || a.id }))
                                                         ).find((o) => o.value === bundleItemId) ?? null}
                                                         setSelected={(opt) => setBundleItemId(opt?.value ?? '')}
                                                         placeholder={tx('detail.selectEntity')}
@@ -1439,8 +1496,15 @@ interface VendorAssessmentRow {
     status: string;
     score: number | null;
     riskRating: string | null;
-    startedAt: string;
-    template: { name: string } | null;
+    // PR-S — server-resolved template name (prefers the G-3 templateVersion),
+    // plus the lifecycle timestamps + respondent the tab/outstanding view need.
+    templateName: string | null;
+    startedAt: string | null;
+    sentAt: string | null;
+    submittedAt: string | null;
+    reviewedAt: string | null;
+    closedAt: string | null;
+    respondentEmail: string | null;
 }
 function VendorAssessmentsTable({ assessments, vendorId, tenantHref }: { assessments: VendorAssessmentRow[]; vendorId: string; tenantHref: (path: string) => string }) {
     const tx = useTranslations('vendors');
@@ -1450,7 +1514,7 @@ function VendorAssessmentsTable({ assessments, vendorId, tenantHref }: { assessm
                 {
                     id: 'template',
                     header: tx('detail.template'),
-                    cell: ({ row }) => row.original.template?.name || '—',
+                    cell: ({ row }) => row.original.templateName || '—',
                 },
                 {
                     id: 'status',
@@ -1484,26 +1548,32 @@ function VendorAssessmentsTable({ assessments, vendorId, tenantHref }: { assessm
                     header: tx('detail.started'),
                     cell: ({ row }) => (
                         <span className="text-content-muted">
-                            {formatDate(row.original.startedAt)}
+                            {row.original.startedAt ? formatDate(row.original.startedAt) : '—'}
                         </span>
                     ),
                 },
                 {
                     id: 'action',
                     header: tx('detail.action'),
-                    // G-3 lifecycle rows (SENT→…→CLOSED) all open the internal
-                    // review surface, which adapts by status: read-only progress
-                    // before SUBMITTED, review actions at SUBMITTED, close at
-                    // REVIEWED, history when CLOSED. SUBMITTED gets the emphatic
-                    // "Review" label. Legacy World-A rows (DRAFT/IN_REVIEW/…) have
-                    // no responder any more (that page was retired) — render a
-                    // muted, non-actionable marker rather than a dead link.
+                    // PR-S — reviewable rows (SUBMITTED/REVIEWED/CLOSED) open the
+                    // review surface; in-flight rows (SENT/IN_PROGRESS) are actioned
+                    // from the Outstanding section above, so here they show a muted
+                    // "Awaiting response" marker rather than routing to a review page
+                    // that has nothing to review yet. Legacy World-A rows
+                    // (DRAFT/IN_REVIEW/…) have no responder — non-actionable marker.
                     cell: ({ row }) => {
                         const status = row.original.status;
                         if (!isG3AssessmentStatus(status)) {
                             return (
                                 <span className="text-content-subtle text-xs">
                                     {tx('detail.legacyAssessment')}
+                                </span>
+                            );
+                        }
+                        if (status === 'SENT' || status === 'IN_PROGRESS') {
+                            return (
+                                <span className="text-content-subtle text-xs">
+                                    {tx('detail.awaitingResponse')}
                                 </span>
                             );
                         }

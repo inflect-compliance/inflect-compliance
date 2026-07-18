@@ -38,6 +38,9 @@ export const POST = withApiErrorHandling(
                 ratingOverridden: result.ratingOverridden,
                 reviewedAt: result.reviewedAt.toISOString(),
                 scoring: result.scoring,
+                // PR-S — surfaced so the review UI can toast a link to the
+                // auto-created register Risk (HIGH/CRITICAL ratings).
+                autoCreatedRiskId: result.autoCreatedRiskId,
             });
         },
     ),

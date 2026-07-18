@@ -78,6 +78,9 @@ export interface ReviewAssessmentResult {
     /** Full scoring breakdown — drives the review-detail UI. */
     scoring: ScoringResult;
     reviewedAt: Date;
+    /** PR-S — id of the register Risk this review auto-created (HIGH/CRITICAL),
+     *  so the review UI can toast a link to it. null when none was created. */
+    autoCreatedRiskId: string | null;
 }
 
 export interface CloseAssessmentResult {
@@ -266,6 +269,7 @@ export async function reviewAssessment(
             ratingOverridden,
             scoring,
             reviewedAt,
+            autoCreatedRiskId: null, // filled in post-commit from the writeback
         };
         return {
             result,
@@ -280,14 +284,16 @@ export async function reviewAssessment(
     // vendor usecases, each of which opens its own tenant context, so it
     // must sit outside `runInTenantContext`. Best-effort — never fails
     // the review (mirrors `notifyAssessmentReviewed`).
-    await applyAssessmentRiskWriteback(
+    const writeback = await applyAssessmentRiskWriteback(
         ctx,
         outcome.vendorId,
         outcome.vendorName,
         outcome.riskRating,
     );
 
-    return outcome.result;
+    // Surface the auto-created risk to the reviewer (best-effort — the writeback
+    // is post-commit, so the review already succeeded regardless).
+    return { ...outcome.result, autoCreatedRiskId: writeback.createdRiskId };
 }
 
 /**
@@ -295,30 +301,50 @@ export async function reviewAssessment(
  * each wrapped so a failure is logged but never rolls back the review:
  *
  *   1. Writeback the assessment-derived tier onto the vendor row —
- *      `inherentRisk` + `lastAssessmentReviewedAt`. `residualRisk`
- *      (manually-owned) and `criticality` are deliberately NOT touched.
+ *      `inherentRisk` + `lastAssessmentReviewedAt`, and (PR-S) roll
+ *      `nextReviewAt` forward by the reassessment cadence UNLESS a review
+ *      is already scheduled in the future (respects a manually-set date).
+ *      `residualRisk` (manually-owned) and `criticality` are NOT touched.
  *   2. On a HIGH/CRITICAL rating, auto-create a register Risk and link
- *      it to the vendor. Idempotent: skipped when the vendor already
- *      has ANY RISK VendorLink, so a re-review never duplicates it.
+ *      it to the vendor. Idempotent on an ASSESSMENT_SOURCED marker link
+ *      (PR-S) — NOT "any RISK link", so an unrelated manual risk link no
+ *      longer suppresses materialization forever.
  *
- * Both call usecases that open their own tenant context, so this MUST
- * run outside the review transaction.
+ * Returns the id of the risk it auto-created (or null), so the caller can
+ * surface it to the reviewer. Both effects call usecases that open their own
+ * tenant context, so this MUST run outside the review transaction.
  */
+// PR-S — matches vendor-reassessment-reminder's DEFAULT_CADENCE_DAYS (annual
+// review cycle; ISO 27001). Duplicated as a small well-known constant to avoid
+// coupling the review path to the reminder-job module.
+const REASSESSMENT_CADENCE_DAYS = 365;
+
 async function applyAssessmentRiskWriteback(
     ctx: RequestContext,
     vendorId: string,
     vendorName: string,
     riskRating: VendorCriticality | null,
-): Promise<void> {
-    if (!riskRating) return;
+): Promise<{ createdRiskId: string | null }> {
+    if (!riskRating) return { createdRiskId: null };
 
-    // 1. Writeback inherent tier + review timestamp.
+    // 1. Writeback inherent tier + review timestamp + next-review roll.
     try {
+        const now = new Date();
+        // PR-S — only roll nextReviewAt when nothing is already scheduled in the
+        // future, so a deliberately-set manual review date is preserved.
+        const existing = await prisma.vendor.findFirst({
+            where: { id: vendorId, tenantId: ctx.tenantId },
+            select: { nextReviewAt: true },
+        });
+        const rollNextReview = !existing?.nextReviewAt || existing.nextReviewAt <= now;
         await prisma.vendor.updateMany({
             where: { id: vendorId, tenantId: ctx.tenantId },
             data: {
                 inherentRisk: riskRating,
-                lastAssessmentReviewedAt: new Date(),
+                lastAssessmentReviewedAt: now,
+                ...(rollNextReview
+                    ? { nextReviewAt: new Date(now.getTime() + REASSESSMENT_CADENCE_DAYS * 86_400_000) }
+                    : {}),
             },
         });
     } catch (err) {
@@ -333,19 +359,22 @@ async function applyAssessmentRiskWriteback(
     }
 
     // 2. Auto-create a register Risk on high-risk ratings (idempotent).
-    if (riskRating !== 'HIGH' && riskRating !== 'CRITICAL') return;
+    if (riskRating !== 'HIGH' && riskRating !== 'CRITICAL') return { createdRiskId: null };
     try {
         const links = await listVendorLinks(ctx, vendorId);
-        if (links.some((l) => l.entityType === 'RISK')) {
+        // PR-S — idempotency keys on the ASSESSMENT_SOURCED marker this writeback
+        // sets, NOT "any RISK link". A manual link to some unrelated risk no
+        // longer silently suppresses assessment-sourced materialization.
+        if (links.some((l) => l.entityType === 'RISK' && l.relation === 'ASSESSMENT_SOURCED')) {
             logger.info(
-                'vendor-assessment-review: vendor already has a RISK link — skipping auto-risk',
+                'vendor-assessment-review: assessment-sourced RISK link already exists — skipping auto-risk',
                 {
                     component: 'vendor-assessment-review',
                     vendorId,
                     riskRating,
                 },
             );
-            return;
+            return { createdRiskId: null };
         }
 
         const risk = await createRisk(ctx, {
@@ -356,7 +385,7 @@ async function applyAssessmentRiskWriteback(
         await addVendorLink(ctx, vendorId, {
             entityType: 'RISK',
             entityId: risk.id,
-            relation: 'RELATED',
+            relation: 'ASSESSMENT_SOURCED',
         });
 
         logger.info(
@@ -368,6 +397,7 @@ async function applyAssessmentRiskWriteback(
                 riskRating,
             },
         );
+        return { createdRiskId: risk.id };
     } catch (err) {
         logger.warn(
             'vendor-assessment-review: auto-risk creation failed',
@@ -378,6 +408,7 @@ async function applyAssessmentRiskWriteback(
                 err: err instanceof Error ? err : new Error(String(err)),
             },
         );
+        return { createdRiskId: null };
     }
 }
 
@@ -805,6 +836,76 @@ export async function listReviewableAssessments(
             riskRating: r.riskRating,
             submittedAt: r.submittedAt?.toISOString() ?? null,
             reviewedAt: r.reviewedAt?.toISOString() ?? null,
+        }));
+    });
+}
+
+// ─── 2c. listVendorAssessments (PR-S) ──────────────────────────────
+
+export interface VendorAssessmentRow {
+    id: string;
+    status: string;
+    score: number | null;
+    riskRating: VendorCriticality | null;
+    /** Template display name — prefers the G-3 templateVersion (G-3 rows have
+     *  templateId=null), falling back to the legacy template, else null. */
+    templateName: string | null;
+    startedAt: string | null;
+    sentAt: string | null;
+    submittedAt: string | null;
+    reviewedAt: string | null;
+    closedAt: string | null;
+    respondentEmail: string | null;
+}
+
+/**
+ * PR-S — the vendor-detail Assessments tab list. Restores the assessments the
+ * vendor `getById` payload never carried (a regression that left the tab empty).
+ * Returns ALL of a vendor's assessments across every status, with the template
+ * NAME resolved through `templateVersion` for G-3 rows (whose `templateId` is
+ * null). canRead gate — the tab is a read surface.
+ */
+export async function listVendorAssessments(
+    ctx: RequestContext,
+    vendorId: string,
+): Promise<VendorAssessmentRow[]> {
+    if (!ctx.permissions.canRead) {
+        throw badRequest('Read access required.');
+    }
+
+    return runInTenantContext(ctx, async (db) => {
+        const rows = await db.vendorAssessment.findMany({
+            where: { tenantId: ctx.tenantId, vendorId },
+            select: {
+                id: true,
+                status: true,
+                score: true,
+                riskRating: true,
+                startedAt: true,
+                sentAt: true,
+                submittedAt: true,
+                reviewedAt: true,
+                closedAt: true,
+                respondentEmail: true,
+                template: { select: { name: true } },
+                templateVersion: { select: { name: true } },
+            },
+            orderBy: { startedAt: 'desc' },
+            take: 200,
+        });
+
+        return rows.map((r) => ({
+            id: r.id,
+            status: r.status,
+            score: r.score,
+            riskRating: r.riskRating,
+            templateName: r.templateVersion?.name ?? r.template?.name ?? null,
+            startedAt: r.startedAt?.toISOString() ?? null,
+            sentAt: r.sentAt?.toISOString() ?? null,
+            submittedAt: r.submittedAt?.toISOString() ?? null,
+            reviewedAt: r.reviewedAt?.toISOString() ?? null,
+            closedAt: r.closedAt?.toISOString() ?? null,
+            respondentEmail: r.respondentEmail,
         }));
     });
 }

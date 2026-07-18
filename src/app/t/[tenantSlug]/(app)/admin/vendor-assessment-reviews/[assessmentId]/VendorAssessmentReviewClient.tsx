@@ -21,9 +21,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiErrorMessage } from '@/lib/api-error';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import {
     useTenantApiUrl,
     useTenantContext,
+    useTenantHref,
 } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
@@ -113,6 +115,7 @@ export function VendorAssessmentReviewClient({
     assessmentId: string;
 }) {
     const apiUrl = useTenantApiUrl();
+    const tenantHref = useTenantHref();
     const { permissions } = useTenantContext();
     const t = useTranslations('admin');
     const tv = useTranslations('vendors');
@@ -121,6 +124,9 @@ export function VendorAssessmentReviewClient({
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
+    // PR-S — id of the register Risk this review auto-created (HIGH/CRITICAL), so
+    // we can surface a link to it after review; null when none was created.
+    const [autoRiskId, setAutoRiskId] = useState<string | null>(null);
 
     // Local edit state, keyed off the answers from the server.
     const [overrides, setOverrides] = useState<
@@ -238,6 +244,10 @@ export function VendorAssessmentReviewClient({
                 setError(apiErrorMessage(b, t('assessmentReview.saveError', { status: res.status })));
                 return;
             }
+            // PR-S — surface the auto-created register Risk (HIGH/CRITICAL) to the
+            // reviewer so the silent writeback becomes observable.
+            const body = (await res.json().catch(() => null)) as { autoCreatedRiskId?: string | null } | null;
+            setAutoRiskId(body?.autoCreatedRiskId ?? null);
             await refresh();
         } finally {
             setSaving(false);
@@ -319,6 +329,20 @@ export function VendorAssessmentReviewClient({
                 >
                     {error}
                 </p>
+            )}
+
+            {/* PR-S — the review auto-created a register Risk (HIGH/CRITICAL):
+                make the previously-silent writeback observable + linkable. */}
+            {autoRiskId && (
+                <div
+                    className={cn(cardVariants({ density: 'compact' }), 'flex flex-wrap items-center justify-between gap-tight')}
+                    id="auto-risk-notice"
+                >
+                    <span className="text-sm text-content-default">{t('assessmentReview.autoRiskCreated')}</span>
+                    <Link href={tenantHref(`/risks/${autoRiskId}`)} className="text-content-info hover:underline text-sm">
+                        {t('assessmentReview.autoRiskView')}
+                    </Link>
+                </div>
             )}
 
             {/* Pre-submit placeholder */}
