@@ -167,6 +167,7 @@ async function renderPanel(props: Partial<React.ComponentProps<typeof RiskAssess
             tenantSlug="t-1"
             riskId="r-1"
             risk={BASE_RISK}
+            matrixConfig={MATRIX as React.ComponentProps<typeof RiskAssessmentPanel>['matrixConfig']}
             canWrite
             canAdmin={false}
             ownerChoices={[]}

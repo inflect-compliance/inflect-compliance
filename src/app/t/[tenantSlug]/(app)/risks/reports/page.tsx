@@ -195,27 +195,51 @@ function SchedulesCard({
     const [templateId, setTemplateId] = useState('');
     const [cadence, setCadence] = useState<(typeof CADENCES)[number]>('MONTHLY');
     const [recipients, setRecipients] = useState('');
+    const [scheduleRiskId, setScheduleRiskId] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
+    // Edit-in-place state (item 2): the schedule id being edited + its draft.
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editCadence, setEditCadence] = useState<(typeof CADENCES)[number]>('MONTHLY');
+    const [editRecipients, setEditRecipients] = useState('');
 
     const templateOptions: ComboboxOption[] = templates.map((tpl) => ({ value: tpl.id, label: tpl.name }));
     const cadenceOptions: ComboboxOption[] = CADENCES.map((c) => ({ value: c, label: t(`reports.cadence_${c}`) }));
+    // A RISK_DEEP_DIVE schedule must carry the same single-risk scope the
+    // one-off generate path sends, or it silently runs portfolio-wide.
+    const selectedIsDeepDive = templates.find((tpl) => tpl.id === templateId)?.type === 'RISK_DEEP_DIVE';
 
     const create = async () => {
         const emails = recipients.split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean);
         if (!templateId || emails.length === 0) return;
         setBusy(true);
         try {
+            const riskId = selectedIsDeepDive ? scheduleRiskId ?? undefined : undefined;
             await fetch(apiUrl('/risks/reports/schedules'), {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ templateId, cadence, recipients: emails }),
+                body: JSON.stringify({ templateId, cadence, recipients: emails, ...(riskId ? { parameters: { riskId } } : {}) }),
             });
-            setTemplateId(''); setRecipients(''); onChanged();
+            setTemplateId(''); setRecipients(''); setScheduleRiskId(null); onChanged();
         } finally { setBusy(false); }
     };
 
     const patch = async (id: string, body: Record<string, unknown>) => {
         await fetch(apiUrl(`/risks/reports/schedules/${id}`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         onChanged();
+    };
+
+    const startEdit = (s: Schedule) => {
+        setEditingId(s.id);
+        setEditCadence((CADENCES as readonly string[]).includes(s.cadence) ? (s.cadence as (typeof CADENCES)[number]) : 'MONTHLY');
+        setEditRecipients((s.recipientsJson ?? []).join(', '));
+    };
+    const saveEdit = async (id: string) => {
+        const emails = editRecipients.split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean);
+        if (emails.length === 0) return;
+        setBusy(true);
+        try {
+            await patch(id, { cadence: editCadence, recipients: emails });
+            setEditingId(null);
+        } finally { setBusy(false); }
     };
     const remove = async (id: string) => {
         await fetch(apiUrl(`/risks/reports/schedules/${id}`), { method: 'DELETE' });
@@ -240,19 +264,52 @@ function SchedulesCard({
                 <Button variant="secondary" onClick={create} disabled={busy || !templateId || !recipients.trim()} id="schedule-create-btn">{t('reports.scheduleCreate')}</Button>
             </div>
 
+            {selectedIsDeepDive && (
+                <div className="max-w-xs">
+                    <span className="text-xs text-content-muted">{t('reports.scheduleDeepDiveScope')}</span>
+                    <RiskPicker
+                        id="schedule-deepdive-risk"
+                        value={scheduleRiskId}
+                        onChange={(id) => setScheduleRiskId(id)}
+                        allowNone
+                        noneLabel={t('reports.deepDiveAll')}
+                        placeholder={t('reports.deepDiveScope')}
+                    />
+                </div>
+            )}
+
             <AnalyticsState isLoading={loading} error={error} isEmpty={schedules.length === 0} emptyText={t('reports.schedulesEmpty')} errorText={t('reports.loadError')}>
                 <ul className="divide-y divide-border-subtle" data-testid="report-schedules">
                     {schedules.map((s) => (
-                        <li key={s.id} className="flex flex-wrap items-center gap-default py-default text-sm">
-                            <StatusBadge variant={s.isActive ? 'success' : 'neutral'}>{s.isActive ? t('reports.scheduleActive') : t('reports.schedulePaused')}</StatusBadge>
-                            <span className="font-medium text-content-emphasis">{nameOf(s.templateId)}</span>
-                            <span className="text-content-muted">{t(`reports.cadence_${s.cadence}` as string)}</span>
-                            <span className="text-xs text-content-subtle">{(s.recipientsJson ?? []).join(', ')}</span>
-                            {s.nextRunAt && <span className="text-xs text-content-subtle">{t('reports.nextRun', { date: formatDateTime(s.nextRunAt) })}</span>}
-                            <span className="ml-auto flex gap-tight">
-                                <Button size="sm" variant="ghost" onClick={() => patch(s.id, { isActive: !s.isActive })} data-testid={`schedule-toggle-${s.id}`}>{s.isActive ? t('reports.schedulePause') : t('reports.scheduleResume')}</Button>
-                                <Button size="sm" variant="ghost" className="text-content-error" onClick={() => remove(s.id)} data-testid={`schedule-delete-${s.id}`}>{t('reports.scheduleDelete')}</Button>
-                            </span>
+                        <li key={s.id} className="flex flex-wrap items-center gap-default py-default text-sm" data-testid={`schedule-row-${s.id}`}>
+                            {editingId === s.id ? (
+                                <div className="flex flex-1 flex-wrap items-end gap-default" data-testid={`schedule-edit-${s.id}`}>
+                                    <span className="font-medium text-content-emphasis">{nameOf(s.templateId)}</span>
+                                    <label className="block w-full sm:w-40"><span className="text-xs text-content-muted">{t('reports.scheduleCadence')}</span>
+                                        <Combobox id={`schedule-edit-cadence-${s.id}`} options={cadenceOptions} selected={cadenceOptions.find((o) => o.value === editCadence) ?? null} setSelected={(o) => { if (o) setEditCadence(o.value as (typeof CADENCES)[number]); }} />
+                                    </label>
+                                    <label className="block flex-1 min-w-[12rem]"><span className="text-xs text-content-muted">{t('reports.scheduleRecipients')}</span>
+                                        <Input value={editRecipients} onChange={(e) => setEditRecipients(e.target.value)} placeholder={t('reports.scheduleRecipientsPlaceholder')} />
+                                    </label>
+                                    <span className="ml-auto flex gap-tight">
+                                        <Button size="sm" variant="secondary" onClick={() => saveEdit(s.id)} disabled={busy || !editRecipients.trim()} data-testid={`schedule-save-${s.id}`}>{t('reports.scheduleSave')}</Button>
+                                        <Button size="sm" variant="ghost" onClick={() => setEditingId(null)} data-testid={`schedule-cancel-${s.id}`}>{t('edit.cancel')}</Button>
+                                    </span>
+                                </div>
+                            ) : (
+                                <>
+                                    <StatusBadge variant={s.isActive ? 'success' : 'neutral'}>{s.isActive ? t('reports.scheduleActive') : t('reports.schedulePaused')}</StatusBadge>
+                                    <span className="font-medium text-content-emphasis">{nameOf(s.templateId)}</span>
+                                    <span className="text-content-muted">{t(`reports.cadence_${s.cadence}` as string)}</span>
+                                    <span className="text-xs text-content-subtle">{(s.recipientsJson ?? []).join(', ')}</span>
+                                    {s.nextRunAt && <span className="text-xs text-content-subtle">{t('reports.nextRun', { date: formatDateTime(s.nextRunAt) })}</span>}
+                                    <span className="ml-auto flex gap-tight">
+                                        <Button size="sm" variant="ghost" onClick={() => startEdit(s)} data-testid={`schedule-edit-btn-${s.id}`}>{t('reports.scheduleEdit')}</Button>
+                                        <Button size="sm" variant="ghost" onClick={() => patch(s.id, { isActive: !s.isActive })} data-testid={`schedule-toggle-${s.id}`}>{s.isActive ? t('reports.schedulePause') : t('reports.scheduleResume')}</Button>
+                                        <Button size="sm" variant="ghost" className="text-content-error" onClick={() => remove(s.id)} data-testid={`schedule-delete-${s.id}`}>{t('reports.scheduleDelete')}</Button>
+                                    </span>
+                                </>
+                            )}
                         </li>
                     ))}
                 </ul>

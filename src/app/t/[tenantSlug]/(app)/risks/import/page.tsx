@@ -20,6 +20,10 @@ type ParsedRow = {
     likelihood?: number;
     impact?: number;
     owner?: string;
+    /** Out-of-scale L/I values that were coerced to the default — kept so
+     *  the preview can flag the downgrade per row instead of dropping it
+     *  silently. */
+    outOfScale?: Array<{ field: 'likelihood' | 'impact'; value: number; max: number }>;
 };
 
 export default function RiskImportPage() {
@@ -49,11 +53,17 @@ export default function RiskImportPage() {
                 if (rec.category) row.category = rec.category;
                 if (rec.likelihood) {
                     const n = parseInt(rec.likelihood, 10);
-                    if (n >= 1 && n <= matrixConfig.likelihoodLevels) row.likelihood = n;
+                    if (Number.isFinite(n)) {
+                        if (n >= 1 && n <= matrixConfig.likelihoodLevels) row.likelihood = n;
+                        else (row.outOfScale ??= []).push({ field: 'likelihood', value: n, max: matrixConfig.likelihoodLevels });
+                    }
                 }
                 if (rec.impact) {
                     const n = parseInt(rec.impact, 10);
-                    if (n >= 1 && n <= matrixConfig.impactLevels) row.impact = n;
+                    if (Number.isFinite(n)) {
+                        if (n >= 1 && n <= matrixConfig.impactLevels) row.impact = n;
+                        else (row.outOfScale ??= []).push({ field: 'impact', value: n, max: matrixConfig.impactLevels });
+                    }
                 }
                 if (rec.owner) row.owner = rec.owner;
                 return row;
@@ -168,7 +178,19 @@ export default function RiskImportPage() {
                             { id: 'num', header: '#', accessorKey: '_idx', cell: ({ getValue }) => <span className="text-xs text-content-subtle">{getValue()}</span> },
                             { accessorKey: 'title', header: t('colTitle'), cell: ({ getValue }) => <span className="text-sm">{getValue()}</span> },
                             { id: 'category', header: t('colCategory'), accessorKey: 'category', cell: ({ getValue }) => <span className="text-xs text-content-muted">{getValue() || '—'}</span> },
-                            { id: 'lxi', header: t('colLxI'), accessorFn: (r) => `${r.likelihood ?? 3}×${r.impact ?? 3}`, cell: ({ getValue }) => <span className="text-xs">{getValue()}</span> },
+                            { id: 'lxi', header: t('colLxI'), accessorFn: (r) => `${r.likelihood ?? 3}×${r.impact ?? 3}`, cell: ({ row, getValue }) => {
+                                const oos = row.original.outOfScale;
+                                return (
+                                    <div className="flex flex-col gap-0.5">
+                                        <span className="text-xs">{getValue() as string}</span>
+                                        {oos?.map((c, i) => (
+                                            <span key={i} className="text-[11px] text-content-warning" data-testid="import-out-of-scale">
+                                                {t(c.field === 'likelihood' ? 'outOfScaleLikelihood' : 'outOfScaleImpact', { value: c.value, max: c.max })}
+                                            </span>
+                                        ))}
+                                    </div>
+                                );
+                            } },
                             { id: 'owner', header: t('colOwner'), accessorKey: 'owner', cell: ({ getValue }) => <span className="text-xs text-content-muted">{getValue() || '—'}</span> },
                         ]);
                         const previewData = rows.slice(0, 20).map((r, i) => ({ ...r, _idx: i + 1 }));

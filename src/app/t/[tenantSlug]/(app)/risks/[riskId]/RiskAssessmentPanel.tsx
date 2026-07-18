@@ -112,6 +112,7 @@ export function RiskAssessmentPanel({
     tenantSlug,
     riskId,
     risk,
+    matrixConfig,
     canWrite,
     canAdmin,
     ownerChoices,
@@ -123,6 +124,9 @@ export function RiskAssessmentPanel({
     tenantSlug: string;
     riskId: string;
     risk: AssessmentRisk;
+    /** The tenant's risk-matrix config, resolved once by the parent —
+     *  passed down so the panel does not independently re-fetch it. */
+    matrixConfig: RiskMatrixConfigShape;
     canWrite: boolean;
     canAdmin: boolean;
     /** Tenant roster for the treatment-plan owner picker (Step 4). */
@@ -140,7 +144,9 @@ export function RiskAssessmentPanel({
     const apiUrl = useTenantApiUrl();
     const toast = useToast();
 
-    const [config, setConfig] = useState<RiskMatrixConfigShape | null>(null);
+    // Matrix config is supplied by the parent (already fetched there) —
+    // no independent re-fetch. Local alias keeps the existing call sites.
+    const config = matrixConfig;
     const [suggestion, setSuggestion] = useState<ResidualSuggestionPayload | null>(null);
     const [error, setError] = useState<string | null>(null);
     // RQ3-7 — currently-breached KRIs for this risk. Drives the
@@ -189,19 +195,13 @@ export function RiskAssessmentPanel({
         let cancelled = false;
         (async () => {
             try {
-                const [configRes] = await Promise.all([
-                    fetch(apiUrl('/risk-matrix-config')),
-                    loadSuggestion(),
-                ]);
-                if (!configRes.ok) throw new Error(`Failed to load matrix config (${configRes.status})`);
-                const cfg = await configRes.json();
-                if (!cancelled) setConfig(cfg);
+                await loadSuggestion();
             } catch (err) {
                 if (!cancelled) setError(err instanceof Error ? err.message : t('assessment.failedLoad'));
             }
         })();
         return () => { cancelled = true; };
-    }, [apiUrl, loadSuggestion, t]);
+    }, [loadSuggestion, t]);
 
     // RQ3-7 — load the KRI breach signal independently (failure-soft:
     // never blocks the panel, just hides the nudge on error).
@@ -218,7 +218,7 @@ export function RiskAssessmentPanel({
     if (error) {
         return <div className={cn(cardVariants({ density: 'compact' }), 'border-border-error text-content-error text-sm')}>{error}</div>;
     }
-    if (!config || !suggestion) {
+    if (!suggestion) {
         return <SkeletonCard lines={4} />;
     }
 

@@ -542,6 +542,7 @@ export default function RiskDetailPage() {
                 <RiskAssessmentPanel
                     tenantSlug={tenant.tenantSlug}
                     riskId={riskId}
+                    matrixConfig={matrixConfig}
                     risk={{
                         likelihood: risk.likelihood,
                         impact: risk.impact,
