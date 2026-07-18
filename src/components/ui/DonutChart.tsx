@@ -92,6 +92,14 @@ export interface DonutSegment {
      * New consumers should reach for `seriesIndex` instead.
      */
     color: string;
+    /**
+     * Optional drill-through target for this slice. When set (and the
+     * chart is given `onSegmentClick`), clicking the arc navigates —
+     * e.g. the "Critical" severity slice → the risks list filtered to
+     * critical. Purely a data carry; the chart primitive itself does
+     * NOT import a router (nav stays with the caller's handler).
+     */
+    href?: string;
 }
 
 export interface DonutChartProps {
@@ -118,6 +126,13 @@ export interface DonutChartProps {
      * renders the "No data" empty state.
      */
     loading?: boolean;
+    /**
+     * Drill-through handler. When provided, each slice that carries an
+     * `href` becomes a keyboard-accessible link (Enter/Space + click)
+     * that calls this with the clicked segment. The caller owns the
+     * actual navigation so this shared primitive stays router-free.
+     */
+    onSegmentClick?: (segment: DonutSegment) => void;
 }
 
 // ─── Component ──────────────────────────────────────────────────────
@@ -132,6 +147,7 @@ export default function DonutChart({
     className = '',
     id,
     loading = false,
+    onSegmentClick,
 }: DonutChartProps) {
     const t = useTranslations('common.chart');
     // useId provides a unique-per-instance gradient id prefix so
@@ -591,11 +607,38 @@ export default function DonutChart({
                                         onFocus={() => setHoveredKey(seg.label)}
                                         onBlur={() => setHoveredKey(null)}
                                         tabIndex={0}
+                                        role={
+                                            onSegmentClick && seg.href
+                                                ? 'link'
+                                                : undefined
+                                        }
+                                        onClick={
+                                            onSegmentClick && seg.href
+                                                ? () => onSegmentClick(seg)
+                                                : undefined
+                                        }
+                                        onKeyDown={
+                                            onSegmentClick && seg.href
+                                                ? (e) => {
+                                                      if (
+                                                          e.key === 'Enter' ||
+                                                          e.key === ' '
+                                                      ) {
+                                                          e.preventDefault();
+                                                          onSegmentClick(seg);
+                                                      }
+                                                  }
+                                                : undefined
+                                        }
                                         style={{
                                             outline: 'none',
                                             cursor: 'pointer',
                                         }}
-                                        aria-label={`${seg.label}: ${seg.value}`}
+                                        aria-label={
+                                            onSegmentClick && seg.href
+                                                ? `${seg.label}: ${seg.value} — open filtered list`
+                                                : `${seg.label}: ${seg.value}`
+                                        }
                                     >
                                         <title>{`${seg.label}: ${seg.value} (${(segPercent * 100).toFixed(1)}%)`}</title>
                                     </path>

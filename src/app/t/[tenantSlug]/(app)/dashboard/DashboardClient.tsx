@@ -56,6 +56,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
     ShieldCheck,
@@ -389,10 +390,10 @@ export default function DashboardClient({
                     title={t("taskStatus")}
                     centerSub="Tasks"
                     segments={[
-                        { label: 'Open', value: exec.taskSummary.open, color: '#3b82f6' },
-                        { label: 'In Progress', value: exec.taskSummary.inProgress, color: '#f59e0b' },
-                        { label: 'Blocked', value: exec.taskSummary.blocked, color: '#dc2626' },
-                        { label: 'Resolved', value: exec.taskSummary.resolved, color: '#22c55e' },
+                        { label: 'Open', value: exec.taskSummary.open, color: '#3b82f6', href: href('/tasks?status=OPEN,TRIAGED') },
+                        { label: 'In Progress', value: exec.taskSummary.inProgress, color: '#f59e0b', href: href('/tasks?status=IN_PROGRESS') },
+                        { label: 'Blocked', value: exec.taskSummary.blocked, color: '#dc2626', href: href('/tasks?status=BLOCKED') },
+                        { label: 'Resolved', value: exec.taskSummary.resolved, color: '#22c55e', href: href('/tasks?status=RESOLVED,CLOSED,CANCELED') },
                     ]}
                 />
                 <StatusDonutSection
@@ -402,11 +403,11 @@ export default function DashboardClient({
                     title={t("policyStatus")}
                     centerSub="Policies"
                     segments={[
-                        { label: 'Draft', value: exec.policySummary.draft, color: '#94a3b8' },
-                        { label: 'In Review', value: exec.policySummary.inReview, color: '#f59e0b' },
-                        { label: 'Approved', value: exec.policySummary.approved, color: '#3b82f6' },
-                        { label: 'Published', value: exec.policySummary.published, color: '#22c55e' },
-                        { label: 'Archived', value: exec.policySummary.archived, color: '#64748b' },
+                        { label: 'Draft', value: exec.policySummary.draft, color: '#94a3b8', href: href('/policies?status=DRAFT') },
+                        { label: 'In Review', value: exec.policySummary.inReview, color: '#f59e0b', href: href('/policies?status=IN_REVIEW') },
+                        { label: 'Approved', value: exec.policySummary.approved, color: '#3b82f6', href: href('/policies?status=APPROVED') },
+                        { label: 'Published', value: exec.policySummary.published, color: '#22c55e', href: href('/policies?status=PUBLISHED') },
+                        { label: 'Archived', value: exec.policySummary.archived, color: '#64748b', href: href('/policies?status=ARCHIVED') },
                     ]}
                 />
             </div>
@@ -743,16 +744,79 @@ function InteractiveKpiGrid({
 // "the focus is elsewhere right now". When no KPI is selected,
 // the card renders unchanged (the baseline byte-for-byte).
 
+// A single legend row beside a status/severity donut. When `href` is
+// set it becomes a keyboard-accessible link that opens the entity list
+// filtered to this slice — the same target the donut arc navigates to.
+function DonutLegendRow({
+    label,
+    value,
+    dotClassName,
+    dotColor,
+    href,
+}: {
+    label: string;
+    value: number;
+    dotClassName?: string;
+    dotColor?: string;
+    href?: string;
+}) {
+    const body = (
+        <>
+            <div className="flex items-center gap-1.5">
+                <span
+                    className={cn('w-2 h-2 rounded-full shrink-0', dotClassName)}
+                    style={dotColor ? { backgroundColor: dotColor } : undefined}
+                />
+                <span className={href ? 'text-content-muted group-hover/legend:text-content-default group-hover/legend:underline' : 'text-content-muted'}>
+                    {label}
+                </span>
+            </div>
+            <span className="text-content-default font-medium tabular-nums">
+                {value}
+            </span>
+        </>
+    );
+    if (!href) {
+        return <div className="flex items-center justify-between text-xs">{body}</div>;
+    }
+    return (
+        <Link
+            href={href}
+            className="group/legend flex items-center justify-between text-xs rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            aria-label={`${label}: ${value} — open filtered list`}
+        >
+            {body}
+        </Link>
+    );
+}
+
 function RiskDistributionSection({
     exec,
 }: {
     exec: ExecutiveDashboardPayload;
 }) {
     const t = useTranslations('dashboard');
+    const href = useTenantHref();
+    const router = useRouter();
     const { riskBySeverity, riskByStatus } = exec;
     const { selectedKpi } = useDashboardChartFocus();
     const isFocused = selectedKpi === 'risks';
     const isDimmed = selectedKpi !== null && !isFocused;
+    // Severity → the risks list filtered by inherent-score range (the
+    // same buckets the donut counts): Critical 15-25, High 10-14,
+    // Medium 5-9, Low 1-4. `score=min|max` is the risks range token.
+    const severitySegments: DonutStatusSegment[] = [
+        { label: 'Critical', value: riskBySeverity.critical, color: '#dc2626', href: href('/risks?score=15|25') },
+        { label: 'High', value: riskBySeverity.high, color: '#f97316', href: href('/risks?score=10|14') },
+        { label: 'Medium', value: riskBySeverity.medium, color: '#f59e0b', href: href('/risks?score=5|9') },
+        { label: 'Low', value: riskBySeverity.low, color: '#22c55e', href: href('/risks?score=1|4') },
+    ];
+    const legendTone: Record<string, string> = {
+        Critical: 'bg-bg-error-emphasis',
+        High: 'bg-orange-500',
+        Medium: 'bg-bg-warning-emphasis',
+        Low: 'bg-bg-success-emphasis',
+    };
     return (
         <Card
             id="risk-distribution"
@@ -774,12 +838,7 @@ function RiskDistributionSection({
             <div className="grid grid-cols-2 gap-default items-center">
                 <DonutChart
                     id="risk-severity-donut"
-                    segments={[
-                        { label: 'Critical', value: riskBySeverity.critical, color: '#dc2626' },
-                        { label: 'High', value: riskBySeverity.high, color: '#f97316' },
-                        { label: 'Medium', value: riskBySeverity.medium, color: '#f59e0b' },
-                        { label: 'Low', value: riskBySeverity.low, color: '#22c55e' },
-                    ]}
+                    segments={severitySegments}
                     size={130}
                     centerLabel={String(
                         riskBySeverity.critical +
@@ -789,28 +848,17 @@ function RiskDistributionSection({
                     )}
                     centerSub="Total"
                     showLegend={false}
+                    onSegmentClick={(s) => s.href && router.push(s.href)}
                 />
                 <div className="space-y-tight">
-                    {[
-                        { label: 'Critical', value: riskBySeverity.critical, color: 'bg-bg-error-emphasis' },
-                        { label: 'High', value: riskBySeverity.high, color: 'bg-orange-500' },
-                        { label: 'Medium', value: riskBySeverity.medium, color: 'bg-bg-warning-emphasis' },
-                        { label: 'Low', value: riskBySeverity.low, color: 'bg-bg-success-emphasis' },
-                    ].map((item) => (
-                        <div
+                    {severitySegments.map((item) => (
+                        <DonutLegendRow
                             key={item.label}
-                            className="flex items-center justify-between text-xs"
-                        >
-                            <div className="flex items-center gap-1.5">
-                                <span
-                                    className={`w-2 h-2 rounded-full ${item.color} shrink-0`}
-                                />
-                                <span className="text-content-muted">{item.label}</span>
-                            </div>
-                            <span className="text-content-default font-medium tabular-nums">
-                                {item.value}
-                            </span>
-                        </div>
+                            label={item.label}
+                            value={item.value}
+                            dotClassName={legendTone[item.label]}
+                            href={item.href}
+                        />
                     ))}
                     <div className="border-t border-border-subtle pt-2 mt-2 flex items-center justify-between text-xs">
                         <span className="text-content-muted">{t('openMitigating')}</span>
@@ -838,6 +886,10 @@ interface DonutStatusSegment {
     value: number;
     /** Hex used for BOTH the donut arc and the legend dot. */
     color: string;
+    /** Tenant-relative drill-through target for this slice (already
+     *  resolved to `/t/{slug}/...` by the caller). Clicking the slice or
+     *  its legend row opens the entity list filtered to this slice. */
+    href?: string;
 }
 
 function StatusDonutSection({
@@ -855,6 +907,7 @@ function StatusDonutSection({
     centerSub: string;
     segments: DonutStatusSegment[];
 }) {
+    const router = useRouter();
     const { selectedKpi } = useDashboardChartFocus();
     const isFocused = selectedKpi === kpiKey;
     const isDimmed = selectedKpi !== null && !isFocused;
@@ -882,24 +935,17 @@ function StatusDonutSection({
                     centerLabel={String(total)}
                     centerSub={centerSub}
                     showLegend={false}
+                    onSegmentClick={(s) => s.href && router.push(s.href)}
                 />
                 <div className="space-y-tight">
                     {segments.map((item) => (
-                        <div
+                        <DonutLegendRow
                             key={item.label}
-                            className="flex items-center justify-between text-xs"
-                        >
-                            <div className="flex items-center gap-1.5">
-                                <span
-                                    className="w-2 h-2 rounded-full shrink-0"
-                                    style={{ backgroundColor: item.color }}
-                                />
-                                <span className="text-content-muted">{item.label}</span>
-                            </div>
-                            <span className="text-content-default font-medium tabular-nums">
-                                {item.value}
-                            </span>
-                        </div>
+                            label={item.label}
+                            value={item.value}
+                            dotColor={item.color}
+                            href={item.href}
+                        />
                     ))}
                 </div>
             </div>
