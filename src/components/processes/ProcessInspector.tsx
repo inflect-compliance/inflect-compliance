@@ -103,9 +103,9 @@ import {
 
 /**
  * Epic P2-PR-A — shape of an edge-attached control reference.
- * One per edge today (the inspector picks ONE); the underlying
- * `ProcessEdgeControl` table supports multiple per edge for future
- * "two controls gate this edge" use cases.
+ * The inspector's control picker is MULTI (PR-D): an edge can carry several
+ * controls, rendered as one pill per persisted control; `ProcessEdgeControl`
+ * backs the many-to-one.
  */
 export interface EdgeControlRef {
     /** Stable per-edge identifier — survives saves + reloads. */

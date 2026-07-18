@@ -107,7 +107,7 @@ export async function getGovernanceGraph(ctx: RequestContext, now: Date) {
         const since = new Date(now.getTime() - THIRTY_DAYS_MS);
         const [maps, nodes, rules, execs] = await Promise.all([
             db.processMap.findMany({
-                where: { tenantId: ctx.tenantId, deletedAt: null },
+                where: { tenantId: ctx.tenantId, deletedAt: null, canvasMode: 'AUTOMATION' },
                 select: { id: true, name: true, canvasMode: true },
                 take: 500,
             }),

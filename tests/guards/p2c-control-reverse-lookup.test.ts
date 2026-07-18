@@ -152,12 +152,12 @@ describe("Epic P2-PR-C — control reverse-lookup", () => {
             expect(src).toMatch(/fetch\(`\$\{base\}\/traceability`\)/);
         });
 
-        it("groups multi-edge results by map (one row per map)", () => {
-            // The modal collapses duplicate map IDs into one row
-            // with an edge count — verified by anchoring the group
-            // accumulator + edgeCount field.
-            expect(src).toMatch(/edgeCount:\s*\d+/);
-            expect(src).toMatch(/edgeCount\s*\+=\s*1/);
+        it("groups multi-placement results by map (one row per map)", () => {
+            // The modal collapses duplicate map IDs into one row with a
+            // placement count (edge gates + control nodes) — verified by
+            // anchoring the group accumulator + placementCount field.
+            expect(src).toMatch(/placementCount:\s*\d+/);
+            expect(src).toMatch(/placementCount\s*\+=\s*1/);
         });
 
         it("deep-links each row to the canvas's activeId query param", () => {

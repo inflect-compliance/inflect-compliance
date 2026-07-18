@@ -82,7 +82,7 @@ export function TemplateLibraryModal({ open, setOpen }: TemplateLibraryModalProp
 
     return (
         <Modal showModal={open} setShowModal={setOpen} title={t('title')} size="xl">
-            <Modal.Header title={t('title')} />
+            <Modal.Header title={t('title')} description={t('description')} />
             <Modal.Body>
                 <div className="mb-default flex flex-wrap gap-tight">
                     <button

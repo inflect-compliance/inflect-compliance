@@ -5742,7 +5742,13 @@
       "rulesCount": "{count, plural, one {# правило} other {# правила}}",
       "noRuns": "няма изпълнения",
       "successPct": "{pct}% успех",
-      "subflowCalls": "Извиквания на подпотоци"
+      "subflowCalls": "Извиквания на подпотоци",
+      "topologyHeading": "Топология на автоматизацията",
+      "topologyDescription": "Карта система-на-запис на вашите автоматизационни потоци — брой правила, 30-дневни нива на успех и извиквания на под-потоци между карти. Това не е покритие за съответствие.",
+      "canvasMode": {
+        "AUTOMATION": "Автоматизация",
+        "DOCUMENT": "Документ"
+      }
     },
     "ruleStatusLabels": {
       "DRAFT": "Чернова",
@@ -6891,7 +6897,10 @@
       "coverageType": "Тип покритие",
       "coverageFull": "Пълно",
       "coveragePartial": "Частично",
-      "coverageUnknown": "Неизвестно"
+      "coverageUnknown": "Неизвестно",
+      "onProcessMaps": "В процесни карти",
+      "viaEdge": "чрез връзка",
+      "viaNode": "чрез възел"
     },
     "policyTrace": {
       "linkControl": "Свържи контрола",
@@ -7202,7 +7211,9 @@
       "requirementsHeading": "Изпълнени изисквания",
       "risksHeading": "Смекчени рискове",
       "assetsHeading": "Защитени активи",
-      "processMapsHeading": "Процесни карти"
+      "processMapsHeading": "Процесни карти",
+      "placementOne": "разположение",
+      "placementMany": "разположения"
     },
     "sharepoint": {
       "title": "Импортиране от SharePoint",
@@ -8037,10 +8048,13 @@
     },
     "node": {
       "expandGroup": "Разгъване на групата",
-      "collapseGroup": "Свиване на групата"
+      "collapseGroup": "Свиване на групата",
+      "linkedControl": "Свързан контрол",
+      "linkedRisk": "Свързан риск",
+      "linkedAsset": "Свързан актив"
     },
     "templates": {
-      "title": "Шаблони за правила",
+      "title": "Шаблони за правила за автоматизация",
       "all": "Всички",
       "useTemplate": "Използвай шаблон",
       "close": "Затвори",
@@ -8049,7 +8063,8 @@
       "tagTask": "Задача",
       "tagIssue": "Проблем",
       "tagNotify": "Уведомяване",
-      "tagWebhook": "Уебхук"
+      "tagWebhook": "Уебхук",
+      "description": "Създайте ЧЕРНОВА правило за автоматизация от шаблон. Това не създава платно за процесна карта."
     },
     "suggestions": {
       "intro": "Автоматизации, които биха запълнили пропуските в текущото ви състояние — всяка с оценка и обосновка. Създайте някоя като чернова и след това я усъвършенствайте.",
@@ -8198,7 +8213,19 @@
       "unsaved": "Незапазено",
       "saving": "Запазване…",
       "saved": "Запазено",
-      "save": "Запазване"
+      "save": "Запазване",
+      "statusDraft": "Чернова",
+      "statusActive": "Активна",
+      "statusArchived": "Архивирана",
+      "statusAria": "Статус на процеса",
+      "statusPlaceholder": "Статус",
+      "delete": "Изтриване",
+      "deleteTitle": "Изтриване на процесна карта",
+      "deleteBody": "Това премахва завинаги <b>{name}</b> и нейното платно. Това не може да бъде отменено.",
+      "deleteTypeToConfirm": "Въведете {name}, за да потвърдите",
+      "deleteConfirm": "Изтриване на процесна карта",
+      "deleteFailed": "Изтриването е неуспешно. Моля, опитайте отново.",
+      "cancel": "Отказ"
     }
   },
   "commandPalette": {

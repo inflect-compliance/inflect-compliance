@@ -5742,7 +5742,13 @@
       "rulesCount": "{count, plural, one {# rule} other {# rules}}",
       "noRuns": "no runs",
       "successPct": "{pct}% success",
-      "subflowCalls": "Sub-flow calls"
+      "subflowCalls": "Sub-flow calls",
+      "topologyHeading": "Automation topology",
+      "topologyDescription": "A system-of-record map of your automation flows — rule counts, 30-day success rates, and sub-flow calls between maps. This is not compliance coverage.",
+      "canvasMode": {
+        "AUTOMATION": "Automation",
+        "DOCUMENT": "Document"
+      }
     },
     "ruleStatusLabels": {
       "DRAFT": "Draft",
@@ -6891,7 +6897,10 @@
       "coverageType": "Coverage type",
       "coverageFull": "Full",
       "coveragePartial": "Partial",
-      "coverageUnknown": "Unknown"
+      "coverageUnknown": "Unknown",
+      "onProcessMaps": "On process maps",
+      "viaEdge": "via edge",
+      "viaNode": "via node"
     },
     "policyTrace": {
       "notice": "A policy links directly to controls; the risks those controls mitigate and the assets they protect are inherited through them. Manage these links on each control.",
@@ -7202,7 +7211,9 @@
       "requirementsHeading": "Requirements satisfied",
       "risksHeading": "Risks mitigated",
       "assetsHeading": "Assets protected",
-      "processMapsHeading": "Process maps"
+      "processMapsHeading": "Process maps",
+      "placementOne": "placement",
+      "placementMany": "placements"
     },
     "sharepoint": {
       "title": "Import from SharePoint",
@@ -8037,10 +8048,13 @@
     },
     "node": {
       "expandGroup": "Expand group",
-      "collapseGroup": "Collapse group"
+      "collapseGroup": "Collapse group",
+      "linkedControl": "Linked control",
+      "linkedRisk": "Linked risk",
+      "linkedAsset": "Linked asset"
     },
     "templates": {
-      "title": "Rule templates",
+      "title": "Automation rule templates",
       "all": "All",
       "useTemplate": "Use template",
       "close": "Close",
@@ -8049,7 +8063,8 @@
       "tagTask": "Task",
       "tagIssue": "Issue",
       "tagNotify": "Notify",
-      "tagWebhook": "Webhook"
+      "tagWebhook": "Webhook",
+      "description": "Start a DRAFT automation rule from a template. This does not create a process-map canvas."
     },
     "suggestions": {
       "intro": "Automations that would close gaps in your current posture — each scored, with a rationale. Create one as a draft, then refine it.",
@@ -8198,7 +8213,19 @@
       "unsaved": "Unsaved",
       "saving": "Saving…",
       "saved": "Saved",
-      "save": "Save"
+      "save": "Save",
+      "statusDraft": "Draft",
+      "statusActive": "Active",
+      "statusArchived": "Archived",
+      "statusAria": "Process status",
+      "statusPlaceholder": "Status",
+      "delete": "Delete",
+      "deleteTitle": "Delete process map",
+      "deleteBody": "This permanently removes <b>{name}</b> and its canvas. This cannot be undone.",
+      "deleteTypeToConfirm": "Type {name} to confirm",
+      "deleteConfirm": "Delete process map",
+      "deleteFailed": "Delete failed. Please try again.",
+      "cancel": "Cancel"
     }
   },
   "commandPalette": {

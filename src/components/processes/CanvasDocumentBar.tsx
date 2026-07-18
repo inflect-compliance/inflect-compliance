@@ -37,6 +37,7 @@ import { Button } from "@/components/ui/button";
 import { useRunMode } from "@/lib/processes/run-mode-context";
 import { useIsAutomationMode } from "@/lib/processes/canvas-mode-context";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
+import { CanvasMapDeleteControl } from "./CanvasMapDeleteControl";
 import type { ProcessMapSummary } from "@/app/t/[tenantSlug]/(app)/processes/ProcessesClient";
 
 import type { AutosaveStatus } from "@/lib/processes/use-canvas-autosave";
@@ -76,6 +77,10 @@ export interface CanvasDocumentBarHandlers {
     setSnapEnabled: (next: boolean | ((prev: boolean) => boolean)) => void;
     /** PR-B follow-up — convert the active map DOCUMENT ⇄ AUTOMATION. */
     onSwitchMode: () => void | Promise<void>;
+    /** Lifecycle — transition the active map's status. */
+    onChangeStatus: (status: ProcessMapSummary["status"]) => void | Promise<void>;
+    /** Lifecycle — soft-delete the active map. Throws on failure. */
+    onDelete: () => void | Promise<void>;
 }
 
 export interface CanvasDocumentBarProps {
@@ -132,6 +137,24 @@ export function CanvasDocumentBar({
                 : null,
         [activeId, processOptions],
     );
+    // Lifecycle — status selector options. Stable references so the
+    // Combobox doesn't churn on every parent tick.
+    const statusOptions = useMemo<ComboboxOption[]>(
+        () => [
+            { value: "DRAFT", label: t("statusDraft") },
+            { value: "ACTIVE", label: t("statusActive") },
+            { value: "ARCHIVED", label: t("statusArchived") },
+        ],
+        [t],
+    );
+    const selectedStatusOption = useMemo<ComboboxOption | null>(
+        () =>
+            activeProcess
+                ? statusOptions.find((o) => o.value === activeProcess.status) ??
+                  null
+                : null,
+        [activeProcess, statusOptions],
+    );
     const { saving, loading, creating, duplicating } = busy;
     const { snapEnabled, autosaveStatus, canUndo, canRedo } = editorState;
     const {
@@ -145,6 +168,8 @@ export function CanvasDocumentBar({
         handleRedo,
         setSnapEnabled,
         onSwitchMode,
+        onChangeStatus,
+        onDelete,
     } = handlers;
     const currentMode = activeProcess?.canvasMode ?? "DOCUMENT";
 
@@ -259,6 +284,28 @@ export function CanvasDocumentBar({
                     {duplicating ? t("duplicating") : t("duplicate")}
                 </Button>
             )}
+            {activeId && (
+                // Lifecycle — DRAFT / ACTIVE / ARCHIVED status selector.
+                // Reflects the active map's stored status; on change it
+                // PATCHes `{ status }` and the parent patches the list
+                // in place so the pill stays in sync.
+                <div data-testid="process-status-selector" className="min-w-[130px]">
+                    <Combobox
+                        selected={selectedStatusOption}
+                        setSelected={(option) => {
+                            if (option) {
+                                void onChangeStatus(
+                                    option.value as ProcessMapSummary["status"],
+                                );
+                            }
+                        }}
+                        options={statusOptions}
+                        disabled={loading || saving}
+                        aria-label={t("statusAria")}
+                        placeholder={t("statusPlaceholder")}
+                    />
+                </div>
+            )}
             <div className="ml-auto flex items-center gap-default">
                 {activeId && (
                     <Button
@@ -276,6 +323,17 @@ export function CanvasDocumentBar({
                             ? t("modeAutomation")
                             : t("modeProcessMap")}
                     </Button>
+                )}
+                {activeId && (
+                    // Lifecycle — delete affordance. Opens a
+                    // typed-confirmation modal (the sanctioned pattern
+                    // for top-level entity deletion — NOT the undo-toast).
+                    <CanvasMapDeleteControl
+                        mapName={activeProcess?.name ?? ""}
+                        onDelete={onDelete}
+                        disabled={saving || loading}
+                        t={t}
+                    />
                 )}
                 {isAutomation && activeId && (
                     <Button

@@ -51,10 +51,21 @@ interface TraceLinkEntry {
     asset?: TraceLinkedEntity;
 }
 type TraceSection = 'risks' | 'controls' | 'assets';
+// Where this entity sits on the process canvas (read-only — surfaces "sits on
+// map X" inline instead of only in the reverse-lookup modal).
+interface TraceMapPlacement {
+    mapId: string;
+    mapName: string;
+    mapStatus: string;
+    via: 'edge' | 'node';
+    locationKey: string;
+    label: string | null;
+}
 interface TraceabilityData {
     risks: TraceLinkEntry[];
     controls: TraceLinkEntry[];
     assets: TraceLinkEntry[];
+    processMaps?: TraceMapPlacement[];
 }
 
 // Dropdown option shapes for the link pickers (cap'd list endpoints).
@@ -335,6 +346,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
     const risks = data.risks || [];
     const controls = data.controls || [];
     const assets = data.assets || [];
+    const processMaps = data.processMaps || [];
 
     // Determine which sections to show based on entity type
     const showRisks = entityType === 'control' || entityType === 'asset';
@@ -543,6 +555,35 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                             </table>
                         )}
                     </div>
+                </div>
+            )}
+
+            {processMaps.length > 0 && (
+                <div>
+                    <Heading level={3} className="text-content-emphasis">
+                        {t('trace.onProcessMaps')} ({processMaps.length})
+                    </Heading>
+                    <ul className="mt-default flex flex-col gap-tight">
+                        {processMaps.map((p) => (
+                            <li
+                                key={`${p.mapId}-${p.via}-${p.locationKey}`}
+                                className="flex items-center justify-between gap-default rounded-[8px] border border-border-subtle px-default py-2"
+                            >
+                                <a
+                                    href={tenantHref(`/processes?activeId=${p.mapId}`)}
+                                    className="text-sm text-content-link hover:underline"
+                                >
+                                    {p.mapName}
+                                </a>
+                                <span className="flex items-center gap-compact text-xs">
+                                    <span className="text-content-subtle">
+                                        {p.via === 'edge' ? t('trace.viaEdge') : t('trace.viaNode')}
+                                    </span>
+                                    <StatusBadge variant="neutral">{p.mapStatus}</StatusBadge>
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
                 </div>
             )}
         </div>

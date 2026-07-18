@@ -1,5 +1,6 @@
 import { RequestContext } from '../types';
 import { ControlRiskRepository, AssetControlRepository, AssetRiskRepository } from '../repositories/TraceabilityRepository';
+import { ProcessMapRepository } from '../repositories/ProcessMapRepository';
 import { logEvent } from '../events/audit';
 import { forbidden } from '@/lib/errors/types';
 import { runInTenantContext } from '@/lib/db-context';
@@ -110,36 +111,71 @@ export async function unmapAssetFromRisk(ctx: RequestContext, assetId: string, r
 
 // ─── Traceability Views ───
 
+/** Unified process-map placement (where an entity sits on the canvas), so
+ *  "sits on map X" shows inline in traceability, not only in a separate modal. */
+export type TraceabilityMapPlacement = {
+    mapId: string;
+    mapName: string;
+    mapStatus: string;
+    via: 'edge' | 'node';
+    locationKey: string;
+    label: string | null;
+};
+
 export async function getControlTraceability(ctx: RequestContext, controlId: string) {
     assertCanRead(ctx);
     return runInTenantContext(ctx, async (db) => {
-        const [risks, assets] = await Promise.all([
+        const [risks, assets, edgeMaps, nodeMaps] = await Promise.all([
             ControlRiskRepository.listByControl(db, ctx.tenantId, controlId),
             AssetControlRepository.listByControl(db, ctx.tenantId, controlId),
+            // A control gates edges (processEdgeControl) AND/OR sits on `control`
+            // nodes (ProcessNode.linkedEntityId) — union both.
+            ProcessMapRepository.listMapsByControl(db, ctx, controlId),
+            ProcessMapRepository.listMapsByLinkedEntity(db, ctx, 'control', controlId),
         ]);
-        return { controlId, risks, assets };
+        const processMaps: TraceabilityMapPlacement[] = [
+            ...edgeMaps.map((e) => ({
+                mapId: e.mapId, mapName: e.mapName, mapStatus: e.mapStatus,
+                via: 'edge' as const, locationKey: e.edgeKey, label: e.edgeLabel,
+            })),
+            ...nodeMaps.map((n) => ({
+                mapId: n.mapId, mapName: n.mapName, mapStatus: n.mapStatus,
+                via: 'node' as const, locationKey: n.nodeKey, label: n.nodeLabel,
+            })),
+        ];
+        return { controlId, risks, assets, processMaps };
     });
 }
 
 export async function getRiskTraceability(ctx: RequestContext, riskId: string) {
     assertCanRead(ctx);
     return runInTenantContext(ctx, async (db) => {
-        const [controls, assets] = await Promise.all([
+        const [controls, assets, nodeMaps] = await Promise.all([
             ControlRiskRepository.listByRisk(db, ctx.tenantId, riskId),
             AssetRiskRepository.listByRisk(db, ctx.tenantId, riskId),
+            ProcessMapRepository.listMapsByLinkedEntity(db, ctx, 'risk', riskId),
         ]);
-        return { riskId, controls, assets };
+        const processMaps: TraceabilityMapPlacement[] = nodeMaps.map((n) => ({
+            mapId: n.mapId, mapName: n.mapName, mapStatus: n.mapStatus,
+            via: 'node' as const, locationKey: n.nodeKey, label: n.nodeLabel,
+        }));
+        return { riskId, controls, assets, processMaps };
     });
 }
 
 export async function getAssetTraceability(ctx: RequestContext, assetId: string) {
     assertCanRead(ctx);
     return runInTenantContext(ctx, async (db) => {
-        const [controls, risks] = await Promise.all([
+        const [controls, risks, nodeMaps] = await Promise.all([
             AssetControlRepository.listByAsset(db, ctx.tenantId, assetId),
             AssetRiskRepository.listByAsset(db, ctx.tenantId, assetId),
+            ProcessMapRepository.listMapsByLinkedEntity(db, ctx, 'asset', assetId),
         ]);
-        return { assetId, controls, risks };
+        const processMaps: TraceabilityMapPlacement[] = nodeMaps.map((n) => ({
+            mapId: n.mapId, mapName: n.mapName, mapStatus: n.mapStatus,
+            via: 'node' as const, locationKey: n.nodeKey, label: n.nodeLabel,
+        }));
+        return { assetId, controls, risks, processMaps };
     });
 }
 

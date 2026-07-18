@@ -199,14 +199,50 @@ export async function setProcessMapStatus(
  * referencing a given control. Read-only; surfaces "Where is this
  * control used?" on the Control detail page.
  */
+export type MapPlacement = {
+    mapId: string;
+    mapName: string;
+    mapStatus: string;
+    /** How the control is attached to the map. */
+    via: 'edge' | 'node';
+    /** edgeKey (edge-mounted) or nodeKey (node-mounted). */
+    locationKey: string;
+    label: string | null;
+};
+
 export async function listMapsUsingControl(
     ctx: RequestContext,
     controlId: string,
-) {
+): Promise<MapPlacement[]> {
     assertCanRead(ctx);
-    return runInTenantContext(ctx, (db) =>
-        ProcessMapRepository.listMapsByControl(db, ctx, controlId),
-    );
+    return runInTenantContext(ctx, async (db) => {
+        // A control can gate an edge (processEdgeControl) OR sit on a `control`
+        // node (ProcessNode.dataJson.linkedEntityId). The edge-only lookup
+        // missed node-mounted controls even though they count toward coverage —
+        // union both so the reverse-lookup matches the coverage signal.
+        const [edges, nodes] = await Promise.all([
+            ProcessMapRepository.listMapsByControl(db, ctx, controlId),
+            ProcessMapRepository.listMapsByLinkedEntity(db, ctx, 'control', controlId),
+        ]);
+        return [
+            ...edges.map((e) => ({
+                mapId: e.mapId,
+                mapName: e.mapName,
+                mapStatus: e.mapStatus,
+                via: 'edge' as const,
+                locationKey: e.edgeKey,
+                label: e.edgeLabel,
+            })),
+            ...nodes.map((n) => ({
+                mapId: n.mapId,
+                mapName: n.mapName,
+                mapStatus: n.mapStatus,
+                via: 'node' as const,
+                locationKey: n.nodeKey,
+                label: n.nodeLabel,
+            })),
+        ];
+    });
 }
 
 /**

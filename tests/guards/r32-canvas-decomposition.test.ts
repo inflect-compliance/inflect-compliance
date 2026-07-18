@@ -189,16 +189,21 @@ describe("R32-PR10 — canvas decomposition (document bar)", () => {
             //     convert an existing map DOCUMENT⇄AUTOMATION from the
             //     doc bar. ~16 lines; the PATCH itself lives in the
             //     helper src/lib/processes/switch-canvas-mode.ts.
+            //   - 2501 → 2541 (lifecycle UI) — handleChangeStatus +
+            //     handleDelete thin useCallbacks for the doc bar's new
+            //     status selector + typed-confirm delete. ~40 lines; the
+            //     PATCH/DELETE fetches live in the helper
+            //     src/lib/processes/switch-canvas-mode.ts and the delete
+            //     modal lives in its own CanvasMapDeleteControl.tsx.
             // Future P6 follow-ups follow the same helper-module-
             // per-feature pattern.
             const src = read(
                 "src/components/processes/PersistedProcessCanvas.tsx",
             );
             const lines = src.split("\n").length;
-            // Floor bumped by the i18n localization delta (next-intl
-            // `buildRejectMessages` factory + the useMemo wiring add ~12
-            // lines of necessary scaffolding). Still a downward ratchet.
-            expect(lines).toBeLessThan(2510);
+            // Floor bumped by the lifecycle-UI delta (status + delete
+            // handlers). Still a downward ratchet.
+            expect(lines).toBeLessThan(2550);
         });
     });
 });
