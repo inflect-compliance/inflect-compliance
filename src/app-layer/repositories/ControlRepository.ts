@@ -117,11 +117,13 @@ export class ControlRepository {
 
     static async getById(db: PrismaTx, ctx: RequestContext, id: string) {
         return traceRepository('control.getById', ctx, async () => {
-            // `risks`, `policyLinks`, and `_count` are deliberately
-            // omitted — they were eager-loaded historically but no
-            // caller ever reads them off the detail payload (the page
-            // computes badge counts from `.length` on the kept arrays;
-            // TraceabilityPanel/TestPlansPanel run their own fetches).
+            // `risks` and `_count` are deliberately omitted — they were
+            // eager-loaded historically but no caller reads them off the
+            // detail payload (the page computes badge counts from `.length`
+            // on the kept arrays; TestPlansPanel runs its own fetch).
+            // `policyLinks` IS loaded: it backs the reverse Policies section
+            // on the control detail page (bidirectional control↔policy), the
+            // mirror of the policy detail's Controls section.
             // The bigger tab-lazy refactor (drop controlTasks /
             // evidenceLinks / evidence / frameworkMappings arrays in
             // favour of per-tab fetches) is bounded follow-up; safe
@@ -136,6 +138,14 @@ export class ControlRepository {
                     createdBy: { select: { id: true, name: true, email: true } },
                     applicabilityDecidedBy: { select: { id: true, name: true, email: true } },
                     contributors: { include: { user: { select: { id: true, name: true, email: true } } } },
+                    // Reverse policy↔control links — linked governing policies,
+                    // surfaced read-only on the control detail (link/unlink is
+                    // owned by the policy side).
+                    policyLinks: {
+                        include: {
+                            policy: { select: { id: true, slug: true, title: true, status: true } },
+                        },
+                    },
                     evidenceLinks: { orderBy: { createdAt: 'desc' }, include: { createdBy: { select: { id: true, name: true } } } },
                     // Evidence↔Control is now a many-to-many join; read the
                     // linked Evidence rows through it and flatten back to the
@@ -177,6 +187,17 @@ export class ControlRepository {
                     createdBy: { select: { id: true, name: true, email: true } },
                     applicabilityDecidedBy: { select: { id: true, name: true, email: true } },
                     contributors: { include: { user: { select: { id: true, name: true, email: true } } } },
+                    // Reverse policy↔control links back the Overview's Policies
+                    // section (bidirectional control↔policy). Kept here despite
+                    // the header-only design: a control links to a handful of
+                    // governing policies at most, so this is a small array — and
+                    // the section needs the policy refs (names + links), not just
+                    // a count.
+                    policyLinks: {
+                        include: {
+                            policy: { select: { id: true, slug: true, title: true, status: true } },
+                        },
+                    },
                     _count: {
                         select: {
                             evidenceLinks: true,

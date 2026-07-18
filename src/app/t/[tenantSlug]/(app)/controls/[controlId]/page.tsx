@@ -136,6 +136,16 @@ type Tab = 'overview' | 'tasks' | 'evidence' | 'mappings' | 'traceability' | 'ac
 const EVENT_KEYS = ['CONTROL_CREATED','CONTROL_UPDATED','CONTROL_STATUS_CHANGED','CONTROL_APPLICABILITY_CHANGED','CONTROL_OWNER_CHANGED','CONTROL_CONTRIBUTOR_ADDED','CONTROL_CONTRIBUTOR_REMOVED','CONTROL_TASK_CREATED','CONTROL_TASK_COMPLETED','CONTROL_TASK_UPDATED','CONTROL_EVIDENCE_LINKED','CONTROL_EVIDENCE_UNLINKED','CONTROL_TEST_COMPLETED','CONTROL_INSTALLED_FROM_TEMPLATE'] as const;
 const buildEventLabels = (t: (k: string) => string): Record<string, string> => Object.fromEntries(EVENT_KEYS.map(k => [k, t(`eventLabels.${k}`)]));
 
+// Read-only Policies section (Overview tab): local status → badge map so
+// this control page stays free of policy-domain helper imports.
+const POLICY_STATUS_BADGE_VARIANT: Record<string, 'neutral' | 'info' | 'success' | 'warning' | 'error'> = {
+    DRAFT: 'neutral',
+    IN_REVIEW: 'warning',
+    APPROVED: 'success',
+    PUBLISHED: 'success',
+    ARCHIVED: 'neutral',
+};
+
 export default function ControlDetailPage() {
     const tx = useTranslations('controls');
     const STATUS_LABELS = buildStatusLabels(tx);
@@ -1246,6 +1256,39 @@ export default function ControlDetailPage() {
                     {/* R2-P2 — Checks are automated; note the check→test bridge. */}
                     <p className="text-sm text-content-muted">{tx('detailPage.checksVsTests')}</p>
                     <ControlChecksTab controlId={controlId} />
+                </div>
+            )}
+
+            {/* Read-only Policies section — control ↔ policy links surfaced on
+              * the Overview tab. Backend populates control.policyLinks; this
+              * card only lists them (title link + status badge). */}
+            {tab === 'overview' && (
+                <div className={cn(cardVariants({ density: 'compact' }), 'mt-6')} id="control-policies-section">
+                    <Heading level={3}>{tx('detailPage.policiesTitle')}</Heading>
+                    {(control.policyLinks?.length ?? 0) > 0 ? (
+                        <div className="mt-default space-y-tight" id="control-policies-list">
+                            {control.policyLinks?.map((link) => (
+                                <div key={link.id} className="flex items-center justify-between gap-compact">
+                                    <a
+                                        href={tenantHref(`/policies/${link.policy.id}`)}
+                                        className="text-sm text-content-link hover:underline truncate"
+                                    >
+                                        {link.policy.title}
+                                    </a>
+                                    <StatusBadge variant={POLICY_STATUS_BADGE_VARIANT[link.policy.status] ?? 'neutral'}>
+                                        {link.policy.status}
+                                    </StatusBadge>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="mt-default">
+                            <InlineEmptyState
+                                title={tx('detailPage.policiesEmptyTitle')}
+                                description={tx('detailPage.policiesEmptyDesc')}
+                            />
+                        </div>
+                    )}
                 </div>
             )}
 

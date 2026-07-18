@@ -53,13 +53,13 @@ test.describe('Policy Center', () => {
         await expect(authedPage.locator('#new-policy-mode')).toBeVisible();
     });
 
-    test('template library page loads', async ({ authedPage, isolatedTenant }) => {
-        await gotoAndVerify(
-            authedPage,
-            `/t/${isolatedTenant.tenantSlug}/policies/templates`,
-            'h1',
-        );
-        await expect(authedPage.locator('h1')).toContainText('Policy Templates');
+    test('template library redirects into the create modal (template mode)', async ({ authedPage, isolatedTenant }) => {
+        // The standalone /policies/templates page was retired — the template
+        // picker now lives inside the canonical new-policy modal. Navigating to
+        // the old URL redirects into that modal in template-picker mode.
+        await authedPage.goto(`/t/${isolatedTenant.tenantSlug}/policies/templates`);
+        await expect(authedPage.locator('#new-policy-form')).toBeVisible();
+        await expect(authedPage.locator('#new-policy-mode')).toBeVisible();
     });
 
     test('create a blank policy and see detail', async ({

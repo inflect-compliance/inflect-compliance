@@ -387,6 +387,14 @@ describeFn('policy usecase — branch coverage (integration)', () => {
         const r2 = await markPolicyReviewed(ctx, noCadence.id);
         expect(r2?.nextReviewAt).toBeNull();
 
+        // without cadence BUT with an explicitly-set review date → PRESERVED.
+        // A manually-set nextReviewAt must survive a "mark reviewed" click
+        // rather than being cleared to null.
+        const manual = await createPolicy(ctx, { title: `Rev3 ${randomUUID().slice(0, 6)}` });
+        await updatePolicyMetadata(ctx, manual.id, { nextReviewAt: new Date('2028-06-01').toISOString() });
+        const r3 = await markPolicyReviewed(ctx, manual.id);
+        expect(r3?.nextReviewAt).toEqual(new Date('2028-06-01'));
+
         // metadata: nextReviewAt string → Date
         await updatePolicyMetadata(ctx, withCadence.id, {
             title: 'Renamed Policy',

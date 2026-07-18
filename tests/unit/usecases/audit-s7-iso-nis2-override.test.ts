@@ -259,13 +259,10 @@ describe("Audit S7 — computeNIS2Readiness honours the override", () => {
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ control: { findMany: jest.fn().mockResolvedValue([]) } } as never),
         );
-        // controlsWithEv (empty)
+        // controlsWithEv (empty) — carries the policy-linkage signal via
+        // _count.policyLinks; no separate policies query.
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ control: { findMany: jest.fn().mockResolvedValue([]) } } as never),
-        );
-        // policies lookup
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
-            fn({ policy: { findMany: jest.fn().mockResolvedValue([]) } } as never),
         );
         // open issues
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>

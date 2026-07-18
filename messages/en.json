@@ -1726,7 +1726,10 @@
       "tabRequirements": "Requirements",
       "addContributor": "Add contributor",
       "addContributorPlaceholder": "Select a member…",
-      "removeContributor": "Remove {name}"
+      "removeContributor": "Remove {name}",
+      "policiesTitle": "Policies",
+      "policiesEmptyTitle": "No linked policies yet",
+      "policiesEmptyDesc": "Policies linked to this control will appear here."
     },
     "editModal": {
       "title": "Edit Control",

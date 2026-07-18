@@ -66,6 +66,7 @@ export const BACK_AFFORDANCE_EXEMPT_SUBPAGES: readonly string[] = [
     '/issues/new',            // legacy redirect → /tasks/new
     '/onboarding',            // forced flow — back would skip a required step
     '/policies/new',          // redirect shim → /policies?create=1
+    '/policies/templates',    // redirect shim → /policies?create=1&template=1
     '/reports/soa/print',     // print view, chrome-less by design
     '/risks/new',             // redirect shim → /risks?create=1
     '/tasks/dashboard',       // redirect shim → /tasks (dashboard merged into list, TP-7)

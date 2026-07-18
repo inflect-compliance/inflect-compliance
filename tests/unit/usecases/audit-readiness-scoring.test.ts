@@ -48,7 +48,6 @@ import {
     exportControlGapsCsv,
     ISO_WEIGHTS,
     NIS2_WEIGHTS,
-    NIS2_KEY_POLICIES,
 } from '@/app-layer/usecases/audit-readiness-scoring';
 import { runInTenantContext } from '@/lib/db-context';
 import { logEvent } from '@/app-layer/events/audit';
@@ -75,16 +74,6 @@ describe('Framework weight invariants', () => {
         expect(Math.abs(sum - 1.0)).toBeLessThan(0.001);
     });
 
-    it('NIS2_KEY_POLICIES uses lowercase substring keywords (case-insensitive matching contract)', () => {
-        // The matcher does `text.toLowerCase().includes(kp.keyword)` so
-        // the keyword itself must be lowercase.
-        for (const kp of NIS2_KEY_POLICIES) {
-            expect(kp.keyword).toBe(kp.keyword.toLowerCase());
-            // Regression: an uppercase keyword would silently fail to
-            // match any policy and the tenant's NIS2 score would drop
-            // by 17% (1/6 keywords).
-        }
-    });
 });
 
 describe('computeReadiness — gate + framework dispatch', () => {
@@ -332,13 +321,10 @@ describe('CSV export — RFC 4180 escaping + audit emit', () => {
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ control: { findMany: jest.fn().mockResolvedValue([]) } } as never),
         );
-        // controlsWithEv (empty)
+        // controlsWithEv (empty) — now also carries the policy-linkage
+        // signal via _count.policyLinks; no separate policies query.
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ control: { findMany: jest.fn().mockResolvedValue([]) } } as never),
-        );
-        // policies lookup
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
-            fn({ policy: { findMany: jest.fn().mockResolvedValue([]) } } as never),
         );
         // open issues
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>

@@ -303,20 +303,15 @@ describe('computeISO27001Readiness — scoring arithmetic & thresholds', () => {
 // NIS2 scoring.
 // ─────────────────────────────────────────────────────────────────
 describe('computeNIS2Readiness — policies, evidence fallback, issues', () => {
-    it('all key policies present + mapped controls with evidence → high score, no policy gaps', async () => {
-        // All 6 keyword matches found (one policy whose text matches
-        // several keywords). policyScore = 100.
-        const policies = [
-            { id: 'p1', title: 'Incident Response and Business Continuity Disaster Recovery', category: 'security' },
-            { id: 'p2', title: 'Supplier Security & Supply Chain Access Control', category: 'vendor' },
-        ];
+    it('every in-scope control has a linked policy + evidence → high score, no policy gaps', async () => {
+        // Linkage-based: the single in-scope control carries a
+        // PolicyControlLink (_count.policyLinks > 0) → policyScore = 100.
         mockDbHolder.db = buildDb({
             cycle: { id: 'c1', frameworkKey: 'NIS2' },
             framework: { id: 'fw-nis2' },
             requirements: [{ id: 'r1', code: 'Art.21', title: 'm' }],
             mappedLinks: [{ requirementId: 'r1', controlId: 'k1' }],
-            controlsWithEvidence: [{ id: 'k1', code: 'C1', name: 'n', evidenceControlLinks: [{ evidenceId: 'e1' }] }],
-            policies,
+            controlsWithEvidence: [{ id: 'k1', code: 'C1', name: 'n', evidenceControlLinks: [{ evidenceId: 'e1' }], _count: { policyLinks: 1 } }],
             openTasks: [],
         });
 
@@ -325,7 +320,7 @@ describe('computeNIS2Readiness — policies, evidence fallback, issues', () => {
         expect(r.breakdown.coverage.score).toBe(100);
         expect(r.breakdown.evidence.score).toBe(100);
         expect(r.breakdown.policies!.score).toBe(100);
-        expect(r.breakdown.policies!.found.length).toBe(r.breakdown.policies!.expected.length);
+        expect(r.breakdown.policies!.withPolicy).toBe(r.breakdown.policies!.total);
         expect(r.gaps.filter((g) => g.type === 'MISSING_POLICY')).toHaveLength(0);
         expect(r.recommendations.some((s) => /readiness is strong/i.test(s))).toBe(true);
     });
@@ -335,8 +330,8 @@ describe('computeNIS2Readiness — policies, evidence fallback, issues', () => {
         // controls (the allControls branch). None have evidence.
         const allControls = [{ id: 'k1' }, { id: 'k2' }];
         const controlsWithEvidence = [
-            { id: 'k1', code: 'C1', name: 'n', evidenceControlLinks: [] },
-            { id: 'k2', code: 'C2', name: 'n', evidenceControlLinks: [] },
+            { id: 'k1', code: 'C1', name: 'n', evidenceControlLinks: [], _count: { policyLinks: 0 } },
+            { id: 'k2', code: 'C2', name: 'n', evidenceControlLinks: [], _count: { policyLinks: 0 } },
         ];
         // 1 requirement, unmapped → coverage 0, 1 UNMAPPED gap.
         const openTasks = Array.from({ length: 4 }, (_, i) => ({
@@ -348,8 +343,7 @@ describe('computeNIS2Readiness — policies, evidence fallback, issues', () => {
             requirements: [{ id: 'r1', code: 'Art.21', title: 'm' }],
             mappedLinks: [],            // → controlIds empty → fallback
             allControls,
-            controlsWithEvidence,
-            policies: [],               // → all 6 MISSING_POLICY gaps
+            controlsWithEvidence,       // neither control has a linked policy
             openTasks,
         });
 
@@ -357,8 +351,9 @@ describe('computeNIS2Readiness — policies, evidence fallback, issues', () => {
         expect(r.breakdown.coverage.score).toBe(0);
         expect(r.breakdown.evidence.score).toBe(0);
         expect(r.breakdown.policies!.score).toBe(0);
-        // 6 NIS2 key policies → 6 MISSING_POLICY gaps.
-        expect(r.gaps.filter((g) => g.type === 'MISSING_POLICY')).toHaveLength(6);
+        // Linkage-based: one MISSING_POLICY gap per in-scope control that
+        // has no linked policy (2 controls → 2 gaps, capped at 10).
+        expect(r.gaps.filter((g) => g.type === 'MISSING_POLICY')).toHaveLength(2);
         expect(r.gaps.filter((g) => g.type === 'UNMAPPED_REQUIREMENT')).toHaveLength(1);
         expect(r.gaps.filter((g) => g.type === 'MISSING_EVIDENCE')).toHaveLength(2);
         // issueScore = max(0,100-40)=60; issues>3 rec fires.
@@ -371,30 +366,27 @@ describe('computeNIS2Readiness — policies, evidence fallback, issues', () => {
         const recs = r.recommendations.join(' | ');
         expect(recs).toMatch(/coverage below 50%/);
         expect(recs).toMatch(/NIS2 requires demonstrable/);
-        expect(recs).toMatch(/Create key NIS2 policies/);
+        expect(recs).toMatch(/Link governing policies to your NIS2 controls/);
         expect(recs).toMatch(/4 open issues/);
     });
 
-    it('partial policies (in [50,100)) → "Complete missing NIS2 policy areas" branch', async () => {
-        // Match exactly 4 of 6 keywords → policyScore round(4/6*100)=67.
-        const policies = [
-            { id: 'p1', title: 'Incident Response', category: '' },
-            { id: 'p2', title: 'Business Continuity', category: '' },
-            { id: 'p3', title: 'Disaster Recovery', category: '' },
-            { id: 'p4', title: 'Supplier Management', category: '' },
-        ];
+    it('partial policy linkage (in [50,100)) → "attach policies to remaining controls" branch', async () => {
+        // 2 of 3 in-scope controls have a linked policy → round(2/3*100)=67.
         mockDbHolder.db = buildDb({
             cycle: { id: 'c1', frameworkKey: 'NIS2' },
             framework: { id: 'fw-nis2' },
             requirements: [],
             mappedLinks: [{ requirementId: 'r1', controlId: 'k1' }],
-            controlsWithEvidence: [{ id: 'k1', code: 'C1', name: 'n', evidenceControlLinks: [{ evidenceId: 'e' }] }],
-            policies,
+            controlsWithEvidence: [
+                { id: 'k1', code: 'C1', name: 'n', evidenceControlLinks: [{ evidenceId: 'e' }], _count: { policyLinks: 1 } },
+                { id: 'k2', code: 'C2', name: 'n', evidenceControlLinks: [{ evidenceId: 'e' }], _count: { policyLinks: 2 } },
+                { id: 'k3', code: 'C3', name: 'n', evidenceControlLinks: [{ evidenceId: 'e' }], _count: { policyLinks: 0 } },
+            ],
             openTasks: [],
         });
         const r = await computeReadiness(ctx, 'c1');
         expect(r.breakdown.policies!.score).toBe(67);
-        expect(r.recommendations.some((s) => /Complete missing NIS2 policy areas/.test(s))).toBe(true);
+        expect(r.recommendations.some((s) => /Attach policies to the remaining unlinked NIS2 controls/.test(s))).toBe(true);
     });
 });
 
