@@ -607,38 +607,25 @@ export default function DonutChart({
                                         onFocus={() => setHoveredKey(seg.label)}
                                         onBlur={() => setHoveredKey(null)}
                                         tabIndex={0}
-                                        role={
-                                            onSegmentClick && seg.href
-                                                ? 'link'
-                                                : undefined
-                                        }
+                                        // Mouse convenience only — clicking the
+                                        // slice navigates. It is deliberately NOT
+                                        // an interactive ARIA role: making an SVG
+                                        // arc a `role="link"` inside the chart's
+                                        // `role="img"` trips axe `nested-interactive`.
+                                        // The keyboard-accessible drill-through is
+                                        // the legend row (`<DonutLegendRow>` → a
+                                        // real <Link>), so this stays a plain
+                                        // clickable image region.
                                         onClick={
                                             onSegmentClick && seg.href
                                                 ? () => onSegmentClick(seg)
-                                                : undefined
-                                        }
-                                        onKeyDown={
-                                            onSegmentClick && seg.href
-                                                ? (e) => {
-                                                      if (
-                                                          e.key === 'Enter' ||
-                                                          e.key === ' '
-                                                      ) {
-                                                          e.preventDefault();
-                                                          onSegmentClick(seg);
-                                                      }
-                                                  }
                                                 : undefined
                                         }
                                         style={{
                                             outline: 'none',
                                             cursor: 'pointer',
                                         }}
-                                        aria-label={
-                                            onSegmentClick && seg.href
-                                                ? `${seg.label}: ${seg.value} — open filtered list`
-                                                : `${seg.label}: ${seg.value}`
-                                        }
+                                        aria-label={`${seg.label}: ${seg.value}`}
                                     >
                                         <title>{`${seg.label}: ${seg.value} (${(segPercent * 100).toFixed(1)}%)`}</title>
                                     </path>

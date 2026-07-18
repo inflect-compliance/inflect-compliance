@@ -21,11 +21,13 @@ describe('DonutChart — clickable slices', () => {
         expect(DONUT).toMatch(/onSegmentClick\?:\s*\(segment: DonutSegment\) => void/);
         expect(DONUT).toMatch(/href\?:\s*string/);
     });
-    it('makes the hit path a keyboard-accessible link when clickable', () => {
+    it('makes the arc mouse-clickable WITHOUT an interactive role (a11y)', () => {
         expect(DONUT).toMatch(/onSegmentClick && seg\.href/);
-        expect(DONUT).toMatch(/role=\{[\s\S]*?'link'/);
-        // Enter/Space activate the slice.
-        expect(DONUT).toMatch(/e\.key === 'Enter' \|\|\s*e\.key === ' '/);
+        expect(DONUT).toMatch(/onSegmentClick\(seg\)/);
+        // The arc must NOT be a role="link" — an interactive role on an SVG
+        // arc inside the chart's role="img" trips axe `nested-interactive`.
+        // The keyboard-accessible drill-through is the legend <Link> row.
+        expect(DONUT).not.toMatch(/role=\{[\s\S]{0,40}'link'/);
     });
 });
 
