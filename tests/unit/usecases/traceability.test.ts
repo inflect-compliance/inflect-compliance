@@ -44,6 +44,13 @@ jest.mock('@/app-layer/repositories/TraceabilityRepository', () => ({
     },
 }));
 
+jest.mock('@/app-layer/repositories/ProcessMapRepository', () => ({
+    ProcessMapRepository: {
+        listMapsByControl: jest.fn().mockResolvedValue([]),
+        listMapsByLinkedEntity: jest.fn().mockResolvedValue([]),
+    },
+}));
+
 jest.mock('@/app-layer/events/audit', () => ({
     logEvent: jest.fn().mockResolvedValue(undefined),
 }));
@@ -176,7 +183,7 @@ describe('mapAssetToRisk — link / update / no-op emit logic', () => {
 });
 
 describe('getControlTraceability — read path', () => {
-    it('does not gate reads by role and fans out both repo queries', async () => {
+    it('does not gate reads by role and fans out the repo queries (incl. process placement)', async () => {
         mockCtrlRisk.listByControl.mockResolvedValueOnce([{ id: 'r1' }] as never);
         mockAssetCtrl.listByControl.mockResolvedValueOnce([{ id: 'a1' }] as never);
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
@@ -184,10 +191,13 @@ describe('getControlTraceability — read path', () => {
         // even a READER can read the traceability graph
         const result = await getControlTraceability(makeRequestContext('READER'), 'c1');
 
+        // Now includes process-map placement (edge + node control links, both
+        // mocked empty here) so "sits on map X" surfaces inline.
         expect(result).toEqual({
             controlId: 'c1',
             risks: [{ id: 'r1' }],
             assets: [{ id: 'a1' }],
+            processMaps: [],
         });
     });
 });
