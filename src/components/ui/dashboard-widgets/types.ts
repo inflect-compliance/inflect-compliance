@@ -14,32 +14,22 @@ import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import type { MiniAreaChartVariant } from '@/components/ui/mini-area-chart';
-import type { ProgressCircleVariant, ProgressCircleSize } from '@/components/ui/progress-circle';
 import type { KpiFormat } from '@/components/ui/KpiCard';
 import type { TrendPolarity } from '@/lib/kpi-trend';
 
 /**
- * The set of visualization shapes the renderer understands. New
- * shapes are added by extending this union AND adding a switch arm
- * + tests; existing call sites are typesafe against the change.
+ * The set of visualization shapes the renderer understands — and,
+ * deliberately, ONLY the shapes the org widget dispatcher actually
+ * produces. The `gauge` / `sparkline` / `line` / `bar` arms that once
+ * lived here were unreachable (no dispatcher path emitted them), so
+ * they were removed to keep this union honest. Add a new shape only
+ * alongside a dispatcher path + picker option that emits it.
  *
- *   - `kpi`        single number with label / sparkline / delta
- *   - `donut`      percent-share donut
- *   - `gauge`      single-percentage progress ring (real-estate)
- *   - `sparkline`  compact area chart, no axes / hover
- *   - `line`       time-series line (rendered as area-no-fill at
- *                  the platform layer; visx Areas without strong fill)
- *   - `area`       time-series filled area
- *   - `bar`        time-series bars
+ *   - `kpi`    single number with label / sparkline / delta
+ *   - `donut`  percent-share donut
+ *   - `area`   time-series filled area (optionally with a target line)
  */
-export type ChartType =
-    | 'kpi'
-    | 'donut'
-    | 'gauge'
-    | 'sparkline'
-    | 'line'
-    | 'area'
-    | 'bar';
+export type ChartType = 'kpi' | 'donut' | 'area';
 
 /**
  * Render lifecycle envelope. Mirrors the chart-platform's
@@ -106,20 +96,6 @@ export interface DonutConfig {
     size?: number;
 }
 
-export interface GaugeConfig {
-    /** Fractional progress in [0, 1]; clamped at the renderer. */
-    progress: number;
-    label?: ReactNode;
-    variant?: ProgressCircleVariant;
-    size?: ProgressCircleSize;
-}
-
-export interface SparklineConfig {
-    points: ReadonlyArray<{ date: Date; value: number }>;
-    variant?: MiniAreaChartVariant;
-    ariaLabel?: string;
-}
-
 export interface TimeSeriesConfig {
     points: ReadonlyArray<{ date: Date; value: number }>;
     /** Stable id for the series; defaults to "series". */
@@ -159,35 +135,12 @@ interface DonutPayload extends BaseRenderProps {
     config: DonutConfig;
 }
 
-interface GaugePayload extends BaseRenderProps {
-    chartType: 'gauge';
-    config: GaugeConfig;
-}
-
-interface SparklinePayload extends BaseRenderProps {
-    chartType: 'sparkline';
-    config: SparklineConfig;
-}
-
 interface TimeSeriesPayload extends BaseRenderProps {
-    chartType: 'line' | 'area' | 'bar';
+    chartType: 'area';
     config: TimeSeriesConfig;
 }
 
 export type ChartRendererProps =
     | KpiPayload
     | DonutPayload
-    | GaugePayload
-    | SparklinePayload
     | TimeSeriesPayload;
-
-/**
- * Type guard — narrows a `ChartType` to the time-series subset
- * (`line` / `area` / `bar`) for the renderer's switch arm. Lets the
- * dispatcher reuse one branch for all three.
- */
-export function isTimeSeriesChartType(
-    type: ChartType,
-): type is 'line' | 'area' | 'bar' {
-    return type === 'line' || type === 'area' || type === 'bar';
-}

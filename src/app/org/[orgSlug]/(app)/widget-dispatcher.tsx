@@ -38,7 +38,6 @@ import type {
 
 import {
     DrillDownCtas,
-    TenantCoverageCards,
     TenantCoverageList,
 } from './dashboard-sections';
 
@@ -119,6 +118,42 @@ const KPI_ICONS = {
     tenants: Building2,
 } as const;
 
+// Per-KPI accessor into the portfolio trend series, so a KPI tile can
+// show its prior-period value (▲/▼ arrow) + an inline sparkline. The
+// `tenants` KPI has no per-period baseline in the trend snapshot, so it
+// is intentionally absent — its arrow simply doesn't render.
+import type { PortfolioTrendDataPoint } from '@/app-layer/schemas/portfolio';
+import type { MiniAreaChartVariant } from '@/components/ui/mini-area-chart';
+
+const KPI_TREND_ACCESSOR: Record<
+    string,
+    { pick: (p: PortfolioTrendDataPoint) => number; variant: MiniAreaChartVariant }
+> = {
+    coverage: { pick: (p) => p.controlCoveragePercent, variant: 'success' },
+    'critical-risks': { pick: (p) => p.risksCritical, variant: 'error' },
+    'overdue-evidence': { pick: (p) => p.evidenceOverdue, variant: 'warning' },
+};
+
+/**
+ * Resolve the KPI's inline trend from the portfolio trend series:
+ * a `{date,value}[]` sparkline + the previous-period value that drives
+ * `KpiCard`'s ▲/▼ arrow. Returns empty fields for KPIs with no series.
+ */
+function resolveKpiTrend(
+    chartType: string,
+    dataPoints: ReadonlyArray<PortfolioTrendDataPoint>,
+): { sparkline?: ReadonlyArray<{ date: Date; value: number }>; sparklineVariant?: MiniAreaChartVariant; previousValue?: number } {
+    const accessor = KPI_TREND_ACCESSOR[chartType];
+    if (!accessor || dataPoints.length === 0) return {};
+    const sparkline = dataPoints.map((p) => ({
+        date: new Date(p.date),
+        value: accessor.pick(p),
+    }));
+    const previousValue =
+        sparkline.length >= 2 ? sparkline[sparkline.length - 2].value : undefined;
+    return { sparkline, sparklineVariant: accessor.variant, previousValue };
+}
+
 function resolveKpiContent(
     t: OrgTranslate,
     widget: OrgDashboardWidgetDto,
@@ -129,6 +164,9 @@ function resolveKpiContent(
     const gradient = (cfg.gradient as string | undefined)
         ?? KPI_GRADIENTS[widget.chartType]
         ?? 'from-brand-default to-brand-muted';
+    // Prior-period value + sparkline from the portfolio trend series so
+    // the ▲/▼ arrow + inline sparkline actually render.
+    const trend = resolveKpiTrend(widget.chartType, data.trends.dataPoints);
 
     switch (widget.chartType) {
         case 'coverage':
@@ -144,6 +182,8 @@ function resolveKpiContent(
                         implemented: data.summary.controls.implemented.toLocaleString(),
                         applicable: data.summary.controls.applicable.toLocaleString(),
                     }),
+                    trendPolarity: 'up-good',
+                    ...trend,
                 },
             };
         case 'critical-risks':
@@ -160,6 +200,7 @@ function resolveKpiContent(
                         high: data.summary.risks.high.toLocaleString(),
                     }),
                     trendPolarity: 'down-good',
+                    ...trend,
                 },
             };
         case 'overdue-evidence':
@@ -175,6 +216,7 @@ function resolveKpiContent(
                         dueSoon: data.summary.evidence.dueSoon7d.toLocaleString(),
                     }),
                     trendPolarity: 'down-good',
+                    ...trend,
                 },
             };
         case 'tenants':
@@ -190,6 +232,7 @@ function resolveKpiContent(
                         snapshotted: data.summary.tenants.snapshotted.toLocaleString(),
                     }),
                     trendPolarity: 'neutral',
+                    ...trend,
                 },
             };
     }
@@ -254,6 +297,10 @@ function resolveTrendContent(
     widget: OrgDashboardWidgetDto,
     data: PortfolioData,
 ): ChartRendererProps {
+    const cfg = widget.config as {
+        colorClassName?: string;
+        target?: { value: number; label?: string; polarity?: 'above-good' | 'below-good' };
+    };
     const points = data.trends.dataPoints.map((p) => {
         let value = 0;
         switch (widget.chartType) {
@@ -281,8 +328,13 @@ function resolveTrendContent(
         config: {
             points,
             seriesId: widget.chartType,
-            seriesColorClassName: colorMap[widget.chartType] ?? 'text-brand-default',
+            seriesColorClassName:
+                cfg.colorClassName ?? colorMap[widget.chartType] ?? 'text-brand-default',
             seriesLabel: localizedWidgetTitle(t, widget),
+            // Epic 41 prompt 5 — forward the optional target line so
+            // <TargetLine> actually renders (schema + renderer + component
+            // all supported it; only this forward was missing).
+            target: cfg.target,
         },
     };
 }
@@ -389,24 +441,15 @@ export function DispatchedWidget({
             const cfg = widget.config as {
                 sortBy?: 'rag' | 'name' | 'coverage';
                 limit?: number;
-                display?: 'list' | 'cards';
             };
             title = widget.title ?? t('widgets.coverageByTenant');
             body = (
                 <div className="overflow-y-auto h-full -mx-2 px-2">
-                    {cfg.display === 'cards' ? (
-                        <TenantCoverageCards
-                            rows={data.tenantHealth}
-                            sortBy={cfg.sortBy}
-                            limit={cfg.limit}
-                        />
-                    ) : (
-                        <TenantCoverageList
-                            rows={data.tenantHealth}
-                            sortBy={cfg.sortBy}
-                            limit={cfg.limit}
-                        />
-                    )}
+                    <TenantCoverageList
+                        rows={data.tenantHealth}
+                        sortBy={cfg.sortBy}
+                        limit={cfg.limit}
+                    />
                 </div>
             );
             break;

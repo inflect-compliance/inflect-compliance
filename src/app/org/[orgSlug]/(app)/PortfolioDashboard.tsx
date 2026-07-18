@@ -29,7 +29,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Building2, Pencil, Plus, RotateCcw, Trash2, X } from 'lucide-react';
+import { Building2, Pencil, Plus, RotateCcw, Settings2, Trash2, X } from 'lucide-react';
 
 import {
     DashboardGrid,
@@ -44,6 +44,7 @@ import { formatDateTimeLong, formatRelativeTime } from '@/lib/format-date';
 import type {
     CreateOrgDashboardWidgetInput,
     OrgDashboardWidgetDto,
+    UpdateOrgDashboardWidgetInput,
 } from '@/app-layer/schemas/org-dashboard-widget.schemas';
 
 import { DispatchedWidget, type PortfolioData } from './widget-dispatcher';
@@ -71,7 +72,7 @@ export interface PortfolioDashboardProps {
 async function patchWidget(
     orgSlug: string,
     id: string,
-    body: { position?: { x: number; y: number }; size?: { w: number; h: number } },
+    body: UpdateOrgDashboardWidgetInput,
 ): Promise<OrgDashboardWidgetDto> {
     const res = await fetch(
         `/api/org/${orgSlug}/dashboard/widgets/${id}`,
@@ -164,6 +165,9 @@ export function PortfolioDashboard({
     );
     const [editMode, setEditMode] = useState(false);
     const [pickerOpen, setPickerOpen] = useState(false);
+    // The widget currently being reconfigured (edit mode), or null when
+    // the picker is in add mode.
+    const [editWidget, setEditWidget] = useState<OrgDashboardWidgetDto | null>(null);
     const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -207,6 +211,18 @@ export function PortfolioDashboard({
             const created = await postWidget(data.orgSlug, input);
             setWidgets((prev) => [...prev, created]);
             return created;
+        },
+        [data.orgSlug],
+    );
+
+    // ── Reconfigure (edit) an existing widget ──
+    // PATCHes title/chartType/config and reflects the response in local
+    // state so the tile re-renders with the new config without a reload.
+    const handleUpdate = useCallback(
+        async (id: string, patch: UpdateOrgDashboardWidgetInput) => {
+            const updated = await patchWidget(data.orgSlug, id, patch);
+            setWidgets((prev) => prev.map((w) => (w.id === id ? updated : w)));
+            return updated;
         },
         [data.orgSlug],
     );
@@ -307,7 +323,10 @@ export function PortfolioDashboard({
                         type="button"
                         variant="secondary"
                         size="sm"
-                        onClick={() => setPickerOpen(true)}
+                        onClick={() => {
+                            setEditWidget(null);
+                            setPickerOpen(true);
+                        }}
                         data-testid="dashboard-add-widget"
                     >
                         <Plus className="size-3.5" aria-hidden="true" />
@@ -415,18 +434,33 @@ export function PortfolioDashboard({
                             data={data}
                             actionsSlot={
                                 editMode ? (
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            void handleDelete(w.id);
-                                        }}
-                                        disabled={busy}
-                                        aria-label={t('dashboard.deleteWidgetAria', { name: w.title ?? w.chartType })}
-                                        data-testid={`dashboard-delete-widget-${w.id}`}
-                                        className="text-content-subtle hover:text-content-error transition-colors p-1 rounded"
-                                    >
-                                        <Trash2 className="size-3.5" aria-hidden="true" />
-                                    </button>
+                                    <div className="flex items-center gap-tight">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setEditWidget(w);
+                                                setPickerOpen(true);
+                                            }}
+                                            disabled={busy}
+                                            aria-label={t('dashboard.editWidgetAria', { name: w.title ?? w.chartType })}
+                                            data-testid={`dashboard-edit-widget-${w.id}`}
+                                            className="text-content-subtle hover:text-content-emphasis transition-colors p-1 rounded"
+                                        >
+                                            <Settings2 className="size-3.5" aria-hidden="true" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                void handleDelete(w.id);
+                                            }}
+                                            disabled={busy}
+                                            aria-label={t('dashboard.deleteWidgetAria', { name: w.title ?? w.chartType })}
+                                            data-testid={`dashboard-delete-widget-${w.id}`}
+                                            className="text-content-subtle hover:text-content-error transition-colors p-1 rounded"
+                                        >
+                                            <Trash2 className="size-3.5" aria-hidden="true" />
+                                        </button>
+                                    </div>
                                 ) : null
                             }
                         />
@@ -434,11 +468,16 @@ export function PortfolioDashboard({
                 />
             )}
 
-            {/* Picker modal */}
+            {/* Picker modal — add (editWidget null) or reconfigure. */}
             <WidgetPicker
                 open={pickerOpen}
-                onOpenChange={setPickerOpen}
+                onOpenChange={(next) => {
+                    setPickerOpen(next);
+                    if (!next) setEditWidget(null);
+                }}
                 onSubmit={handleCreate}
+                onUpdate={handleUpdate}
+                editWidget={editWidget}
             />
 
             {/* Reset-to-preset confirmation — destructive: the current

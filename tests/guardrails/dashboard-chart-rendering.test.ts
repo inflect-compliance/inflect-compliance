@@ -80,8 +80,14 @@ describe('GUARDRAIL: org dashboard chart rendering reliability', () => {
     });
 
     describe('ChartRenderer — engine-rendered dashboard widgets', () => {
-        it('wraps charts in a guaranteed-min-height container', () => {
-            expect(RENDERER).toMatch(/min-h-\[\d+px\]/);
+        it('delegates the collapsible (time-series) chart to the hardened TimeSeriesChart', () => {
+            // The only renderer arm that can collapse to 0-height is the
+            // ParentSize-measured time-series (`area`). It renders through
+            // `<TimeSeriesChart>`, whose `<ChartFrame>` owns the non-zero
+            // min-height floor asserted above. (The old orphaned
+            // `ChartContentSurface` min-h-[160px] wrapper was never on the
+            // render path and has been removed.)
+            expect(RENDERER).toMatch(/<TimeSeriesChart/);
         });
     });
 });

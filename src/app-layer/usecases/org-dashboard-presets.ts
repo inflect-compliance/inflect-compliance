@@ -1,6 +1,12 @@
 /**
  * Epic 41 — Configurable Dashboard Widget Engine — default preset.
  *
+ * NOTE ON "preset": this is intentionally scope-limited to ONE canonical
+ * default layout + a reset-to-that-default action. It is deliberately
+ * NOT a multi-preset save/apply engine (there is no "save my layout as
+ * a named preset" / "apply preset X" surface). Read "preset" throughout
+ * this module as "the single recommended default composition".
+ *
  * Mirrors the prior hardcoded composition of the org-level dashboard
  * at `/org/[orgSlug]` (page.tsx, sections rendered before this epic
  * landed):

@@ -8,9 +8,8 @@
  *
  * Exports:
  *
- *   - `<ChartRenderer>`     — typed dispatcher for the seven supported
- *                             chart shapes (kpi / donut / gauge /
- *                             sparkline / line / area / bar).
+ *   - `<ChartRenderer>`     — typed dispatcher for the supported
+ *                             chart shapes (kpi / donut / area).
  *   - `<DashboardWidget>`   — generic widget shell (header, actions,
  *                             resize handle, content slot).
  *   - Types                 — `ChartType`, `ChartRenderState`,
@@ -18,7 +17,7 @@
  *                             `DashboardWidgetProps`.
  */
 
-export { ChartRenderer, ChartContentSurface } from './ChartRenderer';
+export { ChartRenderer } from './ChartRenderer';
 export type { ChartRendererProps } from './ChartRenderer';
 export {
     DashboardWidget,
@@ -40,10 +39,7 @@ export type {
     KpiConfig,
     DonutConfig,
     DonutSegmentInput,
-    GaugeConfig,
-    SparklineConfig,
     TimeSeriesConfig,
     ChartTargetConfig,
 } from './types';
-export { isTimeSeriesChartType } from './types';
 export { TargetLine, type TargetLineProps } from './TargetLine';

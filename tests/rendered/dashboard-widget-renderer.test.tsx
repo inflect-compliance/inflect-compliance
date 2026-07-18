@@ -2,8 +2,8 @@
  * Epic 41 — `<ChartRenderer>` + `<DashboardWidget>` rendered tests.
  *
  * Coverage:
- *   - per-shape happy path (kpi / donut / gauge / sparkline / line /
- *     area / bar) renders the right primitive
+ *   - per-shape happy path (kpi / donut / area) renders the right
+ *     primitive
  *   - lifecycle states (loading / empty / error) replace the body
  *   - malformed config falls back to the empty state without throwing
  *   - DashboardWidget header / actions / resize-handle visibility
@@ -86,72 +86,20 @@ describe('Epic 41 — ChartRenderer per shape', () => {
         expect(empty).not.toBeNull();
     });
 
-    it('gauge shape renders a progressbar role with the correct value', () => {
-        render(
-            <ChartRenderer
-                chartType="gauge"
-                config={{ progress: 0.62, label: '62%', variant: 'success' }}
-                aria-label="Coverage gauge"
-            />,
-        );
-        const bar = screen.getByRole('progressbar');
-        expect(bar).toBeInTheDocument();
-        expect(screen.getByText('62%')).toBeInTheDocument();
-    });
-
-    it('gauge with NaN progress falls back to empty state', () => {
-        render(
-            <ChartRenderer
-                chartType="gauge"
-                config={{ progress: Number.NaN }}
-            />,
-        );
-        const empty = document.querySelector('[data-chart-empty]');
-        expect(empty).not.toBeNull();
-    });
-
-    it('sparkline shape renders the MiniAreaChart container without throwing', () => {
+    it('area shape renders a TimeSeriesChart-style ParentSize wrapper', () => {
         const points = [
-            { date: new Date('2026-04-01'), value: 70 },
-            { date: new Date('2026-04-02'), value: 72 },
-            { date: new Date('2026-04-03'), value: 75 },
+            { date: new Date('2026-04-01'), value: 1 },
+            { date: new Date('2026-04-02'), value: 2 },
         ];
         const { container } = render(
-            <ChartRenderer
-                chartType="sparkline"
-                config={{
-                    points,
-                    variant: 'success',
-                    ariaLabel: 'Coverage trend',
-                }}
-            />,
+            <ChartRenderer chartType="area" config={{ points }} />,
         );
-        // MiniAreaChart wraps in ParentSize. Under jsdom, ParentSize
-        // measures 0×0 so the inner SVG short-circuits — the wrapper
-        // div still renders. Confirm we mounted without throwing.
+        // jsdom reports 0×0 for ParentSize → the platform
+        // short-circuits to null. The wrapper still emits a
+        // non-empty container, so we verify it rendered without
+        // throwing.
         expect(container.firstChild).not.toBeNull();
     });
-
-    it.each(['line', 'area', 'bar'] as const)(
-        '%s shape renders a TimeSeriesChart-style ParentSize wrapper',
-        (chartType) => {
-            const points = [
-                { date: new Date('2026-04-01'), value: 1 },
-                { date: new Date('2026-04-02'), value: 2 },
-            ];
-            const { container } = render(
-                <ChartRenderer
-                    chartType={chartType}
-                    config={{ points }}
-                />,
-            );
-            // jsdom reports 0×0 for ParentSize → the platform
-            // short-circuits to null. The wrapper still emits a
-            // non-empty container, so we verify it rendered without
-            // throwing.
-            expect(container.firstChild).not.toBeNull();
-        },
-    );
 });
 
 // ─── ChartRenderer — lifecycle states ──────────────────────────────
@@ -339,7 +287,7 @@ describe('Epic 41 — renderer ↔ wrapper coupling', () => {
     it('renderer + wrapper compose without leaking layout boundaries', () => {
         // The wrapper sets `flex flex-col` + `min-h-0` on the body
         // so the chart's ParentSize can measure correctly. Render
-        // a sparkline inside the wrapper and confirm no error.
+        // an area chart inside the wrapper and confirm no error.
         const points = Array.from({ length: 5 }, (_, i) => ({
             date: new Date(2026, 3, i + 1),
             value: 60 + i * 2,
@@ -347,8 +295,8 @@ describe('Epic 41 — renderer ↔ wrapper coupling', () => {
         const { container } = render(
             <DashboardWidget title="Trend">
                 <ChartRenderer
-                    chartType="sparkline"
-                    config={{ points, variant: 'brand' }}
+                    chartType="area"
+                    config={{ points, seriesId: 'coverage' }}
                     aria-label="Coverage trend"
                 />
             </DashboardWidget>,
