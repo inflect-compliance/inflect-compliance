@@ -29,8 +29,8 @@ const FAIR_FIELDS = [
     'secondaryLossEventFrequency', 'secondaryLossMagnitude',
 ] as const;
 interface Comparison {
-    baseline: { portfolioAle: { mean: number; p95: number; p99: number } };
-    scenario: { portfolioAle: { mean: number; p95: number; p99: number } };
+    baseline: { portfolioAle: { mean: number; p95: number; p99: number }; correlationsDropped?: boolean };
+    scenario: { portfolioAle: { mean: number; p95: number; p99: number }; correlationsDropped?: boolean };
     delta: { meanAleDelta: number; varP95Delta: number; varP99Delta: number; roi: number | null };
     perRiskDeltas: Array<{ riskId: string; title: string; baselineAle: number; scenarioAle: number; deltaPercent: number }>;
 }
@@ -191,6 +191,19 @@ export default function RiskScenariosPage() {
             {cmp && (
                 <Card className="space-y-default p-6" data-testid="scenario-comparison">
                     <Heading level={2}>{t('scenarios.baselineVsScenario')}</Heading>
+                    {/* Match the dashboard MonteCarloPanel's honesty: if either
+                        sim dropped its correlation matrix (Cholesky failed →
+                        independent sampling), the VaR figures understate tail
+                        co-movement — tell the operator. */}
+                    {(cmp.baseline.correlationsDropped || cmp.scenario.correlationsDropped) && (
+                        <div
+                            className="rounded-md border border-border-warning bg-bg-warning/15 p-3 text-sm text-content-warning"
+                            role="alert"
+                            data-testid="scenario-correlations-dropped"
+                        >
+                            {t('scenarios.correlationsDropped')}
+                        </div>
+                    )}
                     <table className="w-full text-sm">
                         <thead><tr className="text-content-muted"><th className="text-left">{t('scenarios.colMetric')}</th><th className="text-right">{t('scenarios.colBaseline')}</th><th className="text-right">{t('scenarios.colScenario')}</th><th className="text-right">{t('scenarios.colDelta')}</th></tr></thead>
                         <tbody className="tabular-nums">

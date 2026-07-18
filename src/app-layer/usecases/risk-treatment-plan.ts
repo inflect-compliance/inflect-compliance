@@ -14,18 +14,17 @@
  *   • getOverduePlans     — read path used by the dashboard + the
  *                            eventual overdue-monitor job
  *
- * Risk-status mapping at plan completion:
- *   MITIGATE → CLOSED   (mitigation finished — risk is no longer open)
- *   ACCEPT   → ACCEPTED (formal risk acceptance)
- *   TRANSFER → CLOSED   (risk transferred to a third party)
- *   AVOID    → CLOSED   (risk eliminated by abandoning the activity)
+ * Risk-status mapping at plan completion
+ * (see `riskStatusForCompletedStrategy`):
+ *   MITIGATE → MITIGATED (mitigation finished — its own terminal bucket)
+ *   ACCEPT   → ACCEPTED  (formal risk acceptance)
+ *   TRANSFER → CLOSED    (risk transferred to a third party)
+ *   AVOID    → CLOSED    (risk eliminated by abandoning the activity)
  *
- * The brief calls out a `MITIGATED` target state. The existing
- * RiskStatus enum is `OPEN | MITIGATING | ACCEPTED | CLOSED`, so we
- * map the MITIGATE-completion semantically to `CLOSED` (the risk is
- * no longer an active issue). Adding a distinct `MITIGATED` value is
- * a bounded follow-up that would also need dashboard / list-page
- * updates to acknowledge the new bucket.
+ * The `RiskStatus` enum now includes a distinct `MITIGATED` value
+ * (Audit Coherence S1, 2026-05-22), so a completed MITIGATE plan maps
+ * there — NOT to CLOSED — and the dashboard / list pages carry the
+ * bucket. The earlier MITIGATE→CLOSED behaviour is retired.
  *
  * Audit emission — every transition emits a hash-chained AuditLog
  * row. Categories: `entity_lifecycle` for create/add, `status_change`

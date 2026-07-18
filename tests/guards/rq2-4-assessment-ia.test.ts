@@ -66,8 +66,9 @@ describe('RQ2-4 — risk detail IA', () => {
 
     test('the panel speaks the tenant matrix language', () => {
         // Levels are labelled from RiskMatrixConfig, bands resolved
-        // via the canonical resolver — not hardcoded vocab.
-        expect(panel).toMatch(/risk-matrix-config/);
+        // via the canonical resolver — not hardcoded vocab. The config
+        // is supplied by the parent as a prop (no independent re-fetch).
+        expect(panel).toMatch(/matrixConfig: RiskMatrixConfigShape/);
         expect(panel).toMatch(/levelLabels/);
         expect(panel).toMatch(/resolveBandForScore/);
     });

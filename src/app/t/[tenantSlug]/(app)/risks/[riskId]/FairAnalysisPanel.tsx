@@ -17,6 +17,17 @@
  * mirror the likely value and call out wide spreads; warnings
  * (`validateFairTriples` + `validatePertTriple`) stay warn-only —
  * they NEVER disable the save button.
+ *
+ * SCOPE — BIA fields stay out of this panel (decision, 2026-07-18).
+ * The Risk model does carry BIA-style attributes (`rtoHours`,
+ * `rpoHours`, `revenueAtRisk`, consumed by the report assembler), but
+ * Business Impact Analysis is a distinct discipline with its own
+ * canonical workflow under `audits/business-continuity` (the BIA
+ * usecase, recovery-priority service, and BIA UI). FAIR quantifies
+ * expected loss distribution; BIA quantifies recovery objectives.
+ * Surfacing RTO/RPO here would duplicate that module and blur the two
+ * analyses — so we defer to the dedicated BIA module and do not add
+ * BIA inputs to this panel.
  */
 import { useState, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
