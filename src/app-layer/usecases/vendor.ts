@@ -106,16 +106,15 @@ export async function updateVendor(ctx: RequestContext, vendorId: string, patch:
         if (patch.status) {
             // Activation gate applies on the edit path too — a vendor must not
             // be flipped to ACTIVE via the edit form without a completed
-            // assessment review (same rule as updateVendorStatusWithGate).
+            // assessment review. Routes through the single gate implementation
+            // (assertVendorActivationAllowed).
             const current = await db.vendor.findFirst({
                 where: { id: vendorId, tenantId: ctx.tenantId },
                 include: { assessments: { orderBy: { createdAt: 'desc' }, take: 1 } },
             });
             if (!current) throw notFound('Vendor not found');
             previousStatus = current.status;
-            if (patch.status === 'ACTIVE' && current.status !== 'ACTIVE' && !isActivationEligible(current.assessments[0])) {
-                throw badRequest(ACTIVATION_GATE_MESSAGE);
-            }
+            assertVendorActivationAllowed(patch.status as string, current.status, current.assessments[0]);
         }
         const vendor = await VendorRepository.update(db, ctx, vendorId, sanitisedPatch);
         if (!vendor) throw notFound('Vendor not found');
@@ -533,37 +532,22 @@ function isActivationEligible(
 const ACTIVATION_GATE_MESSAGE =
     'Cannot activate vendor without a completed assessment review. Send an assessment and complete its review (REVIEWED/CLOSED) first.';
 
-export async function updateVendorStatusWithGate(ctx: RequestContext, vendorId: string, newStatus: string) {
-    assertCanManageVendors(ctx);
-    const result = await runInTenantContext(ctx, async (db) => {
-        const vendor = await db.vendor.findFirst({
-            where: { id: vendorId, tenantId: ctx.tenantId },
-            include: { assessments: { orderBy: { createdAt: 'desc' }, take: 1 } },
-        });
-        if (!vendor) throw notFound('Vendor not found');
-
-        // Gate: cannot go ACTIVE without a completed assessment review.
-        if (newStatus === 'ACTIVE' && vendor.status !== 'ACTIVE') {
-            if (!isActivationEligible(vendor.assessments[0])) {
-                throw badRequest(ACTIVATION_GATE_MESSAGE);
-            }
-        }
-
-        const updated = await db.vendor.update({ where: { id: vendorId }, data: { status: newStatus as VendorStatus } });
-
-        await logEvent(db, ctx, {
-            action: 'VENDOR_STATUS_CHANGED',
-            entityType: 'Vendor',
-            entityId: vendorId,
-            details: `Vendor status changed from ${vendor.status} to ${newStatus}`,
-            detailsJson: { category: 'status_change', entityName: 'Vendor', fromStatus: vendor.status, toStatus: newStatus },
-            metadata: { from: vendor.status, to: newStatus },
-        });
-
-        return updated;
-    });
-    await bumpEntityCacheVersion(ctx, 'vendor');
-    return result;
+/**
+ * PR-T — the ONE activation-gate implementation. Throws when a vendor would be
+ * flipped to ACTIVE without a completed assessment review. Every throwing gate
+ * site (the edit path `updateVendor`) routes through this; `bulkSetVendorStatus`
+ * uses the shared `isActivationEligible` predicate directly because it collects +
+ * reports blocked vendors instead of throwing. The dead standalone
+ * `updateVendorStatusWithGate` (which duplicated this check) was removed.
+ */
+function assertVendorActivationAllowed(
+    newStatus: string,
+    currentStatus: string,
+    latest: { status: string; riskRating: string | null } | undefined | null,
+): void {
+    if (newStatus === 'ACTIVE' && currentStatus !== 'ACTIVE' && !isActivationEligible(latest)) {
+        throw badRequest(ACTIVATION_GATE_MESSAGE);
+    }
 }
 
 // ─── Bulk actions (canonical BulkActionBar rollout) ───

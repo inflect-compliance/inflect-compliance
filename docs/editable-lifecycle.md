@@ -22,8 +22,7 @@ src/app-layer/
 │   └── editable-lifecycle.types.ts       # Core types (EditableState, PublishedSnapshot)
 ├── services/
 │   ├── editable-lifecycle.ts             # Pure state machine (no side effects)
-│   ├── policy-lifecycle-adapter.ts       # Policy domain adapter
-│   └── vendor-assessment-lifecycle-adapter.ts  # VendorAssessment domain adapter
+│   └── policy-lifecycle-adapter.ts       # Policy domain adapter
 ├── usecases/
 │   └── editable-lifecycle-usecase.ts     # Auditable, persistence-aware workflow
 └── policies/
@@ -65,7 +64,6 @@ interface EditableState<TPayload> {
 Each domain defines its own payload type:
 
 - **Policy**: `{ contentType, contentText, externalUrl, changeSummary }`
-- **VendorAssessment**: `{ templateKey, answers[], score, riskRating, notes }`
 
 ### Version Rules
 
@@ -87,7 +85,9 @@ Version and history are persisted using two dedicated schema columns:
 | `lifecycleVersion` | `Int @default(1)` | `editing_version` | Version counter, incremented only on publish |
 | `lifecycleHistoryJson` | `Json?` | `editing_history` | Array of `PublishedSnapshot` entries |
 
-These columns exist on both `Policy` and `VendorAssessment` models.
+These columns exist on the `Policy` model. (They also remain on
+`VendorAssessment` from when it used this framework; that adapter has since been
+retired — see below.)
 
 **Backward compatibility**: Adapters prefer persisted columns when present,
 falling back to legacy behavior for pre-migration data:
@@ -203,16 +203,16 @@ export async function getPolicy(ctx: RequestContext, policyId: string) {
 | **Schema change** | None — maps to existing Policy + PolicyVersion Prisma models |
 | **Audit prefix** | `POLICY_*` |
 
-### VendorAssessment
+### VendorAssessment (retired from this framework)
 
-| Aspect | Detail |
-|---|---|
-| **Adapter** | `vendor-assessment-lifecycle-adapter.ts` |
-| **Payload** | `VendorAssessmentPayload { templateKey, answers[], score, riskRating, notes }` |
-| **Phase mapping** | DRAFT/IN_REVIEW/REJECTED → DRAFT, APPROVED → PUBLISHED |
-| **Validation** | Must have at least one answered question |
-| **Schema change** | None — maps to existing VendorAssessment + VendorAssessmentAnswer models |
-| **Audit prefix** | `ASSESSMENT_*` |
+VendorAssessment no longer uses the generic editable lifecycle. The
+`vendor-assessment-lifecycle-adapter.ts` and its World-A phase mapping
+(DRAFT/IN_REVIEW/APPROVED/REJECTED) were removed — VendorAssessment now runs on
+its own dedicated **Epic G-3 lifecycle** (SENT → IN_PROGRESS → SUBMITTED →
+REVIEWED → CLOSED), sent via `vendor-assessment-send.ts` and reviewed via
+`vendor-assessment-review.ts`. The generic adapter was orphaned (imported only
+by its own tests, built on the retired World-A statuses) and was deleted rather
+than resurrected as a third parallel lifecycle.
 
 ### Deferred Domains
 

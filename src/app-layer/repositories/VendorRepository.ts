@@ -90,6 +90,15 @@ export class VendorRepository {
         if (filters.status) where.status = filters.status as VendorStatus;
         if (filters.criticality) where.criticality = filters.criticality as VendorCriticality;
         if (filters.riskRating) {
+            // PR-T — "EVER rated": matches any historical assessment carrying this
+            // rating. This is deliberately DIFFERENT from the vendor dashboard's
+            // risk-rating buckets, which key off the LATEST assessment's rating
+            // (getVendorMetrics loads `assessments` orderBy createdAt desc take 1).
+            // Prisma relation filters can't express "the latest row has X" without
+            // denormalisation, and the dashboard's metric is intentionally
+            // assessment-derived (not the manually-editable inherentRisk), so the
+            // filter is LABELLED "Ever rated {X}" (see vendors filter-defs i18n)
+            // rather than silently disagreeing with the dashboard bucket.
             where.assessments = { some: { riskRating: filters.riskRating as VendorCriticality } };
         }
         if (filters.q) {

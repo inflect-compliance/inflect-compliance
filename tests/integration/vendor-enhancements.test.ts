@@ -71,9 +71,11 @@ describe('Vendor Enhancements Integration', () => {
             expect(typeof mod.getVendorMetrics).toBe('function');
         });
 
-        it('updateVendorStatusWithGate exists', () => {
+        it('updateVendor exists (the single activation-gate edit path — PR-T)', () => {
             const mod = require('../../src/app-layer/usecases/vendor');
-            expect(typeof mod.updateVendorStatusWithGate).toBe('function');
+            expect(typeof mod.updateVendor).toBe('function');
+            // PR-T — the dead updateVendorStatusWithGate duplicate was removed.
+            expect(mod.updateVendorStatusWithGate).toBeUndefined();
         });
     });
 });
