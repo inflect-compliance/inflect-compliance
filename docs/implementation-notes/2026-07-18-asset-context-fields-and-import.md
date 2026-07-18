@@ -41,15 +41,19 @@ badge (same CVE+scanner rollup + tint the list column shows) and the key
 context fields (rendered only when populated).
 
 ### 4 — Orphan columns resolved
-`Asset.tags` and `Asset.retentionUntil` were both dead — written by no form or
-import path, read by no code. Rather than carry two "retention" concepts (the
-surfaced free-text `retention` note + a hidden `retentionUntil` date) and a
-dead tags column, **both columns are dropped** (migration
-`20260718181100_drop_asset_tags_retention_until`), leaving `retention` as the
-single retention concept. The Deleted view's lifecycle column now shows
-who/when — `deletedAt` formatted + `deletedByUserId` resolved to a display name
-via the shared `useTenantMembers` roster (fetched only while the deleted view
-is open).
+`Asset.tags` was dead — written by no form or import path, read by no code —
+so it is **dropped** (migration `20260718181100_drop_asset_tags`).
+`Asset.retentionUntil`, by contrast, is **load-bearing**: the generic
+data-lifecycle retention sweep (`RETENTION_SWEEP_MODELS` includes `Asset`)
+soft-deletes an asset once it elapses. So rather than drop it, it is **surfaced
+as the structured retention date** — a date picker on the create/edit forms,
+persisted through `createAsset`/`updateAsset` (string → `Date`), displayed on
+the detail page + quick-look — while the free-text `retention` field is
+relabelled the human-readable policy note. Two distinct, clearly-labelled
+concepts instead of one surfaced + one hidden. The Deleted view's lifecycle
+column now shows who/when — `deletedAt` formatted + `deletedByUserId` resolved
+to a display name via the shared `useTenantMembers` roster (fetched only while
+the deleted view is open).
 
 ### 5 — Stale docstring
 `SecurityTestingClient`'s header claimed triage was "a follow-up" though
@@ -77,10 +81,14 @@ surfaced there and inline on the asset detail tab). Corrected.
   second structured picker would duplicate it. Labelling as notes + a caption
   pointing at the real feature resolves the "reads as authoritative linkage"
   problem at a fraction of the cost.
-- **Drop both orphan columns.** Both `tags` and `retentionUntil` are dead with
-  zero code refs; dropping is a smaller, clearer surface than surfacing a form
-  input + filter + persistence for fields nothing used. **Rollback:** re-add the
-  two nullable columns (no data to restore — they never received writes).
+- **Drop `tags`, surface `retentionUntil`.** `tags` is dead with zero code
+  refs → drop. `retentionUntil` LOOKS dead (no UI writes it) but the generic
+  retention sweep reads it, so dropping it broke the sweep — it must be
+  surfaced, not removed. Surfacing it as the structured date (the sweep's input)
+  while keeping `retention` as the note is exactly the prompt's "make
+  retentionUntil the structured date and retention the note". **Rollback:**
+  re-add the `tags` nullable column (no data to restore — it never received
+  writes); `retentionUntil` is unchanged at the DB level.
 - **createManyAndReturn + sequential audit in one tx.** Keeps the batch atomic
   and the hash-chain ordered without a per-row transaction.
 - **Client-side deleter-name resolution.** Reusing `useTenantMembers` avoids a

@@ -99,6 +99,7 @@ interface AssetListRow {
     dependencies: string | null;
     businessProcesses: string | null;
     retention: string | null;
+    retentionUntil: string | null;
 }
 
 interface AssetsClientProps {

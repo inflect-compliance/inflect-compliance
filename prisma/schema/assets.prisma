@@ -43,6 +43,11 @@ model Asset {
   version             String?
   deletedAt           DateTime?
   deletedByUserId     String?
+  /// Structured retention-expiry date — the generic data-lifecycle retention
+  /// sweep (RETENTION_SWEEP_MODELS) soft-deletes an asset once this elapses.
+  /// Surfaced as a date picker on the asset form; the free-text `retention`
+  /// field above is the human-readable policy note, not the machine date.
+  retentionUntil      DateTime?
   ownerUser           User?                @relation("AssetOwner", fields: [ownerUserId], references: [id])
   tenant              Tenant               @relation(fields: [tenantId], references: [id])
   risks               AssetRiskLink[]

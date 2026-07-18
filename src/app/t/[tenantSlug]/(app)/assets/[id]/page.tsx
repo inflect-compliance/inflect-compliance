@@ -69,6 +69,7 @@ export interface AssetDetail {
     dependencies: string | null;
     businessProcesses: string | null;
     retention: string | null;
+    retentionUntil: string | null;
     confidentiality: number | null;
     integrity: number | null;
     availability: number | null;
@@ -361,6 +362,7 @@ export default function AssetDetailPage() {
               dependencies: asset.dependencies || '',
               businessProcesses: asset.businessProcesses || '',
               retention: asset.retention || '',
+              retentionUntil: asset.retentionUntil ? asset.retentionUntil.split('T')[0] : '',
               confidentiality: asset.confidentiality ?? 3,
               integrity: asset.integrity ?? 3,
               availability: asset.availability ?? 3,
@@ -1026,6 +1028,10 @@ export default function AssetDetailPage() {
                                 )}
                             </div>
                             <div><Eyebrow>{t('detail.dataResidency')}</Eyebrow><p className="text-sm">{asset.dataResidency || '—'}</p></div>
+                            {/* Structured retention-expiry date (the machine date the
+                                data-lifecycle sweep acts on) — distinct from the free-text
+                                retention note below. */}
+                            <div><Eyebrow>{t('detail.retentionUntil')}</Eyebrow><p className="text-sm">{asset.retentionUntil ? formatDate(asset.retentionUntil) : '—'}</p></div>
                         </div>
                         {/* Context NOTES — free-text, not structured linkage.
                             `businessProcesses` in particular must not be mistaken

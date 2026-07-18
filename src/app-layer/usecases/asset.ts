@@ -208,6 +208,8 @@ interface CreateAssetInput {
     businessProcesses?: string | null;
     dataResidency?: string | null;
     retention?: string | null;
+    // Structured retention-expiry date (YYYY-MM-DD or ISO) — coerced to a Date.
+    retentionUntil?: string | null;
     // External-system reference (CMDB id, ticket key, …).
     externalRef?: string | null;
     // Product-identity fields — power CVE→asset matching.
@@ -246,6 +248,7 @@ export async function createAsset(ctx: RequestContext, data: CreateAssetInput) {
             businessProcesses: data.businessProcesses,
             dataResidency: data.dataResidency,
             retention: data.retention,
+            retentionUntil: data.retentionUntil ? new Date(data.retentionUntil) : null,
             externalRef: data.externalRef,
             cpe: data.cpe,
             vendor: data.vendor,
@@ -308,6 +311,15 @@ export async function updateAsset(ctx: RequestContext, id: string, data: UpdateA
             businessProcesses: data.businessProcesses,
             dataResidency: data.dataResidency,
             retention: data.retention,
+            // Three-state: undefined → leave unchanged; empty/null → clear;
+            // non-empty string → date. (The edit form always sends the field,
+            // as '' when cleared, so '' must map to null — not `new Date('')`.)
+            retentionUntil:
+                data.retentionUntil === undefined
+                    ? undefined
+                    : data.retentionUntil
+                        ? new Date(data.retentionUntil)
+                        : null,
             externalRef: data.externalRef,
             cpe: data.cpe,
             vendor: data.vendor,

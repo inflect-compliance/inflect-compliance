@@ -35,6 +35,10 @@ export const CreateAssetSchema = z.object({
     businessProcesses: z.string().optional().nullable(),
     dataResidency: z.string().optional().nullable(),
     retention: z.string().optional().nullable(),
+    // Structured retention-expiry date (YYYY-MM-DD or ISO) — the machine date
+    // the data-lifecycle sweep acts on, distinct from the free-text `retention`
+    // policy note above. Coerced to a Date in the usecase.
+    retentionUntil: z.string().optional().nullable(),
     // Product-identity fields — power CVE→asset matching (Asset.cpe/vendor/product/version).
     cpe: z.string().optional().nullable(),
     vendor: z.string().optional().nullable(),
@@ -63,6 +67,8 @@ export const UpdateAssetSchema = z.object({
     businessProcesses: z.string().optional().nullable(),
     dataResidency: z.string().optional().nullable(),
     retention: z.string().optional().nullable(),
+    // Structured retention-expiry date (see CreateAssetSchema).
+    retentionUntil: z.string().optional().nullable(),
     // Product-identity fields — power CVE→asset matching (Asset.cpe/vendor/product/version).
     cpe: z.string().optional().nullable(),
     vendor: z.string().optional().nullable(),

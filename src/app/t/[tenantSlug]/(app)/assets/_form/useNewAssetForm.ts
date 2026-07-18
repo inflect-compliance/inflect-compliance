@@ -61,6 +61,7 @@ const INITIAL: NewAssetFormFields = {
     dependencies: '',
     businessProcesses: '',
     retention: '',
+    retentionUntil: '',
 };
 
 export function useNewAssetForm({
@@ -71,7 +72,7 @@ export function useNewAssetForm({
         schema: NewAssetFormSchema,
         initial: INITIAL,
         onSubmit: async (payload) => {
-            const body: { name: string; type: string; status: string; confidentiality: number; integrity: number; availability: number; classification?: string; ownerUserId?: string; location?: string; dataResidency?: string; cpe?: string; vendor?: string; product?: string; version?: string; externalRef?: string; dependencies?: string; businessProcesses?: string; retention?: string } = {
+            const body: { name: string; type: string; status: string; confidentiality: number; integrity: number; availability: number; classification?: string; ownerUserId?: string; location?: string; dataResidency?: string; cpe?: string; vendor?: string; product?: string; version?: string; externalRef?: string; dependencies?: string; businessProcesses?: string; retention?: string; retentionUntil?: string } = {
                 name: payload.name,
                 type: payload.type,
                 status: payload.status,
@@ -91,6 +92,7 @@ export function useNewAssetForm({
             if (payload.dependencies) body.dependencies = payload.dependencies;
             if (payload.businessProcesses) body.businessProcesses = payload.businessProcesses;
             if (payload.retention) body.retention = payload.retention;
+            if (payload.retentionUntil) body.retentionUntil = payload.retentionUntil;
 
             const res = await fetch(apiUrl('/assets'), {
                 method: 'POST',

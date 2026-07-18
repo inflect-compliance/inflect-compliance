@@ -12,6 +12,8 @@ import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { UserCombobox } from '@/components/ui/user-combobox';
+import { DatePicker } from '@/components/ui/date-picker/date-picker';
+import { parseYMD, toYMD } from '@/components/ui/date-picker/date-utils';
 import { AssetCriticalityFields } from './AssetCriticalityFields';
 import { AssetIdentityFields } from './AssetIdentityFields';
 import {
@@ -198,6 +200,17 @@ export function EditAssetFields({
                     onChange={(e) => form.setField('retention', e.target.value)}
                     placeholder={t('form.retentionPlaceholder')}
                 />
+                <p className="mt-1 text-xs text-content-subtle">{t('form.retentionNote')}</p>
+            </div>
+            <div>
+                <label className="input-label">{t('form.retentionUntil')}</label>
+                <DatePicker
+                    clearable
+                    placeholder={t('form.retentionUntilPlaceholder')}
+                    value={form.fields.retentionUntil ? parseYMD(form.fields.retentionUntil) : null}
+                    onChange={(d) => form.setField('retentionUntil', toYMD(d) ?? '')}
+                />
+                <p className="mt-1 text-xs text-content-subtle">{t('form.retentionUntilNote')}</p>
             </div>
             <div>
                 <label className="input-label">{t('form.dependencies')}</label>

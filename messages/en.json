@@ -489,7 +489,11 @@
       "businessProcesses": "Business processes",
       "businessProcessesPlaceholder": "Processes this asset supports",
       "dependenciesNote": "Free-text notes — not linked to assets or controls.",
-      "businessProcessesNote": "Free-text notes. Use the process-map canvas for actual linkage."
+      "businessProcessesNote": "Free-text notes. Use the process-map canvas for actual linkage.",
+      "retentionNote": "Human-readable policy note (e.g. “7 years”). The structured date below drives auto-retirement.",
+      "retentionUntil": "Retention until",
+      "retentionUntilPlaceholder": "Select a date…",
+      "retentionUntilNote": "Structured expiry date — the asset is auto-retired after it."
     },
     "crit": {
       "heading": "Asset Criticality",
@@ -631,7 +635,8 @@
       "deleteConfirmTitle": "Delete this asset?",
       "deleteConfirmDesc": "The asset is soft-deleted and can be restored from the Deleted assets view.",
       "deleteConfirmLabel": "Delete asset",
-      "contextNotesCaption": "Free-text notes — not structured linkage. See “Where used in process maps” above for authoritative process usage."
+      "contextNotesCaption": "Free-text notes — not structured linkage. See “Where used in process maps” above for authoritative process usage.",
+      "retentionUntil": "Retention until"
     },
     "filters": {
       "type": "Type",

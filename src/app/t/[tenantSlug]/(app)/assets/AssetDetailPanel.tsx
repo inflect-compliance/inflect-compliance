@@ -17,6 +17,7 @@ import { useTranslations } from 'next-intl';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { ownerDisplayName } from '@/lib/owner-display';
+import { formatDate } from '@/lib/format-date';
 import { AssetCriticalityBadge } from './_form/AssetCriticalityFields';
 
 export interface AssetPanelRow {
@@ -45,6 +46,7 @@ export interface AssetPanelRow {
     dependencies?: string | null;
     businessProcesses?: string | null;
     retention?: string | null;
+    retentionUntil?: string | null;
 }
 
 /** OPEN-vuln severity → badge tint (mirrors the list column). */
@@ -129,6 +131,7 @@ export function AssetDetailPanel({
                 {asset.location && <Row label={t('detail.location')}>{asset.location}</Row>}
                 {asset.externalRef && <Row label={t('detail.externalRef')}>{asset.externalRef}</Row>}
                 {asset.dataResidency && <Row label={t('detail.dataResidency')}>{asset.dataResidency}</Row>}
+                {asset.retentionUntil && <Row label={t('detail.retentionUntil')}>{formatDate(asset.retentionUntil)}</Row>}
                 {asset.dependencies && <Row label={t('detail.dependencies')}>{asset.dependencies}</Row>}
                 {asset.businessProcesses && <Row label={t('detail.businessProcesses')}>{asset.businessProcesses}</Row>}
                 {asset.retention && <Row label={t('detail.retention')}>{asset.retention}</Row>}
