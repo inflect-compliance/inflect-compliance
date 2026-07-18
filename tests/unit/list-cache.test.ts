@@ -331,10 +331,10 @@ describe('cachedDashboardRead — short-TTL dashboard cache (PR3)', () => {
         expect(loader).toHaveBeenCalledTimes(1);
     });
 
-    it('keys by USER as well as tenant — the payload carries user-specific data', async () => {
-        // unreadNotifications is per-user; a tenant-only key would leak one
-        // user's counts to another. Same tenant, different user → independent
-        // entries (both loaders fire).
+    it('keys by USER as well as tenant — defends against per-user payload data', async () => {
+        // The dashboard read cache keys by (tenant, user) so a tenant-only
+        // key can never leak one user's data to another. Same tenant,
+        // different user → independent entries (both loaders fire).
         const ctxU1 = fakeCtx('t-shared', 'u-1');
         const ctxU2 = fakeCtx('t-shared', 'u-2');
         const loader1 = jest.fn(async () => ({ unread: 1 }));

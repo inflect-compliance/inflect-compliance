@@ -1334,6 +1334,9 @@
         "docs/implementation-notes/2026-07-18-org-widget-wire-reachable.md": {
             "class": "historical"
         },
+        "docs/implementation-notes/2026-07-18-dashboard-compute-render-gap.md": {
+            "class": "historical"
+        },
         "docs/implementation-notes/2026-07-14-ep1-evidence-review-gate.md": {
             "class": "authoritative"
         },

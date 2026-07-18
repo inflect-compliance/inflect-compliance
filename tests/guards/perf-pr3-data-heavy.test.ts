@@ -47,13 +47,13 @@ describe('perf(PR3) — data-heavy page wins', () => {
             repo.indexOf('static async', repo.indexOf('static async getStats') + 10),
         );
 
-        it('runs highRisks + unreadNotifications INSIDE the Promise.all batch', () => {
+        it('runs every headline count INSIDE the single Promise.all batch', () => {
             const batchStart = getStats.indexOf('await Promise.all([');
             const batchEnd = getStats.indexOf(']);', batchStart);
             const batch = getStats.slice(batchStart, batchEnd);
-            expect(batch).toMatch(/inherentScore/);     // highRisks
-            expect(batch).toMatch(/read:\s*false/);      // unreadNotifications
-            expect(batch).toMatch(/clauseProgress\.findMany/);
+            expect(batch).toMatch(/inherentScore/);          // highRisks
+            expect(batch).toMatch(/status: 'SUBMITTED'/);    // pendingEvidence
+            expect(batch).toMatch(/nextReviewDate/);         // overdueEvidence
         });
 
         it('has no trailing sequential `const x = await db.*.count` after the batch', () => {

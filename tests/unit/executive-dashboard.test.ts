@@ -367,7 +367,6 @@ describe('Dashboard — Executive Payload', () => {
         // Verify all sections exist
         expect(result.stats).toBeDefined();
         expect(result.controlCoverage).toBeDefined();
-        expect(result.controlsByStatus).toBeDefined();
         expect(result.riskBySeverity).toBeDefined();
         expect(result.riskByStatus).toBeDefined();
         expect(result.evidenceExpiry).toBeDefined();
@@ -376,6 +375,8 @@ describe('Dashboard — Executive Payload', () => {
         expect(result.vendorSummary).toBeDefined();
         expect(result.riskHeatmap).toBeDefined();
         expect(result.upcomingExpirations).toBeDefined();
+        expect(result.exceptions).toBeDefined();
+        expect(result.treatmentPlans).toBeDefined();
         expect(result.computedAt).toBeDefined();
 
         // Verify new fields

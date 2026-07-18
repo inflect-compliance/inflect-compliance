@@ -1,33 +1,34 @@
 /**
- * R17-PR6 — Dashboard chart-filter coordination context.
+ * Dashboard chart-focus coordination context.
  *
  * The dashboard's KPI tiles (control coverage, risks, evidence,
- * tasks, policies, findings) and the charts below them are
- * currently siblings — each renders the same payload independently.
- * Roadmap-17's interactive layer makes them speak the same
- * coordinated state:
+ * tasks, policies, findings) and the charts below them speak one
+ * coordinated focus state — this is a *highlight* affordance, not a
+ * data filter:
  *
  *   • Clicking a KPI tile sets that tile as the "current focus."
- *   • Charts subscribe to the focus via `useDashboardChartFilter()`.
- *   • When focus changes, the donut, the coverage breakdown, and
- *     the evidence status section all re-render with data filtered
- *     to the selected resource (PR-7..9 wire the consumers; this
- *     PR ships the foundation).
+ *   • Charts subscribe to the focus via `useDashboardChartFocus()`.
+ *   • When a KPI is focused, its owning chart gains a brand ring and
+ *     every other chart dims to 60% — the data each chart renders is
+ *     unchanged. The interaction draws the eye; it does not re-query
+ *     or re-slice any section's dataset. (Per-resource data filtering
+ *     was considered and dropped: "filter the evidence donut to the
+ *     risks KPI" has no coherent meaning — each chart already owns its
+ *     own resource.)
  *
  * Why a context rather than prop-drilling:
  *   • Six KPI tiles × four chart sections × the masthead is a
  *     ~30-edge graph if propped — visual fan-out would dwarf the
  *     actual logic.
- *   • Future filter sources (the eventual chart-on-chart drill-
- *     down, the segment-row click on the donut) want the same
+ *   • The eventual segment-row click on the donut wants the same
  *     setter. A single context is the canonical join point.
  *
  * The KPI keys are typed as a finite union — adding a new tile
  * type requires touching this file, which in turn forces the
- * filter-aware chart consumers (PR-8+) to handle the new case.
+ * focus-aware chart consumers to handle the new case.
  *
- * Default state: `null` — the dashboard renders the unfiltered
- * baseline, identical byte-for-byte to today's render.
+ * Default state: `null` — no tile focused, every chart at full
+ * opacity with no ring.
  */
 'use client';
 
@@ -38,8 +39,9 @@ import * as React from 'react';
 /**
  * Canonical KPI key set. Each value corresponds 1:1 to one of the
  * `<KpiCard>` tiles in the dashboard grid. Adding a tile means
- * adding a key here; the type-narrowing in PR-8's chart consumers
- * forces the new key to be handled at every subscription site.
+ * adding a key here; the type-narrowing in the focus-aware chart
+ * consumers forces the new key to be handled at every subscription
+ * site.
  */
 export type DashboardKpiKey =
     | 'coverage'
@@ -50,7 +52,7 @@ export type DashboardKpiKey =
     | 'findings';
 
 /** Public shape of the context for consumers. */
-export interface DashboardChartFilter {
+export interface DashboardChartFocus {
     /** Currently focused KPI, or `null` when no tile is selected. */
     selectedKpi: DashboardKpiKey | null;
     /**
@@ -71,11 +73,11 @@ export interface DashboardChartFilter {
 
 /**
  * Internal context handle. We don't export the bare Context so
- * consumers go through `useDashboardChartFilter()` and get a
+ * consumers go through `useDashboardChartFocus()` and get a
  * clear error if they're outside the provider.
  */
-const DashboardChartFilterContext =
-    React.createContext<DashboardChartFilter | null>(null);
+const DashboardChartFocusContext =
+    React.createContext<DashboardChartFocus | null>(null);
 
 // ─── Provider ────────────────────────────────────────────────────────
 
@@ -96,7 +98,7 @@ export function DashboardChartProvider({
         [],
     );
 
-    const value = React.useMemo<DashboardChartFilter>(
+    const value = React.useMemo<DashboardChartFocus>(
         () => ({
             selectedKpi,
             setSelectedKpi,
@@ -106,25 +108,25 @@ export function DashboardChartProvider({
     );
 
     return (
-        <DashboardChartFilterContext.Provider value={value}>
+        <DashboardChartFocusContext.Provider value={value}>
             {children}
-        </DashboardChartFilterContext.Provider>
+        </DashboardChartFocusContext.Provider>
     );
 }
 
 // ─── Hook ────────────────────────────────────────────────────────────
 
 /**
- * Subscribe to the dashboard chart-filter state. Throws if called
+ * Subscribe to the dashboard chart-focus state. Throws if called
  * outside a `<DashboardChartProvider>` — keeps the misuse fail-
- * fast at the call site instead of producing silent "no filter
+ * fast at the call site instead of producing silent "no focus
  * ever fires" behaviour.
  */
-export function useDashboardChartFilter(): DashboardChartFilter {
-    const ctx = React.useContext(DashboardChartFilterContext);
+export function useDashboardChartFocus(): DashboardChartFocus {
+    const ctx = React.useContext(DashboardChartFocusContext);
     if (!ctx) {
         throw new Error(
-            'useDashboardChartFilter must be used inside <DashboardChartProvider>',
+            'useDashboardChartFocus must be used inside <DashboardChartProvider>',
         );
     }
     return ctx;

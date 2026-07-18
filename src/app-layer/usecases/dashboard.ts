@@ -44,16 +44,16 @@ export async function getDashboardData(ctx: RequestContext) {
  * within a single transaction for consistency.
  *
  * Query budget:
- * - stats:           ~11 parallel count queries
+ * - stats:            8 parallel count queries
  * - controlCoverage:  1 groupBy + 1 count
- * - controlsByStatus: 1 groupBy
  * - riskBySeverity:   4 parallel counts
  * - riskByStatus:     1 groupBy
  * - evidenceExpiry:   5 parallel counts
  * - policySummary:    1 groupBy + 1 count
  * - taskSummary:      1 groupBy + 1 count
  * - vendorSummary:    2 counts
- * Total: ~30 lightweight COUNT/GROUP BY on indexed columns
+ * - exceptions:       5 parallel counts
+ * - treatmentPlans:   5 parallel counts
  * Expected latency: <100ms on a warm connection pool
  */
 export async function getExecutiveDashboard(ctx: RequestContext): Promise<ExecutiveDashboardPayload> {
@@ -72,7 +72,6 @@ export async function getExecutiveDashboard(ctx: RequestContext): Promise<Execut
         const [
             stats,
             controlCoverage,
-            controlsByStatus,
             riskBySeverity,
             riskByStatus,
             evidenceExpiry,
@@ -86,7 +85,6 @@ export async function getExecutiveDashboard(ctx: RequestContext): Promise<Execut
         ] = await Promise.all([
             DashboardRepository.getStats(db, ctx),
             DashboardRepository.getControlCoverage(db, ctx),
-            DashboardRepository.getControlsByStatus(db, ctx),
             DashboardRepository.getRiskBySeverity(db, ctx),
             DashboardRepository.getRiskByStatus(db, ctx),
             DashboardRepository.getEvidenceExpiry(db, ctx),
@@ -102,7 +100,6 @@ export async function getExecutiveDashboard(ctx: RequestContext): Promise<Execut
         return {
             stats,
             controlCoverage,
-            controlsByStatus,
             riskBySeverity,
             riskByStatus,
             evidenceExpiry,

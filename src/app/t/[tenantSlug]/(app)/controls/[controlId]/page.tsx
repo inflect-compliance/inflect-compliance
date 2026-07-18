@@ -536,8 +536,10 @@ export default function ControlDetailPage() {
                       control: { ...current.control, status },
                   }
                 : (current as unknown as ControlPageDataDTO),
-        // List page shows status badges too — keep it in sync.
-        invalidate: [CACHE_KEYS.controls.list()],
+        // List page shows status badges too — keep it in sync, and the
+        // executive dashboard's control-coverage KPI shifts on a status
+        // flip, so refresh its card stack too.
+        invalidate: [CACHE_KEYS.controls.list(), CACHE_KEYS.dashboard.executive()],
     });
 
     const changeStatus = async (status: string) => {

@@ -100,7 +100,10 @@ describe('CACHE_KEYS — key construction', () => {
         it('dashboard home/executive/trends', () => {
             expect(CACHE_KEYS.dashboard.home()).toBe('/dashboard');
             expect(CACHE_KEYS.dashboard.executive()).toBe('/dashboard/executive');
-            expect(CACHE_KEYS.dashboard.trends()).toBe('/dashboard/trends');
+            // The query window is baked into the key so a mutate() matches
+            // the live entry the dashboard reads (`?days=30` default).
+            expect(CACHE_KEYS.dashboard.trends()).toBe('/dashboard/trends?days=30');
+            expect(CACHE_KEYS.dashboard.trends(7)).toBe('/dashboard/trends?days=7');
         });
         it('coverage home', () => {
             expect(CACHE_KEYS.coverage.home()).toBe('/coverage');

@@ -26,7 +26,7 @@
  *      place.
  *
  *   4. DashboardClient's `<InteractiveKpiGrid>` uses
- *      `useDashboardChartFilter()` and wires all 6 tiles with
+ *      `useDashboardChartFocus()` and wires all 6 tiles with
  *      `onClick={toggleSelectedKpi('<key>')}` +
  *      `selected={selectedKpi === '<key>'}`. The 6 keys form
  *      the full `DashboardKpiKey` union — adding a 7th KPI
@@ -114,9 +114,9 @@ describe('R17-PR7 — clickable KPI tile wiring', () => {
     });
 
     describe('Dashboard wiring (all 6 KpiCards covered)', () => {
-        it('uses useDashboardChartFilter inside InteractiveKpiGrid', () => {
+        it('uses useDashboardChartFocus inside InteractiveKpiGrid', () => {
             expect(DASHBOARD_CLIENT).toMatch(
-                /function\s+InteractiveKpiGrid\b[\s\S]*?useDashboardChartFilter\(\)/,
+                /function\s+InteractiveKpiGrid\b[\s\S]*?useDashboardChartFocus\(\)/,
             );
         });
 

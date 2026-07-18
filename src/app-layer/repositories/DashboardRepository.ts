@@ -1,17 +1,25 @@
 import { PrismaTx } from '@/lib/db-context';
 import { RequestContext } from '../types';
 import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
+import { normalizeActivityEntity } from '@/lib/audit/activity-humanize';
 
 // ─── Executive Dashboard DTO Types ─────────────────────────────────
 
 /**
  * Headline KPI stats — simple counts for the stat-card grid.
- * Matches the dashboard page's current contract and extends it
- * with executive-grade aggregations.
+ *
+ * Every field here has a live reader: the executive dashboard grid
+ * reads `risks`/`highRisks`/`evidence`/`pendingEvidence`/`openTasks`/
+ * `openFindings`, and the assistant read-path
+ * (`getDashboardData` → `assistant.ts`) additionally reads `controls`
+ * and `overdueEvidence`. The previously-computed-but-never-read
+ * `assets` / `clausesReady` / `totalClauses` / `unreadNotifications`
+ * fields were removed — the dashboard stopped paying for the
+ * `asset.count` / `clauseProgress.findMany` / `notification.count`
+ * queries that backed them.
  */
 export interface DashboardStats {
     // ── Entity totals ──
-    assets: number;
     risks: number;
     controls: number;
     evidence: number;
@@ -22,13 +30,6 @@ export interface DashboardStats {
     highRisks: number;
     pendingEvidence: number;
     overdueEvidence: number;
-
-    // ── Clause readiness ──
-    clausesReady: number;
-    totalClauses: number;
-
-    // ── Notifications ──
-    unreadNotifications: number;
 }
 
 /**
@@ -73,14 +74,6 @@ export interface ControlCoverage {
     needsReview: number;
     /** implemented / applicable × 100, rounded to 1 decimal */
     coveragePercent: number;
-}
-
-/**
- * Control status distribution — for pie/bar charts.
- */
-export interface ControlByStatus {
-    status: string;
-    count: number;
 }
 
 /**
@@ -219,7 +212,6 @@ export interface TreatmentPlanSummary {
 export interface ExecutiveDashboardPayload {
     stats: DashboardStats;
     controlCoverage: ControlCoverage;
-    controlsByStatus: ControlByStatus[];
     riskBySeverity: RiskBySeverity;
     riskByStatus: RiskByStatus;
     evidenceExpiry: EvidenceExpiry;
@@ -236,27 +228,91 @@ export interface ExecutiveDashboardPayload {
     computedAt: string;
 }
 
+/**
+ * A recent-activity row enriched with the changed entity's identity.
+ * `title` is the resolved name of the entity the audit row points at
+ * (null when the entity type has no title resolver or the row was
+ * since deleted). The UI humanises `action`/`entity` and links via
+ * `entity` + `entityId`.
+ */
+export interface RecentActivityEntry {
+    id: string;
+    createdAt: Date;
+    actorName: string | null;
+    action: string;
+    entity: string;
+    entityId: string;
+    title: string | null;
+}
+
+/**
+ * Per-entity-type title resolvers for the recent-activity feed.
+ *
+ * The `entity` column is written by every `logEvent` caller with
+ * inconsistent casing (`'Risk'`, `'RISK'`, …) — callers pass a raw
+ * `entityType` string. `normalizeActivityEntity` collapses that to a
+ * canonical UPPERCASE key; the resolvers below turn a batch of ids
+ * for one type into `{ id, title }` rows via a SINGLE `findMany`
+ * (`id IN (...)`). The fan-out in `getRecentActivityDetailed` is one
+ * query per DISTINCT type present in the 10 rows — bounded, never
+ * per-row, so it is not an N+1.
+ */
+type TitleRow = { id: string; title: string | null };
+type TitleResolver = (db: PrismaTx, ids: string[]) => Promise<TitleRow[]>;
+
+// Each resolver is bounded twice over — by the `id: { in: ids }` filter
+// AND an explicit `take: ids.length` — because `ids` is derived from the
+// 10-row recent-activity window (≤ 10 distinct ids per type). The `take:`
+// keeps each query off the unbounded-findMany budget.
+const ACTIVITY_TITLE_RESOLVERS: Record<string, TitleResolver> = {
+    RISK: (db, ids) =>
+        db.risk.findMany({ where: { id: { in: ids } }, select: { id: true, title: true }, take: ids.length }),
+    CONTROL: (db, ids) =>
+        db.control
+            .findMany({ where: { id: { in: ids } }, select: { id: true, name: true }, take: ids.length })
+            .then((rows) => rows.map((r) => ({ id: r.id, title: r.name }))),
+    POLICY: (db, ids) =>
+        db.policy.findMany({ where: { id: { in: ids } }, select: { id: true, title: true }, take: ids.length }),
+    EVIDENCE: (db, ids) =>
+        db.evidence.findMany({ where: { id: { in: ids } }, select: { id: true, title: true }, take: ids.length }),
+    TASK: (db, ids) =>
+        db.task.findMany({ where: { id: { in: ids } }, select: { id: true, title: true }, take: ids.length }),
+    // Issues are the same `Task` rows surfaced under the issue lens
+    // (WorkItemRepository) — resolve their title from `task`.
+    ISSUE: (db, ids) =>
+        db.task.findMany({ where: { id: { in: ids } }, select: { id: true, title: true }, take: ids.length }),
+    FINDING: (db, ids) =>
+        db.finding.findMany({ where: { id: { in: ids } }, select: { id: true, title: true }, take: ids.length }),
+    VENDOR: (db, ids) =>
+        db.vendor
+            .findMany({ where: { id: { in: ids } }, select: { id: true, name: true }, take: ids.length })
+            .then((rows) => rows.map((r) => ({ id: r.id, title: r.name }))),
+    ASSET: (db, ids) =>
+        db.asset
+            .findMany({ where: { id: { in: ids } }, select: { id: true, name: true }, take: ids.length })
+            .then((rows) => rows.map((r) => ({ id: r.id, title: r.name }))),
+    INCIDENT: (db, ids) =>
+        db.incident.findMany({ where: { id: { in: ids } }, select: { id: true, title: true }, take: ids.length }),
+};
+
 // ─── Repository ────────────────────────────────────────────────────
 
 export class DashboardRepository {
     /**
-     * Headline stats — backward-compatible with the existing dashboard.
+     * Headline stats — the counts every reader (executive dashboard +
+     * assistant read-path) actually consumes.
      *
      * Uses parallel Prisma.count() calls which each translate to a single
-     * `SELECT COUNT(*)` with indexed WHERE clauses. N queries = 9 parallel
-     * counts + 1 clauseProgress query + 1 notification count = 11 parallel
-     * queries. All use existing indexes.
+     * `SELECT COUNT(*)` with indexed WHERE clauses: 8 parallel counts, all
+     * on existing indexes. The former `asset.count` / `clauseProgress.findMany`
+     * / `notification.count` reads were dropped — nothing rendered the
+     * `assets` / `clausesReady` / `totalClauses` / `unreadNotifications`
+     * fields they backed.
      */
     static async getStats(db: PrismaTx, ctx: RequestContext): Promise<DashboardStats> {
         const tenantId = ctx.tenantId;
 
-        // PR3 perf: every count is independent — run them ALL in one parallel
-        // batch instead of a parallel batch followed by 5 sequential awaits
-        // (the prior shape serialised highRisks → pendingEvidence →
-        // overdueEvidence → clauseProgress → unreadNotifications after the
-        // first Promise.all, ~5 extra round-trips on the dashboard's hot path).
         const [
-            assetCount,
             riskCount,
             controlCount,
             evidenceCount,
@@ -265,10 +321,7 @@ export class DashboardRepository {
             highRisks,
             pendingEvidence,
             overdueEvidence,
-            clauseProgress,
-            unreadNotifications,
         ] = await Promise.all([
-            db.asset.count({ where: { tenantId } }),
             db.risk.count({ where: { tenantId } }),
             db.control.count({ where: { OR: [{ tenantId }, { tenantId: null }] } }),
             db.evidence.count({ where: { tenantId } }),
@@ -279,14 +332,9 @@ export class DashboardRepository {
             db.evidence.count({
                 where: { tenantId, nextReviewDate: { lt: new Date() }, status: { not: 'APPROVED' } },
             }),
-            db.clauseProgress.findMany({ where: { tenantId } }),
-            db.notification.count({ where: { tenantId, userId: ctx.userId, read: false } }),
         ]);
 
-        const clausesReady = clauseProgress.filter((p) => p.status === 'READY').length;
-
         return {
-            assets: assetCount,
             risks: riskCount,
             controls: controlCount,
             evidence: evidenceCount,
@@ -295,9 +343,6 @@ export class DashboardRepository {
             highRisks,
             pendingEvidence,
             overdueEvidence,
-            clausesReady,
-            totalClauses: 7,
-            unreadNotifications,
         };
     }
 
@@ -361,27 +406,6 @@ export class DashboardRepository {
             needsReview,
             coveragePercent,
         };
-    }
-
-    /**
-     * Controls grouped by status — for visualization.
-     *
-     * Query: 1 groupBy
-     */
-    static async getControlsByStatus(db: PrismaTx, ctx: RequestContext): Promise<ControlByStatus[]> {
-        const groups = await db.control.groupBy({
-            by: ['status'],
-            where: {
-                OR: [{ tenantId: ctx.tenantId }, { tenantId: null }],
-                deletedAt: null,
-            },
-            _count: true,
-        });
-
-        return groups.map((g) => ({
-            status: g.status,
-            count: g._count,
-        }));
     }
 
     /**
@@ -614,6 +638,68 @@ export class DashboardRepository {
             orderBy: { createdAt: 'desc' },
             take: 10,
             include: { user: { select: { name: true } } },
+        });
+    }
+
+    /**
+     * Recent activity enriched with the changed entity's identity —
+     * the feed the dashboard renders (humanised, identified, linked).
+     *
+     * Resolves each row's entity title through a bounded fan-out: the
+     * 10 rows are grouped by entity type, then ONE `findMany` per
+     * distinct type (`ACTIVITY_TITLE_RESOLVERS`) hydrates the titles.
+     * Unknown entity types (no resolver) keep `title: null` and the
+     * UI renders them without a link.
+     */
+    static async getRecentActivityDetailed(
+        db: PrismaTx,
+        ctx: RequestContext,
+    ): Promise<RecentActivityEntry[]> {
+        const logs = await db.auditLog.findMany({
+            where: { tenantId: ctx.tenantId },
+            orderBy: { createdAt: 'desc' },
+            take: 10,
+            select: {
+                id: true,
+                createdAt: true,
+                action: true,
+                entity: true,
+                entityId: true,
+                user: { select: { name: true } },
+            },
+        });
+
+        // Group ids by canonical entity type so each type is a single
+        // `id IN (...)` seek — never a per-row query.
+        const idsByType = new Map<string, Set<string>>();
+        for (const log of logs) {
+            if (!log.entityId) continue;
+            const key = normalizeActivityEntity(log.entity);
+            if (!ACTIVITY_TITLE_RESOLVERS[key]) continue;
+            (idsByType.get(key) ?? idsByType.set(key, new Set()).get(key)!).add(log.entityId);
+        }
+
+        const titleByKey = new Map<string, string>(); // `${type}:${id}` → title
+        await Promise.all(
+            [...idsByType.entries()].map(async ([type, ids]) => {
+                const rows = await ACTIVITY_TITLE_RESOLVERS[type](db, [...ids]);
+                for (const r of rows) {
+                    if (r.title) titleByKey.set(`${type}:${r.id}`, r.title);
+                }
+            }),
+        );
+
+        return logs.map((log) => {
+            const key = normalizeActivityEntity(log.entity);
+            return {
+                id: log.id,
+                createdAt: log.createdAt,
+                actorName: log.user?.name ?? null,
+                action: log.action,
+                entity: log.entity,
+                entityId: log.entityId,
+                title: log.entityId ? titleByKey.get(`${key}:${log.entityId}`) ?? null : null,
+            };
         });
     }
 

@@ -26,7 +26,8 @@
  * />
  * ```
  */
-import { type LucideIcon } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowUpRight, type LucideIcon } from 'lucide-react';
 
 import { AnimatedNumber, type AnimatedNumberFormat } from '@/components/ui/animated-number';
 import { MetricCard } from '@/components/ui/MetricCard';
@@ -116,6 +117,17 @@ export interface KpiCardProps {
      * KPI.
      */
     selected?: boolean;
+    /**
+     * Drill-through target — the entity list (or item) this KPI
+     * summarises. When set, a corner "open list" link is rendered
+     * OUTSIDE the (focus) button so a click can navigate without
+     * disturbing the R17 focus interaction. The whole card is NOT
+     * an anchor — nesting an `<a>` inside the `role="button"`
+     * chassis would be invalid — so the link is a sibling overlay.
+     */
+    href?: string;
+    /** Accessible label for the drill-through link (e.g. "View risks"). */
+    hrefLabel?: string;
 }
 
 // ─── Format mapping ─────────────────────────────────────────────────
@@ -311,6 +323,8 @@ export default function KpiCard({
     loading = false,
     onClick,
     selected = false,
+    href,
+    hrefLabel,
 }: KpiCardProps) {
     const isEmpty = value === null || value === undefined;
     const animatedFormat = kpiFormatToAnimated(format);
@@ -385,7 +399,7 @@ export default function KpiCard({
         </div>
     ) : undefined;
 
-    return (
+    const card = (
         <MetricCard
             id={id}
             icon={Icon}
@@ -399,5 +413,26 @@ export default function KpiCard({
         >
             {valueSlot}
         </MetricCard>
+    );
+
+    // No drill-through target → the card renders exactly as before
+    // (org widgets + any non-navigating caller take this path).
+    if (!href) return card;
+
+    // Drill-through affordance. The link is a SIBLING overlay (not a
+    // wrapper) so the focus button's semantics stay intact; it sits in
+    // the top-right corner above the card and navigates on click.
+    return (
+        <div className="relative">
+            {card}
+            <Link
+                href={href}
+                aria-label={hrefLabel ?? `${label} — open list`}
+                data-kpi-drill
+                className="absolute right-1.5 top-1.5 z-10 inline-flex size-6 items-center justify-center rounded-md text-content-subtle opacity-60 transition hover:bg-bg-muted hover:text-content-default hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            >
+                <ArrowUpRight className="size-3.5" aria-hidden="true" />
+            </Link>
+        </div>
     );
 }
