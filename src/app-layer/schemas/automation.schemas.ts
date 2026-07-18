@@ -32,7 +32,11 @@ const CreateTaskConfig = z.object({
 });
 
 const UpdateStatusConfig = z.object({
-    entityType: z.enum(['Risk', 'Task', 'Control', 'Issue']),
+    // The executor's STATUS_ALLOWLIST (status-allowlist.ts) only implements
+    // Risk / Task / Control — 'Issue' has no handler and always rejects at
+    // runtime, so keep it out of the schema: an unrunnable rule must not be
+    // persistable.
+    entityType: z.enum(['Risk', 'Task', 'Control']),
     field: z.string().min(1),
     toStatus: z.string().min(1),
 });

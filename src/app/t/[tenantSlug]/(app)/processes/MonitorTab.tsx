@@ -3,9 +3,11 @@
 /**
  * Live run monitor (Automation Epic 10).
  *
- * The operator console: in-flight (RUNNING) executions with a cancel
- * affordance, a live recent-activity feed (5s refresh), and the manual
- * trigger panel. The Dynamic-Workflow-Tracker equivalent.
+ * The operator console: a live recent-activity feed (5s refresh, all
+ * statuses incl. failures) as the primary surface, a conditional
+ * stuck-execution watchdog that only appears when an execution is
+ * genuinely hung past its timeout (with a cancel affordance), and the
+ * manual trigger panel. The Dynamic-Workflow-Tracker equivalent.
  */
 import useSWR from 'swr';
 import { useTranslations } from 'next-intl';
@@ -61,29 +63,6 @@ export function MonitorTab() {
             <div className="space-y-section lg:col-span-2">
                 <Card>
                     <p className="mb-default text-[11px] uppercase tracking-wide text-content-subtle">
-                        {t('monitor.inFlight', { count: running.length })}
-                    </p>
-                    {running.length === 0 ? (
-                        <p className="text-sm text-content-muted">{t('monitor.nothingRunning')}</p>
-                    ) : (
-                        <ul className="space-y-tight" data-testid="inflight-list">
-                            {running.map((e) => (
-                                <li key={e.id} className="flex items-center justify-between gap-default">
-                                    <span className="flex items-center gap-compact text-sm">
-                                        <StatusBadge variant="info">{t('monitor.running')}</StatusBadge>
-                                        <span className="text-content-default">{e.ruleName}</span>
-                                    </span>
-                                    <Button variant="ghost" size="sm" onClick={() => cancel(e.id)}>
-                                        {t('monitor.cancel')}
-                                    </Button>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </Card>
-
-                <Card>
-                    <p className="mb-default text-[11px] uppercase tracking-wide text-content-subtle">
                         {t('monitor.recentActivity')}
                     </p>
                     {recent.length === 0 ? (
@@ -106,6 +85,27 @@ export function MonitorTab() {
                         </ul>
                     )}
                 </Card>
+
+                {running.length > 0 && (
+                    <Card>
+                        <p className="mb-default text-[11px] uppercase tracking-wide text-content-subtle">
+                            {t('monitor.stuckExecutions', { count: running.length })}
+                        </p>
+                        <ul className="space-y-tight" data-testid="stuck-list">
+                            {running.map((e) => (
+                                <li key={e.id} className="flex items-center justify-between gap-default">
+                                    <span className="flex items-center gap-compact text-sm">
+                                        <StatusBadge variant="warning">{t('monitor.stuck')}</StatusBadge>
+                                        <span className="text-content-default">{e.ruleName}</span>
+                                    </span>
+                                    <Button variant="ghost" size="sm" onClick={() => cancel(e.id)}>
+                                        {t('monitor.cancel')}
+                                    </Button>
+                                </li>
+                            ))}
+                        </ul>
+                    </Card>
+                )}
             </div>
             <ManualTriggerPanel />
         </div>

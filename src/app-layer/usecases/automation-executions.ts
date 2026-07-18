@@ -181,6 +181,19 @@ export async function reTriggerRule(ctx: RequestContext, ruleId: string) {
                 reason: 'no_prior_execution' as const,
             };
         }
+        // An UPDATE_STATUS rule mutates one entity by `event.entityId`, but a
+        // replay carries a synthetic entityId (= ruleId) and the original
+        // entityId is never persisted on the execution (only the payload is),
+        // so the executor would no-op ("No <entity> matched <ruleId>") while
+        // the panel reported "Fired". Refuse honestly rather than enqueue a
+        // guaranteed-FAIL execution that pollutes the history + counters.
+        if (rule.actionType === 'UPDATE_STATUS') {
+            return {
+                enqueued: false as const,
+                ruleId,
+                reason: 'entity_target_not_replayable' as const,
+            };
+        }
         const data = (recent[0]?.triggerPayloadJson as Record<string, unknown>) ?? {};
 
         const stableKey = `manual-${Date.now()}-${Math.round(Math.random() * 1e9)}`;

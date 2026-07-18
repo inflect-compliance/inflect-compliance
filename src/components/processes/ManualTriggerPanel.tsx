@@ -60,12 +60,17 @@ export function ManualTriggerPanel() {
                 enqueued?: boolean;
                 reason?: string;
             };
-            // PR-E — honest result: a replay with no prior execution is a no-op,
-            // not a success. Distinguish the three outcomes.
+            // Honest result: a replay is only a success when a dispatch was
+            // actually enqueued. Distinguish the no-op outcomes so the panel
+            // never reports "Fired" for something that did nothing.
             if (res.ok && body.enqueued) {
                 setResult('Fired — a manual execution was enqueued.');
             } else if (res.ok && body.reason === 'no_prior_execution') {
                 setResult('Nothing to replay — this rule has no prior execution to re-fire.');
+            } else if (res.ok && body.reason === 'entity_target_not_replayable') {
+                setResult(
+                    'Not replayable — an update-status rule targets a specific entity, and a replay cannot re-target the original entity, so no entity would change.',
+                );
             } else {
                 setResult('Fire failed.');
             }
