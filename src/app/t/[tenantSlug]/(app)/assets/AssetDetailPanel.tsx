@@ -17,6 +17,7 @@ import { useTranslations } from 'next-intl';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { ownerDisplayName } from '@/lib/owner-display';
+import { formatDate } from '@/lib/format-date';
 import { AssetCriticalityBadge } from './_form/AssetCriticalityFields';
 
 export interface AssetPanelRow {
@@ -34,6 +35,27 @@ export interface AssetPanelRow {
     confidentiality?: number | null;
     integrity?: number | null;
     availability?: number | null;
+    /** Per-asset OPEN-vuln rollup (CVE + scanner) the list column shows. */
+    openVulnCount?: number | null;
+    maxVulnSeverity?: string | null;
+    /** Context fields — surfaced here so the quick-look previews the same
+     *  signals the full page carries, without a full-page open. */
+    location?: string | null;
+    dataResidency?: string | null;
+    externalRef?: string | null;
+    dependencies?: string | null;
+    businessProcesses?: string | null;
+    retention?: string | null;
+    retentionUntil?: string | null;
+}
+
+/** OPEN-vuln severity → badge tint (mirrors the list column). */
+function vulnSeverityVariant(sev: string | null | undefined): StatusBadgeVariant {
+    const s = (sev ?? '').toUpperCase();
+    if (s === 'CRITICAL' || s === 'HIGH') return 'error';
+    if (s === 'MEDIUM') return 'warning';
+    if (s === 'LOW') return 'success';
+    return 'neutral';
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -90,6 +112,29 @@ export function AssetDetailPanel({
                 <Row label={t('detail.confidentiality')}>{asset.confidentiality ?? '—'}</Row>
                 <Row label={t('detail.integrity')}>{asset.integrity ?? '—'}</Row>
                 <Row label={t('detail.availability')}>{asset.availability ?? '—'}</Row>
+                {/* Open-vuln signal — the same rollup (CVE + scanner) the list
+                    column tints, previewed without a full-page open. */}
+                <Row label={t('colHeaders.vulnerabilities')}>
+                    {asset.openVulnCount && asset.openVulnCount > 0 ? (
+                        <StatusBadge variant={vulnSeverityVariant(asset.maxVulnSeverity)} size="sm">
+                            {asset.maxVulnSeverity
+                                ? `${asset.openVulnCount} · ${asset.maxVulnSeverity}`
+                                : String(asset.openVulnCount)}
+                        </StatusBadge>
+                    ) : (
+                        <span className="text-content-muted">—</span>
+                    )}
+                </Row>
+                {/* Key context fields — rendered only when populated to keep the
+                    quick-look concise. Dependency / business-process are free-text
+                    notes (structured process-map linkage lives on the full page). */}
+                {asset.location && <Row label={t('detail.location')}>{asset.location}</Row>}
+                {asset.externalRef && <Row label={t('detail.externalRef')}>{asset.externalRef}</Row>}
+                {asset.dataResidency && <Row label={t('detail.dataResidency')}>{asset.dataResidency}</Row>}
+                {asset.retentionUntil && <Row label={t('detail.retentionUntil')}>{formatDate(asset.retentionUntil)}</Row>}
+                {asset.dependencies && <Row label={t('detail.dependencies')}>{asset.dependencies}</Row>}
+                {asset.businessProcesses && <Row label={t('detail.businessProcesses')}>{asset.businessProcesses}</Row>}
+                {asset.retention && <Row label={t('detail.retention')}>{asset.retention}</Row>}
             </div>
             <div className="mt-auto flex justify-end pt-4">
                 <Link

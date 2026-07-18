@@ -70,4 +70,40 @@ describeFn('bulkImportAssets (integration)', () => {
         expect(unmatched?.ownerUserId).toBeNull();
         expect(unmatched?.owner).toBe('nobody@elsewhere.test'); // kept as labeled fallback
     });
+
+    it('persists the new context fields and creates the whole batch in one pass', async () => {
+        const rows = Array.from({ length: 5 }, (_, n) => ({
+            name: `Batch ${runId}-${n}`,
+            type: 'SYSTEM' as const,
+        }));
+        // One row carries the full context-field set the forms now support.
+        rows[0] = {
+            ...rows[0],
+            externalRef: 'acme/svc',
+            dependencies: 'Depends on Prod DB',
+            businessProcesses: 'Order fulfilment',
+            retention: '7 years',
+            dataResidency: 'EU',
+            location: 'eu-west-1',
+        } as (typeof rows)[number];
+
+        const result = await bulkImportAssets(ctx, rows);
+        expect(result.created).toBe(5);
+        expect(result.createdIds).toHaveLength(5);
+
+        const withCtx = await prisma.asset.findFirst({ where: { tenantId, name: `Batch ${runId}-0` } });
+        expect(withCtx?.externalRef).toBe('acme/svc');
+        expect(withCtx?.dependencies).toBe('Depends on Prod DB');
+        expect(withCtx?.businessProcesses).toBe('Order fulfilment');
+        expect(withCtx?.retention).toBe('7 years');
+        expect(withCtx?.dataResidency).toBe('EU');
+        expect(withCtx?.location).toBe('eu-west-1');
+        // Every row got a distinct minted AST-N key from the batched allocation.
+        const keys = await prisma.asset.findMany({
+            where: { tenantId, name: { startsWith: `Batch ${runId}-` } },
+            select: { key: true },
+        });
+        const uniqueKeys = new Set(keys.map((k: { key: string | null }) => k.key));
+        expect(uniqueKeys.size).toBe(5);
+    });
 });

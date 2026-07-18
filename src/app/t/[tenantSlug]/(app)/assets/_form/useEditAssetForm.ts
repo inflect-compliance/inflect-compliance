@@ -33,6 +33,7 @@ export interface EditAssetFormFields {
     dependencies: string;
     businessProcesses: string;
     retention: string;
+    retentionUntil: string;
     confidentiality: number;
     integrity: number;
     availability: number;
@@ -73,6 +74,7 @@ const DEFAULTS: EditAssetFormFields = {
     dependencies: '',
     businessProcesses: '',
     retention: '',
+    retentionUntil: '',
     confidentiality: 3,
     integrity: 3,
     availability: 3,

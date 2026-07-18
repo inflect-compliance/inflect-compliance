@@ -69,6 +69,7 @@ export interface AssetDetail {
     dependencies: string | null;
     businessProcesses: string | null;
     retention: string | null;
+    retentionUntil: string | null;
     confidentiality: number | null;
     integrity: number | null;
     availability: number | null;
@@ -361,6 +362,7 @@ export default function AssetDetailPage() {
               dependencies: asset.dependencies || '',
               businessProcesses: asset.businessProcesses || '',
               retention: asset.retention || '',
+              retentionUntil: asset.retentionUntil ? asset.retentionUntil.split('T')[0] : '',
               confidentiality: asset.confidentiality ?? 3,
               integrity: asset.integrity ?? 3,
               availability: asset.availability ?? 3,
@@ -1026,13 +1028,23 @@ export default function AssetDetailPage() {
                                 )}
                             </div>
                             <div><Eyebrow>{t('detail.dataResidency')}</Eyebrow><p className="text-sm">{asset.dataResidency || '—'}</p></div>
+                            {/* Structured retention-expiry date (the machine date the
+                                data-lifecycle sweep acts on) — distinct from the free-text
+                                retention note below. */}
+                            <div><Eyebrow>{t('detail.retentionUntil')}</Eyebrow><p className="text-sm">{asset.retentionUntil ? formatDate(asset.retentionUntil) : '—'}</p></div>
                         </div>
-                        {/* Context — dependencies / business processes / retention.
-                            Persisted by the API; previously surfaced nowhere. */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-default">
-                            <div><Eyebrow>{t('detail.dependencies')}</Eyebrow><p className="text-sm whitespace-pre-wrap">{asset.dependencies || '—'}</p></div>
-                            <div><Eyebrow>{t('detail.businessProcesses')}</Eyebrow><p className="text-sm whitespace-pre-wrap">{asset.businessProcesses || '—'}</p></div>
-                            <div><Eyebrow>{t('detail.retention')}</Eyebrow><p className="text-sm whitespace-pre-wrap">{asset.retention || '—'}</p></div>
+                        {/* Context NOTES — free-text, not structured linkage.
+                            `businessProcesses` in particular must not be mistaken
+                            for the authoritative "Where used in process maps"
+                            reverse-lookup above; these are operator notes that can
+                            drift from it. De-emphasised + captioned accordingly. */}
+                        <div className="space-y-tight">
+                            <p className="text-xs text-content-subtle">{t('detail.contextNotesCaption')}</p>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-default">
+                                <div><Eyebrow>{t('detail.dependencies')}</Eyebrow><p className="text-sm whitespace-pre-wrap text-content-muted">{asset.dependencies || '—'}</p></div>
+                                <div><Eyebrow>{t('detail.businessProcesses')}</Eyebrow><p className="text-sm whitespace-pre-wrap text-content-muted">{asset.businessProcesses || '—'}</p></div>
+                                <div><Eyebrow>{t('detail.retention')}</Eyebrow><p className="text-sm whitespace-pre-wrap text-content-muted">{asset.retention || '—'}</p></div>
+                            </div>
                         </div>
                         {/* Product identity — the CVE→asset matching keys. */}
                         <div className="flex items-center gap-1.5 border-t border-border-default/50 pt-4">

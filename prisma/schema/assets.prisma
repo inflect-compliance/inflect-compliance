@@ -30,7 +30,6 @@ model Asset {
   criticality         Criticality?
   status              AssetStatus          @default(ACTIVE)
   externalRef         String?
-  tags                String?
   /// Structured product identity for CVE matching (vuln integration).
   /// Optional + best-effort: tenants populate these to turn the global
   /// CVE catalog into a targeted "you are affected" signal. Without
@@ -44,6 +43,10 @@ model Asset {
   version             String?
   deletedAt           DateTime?
   deletedByUserId     String?
+  /// Structured retention-expiry date — the generic data-lifecycle retention
+  /// sweep (RETENTION_SWEEP_MODELS) soft-deletes an asset once this elapses.
+  /// Surfaced as a date picker on the asset form; the free-text `retention`
+  /// field above is the human-readable policy note, not the machine date.
   retentionUntil      DateTime?
   ownerUser           User?                @relation("AssetOwner", fields: [ownerUserId], references: [id])
   tenant              Tenant               @relation(fields: [tenantId], references: [id])

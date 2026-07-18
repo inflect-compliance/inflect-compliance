@@ -1,7 +1,7 @@
 import { RequestContext } from '../types';
 import { AssetRepository, AssetListParams, AssetFilters } from '../repositories/AssetRepository';
 import { WorkItemRepository } from '../repositories/WorkItemRepository';
-import type { TaskLinkEntityType, AssetType } from '@prisma/client';
+import type { TaskLinkEntityType, AssetType, AssetStatus, Prisma } from '@prisma/client';
 import { assertCanRead, assertCanWrite, assertCanAdmin } from '../policies/common';
 import { logEvent } from '../events/audit';
 import { notFound } from '@/lib/errors/types';
@@ -208,6 +208,8 @@ interface CreateAssetInput {
     businessProcesses?: string | null;
     dataResidency?: string | null;
     retention?: string | null;
+    // Structured retention-expiry date (YYYY-MM-DD or ISO) — coerced to a Date.
+    retentionUntil?: string | null;
     // External-system reference (CMDB id, ticket key, …).
     externalRef?: string | null;
     // Product-identity fields — power CVE→asset matching.
@@ -246,6 +248,7 @@ export async function createAsset(ctx: RequestContext, data: CreateAssetInput) {
             businessProcesses: data.businessProcesses,
             dataResidency: data.dataResidency,
             retention: data.retention,
+            retentionUntil: data.retentionUntil ? new Date(data.retentionUntil) : null,
             externalRef: data.externalRef,
             cpe: data.cpe,
             vendor: data.vendor,
@@ -308,6 +311,15 @@ export async function updateAsset(ctx: RequestContext, id: string, data: UpdateA
             businessProcesses: data.businessProcesses,
             dataResidency: data.dataResidency,
             retention: data.retention,
+            // Three-state: undefined → leave unchanged; empty/null → clear;
+            // non-empty string → date. (The edit form always sends the field,
+            // as '' when cleared, so '' must map to null — not `new Date('')`.)
+            retentionUntil:
+                data.retentionUntil === undefined
+                    ? undefined
+                    : data.retentionUntil
+                        ? new Date(data.retentionUntil)
+                        : null,
             externalRef: data.externalRef,
             cpe: data.cpe,
             vendor: data.vendor,
@@ -387,9 +399,13 @@ export interface AssetImportResult {
  *     fallback. `criticality` is NOT taken from the CSV — createAsset derives
  *     it from the CIA triad (the single source of truth).
  *
- * Each row is created through `createAsset`, so it inherits derive-on-write
- * criticality, the per-asset CREATE audit entry, and key minting. Per-row
- * errors are isolated (one bad row never rolls back the good ones).
+ * The writes are BATCHED: after an in-memory validation + normalisation pass
+ * (name-required, dedupe, owner resolution, derive-on-write criticality), the
+ * surviving rows are inserted in ONE transaction — a single N-wide key
+ * allocation, one `createManyAndReturn`, and the per-asset CREATE audit chain.
+ * A 500-row CSV is one transaction, not 500 serial ones. Per-row VALIDATION
+ * errors are isolated (collected before the insert); a DB-level failure rolls
+ * the batch back.
  */
 export async function bulkImportAssets(
     ctx: RequestContext,
@@ -421,6 +437,12 @@ export async function bulkImportAssets(
     const seen = new Set(existingNames.map((n) => n.trim().toLowerCase()));
     const result: AssetImportResult = { created: 0, skipped: 0, createdIds: [], errors: [] };
 
+    // ─── In-memory validation + normalisation pass (NO writes) ───
+    // Per-row validation errors + dedupe skips are isolated here, BEFORE any
+    // write, so one bad row never sinks the batch. Each surviving row is
+    // normalised into the exact create payload (owner resolved, criticality
+    // derived from the CIA triad — the single source of truth).
+    const prepared: { name: string; data: Prisma.AssetUncheckedCreateInput }[] = [];
     let i = 0;
     for (const row of rows) {
         i += 1;
@@ -447,15 +469,87 @@ export async function bulkImportAssets(
             }
         }
 
-        try {
-            const asset = await createAsset(ctx, { ...row, owner: owner ?? undefined, ownerUserId });
-            result.created += 1;
-            result.createdIds.push(asset.id);
-        } catch (e) {
-            result.errors.push({ row: i, name: row.name, message: e instanceof Error ? e.message : String(e) });
-        }
+        const c = row.confidentiality ?? 3;
+        const iScore = row.integrity ?? 3;
+        const a = row.availability ?? 3;
+
+        prepared.push({
+            name: row.name,
+            data: {
+                name: row.name,
+                type: row.type as AssetType,
+                ...(row.status ? { status: row.status as AssetStatus } : {}),
+                classification: row.classification,
+                owner: owner ?? undefined,
+                ownerUserId,
+                location: row.location,
+                confidentiality: row.confidentiality,
+                integrity: row.integrity,
+                availability: row.availability,
+                criticality: criticalityToEnum(c, iScore, a),
+                dependencies: row.dependencies,
+                businessProcesses: row.businessProcesses,
+                dataResidency: row.dataResidency,
+                retention: row.retention,
+                externalRef: row.externalRef,
+                cpe: row.cpe,
+                vendor: row.vendor,
+                product: row.product,
+                version: row.version,
+                tenantId: ctx.tenantId,
+            },
+        });
     }
 
+    if (prepared.length === 0) return result;
+
+    // ─── ONE transaction: batched key allocation + batched insert + audit ───
+    // (was N per-row transactions, each with its own key upsert + insert +
+    // audit). A generous timeout covers the per-row audit hash-chain on large
+    // batches. A DB-level failure rolls the whole batch back — the validation
+    // pass above catches the common bad-row cases first.
+    const created = await runInTenantContext(
+        ctx,
+        async (db) => {
+            // Allocate N keys in ONE counter round-trip (was one upsert/row).
+            const seq = await db.assetKeySequence.upsert({
+                where: { tenantId: ctx.tenantId },
+                create: { tenantId: ctx.tenantId, lastValue: prepared.length },
+                update: { lastValue: { increment: prepared.length } },
+            });
+            const base = seq.lastValue - prepared.length; // AST-(base+1) … AST-(base+N)
+
+            // Single INSERT … RETURNING. Asset carries no encrypted fields, so
+            // createManyAndReturn is safe (no per-row encryption middleware to
+            // bypass); the pii-middleware already handles createMany.
+            const createdRows = await db.asset.createManyAndReturn({
+                data: prepared.map((p, idx) => ({ ...p.data, key: `AST-${base + idx + 1}` })),
+            });
+
+            // Per-asset CREATE audit — sequential on the SAME tx db so the
+            // hash-chain stays ordered (logEvent → appendAuditEntry serialises).
+            for (const asset of createdRows) {
+                await logEvent(db, ctx, {
+                    action: 'CREATE',
+                    entityType: 'Asset',
+                    entityId: asset.id,
+                    details: `Created asset: ${asset.name}`,
+                    detailsJson: {
+                        category: 'entity_lifecycle',
+                        entityName: 'Asset',
+                        operation: 'created',
+                        after: { name: asset.name, type: asset.type, classification: asset.classification },
+                        summary: `Created asset: ${asset.name}`,
+                    },
+                });
+            }
+            return createdRows;
+        },
+        { timeout: 30_000 },
+    );
+
+    result.created = created.length;
+    result.createdIds = created.map((a) => a.id);
     return result;
 }
 

@@ -53,6 +53,9 @@ export const NewAssetFormSchema = z.object({
     dependencies: z.string().trim().max(2000).default(''),
     businessProcesses: z.string().trim().max(2000).default(''),
     retention: z.string().trim().max(2000).default(''),
+    // Structured retention-expiry date (YYYY-MM-DD from the picker) — the
+    // machine date the data-lifecycle sweep acts on. Distinct from `retention`.
+    retentionUntil: z.string().trim().max(40).default(''),
 });
 
 export type NewAssetFormValues = z.input<typeof NewAssetFormSchema>;

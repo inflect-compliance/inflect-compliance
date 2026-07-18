@@ -8,8 +8,10 @@
  * severity / status, and surfaces the CWE → OWASP/SSDF cross-walk. Built on
  * the shared EntityListPage + FilterToolbar + DataTable primitives.
  *
- * Read-only v1 — findings auto-materialise into the Findings register (the
- * triage surface) on ingest; per-row triage status edits are a follow-up.
+ * Findings auto-materialise into the Findings register (the triage surface)
+ * on ingest. Per-row triage status edits are live — via
+ * `PATCH /security-testing/findings/[id]` (`updateScannerFindingStatus`),
+ * surfaced on this page and inline on the asset detail Vulnerabilities tab.
  */
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';

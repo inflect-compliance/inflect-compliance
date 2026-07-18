@@ -25,9 +25,15 @@ type ParsedRow = {
     status?: string;
     owner?: string;
     classification?: string;
+    location?: string;
     confidentiality?: number;
     integrity?: number;
     availability?: number;
+    externalRef?: string;
+    dependencies?: string;
+    businessProcesses?: string;
+    retention?: string;
+    dataResidency?: string;
     cpe?: string;
     vendor?: string;
     product?: string;
@@ -48,10 +54,37 @@ export default function AssetImportPage() {
     const [importing, setImporting] = useState(false);
     const [result, setResult] = useState<{ created: number; skipped: number; errors: string[] } | null>(null);
 
+    // Single-line CSV field split — handles quoted fields containing commas
+    // and escaped "" quotes (the naive `line.split(',')` broke on both).
+    // Cross-line quoted newlines are out of scope: each physical line is parsed
+    // independently, matching the line-oriented split below.
+    const parseCsvLine = (line: string): string[] => {
+        const out: string[] = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let k = 0; k < line.length; k++) {
+            const ch = line[k];
+            if (inQuotes) {
+                if (ch === '"') {
+                    if (line[k + 1] === '"') { cur += '"'; k++; } // escaped quote
+                    else inQuotes = false;
+                } else cur += ch;
+            } else if (ch === '"') {
+                inQuotes = true;
+            } else if (ch === ',') {
+                out.push(cur); cur = '';
+            } else {
+                cur += ch;
+            }
+        }
+        out.push(cur);
+        return out.map((c) => c.trim());
+    };
+
     const parseCSV = (text: string): ParsedRow[] => {
         const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
         if (lines.length < 2) return [];
-        const headers = lines[0].split(',').map((h) => h.trim().toLowerCase().replace(/"/g, ''));
+        const headers = parseCsvLine(lines[0]).map((h) => h.toLowerCase());
         const nameIdx = headers.indexOf('name');
         if (nameIdx < 0) return [];
 
@@ -69,7 +102,7 @@ export default function AssetImportPage() {
         };
 
         return lines.slice(1).map((line): ParsedRow => {
-            const cols = line.split(',').map((c) => c.trim().replace(/^"|"$/g, ''));
+            const cols = parseCsvLine(line);
             const name = cols[nameIdx] ?? '';
             const rawType = col(cols, 'type');
             const rawStatus = col(cols, 'status');
@@ -95,9 +128,15 @@ export default function AssetImportPage() {
                 status,
                 owner: col(cols, 'owner'),
                 classification: col(cols, 'classification'),
+                location: col(cols, 'location'),
                 confidentiality: c.value,
                 integrity: i.value,
                 availability: a.value,
+                externalRef: col(cols, 'externalref'),
+                dependencies: col(cols, 'dependencies'),
+                businessProcesses: col(cols, 'businessprocesses'),
+                retention: col(cols, 'retention'),
+                dataResidency: col(cols, 'dataresidency'),
                 cpe: col(cols, 'cpe'),
                 vendor: col(cols, 'vendor'),
                 product: col(cols, 'product'),
@@ -137,9 +176,15 @@ export default function AssetImportPage() {
             if (row.status) a.status = row.status;
             if (row.owner) a.owner = row.owner;
             if (row.classification) a.classification = row.classification;
+            if (row.location) a.location = row.location;
             if (row.confidentiality !== undefined) a.confidentiality = row.confidentiality;
             if (row.integrity !== undefined) a.integrity = row.integrity;
             if (row.availability !== undefined) a.availability = row.availability;
+            if (row.externalRef) a.externalRef = row.externalRef;
+            if (row.dependencies) a.dependencies = row.dependencies;
+            if (row.businessProcesses) a.businessProcesses = row.businessProcesses;
+            if (row.retention) a.retention = row.retention;
+            if (row.dataResidency) a.dataResidency = row.dataResidency;
             if (row.cpe) a.cpe = row.cpe;
             if (row.vendor) a.vendor = row.vendor;
             if (row.product) a.product = row.product;
@@ -200,8 +245,11 @@ export default function AssetImportPage() {
                 <Heading level={3} className="mb-2">{t('import.csvFormat')}</Heading>
                 <p className="text-xs text-content-muted">{t('import.csvDesc')}</p>
                 <pre className="mt-2 text-xs text-content-subtle bg-bg-page/50 p-2 rounded overflow-x-auto">
-                    Name,Type,Status,Owner,Classification,Confidentiality,Integrity,Availability,CPE,Vendor,Product,Version{'\n'}
-                    Prod DB,DATA_STORE,ACTIVE,DBA,Confidential,5,5,4,cpe:2.3:a:postgresql:postgresql:16,postgresql,postgresql,16
+                    {/* Template-literal so the quoted-CSV example's `"` stay plain
+                        text (react/no-unescaped-entities) — and it doubles as a
+                        demo of the quoted-field parsing the importer now supports. */}
+                    {`Name,Type,Status,Owner,Classification,Location,Confidentiality,Integrity,Availability,ExternalRef,Dependencies,BusinessProcesses,Retention,DataResidency,CPE,Vendor,Product,Version
+Prod DB,DATA_STORE,ACTIVE,DBA,Confidential,eu-west-1,5,5,4,CMDB-1042,"Auth service, Billing",Checkout,7 years,EU,cpe:2.3:a:postgresql:postgresql:16,postgresql,postgresql,16`}
                 </pre>
             </div>
 

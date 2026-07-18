@@ -10,6 +10,8 @@ import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { UserCombobox } from '@/components/ui/user-combobox';
+import { DatePicker } from '@/components/ui/date-picker/date-picker';
+import { parseYMD, toYMD } from '@/components/ui/date-picker/date-utils';
 import { AssetCriticalityFields } from './AssetCriticalityFields';
 import { AssetIdentityFields } from './AssetIdentityFields';
 import {
@@ -224,7 +226,7 @@ export function NewAssetFields({
                         placeholder={t('form.externalRefPlaceholder')}
                     />
                 </FormField>
-                <FormField label={t('form.retention')}>
+                <FormField label={t('form.retention')} hint={t('form.retentionNote')}>
                     <Input
                         id="asset-retention-input"
                         value={form.fields.retention ?? ''}
@@ -232,7 +234,15 @@ export function NewAssetFields({
                         placeholder={t('form.retentionPlaceholder')}
                     />
                 </FormField>
-                <FormField label={t('form.dependencies')}>
+                <FormField label={t('form.retentionUntil')} hint={t('form.retentionUntilNote')}>
+                    <DatePicker
+                        clearable
+                        placeholder={t('form.retentionUntilPlaceholder')}
+                        value={form.fields.retentionUntil ? parseYMD(form.fields.retentionUntil) : null}
+                        onChange={(d) => form.setField('retentionUntil', toYMD(d) ?? '')}
+                    />
+                </FormField>
+                <FormField label={t('form.dependencies')} hint={t('form.dependenciesNote')}>
                     <Input
                         id="asset-dependencies-input"
                         value={form.fields.dependencies ?? ''}
@@ -240,7 +250,7 @@ export function NewAssetFields({
                         placeholder={t('form.dependenciesPlaceholder')}
                     />
                 </FormField>
-                <FormField label={t('form.businessProcesses')}>
+                <FormField label={t('form.businessProcesses')} hint={t('form.businessProcessesNote')}>
                     <Input
                         id="asset-business-processes-input"
                         value={form.fields.businessProcesses ?? ''}

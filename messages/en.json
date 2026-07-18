@@ -487,7 +487,13 @@
       "dependencies": "Dependencies",
       "dependenciesPlaceholder": "Systems or services this depends on",
       "businessProcesses": "Business processes",
-      "businessProcessesPlaceholder": "Processes this asset supports"
+      "businessProcessesPlaceholder": "Processes this asset supports",
+      "dependenciesNote": "Free-text notes — not linked to assets or controls.",
+      "businessProcessesNote": "Free-text notes. Use the process-map canvas for actual linkage.",
+      "retentionNote": "Human-readable policy note (e.g. “7 years”). The structured date below drives auto-retirement.",
+      "retentionUntil": "Retention until",
+      "retentionUntilPlaceholder": "Select a date…",
+      "retentionUntilNote": "Structured expiry date — the asset is auto-retired after it."
     },
     "crit": {
       "heading": "Asset Criticality",
@@ -622,13 +628,15 @@
       "identityHintTitle": "Add product identity",
       "identityHintBody": "This asset has no CPE, vendor, or product set, so new CVEs can't be matched to it. Add product identity to enable automatic vulnerability matching.",
       "identityHintAction": "Add identity",
-      "dependencies": "Dependencies",
-      "businessProcesses": "Business processes",
+      "dependencies": "Dependency notes",
+      "businessProcesses": "Business process notes",
       "retention": "Retention",
       "deleteAsset": "Delete asset",
       "deleteConfirmTitle": "Delete this asset?",
       "deleteConfirmDesc": "The asset is soft-deleted and can be restored from the Deleted assets view.",
-      "deleteConfirmLabel": "Delete asset"
+      "deleteConfirmLabel": "Delete asset",
+      "contextNotesCaption": "Free-text notes — not structured linkage. See “Where used in process maps” above for authoritative process usage.",
+      "retentionUntil": "Retention until"
     },
     "filters": {
       "type": "Type",
@@ -743,7 +751,9 @@
       "purgeTypeToConfirm": "Type {name} to confirm",
       "purgeFailed": "Failed to purge asset. Please try again.",
       "emptyTitle": "No deleted assets",
-      "emptyDesc": "Deleted assets appear here and can be restored."
+      "emptyDesc": "Deleted assets appear here and can be restored.",
+      "byUnknown": "Unknown",
+      "byWhen": "Deleted {when} by {who}"
     }
   },
   "risks": {
