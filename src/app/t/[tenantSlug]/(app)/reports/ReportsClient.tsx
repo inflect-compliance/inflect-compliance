@@ -323,7 +323,7 @@ export function ReportsClient({
                             <div className={cardVariants({ density: 'none' })}>
                                 <KPIStat
                                     value={s.gapRequirements}
-                                    label={tx('gaps')}
+                                    label={tx('gapsMappedNotImplemented')}
                                     tone={s.gapRequirements > 0 ? 'attention' : 'success'}
                                 />
                             </div>

@@ -1648,6 +1648,9 @@
         },
         "docs/implementation-notes/2026-07-18-canvas-compliance-half.md": {
             "class": "historical"
+        },
+        "docs/implementation-notes/2026-07-18-reports-readiness-spine.md": {
+            "class": "historical"
         }
     }
 }

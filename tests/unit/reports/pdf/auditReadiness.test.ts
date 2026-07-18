@@ -1,30 +1,30 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
- * Wave-B coverage — Audit Readiness PDF generator (previously ~0% branches).
+ * Audit Readiness PDF generator — computed off the readiness spine
+ * (`generateReadinessReport`), NOT the old SoA engine.
  *
- * Strategy: mock the data-fetching boundary (getSoA, runSoAChecks, prisma) and
- * let the REAL pdfkit-backed layout/table/section helpers run under node. The
- * generator's own branches are exercised by varying the mocked report data:
- *   - checks.pass true (audit-ready paragraph) vs false (error/warning summary)
- *   - checks.issues empty (no Issues table) vs populated (Issues table + sort)
- *   - issue severity error vs warning sort arm + .toUpperCase()
- *   - entry.applicable true / false / null → 'Yes' / 'No' / 'Unmapped'
- *   - implementationStatus present (replace _) vs absent ('—')
- *   - justification present vs absent ('—')
- *   - tenant name present vs absent; framework option present vs absent
+ * Strategy: mock the data-fetching boundary (generateReadinessReport,
+ * resolveInstalledFrameworkKey, prisma) and let the REAL pdfkit-backed
+ * layout/table/section helpers run under node. The generator's own branches
+ * are exercised by varying the mocked readiness payload:
+ *   - gaps === 0 && unmapped === 0 (audit-ready paragraph) vs not (gap paragraph)
+ *   - unmappedRequirements empty (no Unmapped table) vs populated (Unmapped table + sort)
+ *   - bySection empty vs populated (Coverage-by-section rows + TOTAL footer)
+ *   - tenant name present vs absent ('Tenant' fallback)
+ *   - options.framework present (forwarded) vs absent (resolveInstalledFrameworkKey path)
  *   - watermark option vs default 'NONE'
  */
 
-const mockGetSoA = jest.fn();
-const mockRunSoAChecks = jest.fn();
+const mockGenerateReadinessReport = jest.fn();
+const mockResolveInstalledFrameworkKey = jest.fn();
 const mockTenantFindUnique = jest.fn();
 
-jest.mock('@/app-layer/usecases/soa', () => ({
-    getSoA: (...args: any[]) => mockGetSoA(...args),
+jest.mock('@/app-layer/usecases/framework/coverage', () => ({
+    generateReadinessReport: (...args: any[]) => mockGenerateReadinessReport(...args),
 }));
 
-jest.mock('@/app-layer/usecases/soa-checks', () => ({
-    runSoAChecks: (...args: any[]) => mockRunSoAChecks(...args),
+jest.mock('@/app-layer/usecases/soa', () => ({
+    resolveInstalledFrameworkKey: (...args: any[]) => mockResolveInstalledFrameworkKey(...args),
 }));
 
 jest.mock('@/lib/prisma', () => ({
@@ -39,48 +39,60 @@ import { makeRequestContext } from '../../../helpers/make-context';
 
 const ctx = makeRequestContext('ADMIN');
 
-function entry(over: Partial<any> = {}) {
+function unmapped(over: Partial<any> = {}): any {
     return {
-        requirementId: over.requirementId ?? 'req1',
-        requirementCode: over.requirementCode ?? 'A.5.1',
-        requirementTitle: over.requirementTitle ?? 'Policies',
+        code: over.code ?? 'A.5.1',
+        title: over.title ?? 'Policies for information security',
         section: over.section ?? 'Organizational',
-        applicable: over.applicable ?? true,
-        justification: over.justification ?? null,
-        implementationStatus: over.implementationStatus ?? 'IMPLEMENTED',
-        mappedControls: over.mappedControls ?? [{ controlId: 'c1' }],
-        evidenceCount: over.evidenceCount ?? 1,
-        openTaskCount: over.openTaskCount ?? 0,
-        lastTestResult: over.lastTestResult ?? null,
-        ...over,
     };
 }
 
-function soaReport(entries: any[]): any {
+function section(over: Partial<any> = {}): any {
     return {
-        tenantId: 't1',
-        tenantSlug: 'acme',
-        framework: 'ISO27001',
-        frameworkName: 'ISO 27001:2022',
-        generatedAt: new Date().toISOString(),
-        entries,
-        summary: {
-            total: entries.length,
-            applicable: entries.filter((e) => e.applicable === true).length,
-            notApplicable: entries.filter((e) => e.applicable === false).length,
-            unmapped: entries.filter((e) => e.applicable === null).length,
-            implemented: entries.filter((e) => e.implementationStatus === 'IMPLEMENTED').length,
-            missingJustification: 0,
+        section: over.section ?? 'Organizational',
+        total: over.total ?? 10,
+        mapped: over.mapped ?? 8,
+        coveragePercent: over.coveragePercent ?? 80,
+    };
+}
+
+/**
+ * Build a `generateReadinessReport` payload. Numbers default to a
+ * partially-ready ISO framework; override per-branch.
+ */
+function readinessReport(over: Partial<any> = {}): any {
+    const bySection = over.bySection ?? [section()];
+    const unmappedRequirements = over.unmappedRequirements ?? [];
+    const summary = {
+        totalRequirements: 10,
+        mappedRequirements: 8,
+        coveragePercent: 80,
+        implementedRequirements: 6,
+        gapRequirements: 2,
+        exceptedRequirements: 1,
+        notApplicableCount: 0,
+        missingEvidenceCount: 0,
+        overdueTaskCount: 0,
+        readinessScore: 72,
+        ...(over.summary ?? {}),
+    };
+    return {
+        framework: over.framework ?? { key: 'ISO27001', name: 'ISO 27001', version: '2022' },
+        isIsoFamily: over.isIsoFamily ?? true,
+        generatedAt: over.generatedAt ?? new Date().toISOString(),
+        coverage: {
+            total: summary.totalRequirements,
+            mapped: summary.mappedRequirements,
+            unmapped: over.coverage?.unmapped ?? unmappedRequirements.length,
+            coveragePercent: summary.coveragePercent,
+            ...(over.coverage ?? {}),
         },
-    };
-}
-
-function checks(over: Partial<any> = {}): any {
-    return {
-        pass: over.pass ?? true,
-        errorCount: over.errorCount ?? 0,
-        warningCount: over.warningCount ?? 0,
-        issues: over.issues ?? [],
+        bySection,
+        unmappedRequirements,
+        notApplicableControls: over.notApplicableControls ?? [],
+        controlsMissingEvidence: over.controlsMissingEvidence ?? [],
+        overdueTasks: over.overdueTasks ?? [],
+        summary,
     };
 }
 
@@ -97,55 +109,40 @@ async function renderToBuffer(doc: PDFKit.PDFDocument): Promise<Buffer> {
 beforeEach(() => {
     jest.clearAllMocks();
     mockTenantFindUnique.mockResolvedValue({ name: 'Acme Corp' });
+    mockResolveInstalledFrameworkKey.mockResolvedValue('ISO27001');
 });
 
 describe('generateAuditReadinessPdf', () => {
-    it('audit-ready (pass=true, no issues): renders the ready paragraph, no Issues table', async () => {
-        // Branch: checks.pass === true → "✓ SoA is audit-ready"; issues.length === 0.
-        mockGetSoA.mockResolvedValue(soaReport([entry()]));
-        mockRunSoAChecks.mockReturnValue(checks({ pass: true }));
+    it('audit-ready (0 gaps, 0 unmapped): renders the ready paragraph', async () => {
+        // Branch: gapRequirements === 0 && coverage.unmapped === 0 → "Audit-ready …".
+        mockGenerateReadinessReport.mockResolvedValue(
+            readinessReport({
+                summary: { gapRequirements: 0, readinessScore: 100, implementedRequirements: 10 },
+                coverage: { unmapped: 0 },
+                unmappedRequirements: [],
+            }),
+        );
 
-        const doc = await generateAuditReadinessPdf(ctx);
+        const doc = await generateAuditReadinessPdf(ctx, { framework: 'ISO27001' });
         const buf = await renderToBuffer(doc);
 
         expect(buf.subarray(0, 5).toString()).toBe('%PDF-');
-        expect(mockGetSoA).toHaveBeenCalledWith(
-            ctx,
-            expect.objectContaining({ includeEvidence: true, includeTasks: true, includeTests: true }),
-        );
+        // options.framework is forwarded straight to the readiness spine.
+        expect(mockGenerateReadinessReport).toHaveBeenCalledWith(ctx, 'ISO27001');
+        // Explicit framework passed → the installed-framework resolver is NOT hit.
+        expect(mockResolveInstalledFrameworkKey).not.toHaveBeenCalled();
     });
 
-    it('NOT audit-ready (pass=false) with issues table + error/warning sort', async () => {
-        // Branch: checks.pass === false → "✗ ... NOT audit-ready" summary line;
-        // issues.length > 0 → Issues table; sort places error before warning.
-        mockGetSoA.mockResolvedValue(
-            soaReport([
-                entry({ requirementCode: 'A.5.2', applicable: false, justification: 'N/A here' }),
-                entry({ requirementCode: 'A.5.1', applicable: null, implementationStatus: null, mappedControls: [] }),
-            ]),
-        );
-        mockRunSoAChecks.mockReturnValue(
-            checks({
-                pass: false,
-                errorCount: 1,
-                warningCount: 1,
-                issues: [
-                    {
-                        rule: 'NO_EVIDENCE',
-                        severity: 'warning',
-                        requirementCode: 'A.5.3',
-                        requirementTitle: 'X',
-                        reason: 'No evidence',
-                        suggestedAction: 'Attach evidence',
-                    },
-                    {
-                        rule: 'UNMAPPED',
-                        severity: 'error',
-                        requirementCode: 'A.5.1',
-                        requirementTitle: 'Y',
-                        reason: 'No controls mapped',
-                        suggestedAction: 'Map a control',
-                    },
+    it('not-ready (gaps + unmapped): renders the gap paragraph + Unmapped table', async () => {
+        // Branch: gaps > 0 → readiness-score gap paragraph; unmappedRequirements
+        // populated → Unmapped Requirements table with numeric-aware sort.
+        mockGenerateReadinessReport.mockResolvedValue(
+            readinessReport({
+                summary: { gapRequirements: 3, readinessScore: 40 },
+                unmappedRequirements: [
+                    unmapped({ code: 'A.5.10', title: 'Later', section: 'Org' }),
+                    unmapped({ code: 'A.5.2', title: 'Earlier', section: 'Org' }),
+                    unmapped({ code: 'A.5.3', title: 'No section', section: null }),
                 ],
             }),
         );
@@ -155,65 +152,28 @@ describe('generateAuditReadinessPdf', () => {
         expect(buf.length).toBeGreaterThan(0);
     });
 
-    it('mixed-severity ordering hits BOTH ternary arms of the sort comparator', async () => {
-        // Branch: a.severity !== b.severity → both `'error' ? -1` and `: 1` arms.
-        // Three issues in warning/error/warning order force the comparator to
-        // evaluate (warning,error) and (error,warning) pairs.
-        mockGetSoA.mockResolvedValue(soaReport([entry()]));
-        mockRunSoAChecks.mockReturnValue(
-            checks({
-                pass: false,
-                errorCount: 1,
-                warningCount: 2,
-                issues: [
-                    { rule: 'NO_EVIDENCE', severity: 'warning', requirementCode: 'A.5.1', requirementTitle: 'W1', reason: 'r', suggestedAction: 'a' },
-                    { rule: 'UNMAPPED', severity: 'error', requirementCode: 'A.5.2', requirementTitle: 'E1', reason: 'r', suggestedAction: 'a' },
-                    { rule: 'NOT_STARTED', severity: 'warning', requirementCode: 'A.5.3', requirementTitle: 'W2', reason: 'r', suggestedAction: 'a' },
-                ],
-            }),
+    it('no explicit framework → resolves the installed framework key', async () => {
+        // Branch: options.framework absent → resolveInstalledFrameworkKey(ctx).
+        mockResolveInstalledFrameworkKey.mockResolvedValue('SOC2');
+        mockGenerateReadinessReport.mockResolvedValue(
+            readinessReport({ framework: { key: 'SOC2', name: 'SOC 2', version: null }, isIsoFamily: false }),
         );
 
         const doc = await generateAuditReadinessPdf(ctx);
         const buf = await renderToBuffer(doc);
+
         expect(buf.length).toBeGreaterThan(0);
+        expect(mockResolveInstalledFrameworkKey).toHaveBeenCalledWith(ctx);
+        expect(mockGenerateReadinessReport).toHaveBeenCalledWith(ctx, 'SOC2');
     });
 
-    it('two issues of the SAME severity exercise the localeCompare sort arm', async () => {
-        // Branch: a.severity === b.severity → fall through to code comparison.
-        mockGetSoA.mockResolvedValue(soaReport([entry()]));
-        mockRunSoAChecks.mockReturnValue(
-            checks({
-                pass: false,
-                errorCount: 2,
-                issues: [
-                    { rule: 'UNMAPPED', severity: 'error', requirementCode: 'A.5.10', requirementTitle: 'B', reason: 'r', suggestedAction: 'a' },
-                    { rule: 'UNMAPPED', severity: 'error', requirementCode: 'A.5.2', requirementTitle: 'A', reason: 'r', suggestedAction: 'a' },
-                ],
-            }),
+    it('framework without a version renders the bare name', async () => {
+        // Branch: framework.version falsy → frameworkName === framework.name.
+        mockGenerateReadinessReport.mockResolvedValue(
+            readinessReport({ framework: { key: 'SOC2', name: 'SOC 2', version: null }, isIsoFamily: false }),
         );
 
-        const doc = await generateAuditReadinessPdf(ctx);
-        const buf = await renderToBuffer(doc);
-        expect(buf.length).toBeGreaterThan(0);
-    });
-
-    it('entry field fallbacks: applicable false/null, missing status & justification', async () => {
-        // Branch matrix on the row mapper:
-        //   applicable true  → 'Yes'
-        //   applicable false → 'No'
-        //   applicable null  → 'Unmapped'
-        //   implementationStatus null → '—'
-        //   justification null → '—'
-        mockGetSoA.mockResolvedValue(
-            soaReport([
-                entry({ requirementCode: 'A.5.1', applicable: true, justification: 'because' }),
-                entry({ requirementCode: 'A.5.2', applicable: false, implementationStatus: null, justification: null }),
-                entry({ requirementCode: 'A.5.3', applicable: null, implementationStatus: null, justification: null, mappedControls: [] }),
-            ]),
-        );
-        mockRunSoAChecks.mockReturnValue(checks({ pass: true }));
-
-        const doc = await generateAuditReadinessPdf(ctx);
+        const doc = await generateAuditReadinessPdf(ctx, { framework: 'SOC2' });
         const buf = await renderToBuffer(doc);
         expect(buf.length).toBeGreaterThan(0);
     });
@@ -221,20 +181,30 @@ describe('generateAuditReadinessPdf', () => {
     it('absent tenant name falls back to "Tenant"', async () => {
         // Branch: tenant?.name || 'Tenant'.
         mockTenantFindUnique.mockResolvedValue(null);
-        mockGetSoA.mockResolvedValue(soaReport([entry()]));
-        mockRunSoAChecks.mockReturnValue(checks({ pass: true }));
+        mockGenerateReadinessReport.mockResolvedValue(readinessReport());
 
-        const doc = await generateAuditReadinessPdf(ctx);
+        const doc = await generateAuditReadinessPdf(ctx, { framework: 'ISO27001' });
         const buf = await renderToBuffer(doc);
         expect(buf.length).toBeGreaterThan(0);
     });
 
-    it('empty SoA still renders (no entries)', async () => {
-        // Branch: zero entries — sorted/mapped arrays are empty, totals row still rendered.
-        mockGetSoA.mockResolvedValue(soaReport([]));
-        mockRunSoAChecks.mockReturnValue(checks({ pass: true }));
+    it('empty readiness payload still renders (no sections, no unmapped)', async () => {
+        // Branch: zero sections + zero unmapped — TOTAL footer still rendered,
+        // no Unmapped Requirements table.
+        mockGenerateReadinessReport.mockResolvedValue(
+            readinessReport({
+                bySection: [],
+                unmappedRequirements: [],
+                coverage: { total: 0, mapped: 0, unmapped: 0, coveragePercent: 0 },
+                summary: {
+                    totalRequirements: 0, mappedRequirements: 0, coveragePercent: 0,
+                    implementedRequirements: 0, gapRequirements: 0, exceptedRequirements: 0,
+                    readinessScore: 0,
+                },
+            }),
+        );
 
-        const doc = await generateAuditReadinessPdf(ctx);
+        const doc = await generateAuditReadinessPdf(ctx, { framework: 'ISO27001' });
         const buf = await renderToBuffer(doc);
         expect(buf.length).toBeGreaterThan(0);
     });

@@ -322,6 +322,11 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
 
     return {
         framework: { key: fw.key, name: fw.name, version: fw.version },
+        // PR-U — ISO-family flag so the report EXPORTS (audit-readiness / gap PDFs)
+        // that now compute off THIS payload can gate residual SoA/Annex-A wording
+        // exactly as the SoA CSV route does, keeping non-ISO exports free of ISO
+        // constructs. Same derivation as the SoA DTO (`fw.kind === 'ISO_STANDARD'`).
+        isIsoFamily: fw.kind === 'ISO_STANDARD',
         generatedAt: now.toISOString(),
         coverage: { total, mapped: mapped.length, unmapped: unmapped.length, coveragePercent },
         bySection,
