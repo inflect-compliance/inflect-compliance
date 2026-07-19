@@ -983,9 +983,13 @@ function EvidenceFileVersions({
     }>(open ? CACHE_KEYS.evidence.fileVersions(evidenceId) : null);
 
     const data = versionsQuery.data;
-    if (!data) return null;
+    // Tolerate a payload without `versions` — an older cached response, or
+    // any consumer that hands this component a partial shape. Rendering
+    // nothing is the right fallback for a supplementary panel.
+    const versions = data?.versions;
+    if (!data || !Array.isArray(versions)) return null;
 
-    const prior = data.versions.filter((v) => !v.isCurrent);
+    const prior = versions.filter((v) => !v.isCurrent);
 
     return (
         <div className="space-y-tight" data-testid="evidence-file-versions">
