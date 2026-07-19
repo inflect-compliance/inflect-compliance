@@ -104,6 +104,12 @@ jest.mock('@/app-layer/repositories/TestPlanRepository', () => ({
 const mockAttestControlTested = jest.fn();
 jest.mock('@/app-layer/usecases/control-test', () => ({
     attestControlTested: (...args: unknown[]) => mockAttestControlTested(...args),
+    // PR-CC — the runner gates the attestation + cadence roll on a real
+    // verdict. This predicate is pure, so the mock uses the REAL rule rather
+    // than a stub: a fake that always returned true would hide the very bug
+    // the gate exists to prevent (a handler crash coerced to INCONCLUSIVE
+    // marking the control "tested & on-schedule").
+    isAttestingVerdict: (result: unknown) => result === 'PASS' || result === 'FAIL',
 }));
 
 // Events
