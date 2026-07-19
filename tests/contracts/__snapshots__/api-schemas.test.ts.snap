@@ -3425,6 +3425,12 @@ exports[`API contract — per-schema snapshots schema: PolicyDetail 1`] = `
                   "string",
                   "null"
                 ]
+              },
+              "comment": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             },
             "required": [
