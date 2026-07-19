@@ -1669,6 +1669,9 @@
         },
         "docs/implementation-notes/2026-07-19-control-health-filter-and-swr.md": {
             "class": "historical"
+        },
+        "docs/implementation-notes/2026-07-19-readiness-plumbing-correctness.md": {
+            "class": "historical"
         }
     }
 }

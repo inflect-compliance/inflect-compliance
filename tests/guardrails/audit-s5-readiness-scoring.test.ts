@@ -85,16 +85,42 @@ describe('Audit S5 — Audit Readiness & Scoring', () => {
             expect(src).toMatch(/Math\.abs\(sum\s*-\s*1\.0\)/);
         });
 
-        it('computeReadiness persists a ReadinessSnapshot after scoring', () => {
+        it('computeReadiness persists a ReadinessSnapshot after scoring (best-effort)', () => {
             expect(src).toMatch(/readinessSnapshot\.create/);
-            // Snapshot write is best-effort (try/catch) so the
-            // observational write never breaks the computation.
-            // Window widened to 900 — the create's data: {} block is
-            // multi-line + indented and the matching catch sits ~450
-            // chars past the create marker.
+            // Snapshot write is best-effort — the create sits inside a
+            // try {...} catch so the observational write never breaks the
+            // computation. Window widened to 2000: the dedup findFirst +
+            // logEvent-on-persist block now sit between create and catch
+            // (see the compute/persist split below).
             expect(src).toMatch(
-                /try\s*\{[\s\S]{0,900}readinessSnapshot\.create[\s\S]{0,800}\}\s*catch/,
+                /try\s*\{[\s\S]{0,1200}readinessSnapshot\.create[\s\S]{0,2000}\}\s*catch/,
             );
+        });
+
+        it('compute/persist are split: scoreReadiness (read) vs computeReadiness (write)', () => {
+            // readiness-reconcile — the read path (overview/list/export) must
+            // compute WITHOUT persisting, so a snapshot is only ever written by
+            // the deliberate single-cycle scoring. scoreReadiness is the
+            // compute-only core; computeReadiness wraps it with the persist.
+            expect(src).toMatch(/export async function scoreReadiness\(/);
+            expect(src).toMatch(/export async function computeReadiness\(/);
+            // computeReadiness delegates the compute to scoreReadiness.
+            expect(src).toMatch(/const result = await scoreReadiness\(ctx, cycleId\)/);
+            // scoreReadiness itself never writes a snapshot.
+            const scoreBody = src.slice(
+                src.indexOf('export async function scoreReadiness('),
+                src.indexOf('export async function computeReadiness('),
+            );
+            expect(scoreBody).not.toMatch(/readinessSnapshot\.create/);
+        });
+
+        it('computeReadiness dedupes — reads the latest snapshot before writing', () => {
+            // Skip-if-score-unchanged: the trend must record real movement,
+            // not a snapshot per incidental recompute.
+            expect(src).toMatch(/readinessSnapshot\.findFirst/);
+            expect(src).toMatch(/latest && latest\.score === result\.score/);
+            // The scoring event is emitted only when a snapshot was recorded.
+            expect(src).toMatch(/if \(persisted\)/);
         });
 
         it('exports getReadinessHistory for the trend chart', () => {

@@ -33,6 +33,7 @@ import { RequestContext } from '../types';
 import { runInTenantContext } from '@/lib/db-context';
 import { assertCanWrite } from '../policies/common';
 import { assertCanManageOnboarding } from '../policies/onboarding.policies';
+import { assertCanViewPack } from '../policies/audit-readiness.policies';
 import { Nis2GapAssessmentRepository } from '../repositories/Nis2GapAssessmentRepository';
 import { FindingRepository } from '../repositories/FindingRepository';
 import { createFinding, updateFinding } from './finding';
@@ -204,7 +205,13 @@ export async function computeNis2Readiness(
     ctx: RequestContext,
     assessmentId?: string,
 ): Promise<Nis2Readiness> {
-    assertCanManageOnboarding(ctx);
+    // readiness-reconcile — this is a pure READ (a maturity SCORE), surfaced
+    // as one axis of the readiness overview beside control-coverage and
+    // test-readiness (both `assertCanViewPack`). Gate it on the SAME
+    // view-permission so a pack-viewer sees all three axes instead of a
+    // silent 2-axis view. The self-assessment WRITE paths (running/finalising
+    // an assessment, snapshotting the trend) keep `assertCanManageOnboarding`.
+    assertCanViewPack(ctx);
     return runInTenantContext(ctx, async (db) => {
         const [domains, questions] = await Promise.all([
             Nis2GapAssessmentRepository.listDomains(db),
@@ -370,6 +377,11 @@ export async function materializeNis2Gaps(
  * assessment completion.
  */
 export async function snapshotNis2Readiness(ctx: RequestContext): Promise<void> {
+    // This WRITES a trend snapshot; it previously borrowed its authorization
+    // from computeNis2Readiness's assertion. Now that the score read is
+    // view-gated, keep this write on the stricter manage-onboarding gate
+    // explicitly so a viewer can never persist a snapshot.
+    assertCanManageOnboarding(ctx);
     const readiness = await computeNis2Readiness(ctx);
     await runInTenantContext(ctx, async (db) => {
         await db.readinessSnapshot.create({
@@ -390,7 +402,8 @@ export async function snapshotNis2Readiness(ctx: RequestContext): Promise<void> 
 
 /** Snapshots for the trend chart, oldest→newest. */
 export async function listNis2ReadinessSnapshots(ctx: RequestContext) {
-    assertCanManageOnboarding(ctx);
+    // Trend read — same view-permission as the other readiness axes.
+    assertCanViewPack(ctx);
     return runInTenantContext(ctx, (db) =>
         db.readinessSnapshot.findMany({
             where: { tenantId: ctx.tenantId, frameworkKey: NIS2_SNAPSHOT_FRAMEWORK_KEY },
