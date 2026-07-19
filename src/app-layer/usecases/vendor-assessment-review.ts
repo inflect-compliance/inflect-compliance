@@ -16,9 +16,18 @@
  *                                    suggestion (manual wins)
  *   assessment.reviewerNotes       — assessment-level commentary
  *
- * The engine runs entirely on the post-override view of answers, so
- * a reviewer who returns to a REVIEWED assessment to tweak one
- * override sees the new total recomputed identically.
+ * The engine runs entirely on the post-override view of answers, so the
+ * recomputation is deterministic: the same overrides always yield the same
+ * total, regardless of how many times review runs.
+ *
+ * NOTE — review is single-shot, not an editing loop. `reviewAssessment`
+ * rejects anything whose status is not SUBMITTED, so a reviewer canNOT return
+ * to a REVIEWED assessment to tweak an override; the recompute-on-re-review
+ * behaviour this doc once described was never reachable. Correcting a
+ * completed review currently requires a new assessment cycle. If in-place
+ * amendment is wanted, it needs an explicit REVIEWED → SUBMITTED reopen verb
+ * with its own authz check and audit action — not a relaxation of this guard,
+ * which is also what keeps the risk writeback from firing twice.
  *
  * @module usecases/vendor-assessment-review
  */
@@ -313,6 +322,15 @@ export async function reviewAssessment(
  * Returns the id of the risk it auto-created (or null), so the caller can
  * surface it to the reviewer. Both effects call usecases that open their own
  * tenant context, so this MUST run outside the review transaction.
+ *
+ * Creation and linking are deliberately SEPARATE failure domains. `createRisk`
+ * and `addVendorLink` are distinct usecases, each opening its own transaction,
+ * so they cannot be made atomic without reaching past the usecase layer into
+ * the repositories — which would invert the layering this codebase enforces.
+ * Instead: if the link fails, the committed Risk id is STILL returned (with
+ * `linkFailed: true`) and the failure is logged at `error`. The alternative —
+ * reporting null because the second step failed — would leave a real Risk in
+ * the register that nobody was told about.
  */
 // PR-S — matches vendor-reassessment-reminder's DEFAULT_CADENCE_DAYS (annual
 // review cycle; ISO 27001). Duplicated as a small well-known constant to avoid
@@ -324,7 +342,7 @@ async function applyAssessmentRiskWriteback(
     vendorId: string,
     vendorName: string,
     riskRating: VendorCriticality | null,
-): Promise<{ createdRiskId: string | null }> {
+): Promise<{ createdRiskId: string | null; linkFailed?: boolean }> {
     if (!riskRating) return { createdRiskId: null };
 
     // 1. Writeback inherent tier + review timestamp + next-review roll.
@@ -360,6 +378,9 @@ async function applyAssessmentRiskWriteback(
 
     // 2. Auto-create a register Risk on high-risk ratings (idempotent).
     if (riskRating !== 'HIGH' && riskRating !== 'CRITICAL') return { createdRiskId: null };
+    // Declared outside the try so the link step below — a SEPARATE failure
+    // domain — can still report the id of an already-committed Risk.
+    let risk: { id: string };
     try {
         const links = await listVendorLinks(ctx, vendorId);
         // PR-S — idempotency keys on the ASSESSMENT_SOURCED marker this writeback
@@ -377,28 +398,14 @@ async function applyAssessmentRiskWriteback(
             return { createdRiskId: null };
         }
 
-        const risk = await createRisk(ctx, {
+        risk = await createRisk(ctx, {
             title: `Vendor risk: ${vendorName} (${riskRating}) — from assessment`,
             description: `Auto-created from vendor assessment review. Rating: ${riskRating}.`,
             category: 'Third-party',
         });
-        await addVendorLink(ctx, vendorId, {
-            entityType: 'RISK',
-            entityId: risk.id,
-            relation: 'ASSESSMENT_SOURCED',
-        });
-
-        logger.info(
-            'vendor-assessment-review: auto-created register risk from high-risk assessment',
-            {
-                component: 'vendor-assessment-review',
-                vendorId,
-                riskId: risk.id,
-                riskRating,
-            },
-        );
-        return { createdRiskId: risk.id };
     } catch (err) {
+        // Creation itself failed — nothing was persisted, so reporting null is
+        // accurate and there is nothing to reconcile.
         logger.warn(
             'vendor-assessment-review: auto-risk creation failed',
             {
@@ -410,6 +417,47 @@ async function applyAssessmentRiskWriteback(
         );
         return { createdRiskId: null };
     }
+
+    // The Risk row is now COMMITTED. Linking is a separate failure domain: it
+    // runs in its own tenant context/transaction, so it can fail independently.
+    // Folding it back into the creation try/catch (as this once did) meant a
+    // failed link reported `createdRiskId: null` while the Risk sat in the
+    // register — orphaned, unlinked, and invisible to the reviewer who would
+    // then have no idea it existed. A created Risk must never be silently
+    // unlinked AND unreported: we always return the id, and escalate the link
+    // failure to `error` because it leaves the register needing manual
+    // reconciliation (and the ASSESSMENT_SOURCED idempotency marker missing,
+    // so a subsequent review would materialise a DUPLICATE risk).
+    try {
+        await addVendorLink(ctx, vendorId, {
+            entityType: 'RISK',
+            entityId: risk.id,
+            relation: 'ASSESSMENT_SOURCED',
+        });
+    } catch (err) {
+        logger.error(
+            'vendor-assessment-review: auto-risk created but vendor link FAILED — risk is orphaned and the ASSESSMENT_SOURCED marker is missing; a later review may create a duplicate',
+            {
+                component: 'vendor-assessment-review',
+                vendorId,
+                riskId: risk.id,
+                riskRating,
+                err: err instanceof Error ? err : new Error(String(err)),
+            },
+        );
+        return { createdRiskId: risk.id, linkFailed: true };
+    }
+
+    logger.info(
+        'vendor-assessment-review: auto-created register risk from high-risk assessment',
+        {
+            component: 'vendor-assessment-review',
+            vendorId,
+            riskId: risk.id,
+            riskRating,
+        },
+    );
+    return { createdRiskId: risk.id };
 }
 
 /**
@@ -890,7 +938,14 @@ export async function listVendorAssessments(
                 template: { select: { name: true } },
                 templateVersion: { select: { name: true } },
             },
-            orderBy: { startedAt: 'desc' },
+            // Ordered by createdAt to match how EVERY other surface defines "the
+            // latest assessment" — the activation gate, getVendorMetrics, and the
+            // dashboard risk buckets all use `orderBy createdAt desc take 1`.
+            // This previously ordered by `startedAt`, which drifts from that
+            // whenever startedAt is null or set later than the row was created,
+            // so the assessment shown at the top of this list was not necessarily
+            // the one the gate and the dashboard were reasoning about.
+            orderBy: { createdAt: 'desc' },
             take: 200,
         });
 
