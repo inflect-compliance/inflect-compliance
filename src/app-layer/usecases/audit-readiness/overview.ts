@@ -24,7 +24,7 @@
  *
  * Failure-mode contract:
  *
- *   • If a single cycle's `computeReadiness` throws, the orchestrator
+ *   • If a single cycle's `scoreReadiness` throws, the orchestrator
  *     swallows the error for that cycle and emits no entry in
  *     `scoresByCycleId`. The page renders the cycle's card without
  *     a score (matching the previous client-side behaviour where
@@ -33,7 +33,7 @@
  */
 import { RequestContext } from '../../types';
 import { listAuditCycles } from './cycles';
-import { computeReadiness, type ReadinessResult } from '../audit-readiness-scoring';
+import { scoreReadiness, type ReadinessResult } from '../audit-readiness-scoring';
 
 export interface ReadinessOverviewPayload {
     cycles: Awaited<ReturnType<typeof listAuditCycles>>;
@@ -53,8 +53,13 @@ export async function getReadinessOverview(
 
     // Fan out per-cycle readiness in parallel; tolerate per-cycle
     // failures so a single broken framework doesn't blank the page.
+    // COMPUTE-ONLY (`scoreReadiness`) — the overview is a read surface
+    // visited on every list navigation, so it must NOT persist a
+    // snapshot per cycle (that write-amplification polluted the
+    // readiness trend). Snapshots are recorded only on the deliberate
+    // single-cycle scoring path.
     const settled = await Promise.allSettled(
-        cycles.map((c) => computeReadiness(ctx, c.id)),
+        cycles.map((c) => scoreReadiness(ctx, c.id)),
     );
 
     const scoresByCycleId: Record<string, ReadinessResult> = {};

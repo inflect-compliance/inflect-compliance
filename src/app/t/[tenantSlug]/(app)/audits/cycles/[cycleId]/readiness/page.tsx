@@ -101,6 +101,18 @@ export default function CycleReadinessPage() {
 
     const bd = result.breakdown;
 
+    // feat/readiness-trend first-paint fix — the default readiness fetch
+    // computes (and, on real movement, persists) the current score, but the
+    // `?action=history` fetch runs in the SAME Promise.all and can read the
+    // series before that write lands. Merge the freshly-computed score in as
+    // the trailing point so the trend always reflects the current number on
+    // first paint (belt-and-suspenders alongside the snapshot dedup). If the
+    // history already ends on this score, don't duplicate it.
+    const trendPoints: TimeSeriesPoint[] = history.map((s) => ({ date: new Date(s.computedAt), value: s.score }));
+    if (trendPoints.length === 0 || trendPoints[trendPoints.length - 1].value !== result.score) {
+        trendPoints.push({ date: new Date(), value: result.score });
+    }
+
     return (
         <EntityDetailLayout
             title={tx('readiness.titleSuffix', { name: cycle?.name || tx('readiness.cycleFallback') })}
@@ -162,8 +174,9 @@ export default function CycleReadinessPage() {
                 </div>
             </div>
 
-            {/* feat/readiness-trend — readiness over time from ReadinessSnapshot. */}
-            {history.length >= 2 && (
+            {/* feat/readiness-trend — readiness over time from ReadinessSnapshot,
+                with the current score merged in (see trendPoints above). */}
+            {trendPoints.length >= 2 && (
                 <div className={cardVariants()} id="readiness-trend">
                     <Heading level={3} className="mb-3 inline-flex items-center gap-tight"><AppIcon name="clock" size={16} /> {tx('readiness.trendTitle')}</Heading>
                     <LineChart
@@ -171,9 +184,9 @@ export default function CycleReadinessPage() {
                         ariaLabel={tx('readiness.trendAria')}
                         seriesIndex={1}
                         showArea
-                        state={chartReady<TimeSeriesPoint[]>(history.map((s) => ({ date: new Date(s.computedAt), value: s.score })))}
+                        state={chartReady<TimeSeriesPoint[]>(trendPoints)}
                     />
-                    <p className="text-xs text-content-subtle mt-2">{tx('readiness.trendHint', { count: history.length })}</p>
+                    <p className="text-xs text-content-subtle mt-2">{tx('readiness.trendHint', { count: trendPoints.length })}</p>
                 </div>
             )}
 

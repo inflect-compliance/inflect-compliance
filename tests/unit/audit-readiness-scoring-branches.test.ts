@@ -126,6 +126,9 @@ function buildDb(opts: {
             count: jest.fn().mockResolvedValue(opts.taskCount ?? 0),
         },
         readinessSnapshot: {
+            // Dedup reads the latest snapshot before writing; null = no prior
+            // snapshot → treated as movement → the create path runs.
+            findFirst: jest.fn().mockResolvedValue(null),
             create: opts.snapshotThrows
                 ? jest.fn().mockRejectedValue(new Error('snapshot boom'))
                 : jest.fn().mockResolvedValue({}),

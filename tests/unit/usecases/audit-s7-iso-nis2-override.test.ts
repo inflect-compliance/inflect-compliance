@@ -268,14 +268,22 @@ describe("Audit S7 — computeNIS2Readiness honours the override", () => {
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ task: { findMany: jest.fn().mockResolvedValue([]) } } as never),
         );
+        // countOpenCycleFindings on a NIS2 cycle first resolves the canonical
+        // NIS2 cycle (getCanonicalNis2CycleId) — an extra tenant-context call.
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({ auditCycle: { findFirst: jest.fn().mockResolvedValue({ id: 'c1' }) } } as never),
+        );
         // feat/audit-cycle-unify — countOpenCycleFindings (0 findings).
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ finding: { count: jest.fn().mockResolvedValue(0) } } as never),
         );
-        // snapshot create
+        // dedup read (findFirst=null → movement) + snapshot create
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({
-                readinessSnapshot: { create: jest.fn().mockResolvedValue({}) },
+                readinessSnapshot: {
+                    findFirst: jest.fn().mockResolvedValue(null),
+                    create: jest.fn().mockResolvedValue({}),
+                },
             } as never),
         );
         // logEvent

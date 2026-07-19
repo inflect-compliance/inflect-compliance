@@ -11,26 +11,36 @@
  *      is simply absent from `scoresByCycleId` (the page renders
  *      that cycle without a score, matching the prior client-side
  *      Promise.all + per-cycle try/catch behaviour).
- *   3. `listAuditCycles` and `computeReadiness` are called via the
+ *   3. `listAuditCycles` and `scoreReadiness` are called via the
  *      orchestrator (delegated) — i.e. permission gates and other
  *      invariants from those functions still apply.
+ *   4. The overview is a READ surface (visited on every list nav), so it
+ *      must delegate to the COMPUTE-ONLY `scoreReadiness` — NOT the
+ *      snapshot-persisting `computeReadiness`. Persisting per cycle on
+ *      every overview visit was the write-amplification that polluted the
+ *      readiness trend; the mock below asserts `computeReadiness` is not
+ *      even imported into this path.
  */
 
 jest.mock('../../../src/app-layer/usecases/audit-readiness/cycles', () => ({
     listAuditCycles: jest.fn(),
 }));
 
+// Mock BOTH: scoreReadiness is the compute-only path the overview must use;
+// computeReadiness is the persist path it must NOT touch.
 jest.mock('../../../src/app-layer/usecases/audit-readiness-scoring', () => ({
+    scoreReadiness: jest.fn(),
     computeReadiness: jest.fn(),
 }));
 
 import { getReadinessOverview } from '@/app-layer/usecases/audit-readiness/overview';
 import { listAuditCycles } from '@/app-layer/usecases/audit-readiness/cycles';
-import { computeReadiness } from '@/app-layer/usecases/audit-readiness-scoring';
+import { scoreReadiness, computeReadiness } from '@/app-layer/usecases/audit-readiness-scoring';
 import { makeRequestContext } from '../../helpers/make-context';
 
 const mockList = listAuditCycles as jest.MockedFunction<typeof listAuditCycles>;
-const mockCompute = computeReadiness as jest.MockedFunction<typeof computeReadiness>;
+const mockCompute = scoreReadiness as jest.MockedFunction<typeof scoreReadiness>;
+const mockPersist = computeReadiness as jest.MockedFunction<typeof computeReadiness>;
 
 beforeEach(() => {
     jest.clearAllMocks();
@@ -71,9 +81,12 @@ describe('getReadinessOverview', () => {
         expect(Object.keys(out.scoresByCycleId).sort()).toEqual(['a', 'b']);
         expect(out.scoresByCycleId.a.score).toBe(80);
         expect(out.scoresByCycleId.b.score).toBe(60);
-        // One computeReadiness per cycle, in parallel (called twice
-        // before any resolves — Promise.allSettled).
+        // One scoreReadiness (compute-only) per cycle, in parallel (called
+        // twice before any resolves — Promise.allSettled).
         expect(mockCompute).toHaveBeenCalledTimes(2);
+        // Compute-without-persist: the overview NEVER calls the
+        // snapshot-persisting computeReadiness — no write-amplification.
+        expect(mockPersist).not.toHaveBeenCalled();
     });
 
     it('omits a cycle from scoresByCycleId when its computeReadiness rejects', async () => {

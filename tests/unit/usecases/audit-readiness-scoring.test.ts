@@ -273,16 +273,12 @@ describe('CSV export — RFC 4180 escaping + audit emit', () => {
             fn({ task: { findMany: jest.fn().mockResolvedValue([]) } } as never),
         );
         // countOpenCycleFindings (feat/audit-cycle-unify) — 0 findings.
+        // ISO27001 (not NIS2) → no getCanonicalNis2CycleId call.
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ finding: { count: jest.fn().mockResolvedValue(0) } } as never),
         );
-        // Audit S5 — readinessSnapshot.create best-effort write.
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
-            fn({ readinessSnapshot: { create: jest.fn().mockResolvedValue({}) } } as never),
-        );
-        // computeReadiness internal logEvent
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
-        // exportUnmappedCsv's logEvent
+        // exportUnmappedCsv is COMPUTE-ONLY (scoreReadiness) — no snapshot
+        // persist / READINESS_COMPUTED log — only the export wrapper's log.
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
 
         const result = await exportUnmappedCsv(makeRequestContext('ADMIN'), 'c1');
@@ -292,10 +288,12 @@ describe('CSV export — RFC 4180 escaping + audit emit', () => {
         expect(result.csv).toContain('Requirement');
 
         const audits = mockLog.mock.calls.map(c => (c[2] as any).action);
-        // Two audit rows: one from computeReadiness, one from the
-        // CSV export wrapper.
-        expect(audits).toContain('READINESS_COMPUTED');
+        // readiness-reconcile — exports now COMPUTE-ONLY (scoreReadiness), so
+        // the only audit row is the export wrapper's. No READINESS_COMPUTED:
+        // that event marks a DELIBERATE scoring (the single-cycle route), not
+        // an incidental export-time recompute.
         expect(audits).toContain('AUDIT_EXPORT_GENERATED');
+        expect(audits).not.toContain('READINESS_COMPUTED');
     });
 
     it('exportControlGapsCsv produces filename with framework key', async () => {
@@ -330,17 +328,18 @@ describe('CSV export — RFC 4180 escaping + audit emit', () => {
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ task: { findMany: jest.fn().mockResolvedValue([]) } } as never),
         );
+        // countOpenCycleFindings on a NIS2 cycle first resolves the canonical
+        // NIS2 cycle (getCanonicalNis2CycleId) — an extra tenant-context call.
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({ auditCycle: { findFirst: jest.fn().mockResolvedValue({ id: 'c1' }) } } as never),
+        );
         // countOpenCycleFindings (feat/audit-cycle-unify) — 0 findings.
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ finding: { count: jest.fn().mockResolvedValue(0) } } as never),
         );
-        // Audit S5 — readinessSnapshot.create best-effort write.
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
-            fn({ readinessSnapshot: { create: jest.fn().mockResolvedValue({}) } } as never),
-        );
-        // computeReadiness internal log
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
-        // exportControlGapsCsv log
+        // exportControlGapsCsv is COMPUTE-ONLY (scoreReadiness) — no snapshot
+        // persist, no READINESS_COMPUTED log — so the only remaining call is
+        // the export wrapper's own audit log.
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
 
         const result = await exportControlGapsCsv(makeRequestContext('ADMIN'), 'c1');
@@ -381,14 +380,12 @@ describe('exportReadinessJson — audit emit', () => {
             fn({ task: { findMany: jest.fn().mockResolvedValue([]) } } as never),
         );
         // countOpenCycleFindings (feat/audit-cycle-unify) — 0 findings.
+        // ISO27001 (not NIS2) → no getCanonicalNis2CycleId call.
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ finding: { count: jest.fn().mockResolvedValue(0) } } as never),
         );
-        // Audit S5 — readinessSnapshot.create best-effort write.
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
-            fn({ readinessSnapshot: { create: jest.fn().mockResolvedValue({}) } } as never),
-        );
-        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
+        // exportReadinessJson is COMPUTE-ONLY (scoreReadiness) — no snapshot
+        // persist / READINESS_COMPUTED log — only the export wrapper's log.
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
 
         const result = await exportReadinessJson(makeRequestContext('ADMIN'), 'c1');

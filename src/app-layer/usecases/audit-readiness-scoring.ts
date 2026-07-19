@@ -104,16 +104,47 @@ async function loadEffectiveWeights<T extends Record<string, number>>(
 }
 
 /**
+ * The single canonical NIS2 cycle that folds in the tenant-wide NIS2
+ * self-assessment findings — the oldest NIS2 cycle (by createdAt).
+ *
+ * NIS2 self-assessment is a TENANT-WIDE questionnaire (`Nis2SelfAssessment`
+ * is keyed by tenantId only, not per-cycle), and its gap findings
+ * materialise with `auditId: null` + `sourceKind = NIS2_SELF_ASSESSMENT`
+ * and NO cycle reference. A tenant can nonetheless create multiple NIS2
+ * audit cycles. If every NIS2 cycle counted the tenant-wide self-assessment
+ * findings, the same gaps would double-penalize each cycle identically.
+ * We therefore attribute the self-assessment to exactly ONE canonical cycle
+ * (the oldest NIS2 cycle) — only one NIS2 cycle folds the self-assessment.
+ * Returns null when the tenant has no NIS2 cycle.
+ */
+async function getCanonicalNis2CycleId(ctx: RequestContext): Promise<string | null> {
+    return runInTenantContext(ctx, async (tdb) => {
+        const c = await tdb.auditCycle.findFirst({
+            where: { tenantId: ctx.tenantId, frameworkKey: 'NIS2' },
+            orderBy: { createdAt: 'asc' },
+            select: { id: true },
+        });
+        return c?.id ?? null;
+    });
+}
+
+/**
  * feat/audit-cycle-unify — count OPEN `Finding` rows raised on a
  * fieldwork audit that belongs to this cycle (Audit.auditCycleId =
- * cycleId, now linkable via the Part-1 FK). "Open" = any status that is
- * not CLOSED. Folded into the issue count of every scoring profile so a
- * real, unresolved finding lowers the cycle's readiness — not just the
- * legacy Task-based CONTROL_GAP/AUDIT_FINDING proxy.
+ * cycleId, now linkable via the Part-1 FK), PLUS — for the canonical NIS2
+ * cycle only — the tenant-wide NIS2 self-assessment gap findings. "Open" =
+ * any status that is not CLOSED. Folded into the issue count of every
+ * scoring profile so a real, unresolved finding lowers the cycle's
+ * readiness — not just the legacy Task-based CONTROL_GAP/AUDIT_FINDING proxy.
  *
- * Bounded (a single `count`, no row materialisation, no N+1).
+ * Bounded (a single `count` plus one canonical-cycle lookup, no row
+ * materialisation, no N+1).
  */
 async function countOpenCycleFindings(ctx: RequestContext, cycleId: string, frameworkKey: string): Promise<number> {
+    // Fold the tenant-wide NIS2 self-assessment findings into the canonical
+    // NIS2 cycle ONLY, so two NIS2 cycles never double-count the same gaps.
+    const foldNis2SelfAssessment =
+        frameworkKey === 'NIS2' && cycleId === (await getCanonicalNis2CycleId(ctx));
     return runInTenantContext(ctx, (tdb) =>
         tdb.finding.count({
             where: {
@@ -123,14 +154,11 @@ async function countOpenCycleFindings(ctx: RequestContext, cycleId: string, fram
                 OR: [
                     // Fieldwork findings reach the cycle via their audit.
                     { audit: { auditCycleId: cycleId } },
-                    // feat/audit-cycle-unify — NIS2 self-assessment gap-findings
-                    // are materialised with NO fieldwork audit (auditId = null),
-                    // so the audit-join above never sees them. Count them for the
-                    // NIS2 cycle by their provenance sourceKind, so a NIS2 gap
-                    // lowers the NIS2 cycle's readiness. (Chosen over attaching a
-                    // synthetic audit: the finding's framework provenance already
-                    // uniquely identifies the cycle it belongs to.)
-                    ...(frameworkKey === 'NIS2'
+                    // NIS2 self-assessment gap-findings are materialised with NO
+                    // fieldwork audit (auditId = null), so the audit-join above
+                    // never sees them. They are tenant-wide, so they count once —
+                    // against the canonical NIS2 cycle only (see helper above).
+                    ...(foldNis2SelfAssessment
                         ? [{ auditId: null, sourceKind: NIS2_SOURCE_KIND }]
                         : []),
                 ],
@@ -139,64 +167,93 @@ async function countOpenCycleFindings(ctx: RequestContext, cycleId: string, fram
     );
 }
 
-export async function computeReadiness(ctx: RequestContext, cycleId: string): Promise<ReadinessResult> {
+/**
+ * Compute a cycle's readiness score WITHOUT persisting a snapshot or
+ * logging an event. This is the read path — the list/overview/export/pack
+ * surfaces call it (often fanned over every cycle), so it must be free of
+ * write side-effects: otherwise the readiness trend fills with
+ * near-identical snapshots on every incidental recompute and the "N scored
+ * snapshots" count is inflated. Persist only via `computeReadiness`.
+ */
+export async function scoreReadiness(ctx: RequestContext, cycleId: string): Promise<ReadinessResult> {
     assertCanViewPack(ctx);
 
     const cycle = await runInTenantContext(ctx, (tdb) =>
         tdb.auditCycle.findFirst({ where: { id: cycleId, tenantId: ctx.tenantId } }));
     if (!cycle) throw notFound('Audit cycle not found');
 
-    let result: ReadinessResult;
     if (cycle.frameworkKey === 'ISO27001') {
-        result = await computeISO27001Readiness(ctx, cycle);
+        return computeISO27001Readiness(ctx, cycle);
     } else if (cycle.frameworkKey === 'NIS2') {
-        result = await computeNIS2Readiness(ctx, cycle);
-    } else {
-        // Audit S5 — generic fallback for custom frameworks. Coverage
-        // + evidence + issues only (no implementation/policy specifics).
-        result = await computeGenericReadiness(ctx, cycle);
+        return computeNIS2Readiness(ctx, cycle);
     }
+    // Audit S5 — generic fallback for custom frameworks. Coverage
+    // + evidence + issues only (no implementation/policy specifics).
+    return computeGenericReadiness(ctx, cycle);
+}
 
-    // Audit S5 — persist a time-series snapshot AFTER scoring so the
-    // dashboard's readiness-over-time chart has a cheap source. The
-    // snapshot is best-effort: if the write fails, the computed
-    // result still returns to the caller (the original behaviour).
+/**
+ * Compute a cycle's readiness AND record it — the DELIBERATE-scoring path
+ * (the single-cycle readiness route). Persists a time-series snapshot +
+ * logs `READINESS_COMPUTED`, but DEDUPES: if the cycle's most recent
+ * snapshot already carries this score, the write + event are skipped, so
+ * the trend records real readiness movement rather than every recompute.
+ * Best-effort — a persistence failure never surfaces to the caller.
+ */
+export async function computeReadiness(ctx: RequestContext, cycleId: string): Promise<ReadinessResult> {
+    const result = await scoreReadiness(ctx, cycleId);
+
     try {
-        await runInTenantContext(ctx, (tdb) =>
-            tdb.readinessSnapshot.create({
+        const persisted = await runInTenantContext(ctx, async (tdb) => {
+            // Dedup: skip if the latest snapshot for this cycle+framework
+            // already holds this score (no real movement to record).
+            const latest = await tdb.readinessSnapshot.findFirst({
+                where: {
+                    tenantId: ctx.tenantId,
+                    frameworkKey: result.frameworkKey,
+                    auditCycleId: cycleId,
+                },
+                orderBy: { computedAt: 'desc' },
+                select: { score: true },
+            });
+            if (latest && latest.score === result.score) return false;
+            await tdb.readinessSnapshot.create({
                 data: {
                     tenantId: ctx.tenantId,
-                    frameworkKey: cycle.frameworkKey,
+                    frameworkKey: result.frameworkKey,
                     auditCycleId: cycleId,
                     score: result.score,
                     breakdownJson: result.breakdown as unknown as Prisma.InputJsonValue,
                     gapCount: result.gaps.length,
                     computedByUserId: ctx.userId,
                 },
-            }),
-        );
-    } catch (_err) {
-        // Snapshot is observational — failure must not surface to
-        // the caller. Job-level metrics will surface persistent
-        // failures via the standard logging pipeline.
-    }
+            });
+            return true;
+        });
 
-    // Log event
-    await runInTenantContext(ctx, (tdb) =>
-        logEvent(tdb, ctx, {
-            action: 'READINESS_COMPUTED',
-            entityType: 'AuditCycle',
-            entityId: cycleId,
-            details: JSON.stringify({ score: result.score, frameworkKey: cycle.frameworkKey }),
-            detailsJson: {
-                category: 'custom',
-                event: 'readiness_computed',
-                score: result.score,
-                frameworkKey: cycle.frameworkKey,
-                gapCount: result.gaps.length,
-            },
-        })
-    );
+        // Log the scoring event only when a snapshot was actually recorded,
+        // so read-driven recomputes don't amplify the audit log either.
+        if (persisted) {
+            await runInTenantContext(ctx, (tdb) =>
+                logEvent(tdb, ctx, {
+                    action: 'READINESS_COMPUTED',
+                    entityType: 'AuditCycle',
+                    entityId: cycleId,
+                    details: JSON.stringify({ score: result.score, frameworkKey: result.frameworkKey }),
+                    detailsJson: {
+                        category: 'custom',
+                        event: 'readiness_computed',
+                        score: result.score,
+                        frameworkKey: result.frameworkKey,
+                        gapCount: result.gaps.length,
+                    },
+                }),
+            );
+        }
+    } catch (_err) {
+        // Snapshot + event are observational — a write failure must not
+        // surface to the caller; the computed result still returns.
+    }
 
     return result;
 }
@@ -701,7 +758,7 @@ function generateNIS2Recommendations(coverage: number, evidence: number, policie
 // ─── Export Generators ───
 
 export async function exportReadinessJson(ctx: RequestContext, cycleId: string): Promise<ReadinessResult> {
-    const result = await computeReadiness(ctx, cycleId);
+    const result = await scoreReadiness(ctx, cycleId);
     await runInTenantContext(ctx, (tdb) =>
         logEvent(tdb, ctx, {
             action: 'AUDIT_EXPORT_GENERATED',
@@ -720,7 +777,7 @@ export async function exportReadinessJson(ctx: RequestContext, cycleId: string):
 }
 
 export async function exportUnmappedCsv(ctx: RequestContext, cycleId: string): Promise<{ csv: string; filename: string }> {
-    const result = await computeReadiness(ctx, cycleId);
+    const result = await scoreReadiness(ctx, cycleId);
     const unmapped = result.gaps.filter((g) => g.type === 'UNMAPPED_REQUIREMENT');
 
     const rows = [['Requirement', 'Details', 'Severity']];
@@ -747,7 +804,7 @@ export async function exportUnmappedCsv(ctx: RequestContext, cycleId: string): P
 }
 
 export async function exportControlGapsCsv(ctx: RequestContext, cycleId: string): Promise<{ csv: string; filename: string }> {
-    const result = await computeReadiness(ctx, cycleId);
+    const result = await scoreReadiness(ctx, cycleId);
     const gapItems = result.gaps.filter((g) => g.type === 'MISSING_EVIDENCE' || g.type === 'OVERDUE_TASK' || g.type === 'OPEN_ISSUE');
 
     const rows = [['Type', 'Title', 'Details', 'Severity']];
@@ -777,7 +834,7 @@ export async function exportControlGapsCsv(ctx: RequestContext, cycleId: string)
 
 export async function addReadinessToPack(ctx: RequestContext, packId: string, cycleId: string) {
     assertCanViewPack(ctx);
-    const result = await computeReadiness(ctx, cycleId);
+    const result = await scoreReadiness(ctx, cycleId);
     const { addAuditPackItems } = await import('./audit-readiness');
     return addAuditPackItems(ctx, packId, [{
         entityType: 'READINESS_REPORT',
