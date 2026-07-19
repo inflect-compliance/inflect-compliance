@@ -79,7 +79,12 @@ const RUN_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     PLANNED: 'neutral', RUNNING: 'info', COMPLETED: 'success',
 };
 const buildFreqCbOptions = (freqLabels: Record<string, string>): ComboboxOption[] => Object.entries(freqLabels).map(([v, l]) => ({ value: v, label: l }));
-const buildMethodOptions = (t: (key: string) => string): ComboboxOption[] => [{ value: 'MANUAL', label: t('automationTypeLabels.MANUAL') }, { value: 'AUTOMATED', label: t('automationTypeLabels.AUTOMATED') }];
+// R3-P2 / PR-CC — there is deliberately NO method picker. `method` is a
+// DERIVED projection of `automationType` (see `deriveMethodFromAutomationType`
+// in control-test.ts): you make a plan automated by giving it an
+// `automationType` + `schedule` in the Schedule section, never by typing
+// "AUTOMATED" here. A free toggle let the two drift — the badge read AUTOMATED
+// while automationType stayed MANUAL and nothing was ever scheduled.
 // Audit Coherence S2 — ARCHIVED is the terminal "retired control
 // test" state. Plans in ARCHIVED stay visible for historical audit
 // but no new runs can be created. Distinct from soft-delete which
@@ -358,14 +363,12 @@ function PlanEditForm({
     const t = useTranslations('controls');
     const apiUrl = useTenantApiUrl();
     const toast = useToast();
-    const METHOD_OPTIONS = useMemo(() => buildMethodOptions(t), [t]);
     const PLAN_STATUS_OPTIONS = useMemo(() => buildPlanStatusOptions(t), [t]);
     const FREQ_CB_OPTIONS = useMemo(() => buildFreqCbOptions(buildFreqLabels(t)), [t]);
 
     const [editName, setEditName] = useState(plan.name);
     const [editDesc, setEditDesc] = useState(plan.description ?? '');
     const [editFreq, setEditFreq] = useState(plan.frequency);
-    const [editMethod, setEditMethod] = useState(plan.method);
     const [editStatus, setEditStatus] = useState(plan.status);
     const [editSteps, setEditSteps] = useState<TestStepDraft[]>(
         (plan.steps ?? []).map((s) => ({ instruction: s.instruction, expectedOutput: s.expectedOutput ?? '' })),
@@ -382,7 +385,6 @@ function PlanEditForm({
                     name: editName,
                     description: editDesc || null,
                     frequency: editFreq,
-                    method: editMethod,
                     status: editStatus,
                     steps: serializeSteps(editSteps),
                 }),
@@ -406,14 +408,13 @@ function PlanEditForm({
                 <label className="text-xs text-content-muted block mb-1">{t('testPlan.description')}</label>
                 <textarea className="input w-full h-20" value={editDesc} onChange={e => setEditDesc(e.target.value)} />
             </div>
-            <div className="grid grid-cols-3 gap-compact">
+            {/* Method is NOT editable here — it's derived from automationType
+                (set in the Schedule section). See the note on the removed
+                method options above. */}
+            <div className="grid grid-cols-2 gap-compact">
                 <div>
                     <label className="text-xs text-content-muted block mb-1">{t('testPlan.frequency')}</label>
                     <Combobox hideSearch selected={FREQ_CB_OPTIONS.find(o => o.value === editFreq) ?? null} setSelected={(opt) => setEditFreq(opt?.value ?? editFreq)} options={FREQ_CB_OPTIONS} matchTriggerWidth />
-                </div>
-                <div>
-                    <label className="text-xs text-content-muted block mb-1">{t('testPlan.method')}</label>
-                    <Combobox hideSearch selected={METHOD_OPTIONS.find(o => o.value === editMethod) ?? null} setSelected={(opt) => setEditMethod(opt?.value ?? editMethod)} options={METHOD_OPTIONS} matchTriggerWidth />
                 </div>
                 <div>
                     <label className="text-xs text-content-muted block mb-1">{t('testPlan.status')}</label>

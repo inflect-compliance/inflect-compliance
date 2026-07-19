@@ -98,10 +98,25 @@ export async function runDuePlanning(ctx: RequestContext) {
 
         // Find ACTIVE plans that are due and don't already have a PLANNED/RUNNING run.
         // Reconciled due signal — either clock at/before now (see effectiveDueAt).
+        //
+        // DEDUPE vs THE SCHEDULER (`control-test-scheduler`): a cron-SCHEDULED
+        // plan belongs to the scheduler, which claims it under an optimistic
+        // lock on `nextRunAt` and enqueues a runner job. Between that claim and
+        // the runner writing its ControlTestRun row there is a window where the
+        // `runs: PLANNED/RUNNING` idempotency filter below sees nothing — so
+        // this path would mint a SECOND PLANNED run for the same occurrence.
+        //
+        // The two are separated by OWNERSHIP rather than by a shared lock:
+        // `schedule: null` here means due-planning only instantiates runs for
+        // plans that have no cron (the ones nobody else will ever pick up).
+        // Disjoint input sets make the double-run impossible by construction —
+        // no cross-process coordination to get wrong, and no ambiguity about
+        // which component is responsible for a given plan.
         const duePlans = await db.controlTestPlan.findMany({
             where: {
                 tenantId: ctx.tenantId,
                 status: 'ACTIVE',
+                schedule: null,
                 ...dueOrBeforeWhere(now),
             },
             include: {

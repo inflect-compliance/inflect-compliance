@@ -880,10 +880,15 @@ export const AddVendorLinkSchema = z.object({
 
 // ─── Control Test Schemas ───
 
+// R3-P2 / PR-CC — `method` is NOT accepted on either write path. It is a
+// derived projection of `automationType` (`deriveMethodFromAutomationType`),
+// so a plan becomes AUTOMATED by acquiring an automationType + schedule via
+// the schedule endpoint — never by a caller asserting `method: 'AUTOMATED'`.
+// Accepting it here let the two columns drift (badge said AUTOMATED while
+// automationType stayed MANUAL and nothing was scheduled).
 export const CreateTestPlanSchema = z.object({
     name: z.string().min(1).max(500),
     description: z.string().max(10000).nullable().optional(),
-    method: z.enum(['MANUAL', 'AUTOMATED']).optional().default('MANUAL'),
     frequency: z.enum(['AD_HOC', 'DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'ANNUALLY']).optional().default('AD_HOC'),
     ownerUserId: z.string().nullable().optional(),
     expectedEvidence: z.any().nullable().optional(),
@@ -896,11 +901,13 @@ export const CreateTestPlanSchema = z.object({
 export const UpdateTestPlanSchema = z.object({
     name: z.string().min(1).max(500).optional(),
     description: z.string().max(10000).nullable().optional(),
-    method: z.enum(['MANUAL', 'AUTOMATED']).optional(),
     frequency: z.enum(['AD_HOC', 'DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'ANNUALLY']).optional(),
     ownerUserId: z.string().nullable().optional(),
     expectedEvidence: z.any().nullable().optional(),
-    status: z.enum(['ACTIVE', 'PAUSED']).optional(),
+    // ARCHIVED accepted so single-plan archive works from the detail page —
+    // the bulk path (`bulkSetTestPlanStatus`) already allowed it, so omitting
+    // it here made the detail form's own ARCHIVED option 400.
+    status: z.enum(['ACTIVE', 'PAUSED', 'ARCHIVED']).optional(),
     // R3-P2 — steps are now editable after creation. When present, the
     // array REPLACES the plan's existing procedure (empty array clears it).
     steps: z.array(z.object({

@@ -27,6 +27,7 @@ import { notFound, badRequest } from '@/lib/errors/types';
 import { runInTenantContext, type PrismaTx } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { computeNextDueAt } from '../utils/cadence';
+import { computeNextRunFromCron } from '../jobs/control-test-scheduler';
 import { createTask } from './task';
 import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
 import { bumpEntityCacheVersion } from '@/lib/cache/list-cache';
@@ -72,11 +73,12 @@ function sanitizeOptional(v: string | null | undefined): string | null | undefin
 // used to be edited on two separate surfaces and could disagree. This is the
 // single source of truth for the mapping; every write that touches one side
 // runs it so the pair can never drift.
-export function deriveMethodFromAutomationType(
-    automationType: string,
-): 'MANUAL' | 'AUTOMATED' {
-    return automationType === 'MANUAL' ? 'MANUAL' : 'AUTOMATED';
-}
+// The implementation moved to `domain/test-plan-method` so `TestPlanRepository`
+// can derive too without a repository→usecase import (which would invert the
+// layer dependency). Imported (for local use below) AND re-exported, because
+// this has long been the import site for the usecase layer.
+import { deriveMethodFromAutomationType } from '../domain/test-plan-method';
+export { deriveMethodFromAutomationType };
 
 // ─── Queries ───
 
@@ -214,12 +216,35 @@ export async function computeControlEffectivenessMap(
  * finally advances the control's tested-state and feeds the health summary.
  * Skips NOT_APPLICABLE controls and global-library rows (no tenantId match).
  */
+/**
+ * A run only ATTESTS a control when it reached a real verdict. INCONCLUSIVE
+ * (and any future non-verdict outcome) means the test did not establish
+ * anything: effectiveness stays null, so claiming "tested & on-schedule" would
+ * be a false assurance an auditor could act on.
+ *
+ * Exported because the same rule gates the plan-cadence roll at every
+ * completion site — the two must never diverge.
+ */
+export function isAttestingVerdict(result: string | null | undefined): boolean {
+    return result === 'PASS' || result === 'FAIL';
+}
+
 export async function attestControlTested(
     db: PrismaTx,
     ctx: RequestContext,
     controlId: string | null | undefined,
+    /**
+     * The run's verdict. REQUIRED (not optional-defaulting-to-attest) so every
+     * call site has to state it — a completion path can't silently attest by
+     * forgetting the argument, which is exactly how INCONCLUSIVE runs were
+     * marking controls tested.
+     */
+    result: string | null | undefined,
 ): Promise<void> {
     if (!controlId) return;
+    // Non-verdict → the control was NOT exercised conclusively. Leave
+    // lastTested / nextDueAt untouched so it keeps reading as due.
+    if (!isAttestingVerdict(result)) return;
     const control = await db.control.findFirst({
         where: { id: controlId, tenantId: ctx.tenantId },
         select: { id: true, frequency: true, applicability: true },
@@ -257,7 +282,6 @@ export async function attestControlTested(
 export async function createTestPlan(ctx: RequestContext, controlId: string, input: {
     name: string;
     description?: string | null;
-    method?: string;
     frequency?: string;
     ownerUserId?: string | null;
     expectedEvidence?: unknown;
@@ -300,11 +324,18 @@ export async function createTestPlan(ctx: RequestContext, controlId: string, inp
 export async function updateTestPlan(ctx: RequestContext, planId: string, patch: {
     name?: string;
     description?: string | null;
-    method?: string;
     frequency?: string;
     ownerUserId?: string | null;
     expectedEvidence?: unknown;
     status?: string;
+    /**
+     * Changing automation is what makes a plan automated. `method` is NEVER a
+     * caller input — it is recomputed from this via
+     * `deriveMethodFromAutomationType` below, so the pair cannot drift.
+     * (The schedule endpoint is the usual writer; this keeps the invariant
+     * even if a future caller sets automationType through here.)
+     */
+    automationType?: string;
     steps?: Array<{ instruction: string; expectedOutput?: string | null }>;
 }) {
     assertCanManageTestPlans(ctx);
@@ -322,15 +353,21 @@ export async function updateTestPlan(ctx: RequestContext, planId: string, patch:
         })),
     };
 
-    // R3-P2 — method↔automation reconciliation. Setting a plan back to
-    // MANUAL must also strip any automation it carried (a MANUAL plan
-    // cannot stay scheduled), otherwise `method` and `automationType`
-    // silently disagree and the scheduler would keep firing a plan the
-    // operator believes is manual.
-    if (patch.method === 'MANUAL') {
-        sanitisedPatch.automationType = 'MANUAL';
-        sanitisedPatch.schedule = null;
-        sanitisedPatch.nextRunAt = null;
+    // R3-P2 / PR-CC — method↔automation reconciliation, now DERIVED rather
+    // than asserted. `method` is not a caller input: whenever `automationType`
+    // is written, `method` is recomputed from it, so the two can never
+    // disagree. (Previously only a `method === 'MANUAL'` patch reconciled, so
+    // `method: 'AUTOMATED'` set the column while automationType stayed MANUAL
+    // and schedule stayed null — the badge lied.)
+    if (patch.automationType !== undefined) {
+        sanitisedPatch.method = deriveMethodFromAutomationType(patch.automationType);
+        // Reverting to MANUAL must also strip the automation it carried — a
+        // MANUAL plan cannot stay scheduled, or the scheduler keeps firing a
+        // plan the operator believes is manual.
+        if (patch.automationType === 'MANUAL') {
+            sanitisedPatch.schedule = null;
+            sanitisedPatch.nextRunAt = null;
+        }
     }
     const result = await runInTenantContext(ctx, async (db) => {
         const existing = await TestPlanRepository.getById(db, ctx, planId);
@@ -437,13 +474,35 @@ export async function completeTestRun(ctx: RequestContext, runId: string, input:
         // state the (previously un-triggered) markControlTestCompleted set.
         // Without this, a control tested via the UI never showed lastTested
         // and the health summary/readiness couldn't tell it had been tested.
-        await attestControlTested(db, ctx, run.controlId);
+        await attestControlTested(db, ctx, run.controlId, input.result);
 
-        // 2. Update the plan's nextDueAt based on frequency
+        // 2. Update the plan's nextDueAt based on frequency — but ONLY on a
+        // real verdict. An INCONCLUSIVE run established nothing, so rolling
+        // the cadence would push the plan out of the overdue list while the
+        // control remains genuinely untested.
         const plan = run.testPlan;
-        if (plan) {
-            const nextDueAt = computeNextDueAt(plan.frequency, new Date());
+        if (plan && isAttestingVerdict(input.result)) {
+            const completedAt = new Date();
+            const nextDueAt = computeNextDueAt(plan.frequency, completedAt);
             await TestPlanRepository.updateNextDueAt(db, ctx, plan.id, nextDueAt);
+
+            // A SCHEDULED plan completed by hand must ALSO roll `nextRunAt`
+            // forward from its cron. `effectiveDueAt = min(nextDueAt, nextRunAt)`,
+            // so leaving the stale past run-time in place pinned the plan to it —
+            // it re-appeared as overdue on every surface until the scheduler
+            // happened to tick, no matter how recently it was actually tested.
+            if (plan.schedule && plan.nextRunAt && plan.nextRunAt <= completedAt) {
+                const nextRunAt = computeNextRunFromCron(
+                    plan.schedule,
+                    plan.scheduleTimezone,
+                    completedAt,
+                );
+                // A null means the cron no longer parses — leave the stored value
+                // rather than silently clearing the plan's schedule.
+                if (nextRunAt) {
+                    await TestPlanRepository.update(db, ctx, plan.id, { nextRunAt });
+                }
+            }
         }
 
         // 3. Emit completion event
@@ -648,12 +707,14 @@ export async function createAutomatedTestRun(
             findingSummary: input.result === 'FAIL' ? (input.notes || 'Automated check failed') : undefined,
         });
 
-        // Attest the control was exercised by this automated check.
-        await attestControlTested(db, ctx, plan.controlId);
+        // Attest the control was exercised by this automated check — only on a
+        // real verdict (an INCONCLUSIVE automated check attests nothing).
+        await attestControlTested(db, ctx, plan.controlId, input.result);
 
-        // Advance cadence
+        // Advance cadence — same verdict gate, so an inconclusive check can't
+        // push the plan's due date out.
         const nextDue = computeNextDueAt(plan.frequency, new Date());
-        if (nextDue) {
+        if (nextDue && isAttestingVerdict(input.result)) {
             await TestPlanRepository.updateNextDueAt(db, ctx, plan.id, nextDue);
         }
 

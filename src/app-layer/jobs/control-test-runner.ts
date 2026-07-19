@@ -101,7 +101,7 @@ import { TestPlanRepository } from '../repositories/TestPlanRepository';
 import { FindingRepository } from '../repositories/FindingRepository';
 import { emitTestRunCreated, emitTestRunCompleted, emitTestRunFailed } from '../events/test.events';
 import { logEvent } from '../events/audit';
-import { attestControlTested } from '../usecases/control-test';
+import { attestControlTested, isAttestingVerdict } from '../usecases/control-test';
 import { computeNextDueAt } from '../utils/cadence';
 
 // ─── Public types ──────────────────────────────────────────────────
@@ -438,17 +438,25 @@ async function handleAutomatedPlan(
     });
 
     // Effectiveness parity with the manual completeTestRun path — a completed
-    // automated run must stamp Control.lastTested and roll the plan cadence,
+    // automated run stamps Control.lastTested and rolls the plan cadence,
     // exactly as completeTestRun does. One completion path, one set of side
     // effects. (Dormant until a SCRIPT/INTEGRATION handler is registered, but
     // wired now so parity holds the moment one is.)
-    await attestControlTested(db, ctx, plan.controlId);
-    await TestPlanRepository.updateNextDueAt(
-        db,
-        ctx,
-        plan.id,
-        computeNextDueAt(plan.frequency, new Date()),
-    );
+    //
+    // CRITICAL: gated on a real verdict. The catch block above coerces a
+    // handler CRASH into `result: 'INCONCLUSIVE'` — without this gate a flaky
+    // engine would mark controls "tested & on-schedule" every time it threw,
+    // which is the most dangerous shape of this bug (silent, recurring, and it
+    // looks like healthy automation).
+    await attestControlTested(db, ctx, plan.controlId, outcome.result);
+    if (isAttestingVerdict(outcome.result)) {
+        await TestPlanRepository.updateNextDueAt(
+            db,
+            ctx,
+            plan.id,
+            computeNextDueAt(plan.frequency, new Date()),
+        );
+    }
 
     // Auto-evidence with handler-supplied content.
     const evidenceId = await createScheduledRunEvidence(db, ctx, {

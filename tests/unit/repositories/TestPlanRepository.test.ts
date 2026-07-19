@@ -79,11 +79,13 @@ describe('create', () => {
         expect(db.controlTestStep.createMany).not.toHaveBeenCalled();
     });
 
-    it('passes explicit method/frequency/owner, serializes expectedEvidence, writes steps', async () => {
+    it('DERIVES method from automationType, passes frequency/owner, serializes expectedEvidence, writes steps', async () => {
         await TestPlanRepository.create(db as any, ctx, 'c1', {
             name: 'P',
             description: 'd',
-            method: 'AUTOMATED',
+            // `method` is NOT an input — it is derived from automationType so the
+            // auditor-facing projection can never drift from how execution runs.
+            automationType: 'SCRIPT',
             frequency: 'WEEKLY',
             ownerUserId: 'u9',
             expectedEvidence: { foo: 'bar' },
@@ -94,7 +96,7 @@ describe('create', () => {
         });
         const arg = db.controlTestPlan.create.mock.calls[0][0];
         expect(arg.data.description).toBe('d');
-        expect(arg.data.method).toBe('AUTOMATED');
+        expect(arg.data.method).toBe('AUTOMATED'); // derived from SCRIPT
         expect(arg.data.frequency).toBe('WEEKLY');
         expect(arg.data.ownerUserId).toBe('u9');
         // Branch: expectedEvidence truthy → JSON round-trip clone.

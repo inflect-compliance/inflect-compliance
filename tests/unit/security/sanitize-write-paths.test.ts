@@ -571,7 +571,8 @@ describe('controlTest.createTestPlan sanitises name, description, and steps[]', 
         await createTestPlan(ctx, 'c1', {
             name: `Plan ${XSS}`,
             description: `Desc ${XSS}`,
-            method: 'MANUAL',
+            // PR-CC — `method` is no longer a create input; it's derived from
+            // automationType. Dropped here, not replaced.
             frequency: 'MONTHLY',
             steps: [
                 { instruction: `do thing ${XSS}`, expectedOutput: `output ${XSS}` },

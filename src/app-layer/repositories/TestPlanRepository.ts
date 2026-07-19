@@ -4,6 +4,7 @@
 import { Prisma } from '@prisma/client';
 import { PrismaTx } from '@/lib/db-context';
 import { RequestContext } from '../types';
+import { deriveMethodFromAutomationType } from '../domain/test-plan-method';
 
 export const TestPlanRepository = {
     async listByControl(db: PrismaTx, ctx: RequestContext, controlId: string) {
@@ -40,7 +41,13 @@ export const TestPlanRepository = {
     async create(db: PrismaTx, ctx: RequestContext, controlId: string, data: {
         name: string;
         description?: string | null;
-        method?: string;
+        /**
+         * How execution runs. `method` is DERIVED from this (never accepted
+         * directly) so the auditor-facing MANUAL/AUTOMATED projection can't
+         * drift from reality — see `deriveMethodFromAutomationType`. A new plan
+         * with no automationType is MANUAL on both axes.
+         */
+        automationType?: string;
         frequency?: string;
         ownerUserId?: string | null;
         expectedEvidence?: unknown;
@@ -52,7 +59,9 @@ export const TestPlanRepository = {
                 controlId,
                 name: data.name,
                 description: data.description ?? null,
-                method: (data.method as 'MANUAL' | 'AUTOMATED') || 'MANUAL',
+                // Derived, never supplied — the ONLY writers of `method` in the
+                // codebase are deriveMethodFromAutomationType call sites.
+                method: deriveMethodFromAutomationType(data.automationType ?? 'MANUAL'),
                 frequency: (data.frequency as 'AD_HOC' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'ANNUALLY') || 'AD_HOC',
                 ownerUserId: data.ownerUserId ?? null,
                 expectedEvidence: data.expectedEvidence ? JSON.parse(JSON.stringify(data.expectedEvidence)) : undefined,

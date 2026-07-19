@@ -28,6 +28,12 @@ export const TestRunRepository = {
                 testPlan: {
                     select: {
                         id: true, name: true, controlId: true, frequency: true, ownerUserId: true,
+                        // Schedule fields — a MANUAL completion of a SCHEDULED plan
+                        // must also roll `nextRunAt` forward from the cron, or
+                        // `effectiveDueAt = min(nextDueAt, nextRunAt)` stays pinned
+                        // to the stale past run-time and the plan reads as
+                        // perpetually overdue until the scheduler next ticks.
+                        schedule: true, scheduleTimezone: true, nextRunAt: true,
                         // R3-P2 — the run surface shows the plan's procedure so a
                         // tester walks the steps during a RUNNING execution.
                         steps: {
