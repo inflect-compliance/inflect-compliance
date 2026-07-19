@@ -14,7 +14,7 @@ describe('Filter contract tests', () => {
             // Schema-level verification — the Zod schemas are the source of truth.
             // This test documents the expected contract:
             const expectedParams = {
-                'controls': ['q', 'status', 'applicability', 'ownerUserId', 'category', 'limit', 'cursor', 'includeDeleted'],
+                'controls': ['q', 'status', 'applicability', 'ownerUserId', 'category', 'health', 'ids', 'limit', 'cursor', 'includeDeleted'],
                 'evidence': ['q', 'status', 'type', 'controlId', 'limit', 'cursor'],
                 'tasks': ['q', 'status', 'type', 'severity', 'priority', 'assigneeUserId', 'controlId', 'due', 'limit', 'cursor', 'linkedEntityType', 'linkedEntityId'],
                 'risks': ['q', 'status', 'scoreMin', 'scoreMax', 'category', 'ownerUserId', 'limit', 'cursor', 'includeDeleted'],

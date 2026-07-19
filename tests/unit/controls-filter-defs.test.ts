@@ -61,14 +61,14 @@ const APPLICABILITY_VALUES = ['APPLICABLE', 'NOT_APPLICABLE'];
 describe('Controls filter config', () => {
     it('exposes the expected key set aligned with the Controls API schema', () => {
         expect(CONTROL_FILTER_KEYS.sort()).toEqual(
-            ['applicability', 'category', 'ownerUserId', 'status'].sort(),
+            ['applicability', 'category', 'health', 'ownerUserId', 'status'].sort(),
         );
     });
 
     it('produces a FilterDef[] via createTypedFilterDefs', () => {
         const bundle = controlFilterDefs;
         expect(bundle.filters.map((f) => f.key).sort()).toEqual(
-            ['applicability', 'category', 'ownerUserId', 'status'].sort(),
+            ['applicability', 'category', 'health', 'ownerUserId', 'status'].sort(),
         );
         // Each filter must carry a paramKey that matches its key unless
         // explicitly overridden (none are overridden today).
@@ -284,7 +284,7 @@ describe('Controls filter — empty state', () => {
     it('buildControlFilters with zero controls still returns the full filter set', () => {
         const live = buildControlFilters([], tControls, tGroup);
         expect(live.map((f) => f.key).sort()).toEqual(
-            ['applicability', 'category', 'ownerUserId', 'status'].sort(),
+            ['applicability', 'category', 'health', 'ownerUserId', 'status'].sort(),
         );
     });
 
