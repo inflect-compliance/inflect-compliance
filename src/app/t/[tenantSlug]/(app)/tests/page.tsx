@@ -1,8 +1,4 @@
 'use client';
-/* TODO(swr-migration): this file has fetch-on-mount + setState
- * patterns flagged by react-hooks/set-state-in-effect. Each call site
- * carries an inline disable directive; collectively they should
- * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { formatDate } from '@/lib/format-date';
 import { useMemo, useState } from 'react';
@@ -24,6 +20,12 @@ import { ToggleGroup } from '@/components/ui/toggle-group';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { NewTestPlanModal } from './_components/NewTestPlanModal';
 import { TestsSubNav } from './_components/TestsSubNav';
+import {
+    buildPlanStatusLabels,
+    buildResultLabels,
+    PLAN_STATUS_BADGE,
+    RESULT_BADGE,
+} from './_components/test-plan-labels';
 import { FilterProvider, useFilterContext, useFilters, useFilterCardVisibility, filtersToCards, selectVisibleFilters } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
@@ -87,18 +89,14 @@ const freqLabels = (t: (key: string) => string): Record<string, string> => ({
     AD_HOC: t('freq.adHoc'), DAILY: t('freq.daily'), WEEKLY: t('freq.weekly'),
     MONTHLY: t('freq.monthly'), QUARTERLY: t('freq.quarterly'), ANNUALLY: t('freq.annually'),
 });
-const RESULT_BADGE: Record<string, StatusBadgeVariant> = {
-    PASS: 'success', FAIL: 'error', INCONCLUSIVE: 'warning',
-};
+// PR-DD — RESULT_BADGE + PLAN_STATUS_BADGE moved to the shared
+// `_components/test-plan-labels` module so this register and the plan detail
+// view render one vocabulary with one set of tones (they were duplicated).
+//
 // Audit Coherence S2 — TestPlanStatus values: ACTIVE / PAUSED /
 // ARCHIVED. ARCHIVED is the terminal "retired control test" state
 // (preserved for historical audit, no new runs). Pre-S2 the UI
 // only knew about ACTIVE / PAUSED.
-const PLAN_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
-    ACTIVE: 'success',
-    PAUSED: 'warning',
-    ARCHIVED: 'neutral',
-};
 
 // PR-Q — reconciled due signal: the earliest of the two clocks (nextDueAt from
 // frequency, nextRunAt from a cron schedule). Mirrors the server-side
@@ -145,14 +143,11 @@ export default function TestsRollupPage() {
 function TestsRollupContent() {
     const t = useTranslations('controlTests');
     const FREQ_LABELS = useMemo(() => freqLabels(t), [t]);
-    // PR-R — localized enum→label maps for the plan-status + last-result badges
-    // (mirrors the already-localized method/frequency/checkStatus pattern).
-    const PLAN_STATUS_LABELS = useMemo<Record<string, string>>(() => ({
-        ACTIVE: t('planStatus.ACTIVE'), PAUSED: t('planStatus.PAUSED'), ARCHIVED: t('planStatus.ARCHIVED'),
-    }), [t]);
-    const RESULT_LABELS = useMemo<Record<string, string>>(() => ({
-        PASS: t('result.PASS'), FAIL: t('result.FAIL'), INCONCLUSIVE: t('result.INCONCLUSIVE'),
-    }), [t]);
+    // PR-R — localized enum→label maps for the plan-status + last-result badges.
+    // PR-DD moved the builders into `_components/test-plan-labels` so the plan
+    // DETAIL view renders the same vocabulary (it printed raw enums before).
+    const PLAN_STATUS_LABELS = useMemo(() => buildPlanStatusLabels(t), [t]);
+    const RESULT_LABELS = useMemo(() => buildResultLabels(t), [t]);
     const tGroup = useTranslations('common.filterGroups');
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();

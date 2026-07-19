@@ -25,7 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { Breadcrumbs, type BreadcrumbItem } from '@/components/ui/breadcrumbs';
 import { TestPlanScheduleSection } from '@/components/TestPlanScheduleSection';
-import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { CardHeader } from '@/components/ui/card-header';
@@ -35,6 +35,15 @@ import { cn } from '@/lib/cn';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { useToast } from '@/components/ui/hooks/use-toast';
 import { TestStepsEditor, type TestStepDraft, serializeSteps } from './TestStepsEditor';
+import {
+    buildPlanStatusLabels,
+    buildRunStatusLabels,
+    buildResultLabels,
+    buildMethodLabels,
+    PLAN_STATUS_BADGE,
+    RUN_STATUS_BADGE,
+    RESULT_BADGE,
+} from './test-plan-labels';
 
 interface TestPlanDetail {
     id: string;
@@ -72,12 +81,6 @@ const buildFreqLabels = (t: (k: string) => string): Record<string, string> => ({
     AD_HOC: t('freq.adHoc'), DAILY: t('freq.daily'), WEEKLY: t('freq.weekly'),
     MONTHLY: t('freq.monthly'), QUARTERLY: t('freq.quarterly'), ANNUALLY: t('freq.annually'),
 });
-const RESULT_BADGE: Record<string, StatusBadgeVariant> = {
-    PASS: 'success', FAIL: 'error', INCONCLUSIVE: 'warning',
-};
-const RUN_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
-    PLANNED: 'neutral', RUNNING: 'info', COMPLETED: 'success',
-};
 const buildFreqCbOptions = (freqLabels: Record<string, string>): ComboboxOption[] => Object.entries(freqLabels).map(([v, l]) => ({ value: v, label: l }));
 // R3-P2 / PR-CC — there is deliberately NO method picker. `method` is a
 // DERIVED projection of `automationType` (see `deriveMethodFromAutomationType`
@@ -94,11 +97,10 @@ const buildPlanStatusOptions = (t: (key: string) => string): ComboboxOption[] =>
     { value: 'PAUSED', label: t('planStatus.paused') },
     { value: 'ARCHIVED', label: t('planStatus.archived') },
 ];
-const PLAN_STATUS_BADGE_VARIANT: Record<string, StatusBadgeVariant> = {
-    ACTIVE: 'success',
-    PAUSED: 'warning',
-    ARCHIVED: 'neutral',
-};
+// PR-DD — plan-status / run-status / result labels + badge tones come from the
+// shared `test-plan-labels` module so this view and the /tests register render
+// one vocabulary. They previously diverged: the register localized these while
+// this view printed the RAW enum (`ACTIVE`, `PLANNED`, `PASS`, `MANUAL`).
 
 export function TestPlanDetailView({ planId, context }: { planId: string; context: 'control' | 'tests' }) {
     const router = useRouter();
@@ -106,7 +108,15 @@ export function TestPlanDetailView({ planId, context }: { planId: string; contex
     const tenantHref = useTenantHref();
     const { permissions } = useTenantContext();
     const t = useTranslations('controls');
+    // Second binding: the plan/run enum labels live in `controlTests` (where the
+    // /tests register already localized them), so reuse those keys rather than
+    // duplicating the vocabulary under `controls`.
+    const tTests = useTranslations('controlTests');
     const FREQ_LABELS = buildFreqLabels(t);
+    const PLAN_STATUS_LABELS = useMemo(() => buildPlanStatusLabels(tTests), [tTests]);
+    const RUN_STATUS_LABELS = useMemo(() => buildRunStatusLabels(tTests), [tTests]);
+    const RESULT_LABELS = useMemo(() => buildResultLabels(tTests), [tTests]);
+    const METHOD_LABELS = useMemo(() => buildMethodLabels(tTests), [tTests]);
 
     // Epic 69 — canonical tenant-aware read. The endpoint returns the
     // plan + embedded steps[] + runs[] in one payload; we consume that
@@ -175,12 +185,12 @@ export function TestPlanDetailView({ planId, context }: { planId: string; contex
                 <div>
                     <Heading level={1} id="test-plan-title">{plan.name}</Heading>
                     <div className="flex items-center gap-tight mt-1 flex-wrap">
-                        <StatusBadge variant={PLAN_STATUS_BADGE_VARIANT[plan.status] ?? 'neutral'} id="test-plan-status">
-                            {plan.status}
+                        <StatusBadge variant={PLAN_STATUS_BADGE[plan.status] ?? 'neutral'} id="test-plan-status">
+                            {PLAN_STATUS_LABELS[plan.status] ?? plan.status}
                         </StatusBadge>
                         <span className="text-xs text-content-subtle">{FREQ_LABELS[plan.frequency] || plan.frequency}</span>
                         <span className="text-xs text-content-subtle">•</span>
-                        <span className="text-xs text-content-subtle">{plan.method}</span>
+                        <span className="text-xs text-content-subtle">{METHOD_LABELS[plan.method] ?? plan.method}</span>
                         {plan.nextDueAt && (
                             <>
                                 <span className="text-xs text-content-subtle">•</span>
@@ -306,11 +316,11 @@ export function TestPlanDetailView({ planId, context }: { planId: string; contex
                             >
                                 <div className="flex items-center gap-compact">
                                     <StatusBadge variant={RUN_STATUS_BADGE[run.status] || 'neutral'} size="sm">
-                                        {run.status}
+                                        {RUN_STATUS_LABELS[run.status] ?? run.status}
                                     </StatusBadge>
                                     {run.result && (
                                         <StatusBadge variant={RESULT_BADGE[run.result] || 'neutral'} size="sm">
-                                            {run.result}
+                                            {RESULT_LABELS[run.result] ?? run.result}
                                         </StatusBadge>
                                     )}
                                     <span className="text-xs text-content-muted">

@@ -6410,6 +6410,11 @@
       "due": "Due",
       "dashboard": "Dashboard",
       "aria": "Test sections"
+    },
+    "runStatus": {
+      "PLANNED": "Planned",
+      "RUNNING": "Running",
+      "COMPLETED": "Completed"
     }
   },
   "agents": {
@@ -7266,14 +7271,15 @@
       "cadOffLabel": "Off (manual)",
       "cadOffDesc": "Test runs are created on demand. No auto-schedule.",
       "cadDailyLabel": "Daily at 09:00",
-      "cadDailyDesc": "Runs every day at 09:00 in your local timezone.",
+      "cadDailyDesc": "Creates a run every day at 09:00 in your local timezone.",
       "cadWeeklyLabel": "Weekly (Mondays at 09:00)",
-      "cadWeeklyDesc": "Runs every Monday at 09:00.",
+      "cadWeeklyDesc": "Creates a run every Monday at 09:00 in your local timezone.",
       "cadMonthlyLabel": "Monthly (1st at 09:00)",
-      "cadMonthlyDesc": "Runs the first of every month at 09:00.",
+      "cadMonthlyDesc": "Creates a run on the 1st of each month at 09:00 in your local timezone.",
       "cadQuarterlyLabel": "Quarterly (1st of Jan/Apr/Jul/Oct)",
-      "cadQuarterlyDesc": "Runs on the first of each calendar quarter at 09:00.",
-      "permissionDenied": "You don't have permission to change this plan's schedule."
+      "cadQuarterlyDesc": "Creates a run on the 1st of each quarter at 09:00 in your local timezone.",
+      "permissionDenied": "You don't have permission to change this plan's schedule.",
+      "instantiationNote": "A schedule creates a test run for someone to complete — it does not run the test itself."
     },
     "testDashG2": {
       "automation": "Automation",
