@@ -229,6 +229,19 @@ export function TestPlanScheduleSection({
                 </span>
             </div>
 
+            {/* PR-DD — honest framing. A schedule INSTANTIATES a run for a human
+                to complete; it does not execute the test. No SCRIPT/INTEGRATION
+                handler is registered, so the runner deliberately falls back to a
+                PLANNED "awaiting manual completion" run rather than completing as
+                a misleading no-op (see control-test-runner). Without this line the
+                cadence copy ("Runs every day at 09:00") reads as self-execution. */}
+            <p
+                className="text-xs text-content-subtle"
+                id="test-plan-schedule-instantiation-note"
+            >
+                {t('instantiationNote')}
+            </p>
+
             {/* Frequency picker */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-compact items-start">
                 <div className="md:col-span-2">

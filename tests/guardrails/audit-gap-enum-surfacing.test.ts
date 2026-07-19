@@ -112,10 +112,17 @@ describe('Audit-gap enum surfacing', () => {
             expect(en.controls.planStatus.archived).toBe('Archived');
         });
 
-        it('test-plan detail badge variant lookup carries ARCHIVED', () => {
-            const block = detail.slice(
-                detail.indexOf('PLAN_STATUS_BADGE_VARIANT'),
-                detail.indexOf('PLAN_STATUS_BADGE_VARIANT') + 400,
+        it('the SHARED plan-status badge map carries ARCHIVED', () => {
+            // PR-DD extracted the tone maps out of the two pages (they were
+            // duplicated verbatim) into `tests/_components/test-plan-labels.ts`.
+            // The invariant is unchanged and now has ONE home: ARCHIVED must
+            // resolve to a variant rather than falling through.
+            const labels = read(
+                'src/app/t/[tenantSlug]/(app)/tests/_components/test-plan-labels.ts',
+            );
+            const block = labels.slice(
+                labels.indexOf('PLAN_STATUS_BADGE'),
+                labels.indexOf('PLAN_STATUS_BADGE') + 400,
             );
             expect(block).toMatch(/ARCHIVED:\s*['"][a-z]+['"]/);
         });
@@ -128,17 +135,13 @@ describe('Audit-gap enum surfacing', () => {
             expect(detail).not.toMatch(
                 /variant=\{plan\.status\s*===\s*['"]ACTIVE['"]\s*\?\s*['"]success['"]\s*:\s*['"]warning['"]\}/,
             );
-            expect(detail).toMatch(
-                /variant=\{PLAN_STATUS_BADGE_VARIANT\[plan\.status\]/,
-            );
+            // Now reads from the shared map (same lookup shape, one source).
+            expect(detail).toMatch(/variant=\{PLAN_STATUS_BADGE\[plan\.status\]/);
         });
 
-        it('tests rollup page status-badge variant lookup carries ARCHIVED', () => {
-            const block = list.slice(
-                list.indexOf('PLAN_STATUS_BADGE'),
-                list.indexOf('PLAN_STATUS_BADGE') + 400,
-            );
-            expect(block).toMatch(/ARCHIVED:\s*['"][a-z]+['"]/);
+        it('tests rollup page uses the shared badge map (no inline ternary)', () => {
+            // The rollup imports the shared map rather than declaring its own.
+            expect(list).toMatch(/PLAN_STATUS_BADGE/);
             // Inline ACTIVE-ternary retired.
             expect(list).not.toMatch(
                 /variant=\{row\.original\.status\s*===\s*['"]ACTIVE['"]\s*\?\s*['"]success['"]\s*:\s*['"]warning['"]\}/,
