@@ -810,11 +810,18 @@ export async function getRiskEvidenceTab(ctx: RequestContext, riskId: string) {
             select: { id: true },
         });
         if (!risk) throw notFound('Risk not found');
-        const evidence = await db.evidence.findMany({
-            where: { riskId, tenantId: ctx.tenantId, deletedAt: null },
+        // Read through the join so one artifact can be attached to many
+        // risks. `Evidence.riskId` survives as "uploaded from" provenance
+        // (the detail sheet's back-reference) but is no longer the
+        // association — it could only ever hold one risk, which is what
+        // forced a re-upload to attach the same document twice.
+        const links = await db.evidenceRiskLink.findMany({
+            where: { riskId, tenantId: ctx.tenantId, evidence: { deletedAt: null } },
             orderBy: { createdAt: 'desc' },
+            include: { evidence: true },
+            take: 500,
         });
-        return { links: [], evidence };
+        return { links: [], evidence: links.map((l) => l.evidence) };
     });
 }
 
@@ -836,12 +843,22 @@ export async function linkRiskEvidence(
         const evidence = await db.evidence.create({
             data: {
                 tenantId: ctx.tenantId,
+                // Kept as the "uploaded from" provenance stamp.
                 riskId,
                 type: 'LINK',
                 title: note || url,
                 content: url,
                 status: 'DRAFT',
                 ownerUserId: ctx.userId,
+            },
+        });
+        // The association itself lives in the join.
+        await db.evidenceRiskLink.create({
+            data: {
+                tenantId: ctx.tenantId,
+                evidenceId: evidence.id,
+                riskId,
+                createdByUserId: ctx.userId,
             },
         });
         await logEvent(db, ctx, {
@@ -865,13 +882,20 @@ export async function unlinkRiskEvidence(
 ) {
     assertCanWrite(ctx);
     const outcome = await runInTenantContext(ctx, async (db) => {
-        const evidence = await db.evidence.findFirst({
-            where: { id: evidenceId, riskId, tenantId: ctx.tenantId },
+        const link = await db.evidenceRiskLink.findFirst({
+            where: { evidenceId, riskId, tenantId: ctx.tenantId },
             select: { id: true },
         });
-        if (!evidence) throw notFound('Risk evidence not found');
-        await db.evidence.update({
-            where: { id: evidenceId },
+        if (!link) throw notFound('Risk evidence not found');
+        // Detach = drop the join row. The evidence survives in the library
+        // and stays attached to any OTHER risks it is linked to — the
+        // point of the join.
+        await db.evidenceRiskLink.delete({ where: { id: link.id } });
+        // Clear the provenance stamp too when it pointed at this risk, so
+        // the row doesn't claim it came from somewhere it is no longer
+        // attached to.
+        await db.evidence.updateMany({
+            where: { id: evidenceId, tenantId: ctx.tenantId, riskId },
             data: { riskId: null },
         });
         await logEvent(db, ctx, {

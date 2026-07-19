@@ -282,9 +282,10 @@ function EvidencePageInner({ initialEvidence, initialControls, initialMetrics, t
     const truncated = evidenceQuery.data?.truncated ?? false;
 
     // ─── Bulk actions (canonical BulkActionBar) ───
-    // Approve, Assign owner, Delete. Bulk Approve moves items straight to
-    // APPROVED — the separate reviewer-identity review chain is bypassed for
-    // this action (see bulkApproveEvidence).
+    // Approve, Assign owner, Delete. Bulk Approve is NOT a status bypass:
+    // `bulkApproveEvidence` enforces the same reviewer tier, SUBMITTED
+    // precondition and segregation-of-duties rule as the single-item
+    // review (see the partition handling below).
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [bulkApplying, setBulkApplying] = useState(false);
     const handleBulkApply = async (action: string, value: string) => {
@@ -701,6 +702,16 @@ function EvidencePageInner({ initialEvidence, initialControls, initialMetrics, t
         needs_review: metrics.needsReview,
     };
 
+    // The freshness KPI tiles read a TENANT-WIDE server aggregate, but
+    // clicking one refines CLIENT-side over the loaded page. Past the
+    // fetch cap those two numbers legitimately differ — the page showed
+    // the tile's tenant-wide count beside a shorter list with no
+    // explanation, which reads as a bug. Say which is which instead.
+    const freshnessCountMismatch =
+        freshnessValue !== null &&
+        truncated &&
+        displayEvidenceFresh.length < (freshnessCounts[freshnessValue] ?? 0);
+
     const setFreshnessFilter = useCallback(
         (bucket: EvidenceFreshnessBucket) => {
             if (freshnessValue === bucket) filterCtx.removeAll('freshness');
@@ -1023,7 +1034,7 @@ function EvidencePageInner({ initialEvidence, initialControls, initialMetrics, t
                 return (
                     <FreshnessBadge
                         lastRefreshedAt={reviewCurrencyAnchor(ev)}
-                        now={hydratedNow}
+                        now={hydratedNow ?? undefined}
                         compact
                         data-testid={`evidence-row-freshness-${ev.id}`}
                     />
@@ -1575,6 +1586,21 @@ function EvidencePageInner({ initialEvidence, initialControls, initialMetrics, t
 
             <ListPageShell.Body>
                 <TruncationBanner truncated={truncated} />
+
+                {/* Freshness tile ≠ shown rows. The tile counts the whole
+                    tenant; the refinement runs over the loaded page. */}
+                {freshnessCountMismatch && (
+                    <div
+                        className="rounded-lg border border-border-warning bg-bg-warning px-4 py-2 text-sm text-content-warning"
+                        role="status"
+                        data-testid="evidence-freshness-scope-notice"
+                    >
+                        {tx('list.freshnessScopeNotice', {
+                            shown: displayEvidenceFresh.length,
+                            total: freshnessCounts[freshnessValue!] ?? 0,
+                        })}
+                    </div>
+                )}
                 {viewMode === 'gallery' ? (
                   <>
                     {/* EP-2 — bulk action bar in gallery view too (the
@@ -1594,6 +1620,9 @@ function EvidencePageInner({ initialEvidence, initialControls, initialMetrics, t
                     )}
                     <EvidenceGallery
                         rows={displayEvidenceFresh}
+                        // Same clock the table cell uses, so a row's
+                        // freshness badge reads identically in both views.
+                        now={hydratedNow ?? undefined}
                         loading={evidenceQuery.isLoading && !evidenceQuery.data}
                         emptyState={
                             anyFilterActive ? (

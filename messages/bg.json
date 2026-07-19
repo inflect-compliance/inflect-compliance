@@ -2266,7 +2266,8 @@
       "createFileUpload": "Качване на файл",
       "createTextNote": "Текстова бележка",
       "createLink": "Връзка / URL",
-      "createBulkImport": "Групов ZIP импорт"
+      "createBulkImport": "Групов ZIP импорт",
+      "freshnessScopeNotice": "Показани са {shown} от {total} в целия наемател — останалите са извън заредената страница."
     },
     "reject": {
       "title": "Отхвърляне на доказателство",
@@ -2346,7 +2347,10 @@
       "linkControlPlaceholder": "Изберете контрол…",
       "linkControlButton": "Свързване на контрол",
       "linking": "Свързване…",
-      "linkControlFailed": "Свързването с контрола е неуспешно"
+      "linkControlFailed": "Свързването с контрола е неуспешно",
+      "usedByLabel": "Използва се от",
+      "usedBySummary": "{controls} контроли · {risks} риска · {assets} актива",
+      "tagsLabel": "Етикети"
     },
     "edit": {
       "title": "Редактиране на доказателство",
@@ -2379,7 +2383,10 @@
       "replaceFileLabel": "Замяна на файл",
       "replaceFileDesc": "Качете нов файл, който да замени текущия.",
       "replacing": "Заменя се…",
-      "replaceFailed": "Замяната на файла е неуспешна"
+      "replaceFailed": "Замяната на файла е неуспешна",
+      "tagsLabel": "Етикети",
+      "tagsDesc": "Разделени със запетая. Втори начин за организиране на доказателствата освен папките.",
+      "tagsPlaceholder": "soc2, access-control, q3"
     },
     "upload": {
       "title": "Качване на доказателство",

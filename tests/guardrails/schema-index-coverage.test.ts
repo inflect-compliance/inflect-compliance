@@ -189,6 +189,10 @@ const FK_INDEX_EXEMPT: Record<string, string> = {
     'ControlContributor.userId': R_ACTOR,
     'ControlEvidenceLink.createdByUserId': R_ACTOR,
     'EvidenceControlLink.createdByUserId': R_ACTOR,
+    // Same shape as the control join above — an actor stamp, never a
+    // query dimension (nothing lists links "created by user X").
+    'EvidenceRiskLink.createdByUserId': R_ACTOR,
+    'EvidenceAssetLink.createdByUserId': R_ACTOR,
     'ControlTemplateTask.templateId': R_LIBRARY_TABLE,
     'ControlTemplateRequirementLink.requirementId': R_LIBRARY_TABLE,
     'Evidence.fileRecordId': R_ONE_TO_ONE,
@@ -385,6 +389,9 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
     Employee: 'listEmployees filters by tenantId (+status) — covered by @@index([tenantId, status]); bounded take ≤500.',
     EvidenceReview: 'getLatestSubmitters (evidence review-gate SoD) filters by (tenantId, evidenceId IN […]) + action equality, orders by createdAt desc — covered by @@index([tenantId, evidenceId]); action is a small in-page equality filter; bounded by the evidenceId set (bulk cap ≤100).',
     EvidenceControlLink: 'listControlLinks filters by (tenantId, evidenceId) — covered by @@index([tenantId, evidenceId]); bounded by the single evidence row it lists links for.',
+    EvidenceRiskLink: 'Risk evidence tab filters by (tenantId, riskId) — covered by @@index([tenantId, riskId]); bounded by take: 500.',
+    EvidenceAssetLink: 'Asset evidence tab filters by (tenantId, assetId) — covered by @@index([tenantId, assetId]); bounded by take: 500.',
+    EvidenceTag: 'Tag filter + option list read (tenantId, tag) — covered by @@index([tenantId, tag]); the distinct read is bounded by take: 500.',
     ConnectedIdentityAccount: 'personnel provider reads all accounts for a tenant (offboarded-access join) — covered by @@index([tenantId, status]); bounded take ≤10000.',
     Device: 'listDevices + device provider read by tenantId (+platform) — covered by @@index([tenantId, platform]); bounded take ≤10000.',
     TenantDeviceToken: 'listDeviceTokens by tenantId — covered by @@index([tenantId]) / @@index([tenantId, revokedAt]); bounded take ≤200.',

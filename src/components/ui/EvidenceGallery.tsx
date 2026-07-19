@@ -59,10 +59,22 @@ export interface EvidenceGalleryRow {
     /** Optional MIME — repository may include it via fileRecord. */
     fileRecord?: { mimeType?: string | null } | null;
     fileMimeType?: string | null;
-    /** When the artefact was last refreshed — driven by `updatedAt`
-     *  today; the prop name keeps the UX semantic in sync with the
-     *  Epic 43 spec ("freshness driven by lastRefreshedAt"). */
+    /**
+     * Review-currency anchor for the freshness badge — `nextReviewDate ??
+     * expiredAt`, the SAME value the table cell uses via
+     * `reviewCurrencyAnchor`.
+     *
+     * The old doc claimed this was `updatedAt`-driven; it was neither.
+     * `EvidenceRow` never carried a `lastRefreshedAt` field at all, so
+     * `row.lastRefreshedAt` resolved to undefined and EVERY gallery card
+     * rendered "no refresh recorded" — while the same rows in the table
+     * showed real freshness. Toggling table→gallery silently changed the
+     * meaning of identical data.
+     */
     lastRefreshedAt?: string | Date | null;
+    /** Optional review date — used to derive the anchor when the caller
+     *  passes raw rows rather than pre-computing `lastRefreshedAt`. */
+    nextReviewDate?: string | Date | null;
     retentionUntil?: string | null;
     isArchived?: boolean;
     expiredAt?: string | null;
@@ -71,6 +83,13 @@ export interface EvidenceGalleryRow {
 
 export interface EvidenceGalleryProps<T extends EvidenceGalleryRow> {
     rows: T[];
+    /**
+     * SSR-hydration-safe "now" for the freshness badges. Supplied by the
+     * page (`useHydratedNow()`), exactly as the table cell does — without
+     * it each badge falls back to its own `new Date()`, which is
+     * non-deterministic under SSR and can disagree with the table.
+     */
+    now?: Date;
     loading?: boolean;
     emptyState?: React.ReactNode;
     /** Build a download URL for a file row. Returning null hides the
@@ -112,6 +131,7 @@ export interface EvidenceGalleryProps<T extends EvidenceGalleryRow> {
 
 export function EvidenceGallery<T extends EvidenceGalleryRow>({
     rows,
+    now,
     loading,
     emptyState,
     fileUrl,
@@ -170,6 +190,7 @@ export function EvidenceGallery<T extends EvidenceGalleryRow>({
                 <GalleryCard
                     key={row.id}
                     row={row}
+                    now={now}
                     fileUrl={fileUrl}
                     onRowClick={onRowClick}
                     statusBadgeVariant={statusBadgeVariant}
@@ -189,6 +210,8 @@ export function EvidenceGallery<T extends EvidenceGalleryRow>({
 
 interface GalleryCardProps<T extends EvidenceGalleryRow> {
     row: T;
+    /** Shared hydration-safe clock for the freshness badge. */
+    now?: Date;
     fileUrl: (row: T) => string | null;
     onRowClick?: (row: T) => void;
     statusBadgeVariant?: (status: string) => StatusBadgeVariant;
@@ -202,6 +225,7 @@ interface GalleryCardProps<T extends EvidenceGalleryRow> {
 
 function GalleryCard<T extends EvidenceGalleryRow>({
     row,
+    now,
     fileUrl,
     onRowClick,
     statusBadgeVariant,
@@ -363,7 +387,8 @@ function GalleryCard<T extends EvidenceGalleryRow>({
 
                 <div className="mt-auto flex flex-wrap items-center gap-1.5">
                     <FreshnessBadge
-                        lastRefreshedAt={row.lastRefreshedAt ?? null}
+                        lastRefreshedAt={row.lastRefreshedAt ?? row.nextReviewDate ?? row.expiredAt ?? null}
+                        now={now}
                         compact
                         data-testid={`evidence-gallery-freshness-${row.id}`}
                     />

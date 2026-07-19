@@ -59,6 +59,7 @@ model Asset {
   // Evidence attached directly to this asset (Evidence Library tag +
   // the asset Evidence tab). Mirrors Control/Task.
   evidence            Evidence[]
+  evidenceLinks       EvidenceAssetLink[]
 
   /// Unique within a tenant — `AST-N` collisions are race-free
   /// via the AssetKeySequence counter.

@@ -72,6 +72,8 @@ export interface EditEvidenceInitial {
     category: string | null;
     /** B8 follow-up — current folder label (null = unfoldered). */
     folder?: string | null;
+    /** Current tags (normalised, lower-cased). */
+    tags?: string[];
     /** Retention date (ISO) — edited here now (was inline in the table). */
     retentionUntil?: string | null;
     /** EvidenceType — gates the "Replace file" affordance. */
@@ -106,6 +108,8 @@ export function EditEvidenceModal({
     const t = useTranslations('evidence');
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
+    // Comma-separated in the input; normalised to an array on submit.
+    const [tagsInput, setTagsInput] = useState('');
     // FILE evidence stores its object-storage pathKey in `content`, so the
     // body field is hidden AND withheld from the PUT for that type.
     const contentEditable = isEvidenceContentEditable(initial?.type);
@@ -147,6 +151,7 @@ export function EditEvidenceModal({
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setTitle(initial.title);
             setContent(initial.content ?? '');
+            setTagsInput((initial.tags ?? []).join(', '));
             setOwnerUserId(initial.ownerUserId);
             // Prefer the shared option (stable label) but fall back to a
             // synthesised option so a control missing from the loaded
@@ -191,6 +196,12 @@ export function EditEvidenceModal({
                     // evidence `content` is the storage pathKey — sending
                     // the (hidden, empty) field would detach the file.
                     ...(contentEditable ? { content: content || null } : {}),
+                    // Reconciled server-side to exactly this set; the
+                    // repository normalises (trim + lower-case).
+                    tags: tagsInput
+                        .split(',')
+                        .map((t) => t.trim())
+                        .filter(Boolean),
                     ownerUserId: ownerUserId || null,
                     // EP-3 — reconcile the whole link set. Never send the
                     // legacy singular `controlId`.
@@ -344,6 +355,22 @@ export function EditEvidenceModal({
                             />
                         </FormField>
                         )}
+                        <FormField
+                            label={t('edit.tagsLabel')}
+                            description={t('edit.tagsDesc')}
+                        >
+                            <Input
+                                id="edit-evidence-tags"
+                                type="text"
+                                value={tagsInput}
+                                placeholder={t('edit.tagsPlaceholder')}
+                                onChange={(e) => {
+                                    setTagsInput(e.target.value);
+                                    markDirty();
+                                }}
+                                autoComplete="off"
+                            />
+                        </FormField>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-default">
                             <FormField label={t('edit.ownerLabel')}>
                                 <UserCombobox

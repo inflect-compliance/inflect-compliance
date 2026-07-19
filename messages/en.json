@@ -2266,7 +2266,8 @@
       "createFileUpload": "File upload",
       "createTextNote": "Text note",
       "createLink": "Link / URL",
-      "createBulkImport": "Bulk ZIP import"
+      "createBulkImport": "Bulk ZIP import",
+      "freshnessScopeNotice": "Showing {shown} of {total} matching this tenant-wide — the rest are beyond the loaded page."
     },
     "reject": {
       "title": "Reject evidence",
@@ -2346,7 +2347,10 @@
       "linkControlPlaceholder": "Select control…",
       "linkControlButton": "Link control",
       "linking": "Linking…",
-      "linkControlFailed": "Failed to link control"
+      "linkControlFailed": "Failed to link control",
+      "usedByLabel": "Used by",
+      "usedBySummary": "{controls} controls · {risks} risks · {assets} assets",
+      "tagsLabel": "Tags"
     },
     "edit": {
       "title": "Edit evidence",
@@ -2379,7 +2383,10 @@
       "replaceFileLabel": "Replace file",
       "replaceFileDesc": "Upload a new file to replace the current one.",
       "replacing": "Replacing…",
-      "replaceFailed": "Failed to replace file"
+      "replaceFailed": "Failed to replace file",
+      "tagsLabel": "Tags",
+      "tagsDesc": "Comma-separated. A second way to organise evidence beside folders.",
+      "tagsPlaceholder": "soc2, access-control, q3"
     },
     "upload": {
       "title": "Upload evidence",

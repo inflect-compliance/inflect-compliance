@@ -152,6 +152,9 @@ model Tenant {
   controlContributors               ControlContributor[]
   controlEvidenceLinks              ControlEvidenceLink[]
   evidenceControlLinks              EvidenceControlLink[]
+  evidenceRiskLinks                 EvidenceRiskLink[]
+  evidenceAssetLinks                EvidenceAssetLink[]
+  evidenceTags                      EvidenceTag[]
   controlRequirementLinks           ControlRequirementLink[]
   frameworkRequirementOrders        FrameworkRequirementOrder[]
   controlTestEvidenceLinks          ControlTestEvidenceLink[]
@@ -896,6 +899,8 @@ model User {
   controlContributions          ControlContributor[]
   controlEvidenceLinksCreated   ControlEvidenceLink[]           @relation("ControlEvidenceCreator")
   evidenceControlLinksCreated   EvidenceControlLink[]           @relation("EvidenceControlLinkCreator")
+  evidenceRiskLinksCreated      EvidenceRiskLink[]              @relation("EvidenceRiskLinkCreator")
+  evidenceAssetLinksCreated     EvidenceAssetLink[]             @relation("EvidenceAssetLinkCreator")
   testEvidenceLinksCreated      ControlTestEvidenceLink[]       @relation("TestEvidenceCreator")
   createdTestPlans              ControlTestPlan[]               @relation("TestPlanCreator")
   ownedTestPlans                ControlTestPlan[]               @relation("TestPlanOwner")

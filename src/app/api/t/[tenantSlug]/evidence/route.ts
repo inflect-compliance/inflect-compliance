@@ -18,6 +18,9 @@ const EvidenceQuerySchema = z.object({
     controlId: z.string().optional(),
     // EP-3 Part 5 — category filter (exact match).
     category: z.string().optional(),
+    // Tag filter — normalised (lower-cased) exact match, server-side so
+    // the result set matches what the tag chip claims.
+    tag: z.string().optional(),
     q: z.string().optional().transform(normalizeQ),
     archived: z.enum(['true', 'false']).optional(),
     expiring: z.enum(['true', 'false']).optional(),
@@ -44,6 +47,7 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params: param
         status: query.status,
         controlId: query.controlId,
         category: query.category,
+        tag: query.tag,
         folder: query.folder,
         q: query.q,
         archived: query.archived === 'true' ? true : query.archived === 'false' ? false : undefined,

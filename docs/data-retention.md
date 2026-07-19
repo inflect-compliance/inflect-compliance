@@ -101,6 +101,9 @@ a `userId` but stores no contact PII).
 | `DataSubjectRequest` | Regulatory artefact | ind. | None — retained indefinitely (DSAR compliance record) | DEFINED — retained as Art. 17 compliance evidence (see docs/dsar.md) |
 | `Evidence` | Business record | No | retentionUntil sweep (data-lifecycle `runRetentionSweep`) + soft-delete | DEFINED — template for the rest |
 | `EvidenceControlLink` | Business record | No | None today — cascade on parent/tenant delete only (Evidence or Control delete) | Indefinite while tenant active — review w/ compliance |
+| `EvidenceRiskLink` | Business record | No | None today — cascade on parent/tenant delete only (Evidence or Risk delete) | Indefinite while tenant active — review w/ compliance |
+| `EvidenceAssetLink` | Business record | No | None today — cascade on parent/tenant delete only (Evidence or Asset delete) | Indefinite while tenant active — review w/ compliance |
+| `EvidenceTag` | Business record | No | None today — cascade on parent/tenant delete only (Evidence delete) | Indefinite while tenant active — review w/ compliance |
 | `EvidenceReview` | Business record | maybe | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `FileRecord` | Business record | No | retentionUntil sweep (data-lifecycle `runRetentionSweep`) + soft-delete | DEFINED (retentionUntil) where set; else indefinite |
 | `Finding` | Business record | No | Soft-delete (`deletedAt`); 90-day purge via `data-lifecycle` | Active: indefinite. Soft-deleted: 90-day purge |

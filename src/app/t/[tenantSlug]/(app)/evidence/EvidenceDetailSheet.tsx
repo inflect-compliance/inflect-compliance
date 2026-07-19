@@ -122,6 +122,20 @@ interface EvidenceDetailPayload {
     category: string | null;
     /** B8 follow-up — folder label (null = unfoldered). */
     folder: string | null;
+    /** Tags — the second organisation dimension beside `folder`. */
+    tags?: Array<{ id: string; tag: string }>;
+    /** Risks this evidence is attached to (many-to-many). */
+    evidenceRiskLinks?: Array<{
+        id: string;
+        riskId: string;
+        risk: { id: string; key: string | null; title: string };
+    }>;
+    /** Assets this evidence is attached to (many-to-many). */
+    evidenceAssetLinks?: Array<{
+        id: string;
+        assetId: string;
+        asset: { id: string; key: string | null; name: string };
+    }>;
     /** EP-3 — the controls this evidence satisfies (many-to-many). */
     evidenceControlLinks: Array<{
         id: string;
@@ -559,6 +573,43 @@ export function EvidenceDetailSheet({
                                 </div>
                             )}
 
+                            {/* Where-used footprint. One artifact now
+                                reuses across controls, risks AND assets, so
+                                the sheet reports all three rather than a
+                                single "uploaded from" source. */}
+                            <div className="space-y-tight" data-testid="evidence-footprint">
+                                <p className="text-xs font-medium uppercase tracking-widest text-content-subtle">
+                                    {t('detail.usedByLabel')}
+                                </p>
+                                <p className="text-sm text-content-default">
+                                    {t('detail.usedBySummary', {
+                                        controls: evidence.evidenceControlLinks?.length ?? 0,
+                                        risks: evidence.evidenceRiskLinks?.length ?? 0,
+                                        assets: evidence.evidenceAssetLinks?.length ?? 0,
+                                    })}
+                                </p>
+                            </div>
+
+                            {(evidence.tags?.length ?? 0) > 0 && (
+                                <div className="space-y-tight" data-testid="evidence-tags">
+                                    <p className="text-xs font-medium uppercase tracking-widest text-content-subtle">
+                                        {t('detail.tagsLabel')}
+                                    </p>
+                                    <div className="flex flex-wrap gap-tight">
+                                        {(evidence.tags ?? []).map((tg) => (
+                                            <StatusBadge
+                                                key={tg.id}
+                                                variant="info"
+                                                tone="subtle"
+                                                data-testid={`evidence-tag-${tg.tag}`}
+                                            >
+                                                {tg.tag}
+                                            </StatusBadge>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* EP-2 — file metadata block (filename, size,
                                 MIME, SHA-256, retention/expiry, next review). */}
                             <EvidenceFileMetadata evidence={evidence} t={t} />
@@ -631,6 +682,7 @@ export function EvidenceDetailSheet({
                                                 ),
                                             category: evidence.category,
                                             folder: evidence.folder ?? null,
+                                            tags: (evidence.tags ?? []).map((tg) => tg.tag),
                                             retentionUntil: evidence.retentionUntil,
                                             type: evidence.type,
                                             fileRecordId: evidence.fileRecordId,

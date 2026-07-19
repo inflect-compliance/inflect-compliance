@@ -57,6 +57,9 @@ model Evidence {
   vendorAnswers       VendorAssessmentAnswer[]  @relation("VendorAnswerEvidence")
   // EP-3 — the join replaces the singular `control` relation.
   evidenceControlLinks EvidenceControlLink[]
+  evidenceRiskLinks    EvidenceRiskLink[]
+  evidenceAssetLinks   EvidenceAssetLink[]
+  tags                 EvidenceTag[]
   task                Task?                     @relation(fields: [taskId], references: [id])
   risk                Risk?                     @relation(fields: [riskId], references: [id])
   asset               Asset?                    @relation(fields: [assetId], references: [id])
@@ -179,5 +182,74 @@ model EvidenceControlLink {
 
   @@unique([tenantId, evidenceId, controlId])
   @@index([tenantId, controlId])
+  @@index([tenantId, evidenceId])
+}
+
+/// Evidence ↔ Risk reuse join.
+///
+/// Mirrors EvidenceControlLink. Before this, `Evidence.riskId` was a
+/// SINGULAR FK, so attaching the same artifact to a second risk meant
+/// re-uploading it — the exact cloning problem the control join was
+/// created to solve, left unfixed for risks and assets.
+///
+/// The composite FK `[evidenceId, tenantId] → Evidence[id, tenantId]`
+/// is load-bearing: it makes a cross-tenant link impossible at the DB
+/// level, not merely at the RLS level.
+model EvidenceRiskLink {
+  id              String   @id @default(cuid())
+  tenantId        String
+  evidenceId      String
+  riskId          String
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  evidence        Evidence @relation(fields: [evidenceId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  risk            Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  createdBy       User?    @relation("EvidenceRiskLinkCreator", fields: [createdByUserId], references: [id])
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, evidenceId, riskId])
+  @@index([tenantId, riskId])
+  @@index([tenantId, evidenceId])
+}
+
+/// Evidence ↔ Asset reuse join. See EvidenceRiskLink.
+model EvidenceAssetLink {
+  id              String   @id @default(cuid())
+  tenantId        String
+  evidenceId      String
+  assetId         String
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  evidence        Evidence @relation(fields: [evidenceId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  asset           Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  createdBy       User?    @relation("EvidenceAssetLinkCreator", fields: [createdByUserId], references: [id])
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, evidenceId, assetId])
+  @@index([tenantId, assetId])
+  @@index([tenantId, evidenceId])
+}
+
+/// Evidence tag — the second organisation dimension beside `folder`.
+///
+/// A join model rather than a `String[]`/`Json` column: the repo has
+/// been migrating AWAY from denormalised refs (see EvidenceControlLink),
+/// and `folder` already needed its own index to be filterable at all. A
+/// row per (evidence, tag) keeps the tag filter an indexed join instead
+/// of a scan over a JSON column.
+model EvidenceTag {
+  id         String   @id @default(cuid())
+  tenantId   String
+  evidenceId String
+  /// Normalised (trimmed, lower-cased) for the unique key + filtering.
+  tag        String
+  createdAt  DateTime @default(now())
+  evidence   Evidence @relation(fields: [evidenceId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, evidenceId, tag])
+  @@index([tenantId, tag])
   @@index([tenantId, evidenceId])
 }
