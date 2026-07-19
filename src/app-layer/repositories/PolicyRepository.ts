@@ -11,6 +11,20 @@ export interface PolicyFilters {
     q?: string;
     /** Review-cycle bucket: 'overdue' (nextReviewAt past) | 'upcoming' (≤30d). */
     reviewBucket?: 'overdue' | 'upcoming';
+    /**
+     * Restrict to policies whose CURRENT version has an unmet mandatory
+     * acknowledgement. Resolved SERVER-side (see `outstandingAckVersionIds`)
+     * and folded into the `where` as a `currentVersionId IN (…)`, so the filter
+     * survives pagination instead of being a post-fetch client predicate.
+     */
+    outstandingAck?: boolean;
+}
+
+/** Per-version assigned ∧ acknowledged counts, keyed by policyVersionId. */
+export interface AckCountRow {
+    policyVersionId: string;
+    assigned: number;
+    acked: number;
 }
 
 export interface PolicyListParams {
@@ -44,13 +58,98 @@ const policyListSelect = {
 } as const;
 
 export class PolicyRepository {
+    /**
+     * Assigned ∧ acknowledged counts for a set of policy versions — ONE
+     * aggregate, no row fetch, no cap.
+     *
+     * Completion is DERIVED: `PolicyAcknowledgementAssignment` records the
+     * requirement and `PolicyAcknowledgement` records the act, with no relation
+     * between them, so the LEFT JOIN on `(policyVersionId, userId)` is what
+     * makes `acked` the INTERSECTION. A plain `groupBy` over acknowledgements
+     * would wrongly count a VOLUNTARY ack by a non-assigned user and under-report
+     * the outstanding set.
+     *
+     * Tenant scoping is belt-and-braces: the JOIN to PolicyVersion pins
+     * `tenantId` explicitly, and RLS independently enforces the same via its
+     * EXISTS-on-PolicyVersion policy (this runs inside `runInTenantContext`).
+     */
+    static async ackCountsByVersion(
+        db: PrismaTx,
+        ctx: RequestContext,
+        versionIds: string[],
+    ): Promise<AckCountRow[]> {
+        // `Prisma.join` rejects an empty list — and there is nothing to count.
+        if (versionIds.length === 0) return [];
+        return db.$queryRaw<AckCountRow[]>`
+            SELECT a."policyVersionId"      AS "policyVersionId",
+                   COUNT(*)::int            AS "assigned",
+                   COUNT(k."userId")::int   AS "acked"
+            FROM "PolicyAcknowledgementAssignment" a
+            JOIN "PolicyVersion" pv
+              ON pv.id = a."policyVersionId"
+             AND pv."tenantId" = ${ctx.tenantId}
+            LEFT JOIN "PolicyAcknowledgement" k
+              ON k."policyVersionId" = a."policyVersionId"
+             AND k."userId" = a."userId"
+            WHERE a."policyVersionId" IN (${Prisma.join(versionIds)})
+            GROUP BY a."policyVersionId"
+        `;
+    }
+
+    /**
+     * Policy-version ids carrying an UNMET mandatory acknowledgement, for the
+     * server-side `outstandingAck` filter. Same derivation as above, expressed
+     * as `HAVING assigned > acked` — the SQL twin of
+     * `hasOutstandingAcknowledgement` (assignedCount > 0 is implied: a version
+     * with no assignments produces no group).
+     */
+    static async outstandingAckVersionIds(
+        db: PrismaTx,
+        ctx: RequestContext,
+    ): Promise<string[]> {
+        const rows = await db.$queryRaw<Array<{ policyVersionId: string }>>`
+            SELECT a."policyVersionId" AS "policyVersionId"
+            FROM "PolicyAcknowledgementAssignment" a
+            JOIN "PolicyVersion" pv
+              ON pv.id = a."policyVersionId"
+             AND pv."tenantId" = ${ctx.tenantId}
+            LEFT JOIN "PolicyAcknowledgement" k
+              ON k."policyVersionId" = a."policyVersionId"
+             AND k."userId" = a."userId"
+            GROUP BY a."policyVersionId"
+            HAVING COUNT(*) > COUNT(k."userId")
+        `;
+        return rows.map((r) => r.policyVersionId);
+    }
+
+    /**
+     * Resolve the `outstandingAck` filter into a concrete `currentVersionId`
+     * restriction. An empty result must narrow to ZERO rows (the facet was
+     * requested and matched nothing) — never silently drop the filter.
+     */
+    private static async _applyOutstandingAck(
+        db: PrismaTx,
+        ctx: RequestContext,
+        where: Prisma.PolicyWhereInput,
+        filters?: PolicyFilters,
+    ): Promise<Prisma.PolicyWhereInput> {
+        if (!filters?.outstandingAck) return where;
+        const ids = await PolicyRepository.outstandingAckVersionIds(db, ctx);
+        return { ...where, currentVersionId: { in: ids } };
+    }
+
     static async list(
         db: PrismaTx,
         ctx: RequestContext,
         filters?: PolicyFilters,
         options: { take?: number } = {},
     ) {
-        const where = PolicyRepository._buildWhere(ctx, filters);
+        const where = await PolicyRepository._applyOutstandingAck(
+            db,
+            ctx,
+            PolicyRepository._buildWhere(ctx, filters),
+            filters,
+        );
         return db.policy.findMany({
             where,
             orderBy: { updatedAt: 'desc' },
@@ -61,7 +160,12 @@ export class PolicyRepository {
 
     static async listPaginated(db: PrismaTx, ctx: RequestContext, params: PolicyListParams): Promise<PaginatedResponse<unknown>> {
         const limit = clampLimit(params.limit);
-        const where = PolicyRepository._buildWhere(ctx, params.filters);
+        const where = await PolicyRepository._applyOutstandingAck(
+            db,
+            ctx,
+            PolicyRepository._buildWhere(ctx, params.filters),
+            params.filters,
+        );
 
         const cursorWhere = buildCursorWhere(params.cursor);
         if (cursorWhere) {

@@ -35,7 +35,12 @@ const POLICY_STATUS_LABELS = buildPolicyStatusLabels(t);
 
 describe('Policies filter config', () => {
     it('manages the documented key set', () => {
-        expect([...POLICY_FILTER_KEYS].sort()).toEqual(['category', 'reviewBucket', 'status'].sort());
+        // `outstanding` is the server-resolved acknowledgement facet — unlike the
+        // others it is NOT derived from the loaded rows; the value is forwarded
+        // to the API and resolved against the whole tenant.
+        expect([...POLICY_FILTER_KEYS].sort()).toEqual(
+            ['category', 'outstanding', 'reviewBucket', 'status'].sort(),
+        );
     });
 
     it('status is a multi-select enum matching PolicyStatus', () => {

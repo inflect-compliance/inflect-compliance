@@ -2647,7 +2647,8 @@
       "clearFilters": "Изчисти филтрите",
       "emptyDesc": "Създайте документите, които уреждат как работи вашата организация — сигурност, поверителност, допустимо ползване, реакция при инциденти.",
       "kpiOutstandingAck": "Чакащи потвърждения",
-      "ackOutstandingBadge": "Чакащо"
+      "ackOutstandingBadge": "Чакащо",
+      "ackProgress": "{acknowledged}/{assigned}"
     },
     "colHeaders": {
       "title": "Заглавие",

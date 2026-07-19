@@ -2647,7 +2647,8 @@
       "clearFilters": "Clear filters",
       "emptyDesc": "Author the documents that govern how your organisation operates — security, privacy, acceptable use, incident response.",
       "kpiOutstandingAck": "Outstanding acknowledgements",
-      "ackOutstandingBadge": "Outstanding"
+      "ackOutstandingBadge": "Outstanding",
+      "ackProgress": "{acknowledged}/{assigned}"
     },
     "colHeaders": {
       "title": "Title",

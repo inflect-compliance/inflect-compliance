@@ -119,6 +119,9 @@ export const PolicyDetailDTOSchema = PolicyListItemDTOSchema.extend({
         requestedBy: UserRefShortSchema.nullable().optional(),
         approvedBy: UserRefShortSchema.nullable().optional(),
         decidedAt: z.string().nullable().optional(),
+        // The reviewer's decision comment. It was always in the payload but
+        // undeclared, so the detail page read it through a cast.
+        comment: z.string().nullable().optional(),
     }).passthrough()).optional(),
 }).openapi('PolicyDetail', {
     description: 'Policy with full version history, control links, and approval audit trail. Returned by GET /policies/{id}.',

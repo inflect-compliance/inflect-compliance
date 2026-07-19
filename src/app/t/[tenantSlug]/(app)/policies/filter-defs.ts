@@ -1,7 +1,8 @@
 /**
  * Epic 53 — Policies list page filter configuration.
  *
- * Keys map onto `PolicyQuerySchema` (q + status + category + language).
+ * Keys map onto `PolicyQuerySchema` (q + status + category + language +
+ * reviewBucket + outstanding).
  * `language` isn't surfaced today (the page doesn't render multilingual
  * policies yet); we leave room for it in the static config so the filter
  * can be added without touching the page.
@@ -13,7 +14,7 @@ import {
     optionsFromEnum,
 } from '@/components/ui/filter/filter-definitions';
 import type { FilterOption } from '@/components/ui/filter/types';
-import { CircleDot, Tag, Clock } from 'lucide-react';
+import { CircleDot, Tag, Clock, BellRing } from 'lucide-react';
 
 /** Surface-namespace resolver (`useTranslations('policies')`). */
 type T = (key: string, values?: Record<string, unknown>) => string;
@@ -65,6 +66,21 @@ function policyFilterDefsInput(t: T, tGroup: TGroup) {
             options: [
                 { value: 'overdue', label: t('filterEnums.reviewBucket.overdue') },
                 { value: 'upcoming', label: t('filterEnums.reviewBucket.upcoming') },
+            ],
+            multiple: false,
+            resetBehavior: 'clearable',
+        },
+        // Acknowledgement completeness. Unlike `category` / `reviewBucket`
+        // this is NOT derived from the loaded rows — the value is forwarded to
+        // the API and resolved against the whole tenant server-side, so the
+        // facet stays correct past the first page.
+        outstanding: {
+            label: t('filters.acknowledgement'),
+            description: t('filters.acknowledgementDesc'),
+            group: tGroup('attributes'),
+            icon: BellRing,
+            options: [
+                { value: 'true', label: t('filterEnums.acknowledgement.outstanding') },
             ],
             multiple: false,
             resetBehavior: 'clearable',

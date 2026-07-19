@@ -44,6 +44,13 @@ export interface ApprovalBannerApproval {
     approvedBy?: ApprovalBannerUserRef | null;
     decidedAt?: string | null;
     comment?: string | null;
+    /**
+     * Author of the version under review. Segregation of duties blocks BOTH the
+     * requester and the author from approving — the server and the per-version
+     * approval card already enforce the author half, so without it here the
+     * banner rendered an enabled Approve button that 403'd on click.
+     */
+    versionAuthor?: ApprovalBannerUserRef | null;
     /** Optional — when the version reference is known, it surfaces
      *  in the banner so the reviewer knows which version they're
      *  approving (avoids accidental approval of an outdated draft). */
@@ -91,10 +98,13 @@ export function ApprovalBanner({
     const [showCommentField, setShowCommentField] = useState(false);
 
     const isPending = approval.status === 'PENDING';
+    // SoD mirror of the server rule (and of the per-version approval card):
+    // the viewer may not approve their OWN request, nor a version they authored.
     const isSelfApproval =
         canDecide &&
         currentUserId != null &&
-        approval.requestedBy?.id === currentUserId;
+        (approval.requestedBy?.id === currentUserId ||
+            approval.versionAuthor?.id === currentUserId);
     const canActNow = canDecide && isPending && !isSelfApproval && !busy;
 
     // Visual treatment per status. Pending = brand emphasis;
