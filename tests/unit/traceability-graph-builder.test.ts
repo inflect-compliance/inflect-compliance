@@ -13,6 +13,7 @@ import {
     type RawControl,
     type RawLink,
     type RawRequirement,
+    type RawPolicy,
     type RawRisk,
 } from '@/lib/traceability-graph/build';
 import { DEFAULT_NODE_CAP } from '@/lib/traceability-graph/types';
@@ -35,6 +36,14 @@ function requirement(
     frameworkName: string | null = 'ISO 27001',
 ): RawRequirement {
     return { id, code, title, framework: frameworkName ? { name: frameworkName } : null };
+}
+function policy(
+    id: string,
+    title = `Policy ${id}`,
+    category: string | null = 'Governance',
+    status = 'PUBLISHED',
+): RawPolicy {
+    return { id, title, category, status };
 }
 function link(
     id: string,
@@ -139,6 +148,27 @@ describe('buildTraceabilityGraph — node normalisation', () => {
             href: null,
         });
     });
+
+    it('renders policy nodes with title label, category secondary, status badge, and a real detail href', () => {
+        const g = buildTraceabilityGraph({
+            tenantSlug: TENANT_SLUG,
+            controls: [],
+            risks: [],
+            assets: [],
+            requirements: [],
+            policies: [policy('p1', 'Access Control Policy', 'Security', 'PUBLISHED')],
+            links: [],
+        });
+        expect(g.nodes).toHaveLength(1);
+        expect(g.nodes[0]).toMatchObject({
+            id: 'p1',
+            kind: 'policy',
+            label: 'Access Control Policy',
+            secondary: 'Security',
+            badge: 'PUBLISHED',
+            href: '/t/acme-corp/policies/p1',
+        });
+    });
 });
 
 // ─── Edges ─────────────────────────────────────────────────────────────
@@ -182,6 +212,43 @@ describe('buildTraceabilityGraph — edges', () => {
         });
         const byKind = Object.fromEntries(g.categories.map((c) => [c.kind, c.count]));
         expect(byKind.requirement).toBe(1);
+    });
+
+    it('emits the policy→control governs edge between both nodes', () => {
+        const g = buildTraceabilityGraph({
+            tenantSlug: TENANT_SLUG,
+            controls: [ctrl('c1')],
+            risks: [],
+            assets: [],
+            requirements: [],
+            policies: [policy('p1')],
+            links: [link('pcl:1', 'p1', 'c1', 'governs')],
+        });
+        expect(g.nodes.map((n) => n.kind).sort()).toEqual(['control', 'policy']);
+        expect(g.edges).toHaveLength(1);
+        expect(g.edges[0]).toMatchObject({
+            id: 'pcl:1',
+            source: 'p1',
+            target: 'c1',
+            relation: 'governs',
+        });
+        const byKind = Object.fromEntries(g.categories.map((c) => [c.kind, c.count]));
+        expect(byKind.policy).toBe(1);
+    });
+
+    it('omits policy nodes (and their governs edge) when the kind filter excludes policy', () => {
+        const g = buildTraceabilityGraph({
+            tenantSlug: TENANT_SLUG,
+            controls: [ctrl('c1')],
+            risks: [],
+            assets: [],
+            requirements: [],
+            policies: [policy('p1')],
+            links: [link('pcl:1', 'p1', 'c1', 'governs')],
+            filters: { kinds: ['control'] },
+        });
+        expect(g.nodes.map((n) => n.kind)).toEqual(['control']);
+        expect(g.edges).toHaveLength(0); // governs edge dropped — policy endpoint gone
     });
 
     it('preserves the qualifier (coverage type, exposure level)', () => {

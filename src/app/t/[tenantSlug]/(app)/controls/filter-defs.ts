@@ -37,7 +37,7 @@ import {
     optionsFromEnum,
 } from '@/components/ui/filter/filter-definitions';
 import type { FilterOption } from '@/components/ui/filter/types';
-import { CircleDot, Tag, UserCircle2, ShieldCheck } from 'lucide-react';
+import { CircleDot, Tag, UserCircle2, ShieldCheck, Activity } from 'lucide-react';
 
 /** Surface-namespace resolver (`useTranslations('controls')`). */
 type T = (key: string, values?: Record<string, unknown>) => string;
@@ -64,6 +64,19 @@ function applicabilityLabels(t: T): Record<string, string> {
     return {
         APPLICABLE: t('filterEnums.applicability.APPLICABLE'),
         NOT_APPLICABLE: t('filterEnums.applicability.NOT_APPLICABLE'),
+    };
+}
+
+/** ControlHealthVerdict → label. Order matches CONTROL_HEALTH_VERDICTS (the
+ *  dashboard tile order); the register facet + tile deep-links share these
+ *  verdict values. */
+function controlHealthLabels(t: T): Record<string, string> {
+    return {
+        HEALTHY: t('filterEnums.health.HEALTHY'),
+        DEGRADED: t('filterEnums.health.DEGRADED'),
+        AT_RISK: t('filterEnums.health.AT_RISK'),
+        NOT_APPLICABLE: t('filterEnums.health.NOT_APPLICABLE'),
+        UNKNOWN: t('filterEnums.health.UNKNOWN'),
     };
 }
 
@@ -111,6 +124,18 @@ function controlFilterDefsInput(t: T, tGroup: TGroup) {
             icon: Tag,
             options: null, // filled in at render time from loaded controls
             multiple: true,
+            resetBehavior: 'clearable',
+        },
+        // Health verdict facet — single-select (mirrors the tile deep-links,
+        // one verdict at a time). Resolved SERVER-SIDE to an `id: { in }`
+        // restriction in listControls (same /controls/health-verdicts data the
+        // Health column + dashboard tiles use).
+        health: {
+            label: t('filters.health'),
+            description: t('filters.healthDesc'),
+            group: tGroup('attributes'),
+            icon: Activity,
+            options: optionsFromEnum(controlHealthLabels(t)),
             resetBehavior: 'clearable',
         },
     } satisfies Record<string, FilterDefInput>;

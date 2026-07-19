@@ -54,12 +54,15 @@ export type TraceabilityNodeKind =
  *                     a framework requirement (carried for parity
  *                     with the Epic 46 viewer; reserved for a
  *                     future explorer mode).
+ *   `governs`       — PolicyControlLink: a policy governs a control
+ *                     (the control operationalises the policy).
  */
 export type TraceabilityEdgeRelation =
     | 'mitigates'
     | 'protects'
     | 'exposes'
-    | 'implements';
+    | 'implements'
+    | 'governs';
 
 // ─── Wire shapes ───────────────────────────────────────────────────────
 

@@ -11,6 +11,14 @@ export interface ControlListFilters {
     ownerUserId?: string;
     q?: string;
     category?: string;
+    /**
+     * Restrict to an explicit control-id set — the server-side backing for the
+     * consistency-check `?ids=` deep-link AND the resolved health-verdict facet
+     * (the usecase resolves `health` → this id set). Applied as `id: { in }` so
+     * a flagged control beyond the loaded page is no longer silently hidden by a
+     * client-side row filter.
+     */
+    ids?: string[];
 }
 
 export interface ControlListParams {
@@ -102,6 +110,11 @@ export class ControlRepository {
         }
         if (filters?.ownerUserId) where.ownerUserId = filters.ownerUserId;
         if (filters?.category) where.category = filters.category;
+        // Explicit id restriction (consistency `?ids=` deep-link + resolved
+        // health facet). Filtered in-DB so it scales past the loaded page.
+        // An EMPTY array is deliberate (a requested facet that matched nothing)
+        // → `id in ()` → zero rows, NOT "no restriction"; only `undefined` skips.
+        if (filters?.ids) where.id = { in: filters.ids };
         if (filters?.q) {
             where.AND = [{
                 OR: [

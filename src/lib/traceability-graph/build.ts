@@ -50,6 +50,13 @@ export interface RawRequirement {
     framework: { name: string } | null;
 }
 
+export interface RawPolicy {
+    id: string;
+    title: string;
+    category: string | null;
+    status: string;
+}
+
 export interface RawLink {
     /** Underlying link-row id. */
     id: string;
@@ -67,7 +74,8 @@ export interface BuildInput {
     risks: ReadonlyArray<RawRisk>;
     assets: ReadonlyArray<RawAsset>;
     requirements: ReadonlyArray<RawRequirement>;
-    /** Edges, all four relationship types pre-tagged. */
+    policies?: ReadonlyArray<RawPolicy>;
+    /** Edges, all relationship types pre-tagged. */
     links: ReadonlyArray<RawLink>;
     /** Filters the caller asked for — echoed back in `meta`. */
     filters?: TraceabilityGraphFilters;
@@ -126,6 +134,18 @@ function requirementNode(r: RawRequirement): TraceabilityNode {
     };
 }
 
+function policyNode(p: RawPolicy, tenantSlug: string): TraceabilityNode {
+    return {
+        id: p.id,
+        kind: 'policy',
+        label: p.title,
+        secondary: p.category,
+        badge: p.status,
+        // Policies HAVE a per-id detail route, unlike requirements.
+        href: `/t/${tenantSlug}/policies/${p.id}`,
+    };
+}
+
 // ─── Capping ───────────────────────────────────────────────────────────
 
 /**
@@ -179,6 +199,9 @@ export function buildTraceabilityGraph(input: BuildInput): TraceabilityGraph {
     }
     if (!allowedKinds || allowedKinds.has('requirement')) {
         for (const r of input.requirements) allNodes.push(requirementNode(r));
+    }
+    if (!allowedKinds || allowedKinds.has('policy')) {
+        for (const p of input.policies ?? []) allNodes.push(policyNode(p, input.tenantSlug));
     }
 
     // 2. Apply soft cap (keeps relative weights per kind).

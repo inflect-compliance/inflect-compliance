@@ -1666,6 +1666,9 @@
         },
         "docs/implementation-notes/2026-07-18-asset-context-fields-and-import.md": {
             "class": "historical"
+        },
+        "docs/implementation-notes/2026-07-19-control-health-filter-and-swr.md": {
+            "class": "historical"
         }
     }
 }

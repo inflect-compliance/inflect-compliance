@@ -29,6 +29,7 @@ import {
     type RawControl,
     type RawLink,
     type RawRequirement,
+    type RawPolicy,
     type RawRisk,
 } from '@/lib/traceability-graph/build';
 import {
@@ -95,6 +96,7 @@ export async function getTraceabilityGraph(
             controlAssets,
             assetRisks,
             controlRequirementLinks,
+            policyControlLinks,
         ] = await Promise.all([
             wantKinds && !wantKinds.has('control')
                 ? Promise.resolve([] as RawControl[])
@@ -166,6 +168,16 @@ export async function getTraceabilityGraph(
                       select: { id: true, controlId: true, requirementId: true },
                       take: linkCap,
                   }),
+            // Gated on the policy kind — mirrors the requirement gating.
+            wantKinds && !wantKinds.has('policy')
+                ? Promise.resolve(
+                      [] as { id: string; policyId: string; controlId: string }[],
+                  )
+                : db.policyControlLink.findMany({
+                      where: { tenantId: ctx.tenantId },
+                      select: { id: true, policyId: true, controlId: true },
+                      take: linkCap,
+                  }),
         ]);
 
         // Fetch ONLY the requirements actually linked to a control, so
@@ -186,6 +198,22 @@ export async function getTraceabilityGraph(
                           title: true,
                           framework: { select: { name: true } },
                       },
+                      take: nodeCap,
+                  });
+
+        // Fetch ONLY the policies actually linked to a control (mirrors the
+        // requirement approach) so the policy column isn't flooded. Policy IS
+        // tenant-scoped (unlike the global requirement corpus); still filter
+        // by tenant + soft-delete for defence-in-depth.
+        const linkedPolicyIds = [
+            ...new Set(policyControlLinks.map((l) => l.policyId)),
+        ];
+        const policies: RawPolicy[] =
+            linkedPolicyIds.length === 0
+                ? []
+                : await db.policy.findMany({
+                      where: { tenantId: ctx.tenantId, deletedAt: null, id: { in: linkedPolicyIds } },
+                      select: { id: true, title: true, category: true, status: true },
                       take: nodeCap,
                   });
 
@@ -221,6 +249,14 @@ export async function getTraceabilityGraph(
                 relation: 'implements' as const,
                 qualifier: null,
             })),
+            // Policy governs control (a=policy governs b=control).
+            ...policyControlLinks.map((l) => ({
+                id: `pcl:${l.id}`,
+                a: l.policyId,
+                b: l.controlId,
+                relation: 'governs' as const,
+                qualifier: null,
+            })),
         ];
 
         return buildTraceabilityGraph({
@@ -233,6 +269,7 @@ export async function getTraceabilityGraph(
             risks,
             assets,
             requirements,
+            policies,
             links,
             filters,
             nodeCap: options.nodeCap ?? DEFAULT_NODE_CAP,

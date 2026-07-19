@@ -112,6 +112,20 @@ describe('list / _buildWhere', () => {
         expect(where.applicability).toBe('NOT_APPLICABLE');
     });
 
+    it('applies an `id: { in }` restriction from the ids branch (?ids= / health facet)', async () => {
+        // Branch: filters.ids present → `where.id = { in: ids }` (server-side).
+        await ControlRepository.list(db as any, ctx, { ids: ['c-1', 'c-2'] });
+        const where = (db.control.findMany.mock.calls[0] as any[])[0].where;
+        expect(where.id).toEqual({ in: ['c-1', 'c-2'] });
+    });
+
+    it('an EMPTY ids array restricts to zero rows (not "no restriction")', async () => {
+        // A requested facet that matched nothing must yield `id in ()`, not all.
+        await ControlRepository.list(db as any, ctx, { ids: [] });
+        const where = (db.control.findMany.mock.calls[0] as any[])[0].where;
+        expect(where.id).toEqual({ in: [] });
+    });
+
     it('ignores an invalid applicability value', async () => {
         // Branch: applicability truthy but not one of the two allowed → skipped.
         await ControlRepository.list(db as any, ctx, { applicability: 'MAYBE' });

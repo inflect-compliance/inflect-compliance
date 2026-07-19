@@ -35,7 +35,10 @@ export default async function ControlsPage({
     // (`src/app/t/[tenantSlug]/(app)/controls/filter-defs.ts`) so SSR and
     // client filter state agree on the first paint.
     const filters: Record<string, string> = {};
-    for (const key of ['q', 'status', 'applicability', 'ownerUserId', 'category']) {
+    // `ids` (consistency deep-link) + `health` (verdict facet) are server-side
+    // filters too — the register's SSR read must apply them so the first paint
+    // is already restricted (and the client's fallbackData matches).
+    for (const key of ['q', 'status', 'applicability', 'ownerUserId', 'category', 'ids', 'health']) {
         const val = sp[key];
         if (typeof val === 'string' && val) filters[key] = val;
     }

@@ -272,12 +272,19 @@ function ControlsPageInner({
         return ids.length > 0 ? new Set(ids) : null;
     }, [searchParams]);
 
-    // ─── API query string from filter state + search ───
+    // ─── API query string from filter state + search + ?ids= deep-link ───
+    // `ids` is not a FilterToolbar facet (it's a consistency deep-link param),
+    // so it's threaded in here explicitly. Being part of `filtersForQuery` means
+    // it flows into the SWR key AND `queryKeyFilters` — so the SSR-provided
+    // `initialFilters` (which also carries `ids`) still matches on the first
+    // paint and `fallbackData` is preserved (no cold refetch flash).
     const filtersForQuery = useMemo(() => {
         const params = filterStateToUrlParams(state);
         if (search) params.set('q', search);
+        const idsParam = searchParams?.get('ids');
+        if (idsParam) params.set('ids', idsParam);
         return params;
-    }, [state, search]);
+    }, [state, search, searchParams]);
 
     // Flat shape for react-query cache key stability (objects with the same
     // serialised content should hit the same cache entry).
@@ -361,15 +368,13 @@ function ControlsPageInner({
         [],
     );
     const controls = useMemo(() => {
-        const sorted = sortRowsByDisplay(rawControls, sortAccessors, sortBy, sortOrder);
-        // When the consistency deep-link is active, restrict the loaded
-        // rows to the flagged id set — the whole page (table, KPIs, browse
-        // rail) then reflects exactly the offending controls. The id set is
-        // a small, bounded deep-link payload from the consistency report,
-        // not a server-side filter substitute.
-        // guardrail-ignore: bounded deep-link id set, not a list filter
-        return flaggedIds ? sorted.filter((c) => flaggedIds.has(c.id)) : sorted;
-    }, [rawControls, sortAccessors, sortBy, sortOrder, flaggedIds]);
+        // The consistency `?ids=` deep-link is now applied SERVER-SIDE (threaded
+        // into the SWR query + SSR read as an `id: { in }` restriction), so
+        // `rawControls` already IS the flagged set — no client-side row filter,
+        // which means a flagged control beyond the loaded page is no longer
+        // silently dropped. `flaggedIds` is retained only to drive the banner.
+        return sortRowsByDisplay(rawControls, sortAccessors, sortBy, sortOrder);
+    }, [rawControls, sortAccessors, sortBy, sortOrder]);
     const sortableColumns = useMemo(
         () => ['code', 'name', 'status', 'category', 'frequency', 'owner'],
         [],
