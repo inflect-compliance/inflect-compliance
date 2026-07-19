@@ -93,10 +93,14 @@ describe('PR-B TASK_DUE emit coverage', () => {
             const start = s.indexOf(`export async function ${usecase}(`);
             expect(start).toBeGreaterThan(-1);
             // Body spans until the next exported function OR a
-            // sibling section marker. We grab a 3000-char window —
+            // sibling section marker. We grab a fixed window —
             // generous enough for the longest body, tight enough
             // that the emit call sits within range.
-            const body = s.slice(start, start + 3000);
+            // Widened 3000 → 4000 in PR-AA: `createTask` grew the TP-2
+            // segregation-of-duties guard (reviewer ≠ assignee), pushing its
+            // post-commit emit to offset ~3050. The emit is still present and
+            // still post-commit — only the window needed room.
+            const body = s.slice(start, start + 4000);
             // The call MUST be `emitTaskDueNotification(ctx, …)`
             // (no `await`-less variants, no commented-out lines).
             expect(body).toMatch(/await emitTaskDueNotification\(ctx,/);

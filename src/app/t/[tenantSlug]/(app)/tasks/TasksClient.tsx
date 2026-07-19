@@ -52,16 +52,19 @@ import {
     toYMD,
 } from '@/components/ui/date-picker/date-utils';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
-import { taskStatusVariant } from '@/lib/task-status-badge';
+import { taskStatusVariant, TASK_STATUS_BADGE } from '@/lib/task-status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
-// Status → badge tone is the shared `TASK_STATUS_BADGE` map (TP-1),
-// consumed via `taskStatusVariant`. Labels stay local (label copy).
-const buildStatusLabels = (t: (k: string) => string): Record<string, string> => ({
-    OPEN: t('statusLabels.OPEN'), TRIAGED: t('statusLabels.TRIAGED'), IN_PROGRESS: t('statusLabels.IN_PROGRESS'),
-    BLOCKED: t('statusLabels.BLOCKED'), RESOLVED: t('statusLabels.RESOLVED'), CLOSED: t('statusLabels.CLOSED'), CANCELED: t('statusLabels.CANCELED'),
-});
+// Status → badge tone AND label both come from the shared
+// `TASK_STATUS_BADGE` map (TP-1) — tone via `taskStatusVariant`, copy via the
+// map's `labelKey`. Deriving the record (rather than hand-listing statuses)
+// is what stops a status from going missing: IN_REVIEW was absent here and
+// rendered as a raw "IN_REVIEW" string in the list + bulk-status surfaces.
+const buildStatusLabels = (t: (k: string) => string): Record<string, string> =>
+    Object.fromEntries(
+        Object.entries(TASK_STATUS_BADGE).map(([status, spec]) => [status, t(spec.labelKey)]),
+    );
 const SEVERITY_BADGE: Record<string, StatusBadgeVariant> = {
     INFO: 'neutral', LOW: 'neutral', MEDIUM: 'warning',
     HIGH: 'error', CRITICAL: 'error',

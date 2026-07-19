@@ -541,7 +541,10 @@ export class WorkItemRepository {
                 tenantId: ctx.tenantId,
                 deletedAt: null,
             },
-            select: { id: true, status: true },
+            // `reviewerUserId` is selected because the BULK status path must
+            // apply the same reviewer sign-off gate the single-task path does
+            // (TP-2) — without it, /tasks/bulk/status was an escape hatch.
+            select: { id: true, status: true, reviewerUserId: true },
         });
     }
 
