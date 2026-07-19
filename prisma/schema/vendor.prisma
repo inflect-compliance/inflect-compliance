@@ -342,6 +342,9 @@ model VendorAssessment {
   @@index([tenantId, vendorId])
   @@index([tenantId, status])
   @@index([tenantId, riskRating])
+  // Compliance-calendar vendor-reassessment loader: tenant-scoped range
+  // scan on the next review date, ordered ascending.
+  @@index([tenantId, nextReviewAt])
   // Index the external token hash for O(log n) lookup when the
   // external respondent hits the answer URL.
   @@index([externalAccessTokenHash])

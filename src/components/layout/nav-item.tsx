@@ -127,6 +127,14 @@ export interface NavItemProps {
     active: boolean;
     /** Optional count chip (e.g. calendar upcoming-event count). */
     badge?: string | number;
+    /**
+     * Accessible description of what the badge counts. A bare number on a
+     * nav row is ambiguous — the Calendar badge counts only the caller's
+     * OWN tasks while the Calendar page is tenant-wide across every
+     * deadline source, so the scope has to be stated somewhere rather
+     * than guessed. Applied as the chip's aria-label + title.
+     */
+    badgeLabel?: string;
     /** Optional click handler — used by the mobile drawer to close itself. */
     onClick?: () => void;
 }
@@ -577,7 +585,7 @@ function hashSlugToDriftDelays(slug: string): {
     };
 }
 
-export function NavItem({ href, icon: Icon, label, active, badge, onClick }: NavItemProps) {
+export function NavItem({ href, icon: Icon, label, active, badge, badgeLabel, onClick }: NavItemProps) {
     const slug = href.split('/').pop() ?? '';
     const { shimmerDelayMs, breathDelayMs } = hashSlugToDriftDelays(slug);
     const driftStyle = {
@@ -638,7 +646,13 @@ export function NavItem({ href, icon: Icon, label, active, badge, onClick }: Nav
                 </span>
             )}
             {!collapsed && badge != null && (
-                <StatusBadge variant="info" size="sm" className={NAV_ITEM_BADGE}>
+                <StatusBadge
+                    variant="info"
+                    size="sm"
+                    className={NAV_ITEM_BADGE}
+                    aria-label={badgeLabel}
+                    title={badgeLabel}
+                >
                     {badge}
                 </StatusBadge>
             )}

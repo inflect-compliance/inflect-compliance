@@ -25,6 +25,32 @@ function exists(p: string): boolean {
     return fs.existsSync(path.join(REPO, p));
 }
 
+/**
+ * Every per-source loader in the compliance-calendar aggregation. Adding
+ * a deadline source means adding it here too — that is deliberate: the
+ * list is the checklist for "does the calendar still cover everything it
+ * claims to cover".
+ */
+const CALENDAR_LOADERS = [
+    'loadEvidenceEvents',
+    'loadPolicyEvents',
+    'loadVendorEvents',
+    'loadVendorDocumentEvents',
+    'loadVendorAssessmentEvents',
+    'loadAuditCycleEvents',
+    'loadControlEvents',
+    'loadTestPlanEvents',
+    'loadControlExceptionEvents',
+    'loadAccessReviewEvents',
+    'loadTrainingEvents',
+    'loadIncidentNotificationEvents',
+    'loadTaskEvents',
+    'loadRiskEvents',
+    'loadFindingEvents',
+    'loadTreatmentMilestoneEvents',
+    'loadTreatmentPlanEvents',
+] as const;
+
 describe('Epic 49 — calendar feature wiring', () => {
     it('the Calendar route + page exist', () => {
         expect(
@@ -59,20 +85,68 @@ describe('Epic 49 — calendar feature wiring', () => {
         // Each loader name guards against a future refactor that
         // accidentally drops a source — the calendar would still
         // render but a whole entity class would be invisible.
-        for (const fn of [
-            'loadEvidenceEvents',
-            'loadPolicyEvents',
-            'loadVendorEvents',
-            'loadVendorDocumentEvents',
-            'loadAuditCycleEvents',
-            'loadControlEvents',
-            'loadTestPlanEvents',
-            'loadTaskEvents',
-            'loadRiskEvents',
-            'loadFindingEvents',
-        ]) {
+        for (const fn of CALENDAR_LOADERS) {
             expect(src).toMatch(new RegExp(`function\\s+${fn}\\b`));
         }
+    });
+
+    it('every loader is actually WIRED into the fan-out, not just defined', () => {
+        // The previous version of this guard only checked that each
+        // `function load…` existed. A loader that was defined but never
+        // called from the aggregator would pass while contributing zero
+        // events — exactly the silent-omission class this file exists to
+        // catch. Assert each one is invoked inside the `sources` table.
+        const src = read('src/app-layer/usecases/compliance-calendar.ts');
+        const table = src.slice(
+            src.indexOf('const sources:'),
+            src.indexOf('const results = await runInTenantContext'),
+        );
+        expect(table.length).toBeGreaterThan(0);
+        for (const fn of CALENDAR_LOADERS) {
+            expect(table).toMatch(new RegExp(`${fn}\\(db, ctx, range, now, limit\\)`));
+        }
+    });
+
+    it('every loader orders by its date column so a cap keeps the nearest', () => {
+        // The per-source cap without an ORDER BY truncates arbitrarily —
+        // a busy tenant silently loses its soonest deadlines. Behavioural
+        // coverage lives in tests/unit/compliance-calendar.test.ts; this
+        // is the structural floor: no loader may issue a capped findMany
+        // without an orderBy.
+        const src = read('src/app-layer/usecases/compliance-calendar.ts');
+        const takeCount = (src.match(/take: limit,/g) ?? []).length;
+        const orderByCount = (src.match(/orderBy: /g) ?? []).length;
+        expect(takeCount).toBe(CALENDAR_LOADERS.length);
+        expect(orderByCount).toBeGreaterThanOrEqual(takeCount);
+    });
+
+    it('the response carries a truncation report', () => {
+        const schemas = read('src/app-layer/schemas/calendar.schemas.ts');
+        expect(schemas).toMatch(/truncation:\s*\{/);
+        expect(schemas).toMatch(/CALENDAR_SOURCE_NAMES\s*=/);
+        // The count summary must be able to say it is partial.
+        expect(schemas).toMatch(/partial:\s*boolean/);
+        // …and the page must surface it rather than silently under-report.
+        const client = read(
+            'src/app/t/[tenantSlug]/(app)/calendar/CalendarClient.tsx',
+        );
+        expect(client).toMatch(/calendar-truncation-notice/);
+        expect(client).toMatch(/truncationNotice/);
+    });
+
+    it('evidence expiry runs through the one shared predicate', () => {
+        // Calendar, ExpiryCalendar list, and the KPI buckets used to
+        // define "what's expiring" three different ways and drift.
+        const calendar = read('src/app-layer/usecases/compliance-calendar.ts');
+        const dashboard = read(
+            'src/app-layer/repositories/DashboardRepository.ts',
+        );
+        for (const src of [calendar, dashboard]) {
+            expect(src).toMatch(/evidenceExpiryScopeWhere/);
+        }
+        // The dead `evidence-expiry` type is gone — it never had a loader.
+        const schemas = read('src/app-layer/schemas/calendar.schemas.ts');
+        expect(schemas).not.toMatch(/'evidence-expiry'/);
     });
 
     it('the sidebar Calendar nav item is registered with a live badge', () => {

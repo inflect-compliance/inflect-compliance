@@ -138,6 +138,10 @@ export function CalendarClient({
         [calQuery.data],
     );
 
+    // Per-source truncation report. Absent on a cached response from
+    // before this shipped, hence the optional chain at the call site.
+    const truncation = calQuery.data?.truncation;
+
     // Filter: Gantt only shows events that have a meaningful range OR
     // are audit cycles (where `start === end` may be intentional).
     const ganttEvents = React.useMemo(
@@ -344,6 +348,23 @@ export function CalendarClient({
             {calQuery.error && (
                 <div className="rounded-lg border border-border-error bg-bg-error px-4 py-3 text-sm text-content-error">
                     {t('loadError')}
+                </div>
+            )}
+
+            {/* Truncation notice. Each source is capped per request; because
+                every loader now orders by its date column ascending, what
+                survives a cap is the NEAREST deadlines — but the rest are
+                real and the page must not imply this range is complete. */}
+            {truncation?.capped && (
+                <div
+                    className="rounded-lg border border-border-warning bg-bg-warning px-4 py-3 text-sm text-content-warning"
+                    role="status"
+                    data-testid="calendar-truncation-notice"
+                >
+                    {t('truncationNotice', {
+                        limit: truncation.perSourceLimit,
+                        sources: truncation.sources.join(', '),
+                    })}
                 </div>
             )}
 

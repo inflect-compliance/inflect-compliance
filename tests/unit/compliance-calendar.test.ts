@@ -36,6 +36,14 @@ const mockFindingFindMany = jest.fn();
 const mockTreatmentMilestoneFindMany = jest.fn();
 const mockTreatmentPlanFindMany = jest.fn();
 
+// Sources added when the calendar stopped omitting deadline-bearing
+// entities that already had reminder jobs.
+const mockAccessReviewFindMany = jest.fn();
+const mockTrainingFindMany = jest.fn();
+const mockIncidentNotificationFindMany = jest.fn();
+const mockControlExceptionFindMany = jest.fn();
+const mockVendorAssessmentFindMany = jest.fn();
+
 const mockTaskCount = jest.fn().mockResolvedValue(0);
 const mockControlCount = jest.fn().mockResolvedValue(0);
 const mockEvidenceCount = jest.fn().mockResolvedValue(0);
@@ -58,6 +66,11 @@ beforeEach(() => {
         mockFindingFindMany,
         mockTreatmentMilestoneFindMany,
         mockTreatmentPlanFindMany,
+        mockAccessReviewFindMany,
+        mockTrainingFindMany,
+        mockIncidentNotificationFindMany,
+        mockControlExceptionFindMany,
+        mockVendorAssessmentFindMany,
     ].forEach((m) => m.mockReset().mockResolvedValue([]));
     [
         mockTaskCount,
@@ -113,6 +126,21 @@ beforeEach(() => {
         },
         riskTreatmentPlan: {
             findMany: (...a: unknown[]) => mockTreatmentPlanFindMany(...a),
+        },
+        accessReview: {
+            findMany: (...a: unknown[]) => mockAccessReviewFindMany(...a),
+        },
+        trainingAssignment: {
+            findMany: (...a: unknown[]) => mockTrainingFindMany(...a),
+        },
+        incidentNotification: {
+            findMany: (...a: unknown[]) => mockIncidentNotificationFindMany(...a),
+        },
+        controlException: {
+            findMany: (...a: unknown[]) => mockControlExceptionFindMany(...a),
+        },
+        vendorAssessment: {
+            findMany: (...a: unknown[]) => mockVendorAssessmentFindMany(...a),
         },
     };
     jest.mock('@/lib/db-context', () => ({
@@ -423,40 +451,195 @@ describe('getUpcomingDeadlineCount — sidebar "Time" badge', () => {
         expect(count).toBe(3);
     });
 
-    it('filters to the caller and to future (dueAt > now), assignee-scoped', async () => {
+    it('INCLUDES overdue — the badge means "needs attention", not "upcoming"', async () => {
+        // Regression: the badge used to filter `dueAt > now`, so a user
+        // whose work was ENTIRELY late saw an empty badge — the worst
+        // state rendered as the calmest. There must be no lower bound.
         mockTaskCount.mockResolvedValue(5);
         const { getUpcomingDeadlineCount } = await import(
             '@/app-layer/usecases/compliance-calendar'
         );
         await getUpcomingDeadlineCount(makeCtx() as never, { now: NOW });
-        expect(mockTaskCount).toHaveBeenCalledWith(
-            expect.objectContaining({
-                where: expect.objectContaining({
-                    assigneeUserId: 'user-1',
-                    dueAt: { gt: NOW },
-                }),
-            }),
-        );
-        // Non-task sources are never queried for the badge.
+        const where = mockTaskCount.mock.calls[0][0].where;
+        expect(where.assigneeUserId).toBe('user-1');
+        expect(where.dueAt).toEqual({ not: null });
+        // No lower bound of any kind — overdue tasks are in scope.
+        expect(where.dueAt.gt).toBeUndefined();
+        expect(where.dueAt.gte).toBeUndefined();
+        // Non-task sources are never queried for the badge — its scope is
+        // deliberately "my tasks", which the nav labels explicitly.
         expect(mockControlCount).not.toHaveBeenCalled();
         expect(mockEvidenceCount).not.toHaveBeenCalled();
         expect(mockPolicyCount).not.toHaveBeenCalled();
         expect(mockVendorCount).not.toHaveBeenCalled();
     });
 
-    it('caps the window to horizonDays when provided', async () => {
+    it('horizonDays caps the FUTURE side only, still counting overdue', async () => {
         mockTaskCount.mockResolvedValue(2);
         const { getUpcomingDeadlineCount } = await import(
             '@/app-layer/usecases/compliance-calendar'
         );
         await getUpcomingDeadlineCount(makeCtx() as never, { now: NOW, horizonDays: 7 });
         const horizon = new Date(NOW.getTime() + 7 * 86_400_000);
-        expect(mockTaskCount).toHaveBeenCalledWith(
-            expect.objectContaining({
-                where: expect.objectContaining({
-                    dueAt: { gt: NOW, lte: horizon },
-                }),
-            }),
+        const where = mockTaskCount.mock.calls[0][0].where;
+        expect(where.dueAt.lte).toEqual(horizon);
+        // An old overdue task doesn't stop needing attention because the
+        // caller asked for a 7-day view.
+        expect(where.dueAt.gt).toBeUndefined();
+        expect(where.dueAt.gte).toBeUndefined();
+    });
+});
+
+// ─── Ordered truncation + the shared evidence-expiry predicate ────────
+
+describe('per-source truncation keeps the NEAREST deadlines', () => {
+    /**
+     * The per-source cap without an ORDER BY was silently arbitrary: the
+     * planner returned whatever 500 rows it liked, so a busy tenant could
+     * lose precisely the deadlines it most needed to see. Every loader must
+     * therefore order ascending by the date column it ranges on.
+     */
+    const ORDERED_SOURCES: ReadonlyArray<[string, () => jest.Mock, string]> = [
+        ['evidence', () => mockEvidenceFindMany, 'nextReviewDate'],
+        ['policy', () => mockPolicyFindMany, 'nextReviewAt'],
+        ['vendorDocument', () => mockVendorDocFindMany, 'validTo'],
+        ['control', () => mockControlFindMany, 'nextDueAt'],
+        ['controlTestPlan', () => mockTestPlanFindMany, 'nextDueAt'],
+        ['task', () => mockTaskFindMany, 'dueAt'],
+        ['finding', () => mockFindingFindMany, 'dueDate'],
+        ['accessReview', () => mockAccessReviewFindMany, 'dueAt'],
+        ['trainingAssignment', () => mockTrainingFindMany, 'dueAt'],
+        ['incidentNotification', () => mockIncidentNotificationFindMany, 'dueAt'],
+        ['controlException', () => mockControlExceptionFindMany, 'expiresAt'],
+        ['vendorAssessment', () => mockVendorAssessmentFindMany, 'nextReviewAt'],
+        ['treatmentMilestone', () => mockTreatmentMilestoneFindMany, 'dueDate'],
+        ['riskTreatmentPlan', () => mockTreatmentPlanFindMany, 'targetDate'],
+    ];
+
+    it.each(ORDERED_SOURCES)(
+        '%s orders ascending by %s so a cap keeps the soonest',
+        async (_name, getMock, dateField) => {
+            const { getComplianceCalendarEvents } = await import(
+                '@/app-layer/usecases/compliance-calendar'
+            );
+            await getComplianceCalendarEvents(makeCtx() as never, {
+                from: FROM,
+                to: TO,
+                now: NOW,
+            });
+            const args = getMock().mock.calls[0][0];
+            expect(args.orderBy).toBeDefined();
+            expect(args.take).toBeGreaterThan(0);
+            // Single-column sources order on their date column directly;
+            // two-date sources (vendor, risk, auditCycle) pass an array and
+            // are asserted separately below.
+            expect(args.orderBy).toEqual({ [dateField]: 'asc' });
+        },
+    );
+
+    it('two-date sources order by both columns ascending', async () => {
+        const { getComplianceCalendarEvents } = await import(
+            '@/app-layer/usecases/compliance-calendar'
         );
+        await getComplianceCalendarEvents(makeCtx() as never, {
+            from: FROM,
+            to: TO,
+            now: NOW,
+        });
+        expect(mockVendorFindMany.mock.calls[0][0].orderBy).toEqual([
+            { nextReviewAt: 'asc' },
+            { contractRenewalAt: 'asc' },
+        ]);
+        expect(mockRiskFindMany.mock.calls[0][0].orderBy).toEqual([
+            { nextReviewAt: 'asc' },
+            { targetDate: 'asc' },
+        ]);
+        expect(mockAuditCycleFindMany.mock.calls[0][0].orderBy).toEqual([
+            { periodStartAt: 'asc' },
+            { periodEndAt: 'asc' },
+        ]);
+    });
+
+    it('reports the capped source instead of silently under-reporting', async () => {
+        // A source that returns exactly `perSourceLimit` rows has almost
+        // certainly got more behind the cap.
+        mockTaskFindMany.mockResolvedValue(
+            Array.from({ length: 3 }, (_, i) => ({
+                id: `t${i}`,
+                title: `Task ${i}`,
+                dueAt: new Date('2026-06-10T00:00:00Z'),
+                status: 'OPEN',
+                assigneeUserId: null,
+            })),
+        );
+        const { getComplianceCalendarEvents } = await import(
+            '@/app-layer/usecases/compliance-calendar'
+        );
+        const res = await getComplianceCalendarEvents(makeCtx() as never, {
+            from: FROM,
+            to: TO,
+            now: NOW,
+            perSourceLimit: 3,
+        });
+        expect(res.truncation.capped).toBe(true);
+        expect(res.truncation.sources).toContain('task');
+        expect(res.truncation.perSourceLimit).toBe(3);
+        // The summary must not present a post-truncation count as complete.
+        expect(res.counts.partial).toBe(true);
+    });
+
+    it('reports no truncation when every source is under its cap', async () => {
+        mockTaskFindMany.mockResolvedValue([
+            {
+                id: 't1',
+                title: 'Task',
+                dueAt: new Date('2026-06-10T00:00:00Z'),
+                status: 'OPEN',
+                assigneeUserId: null,
+            },
+        ]);
+        const { getComplianceCalendarEvents } = await import(
+            '@/app-layer/usecases/compliance-calendar'
+        );
+        const res = await getComplianceCalendarEvents(makeCtx() as never, {
+            from: FROM,
+            to: TO,
+            now: NOW,
+            perSourceLimit: 500,
+        });
+        expect(res.truncation.capped).toBe(false);
+        expect(res.truncation.sources).toEqual([]);
+        expect(res.counts.partial).toBe(false);
+    });
+});
+
+describe('evidence expiry uses the one shared predicate', () => {
+    it('the calendar loader excludes soft-deleted + archived evidence', async () => {
+        // Regression: the calendar had no deletedAt/isArchived guard at
+        // all, so it showed review deadlines for evidence the rest of the
+        // product treats as gone — phantom reviews.
+        const { getComplianceCalendarEvents } = await import(
+            '@/app-layer/usecases/compliance-calendar'
+        );
+        await getComplianceCalendarEvents(makeCtx() as never, {
+            from: FROM,
+            to: TO,
+            now: NOW,
+        });
+        const where = mockEvidenceFindMany.mock.calls[0][0].where;
+        expect(where.deletedAt).toBeNull();
+        expect(where.isArchived).toBe(false);
+        expect(where.tenantId).toBe(TENANT_ID);
+    });
+
+    it('the shared scope predicate is what the calendar and dashboard both spread', async () => {
+        const { evidenceExpiryScopeWhere } = await import(
+            '@/app-layer/domain/evidence-expiry'
+        );
+        expect(evidenceExpiryScopeWhere(TENANT_ID)).toEqual({
+            tenantId: TENANT_ID,
+            deletedAt: null,
+            isArchived: false,
+        });
     });
 });

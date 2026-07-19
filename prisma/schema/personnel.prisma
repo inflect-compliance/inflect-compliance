@@ -73,6 +73,9 @@ model TrainingAssignment {
   @@index([tenantId, employeeId])
   @@index([tenantId, status])
   @@index([tenantId, courseId])
+  // Compliance-calendar training loader: tenant-scoped range scan on the
+  // due date, ordered ascending so a capped page keeps the nearest.
+  @@index([tenantId, dueAt])
 }
 
 /// A background check for an employee (PR-6). `resultSummary` is encrypted at
