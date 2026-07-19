@@ -1687,6 +1687,9 @@
         },
         "docs/implementation-notes/2026-07-19-calendar-deadline-reliability.md": {
             "class": "historical"
+        },
+        "docs/implementation-notes/2026-07-19-calendar-ux-completeness.md": {
+            "class": "historical"
         }
     }
 }

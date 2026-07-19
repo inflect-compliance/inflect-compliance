@@ -21,6 +21,7 @@
  */
 
 import { formatDateCompact } from '@/lib/format-date';
+import { urgencyFromDaysUntil, type UrgencyLevel } from '@/lib/urgency';
 import { Heading } from '@/components/ui/typography';
 import { cardVariants } from '@/components/ui/card-variants';
 import { cn } from '@/lib/cn';
@@ -47,15 +48,15 @@ export interface ExpiryCalendarProps {
 }
 
 // ─── Urgency Helpers ────────────────────────────────────────────────
+//
+// Thresholds come from the shared `URGENCY_DAYS` scale — this widget
+// used to carry its own ≤7 / ≤14 pair, which made "upcoming" mean
+// something different here than on the calendar (≤7 due_soon) or the
+// evidence KPI (≤30). The ≤14 tier was the only place 14 appeared.
 
-type Urgency = 'overdue' | 'urgent' | 'upcoming' | 'normal';
+type Urgency = UrgencyLevel;
 
-function getUrgency(daysUntil: number): Urgency {
-    if (daysUntil < 0) return 'overdue';
-    if (daysUntil <= 7) return 'urgent';
-    if (daysUntil <= 14) return 'upcoming';
-    return 'normal';
-}
+const getUrgency = urgencyFromDaysUntil;
 
 // EXEMPT from PR-1 status-color migration: this widget uses a 3-tier
 // urgency gradient (red → amber → yellow) for at-a-glance scanning of
@@ -67,8 +68,8 @@ function urgencyConfig(u: Urgency) {
     switch (u) {
         case 'overdue':  return { color: 'text-red-400', bg: 'bg-red-500/20', badge: 'bg-red-500/30 text-red-300', label: 'Overdue' };
         case 'urgent':   return { color: 'text-amber-400', bg: 'bg-amber-500/20', badge: 'bg-amber-500/30 text-amber-300', label: 'This Week' };
-        case 'upcoming': return { color: 'text-yellow-400', bg: 'bg-yellow-500/20', badge: 'bg-yellow-500/30 text-yellow-300', label: 'Next Week' };
-        case 'normal':   return { color: 'text-content-muted', bg: 'bg-bg-subtle', badge: 'bg-bg-subtle text-content-default', label: 'This Month' };
+        case 'upcoming': return { color: 'text-yellow-400', bg: 'bg-yellow-500/20', badge: 'bg-yellow-500/30 text-yellow-300', label: 'This Month' };
+        case 'normal':   return { color: 'text-content-muted', bg: 'bg-bg-subtle', badge: 'bg-bg-subtle text-content-default', label: 'Later' };
     }
 }
 

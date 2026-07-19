@@ -8,6 +8,7 @@ import { formatDate } from '@/lib/format-date';
 import { useEffect, useMemo, useState, useCallback, use } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
 import { Pen2, Plus, ChevronRight } from '@/components/ui/icons/nucleo';
@@ -77,6 +78,12 @@ const LINK_ENTITY_HREF: Record<string, (id: string) => string> = {
 };
 
 type Tab = 'overview' | 'documents' | 'assessments' | 'monitoring' | 'links' | 'bundles' | 'subprocessors' | 'tasks';
+
+/** Runtime list of the Tab union — used to validate the `?tab=` param. */
+const VENDOR_TABS: readonly Tab[] = [
+    'overview', 'documents', 'assessments', 'monitoring',
+    'links', 'bundles', 'subprocessors', 'tasks',
+];
 
 // vendor → getVendor → VendorRepository.getById (vendor scalars + owner + _count).
 // owner/_count optional: absent on the scalar-only PATCH/enrich responses that
@@ -216,7 +223,15 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
 
     const [vendor, setVendor] = useState<VendorDetail | null>(null);
     const [loading, setLoading] = useState(true);
-    const [tab, setTab] = useState<Tab>('overview');
+    // Seed the active tab from `?tab=` so other surfaces can deep-link to
+    // a specific section. The compliance calendar uses this to land a
+    // vendor-document expiry on the Documents tab rather than dropping the
+    // user on Overview to hunt for it. Unknown/absent values fall back to
+    // overview, so old links keep working.
+    const tabParam = useSearchParams()?.get('tab');
+    const [tab, setTab] = useState<Tab>(() =>
+        VENDOR_TABS.includes(tabParam as Tab) ? (tabParam as Tab) : 'overview',
+    );
     const [docs, setDocs] = useState<VendorDocRow[]>([]);
     const [assessments, setAssessments] = useState<VendorAssessmentRow[]>([]);
     const [editing, setEditing] = useState(false);

@@ -57,6 +57,7 @@ import {
     evidenceExpiryScopeWhere,
     EVIDENCE_REVIEWED_STATUS,
 } from '../domain/evidence-expiry';
+import { urgencyFromDate } from '@/lib/urgency';
 import type { WorkItemStatus } from '@prisma/client';
 import type { RequestContext } from '../types';
 import {
@@ -208,8 +209,13 @@ interface DateRange {
 
 /**
  * Map a date+status into a calendar status. `now` is the comparison
- * anchor; `due_soon` window is 7 days. `done`/`scheduled` are decided
- * by the caller's domain logic and pass through verbatim.
+ * anchor. `done`/`scheduled` are decided by the caller's domain logic
+ * and pass through verbatim.
+ *
+ * The due-soon window comes from the shared `URGENCY_DAYS` scale rather
+ * than a local literal — the calendar's `due_soon` IS the product-wide
+ * `urgent` level, and it used to disagree with the dashboard's copy of
+ * the same idea.
  */
 function classifyStatus(
     eventDate: Date,
@@ -217,9 +223,9 @@ function classifyStatus(
     isDone: boolean,
 ): CalendarEventStatus {
     if (isDone) return 'done';
-    const diffMs = eventDate.getTime() - now.getTime();
-    if (diffMs < 0) return 'overdue';
-    if (diffMs <= 7 * 86_400_000) return 'due_soon';
+    const urgency = urgencyFromDate(eventDate, now);
+    if (urgency === 'overdue') return 'overdue';
+    if (urgency === 'urgent') return 'due_soon';
     return 'scheduled';
 }
 
@@ -454,7 +460,12 @@ async function loadVendorDocumentEvents(
                 status: classifyStatus(date, now, false),
                 entityType: 'VENDOR_DOCUMENT',
                 entityId: r.id,
-                href: tenantHrefFromCtx(ctx, `/vendors/${r.vendorId}`),
+                // Land on the Documents tab, not the vendor root — the
+                // expiring document is what the user came for.
+                href: tenantHrefFromCtx(
+                    ctx,
+                    `/vendors/${r.vendorId}?tab=documents`,
+                ),
             };
         });
     return sourceResult(events, rows.length, limit);
@@ -1206,7 +1217,10 @@ async function loadVendorAssessmentEvents(
                 status: classifyStatus(date, now, r.status === 'CLOSED'),
                 entityType: 'VENDOR_ASSESSMENT',
                 entityId: r.id,
-                href: tenantHrefFromCtx(ctx, `/vendors/${r.vendorId}`),
+                href: tenantHrefFromCtx(
+                    ctx,
+                    `/vendors/${r.vendorId}?tab=assessments`,
+                ),
             };
         });
     return sourceResult(events, rows.length, limit);
