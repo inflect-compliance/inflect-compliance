@@ -1,10 +1,12 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { useTenantApiUrl, useTenantContext, useTenantHref } from '@/lib/tenant-context-provider';
+import { useTenantContext, useTenantHref } from '@/lib/tenant-context-provider';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import type { ControlDashboardDTO, ConsistencyCheckDTO } from '@/lib/dto';
 import { AppIcon } from '@/components/icons/AppIcon';
+import { Button } from '@/components/ui/button';
 import { IconAction } from '@/components/ui/icon-action';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import {
@@ -36,55 +38,32 @@ const STATUS_VARIANT: Record<string, StatusBreakdownVariant> = {
 };
 
 export default function ControlsDashboard() {
-    const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const { permissions } = useTenantContext();
     const t = useTranslations('controls');
     const STATUS_LABELS = buildStatusLabels(t);
 
-    const [data, setData] = useState<ControlDashboardDTO | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [consistency, setConsistency] = useState<ConsistencyCheckDTO | null>(null);
     const [showConsistency, setShowConsistency] = useState(false);
 
-    // Was a recursive useCallback (`fetchDashboard(attempt + 1)` in
-    // its own body) — the React Compiler immutability rule fired
-    // because the closure references its own not-yet-finalised
-    // binding. Refactored to an inline retry loop, which is also
-    // simpler to read.
-    const fetchDashboard = useCallback(async () => {
-        setLoading(true);
-        for (let attempt = 0; attempt < 3; attempt++) {
-            try {
-                const res = await fetch(apiUrl('/controls/dashboard'));
-                if (res.ok) {
-                    setData(await res.json());
-                    break;
-                }
-            } catch {
-                // Fall through to retry below.
-            }
-            if (attempt < 2) {
-                // Retry on server errors (e.g., dev server compilation race)
-                await new Promise(r => setTimeout(r, 2000));
-            }
-        }
-        setLoading(false);
-    }, [apiUrl]);
+    // Epic 69 — SWR-backed shell. Was a hand-rolled 3× fetch retry +
+    // setState-in-effect; SWR owns caching/revalidation and the inline
+    // retry below replaces the retry loop.
+    const { data, isLoading, mutate } = useTenantSWR<ControlDashboardDTO>('/controls/dashboard');
+    // Consistency check is on-demand — a null SWR key keeps it unfetched
+    // until the admin clicks the button (which flips `showConsistency`).
+    const { data: consistency } = useTenantSWR<ConsistencyCheckDTO>(
+        showConsistency ? '/controls/consistency-check' : null,
+    );
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
-
-    const fetchConsistency = async () => {
-        setShowConsistency(true);
-        const res = await fetch(apiUrl('/controls/consistency-check'));
-        if (res.ok) setConsistency(await res.json());
-    };
-
-    if (loading) return <SkeletonDashboard />;
+    if (isLoading && !data) return <SkeletonDashboard />;
     if (!data) return (
         <DashboardLayout header={{ title: t('dashboard.title'), titleId: 'dashboard-heading' }}>
-            <div className="p-12 text-center text-content-error">{t('dashboard.loadFailed')}</div>
+            <div className="p-12 text-center space-y-default">
+                <p className="text-content-error">{t('dashboard.loadFailed')}</p>
+                <Button variant="secondary" onClick={() => mutate()} id="dashboard-retry-btn">
+                    {t('dashboard.retry')}
+                </Button>
+            </div>
         </DashboardLayout>
     );
 
@@ -98,7 +77,7 @@ export default function ControlsDashboard() {
                 actions: (
                     <>
                         {permissions.canAdmin && (
-                            <IconAction variant="secondary" onClick={fetchConsistency} id="consistency-check-btn" icon={<AppIcon name="search" size={16} />} label={t('dashboard.consistencyCheck')} />
+                            <IconAction variant="secondary" onClick={() => setShowConsistency(true)} id="consistency-check-btn" icon={<AppIcon name="search" size={16} />} label={t('dashboard.consistencyCheck')} />
                         )}
                     </>
                 ),

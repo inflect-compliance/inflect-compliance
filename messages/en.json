@@ -1961,7 +1961,9 @@
       "duplicateCodes": "Duplicate Codes",
       "allPassed": "All checks passed — no issues found",
       "bestValueTitle": "Best-value controls",
-      "controlHealthTitle": "Control health"
+      "controlHealthTitle": "Control health",
+      "retry": "Retry",
+      "controlHealthTileAria": "{count} controls — {verdict}"
     },
     "templates": {
       "title": "Control Templates",
@@ -1982,7 +1984,9 @@
       "searchPlaceholder": "Search templates…",
       "colPreview": "Preview",
       "previewSummary": "{tasks} tasks · {requirements} requirement links",
-      "installedWithSkipped": "Installed {installed} · skipped {skipped} existing"
+      "installedWithSkipped": "Installed {installed} · skipped {skipped} existing",
+      "loadFailed": "Couldn't load templates",
+      "retry": "Retry"
     },
     "testPlan": {
       "planNotFound": "Plan not found",
@@ -2030,7 +2034,9 @@
       "ownerDesc": "User accountable for this control.",
       "category": "Category",
       "categoryPlural": "Categories",
-      "categoryDesc": "Free-form grouping assigned to the control."
+      "categoryDesc": "Free-form grouping assigned to the control.",
+      "health": "Health",
+      "healthDesc": "Filter by control health verdict"
     },
     "filterEnums": {
       "status": {
@@ -2045,6 +2051,13 @@
       "applicability": {
         "APPLICABLE": "Applicable",
         "NOT_APPLICABLE": "Not Applicable"
+      },
+      "health": {
+        "HEALTHY": "Healthy",
+        "DEGRADED": "Degraded",
+        "AT_RISK": "At risk",
+        "NOT_APPLICABLE": "Not applicable",
+        "UNKNOWN": "Unknown"
       }
     },
     "freq": {

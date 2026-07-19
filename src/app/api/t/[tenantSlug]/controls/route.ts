@@ -17,6 +17,10 @@ const ControlsQuerySchema = z.object({
     ownerUserId: z.string().optional(),
     q: z.string().optional().transform(normalizeQ),
     category: z.string().optional(),
+    // Consistency `?ids=` deep-link (comma-separated) + health verdict facet —
+    // both resolved to a server-side `id: { in }` restriction in the usecase.
+    ids: z.string().optional(),
+    health: z.enum(['HEALTHY', 'DEGRADED', 'AT_RISK', 'NOT_APPLICABLE', 'UNKNOWN']).optional(),
     includeDeleted: z.enum(['true', 'false']).optional(),
 }).strip();
 
@@ -35,6 +39,8 @@ export const GET = withApiErrorHandling(requirePermission<{ tenantSlug: string }
         ownerUserId: query.ownerUserId,
         q: query.q,
         category: query.category,
+        ids: query.ids,
+        health: query.health,
     };
 
     // If pagination params present, use paginated response

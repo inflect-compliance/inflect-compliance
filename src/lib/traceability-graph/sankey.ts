@@ -118,8 +118,11 @@ const COLUMN_LAYOUT: ReadonlyArray<{ index: number; kind: TraceabilityNodeKind; 
  *   1. Optionally narrow the graph via `computeSearchHighlight` —
  *      keep nodes that are matched OR adjacent.
  *   2. Place every surviving node into its column based on `kind`.
- *      Drop kinds outside the column layout (today: `policy` — it's
- *      rendered in graph view but has no Sankey column yet).
+ *      Drop kinds outside the column layout. `policy` is genuinely
+ *      rendered in the graph view (nodes + `governs` edges) but is
+ *      INTENTIONALLY omitted from the Sankey: it governs controls
+ *      orthogonally to the asset→risk→control→requirement flow, so it
+ *      has no natural column in this left-to-right projection.
  *      `requirement` now has a column (rightmost), so control→
  *      requirement `implements` edges render as a real band.
  *   3. Project edges: for each edge whose endpoints both survive,
@@ -153,7 +156,10 @@ export function buildSankeyDataset(
     for (const node of graph.nodes) {
         if (!inScope(node.id)) continue;
         const col = colByKind.get(node.kind);
-        if (!col) continue; // kinds outside the layout (e.g. policy) are dropped
+        // Kinds outside the layout are dropped. `policy` is drawn in the graph
+        // view but has no Sankey column by design (it governs controls
+        // orthogonally to the linear asset→…→requirement flow).
+        if (!col) continue;
         placedNodes.set(node.id, {
             id: node.id,
             label: node.label,

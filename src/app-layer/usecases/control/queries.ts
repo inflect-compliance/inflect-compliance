@@ -1,5 +1,6 @@
 import { RequestContext } from '../../types';
-import { ControlRepository } from '../../repositories/ControlRepository';
+import { ControlRepository, type ControlListFilters } from '../../repositories/ControlRepository';
+import { getControlHealthVerdicts } from './health';
 import { WorkItemRepository } from '../../repositories/WorkItemRepository';
 import { assertCanReadControls } from '../../policies/control.policies';
 import { notFound } from '@/lib/errors/types';
@@ -18,21 +19,65 @@ const OPEN_TASK_STATUS_FILTER = {
 
 // ─── Queries ───
 
+/** Filters the controls list read accepts at the usecase boundary (URL-shaped:
+ *  `ids` is a comma-separated string, `health` a verdict). The usecase resolves
+ *  `ids`/`health` into a concrete `ControlListFilters.ids` array for the repo. */
+export interface ControlListInputFilters {
+    status?: string; applicability?: string; ownerUserId?: string; q?: string; category?: string;
+    /** Comma-separated control ids (consistency `?ids=` deep-link). */
+    ids?: string;
+    /** Health verdict facet — resolved server-side to the matching control ids. */
+    health?: string;
+}
+
+/**
+ * Resolve the id-restriction inputs (`ids` deep-link + `health` verdict facet)
+ * to a concrete control-id array for `_buildWhere`. Returns `undefined` when
+ * NEITHER is requested (no restriction); returns `[]` when a facet WAS requested
+ * but matched nothing (→ zero rows, never "all rows").
+ */
+async function resolveControlIdRestriction(
+    ctx: RequestContext,
+    filters?: ControlListInputFilters,
+): Promise<string[] | undefined> {
+    let ids: string[] | undefined;
+    if (filters?.ids !== undefined) {
+        ids = filters.ids.split(',').map((s) => s.trim()).filter(Boolean);
+    }
+    if (filters?.health) {
+        const { verdicts } = await getControlHealthVerdicts(ctx);
+        const healthIds = verdicts.filter((v) => v.verdict === filters.health).map((v) => v.controlId);
+        ids = ids ? ids.filter((id) => healthIds.includes(id)) : healthIds;
+    }
+    return ids;
+}
+
+/** Strip the URL-shaped `ids`/`health` inputs down to the repo filter shape,
+ *  substituting the resolved id array. */
+function toRepoFilters(filters: ControlListInputFilters | undefined, ids: string[] | undefined): ControlListFilters | undefined {
+    if (!filters) return undefined;
+    return {
+        status: filters.status, applicability: filters.applicability,
+        ownerUserId: filters.ownerUserId, q: filters.q, category: filters.category, ids,
+    };
+}
+
 export async function listControls(
     ctx: RequestContext,
-    filters?: {
-        status?: string; applicability?: string; ownerUserId?: string; q?: string; category?: string;
-    },
+    filters?: ControlListInputFilters,
     options: { take?: number } = {},
 ) {
     assertCanReadControls(ctx);
+    const idRestriction = await resolveControlIdRestriction(ctx, filters);
+    const repoFilters = toRepoFilters(filters, idRestriction);
     return cachedListRead({
         ctx,
         entity: 'control',
         operation: 'list',
         // `take` participates in the cache key so a bounded SSR
         // result can't poison the unbounded API GET cache (mirrors
-        // the PR #146 Tasks pattern).
+        // the PR #146 Tasks pattern). The RAW url-shaped filters (small
+        // `health`/`ids` strings) form the key — not the resolved id array.
         params: options.take
             ? { ...(filters ?? {}), _take: options.take }
             : (filters ?? {}),
@@ -41,7 +86,7 @@ export async function listControls(
                 const controls = await ControlRepository.list(
                     db,
                     ctx,
-                    filters,
+                    repoFilters,
                     options,
                 );
                 // Attach the unified linked-task counts (TaskLink CONTROL
@@ -64,17 +109,21 @@ export async function listControls(
 
 export async function listControlsPaginated(ctx: RequestContext, params: {
     limit?: number; cursor?: string;
-    filters?: { status?: string; applicability?: string; ownerUserId?: string; q?: string; category?: string };
+    filters?: ControlListInputFilters;
 }) {
     assertCanReadControls(ctx);
+    const idRestriction = await resolveControlIdRestriction(ctx, params.filters);
+    const repoParams = { ...params, filters: toRepoFilters(params.filters, idRestriction) };
     return cachedListRead({
         ctx,
         entity: 'control',
         operation: 'listPaginated',
+        // Cache key stays the RAW url-shaped filters (small); the loader uses the
+        // resolved id array.
         params,
         loader: () =>
             runInTenantContext(ctx, (db) =>
-                ControlRepository.listPaginated(db, ctx, params),
+                ControlRepository.listPaginated(db, ctx, repoParams),
             ),
     });
 }

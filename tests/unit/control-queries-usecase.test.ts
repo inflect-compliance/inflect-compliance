@@ -71,8 +71,15 @@ jest.mock('@/lib/soft-delete', () => ({
     withDeleted: jest.fn((args: any) => ({ ...args, _withDeleted: true })),
 }));
 
+// listControls now resolves the `health` verdict facet → control-id set via
+// this usecase; mock it so the resolution is deterministic in these unit tests.
+jest.mock('@/app-layer/usecases/control/health', () => ({
+    getControlHealthVerdicts: jest.fn(),
+}));
+
 import { ControlRepository } from '@/app-layer/repositories/ControlRepository';
 import { WorkItemRepository } from '@/app-layer/repositories/WorkItemRepository';
+import { getControlHealthVerdicts } from '@/app-layer/usecases/control/health';
 import { cachedListRead } from '@/lib/cache/list-cache';
 // Direct import from queries.ts to skip the barrel — the barrel pulls
 // `mutations.ts` which transitively imports the Prisma audit extension
@@ -138,6 +145,79 @@ describe('listControls', () => {
         await listControls(readerCtx, undefined, { take: 25 });
         const cacheArgs = (cachedListRead as jest.Mock).mock.calls[0][0];
         expect(cacheArgs.params).toEqual({ _take: 25 });
+    });
+
+    it('resolves the `?ids=` deep-link to a server-side id restriction', async () => {
+        (ControlRepository.list as jest.Mock).mockResolvedValue([]);
+        (WorkItemRepository.countLinkedToControls as jest.Mock).mockResolvedValue(new Map());
+        await listControls(readerCtx, { ids: 'c-1, c-2 ,c-3' });
+        // The comma-separated deep-link string is parsed into the repo `ids`
+        // array (trimmed) so the DB applies `id: { in }` — not a client filter.
+        expect(ControlRepository.list).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.anything(),
+            expect.objectContaining({ ids: ['c-1', 'c-2', 'c-3'] }),
+            expect.anything(),
+        );
+        // The RAW url-shaped string stays in the cache key (small), not the array.
+        expect((cachedListRead as jest.Mock).mock.calls[0][0].params).toEqual({ ids: 'c-1, c-2 ,c-3' });
+    });
+
+    it('resolves the `health` facet to the matching control ids (server-side)', async () => {
+        (getControlHealthVerdicts as jest.Mock).mockResolvedValue({
+            verdicts: [
+                { controlId: 'c-1', verdict: 'DEGRADED', passRate: 50 },
+                { controlId: 'c-2', verdict: 'HEALTHY', passRate: 95 },
+                { controlId: 'c-3', verdict: 'DEGRADED', passRate: 60 },
+            ],
+            counts: {},
+        });
+        (ControlRepository.list as jest.Mock).mockResolvedValue([]);
+        (WorkItemRepository.countLinkedToControls as jest.Mock).mockResolvedValue(new Map());
+        await listControls(readerCtx, { health: 'DEGRADED' });
+        expect(ControlRepository.list).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.anything(),
+            expect.objectContaining({ ids: ['c-1', 'c-3'] }),
+            expect.anything(),
+        );
+    });
+
+    it('a `health` facet matching nothing restricts to zero rows (empty id set, not "all")', async () => {
+        (getControlHealthVerdicts as jest.Mock).mockResolvedValue({
+            verdicts: [{ controlId: 'c-1', verdict: 'HEALTHY', passRate: 95 }],
+            counts: {},
+        });
+        (ControlRepository.list as jest.Mock).mockResolvedValue([]);
+        (WorkItemRepository.countLinkedToControls as jest.Mock).mockResolvedValue(new Map());
+        await listControls(readerCtx, { health: 'AT_RISK' });
+        // Empty array → repo applies `id: { in: [] }` → zero rows (NOT undefined).
+        expect(ControlRepository.list).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.anything(),
+            expect.objectContaining({ ids: [] }),
+            expect.anything(),
+        );
+    });
+
+    it('intersects `ids` and `health` when both are present', async () => {
+        (getControlHealthVerdicts as jest.Mock).mockResolvedValue({
+            verdicts: [
+                { controlId: 'c-1', verdict: 'DEGRADED', passRate: 50 },
+                { controlId: 'c-2', verdict: 'DEGRADED', passRate: 60 },
+            ],
+            counts: {},
+        });
+        (ControlRepository.list as jest.Mock).mockResolvedValue([]);
+        (WorkItemRepository.countLinkedToControls as jest.Mock).mockResolvedValue(new Map());
+        await listControls(readerCtx, { ids: 'c-1,c-9', health: 'DEGRADED' });
+        // c-1 is in both the deep-link AND degraded; c-9 isn't degraded, c-2 isn't in the link.
+        expect(ControlRepository.list).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.anything(),
+            expect.objectContaining({ ids: ['c-1'] }),
+            expect.anything(),
+        );
     });
 
     it('forwards filters into the cache key', async () => {

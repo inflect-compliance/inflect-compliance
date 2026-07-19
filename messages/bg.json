@@ -1961,7 +1961,9 @@
       "duplicateCodes": "Дублирани кодове",
       "allPassed": "Всички проверки преминаха — не са открити проблеми",
       "bestValueTitle": "Контроли с най-добра стойност",
-      "controlHealthTitle": "Здраве на контролите"
+      "controlHealthTitle": "Здраве на контролите",
+      "retry": "Опитай отново",
+      "controlHealthTileAria": "{count} контроли — {verdict}"
     },
     "templates": {
       "title": "Шаблони за контроли",
@@ -1982,7 +1984,9 @@
       "searchPlaceholder": "Търсене на шаблони…",
       "colPreview": "Преглед",
       "previewSummary": "{tasks} задачи · {requirements} връзки към изисквания",
-      "installedWithSkipped": "Инсталирани {installed} · пропуснати {skipped} съществуващи"
+      "installedWithSkipped": "Инсталирани {installed} · пропуснати {skipped} съществуващи",
+      "loadFailed": "Шаблоните не се заредиха",
+      "retry": "Опитай отново"
     },
     "testPlan": {
       "planNotFound": "Планът не е намерен",
@@ -2030,7 +2034,9 @@
       "ownerDesc": "Потребител, отговорен за този контрол.",
       "category": "Категория",
       "categoryPlural": "Категории",
-      "categoryDesc": "Свободна групировка, зададена на контрола."
+      "categoryDesc": "Свободна групировка, зададена на контрола.",
+      "health": "Състояние",
+      "healthDesc": "Филтрирай по състояние на контрола"
     },
     "filterEnums": {
       "status": {
@@ -2045,6 +2051,13 @@
       "applicability": {
         "APPLICABLE": "Приложим",
         "NOT_APPLICABLE": "Неприложим"
+      },
+      "health": {
+        "HEALTHY": "Здрав",
+        "DEGRADED": "Влошен",
+        "AT_RISK": "Рисков",
+        "NOT_APPLICABLE": "Неприложим",
+        "UNKNOWN": "Неизвестен"
       }
     },
     "freq": {

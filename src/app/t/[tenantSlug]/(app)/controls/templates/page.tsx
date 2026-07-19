@@ -1,13 +1,10 @@
 'use client';
-/* TODO(swr-migration): this file has fetch-on-mount + setState
- * patterns flagged by react-hooks/set-state-in-effect. Each call site
- * carries an inline disable directive; collectively they should
- * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,8 +37,10 @@ export default function ControlTemplatesPage() {
     const t = useTranslations('controls');
 
 
-    const [templates, setTemplates] = useState<ControlTemplateRow[]>([]);
-    const [loading, setLoading] = useState(true);
+    // Epic 69 — SWR-backed list (was fetch-on-mount + setState-in-effect).
+    // The API returns a bare array; `mutate` powers the inline retry.
+    const { data: templates = [], isLoading, error: loadError, mutate } =
+        useTenantSWR<ControlTemplateRow[]>('/controls/templates');
     // Live client-side search over the loaded templates (code / title /
     // category). Typing filters immediately — no Enter. The list is small
     // enough that a client filter is the right tool; the page has no
@@ -51,16 +50,6 @@ export default function ControlTemplatesPage() {
     const [installing, setInstalling] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-
-    const fetchTemplates = useCallback(async () => {
-        setLoading(true);
-        const res = await fetch(apiUrl('/controls/templates'));
-        if (res.ok) setTemplates(await res.json());
-        setLoading(false);
-    }, [apiUrl]);
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
     const toggle = (id: string) => {
         setSelectedIds(prev => {
@@ -176,8 +165,15 @@ export default function ControlTemplatesPage() {
 
             {/* Template list */}
             <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
-                {loading ? (
+                {isLoading ? (
                     <div className="p-12 text-center text-content-subtle animate-pulse">{t('templates.loading')}</div>
+                ) : loadError ? (
+                    <div className="p-12 text-center space-y-default">
+                        <p className="text-content-error">{t('templates.loadFailed')}</p>
+                        <Button variant="secondary" onClick={() => mutate()} id="templates-retry-btn">
+                            {t('templates.retry')}
+                        </Button>
+                    </div>
                 ) : filtered.length === 0 ? (
                     <InlineEmptyState
                         title={t('templates.emptyTitle')}
