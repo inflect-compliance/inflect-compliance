@@ -27,6 +27,7 @@ import { notFound } from '@/lib/errors/types';
 import { WorkItemStatus } from '@prisma/client';
 import { worstStatus, isImplemented, rollUpRequirementVerdict } from '@/lib/compliance/requirement-status-rollup';
 import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
+import { coverageQualifyingEvidenceWhere } from '@/lib/compliance/coverage-evidence';
 import type {
     SoAReportDTO,
     SoAEntryDTO,
@@ -385,7 +386,14 @@ async function loadEvidenceCounts(ctx: RequestContext, controlIds: string[]): Pr
     const counts = await runInTenantContext(ctx, (db) =>
         db.evidenceControlLink.groupBy({
             by: ['controlId'],
-            where: { tenantId: ctx.tenantId, controlId: { in: controlIds }, evidence: { deletedAt: null } },
+            // Count only evidence that COUNTS — the SoA tally used to
+            // filter deletedAt alone, so DRAFT/expired/archived rows
+            // inflated it past what coverage scoring credits.
+            where: {
+                tenantId: ctx.tenantId,
+                controlId: { in: controlIds },
+                evidence: coverageQualifyingEvidenceWhere(),
+            },
             _count: { id: true },
         })
     );

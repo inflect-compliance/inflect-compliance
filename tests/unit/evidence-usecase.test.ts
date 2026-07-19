@@ -33,7 +33,15 @@
 const mockDb = {
     user: { findUnique: jest.fn() },
     notification: { create: jest.fn() },
-    evidence: { delete: jest.fn(), findMany: jest.fn() },
+    // `updateEvidence` first reads the row's TYPE, because `content` is
+    // only user-authored for TEXT/LINK — for FILE it is the storage
+    // pathKey and must not be caller-writable. Default to TEXT so the
+    // existing update assertions exercise the editable path.
+    evidence: {
+        delete: jest.fn(),
+        findMany: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue({ type: 'TEXT' }),
+    },
     controlEvidenceLink: { create: jest.fn() },
     // SP audit — getEvidence now looks up an optional SharePoint sync mapping.
     integrationSyncMapping: { findFirst: jest.fn().mockResolvedValue(null) },

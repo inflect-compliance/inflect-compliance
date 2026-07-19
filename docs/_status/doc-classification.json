@@ -1702,6 +1702,9 @@
         },
         "docs/implementation-notes/2026-07-19-vendor-risk-integrity.md": {
             "class": "historical"
+        },
+        "docs/implementation-notes/2026-07-19-evidence-content-and-scorer-parity.md": {
+            "class": "historical"
         }
     }
 }

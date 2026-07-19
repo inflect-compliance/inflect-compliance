@@ -40,6 +40,11 @@ const evidenceListSelect = {
     fileName: true,
     type: true,
     status: true,
+    // The note body / link URL. Selected so the list-row edit affordance
+    // can seed the body field — without it the edit modal opened blank
+    // and a save silently blanked the note. NOT prose for FILE rows (it
+    // is the storage pathKey there); see @/lib/evidence-content.
+    content: true,
     // EP-3 Part 5 — category is now a rendered column + filter.
     category: true,
     owner: true,

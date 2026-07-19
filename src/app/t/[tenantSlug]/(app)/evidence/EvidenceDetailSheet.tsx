@@ -22,6 +22,7 @@ import { useTranslations } from 'next-intl';
 import { RejectReasonModal } from './RejectReasonModal';
 import { evidenceStatusLabel, evidenceTypeLabel, evidenceReviewActionLabel } from './evidence-labels';
 import type { EditEvidenceInitial } from './EditEvidenceModal';
+import { evidenceContentRole } from '@/lib/evidence-content';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { Sheet } from '@/components/ui/sheet';
@@ -99,7 +100,12 @@ interface EvidenceReviewRow {
 interface EvidenceDetailPayload {
     id: string;
     title: string;
-    description: string | null;
+    /**
+     * The note body (TEXT) / target URL (LINK) / storage pathKey (FILE).
+     * The sheet previously read a `description` field that does not exist
+     * on the model, so the body block could never render. See
+     * @/lib/evidence-content for what this holds per type.
+     */
     content: string | null;
     type: string;
     status: string;
@@ -171,6 +177,8 @@ export function EvidenceDetailSheet({
 
     const evidence = detailQuery.data;
     const { mutate: mutateDetail } = detailQuery;
+    // What `content` means for this row — note / url / internal pathKey.
+    const contentRole = evidenceContentRole(evidence?.type);
 
     // EP-3 — unlink a control (Epic 67 undo-toast: optimistic remove +
     // 5s deferred DELETE + undo). The evidence row survives.
@@ -351,10 +359,7 @@ export function EvidenceDetailSheet({
                 </>
             ) : (
                 <>
-                    <Sheet.Header
-                        title={evidence.title}
-                        description={evidence.description || undefined}
-                    />
+                    <Sheet.Header title={evidence.title} />
                     <Sheet.Body>
                         <div className="space-y-default">
                             <div className="flex items-center gap-tight">
@@ -524,20 +529,53 @@ export function EvidenceDetailSheet({
                                 )}
                             </div>
 
-                            {evidence.description && (
+                            {/* The body. Rendered from `content`, which is
+                                the note for TEXT and the URL for LINK — and
+                                the internal storage pathKey for FILE, which
+                                must NOT be shown. */}
+                            {evidence.content && contentRole !== 'internal' && (
                                 <div className="space-y-tight">
                                     <p className="text-xs font-medium uppercase tracking-widest text-content-subtle">
                                         {t('detail.descriptionLabel')}
                                     </p>
-                                    <p className="text-sm text-content-default whitespace-pre-wrap">
-                                        {evidence.description}
-                                    </p>
+                                    {contentRole === 'url' ? (
+                                        <a
+                                            href={evidence.content}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-sm text-content-link underline underline-offset-2 break-all"
+                                            id="evidence-sheet-link-target"
+                                        >
+                                            {evidence.content}
+                                        </a>
+                                    ) : (
+                                        <p
+                                            className="text-sm text-content-default whitespace-pre-wrap"
+                                            data-testid="evidence-sheet-content"
+                                        >
+                                            {evidence.content}
+                                        </p>
+                                    )}
                                 </div>
                             )}
 
                             {/* EP-2 — file metadata block (filename, size,
                                 MIME, SHA-256, retention/expiry, next review). */}
                             <EvidenceFileMetadata evidence={evidence} t={t} />
+
+                            {/* File-version lineage. `replaceEvidenceFile`
+                                has always written the chain; until now
+                                nothing read it, so a replaced file looked
+                                like it had simply changed and v1 was
+                                unreachable. */}
+                            {evidence.fileRecordId && (
+                                <EvidenceFileVersions
+                                    evidenceId={evidence.id}
+                                    open={open}
+                                    t={t}
+                                    tenantApiUrl={tenantApiUrl}
+                                />
+                            )}
 
                             {/* EP-2 — review-history timeline. Rows are
                                 written on every transition but were invisible
@@ -575,7 +613,7 @@ export function EvidenceDetailSheet({
                                         onEdit({
                                             id: evidence.id,
                                             title: evidence.title,
-                                            description: evidence.description,
+                                            content: evidence.content,
                                             ownerUserId: evidence.ownerUserId,
                                             // EP-3 — seed the multi-select
                                             // from the linked controls.
@@ -902,6 +940,96 @@ function EvidenceReviewTimeline({
                         );
                     })}
                 </ol>
+            )}
+        </div>
+    );
+}
+
+
+/** One entry of the file-version lineage. */
+interface EvidenceFileVersionRow {
+    id: string;
+    version: number;
+    originalName: string;
+    mimeType: string;
+    sizeBytes: number;
+    sha256: string;
+    createdAt: string;
+    isCurrent: boolean;
+}
+
+/**
+ * File-version history for a FILE evidence row.
+ *
+ * Renders the current version as a badge and every superseded version
+ * beneath it, each downloadable. Only fetched while the sheet is open —
+ * most evidence has a single version, so this stays off the critical path
+ * for the common case.
+ */
+function EvidenceFileVersions({
+    evidenceId,
+    open,
+    t,
+    tenantApiUrl,
+}: {
+    evidenceId: string;
+    open: boolean;
+    t: ReturnType<typeof useTranslations>;
+    tenantApiUrl: (path: string) => string;
+}) {
+    const versionsQuery = useTenantSWR<{
+        fileVersion: number;
+        versions: EvidenceFileVersionRow[];
+    }>(open ? CACHE_KEYS.evidence.fileVersions(evidenceId) : null);
+
+    const data = versionsQuery.data;
+    if (!data) return null;
+
+    const prior = data.versions.filter((v) => !v.isCurrent);
+
+    return (
+        <div className="space-y-tight" data-testid="evidence-file-versions">
+            <div className="flex items-center gap-tight">
+                <p className="text-xs font-medium uppercase tracking-widest text-content-subtle">
+                    {t('detail.versionsLabel')}
+                </p>
+                <StatusBadge variant="info" tone="subtle" data-testid="evidence-file-version-badge">
+                    {t('detail.versionBadge', { version: data.fileVersion })}
+                </StatusBadge>
+            </div>
+
+            {prior.length === 0 ? (
+                <p className="text-xs text-content-subtle">
+                    {t('detail.versionsSingle')}
+                </p>
+            ) : (
+                <ul className="space-y-tight">
+                    {prior.map((v) => (
+                        <li
+                            key={v.id}
+                            className="flex items-center justify-between gap-tight rounded border border-border-subtle px-2 py-1.5"
+                            data-testid={`evidence-file-version-${v.version}`}
+                        >
+                            <span className="min-w-0">
+                                <span className="block truncate text-xs text-content-default">
+                                    {t('detail.versionBadge', { version: v.version })} · {v.originalName}
+                                </span>
+                                <span className="block text-[10px] text-content-subtle">
+                                    {formatDateTime(v.createdAt)} · {formatBytes(v.sizeBytes)}
+                                </span>
+                            </span>
+                            <a
+                                href={tenantApiUrl(`/evidence/files/${v.id}/download`)}
+                                download
+                                className="shrink-0 text-content-muted hover:text-content-emphasis"
+                                aria-label={t('detail.versionDownloadAria', { version: v.version })}
+                                id={`evidence-version-download-${v.version}`}
+                            >
+                                <Download className="size-4" />
+                            </a>
+                        </li>
+                    ))}
+                </ul>
             )}
         </div>
     );

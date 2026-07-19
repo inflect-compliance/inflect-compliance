@@ -9,6 +9,7 @@ import { cachedListRead, bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 import type { EvidenceType, ReviewCadence } from '@prisma/client';
 import { z } from 'zod';
 import { CreateEvidenceSchema, UpdateEvidenceSchema } from '@/lib/schemas';
+import { isEvidenceContentEditable } from '@/lib/evidence-content';
 
 /**
  * EP-3 — collapse the many-to-many `controlIds` input + the legacy singular
@@ -183,9 +184,24 @@ export async function updateEvidence(ctx: RequestContext, id: string, data: z.in
     assertCanWrite(ctx);
 
     const updated = await runInTenantContext(ctx, async (db) => {
+        // `content` is only user-authored for TEXT (note body) and LINK
+        // (target URL). For FILE evidence it holds the object-storage
+        // pathKey written by the upload / `replaceEvidenceFile`, so
+        // accepting a caller-supplied value would detach the row from its
+        // file. The edit form already hides the field for FILE rows; this
+        // is the server-side half of that gate, because the API is public.
+        const existing = await db.evidence.findFirst({
+            where: { id, tenantId: ctx.tenantId },
+            select: { type: true },
+        });
+        if (!existing) throw notFound('Evidence not found');
+        const content = isEvidenceContentEditable(existing.type)
+            ? data.content
+            : undefined;
+
         const evidence = await EvidenceRepository.update(db, ctx, id, {
             title: data.title,
-            content: data.content,
+            content,
             category: data.category,
             // B8 follow-up — folder is editable post-create. The
             // three-state contract is preserved (undefined = no
@@ -856,6 +872,104 @@ export async function uploadEvidenceFile(
  * control links. The point: updating a doc keeps lineage instead of spawning
  * an unrelated Evidence row.
  */
+/**
+ * Safety bound on the version walk. Each `replaceEvidenceFile` adds one
+ * link, so real chains are short; this stops a cycle (which the schema
+ * does not forbid) from looping forever.
+ */
+const MAX_FILE_VERSION_CHAIN = 50;
+
+/** The FileRecord columns the version walk reads. */
+interface FileVersionRecord {
+    id: string;
+    originalName: string;
+    mimeType: string;
+    sizeBytes: number;
+    sha256: string;
+    createdAt: Date;
+    previousFileRecordId: string | null;
+}
+
+/**
+ * Walk an evidence row's file-version lineage, newest first.
+ *
+ * `replaceEvidenceFile` has always written the chain — each new
+ * FileRecord points at the one it superseded via `previousFileRecordId`,
+ * and `Evidence.fileVersion` counts up — but nothing ever read it back.
+ * A user who replaced a file could see neither that v2 existed nor how to
+ * retrieve v1.
+ *
+ * FileRecord carries no `evidenceId` (only the CURRENT head is linked,
+ * from `Evidence.fileRecordId`), so the lineage can only be reached by
+ * walking the linked list. Version numbers are assigned by counting down
+ * from `Evidence.fileVersion`, which is the head's ordinal.
+ *
+ * Prior versions download through the existing
+ * `/evidence/files/[fileId]/download` route — it resolves any
+ * tenant-scoped FileRecord and re-checks the tenant path guard and the AV
+ * scan status, so historical versions get the same protections as the head.
+ */
+export async function getEvidenceFileVersions(ctx: RequestContext, evidenceId: string) {
+    assertCanRead(ctx);
+
+    return runInTenantContext(ctx, async (db) => {
+        const evidence = await db.evidence.findFirst({
+            where: { id: evidenceId, tenantId: ctx.tenantId },
+            select: { fileRecordId: true, fileVersion: true },
+        });
+        if (!evidence) throw notFound('Evidence not found');
+
+        const versions: Array<{
+            id: string;
+            version: number;
+            originalName: string;
+            mimeType: string;
+            sizeBytes: number;
+            sha256: string;
+            createdAt: Date;
+            isCurrent: boolean;
+        }> = [];
+
+        let cursor = evidence.fileRecordId;
+        let version = evidence.fileVersion;
+        // A linked list can only be walked one hop at a time (FileRecord
+        // has no evidenceId to batch on), and the walk is bounded by
+        // MAX_FILE_VERSION_CHAIN. Chains are single-digit in practice:
+        // one hop per file replacement.
+        while (cursor && versions.length < MAX_FILE_VERSION_CHAIN) { // guardrail-allow: n+1
+            const record: FileVersionRecord | null = await db.fileRecord.findFirst({
+                where: { id: cursor, tenantId: ctx.tenantId, deletedAt: null },
+                select: {
+                    id: true,
+                    originalName: true,
+                    mimeType: true,
+                    sizeBytes: true,
+                    sha256: true,
+                    createdAt: true,
+                    previousFileRecordId: true,
+                },
+            });
+            if (!record) break;
+
+            versions.push({
+                id: record.id,
+                version,
+                originalName: record.originalName,
+                mimeType: record.mimeType,
+                sizeBytes: record.sizeBytes,
+                sha256: record.sha256,
+                createdAt: record.createdAt,
+                isCurrent: versions.length === 0,
+            });
+
+            cursor = record.previousFileRecordId;
+            version -= 1;
+        }
+
+        return { fileVersion: evidence.fileVersion, versions };
+    });
+}
+
 export async function replaceEvidenceFile(ctx: RequestContext, evidenceId: string, file: File) {
     assertCanWrite(ctx);
 
