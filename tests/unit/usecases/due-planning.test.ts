@@ -132,6 +132,24 @@ describe('runDuePlanning — idempotency', () => {
         expect(createdControls).toEqual(['c-a', 'c-c']);
     });
 
+    it('never picks up cron-SCHEDULED plans — those belong to the scheduler', async () => {
+        // Dedupe by disjoint OWNERSHIP rather than a cross-process lock: the
+        // scheduler claims a scheduled plan and enqueues a runner job, and
+        // there's a window before the runner writes its row where the
+        // pending-run filter sees nothing — so this path would mint a SECOND
+        // PLANNED run for the same occurrence. Querying `schedule: null` makes
+        // the double-run impossible by construction.
+        const db = fakeDb();
+        db.controlTestPlan.findMany.mockResolvedValue([]);
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn(db as never));
+
+        await runDuePlanning(makeRequestContext('ADMIN'));
+
+        const where = db.controlTestPlan.findMany.mock.calls[0][0].where;
+        expect(where.schedule).toBeNull();
+        expect(where.status).toBe('ACTIVE');
+    });
+
     it('is a no-op (creates nothing) when every due plan already has a pending run', async () => {
         const db = fakeDb();
         db.controlTestPlan.findMany.mockResolvedValue([

@@ -146,9 +146,36 @@ describe('Control Test Zod schemas', () => {
     const schemas = require('../../src/lib/schemas');
 
     it('CreateTestPlanSchema validates correct input', () => {
-        const input = { name: 'Quarterly access review', method: 'MANUAL', frequency: 'QUARTERLY' };
+        const input = { name: 'Quarterly access review', frequency: 'QUARTERLY' };
         const result = schemas.CreateTestPlanSchema.safeParse(input);
         expect(result.success).toBe(true);
+    });
+
+    // PR-CC — `method` is a DERIVED projection of `automationType`, never a
+    // caller input. Both write schemas `.strip()` it, so a client asserting
+    // `method: 'AUTOMATED'` can no longer set the column while automationType
+    // stays MANUAL (the drift that made the badge lie).
+    it('CreateTestPlanSchema strips a caller-supplied method (derived, not asserted)', () => {
+        const result = schemas.CreateTestPlanSchema.safeParse({
+            name: 'Sneaky', method: 'AUTOMATED',
+        });
+        expect(result.success).toBe(true);
+        expect(result.data).not.toHaveProperty('method');
+    });
+
+    it('UpdateTestPlanSchema strips a caller-supplied method', () => {
+        const result = schemas.UpdateTestPlanSchema.safeParse({ method: 'AUTOMATED' });
+        expect(result.success).toBe(true);
+        expect(result.data).not.toHaveProperty('method');
+    });
+
+    // PR-CC — the detail form offers ARCHIVED and bulk already supported it;
+    // omitting it here made single-plan archive 400.
+    it('UpdateTestPlanSchema accepts ARCHIVED (parity with the bulk path)', () => {
+        for (const status of ['ACTIVE', 'PAUSED', 'ARCHIVED']) {
+            expect(schemas.UpdateTestPlanSchema.safeParse({ status }).success).toBe(true);
+        }
+        expect(schemas.UpdateTestPlanSchema.safeParse({ status: 'BOGUS' }).success).toBe(false);
     });
 
     it('CreateTestPlanSchema rejects empty name', () => {

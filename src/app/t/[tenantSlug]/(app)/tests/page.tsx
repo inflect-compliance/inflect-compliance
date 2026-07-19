@@ -108,9 +108,22 @@ const effectiveDue = (p: { nextDueAt: string | null; nextRunAt: string | null })
     if (ds.length === 0) return null;
     return ds.reduce((a, b) => (new Date(a) <= new Date(b) ? a : b));
 };
-const isOverdue = (p: { nextDueAt: string | null; nextRunAt: string | null }) => {
+/**
+ * THE definition of an overdue plan, shared with `/tests/due` and the dashboard
+ * (`due-planning.ts`): status ACTIVE, and the earliest of the two due clocks is
+ * at-or-before now.
+ *
+ * Both halves used to differ here — this surface counted EVERY status with a
+ * strict `<`, while the server counted ACTIVE-only with `<=`. So a paused or
+ * archived past-due plan showed as overdue in the list but not in the KPI, and
+ * the two disagreed on the exact-equality boundary. ACTIVE-only is the right
+ * scope (pausing a plan is a deliberate "stop expecting this"), and `<=`
+ * matches the `lte` the authoritative DB queries use.
+ */
+const isOverdue = (p: { nextDueAt: string | null; nextRunAt: string | null; status: string }) => {
+    if (p.status !== 'ACTIVE') return false;
     const d = effectiveDue(p);
-    return d ? new Date(d) < new Date() : false;
+    return d ? new Date(d) <= new Date() : false;
 };
 
 const getLastResult = (plan: TestPlanSummary) => {

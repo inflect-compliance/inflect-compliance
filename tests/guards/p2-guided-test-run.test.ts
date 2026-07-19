@@ -19,6 +19,9 @@ const ROOT = join(__dirname, '..', '..');
 const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8');
 
 const USECASE = 'src/app-layer/usecases/control-test.ts';
+const DERIVE_DOMAIN = 'src/app-layer/domain/test-plan-method.ts';
+const REPOSITORY = 'src/app-layer/repositories/TestPlanRepository.ts';
+const PLAN_DETAIL = 'src/app/t/[tenantSlug]/(app)/tests/_components/TestPlanDetailView.tsx';
 const SCHEDULING = 'src/app-layer/usecases/test-scheduling.ts';
 const RUN_REPO = 'src/app-layer/repositories/TestRunRepository.ts';
 const START_ROUTE = 'src/app/api/t/[tenantSlug]/tests/runs/[runId]/start/route.ts';
@@ -74,11 +77,30 @@ describe('R3-P2 (4) client navigation on due Run-now', () => {
 
 describe('R3-P2 (5) method↔automation reconciliation', () => {
     it('a single derive helper is applied in the scheduling write path', () => {
-        expect(read(USECASE)).toMatch(/export function deriveMethodFromAutomationType/);
+        // PR-CC — the helper moved to `domain/test-plan-method` so
+        // TestPlanRepository can derive too WITHOUT a repository→usecase import
+        // (which would invert the layer dependency). The usecase imports and
+        // re-exports it, so this remains the usecase-layer import site.
+        expect(read(DERIVE_DOMAIN)).toMatch(/export function deriveMethodFromAutomationType/);
+        expect(read(USECASE)).toMatch(/deriveMethodFromAutomationType/);
         expect(read(SCHEDULING)).toMatch(/deriveMethodFromAutomationType/);
         // schedule write syncs method + nextDueAt into one coherent model
         expect(read(SCHEDULING)).toMatch(/method,/);
         expect(read(SCHEDULING)).toMatch(/nextDueAt,/);
+    });
+
+    it('`method` is DERIVED everywhere — no surface writes it directly', () => {
+        // PR-CC — the free method toggle drifted from automationType (a plan
+        // rendered "AUTOMATED" while nothing was scheduled). It's gone: the
+        // edit form no longer offers it, and the repository derives on create.
+        expect(read(PLAN_DETAIL)).not.toMatch(/buildMethodOptions|setEditMethod/);
+        // The repo derives on CREATE from automationType instead of accepting a
+        // caller-supplied `method` (which defaulted to MANUAL and was a latent
+        // re-drift vector). `update` still takes `method` — that's the usecase
+        // persisting the value it just DERIVED, which is the correct flow.
+        const repo = read(REPOSITORY);
+        expect(repo).toMatch(/method: deriveMethodFromAutomationType\(/);
+        expect(repo).toMatch(/automationType\?: string;/);
     });
 });
 

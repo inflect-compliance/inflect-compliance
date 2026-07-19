@@ -1690,6 +1690,9 @@
         },
         "docs/implementation-notes/2026-07-19-calendar-ux-completeness.md": {
             "class": "historical"
+        },
+        "docs/implementation-notes/2026-07-19-test-plan-correctness.md": {
+            "class": "historical"
         }
     }
 }

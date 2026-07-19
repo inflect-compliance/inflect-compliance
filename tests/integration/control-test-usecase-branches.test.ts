@@ -172,6 +172,98 @@ describeFn('control-test usecase — branch coverage (integration)', () => {
         await expect(createTestRun(ctx, plan.id)).rejects.toThrow(/paused/i);
     });
 
+    it('method is DERIVED from automationType and can never drift', async () => {
+        const plan = await createTestPlan(ctx, controlId, { name: 'Derivation' });
+        // A fresh plan is MANUAL/MANUAL.
+        expect(plan.method).toBe('MANUAL');
+
+        // Acquiring an automationType flips method with it…
+        const automated = await updateTestPlan(ctx, plan.id, { automationType: 'SCRIPT' });
+        expect(automated.automationType).toBe('SCRIPT');
+        expect(automated.method).toBe('AUTOMATED');
+
+        // …and reverting to MANUAL strips the automation AND the schedule, so
+        // the scheduler can't keep firing a plan the operator thinks is manual.
+        const back = await updateTestPlan(ctx, plan.id, { automationType: 'MANUAL' });
+        expect(back.automationType).toBe('MANUAL');
+        expect(back.method).toBe('MANUAL');
+        expect(back.schedule ?? null).toBeNull();
+        expect(back.nextRunAt ?? null).toBeNull();
+    });
+
+    it('single-plan ARCHIVE works and matches the bulk-archive end state', async () => {
+        const viaSingle = await createTestPlan(ctx, controlId, { name: 'Archive single' });
+        const viaBulk = await createTestPlan(ctx, controlId, { name: 'Archive bulk' });
+
+        // The detail form's ARCHIVED option used to 400 at the schema.
+        const archived = await updateTestPlan(ctx, viaSingle.id, { status: 'ARCHIVED' });
+        expect(archived.status).toBe('ARCHIVED');
+
+        await bulkSetTestPlanStatus(ctx, [viaBulk.id], 'ARCHIVED');
+        const bulkRow = await getTestPlan(ctx, viaBulk.id);
+
+        // Same end state on both paths — archive is archive however you got there.
+        expect(archived.status).toBe(bulkRow.status);
+        expect(archived.schedule ?? null).toBe(bulkRow.schedule ?? null);
+        expect(archived.nextRunAt ?? null).toEqual(bulkRow.nextRunAt ?? null);
+    });
+
+    it('an INCONCLUSIVE run does NOT attest the control or roll the cadence', async () => {
+        // The bug: attestControlTested + the plan-cadence roll ran BEFORE the
+        // result branch, so a control whose only runs were INCONCLUSIVE read
+        // "tested & on-schedule" while its effectiveness stayed null.
+        const plan = await createTestPlan(ctx, controlId, { name: 'Inconclusive plan', frequency: 'MONTHLY' });
+        const before = await globalPrisma.control.findUnique({
+            where: { id: controlId }, select: { lastTested: true, nextDueAt: true },
+        });
+        const planBefore = await getTestPlan(ctx, plan.id);
+
+        const run = await createTestRun(ctx, plan.id);
+        const done = await completeTestRun(ctx, run.id, { result: 'INCONCLUSIVE', notes: 'could not determine' });
+        expect(done.result).toBe('INCONCLUSIVE');
+
+        const after = await globalPrisma.control.findUnique({
+            where: { id: controlId }, select: { lastTested: true, nextDueAt: true },
+        });
+        // Control tested-state untouched — nothing was established.
+        expect(after?.lastTested ?? null).toEqual(before?.lastTested ?? null);
+        expect(after?.nextDueAt ?? null).toEqual(before?.nextDueAt ?? null);
+        // …and the plan's due date did not roll forward either.
+        const planAfter = await getTestPlan(ctx, plan.id);
+        expect(planAfter.nextDueAt ?? null).toEqual(planBefore.nextDueAt ?? null);
+    });
+
+    it('a PASS run DOES attest the control (the gate only blocks non-verdicts)', async () => {
+        const plan = await createTestPlan(ctx, controlId, { name: 'Verdict plan', frequency: 'MONTHLY' });
+        const run = await createTestRun(ctx, plan.id);
+        await completeTestRun(ctx, run.id, { result: 'PASS', notes: 'ok' });
+
+        const after = await globalPrisma.control.findUnique({
+            where: { id: controlId }, select: { lastTested: true },
+        });
+        expect(after?.lastTested).not.toBeNull();
+    });
+
+    it('manually completing a SCHEDULED plan rolls nextRunAt so it is not perpetually overdue', async () => {
+        // effectiveDueAt = min(nextDueAt, nextRunAt). Advancing only nextDueAt
+        // left the stale PAST nextRunAt pinning the plan as overdue forever.
+        const plan = await createTestPlan(ctx, controlId, { name: 'Scheduled plan', frequency: 'MONTHLY' });
+        const past = new Date(Date.now() - 60 * 60 * 1000);
+        await globalPrisma.controlTestPlan.update({
+            where: { id: plan.id },
+            data: { schedule: '0 3 * * *', scheduleTimezone: 'UTC', nextRunAt: past },
+        });
+
+        const run = await createTestRun(ctx, plan.id);
+        await completeTestRun(ctx, run.id, { result: 'PASS', notes: 'done by hand' });
+
+        const after = await getTestPlan(ctx, plan.id);
+        // nextRunAt moved into the future → min(nextDueAt, nextRunAt) is no
+        // longer in the past, so the plan leaves the overdue surfaces.
+        expect(after.nextRunAt).not.toBeNull();
+        expect(new Date(after.nextRunAt!).getTime()).toBeGreaterThan(Date.now());
+    });
+
     it('test-run lifecycle: create → complete PASS, double-complete, retest guard', async () => {
         const plan = await createTestPlan(ctx, controlId, { name: 'Run plan', frequency: 'MONTHLY' });
         const run = await createTestRun(ctx, plan.id);
