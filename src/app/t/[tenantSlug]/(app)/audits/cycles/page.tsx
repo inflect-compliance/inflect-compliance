@@ -45,6 +45,12 @@ const FW_META: Record<string, { icon: AppIconName; label: string; color: string 
     ISO27001: { icon: 'shield', label: 'ISO/IEC 27001:2022', color: 'from-indigo-500 to-purple-600' },
     NIS2: { icon: 'globe', label: 'NIS2 Directive', color: 'from-blue-500 to-cyan-600' },
 };
+// Custom-framework cycles (any key scored via computeGenericReadiness) get a
+// generic-but-branded chip — a real gradient + a certificate icon, not the
+// flat gray "unknown" look. The label falls back to the framework key itself.
+const FW_FALLBACK = { icon: 'shield' as AppIconName, color: 'from-violet-500 to-fuchsia-600' };
+const fwMeta = (frameworkKey: string) =>
+    FW_META[frameworkKey] ?? { ...FW_FALLBACK, label: frameworkKey };
 
 // Epic 55 — framework picker options. Labels are intentionally verbose
 // (include the version / full regulation name) because the Combobox
@@ -299,7 +305,7 @@ export default function AuditCyclesPage() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-default">
                     {cycles.map(c => {
-                        const meta = FW_META[c.frameworkKey] || { icon: 'shield' as AppIconName, label: c.frameworkKey, color: 'from-gray-500 to-gray-600' };
+                        const meta = fwMeta(c.frameworkKey);
                         const sc = scores[c.id];
                         return (
                             <div key={c.id} className={cardVariants()} id={`cycle-card-${c.id}`}>
@@ -312,7 +318,7 @@ export default function AuditCyclesPage() {
                                             <span className={`w-10 h-10 rounded-lg bg-gradient-to-br ${meta.color} flex items-center justify-center text-lg flex-shrink-0`}>
                                                 <AppIcon name={meta.icon} size={20} />
                                             </span>
-                                            <StatusBadge variant={STATUS_BADGE[c.status] || 'neutral'}>{c.status}</StatusBadge>
+                                            <StatusBadge variant={STATUS_BADGE[c.status] || 'neutral'}>{tx(`cycleStatus.${c.status}` as Parameters<typeof tx>[0])}</StatusBadge>
                                         </div>
                                         <Heading level={3} className="truncate">{c.name}</Heading>
                                         <p className="text-xs text-content-muted mt-1">{meta.label} · v{c.frameworkVersion}</p>

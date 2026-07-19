@@ -2983,7 +2983,10 @@
       "step6Desc": "Възложете задачи и приключете действията.",
       "auditorManagement": "Управление на одитори",
       "cycleFilterActive": "Показват се одити на място за един цикъл.",
-      "clearCycleFilter": "Изчисти филтъра"
+      "cycleFilterActiveNamed": "Показват се одити на място за „{name}“.",
+      "clearCycleFilter": "Изчисти филтъра",
+      "cyclePickerLabel": "Цикъл",
+      "cyclePickerAll": "Всички одити на място"
     },
     "readinessLegend": {
       "aria": "Как работи оценката за готовност",
@@ -3155,6 +3158,7 @@
         "statusOPEN": "Отворена",
         "statusRESOLVED": "Разрешена",
         "createFinding": "Създай констатация",
+        "createObservation": "Създай наблюдение",
         "findingCreated": "Констатацията е създадена и свързана с цикъла.",
         "materializeError": "Неуспешно създаване на констатация от този запис."
       },
@@ -3555,6 +3559,10 @@
       "placeholderNone": "— Няма",
       "searchControls": "Търсене на контроли…",
       "emptyControls": "Няма съвпадащи контроли",
+      "labelOriginatingAudit": "Одит източник",
+      "descOriginatingAudit": "Свържете тази констатация с одита (и неговия цикъл), по време на който е повдигната.",
+      "searchAudits": "Търсене на одити…",
+      "emptyAudits": "Няма съвпадащи одити",
       "labelCompensatingControl": "Компенсиращ контрол",
       "descCompensatingControl": "Контрол, който смекчава констатацията.",
       "labelImplicatedRisks": "Засегнати рискове ({count} избрани)",

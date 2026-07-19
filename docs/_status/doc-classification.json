@@ -1672,6 +1672,9 @@
         },
         "docs/implementation-notes/2026-07-19-readiness-plumbing-correctness.md": {
             "class": "historical"
+        },
+        "docs/implementation-notes/2026-07-19-readiness-discoverability-provenance.md": {
+            "class": "historical"
         }
     }
 }

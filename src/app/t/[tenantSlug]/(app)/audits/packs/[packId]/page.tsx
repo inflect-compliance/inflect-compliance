@@ -600,7 +600,12 @@ export default function PackDetailPage() {
                                                             disabled={materializingId === c.id || resolvingId === c.id}
                                                             data-testid={`materialize-comment-${c.id}`}
                                                         >
-                                                            {tx('packs.auditorActivity.createFinding')}
+                                                            {/* Label per kind — a FINDING becomes a nonconformity
+                                                                finding; an EVIDENCE_REQUEST becomes an observation
+                                                                finding + follow-up task. */}
+                                                            {c.kind === 'FINDING'
+                                                                ? tx('packs.auditorActivity.createFinding')
+                                                                : tx('packs.auditorActivity.createObservation')}
                                                         </Button>
                                                     )}
                                                     <Button

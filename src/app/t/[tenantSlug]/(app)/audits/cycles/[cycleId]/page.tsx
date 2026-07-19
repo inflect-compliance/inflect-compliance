@@ -177,6 +177,14 @@ export default function CycleDetailPage() {
 
     const fw = FW_META[cycle.frameworkKey] || { icon: 'shield' as AppIconName, label: cycle.frameworkKey };
 
+    // Localize the fieldwork-audit status enum (PLANNED/IN_PROGRESS/COMPLETED/
+    // CANCELLED) via the flat audit-status keys, so the badge isn't a raw enum.
+    const AUDIT_STATUS_KEY: Record<string, string> = {
+        PLANNED: 'planned', IN_PROGRESS: 'inProgress', COMPLETED: 'completed', CANCELLED: 'cancelled',
+    };
+    const auditStatusLabel = (status: string) =>
+        AUDIT_STATUS_KEY[status] ? tx(AUDIT_STATUS_KEY[status] as Parameters<typeof tx>[0]) : status;
+
     return (
         <EntityDetailLayout
             id="cycle-detail-page"
@@ -270,7 +278,7 @@ export default function CycleDetailPage() {
                         <Link key={a.id} href={`/t/${tenantSlug}/audits/${a.id}`}
                             className={cn(cardVariants({ density: 'compact' }), 'flex items-center justify-between hover:bg-bg-muted/50 transition block')} id={`cycle-audit-link-${a.id}`}>
                             <span className="font-medium text-sm">{a.title}</span>
-                            <StatusBadge variant={a.status === 'COMPLETED' ? 'success' : a.status === 'IN_PROGRESS' ? 'info' : 'neutral'} className="ml-2">{a.status}</StatusBadge>
+                            <StatusBadge variant={a.status === 'COMPLETED' ? 'success' : a.status === 'IN_PROGRESS' ? 'info' : 'neutral'} className="ml-2">{auditStatusLabel(a.status)}</StatusBadge>
                         </Link>
                     ))
                 ) : (
