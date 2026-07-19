@@ -7,6 +7,7 @@ import {
     getFrameworkMappings as getGuidanceMappings,
 } from '@/app-layer/libraries';
 import { runInTenantContext } from '@/lib/db-context';
+import { isCoverageQualifyingEvidence } from '@/lib/compliance/coverage-evidence';
 
 export async function getFrameworkMappings(ctx: RequestContext) {
     assertCanRead(ctx);
@@ -26,7 +27,13 @@ export async function getFrameworkMappings(ctx: RequestContext) {
                 relatedMappings.some((m) => m.isoControlId === c.annexId)
             );
             const implemented = relatedControls.filter((c) => c.status === 'IMPLEMENTED').length;
-            const withEvidence = relatedControls.filter((c) => c.evidence.some((e) => e.status === 'APPROVED')).length;
+            // Shared coverage definition. A bare status check counted
+            // archived / expired / soft-deleted evidence that coverage.ts
+            // rejects, so the same control read as covered here and not
+            // there.
+            const withEvidence = relatedControls.filter((c) =>
+                c.evidence.some((e) => isCoverageQualifyingEvidence(e)),
+            ).length;
             const total = relatedControls.length;
 
             return {

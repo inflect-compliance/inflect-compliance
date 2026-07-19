@@ -13,6 +13,7 @@ import { runInTenantContext } from '@/lib/db-context';
 import { notFound, badRequest } from '@/lib/errors/types';
 import { TERMINAL_WORK_ITEM_STATUSES } from '../../domain/work-item-status';
 import { bumpEntityCacheVersion } from '@/lib/cache/list-cache';
+import { coverageQualifyingEvidenceWhere } from '@/lib/compliance/coverage-evidence';
 
 // РІвЂќР‚РІвЂќР‚РІвЂќР‚ Audit Packs РІвЂќР‚РІвЂќР‚РІвЂќР‚
 
@@ -342,7 +343,10 @@ async function buildCuratedDefaultPack(ctx: RequestContext, frameworkKey: string
                 status: { in: [...OPERATING_CONTROL_STATUSES] },
                 ...(mappedControlIds.length > 0 ? { id: { in: mappedControlIds } } : {}),
             },
-            select: { id: true, evidenceControlLinks: { where: { evidence: { status: EvidenceStatus.APPROVED } }, select: { evidenceId: true } } },
+            // Shared coverage definition — status alone let archived,
+            // expired and soft-deleted-but-APPROVED evidence count here
+            // while coverage.ts excluded it.
+            select: { id: true, evidenceControlLinks: { where: { evidence: coverageQualifyingEvidenceWhere() }, select: { evidenceId: true } } },
             take: 2000,
         })
     );

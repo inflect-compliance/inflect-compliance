@@ -1070,7 +1070,7 @@ function EvidencePageInner({ initialEvidence, initialControls, initialMetrics, t
                                 setEditInitial({
                                     id: ev.id,
                                     title: ev.title,
-                                    description: ev.content ?? null,
+                                    content: ev.content ?? null,
                                     ownerUserId: ev.ownerUserId ?? null,
                                     controlLinks: (ev.evidenceControlLinks ?? []).map(
                                         (l) => l.control,

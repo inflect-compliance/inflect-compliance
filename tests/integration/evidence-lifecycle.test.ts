@@ -167,6 +167,65 @@ describeFn('updateEvidence (integration)', () => {
     it('throws notFound updating a non-existent id', async () => {
         await expect(updateEvidence(adminCtx(), 'ev-nope', { title: 'x' } as never)).rejects.toThrow();
     });
+
+    // ─── The body round-trip ─────────────────────────────────────────
+    //
+    // Regression: the UI read/wrote a `description` field that is not a
+    // column on Evidence, and UpdateEvidenceSchema (.strip()) silently
+    // discarded it. A TEXT note's body was therefore invisible in the
+    // detail sheet AND un-editable — the save appeared to succeed and
+    // changed nothing. The column is `content`.
+
+    it("a TEXT note's body round-trips create → read → edit", async () => {
+        const ev = await newDraft({ title: 'round trip', type: 'TEXT' });
+        // Create persisted the body…
+        expect(ev.content).toBe('some text');
+
+        // …the read path returns it (this is what the detail sheet renders)…
+        const read = await getEvidence(adminCtx(), ev.id);
+        expect(read.content).toBe('some text');
+
+        // …and an edit actually changes it.
+        const upd = await updateEvidence(
+            adminCtx(),
+            ev.id,
+            { content: 'edited body' } as never,
+        );
+        expect(upd.content).toBe('edited body');
+        expect((await getEvidence(adminCtx(), ev.id)).content).toBe('edited body');
+    });
+
+    it('a LINK evidence can edit its target URL', async () => {
+        const ev = await newDraft({ title: 'link edit', type: 'LINK' });
+        const upd = await updateEvidence(
+            adminCtx(),
+            ev.id,
+            { content: 'https://example.com/moved' } as never,
+        );
+        expect(upd.content).toBe('https://example.com/moved');
+    });
+
+    it('a FILE evidence REFUSES a caller-supplied content (it is the storage pathKey)', async () => {
+        // `content` holds the object-storage pathKey for FILE evidence —
+        // writing it from the generic edit form would detach the row from
+        // its file. The edit form hides the field; this is the server-side
+        // half of that gate, since the API is public.
+        const ev = await createEvidence(adminCtx(), {
+            type: 'FILE',
+            title: 'file content guard',
+            content: 'tenant-a/evidence/original-path-key',
+        } as never);
+
+        const upd = await updateEvidence(
+            adminCtx(),
+            ev.id,
+            { title: 'renamed', content: 'attacker/overwritten' } as never,
+        );
+
+        expect(upd.title).toBe('renamed');
+        // The pathKey survived.
+        expect(upd.content).toBe('tenant-a/evidence/original-path-key');
+    });
 });
 
 describeFn('reviewEvidence — state machine (integration)', () => {

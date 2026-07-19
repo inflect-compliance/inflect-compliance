@@ -30,6 +30,7 @@ import {
     type SetStateAction,
 } from 'react';
 import { useTranslations } from 'next-intl';
+import { isEvidenceContentEditable } from '@/lib/evidence-content';
 import { apiErrorMessage } from '@/lib/api-error';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
@@ -57,7 +58,13 @@ interface ControlOption {
 export interface EditEvidenceInitial {
     id: string;
     title: string;
-    description: string | null;
+    /**
+     * The evidence body. This is `Evidence.content` — the modal used to
+     * carry a `description`, which is not a column on the model, so the
+     * form opened blank and the save was discarded by the schema's
+     * `.strip()`. Only editable for TEXT/LINK; see @/lib/evidence-content.
+     */
+    content: string | null;
     ownerUserId: string | null;
     /** EP-3 — the controls this evidence currently satisfies. */
     controlLinks: ControlOption[];
@@ -98,7 +105,10 @@ export function EditEvidenceModal({
     const apiUrl = useTenantApiUrl();
     const t = useTranslations('evidence');
     const [title, setTitle] = useState('');
-    const [description, setDescription] = useState('');
+    const [content, setContent] = useState('');
+    // FILE evidence stores its object-storage pathKey in `content`, so the
+    // body field is hidden AND withheld from the PUT for that type.
+    const contentEditable = isEvidenceContentEditable(initial?.type);
     const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
     // EP-3 — multi-select control links.
     const [selectedControls, setSelectedControls] = useState<
@@ -136,7 +146,7 @@ export function EditEvidenceModal({
         if (open && initial) {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setTitle(initial.title);
-            setDescription(initial.description ?? '');
+            setContent(initial.content ?? '');
             setOwnerUserId(initial.ownerUserId);
             // Prefer the shared option (stable label) but fall back to a
             // synthesised option so a control missing from the loaded
@@ -177,7 +187,10 @@ export function EditEvidenceModal({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     title,
-                    description: description || null,
+                    // Only send the body when this type owns it. For FILE
+                    // evidence `content` is the storage pathKey — sending
+                    // the (hidden, empty) field would detach the file.
+                    ...(contentEditable ? { content: content || null } : {}),
                     ownerUserId: ownerUserId || null,
                     // EP-3 — reconcile the whole link set. Never send the
                     // legacy singular `controlId`.
@@ -315,17 +328,22 @@ export function EditEvidenceModal({
                                 required
                             />
                         </FormField>
+                        {/* Body. Hidden for FILE evidence, whose `content`
+                            is the internal storage pathKey rather than
+                            anything a user wrote. */}
+                        {contentEditable && (
                         <FormField label={t('edit.descriptionLabel')}>
                             <Textarea
                                 id="edit-evidence-description"
                                 className="h-24"
-                                value={description}
+                                value={content}
                                 onChange={(e) => {
-                                    setDescription(e.target.value);
+                                    setContent(e.target.value);
                                     markDirty();
                                 }}
                             />
                         </FormField>
+                        )}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-default">
                             <FormField label={t('edit.ownerLabel')}>
                                 <UserCombobox

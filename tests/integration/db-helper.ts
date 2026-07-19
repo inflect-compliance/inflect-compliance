@@ -94,7 +94,12 @@ function checkDbAvailable(url: string | undefined): boolean {
             '.catch(()=>{p.$disconnect().catch(()=>{});process.exit(1)})',
         ].join('');
         const result = spawnSync('node', ['-e', script], {
-            timeout: 5000,
+            // 5s was too tight: a cold Prisma client + connect on a
+            // loaded machine takes ~6s here, so the probe timed out and
+            // EVERY integration suite silently skipped — tests appeared
+            // to pass while never running. Erring long only ever runs
+            // more tests; it cannot mask a failure.
+            timeout: 30000,
             stdio: 'ignore',
             cwd: ROOT,
             env: { ...process.env, __DB_CHECK_URL: url },

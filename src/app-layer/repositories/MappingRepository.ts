@@ -10,7 +10,11 @@ export class MappingRepository {
             where: { OR: [{ tenantId: ctx.tenantId }, { tenantId: null }] },
             include: {
                 evidenceControlLinks: {
-                    where: { tenantId: ctx.tenantId },
+                    // Soft-deleted evidence must not reach the scorer at
+                    // all — the in-memory qualifying predicate downstream
+                    // checks it too, but excluding it here keeps the
+                    // payload honest for every consumer of this shape.
+                    where: { tenantId: ctx.tenantId, evidence: { deletedAt: null } },
                     include: { evidence: true },
                 },
             },

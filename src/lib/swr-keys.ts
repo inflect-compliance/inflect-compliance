@@ -116,6 +116,8 @@ export const CACHE_KEYS = {
         ...makeResource('evidence'),
         metrics: () => '/evidence/metrics' as const,
         files: () => '/evidence/files' as const,
+        /** File-version lineage for one evidence row (newest first). */
+        fileVersions: (id: string) => `/evidence/${id}/file-versions` as const,
         retention: () => '/evidence/retention' as const,
     },
     policies: {
