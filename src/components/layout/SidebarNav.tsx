@@ -42,6 +42,8 @@ interface NavItemDef {
     label: string;
     icon: LucideIcon;
     badge?: string | number;
+    /** Accessible description of what `badge` counts (see NavItem). */
+    badgeLabel?: string;
     /** If set, item is only shown when this returns true */
     visible?: boolean;
 }
@@ -111,6 +113,11 @@ export function useNavSections(): NavSectionDef[] {
                     label: t('calendar'),
                     icon: CalendarIcon,
                     badge: calendarBadge,
+                    // The badge counts only the caller's OWN tasks (overdue
+                    // + upcoming) while the page it links to is tenant-wide
+                    // across every deadline source — say so rather than let
+                    // a small number read as "the tenant is fine".
+                    badgeLabel: t('calendarBadgeLabel'),
                 },
                 { href: tenantHref('/tests'), label: t('tests'), icon: FlaskConical },
                 { href: tenantHref('/evidence'), label: t('evidence'), icon: Paperclip },
@@ -226,6 +233,7 @@ export function SidebarContent({ user, onLogout, onNavClick, onToggleCollapse }:
                                 icon={item.icon}
                                 label={item.label}
                                 badge={item.badge}
+                                badgeLabel={item.badgeLabel}
                                 active={pathname.startsWith(item.href)}
                                 onClick={onNavClick}
                             />

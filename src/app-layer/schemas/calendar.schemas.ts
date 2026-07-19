@@ -49,10 +49,33 @@ export type CalendarEventCategory =
  * Specific event type — finer-grained than category. Powers tooltip
  * copy ("Vendor renewal", "Policy review", …). Each maps to exactly
  * one category; many events of different types may share a category.
+ *
+ * Category is the COLOUR/grouping axis, not the identity axis — the
+ * palette has four status tones and eight categories already consume
+ * them, so the sources added later reuse the nearest existing category
+ * rather than inventing a category with no distinct token:
+ *
+ *   - `access-review-due`        → `audit`   (recertification is an
+ *                                             attestation activity)
+ *   - `training-due`             → `task`    (an assignment with an
+ *                                             owner and a due date)
+ *   - `incident-notification-due`→ `finding` (something went wrong and
+ *                                             a clock is running on the
+ *                                             response — the NIS2 Art.23
+ *                                             regulatory notification SLA)
+ *
+ * The `type` stays distinct in every case, so filters and tooltip copy
+ * can still address these precisely.
  */
 export const CALENDAR_EVENT_TYPES = [
     // evidence
-    'evidence-expiry',
+    //
+    // NOTE: there is deliberately no `evidence-expiry` type. It existed
+    // here for a long time with no loader ever emitting it — a filter
+    // value that always returned zero events. `Evidence.expiredAt` is
+    // stamped by the retention job AT the moment of expiry, so it is a
+    // past-tense receipt, not a forward deadline; `nextReviewDate` is the
+    // deadline and it ships as `evidence-review`.
     'evidence-review',
     // policy
     'policy-review',
@@ -60,11 +83,18 @@ export const CALENDAR_EVENT_TYPES = [
     'vendor-review',
     'vendor-renewal',
     'vendor-document-expiry',
+    'vendor-assessment-review',
     // audit
     'audit-cycle',
+    'access-review-due',
     // control
     'control-review',
     'control-test-due',
+    'control-exception-expiry',
+    // personnel
+    'training-due',
+    // incident
+    'incident-notification-due',
     // task
     'task-due',
     // risk
@@ -125,9 +155,14 @@ export interface CalendarEvent {
         | 'POLICY'
         | 'VENDOR'
         | 'VENDOR_DOCUMENT'
+        | 'VENDOR_ASSESSMENT'
         | 'AUDIT_CYCLE'
+        | 'ACCESS_REVIEW'
         | 'CONTROL'
         | 'CONTROL_TEST_PLAN'
+        | 'CONTROL_EXCEPTION'
+        | 'TRAINING_ASSIGNMENT'
+        | 'INCIDENT_NOTIFICATION'
         | 'TASK'
         | 'RISK'
         | 'RISK_TREATMENT_PLAN'
@@ -225,12 +260,55 @@ export type CalendarQueryInput = z.infer<typeof CalendarQuerySchema>;
  * pre-aggregates client-side, but the API surface includes counts so
  * a low-bandwidth client (e.g., mobile widget) doesn't need every event.
  */
+/**
+ * Names of the per-source loaders, as reported by `truncation.sources`.
+ * Stable strings — the UI shows them when it explains what was hidden.
+ */
+export const CALENDAR_SOURCE_NAMES = [
+    'evidence',
+    'policy',
+    'vendor',
+    'vendor-document',
+    'vendor-assessment',
+    'audit-cycle',
+    'control',
+    'control-test-plan',
+    'control-exception',
+    'access-review',
+    'training',
+    'incident-notification',
+    'task',
+    'risk',
+    'finding',
+    'treatment-milestone',
+    'treatment-plan',
+] as const;
+
+export type CalendarSourceName = (typeof CALENDAR_SOURCE_NAMES)[number];
+
 export interface CalendarResponse {
     events: CalendarEvent[];
     counts: {
         total: number;
         byCategory: Record<CalendarEventCategory, number>;
         byStatus: Record<CalendarEventStatus, number>;
+        /**
+         * True when at least one source hit its per-source cap, so these
+         * totals count only what survived truncation. The UI must not
+         * present a partial count as authoritative.
+         */
+        partial: boolean;
+    };
+    /**
+     * Truncation report. Each source is capped at `perSourceLimit` and
+     * ordered ascending by its date column, so what survives a cap is the
+     * NEAREST N deadlines — but the ones past the cap are still real, and
+     * the UI is expected to say so rather than silently drop them.
+     */
+    truncation: {
+        capped: boolean;
+        sources: CalendarSourceName[];
+        perSourceLimit: number;
     };
     range: {
         from: string;

@@ -1,6 +1,11 @@
 import { PrismaTx } from '@/lib/db-context';
 import { RequestContext } from '../types';
 import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
+import {
+    evidenceExpiryScopeWhere,
+    EVIDENCE_OUTSTANDING_STATUS_FILTER,
+    EVIDENCE_REVIEWED_STATUS,
+} from '../domain/evidence-expiry';
 import { normalizeActivityEntity } from '@/lib/audit/activity-humanize';
 
 // ─── Executive Dashboard DTO Types ─────────────────────────────────
@@ -475,12 +480,19 @@ export class DashboardRepository {
         const now = new Date();
         const in7d = new Date(now.getTime() + 7 * 86400000);
         const in30d = new Date(now.getTime() + 30 * 86400000);
-        const base = { tenantId, deletedAt: null, isArchived: false };
+        // Shared expiry scope — the same predicate the compliance calendar
+        // and the ExpiryCalendar list use, so all three agree on which
+        // evidence rows exist at all. See app-layer/domain/evidence-expiry.
+        const base = evidenceExpiryScopeWhere(tenantId);
 
         const [overdue, dueSoon7d, dueSoon30d, noReviewDate, current] = await Promise.all([
             // Overdue: review date is past and not approved
             db.evidence.count({
-                where: { ...base, nextReviewDate: { lt: now }, status: { not: 'APPROVED' } },
+                where: {
+                    ...base,
+                    nextReviewDate: { lt: now },
+                    status: EVIDENCE_OUTSTANDING_STATUS_FILTER,
+                },
             }),
             // Due within 7 days (not yet past)
             db.evidence.count({
@@ -498,7 +510,7 @@ export class DashboardRepository {
             db.evidence.count({
                 where: {
                     ...base,
-                    status: 'APPROVED',
+                    status: EVIDENCE_REVIEWED_STATUS,
                     OR: [
                         { nextReviewDate: null },
                         { nextReviewDate: { gte: now } },
@@ -735,11 +747,13 @@ export class DashboardRepository {
 
         const items = await db.evidence.findMany({
             where: {
-                tenantId: ctx.tenantId,
-                deletedAt: null,
-                isArchived: false,
+                // Shared expiry scope + outstanding filter — same definition
+                // as the KPI above and the compliance calendar's evidence
+                // loader. See app-layer/domain/evidence-expiry.
+                ...evidenceExpiryScopeWhere(ctx.tenantId),
+                // No lower bound: overdue reviews belong on this list.
                 nextReviewDate: { lte: in30d },
-                status: { not: 'APPROVED' },
+                status: EVIDENCE_OUTSTANDING_STATUS_FILTER,
             },
             orderBy: { nextReviewDate: 'asc' },
             take: 20,
