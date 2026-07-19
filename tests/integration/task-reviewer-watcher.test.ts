@@ -15,7 +15,7 @@ import { randomUUID } from 'crypto';
 import { DB_URL, DB_AVAILABLE } from './db-helper';
 import { hashForLookup } from '@/lib/security/encryption';
 import { makeRequestContext } from '../helpers/make-context';
-import { createTask, setTaskStatus, addTaskWatcher, addTaskComment } from '@/app-layer/usecases/task';
+import { createTask, setTaskStatus, bulkSetTaskStatus, updateTask, assignTask, addTaskWatcher, addTaskComment } from '@/app-layer/usecases/task';
 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: DB_URL }) });
 const describeFn = DB_AVAILABLE ? describe : describe.skip;
@@ -27,6 +27,10 @@ let reviewerId: string;
 let actorId: string;
 let ctxActor: ReturnType<typeof makeRequestContext>;
 let ctxReviewer: ReturnType<typeof makeRequestContext>;
+/** A plain EDITOR — write access but NOT admin. The opt-out hole is about an
+ *  editor escaping sign-off; ctxActor is an OWNER (canAdmin), who is
+ *  deliberately allowed to override. */
+let ctxEditor: ReturnType<typeof makeRequestContext>;
 
 async function makeUser(label: string): Promise<string> {
     const email = `${TAG}-${label}@example.test`;
@@ -44,6 +48,7 @@ describeFn('task reviewer gate + watcher fan-out (integration)', () => {
         reviewerId = await makeUser('reviewer');
         ctxActor = makeRequestContext('OWNER', { tenantId: TENANT, tenantSlug: TENANT, userId: actorId });
         ctxReviewer = makeRequestContext('OWNER', { tenantId: TENANT, tenantSlug: TENANT, userId: reviewerId });
+        ctxEditor = makeRequestContext('EDITOR', { tenantId: TENANT, tenantSlug: TENANT, userId: actorId });
     });
 
     afterAll(async () => {
@@ -90,6 +95,98 @@ describeFn('task reviewer gate + watcher fan-out (integration)', () => {
         const task = await createTask(ctxActor, { title: 'No reviewer', type: 'TASK' });
         const closed = await setTaskStatus(ctxActor, task.id, 'CLOSED', 'done');
         expect(closed.status).toBe('CLOSED');
+    });
+
+    // ─── The gate is not bypassable (the three holes) ────────────────
+
+    it('BULK close cannot bypass the reviewer gate — /tasks/bulk/status is not an escape hatch', async () => {
+        const task = await createTask(ctxActor, { title: 'Bulk-gated', type: 'TASK', reviewerUserId: reviewerId });
+        // Straight to CLOSED via the bulk path — the hole this PR closes.
+        await expect(
+            bulkSetTaskStatus(ctxActor, [task.id], 'CLOSED', 'bulk done'),
+        ).rejects.toThrow(/IN_REVIEW/);
+        // …and even from IN_REVIEW, a NON-reviewer can't bulk-close it.
+        await setTaskStatus(ctxActor, task.id, 'IN_REVIEW');
+        await expect(
+            bulkSetTaskStatus(ctxActor, [task.id], 'CLOSED', 'bulk done'),
+        ).rejects.toThrow(/reviewer/i);
+        // The reviewer can, through the same bulk path.
+        await bulkSetTaskStatus(ctxReviewer, [task.id], 'CLOSED', 'bulk sign-off');
+        const row = await db.task.findUnique({ where: { id: task.id }, select: { status: true } });
+        expect(row?.status).toBe('CLOSED');
+    });
+
+    it('a bulk batch is rejected WHOLESALE when any row violates the gate (no partial close)', async () => {
+        const gated = await createTask(ctxActor, { title: 'Gated row', type: 'TASK', reviewerUserId: reviewerId });
+        const ungated = await createTask(ctxActor, { title: 'Ungated row', type: 'TASK' });
+        await expect(
+            bulkSetTaskStatus(ctxActor, [ungated.id, gated.id], 'CLOSED', 'batch'),
+        ).rejects.toThrow(/IN_REVIEW/);
+        // The innocent row must NOT have been closed — all-or-nothing.
+        const row = await db.task.findUnique({ where: { id: ungated.id }, select: { status: true } });
+        expect(row?.status).not.toBe('CLOSED');
+    });
+
+    it('an EDITOR cannot clear or reassign the reviewer to escape sign-off once under review', async () => {
+        const task = await createTask(ctxActor, { title: 'No opt-out', type: 'TASK', reviewerUserId: reviewerId });
+        await setTaskStatus(ctxActor, task.id, 'IN_REVIEW');
+        // PATCHing reviewerUserId: null is the opt-out hole this PR closes.
+        await expect(
+            updateTask(ctxEditor, task.id, { reviewerUserId: null }),
+        ).rejects.toThrow(/reviewer or an admin/i);
+        // Reassigning it away is equally blocked.
+        await expect(
+            updateTask(ctxEditor, task.id, { reviewerUserId: actorId }),
+        ).rejects.toThrow(/reviewer or an admin/i);
+        // The sitting reviewer may still hand off / step down.
+        const handed = await updateTask(ctxReviewer, task.id, { reviewerUserId: null });
+        expect(handed.reviewerUserId).toBeNull();
+    });
+
+    it('an ADMIN may still override the reviewer under review (documented carve-out)', async () => {
+        const task = await createTask(ctxActor, { title: 'Admin override', type: 'TASK', reviewerUserId: reviewerId });
+        await setTaskStatus(ctxActor, task.id, 'IN_REVIEW');
+        // ctxActor is an OWNER (canAdmin) — admins retain the escape hatch on
+        // purpose (a departed reviewer must not deadlock the task); the action
+        // is audited via TASK_UPDATED.
+        const cleared = await updateTask(ctxActor, task.id, { reviewerUserId: null });
+        expect(cleared.reviewerUserId).toBeNull();
+    });
+
+    it('the reviewer may still be changed freely BEFORE the task reaches review', async () => {
+        const task = await createTask(ctxActor, { title: 'Pre-review', type: 'TASK', reviewerUserId: reviewerId });
+        // Still OPEN — review isn't required yet, so an editor can adjust it.
+        const cleared = await updateTask(ctxEditor, task.id, { reviewerUserId: null });
+        expect(cleared.reviewerUserId).toBeNull();
+    });
+
+    it('rejects self-review — reviewer must differ from assignee (create, update, assign)', async () => {
+        // create
+        await expect(
+            createTask(ctxActor, {
+                title: 'Self review', type: 'TASK',
+                assigneeUserId: actorId, reviewerUserId: actorId,
+            }),
+        ).rejects.toThrow(/different from its assignee/i);
+
+        // update — setting the reviewer to the existing assignee
+        const t2 = await createTask(ctxActor, { title: 'Assigned', type: 'TASK', assigneeUserId: actorId });
+        await expect(
+            updateTask(ctxActor, t2.id, { reviewerUserId: actorId }),
+        ).rejects.toThrow(/different from its assignee/i);
+
+        // assign — from the other side: assigning the task to its reviewer
+        const t3 = await createTask(ctxActor, { title: 'Reviewed', type: 'TASK', reviewerUserId: reviewerId });
+        await expect(
+            assignTask(ctxActor, t3.id, reviewerId),
+        ).rejects.toThrow(/different from its assignee/i);
+
+        // A genuine two-person split is accepted.
+        const ok = await createTask(ctxActor, {
+            title: 'Four eyes', type: 'TASK',
+            assigneeUserId: actorId, reviewerUserId: reviewerId,
+        });
+        expect(ok.reviewerUserId).toBe(reviewerId);
     });
 
     // ─── Watcher fan-out ─────────────────────────────────────────────

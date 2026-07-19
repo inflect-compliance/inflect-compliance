@@ -30,7 +30,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { TASK_SEVERITY_VARIANT } from '@/app-layer/domain/entity-status-mapping';
-import { taskStatusVariant } from '@/lib/task-status-badge';
+import { taskStatusVariant, TASK_STATUS_BADGE } from '@/lib/task-status-badge';
 import { cardVariants } from '@/components/ui/card';
 // Shared evidence sub-table — lives under the control detail route's
 // `_tabs/` (kept there so existing guard exemptions + a unit test keyed
@@ -43,13 +43,16 @@ import { TaskEditPanel } from '@/app/t/[tenantSlug]/(app)/controls/TaskEditPanel
 import { Pen2 } from '@/components/ui/icons/nucleo';
 import { cn } from '@/lib/cn';
 
-// Status tone comes from the shared `TASK_STATUS_BADGE` map (TP-1) via
-// `taskStatusVariant`; severity tone from `TASK_SEVERITY_VARIANT`.
-// Labels stay local because they're presentation copy.
-const buildStatusLabels = (t: (k: string) => string): Record<string, string> => ({
-    OPEN: t('statusLabels.OPEN'), TRIAGED: t('statusLabels.TRIAGED'), IN_PROGRESS: t('statusLabels.IN_PROGRESS'),
-    BLOCKED: t('statusLabels.BLOCKED'), RESOLVED: t('statusLabels.RESOLVED'), CLOSED: t('statusLabels.CLOSED'), CANCELED: t('statusLabels.CANCELED'),
-});
+// Status tone AND label both come from the shared `TASK_STATUS_BADGE` map
+// (TP-1) — tone via `taskStatusVariant`, copy via the map's `labelKey`.
+// Deriving the label record from that map (rather than hand-listing the
+// statuses) is what keeps IN_REVIEW — the reviewer-gate linchpin — from
+// silently going missing: adding a WorkItemStatus now populates every
+// surface automatically. Severity tone stays `TASK_SEVERITY_VARIANT`.
+const buildStatusLabels = (t: (k: string) => string): Record<string, string> =>
+    Object.fromEntries(
+        Object.entries(TASK_STATUS_BADGE).map(([status, spec]) => [status, t(spec.labelKey)]),
+    );
 const buildPriorityLabels = (t: (k: string) => string): Record<string, string> => ({
     P0: t('priorityLabels.P0'), P1: t('priorityLabels.P1'), P2: t('priorityLabels.P2'), P3: t('priorityLabels.P3'),
 });
@@ -57,7 +60,20 @@ const buildTypeLabels = (t: (k: string) => string): Record<string, string> => ({
     AUDIT_FINDING: t('typeLabels.AUDIT_FINDING'), CONTROL_GAP: t('typeLabels.CONTROL_GAP'),
     INCIDENT: t('typeLabels.INCIDENT'), IMPROVEMENT: t('typeLabels.IMPROVEMENT'), TASK: t('typeLabels.TASK'),
 });
-const ENTITY_TYPE_OPTIONS = ['CONTROL', 'RISK', 'ASSET', 'EVIDENCE', 'FRAMEWORK_REQUIREMENT', 'POLICY', 'VENDOR', 'FILE', 'AUDIT_PACK', 'INCIDENT'];
+// Every option here MUST resolve in `<EntityPicker>` — an offered target the
+// picker can't fetch renders an empty dropdown and cannot be linked.
+// `FILE` is deliberately absent: `TaskLinkEntityType` accepts it, but there is
+// no file LIST endpoint (only `/files/{fileName}` by-name and a per-evidence
+// download), so it can't be picked. Files are attached through the Evidence
+// tab instead. Re-add it here the day a file list endpoint exists.
+//
+// `FRAMEWORK_REQUIREMENT` is absent for the same reason: the picker only
+// resolves it when the caller supplies a `frameworkKey` in `extraQuery` (there
+// is no global "all requirements" endpoint — only per-framework
+// `/frameworks/{key}/tree`), and this page passes none, so it rendered an empty
+// dropdown. Re-add it once the picker grows a framework selector; requirements
+// remain linkable from the framework tree in the meantime.
+const ENTITY_TYPE_OPTIONS = ['CONTROL', 'RISK', 'ASSET', 'EVIDENCE', 'POLICY', 'VENDOR', 'AUDIT_PACK', 'INCIDENT'];
 const ENTITY_TYPE_CB_OPTIONS: ComboboxOption[] = ENTITY_TYPE_OPTIONS.map(t => ({ value: t, label: t }));
 const RELATION_OPTIONS = ['RELATES_TO', 'CAUSED_BY', 'MITIGATED_BY', 'EVIDENCE_FOR'];
 const RELATION_CB_OPTIONS: ComboboxOption[] = RELATION_OPTIONS.map(r => ({ value: r, label: r.replace(/_/g, ' ') }));
@@ -66,7 +82,11 @@ const RELATION_CB_OPTIONS: ComboboxOption[] = RELATION_OPTIONS.map(r => ({ value
 // badge; just not offered as a choice (a RESOLVED task is closed via
 // the CLOSED option). CLOSED + CANCELED prompt for a resolution note.
 const SELECTABLE_STATUSES = ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED', 'CLOSED', 'CANCELED'];
-const buildTaskStatusCbOptions = (statusLabels: Record<string, string>): ComboboxOption[] => SELECTABLE_STATUSES.map((val) => ({ value: val, label: statusLabels[val] }));
+// `|| val` fallback — a status missing from the label map renders its raw
+// value rather than a BLANK option. (Before the map derived from
+// TASK_STATUS_BADGE, IN_REVIEW hit exactly this hole and shipped an
+// unlabelled, unpickable entry in the status combobox.)
+const buildTaskStatusCbOptions = (statusLabels: Record<string, string>): ComboboxOption[] => SELECTABLE_STATUSES.map((val) => ({ value: val, label: statusLabels[val] || val }));
 
 type Tab = 'overview' | 'evidence' | 'links' | 'comments' | 'activity';
 

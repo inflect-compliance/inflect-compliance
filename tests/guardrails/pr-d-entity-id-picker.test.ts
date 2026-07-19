@@ -36,10 +36,17 @@ describe('PR-D — entity-ID picker migration', () => {
             expect(src).toMatch(/export type EntityPickerKind/);
         });
 
-        it('supports the seven canonical entity kinds', () => {
-            // The Kind union must list every entity type the four
-            // migrated sites reference. Anchor on each literal so a
-            // future "drop one" PR fails CI loudly.
+        it('supports every canonical entity kind', () => {
+            // The Kind union must list every entity type the migrated
+            // sites reference. Anchor on each literal so a future
+            // "drop one" PR fails CI loudly.
+            //
+            // POLICY / AUDIT_PACK / INCIDENT were added when the task-link
+            // form's offered types were reconciled with the picker: those
+            // three were offered but unresolvable, so they rendered an empty
+            // dropdown and could not be linked. FILE is deliberately NOT
+            // here — it has no list endpoint, so it was removed from the
+            // offered options instead of being wired.
             for (const kind of [
                 'CONTROL',
                 'RISK',
@@ -47,10 +54,21 @@ describe('PR-D — entity-ID picker migration', () => {
                 'EVIDENCE',
                 'VENDOR',
                 'ISSUE',
+                'POLICY',
+                'AUDIT_PACK',
+                'INCIDENT',
                 'FRAMEWORK_REQUIREMENT',
             ]) {
                 expect(src).toMatch(new RegExp(`['"]${kind}['"]`));
             }
+        });
+
+        it('resolves INCIDENT against /incidents, not the task-compat /issues route', () => {
+            // `/issues` is a DEPRECATED compat route that forwards to the
+            // Task usecases — it serves Tasks. Pointing INCIDENT at it would
+            // populate the picker with Tasks and mint a TaskLink whose
+            // entityType says INCIDENT but whose entityId is a Task.
+            expect(src).toMatch(/\/incidents/);
         });
 
         it('fetches candidates from /api/t/{slug}/... per type', () => {

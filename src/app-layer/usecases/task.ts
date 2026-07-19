@@ -141,6 +141,9 @@ export async function createTask(ctx: RequestContext, input: {
         if (input.metadataJson !== undefined) {
             input.metadataJson = validateTaskMetadata(input.metadataJson);
         }
+        // TP-2 (hole 2b) — segregation of duties at creation: reviewer ≠ assignee.
+        assertReviewerIsNotAssignee(input.reviewerUserId, input.assigneeUserId);
+
         const task = await WorkItemRepository.create(db, ctx, input);
 
         // Type-specific validation (deferred: allow creation, then check after links can be added)
@@ -202,6 +205,29 @@ export async function createTask(ctx: RequestContext, input: {
     return result;
 }
 
+/**
+ * TP-2 (hole 2b) — segregation of duties: a task's reviewer may not also be
+ * its assignee. Four eyes means two people; letting the doer sign off on their
+ * own work makes the gate ceremonial. Enforced on every path that can bring the
+ * two fields into agreement: create, update (reviewer side), and assign
+ * (assignee side).
+ *
+ * There is no per-tenant "allow self-review" setting today, so this is
+ * unconditional — see the implementation note. If one is ever added, this
+ * helper is the single place to consult it.
+ */
+export function assertReviewerIsNotAssignee(
+    reviewerUserId: string | null | undefined,
+    assigneeUserId: string | null | undefined,
+): void {
+    if (!reviewerUserId || !assigneeUserId) return;
+    if (reviewerUserId === assigneeUserId) {
+        throw badRequest(
+            "A task's reviewer must be different from its assignee — the person doing the work cannot sign off on it.",
+        );
+    }
+}
+
 // ─── Update ───
 
 export async function updateTask(ctx: RequestContext, taskId: string, patch: {
@@ -221,6 +247,35 @@ export async function updateTask(ctx: RequestContext, taskId: string, patch: {
         if (patch.metadataJson !== undefined) {
             patch.metadataJson = validateTaskMetadata(patch.metadataJson);
         }
+
+        // TP-2 (hole 2) — the reviewer field itself is part of the four-eyes
+        // control, so changing it is gated too. Read the before-state.
+        const existing = await WorkItemRepository.getById(db, ctx, taskId);
+        if (!existing) throw notFound('Task not found');
+
+        if (patch.reviewerUserId !== undefined) {
+            // (a) OPT-OUT HOLE — once a task actually REQUIRES review (it has a
+            // reviewer AND has reached or passed IN_REVIEW), an editor could
+            // PATCH `reviewerUserId: null` to escape sign-off entirely. Only the
+            // sitting reviewer (handing off / stepping down) or an admin may
+            // change it from that point on.
+            const reviewRequired =
+                !!existing.reviewerUserId &&
+                (existing.status === 'IN_REVIEW' || isTerminalStatus(existing.status));
+            const isReviewer = ctx.userId === existing.reviewerUserId;
+            const isAdmin = ctx.permissions.canAdmin;
+            if (reviewRequired && !isReviewer && !isAdmin) {
+                throw forbidden(
+                    'This task is under review — only the assigned reviewer or an admin can change or clear its reviewer.',
+                );
+            }
+
+            // (b) SELF-REVIEW HOLE — segregation of duties: the doer cannot be
+            // the sole sign-off. `assigneeUserId` is not part of this patch
+            // shape, so the effective assignee is the stored one.
+            assertReviewerIsNotAssignee(patch.reviewerUserId, existing.assigneeUserId);
+        }
+
         const task = await WorkItemRepository.update(db, ctx, taskId, patch);
         if (!task) throw notFound('Task not found');
         await logEvent(db, ctx, {
@@ -288,6 +343,46 @@ export async function deleteTask(ctx: RequestContext, taskId: string) {
 
 // ─── Status ───
 
+/**
+ * TP-2 reviewer sign-off gate — the four-eyes control, in ONE place.
+ *
+ * When a task carries a `reviewerUserId` it cannot be completed
+ * (RESOLVED/CLOSED) directly from an active state: the close MUST pass
+ * through IN_REVIEW and be driven by the reviewer. CANCELED is exempt
+ * (cancelling is not completing), and RESOLVED→CLOSED bookkeeping is exempt
+ * because the sign-off already happened on the IN_REVIEW→RESOLVED step
+ * (`fromStatus` is already terminal there).
+ *
+ * Returns a violation message, or `null` when the transition is allowed.
+ * BOTH the single-task and the BULK status paths call this — the gate is a
+ * compliance control, and bulk is an admin convenience, not an escape hatch.
+ */
+export function checkReviewerSignOffGate(args: {
+    reviewerUserId: string | null | undefined;
+    fromStatus: string;
+    toStatus: string;
+    actorUserId: string;
+}): { kind: 'needs_review' | 'wrong_actor'; message: string } | null {
+    const { reviewerUserId, fromStatus, toStatus, actorUserId } = args;
+    if (!reviewerUserId) return null;
+    if (isTerminalStatus(fromStatus)) return null;
+    if (toStatus !== 'RESOLVED' && toStatus !== 'CLOSED') return null;
+
+    if (fromStatus !== 'IN_REVIEW') {
+        return {
+            kind: 'needs_review',
+            message: `This task has a reviewer and must pass through IN_REVIEW before it can be ${toStatus}. Move it to IN_REVIEW for sign-off first.`,
+        };
+    }
+    if (actorUserId !== reviewerUserId) {
+        return {
+            kind: 'wrong_actor',
+            message: 'Only the assigned reviewer can sign off and complete this task.',
+        };
+    }
+    return null;
+}
+
 export async function setTaskStatus(ctx: RequestContext, taskId: string, status: string, resolution?: string | null) {
     assertCanWriteTasks(ctx);
     let capturedFrom = '';
@@ -307,28 +402,17 @@ export async function setTaskStatus(ctx: RequestContext, taskId: string, status:
         const transitionErr = checkWorkItemTransition(fromStatus, status);
         if (transitionErr) throw badRequest(formatTransitionError(transitionErr));
 
-        // TP-2 — reviewer sign-off gate. When a task carries a
-        // reviewerUserId, it cannot be completed (RESOLVED/CLOSED) directly
-        // from an active state: the close MUST pass through IN_REVIEW and be
-        // driven by the reviewer. CANCELED is exempt (cancelling is not
-        // completing), and RESOLVED→CLOSED bookkeeping is exempt because the
-        // sign-off already happened on the IN_REVIEW→RESOLVED step (fromStatus
-        // is already terminal there).
-        if (
-            existing.reviewerUserId &&
-            !isTerminalStatus(fromStatus) &&
-            (status === 'RESOLVED' || status === 'CLOSED')
-        ) {
-            if (fromStatus !== 'IN_REVIEW') {
-                throw badRequest(
-                    `This task has a reviewer and must pass through IN_REVIEW before it can be ${status}. Move it to IN_REVIEW for sign-off first.`,
-                );
-            }
-            if (ctx.userId !== existing.reviewerUserId) {
-                throw forbidden(
-                    'Only the assigned reviewer can sign off and complete this task.',
-                );
-            }
+        // TP-2 — reviewer sign-off gate (shared with the bulk path).
+        const gateViolation = checkReviewerSignOffGate({
+            reviewerUserId: existing.reviewerUserId,
+            fromStatus,
+            toStatus: status,
+            actorUserId: ctx.userId,
+        });
+        if (gateViolation) {
+            throw gateViolation.kind === 'wrong_actor'
+                ? forbidden(gateViolation.message)
+                : badRequest(gateViolation.message);
         }
 
         // Audit Coherence S8 — every terminal write requires a non-
@@ -404,6 +488,15 @@ export async function setTaskStatus(ctx: RequestContext, taskId: string, status:
 export async function assignTask(ctx: RequestContext, taskId: string, assigneeUserId: string | null) {
     assertCanWriteTasks(ctx);
     const result = await runInTenantContext(ctx, async (db) => {
+        // TP-2 (hole 2b) — SoD from the assignee side: assigning the task to the
+        // person who is already its reviewer would collapse four eyes into two
+        // just as surely as setting reviewer = assignee does.
+        if (assigneeUserId) {
+            const existing = await WorkItemRepository.getById(db, ctx, taskId);
+            if (!existing) throw notFound('Task not found');
+            assertReviewerIsNotAssignee(existing.reviewerUserId, assigneeUserId);
+        }
+
         const task = await WorkItemRepository.assign(db, ctx, taskId, assigneeUserId);
         if (!task) throw notFound('Task not found');
         await logEvent(db, ctx, {
@@ -931,25 +1024,49 @@ export async function bulkSetTaskStatus(ctx: RequestContext, taskIds: string[], 
         // audit entry with the REAL fromStatus instead of the prior
         // hardcoded null.
         const existingRows = await WorkItemRepository.listByIds(db, ctx, taskIds);
-        const existingMap = new Map(existingRows.map((r) => [r.id, r.status]));
+        const existingMap = new Map(existingRows.map((r) => [r.id, r]));
 
-        // First pass — all-or-nothing transition validation.
+        // First pass — all-or-nothing validation.
         for (const id of taskIds) {
-            const fromStatus = existingMap.get(id);
-            if (!fromStatus) {
+            const existing = existingMap.get(id);
+            if (!existing) {
                 throw notFound(`Task ${id} not found`);
             }
+            const fromStatus = existing.status;
             const err = checkWorkItemTransition(fromStatus, status);
             if (err) {
                 throw badRequest(
                     `Cannot bulk-transition task ${id}: ${formatTransitionError(err)}`,
                 );
             }
+
+            // TP-2 — the SAME reviewer sign-off gate the single-task path
+            // applies. Without this, POST /tasks/bulk/status closed a
+            // reviewer-gated task while skipping IN_REVIEW and the
+            // reviewer-identity check — a four-eyes bypass. Rejecting the
+            // whole batch (rather than silently skipping the row) matches the
+            // existing all-or-nothing contract above: a bulk close that would
+            // violate sign-off is an error the caller must see, not a partial
+            // success they might not notice.
+            const gateViolation = checkReviewerSignOffGate({
+                reviewerUserId: existing.reviewerUserId,
+                fromStatus,
+                toStatus: status,
+                actorUserId: ctx.userId,
+            });
+            if (gateViolation) {
+                const detail = `Cannot bulk-transition task ${id}: ${gateViolation.message}`;
+                throw gateViolation.kind === 'wrong_actor'
+                    ? forbidden(detail)
+                    : badRequest(detail);
+            }
         }
 
         const result = await WorkItemRepository.bulkSetStatus(db, ctx, taskIds, status, resolution);
         for (const id of taskIds) {
-            const fromStatus = existingMap.get(id) ?? null;
+            // `existingMap` holds the ROW (status + reviewerUserId for the TP-2
+            // gate above) — the audit entry wants just the status string.
+            const fromStatus = existingMap.get(id)?.status ?? null;
             await logEvent(db, ctx, {
                 action: 'TASK_STATUS_CHANGED',
                 entityType: 'Task',

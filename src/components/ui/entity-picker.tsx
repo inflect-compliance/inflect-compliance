@@ -17,14 +17,20 @@
  * list pages. The hook caches per-type per-tenant with SWR (using
  * an in-memory map; sessionStorage would over-cache stale data).
  *
- * Six entity types are supported out of the box, matching the
- * union of task-link and vendor-link targets:
+ * The supported types cover the union of task-link and vendor-link
+ * targets — every `TaskLinkEntityType` the API accepts EXCEPT `FILE`,
+ * which has no list endpoint (only `/files/{fileName}` by-name fetch and
+ * a per-evidence download), so it is not offered as a link target:
  *
  *   • CONTROL                — code/annexId + name
  *   • RISK                   — key (RSK-N) + title
  *   • ASSET                  — name
  *   • EVIDENCE               — title
  *   • VENDOR                 — name
+ *   • ISSUE                  — title (legacy task-compat alias)
+ *   • POLICY                 — title
+ *   • AUDIT_PACK             — name (fetched from /audits/packs)
+ *   • INCIDENT               — reference (INC-N) + title
  *   • FRAMEWORK_REQUIREMENT  — code + title (per-framework fetch)
  *
  * Adding a new type is one branch in `ENTITY_TYPE_FETCHERS` —
@@ -58,6 +64,9 @@ export type EntityPickerKind =
     | 'EVIDENCE'
     | 'VENDOR'
     | 'ISSUE'
+    | 'POLICY'
+    | 'AUDIT_PACK'
+    | 'INCIDENT'
     | 'FRAMEWORK_REQUIREMENT';
 
 interface CandidateRow {
@@ -114,6 +123,27 @@ function rowsFromResponse(
                 id: r.id,
                 label: (r.title as string) || untitled,
             }));
+        case 'POLICY':
+            return rows.map((r) => ({
+                id: r.id,
+                label: (r.title as string) || untitled,
+            }));
+        case 'AUDIT_PACK':
+            return rows.map((r) => ({
+                id: r.id,
+                label: (r.name as string) || untitled,
+            }));
+        case 'INCIDENT':
+            // `reference` is the tenant-scoped human key (INC-2026-001) —
+            // same shape as RISK's `key: title`.
+            return rows.map((r) => {
+                const reference = (r.reference as string) || '';
+                const title = (r.title as string) || untitled;
+                return {
+                    id: r.id,
+                    label: reference ? `${reference}: ${title}` : title,
+                };
+            });
         case 'FRAMEWORK_REQUIREMENT':
             // FRAMEWORK_REQUIREMENT is the only type whose canonical
             // list lives behind a per-framework URL. The picker
@@ -170,6 +200,22 @@ async function fetchCandidates(
             break;
         case 'ISSUE':
             url = `${base}/issues${qs}`;
+            break;
+        case 'POLICY':
+            url = `${base}/policies${qs}`;
+            break;
+        case 'AUDIT_PACK':
+            // Audit packs live under the audits tree, not a top-level
+            // `/audit-packs` route.
+            url = `${base}/audits/packs${qs}`;
+            break;
+        case 'INCIDENT':
+            // NOTE: `/issues` is a DEPRECATED compat route that forwards to
+            // the Task usecases — it serves Tasks, not Incidents. INCIDENT
+            // must resolve against the real `/incidents` endpoint, otherwise
+            // the picker would offer Tasks and silently mint a TaskLink whose
+            // entityType says INCIDENT but whose entityId is a Task.
+            url = `${base}/incidents${qs}`;
             break;
         case 'FRAMEWORK_REQUIREMENT': {
             // The framework requirement list lives behind
