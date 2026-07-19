@@ -97,6 +97,20 @@ describeFn('RQ3-8 — control ROI (integration)', () => {
         expect(codes.indexOf('CTL-2')).toBeLessThan(codes.indexOf('CTL-1'));
     });
 
+    it('each ranked row discloses its effectiveness provenance', async () => {
+        const ranked = await getBestValueControls(ctx, 10);
+        expect(ranked.length).toBeGreaterThan(0);
+        // A rank must never hide whether it rests on measured tests or a
+        // declared guess — the leaderboard renders this as a badge.
+        for (const row of ranked) {
+            expect(row).toHaveProperty('effectivenessSource');
+        }
+        // These controls carry a declared `effectiveness` with no test runs,
+        // so the reconciliation falls back to DECLARED (not MEASURED).
+        const ctl2 = ranked.find((r) => r.code === 'CTL-2');
+        expect(ctl2?.effectivenessSource).toBe('DECLARED');
+    });
+
     it('an un-priced control is excluded from the leaderboard (no synthetic zero)', async () => {
         const control = await globalPrisma.control.create({
             data: {

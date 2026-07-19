@@ -39,7 +39,7 @@ import {
     type SortAccessors,
 } from '@/components/ui/table';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Tooltip } from '@/components/ui/tooltip';
+import { Tooltip, InfoTooltip } from '@/components/ui/tooltip';
 import { EmptyState } from '@/components/ui/empty-state';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
@@ -861,7 +861,16 @@ function ControlsPageInner({
             // `/controls/health-verdicts` map keyed by control id. Muted
             // '—' until the map resolves (or if a control isn't in it).
             id: 'health',
-            header: t('list.healthColumn'),
+            // Header carries the measured-only caveat: the verdict reflects
+            // MEASURED test operating-effectiveness only. Declared effectiveness
+            // informs valuation/ROI, not health — so a control with declared 95
+            // and no tests reads UNKNOWN here while ROI shows 95%.
+            header: () => (
+                <span className="inline-flex items-center gap-1">
+                    {t('list.healthColumn')}
+                    <InfoTooltip content={t('dashboard.controlHealthMeasuredOnly')} />
+                </span>
+            ),
             accessorFn: (c) => verdictMap.get(c.id) ?? '',
             cell: ({ row }) => {
                 const v = verdictMap.get(row.original.id);
