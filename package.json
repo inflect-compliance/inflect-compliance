@@ -1,6 +1,6 @@
 {
   "name": "inflect-compliance",
-  "version": "1.830.1",
+  "version": "1.831.0",
   "private": true,
   "engines": {
     "node": ">=24.0.0 <25.0.0",
