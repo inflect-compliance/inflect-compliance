@@ -63,7 +63,14 @@ describe('Policies list — Epic 45.1 shell + column wiring', () => {
         expect(clientSrc).toMatch(/<EntityListPage<\w+>/);
         expect(clientSrc).toMatch(/header=\{\{[\s\S]{0,200}title:/);
         expect(clientSrc).toMatch(/filters=\{\{[\s\S]{0,200}defs:\s*visibleFilterDefs/);
-        expect(clientSrc).toMatch(/table=\{\{[\s\S]{0,260}columns:\s*orderColumns\(policyColumns/);
+        // Columns are threaded via a MEMOISED array. They used to be
+        // `orderColumns(policyColumns)` inline, which minted a new
+        // identity every render and rebuilt the table model
+        // mid-double-click — see tests/guards/datatable-stable-row-identity.
+        expect(clientSrc).toMatch(/table=\{\{[\s\S]{0,260}columns:\s*orderedPolicyColumns/);
+        expect(clientSrc).toMatch(
+            /const orderedPolicyColumns = useMemo\(\s*\(\) => orderColumns\(policyColumns\)/,
+        );
     });
 
     it('threads searchId + searchPlaceholder for the live filter search box', () => {
@@ -78,8 +85,12 @@ describe('Policies list — Epic 45.1 shell + column wiring', () => {
     });
 
     it('preserves row navigation to the detail page', () => {
+        // The handler is a STABLE useCallback now, not an inline arrow —
+        // an inline `onRowClick` is recreated per render and breaks
+        // double-click-to-open. Assert the wiring + the destination.
+        expect(clientSrc).toMatch(/onRowClick:\s*handleRowClick/);
         expect(clientSrc).toMatch(
-            /onRowClick:\s*\(row\)\s*=>[\s\S]{0,200}router\.push\([\s\S]{0,200}\/policies\//,
+            /const handleRowClick = useCallback\([\s\S]{0,200}router\.push\([\s\S]{0,120}\/policies\//,
         );
     });
 
