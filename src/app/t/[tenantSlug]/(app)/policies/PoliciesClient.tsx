@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable react-hooks/exhaustive-deps -- Various useEffect/useMemo dep arrays in this file deliberately omit identity-unstable callbacks (handlers recreated each render) or use selector functions whose change-detection happens elsewhere. Adding the deps would either trigger unnecessary re-runs OR cause infinite render loops; the proper structural fix is to wrap parent-level callbacks in useCallback. Tracked as follow-up. */
 import { TimestampTooltip } from '@/components/ui/timestamp-tooltip';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { NewPolicyModal } from './NewPolicyModal';
@@ -133,7 +133,17 @@ function PoliciesPageInner({
         () => buildPolicyStatusLabels((k, v) => tx(k as Parameters<typeof tx>[0], v as Parameters<typeof tx>[1])),
         [tx],
     );
-    const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
+    // Stable across renders. A double-click toggles selection ON then OFF
+    // (DataTable's R13-PR14 click model), so the row re-renders BETWEEN the
+    // two clicks. Handing DataTable fresh `columns` / `onRowClick` /
+    // `getRowId` identities on that re-render rebuilds the table model
+    // mid-double-click, the row's DOM node is replaced, and the browser
+    // never fires `dblclick` — so double-click-to-open silently dies.
+    // ControlsClient documents the same rule; Policies had drifted off it.
+    const tenantHref = useCallback(
+        (path: string) => `/t/${tenantSlug}${path}`,
+        [tenantSlug],
+    );
     const router = useRouter();
     // Null on SSR + first client render so the "Overdue" badge doesn't
     // flip between server- and client-side `new Date()` values.
@@ -469,6 +479,24 @@ function PoliciesPageInner({
         columns: policyColumnList,
     });
 
+    // Stable table-model identities — see the note on `tenantHref`.
+    const getPolicyRowId = useCallback((p: PolicyRow) => p.id, []);
+    const handleRowClick = useCallback(
+        (row: { original: PolicyRow }) =>
+            router.push(tenantHref(`/policies/${row.original.id}`)),
+        [router, tenantHref],
+    );
+    const handleRowPrefetch = useCallback(
+        (row: { original: PolicyRow }) =>
+            router.prefetch(tenantHref(`/policies/${row.original.id}`)),
+        [router, tenantHref],
+    );
+    const resourceName = useCallback(
+        (p?: unknown) =>
+            p ? tx('list.resourcePlural') : tx('list.resourceSingular'),
+        [tx],
+    );
+
     const policyColumns = useMemo(() => createColumns<PolicyRow>([
         {
             accessorKey: 'title',
@@ -643,6 +671,13 @@ function PoliciesPageInner({
         },
     ]), [tenantHref, hydratedNow, tx, policyStatusLabels]);
 
+    // Memoised: `orderColumns()` returns a NEW array each call, and a fresh
+    // `columns` identity rebuilds the table model (see `tenantHref` above).
+    const orderedPolicyColumns = useMemo(
+        () => orderColumns(policyColumns),
+        [orderColumns, policyColumns],
+    );
+
     return (
         <EntityListPage<PolicyRow>
             className="animate-fadeIn gap-section"
@@ -750,7 +785,7 @@ function PoliciesPageInner({
             table={{
                 data: visiblePolicies,
                 onReachEnd: hasMorePolicies ? loadMorePolicies : undefined,
-                columns: orderColumns(policyColumns),
+                columns: orderedPolicyColumns,
                 loading,
                 sortableColumns,
                 sortBy,
@@ -759,10 +794,9 @@ function PoliciesPageInner({
                     setSortBy(nextBy);
                     setSortOrder(nextOrder);
                 },
-                getRowId: (p) => p.id,
-                onRowClick: (row) =>
-                    router.push(tenantHref(`/policies/${row.original.id}`)),
-                onRowPrefetch: (row) => router.prefetch(tenantHref(`/policies/${row.original.id}`)),
+                getRowId: getPolicyRowId,
+                onRowClick: handleRowClick,
+                onRowPrefetch: handleRowPrefetch,
                 emptyState: hasActive ? (
                     <EmptyState
                         size="sm"
@@ -782,7 +816,7 @@ function PoliciesPageInner({
                         description={tx('list.emptyDesc')}
                     />
                 ),
-                resourceName: (p) => (p ? tx('list.resourcePlural') : tx('list.resourceSingular')),
+                resourceName,
                 columnVisibility,
                 onColumnVisibilityChange: setColumnVisibility,
                 'data-testid': 'policies-table',
