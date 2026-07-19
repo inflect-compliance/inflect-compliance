@@ -27,7 +27,14 @@
 import type { PrismaClient } from '@prisma/client';
 import { publishNotificationEvent } from '@/lib/notifications/notification-bus';
 
-export type WatcherActivityKind = 'commented' | 'status_changed' | 'assigned';
+/**
+ * `updated` covers MATERIAL field edits (due-date reschedule, reviewer
+ * reassignment) — the changes a watcher needs to know about that aren't a
+ * comment, status move, or assignment. Cosmetic edits (title/description
+ * wording) deliberately do NOT notify: a bell for every keystroke-level save
+ * trains people to ignore the bell.
+ */
+export type WatcherActivityKind = 'commented' | 'status_changed' | 'assigned' | 'updated';
 
 export interface WatcherActivity {
     tenantId: string;

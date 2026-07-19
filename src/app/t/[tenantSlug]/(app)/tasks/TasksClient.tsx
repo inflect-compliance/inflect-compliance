@@ -117,7 +117,6 @@ export interface TaskListMetrics {
     byStatus: Record<string, number>;
     overdue: number;
     dueIn7d: number;
-    dueIn30d: number;
 }
 
 interface TasksClientProps {

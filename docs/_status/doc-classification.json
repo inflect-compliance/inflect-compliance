@@ -1681,6 +1681,9 @@
         },
         "docs/implementation-notes/2026-07-19-reviewer-gate-enforcement.md": {
             "class": "historical"
+        },
+        "docs/implementation-notes/2026-07-19-task-residuals.md": {
+            "class": "historical"
         }
     }
 }

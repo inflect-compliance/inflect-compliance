@@ -25,6 +25,7 @@ import type { EditEvidenceInitial } from './EditEvidenceModal';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { Sheet } from '@/components/ui/sheet';
+import LinkedTasksPanel from '@/components/LinkedTasksPanel';
 import { Button } from '@/components/ui/button';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { CopyText } from '@/components/ui/copy-text';
@@ -545,6 +546,23 @@ export function EvidenceDetailSheet({
                                 reviews={evidence.reviews ?? []}
                                 t={t}
                             />
+
+                            {/* Linked tasks — evidence had no surface showing
+                                the tasks raised against it, so a remediation
+                                task reconciled back to this evidence was
+                                invisible from the evidence side. This sheet is
+                                evidence's detail surface, so the shared panel
+                                mounts here (same component the control / risk /
+                                asset / incident detail pages use). */}
+                            {evidenceId && (
+                                <LinkedTasksPanel
+                                    apiBase={`/api/t/${tenantSlug}`}
+                                    entityType="EVIDENCE"
+                                    entityId={evidenceId}
+                                    tenantHref={(p) => `/t/${tenantSlug}${p}`}
+                                    canWrite={canWrite}
+                                />
+                            )}
                         </div>
                     </Sheet.Body>
                     <Sheet.Footer>

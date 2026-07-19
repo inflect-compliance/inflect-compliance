@@ -242,7 +242,11 @@ export async function updateTask(ctx: RequestContext, taskId: string, patch: {
     metadataJson?: unknown;
 }) {
     assertCanWriteTasks(ctx);
-    const result = await runInTenantContext(ctx, async (db) => {
+    // The before-values ride out of the transaction on its RETURN value (rather
+    // than via closure mutation) so TypeScript can actually see them as
+    // populated — a `let` assigned inside the callback stays narrowed to its
+    // initializer at the post-commit read.
+    const { task: result, beforeDueAt, beforeReviewerUserId } = await runInTenantContext(ctx, async (db) => {
         // Validate metadataJson on write
         if (patch.metadataJson !== undefined) {
             patch.metadataJson = validateTaskMetadata(patch.metadataJson);
@@ -252,6 +256,8 @@ export async function updateTask(ctx: RequestContext, taskId: string, patch: {
         // control, so changing it is gated too. Read the before-state.
         const existing = await WorkItemRepository.getById(db, ctx, taskId);
         if (!existing) throw notFound('Task not found');
+        const beforeDueAt = existing.dueAt;
+        const beforeReviewerUserId = existing.reviewerUserId;
 
         if (patch.reviewerUserId !== undefined) {
             // (a) OPT-OUT HOLE — once a task actually REQUIRES review (it has a
@@ -286,11 +292,49 @@ export async function updateTask(ctx: RequestContext, taskId: string, patch: {
             detailsJson: { category: 'entity_lifecycle', entityName: 'Task', operation: 'updated', summary: 'TASK_UPDATED' },
             metadata: patch,
         });
-        return task;
+        return { task, beforeDueAt, beforeReviewerUserId };
     });
     // A rescheduled `dueAt` may move the task into a reminder window —
     // re-evaluate the in-app notification after the commit.
     await emitTaskDueNotification(ctx, result);
+
+    // TP-2 — watcher fan-out on MATERIAL edits. Watchers were told about
+    // comments, status moves and assignments but not about the two changes
+    // that most often invalidate their plans: a due-date reschedule and a
+    // reviewer reassignment. Cosmetic edits (title/description) stay silent on
+    // purpose — a bell for every save trains people to ignore the bell.
+    const dueChanged =
+        patch.dueAt !== undefined &&
+        (beforeDueAt?.getTime() ?? null) !== (result.dueAt?.getTime() ?? null);
+    const reviewerChanged =
+        patch.reviewerUserId !== undefined &&
+        beforeReviewerUserId !== result.reviewerUserId;
+
+    if (dueChanged || reviewerChanged) {
+        const changes: string[] = [];
+        if (dueChanged) {
+            // Plain YYYY-MM-DD — this string goes into a stored notification
+            // body read by many users, so it stays locale-free.
+            const ymd = (d: Date) => d.toISOString().slice(0, 10);
+            const from = beforeDueAt ? ymd(beforeDueAt) : 'no due date';
+            const to = result.dueAt ? ymd(result.dueAt) : 'no due date';
+            changes.push(`due ${from} → ${to}`);
+        }
+        if (reviewerChanged) {
+            changes.push(result.reviewerUserId ? 'reviewer reassigned' : 'reviewer cleared');
+        }
+        await emitTaskWatcherActivity(
+            ctx,
+            taskId,
+            'updated',
+            // Discriminator keys the dedupe on WHAT changed to WHAT, so two
+            // genuinely different reschedules don't collapse into one bell
+            // while a retry of the same write still dedupes.
+            `${beforeDueAt?.toISOString() ?? 'none'}->${result.dueAt?.toISOString() ?? 'none'}|${beforeReviewerUserId ?? 'none'}->${result.reviewerUserId ?? 'none'}`,
+            changes.join(', '),
+        );
+    }
+
     await bumpEntityCacheVersion(ctx, 'task');
     return result;
 }
