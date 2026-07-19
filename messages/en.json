@@ -4993,6 +4993,7 @@
       "yes": "Yes",
       "no": "No",
       "inherentRisk": "Inherent Risk",
+      "inherentRiskReadOnly": "Set by assessment review — not editable here",
       "inherentRiskHint": "Assessment-derived — set from the latest completed assessment review.",
       "residualRisk": "Residual Risk",
       "residualRiskNone": "Not set",

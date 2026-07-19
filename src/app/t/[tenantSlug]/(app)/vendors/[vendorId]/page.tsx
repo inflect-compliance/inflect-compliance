@@ -128,6 +128,8 @@ interface VendorEditForm {
     status: string;
     /** Empty string = clear (send null). Otherwise a VendorCriticality value. */
     residualRisk: string;
+    /** Empty string = clear (send null). Otherwise a VendorDataAccess value. */
+    dataAccess: string;
 }
 
 // Epic G-3 — VendorAssessmentTemplate rows (the questionnaire model
@@ -213,6 +215,17 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
         () => ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((c) => ({ value: c, label: tx('criticalityLabel.' + c) })),
         [tx],
     );
+    // Mirrors DATA_ACCESS_OPTIONS in the create form (NewVendorFields) so the
+    // edit surface offers exactly the values creation does — same enum, same
+    // localized labels.
+    const DATA_ACCESS_OPTIONS_L = useMemo<ComboboxOption[]>(
+        () =>
+            (['NONE', 'LOW', 'MEDIUM', 'HIGH'] as const).map((v) => ({
+                value: v,
+                label: tx('form.' + DATA_ACCESS_LABEL_KEY[v]),
+            })),
+        [tx],
+    );
     const DOC_TYPE_FILTER_OPTIONS = buildDocTypeFilterOptions(tx, DOC_TYPE_CB_OPTIONS);
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
@@ -238,7 +251,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     const [editForm, setEditForm] = useState<VendorEditForm>({
         name: '', legalName: '', websiteUrl: '', domain: '',
         country: '', description: '', criticality: '', status: '',
-        residualRisk: '',
+        residualRisk: '', dataAccess: '',
     });
 
     // Doc form
@@ -293,7 +306,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
         if (res.ok) {
             const v = await res.json();
             setVendor(v);
-            setEditForm({ name: v.name, legalName: v.legalName || '', websiteUrl: v.websiteUrl || '', domain: v.domain || '', country: v.country || '', description: v.description || '', criticality: v.criticality, status: v.status, residualRisk: v.residualRisk || '' });
+            setEditForm({ name: v.name, legalName: v.legalName || '', websiteUrl: v.websiteUrl || '', domain: v.domain || '', country: v.country || '', description: v.description || '', criticality: v.criticality, status: v.status, residualRisk: v.residualRisk || '', dataAccess: v.dataAccess || '' });
         }
         setLoading(false);
     }, [apiUrl, params.vendorId]);
@@ -433,8 +446,13 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     const saveEdit = async () => {
         const res = await fetch(apiUrl(`/vendors/${params.vendorId}`), {
             method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-            // residualRisk is nullable: an empty selection clears it (send null).
-            body: JSON.stringify({ ...editForm, residualRisk: editForm.residualRisk || null }),
+            // residualRisk + dataAccess are nullable: an empty selection clears
+            // each one (send null rather than '', which the schema would reject).
+            body: JSON.stringify({
+                ...editForm,
+                residualRisk: editForm.residualRisk || null,
+                dataAccess: editForm.dataAccess || null,
+            }),
         });
         if (res.ok) { setVendor(await res.json()); setEditing(false); }
     };
@@ -693,6 +711,37 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                 options={[{ value: '', label: tx('detail.residualRiskNone') }, ...CRIT_OPTIONS_L]}
                                 matchTriggerWidth
                             />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-content-muted mb-1">{tx('detail.dataAccess')}</label>
+                            {/* Nullable, and manually owned — nothing writes dataAccess
+                                except create/update, so it is safe to edit here. It was
+                                accepted by UpdateVendorSchema and settable at creation but
+                                absent from this form, which froze it at its creation value. */}
+                            <Combobox
+                                hideSearch
+                                selected={
+                                    editForm.dataAccess
+                                        ? { value: editForm.dataAccess, label: tx('form.' + DATA_ACCESS_LABEL_KEY[editForm.dataAccess]) }
+                                        : { value: '', label: tx('form.dataAccessPlaceholder') }
+                                }
+                                setSelected={(opt) => setEditForm((p) => ({ ...p, dataAccess: opt?.value ?? '' }))}
+                                options={[{ value: '', label: tx('form.dataAccessPlaceholder') }, ...DATA_ACCESS_OPTIONS_L]}
+                                matchTriggerWidth
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-content-muted mb-1">{tx('detail.inherentRisk')}</label>
+                            {/* Deliberately READ-ONLY. `inherentRisk` is assessment-derived:
+                                every review writeback overwrites it with the assessment's
+                                riskRating (applyAssessmentRiskWriteback). Exposing an editor
+                                would let a user set a value that the next review silently
+                                discards — worse than not offering the control at all.
+                                Change it by reviewing an assessment, not by typing. */}
+                            <p className="text-sm text-content-default py-2">
+                                {vendor.inherentRisk ? tx('criticalityLabel.' + vendor.inherentRisk) : '—'}
+                            </p>
+                            <p className="text-xs text-content-muted">{tx('detail.inherentRiskReadOnly')}</p>
                         </div>
                     </div>
                     <div>
@@ -1138,8 +1187,12 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                 <Heading level={3}>{tx('detail.linkGroup', { type, count: typeLinks.length })}</Heading>
                                 {typeLinks.map((l) => {
                                     const buildHref = LINK_ENTITY_HREF[l.entityType];
-                                    // entityName resolves once the backend lands; until then
-                                    // fall back to the raw cuid so the row still links out.
+                                    // `entityName` IS resolved server-side (listVendorLinks
+                                    // batch-loads names per entityType). It stays nullable
+                                    // for links whose target no longer resolves — deleted or
+                                    // soft-deleted rows — so keep the raw-id fallback: a
+                                    // dangling link should still render and link out rather
+                                    // than collapse to an empty row.
                                     const label = l.entityName ?? (
                                         <code className="text-xs">{l.entityId}</code>
                                     );

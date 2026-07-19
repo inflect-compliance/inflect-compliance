@@ -1699,6 +1699,9 @@
         },
         "docs/implementation-notes/2026-07-19-policy-ack-rollup-and-sod.md": {
             "class": "historical"
+        },
+        "docs/implementation-notes/2026-07-19-vendor-risk-integrity.md": {
+            "class": "historical"
         }
     }
 }
