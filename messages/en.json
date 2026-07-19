@@ -2983,7 +2983,10 @@
       "step6Desc": "Assign tasks and close out the actions.",
       "auditorManagement": "Auditor management",
       "cycleFilterActive": "Showing fieldwork audits for one cycle.",
-      "clearCycleFilter": "Clear filter"
+      "cycleFilterActiveNamed": "Showing fieldwork audits for “{name}”.",
+      "clearCycleFilter": "Clear filter",
+      "cyclePickerLabel": "Cycle",
+      "cyclePickerAll": "All fieldwork audits"
     },
     "readinessLegend": {
       "aria": "How the readiness score works",
@@ -3155,6 +3158,7 @@
         "statusOPEN": "Open",
         "statusRESOLVED": "Resolved",
         "createFinding": "Create finding",
+        "createObservation": "Create observation",
         "findingCreated": "Finding created and linked to the cycle.",
         "materializeError": "Failed to create finding from this entry."
       },
@@ -3555,6 +3559,10 @@
       "placeholderNone": "— None",
       "searchControls": "Search controls…",
       "emptyControls": "No controls match",
+      "labelOriginatingAudit": "Originating audit",
+      "descOriginatingAudit": "Attribute this finding to the audit (and its cycle) it was raised during.",
+      "searchAudits": "Search audits…",
+      "emptyAudits": "No audits match",
       "labelCompensatingControl": "Compensating control",
       "descCompensatingControl": "A control that mitigates the finding.",
       "labelImplicatedRisks": "Implicated risks ({count} selected)",

@@ -2,10 +2,12 @@ import { PrismaTx } from '@/lib/db-context';
 import { RequestContext } from '../types';
 import { Prisma } from '@prisma/client';
 
-// PR-3 — tight SELECT shape for the Findings list page. The previous
-// `include` returned all Finding scalars (encrypted `description`,
-// `rootCause`, `correctiveAction`, etc.) plus the `audit` relation
-// the page never reads on the list view (detail loads separately).
+// PR-3 — tight SELECT shape for the Findings list page. Drops the
+// encrypted free-text scalars (`description`, `rootCause`,
+// `correctiveAction`, …) that the list never renders (detail loads them
+// separately). It DOES carry the lightweight `audit` provenance relation
+// (feat/audit-cycle-unify) so the register can show a finding's originating
+// audit + cycle without a second query.
 const findingListSelect = {
     id: true,
     title: true,

@@ -70,6 +70,15 @@ interface AuditsClientProps {
     };
 }
 
+// listAuditCycles row — the hub cycle picker only needs id + name to build
+// options and name the active-filter banner.
+interface CycleRow {
+    id: string;
+    name: string;
+    frameworkKey: string;
+    status: string;
+}
+
 // getAudit → AuditRepository.getById (full Audit + ordered checklist + findings).
 interface AuditChecklistItemRow {
     id: string;
@@ -137,6 +146,24 @@ export function AuditsClient({ initialAudits, tenantSlug, cycleId, hasNis2, canW
     );
     const audits = auditsQuery.data?.rows ?? [];
     const truncated = auditsQuery.data?.truncated ?? false;
+
+    // feat/audit-cycle-unify — cycle picker. Fetch the cycle list so the
+    // hub can scope its fieldwork-audit list to one cycle (?cycleId) and
+    // name the selected cycle in the context banner (instead of generic
+    // "viewing one cycle" text).
+    const cyclesQuery = useTenantSWR<CycleRow[]>(CACHE_KEYS.audits.cycles());
+    const cycles = cyclesQuery.data ?? [];
+    const selectedCycle = cycleId ? cycles.find((c) => c.id === cycleId) ?? null : null;
+    const cycleOptions = useMemo<ComboboxOption[]>(
+        () => [
+            { value: '', label: tx('hub.cyclePickerAll') },
+            ...cycles.map((c) => ({ value: c.id, label: c.name })),
+        ],
+        [cycles, tx],
+    );
+    const onCycleChange = (id: string) => {
+        router.push(`/t/${tenantSlug}/audits${id ? `?cycleId=${id}` : ''}`, { scroll: false });
+    };
 
     const loadAudit = async (id: string) => {
         const res = await fetch(apiUrl(`/audits/${id}`));
@@ -324,16 +351,35 @@ export function AuditsClient({ initialAudits, tenantSlug, cycleId, hasNis2, canW
                 </div>
             </section>
 
-            {/* feat/audit-cycle-unify — scoped-to-cycle context banner. */}
-            {cycleId && (
-                <div
-                    className="flex items-center justify-between rounded-md border border-border-emphasis bg-bg-info/10 px-3 py-2 text-sm"
-                    data-testid="audits-cycle-filter-banner"
-                >
-                    <span className="text-content-default">{tx('hub.cycleFilterActive')}</span>
-                    <Link href={`/t/${tenantSlug}/audits`} className="text-xs text-content-muted underline underline-offset-2" id="audits-clear-cycle-filter">
-                        {tx('hub.clearCycleFilter')}
-                    </Link>
+            {/* feat/audit-cycle-unify — cycle picker + scoped context banner.
+                The picker scopes the fieldwork-audit list to one cycle
+                (?cycleId); the banner names the selected cycle so the scope
+                is legible, not just "one cycle". */}
+            {cycles.length > 0 && (
+                <div className="flex flex-col gap-tight sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-compact">
+                        <span className="text-xs font-medium text-content-muted">{tx('hub.cyclePickerLabel')}</span>
+                        <Combobox
+                            options={cycleOptions}
+                            selected={cycleOptions.find((o) => o.value === (cycleId ?? '')) ?? cycleOptions[0]}
+                            setSelected={(opt) => onCycleChange(opt?.value ?? '')}
+                            matchTriggerWidth
+                            buttonProps={{ className: 'text-sm min-w-[14rem]', id: 'audits-cycle-picker' }}
+                            aria-label={tx('hub.cyclePickerLabel')}
+                            caret
+                        />
+                    </div>
+                    {selectedCycle && (
+                        <div
+                            className="flex items-center justify-between gap-compact rounded-md border border-border-emphasis bg-bg-info/10 px-3 py-2 text-sm"
+                            data-testid="audits-cycle-filter-banner"
+                        >
+                            <span className="text-content-default">{tx('hub.cycleFilterActiveNamed', { name: selectedCycle.name })}</span>
+                            <Link href={`/t/${tenantSlug}/audits`} className="text-xs text-content-muted underline underline-offset-2" id="audits-clear-cycle-filter">
+                                {tx('hub.clearCycleFilter')}
+                            </Link>
+                        </div>
+                    )}
                 </div>
             )}
 

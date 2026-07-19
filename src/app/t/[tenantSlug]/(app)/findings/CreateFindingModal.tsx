@@ -56,6 +56,11 @@ interface RiskOption {
     title: string;
 }
 
+interface AuditOption {
+    id: string;
+    title: string;
+}
+
 const buildSeverityOptions = (t: (key: string) => string): ComboboxOption[] =>
     ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((v) => ({ value: v, label: t(`severityOptions.${v}`) }));
 const buildTypeOptions = (t: (key: string) => string): ComboboxOption[] =>
@@ -71,6 +76,9 @@ const EMPTY_FORM = {
     compensatingControlId: '',
     analysis: '',
     dueDate: '',
+    // Optional provenance — attribute a register-created finding to the
+    // audit (and thereby the cycle) it was raised during.
+    auditId: '',
 };
 
 export interface CreateFindingModalProps {
@@ -141,6 +149,18 @@ export function CreateFindingModal({
         [controls],
     );
 
+    // Optional audit provenance picker — a register-created finding can be
+    // attributed to the audit it was raised during (the schema accepts
+    // auditId; the audit carries the cycle linkage).
+    const auditsQuery = useTenantSWR<CappedList<AuditOption> | AuditOption[]>(
+        open ? CACHE_KEYS.audits.list() : null,
+    );
+    const auditOptions = useMemo<ComboboxOption[]>(() => {
+        const data = auditsQuery.data;
+        const rows = Array.isArray(data) ? data : (data?.rows ?? []);
+        return rows.map((a) => ({ value: a.id, label: a.title }));
+    }, [auditsQuery.data]);
+
     const filteredRisks = useMemo(() => {
         const q = riskFilter.trim().toLowerCase();
         if (!q) return risks;
@@ -188,6 +208,7 @@ export function CreateFindingModal({
             hasAssignee: Boolean(form.assigneeUserId),
             hasControl: Boolean(form.controlId),
             hasCompensatingControl: Boolean(form.compensatingControlId),
+            hasAudit: Boolean(form.auditId),
             riskLinkCount: selectedRiskIds.size,
         });
         try {
@@ -200,6 +221,7 @@ export function CreateFindingModal({
                 controlId: form.controlId || undefined,
                 compensatingControlId: form.compensatingControlId || undefined,
                 analysis: form.analysis.trim() || undefined,
+                auditId: form.auditId || undefined,
                 riskIds: Array.from(selectedRiskIds),
             };
             if (form.dueDate) payload.dueDate = form.dueDate;
@@ -321,6 +343,27 @@ export function CreateFindingModal({
                                     />
                                 </FormField>
                             </div>
+
+                            <FormField
+                                label={tx('create.labelOriginatingAudit')}
+                                description={tx('create.descOriginatingAudit')}
+                            >
+                                <Combobox
+                                    id="finding-audit"
+                                    name="auditId"
+                                    options={auditOptions}
+                                    selected={auditOptions.find((o) => o.value === form.auditId) ?? null}
+                                    setSelected={(o) => update('auditId', o?.value ?? '')}
+                                    loading={auditsQuery.isLoading}
+                                    placeholder={tx('create.placeholderNone')}
+                                    searchPlaceholder={tx('create.searchAudits')}
+                                    emptyState={tx('create.emptyAudits')}
+                                    matchTriggerWidth
+                                    forceDropdown
+                                    buttonProps={{ className: 'w-full' }}
+                                    caret
+                                />
+                            </FormField>
 
                             <FormField label={tx('create.labelDescription')} required>
                                 <Textarea

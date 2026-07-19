@@ -291,6 +291,15 @@ export async function materializeShareCommentFinding(ctx: RequestContext, packId
             select: { id: true },
         });
         const pack = await tdb.auditPack.findFirst({ where: { id: packId, tenantId: ctx.tenantId }, select: { auditCycleId: true } });
+        // Deterministic attachment point: the materialised finding needs an
+        // audit so readiness's `audit.auditCycleId` join folds it into the
+        // cycle — any fieldwork audit in the cycle satisfies that join equally.
+        // We pick the OLDEST (createdAt asc) as the stable canonical choice:
+        // it is the cycle's first/primary fieldwork audit and never changes as
+        // later audits are added, so repeated materialisations and idempotent
+        // re-runs always resolve to the same audit. A per-audit reviewer picker
+        // is intentionally out of scope — the cycle linkage, not the specific
+        // audit, is what readiness scoring consumes.
         const audit = pack
             ? await tdb.audit.findFirst({ where: { tenantId: ctx.tenantId, auditCycleId: pack.auditCycleId, deletedAt: null }, select: { id: true }, orderBy: { createdAt: 'asc' } })
             : null;
