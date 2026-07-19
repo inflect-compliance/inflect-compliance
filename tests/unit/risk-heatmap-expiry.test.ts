@@ -12,6 +12,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { urgencyFromDaysUntil, URGENCY_DAYS } from '@/lib/urgency';
 
 const UI_DIR = path.resolve(__dirname, '../../src/components/ui');
 const REPO_FILE = path.resolve(__dirname, '../../src/app-layer/repositories/DashboardRepository.ts');
@@ -233,16 +234,36 @@ describe('Dashboard Page Integration', () => {
 describe('ExpiryCalendar Urgency Logic', () => {
     const content = fs.readFileSync(path.join(UI_DIR, 'ExpiryCalendar.tsx'), 'utf-8');
 
-    test('overdue threshold: daysUntil < 0', () => {
-        expect(content).toContain('daysUntil < 0');
+    // These used to grep the widget's source for `daysUntil <= 7` /
+    // `<= 14` literals. The thresholds now live in the shared
+    // `@/lib/urgency` scale (the widget's private ≤14 tier was the only
+    // place 14 appeared anywhere, and it made "upcoming" mean something
+    // different here than on the calendar or the evidence KPI). Assert
+    // the BEHAVIOUR of the shared classifier instead of the text of a
+    // component that no longer owns the numbers.
+
+    test('the widget consumes the shared scale rather than its own literals', () => {
+        expect(content).toContain('urgencyFromDaysUntil');
+        expect(content).not.toContain('daysUntil <= 14');
     });
 
-    test('urgent threshold: daysUntil <= 7', () => {
-        expect(content).toContain('daysUntil <= 7');
+    test('overdue: any negative distance', () => {
+        expect(urgencyFromDaysUntil(-1)).toBe('overdue');
+        expect(urgencyFromDaysUntil(-90)).toBe('overdue');
     });
 
-    test('upcoming threshold: daysUntil <= 14', () => {
-        expect(content).toContain('daysUntil <= 14');
+    test('urgent: today through the 7-day boundary', () => {
+        expect(urgencyFromDaysUntil(0)).toBe('urgent');
+        expect(urgencyFromDaysUntil(URGENCY_DAYS.URGENT)).toBe('urgent');
+    });
+
+    test('upcoming: just past urgent, through the 30-day boundary', () => {
+        expect(urgencyFromDaysUntil(URGENCY_DAYS.URGENT + 1)).toBe('upcoming');
+        expect(urgencyFromDaysUntil(URGENCY_DAYS.UPCOMING)).toBe('upcoming');
+    });
+
+    test('normal: beyond the upcoming boundary', () => {
+        expect(urgencyFromDaysUntil(URGENCY_DAYS.UPCOMING + 1)).toBe('normal');
     });
 
     test('ordered groups: overdue first, normal last', () => {

@@ -23,9 +23,11 @@ import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 
 import { Button } from '@/components/ui/button';
+import { LoadingSpinner } from '@/components/ui/icons';
+import { Plus } from '@/components/ui/icons/nucleo';
 import { useToast } from '@/components/ui/hooks/use-toast';
 import { DatePicker } from '@/components/ui/date-picker/date-picker';
-import { parseYMD, toYMD } from '@/components/ui/date-picker/date-utils';
+import { parseYMD, toYMD, startOfUtcDay } from '@/components/ui/date-picker/date-utils';
 import { CalendarHeatmap } from '@/components/ui/CalendarHeatmap';
 import { CalendarMonth } from '@/components/ui/CalendarMonth';
 import { GanttTimeline } from '@/components/ui/GanttTimeline';
@@ -60,12 +62,21 @@ function endOfUtcMonth(d: Date): Date {
     );
 }
 
+/**
+ * How far forward the heatmap looks. It used to end at `today`, so it
+ * was purely retrospective — a density view of past activity sitting
+ * beside two deadline views, where a user reasonably expects to see what
+ * is COMING. It now covers the same forward window as the timeline, so
+ * "busy weeks ahead" is visible where people look for it.
+ */
+const HEATMAP_FORWARD_DAYS = 180;
+
 function rangeForView(view: View, monthCursor: Date): { from: Date; to: Date } {
     const today = new Date();
     if (view === 'heatmap') {
         return {
             from: new Date(today.getTime() - 365 * DAY_MS),
-            to: today,
+            to: new Date(today.getTime() + HEATMAP_FORWARD_DAYS * DAY_MS),
         };
     }
     if (view === 'gantt') {
@@ -142,15 +153,68 @@ export function CalendarClient({
     // before this shipped, hence the optional chain at the call site.
     const truncation = calQuery.data?.truncation;
 
-    // Filter: Gantt only shows events that have a meaningful range OR
-    // are audit cycles (where `start === end` may be intentional).
-    const ganttEvents = React.useMemo(
-        () =>
-            events.filter(
-                (e) => e.end !== undefined || e.category === 'audit',
-            ),
-        [events],
+    // Pending = no payload for this key yet and nothing has failed. Each
+    // view/range switch mints a NEW SWR key, so `data` is undefined until
+    // it resolves; without this the grid renders empty and "loading" is
+    // indistinguishable from "nothing due".
+    const pending = !calQuery.data && !calQuery.error;
+
+    // ─── Off-screen deadline probe ───────────────────────────────────
+    //
+    // The windows are fixed (heatmap 365d back → 180d on, timeline ±180d)
+    // and the month view steps one month at a time, so the next real
+    // deadline can sit outside what's rendered — which looks exactly like
+    // "nothing due". When the current range comes back EMPTY, probe a wide
+    // forward window for the nearest deadline so we can point at it.
+    //
+    // Deliberately conditional: the key is null unless the view is empty,
+    // so this costs nothing on the normal path. The anchor is snapped to
+    // UTC midnight so the key is stable across renders within a day.
+    const isEmptyView = !pending && events.length === 0;
+    const todayMs = startOfUtcDay(new Date()).getTime();
+    const probeRange = React.useMemo(
+        () => ({
+            from: new Date(todayMs).toISOString(),
+            // The query schema caps a range at 2 years.
+            to: new Date(todayMs + 730 * DAY_MS).toISOString(),
+        }),
+        [todayMs],
     );
+    const probeQuery = useTenantSWR<CalendarResponse>(
+        isEmptyView ? CACHE_KEYS.calendar.range(probeRange.from, probeRange.to) : null,
+    );
+
+    const nextOffscreenDeadline = React.useMemo(() => {
+        if (!isEmptyView) return null;
+        const fromMs = range.from.getTime();
+        const toMs = range.to.getTime();
+        // The API returns events already sorted ascending by date, so the
+        // first one outside the visible window IS the nearest.
+        const hit = (probeQuery.data?.events ?? []).find((e) => {
+            const ms = new Date(e.date).getTime();
+            return ms < fromMs || ms > toMs;
+        });
+        return hit ? { date: new Date(hit.date) } : null;
+    }, [isEmptyView, probeQuery.data, range]);
+
+    /** Jump the month view to the month containing `d` and select the day. */
+    const jumpToDeadline = React.useCallback((d: Date) => {
+        setView('month');
+        setMonthCursor(startOfUtcMonth(d));
+        setSelectedDate(toYMD(d) ?? null);
+    }, []);
+
+    // The Timeline shows EVERY deadline, not just ranges.
+    //
+    // This used to pre-filter to `e.end !== undefined || category ===
+    // 'audit'`. Only the audit-cycle loader ever sets `end`, so the two
+    // clauses were near-identical and the "Timeline" was really an
+    // audit-cycle view — blank for any tenant without audit cycles, even
+    // when the range was full of deadlines. GanttTimeline already renders
+    // a point-in-time event as a 1-day marker (with a 0.5% minimum bar
+    // width), which is exactly the fallback needed, so the filter was
+    // discarding events the component could draw perfectly well.
+    const ganttEvents = events;
 
     const selectedEvents = React.useMemo(() => {
         if (!selectedDate) return [];
@@ -368,9 +432,53 @@ export function CalendarClient({
                 </div>
             )}
 
+            {/* Off-screen deadline hint. The heatmap + timeline windows are
+                fixed, and the month view steps one month at a time, so the
+                next real deadline can sit outside what's rendered — which
+                looks identical to "nothing due". Point at it instead. */}
+            {!pending && nextOffscreenDeadline && (
+                <div
+                    className="flex flex-wrap items-center justify-between gap-compact rounded-lg border border-border-subtle bg-bg-subtle px-4 py-2 text-sm"
+                    data-testid="calendar-offscreen-hint"
+                >
+                    <span className="text-content-muted">
+                        {t('offscreenHint', {
+                            date: formatDate(nextOffscreenDeadline.date),
+                        })}
+                    </span>
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        id="calendar-jump-to-next"
+                        onClick={() => jumpToDeadline(nextOffscreenDeadline.date)}
+                    >
+                        {t('offscreenJump')}
+                    </Button>
+                </div>
+            )}
+
             {/* Body — view switch */}
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-section">
-                <div className={cardVariants({ density: 'compact' })}>
+                <div
+                    className={cn(
+                        cardVariants({ density: 'compact' }),
+                        // Pending: dim the grid rather than blanking it, so a
+                        // range switch reads as "loading" instead of "nothing
+                        // due" — the two were indistinguishable before.
+                        pending && 'opacity-50 transition-opacity',
+                    )}
+                    aria-busy={pending || undefined}
+                >
+                    {pending && (
+                        <div
+                            className="flex items-center gap-tight pb-2 text-xs text-content-muted"
+                            role="status"
+                            data-testid="calendar-loading"
+                        >
+                            <LoadingSpinner className="h-3.5 w-3.5" />
+                            {t('loading')}
+                        </div>
+                    )}
                     {/* The calendar/heatmap/timeline always renders — even
                         with zero events — so an empty month still shows its
                         full grid (no "No deadlines in this range" takeover).
@@ -394,6 +502,7 @@ export function CalendarClient({
                                 setSelectedDate(ymd);
                                 setTaskCreateDate(ymd);
                             }}
+                            newTaskLabel={t('newTaskOnDay')}
                             selectedYmd={selectedDate}
                         />
                     ) : (
@@ -416,6 +525,21 @@ export function CalendarClient({
                             <Heading level={3} className="mb-2">
                                 {formatDate(new Date(selectedDate))}
                             </Heading>
+                            {/* Create-from-calendar was double-click-only and
+                                completely unadvertised — no tooltip, no cursor
+                                change, nothing in the aria-label. This button
+                                is the discoverable path to the same flow (the
+                                double-click shortcut still works). */}
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                className="mb-3 w-full"
+                                icon={<Plus className="-ml-0.5 -mr-2.5" />}
+                                id="calendar-new-task-on-day"
+                                onClick={() => setTaskCreateDate(selectedDate)}
+                            >
+                                {t('newTaskOnDay')}
+                            </Button>
                             {selectedEvents.length === 0 ? (
                                 <p className="text-xs text-content-muted">
                                     {t('eventsEmptyDay')}

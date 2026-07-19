@@ -1,6 +1,7 @@
 import { PrismaTx } from '@/lib/db-context';
 import { RequestContext } from '../types';
 import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
+import { URGENCY_MS } from '@/lib/urgency';
 import {
     evidenceExpiryScopeWhere,
     EVIDENCE_OUTSTANDING_STATUS_FILTER,
@@ -478,8 +479,11 @@ export class DashboardRepository {
     static async getEvidenceExpiry(db: PrismaTx, ctx: RequestContext): Promise<EvidenceExpiry> {
         const tenantId = ctx.tenantId;
         const now = new Date();
-        const in7d = new Date(now.getTime() + 7 * 86400000);
-        const in30d = new Date(now.getTime() + 30 * 86400000);
+        // Bucket boundaries come from the shared urgency scale so "due
+        // soon" means the same number of days here, on the calendar, and
+        // on the ExpiryCalendar widget.
+        const in7d = new Date(now.getTime() + URGENCY_MS.URGENT);
+        const in30d = new Date(now.getTime() + URGENCY_MS.UPCOMING);
         // Shared expiry scope — the same predicate the compliance calendar
         // and the ExpiryCalendar list use, so all three agree on which
         // evidence rows exist at all. See app-layer/domain/evidence-expiry.
@@ -743,7 +747,8 @@ export class DashboardRepository {
      */
     static async getUpcomingExpirations(db: PrismaTx, ctx: RequestContext): Promise<EvidenceExpiryItem[]> {
         const now = new Date();
-        const in30d = new Date(now.getTime() + 30 * 86400000);
+        // Same shared urgency scale as the KPI buckets above.
+        const in30d = new Date(now.getTime() + URGENCY_MS.UPCOMING);
 
         const items = await db.evidence.findMany({
             where: {

@@ -44,6 +44,12 @@ export interface CalendarMonthProps {
      */
     onDoubleClickDate?: (date: string) => void;
     /**
+     * Label for the per-day "+" create affordance (tooltip + aria-label).
+     * Supplied by the caller so the copy stays in the page's i18n
+     * catalog — this primitive holds no strings of its own.
+     */
+    newTaskLabel?: string;
+    /**
      * The currently-selected day in `YYYY-MM-DD` form. B3 — the
      * matching cell renders a visible selected-state (brand ring +
      * brand-subtle background) so the click feels acknowledged.
@@ -104,6 +110,7 @@ export function CalendarMonth({
     maxDotsPerDay = 3,
     onSelectDate,
     onDoubleClickDate,
+    newTaskLabel = 'New task on this day',
     selectedYmd,
     today,
     className,
@@ -199,7 +206,7 @@ export function CalendarMonth({
                         <div
                             key={ymd}
                             className={cn(
-                                'relative min-h-[80px] p-1.5 flex flex-col gap-1',
+                                'group relative min-h-[80px] p-1.5 flex flex-col gap-1',
                                 cell.inMonth
                                     ? 'bg-bg-default'
                                     : 'bg-bg-muted/30 opacity-60',
@@ -236,18 +243,46 @@ export function CalendarMonth({
                                     : undefined
                             }
                         >
-                            <button
-                                type="button"
-                                className={cn(
-                                    'self-end text-xs leading-none px-1 py-0.5 rounded text-content-muted hover:bg-bg-muted',
-                                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]',
-                                    isToday && 'text-content-emphasis font-semibold',
+                            <div className="flex items-center justify-between gap-1">
+                                {/* Create-on-this-day affordance. The
+                                    double-click shortcut existed but was
+                                    invisible — no cursor change, no tooltip,
+                                    nothing in the aria-label — so nobody
+                                    could discover it. Revealed on hover /
+                                    keyboard focus; the cell's own dblclick
+                                    still works for people who know it. */}
+                                {onDoubleClickDate ? (
+                                    <button
+                                        type="button"
+                                        className={cn(
+                                            'text-xs leading-none px-1 py-0.5 rounded text-content-muted',
+                                            'opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
+                                            'hover:bg-bg-muted hover:text-content-emphasis transition-opacity',
+                                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]',
+                                        )}
+                                        onClick={() => onDoubleClickDate(ymd)}
+                                        title={newTaskLabel}
+                                        aria-label={`${newTaskLabel} — ${ymd}`}
+                                        data-testid={`calendar-day-add-${ymd}`}
+                                    >
+                                        +
+                                    </button>
+                                ) : (
+                                    <span />
                                 )}
-                                onClick={() => onSelectDate?.(ymd)}
-                                aria-label={`${ymd}: ${dayEvents.length} event${dayEvents.length === 1 ? '' : 's'}`}
-                            >
-                                {cell.date.getUTCDate()}
-                            </button>
+                                <button
+                                    type="button"
+                                    className={cn(
+                                        'text-xs leading-none px-1 py-0.5 rounded text-content-muted hover:bg-bg-muted',
+                                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]',
+                                        isToday && 'text-content-emphasis font-semibold',
+                                    )}
+                                    onClick={() => onSelectDate?.(ymd)}
+                                    aria-label={`${ymd}: ${dayEvents.length} event${dayEvents.length === 1 ? '' : 's'}`}
+                                >
+                                    {cell.date.getUTCDate()}
+                                </button>
+                            </div>
                             {visible.length > 0 && (
                                 <ul className="flex flex-col gap-0.5 min-h-0">
                                     {visible.map((ev) => (
