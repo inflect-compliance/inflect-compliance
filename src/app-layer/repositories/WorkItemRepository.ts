@@ -483,21 +483,14 @@ export class WorkItemRepository {
         const tenantId = ctx.tenantId;
         const now = new Date();
         const in7d = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-        const in30d = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-        const ago30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
         const openFilter = { notIn: [...TERMINAL_WORK_ITEM_STATUSES] as WorkItemStatus[] };
 
-        const [byStatus, bySeverity, byType, overdueCount, due7dCount, due30dCount, total, recentCreated, recentResolved] = await Promise.all([
+        const [byStatus, overdueCount, due7dCount, total] = await Promise.all([
             db.task.groupBy({ by: ['status'], where: { tenantId }, _count: true }),
-            db.task.groupBy({ by: ['severity'], where: { tenantId }, _count: true }),
-            db.task.groupBy({ by: ['type'], where: { tenantId }, _count: true }),
             db.task.count({ where: { tenantId, dueAt: { lt: now }, status: openFilter } }),
             db.task.count({ where: { tenantId, dueAt: { gte: now, lte: in7d }, status: openFilter } }),
-            db.task.count({ where: { tenantId, dueAt: { gte: now, lte: in30d }, status: openFilter } }),
             db.task.count({ where: { tenantId } }),
-            db.task.count({ where: { tenantId, createdAt: { gte: ago30d } } }),
-            db.task.count({ where: { tenantId, completedAt: { gte: ago30d } } }),
         ]);
 
         // NB `topControls` (open tasks per control) + `topLinkedEntities`
@@ -507,16 +500,19 @@ export class WorkItemRepository {
         // Trimmed. A "top controls by open tasks" widget is a worthwhile
         // follow-up; the aggregation can be re-added cheaply when a consumer
         // exists (see 2026-07-17-task-surface-defects impl note).
+        //
+        // Same treatment applied to `bySeverity`, `byType`, `dueIn30d` and
+        // `trend` (created30d / resolved30d): computed on every tasks-list
+        // load, read by nothing. The KPI strip renders total / byStatus.OPEN /
+        // overdue / dueIn7d, and the sparklines come from the separate
+        // /dashboard/trends endpoint — so those five extra queries (2 groupBy
+        // + 3 count) were pure cost. Re-add per field WITH its consumer.
 
         return {
             total,
             byStatus: Object.fromEntries(byStatus.map(r => [r.status, r._count])),
-            bySeverity: Object.fromEntries(bySeverity.map(r => [r.severity, r._count])),
-            byType: Object.fromEntries(byType.map(r => [r.type, r._count])),
             overdue: overdueCount,
             dueIn7d: due7dCount,
-            dueIn30d: due30dCount,
-            trend: { created30d: recentCreated, resolved30d: recentResolved },
         };
     }
 

@@ -210,6 +210,32 @@ describeFn('task reviewer gate + watcher fan-out (integration)', () => {
         expect(actorNotif).toBeNull();
     });
 
+    it('a MATERIAL edit (due-date reschedule) notifies the watcher', async () => {
+        const task = await createTask(ctxActor, { title: 'Reschedule me', type: 'TASK' });
+        await addTaskWatcher(ctxActor, task.id, reviewerId);
+        await updateTask(ctxActor, task.id, { dueAt: '2030-01-15' });
+
+        const notifs = await db.notification.findMany({
+            where: { tenantId: TENANT, userId: reviewerId, type: 'TASK_WATCH_UPDATE' },
+        });
+        expect(notifs.length).toBeGreaterThan(0);
+        expect(notifs.some((n) => n.message.includes('due'))).toBe(true);
+    });
+
+    it('a COSMETIC edit (title only) does NOT notify the watcher', async () => {
+        const task = await createTask(ctxActor, { title: 'Before', type: 'TASK' });
+        await addTaskWatcher(ctxActor, task.id, reviewerId);
+        const before = await db.notification.count({
+            where: { tenantId: TENANT, userId: reviewerId, type: 'TASK_WATCH_UPDATE' },
+        });
+        await updateTask(ctxActor, task.id, { title: 'After' });
+        const after = await db.notification.count({
+            where: { tenantId: TENANT, userId: reviewerId, type: 'TASK_WATCH_UPDATE' },
+        });
+        // A bell for every save trains people to ignore the bell.
+        expect(after).toBe(before);
+    });
+
     it('a comment notifies the watcher', async () => {
         const task = await createTask(ctxActor, { title: 'Commented task', type: 'TASK' });
         await addTaskWatcher(ctxActor, task.id, reviewerId);

@@ -426,18 +426,31 @@ describe('WorkItemRepository.metrics', () => {
         expect(db.control.findMany).not.toHaveBeenCalled();
     });
 
-    it('maps status/severity/type groupBy results', async () => {
-        db.task.groupBy
-            .mockResolvedValueOnce([{ status: 'OPEN', _count: 3 }])      // byStatus
-            .mockResolvedValueOnce([{ severity: 'HIGH', _count: 2 }])    // bySeverity
-            .mockResolvedValueOnce([{ type: 'TASK', _count: 4 }]);       // byType
+    it('maps the byStatus groupBy result', async () => {
+        db.task.groupBy.mockResolvedValueOnce([{ status: 'OPEN', _count: 3 }]);
         db.task.count.mockResolvedValue(1);
 
         const r = await WorkItemRepository.metrics(db as any, ctx);
         expect(r.byStatus).toEqual({ OPEN: 3 });
-        expect(r.bySeverity).toEqual({ HIGH: 2 });
-        expect(r.byType).toEqual({ TASK: 4 });
-        expect(r.trend).toEqual({ created30d: 1, resolved30d: 1 });
+        expect(r.total).toBe(1);
+        expect(r.overdue).toBe(1);
+        expect(r.dueIn7d).toBe(1);
+    });
+
+    it('computes ONLY the fields a surface reads (no dead aggregations)', async () => {
+        // PR-BB — bySeverity / byType / dueIn30d / trend were computed on every
+        // tasks-list load and read by nothing (the KPI strip renders total /
+        // byStatus.OPEN / overdue / dueIn7d; sparklines come from
+        // /dashboard/trends). Trimming them removed 2 groupBy + 3 count queries.
+        // Lock the shape so a field can't creep back without a consumer.
+        db.task.groupBy.mockResolvedValue([]);
+        db.task.count.mockResolvedValue(0);
+
+        const r = await WorkItemRepository.metrics(db as any, ctx);
+        expect(Object.keys(r).sort()).toEqual(['byStatus', 'dueIn7d', 'overdue', 'total']);
+        // One groupBy (status) + three counts (overdue, due7d, total).
+        expect(db.task.groupBy).toHaveBeenCalledTimes(1);
+        expect(db.task.count).toHaveBeenCalledTimes(3);
     });
 });
 
