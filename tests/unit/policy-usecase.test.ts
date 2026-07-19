@@ -39,6 +39,7 @@ jest.mock('@/app-layer/repositories/PolicyRepository', () => ({
     PolicyRepository: {
         list: jest.fn(),
         listPaginated: jest.fn(),
+        ackCountsByVersion: jest.fn(),
         getById: jest.fn(),
         getBySlug: jest.fn(),
         create: jest.fn(),
@@ -130,6 +131,67 @@ describe('listPolicies', () => {
         // non-PUBLISHED / version-less row annotates to a zero, not-outstanding summary.
         expect(rows).toEqual([{ id: 'p-1', acknowledgement: { assignedCount: 0, acknowledgedCount: 0, outstanding: false } }]);
         expect(PolicyRepository.list).toHaveBeenCalledWith(mockDb, readerCtx, { status: 'PUBLISHED' }, {});
+        // No PUBLISHED row with a current version ⇒ no aggregate is issued.
+        expect(PolicyRepository.ackCountsByVersion).not.toHaveBeenCalled();
+    });
+
+    it('annotates PUBLISHED rows from ONE aggregate keyed by current version', async () => {
+        (PolicyRepository.list as jest.Mock).mockResolvedValue([
+            { id: 'p-1', status: 'PUBLISHED', currentVersion: { id: 'v-1' } },
+            { id: 'p-2', status: 'PUBLISHED', currentVersion: { id: 'v-2' } },
+            // DRAFT + version-less rows never carry a live campaign.
+            { id: 'p-3', status: 'DRAFT', currentVersion: { id: 'v-3' } },
+            { id: 'p-4', status: 'PUBLISHED', currentVersion: null },
+        ]);
+        (PolicyRepository.ackCountsByVersion as jest.Mock).mockResolvedValue([
+            { policyVersionId: 'v-1', assigned: 10, acked: 3 },
+            { policyVersionId: 'v-2', assigned: 4, acked: 4 },
+        ]);
+
+        const rows = await listPolicies(readerCtx);
+
+        // Exactly one aggregate, scoped to the PUBLISHED current-version ids —
+        // v-3 (DRAFT) is excluded so a stale draft campaign can't leak in.
+        expect(PolicyRepository.ackCountsByVersion).toHaveBeenCalledTimes(1);
+        expect(PolicyRepository.ackCountsByVersion).toHaveBeenCalledWith(
+            mockDb,
+            readerCtx,
+            ['v-1', 'v-2'],
+        );
+        expect(rows.map((r: any) => r.acknowledgement)).toEqual([
+            { assignedCount: 10, acknowledgedCount: 3, outstanding: true },
+            { assignedCount: 4, acknowledgedCount: 4, outstanding: false },
+            { assignedCount: 0, acknowledgedCount: 0, outstanding: false },
+            { assignedCount: 0, acknowledgedCount: 0, outstanding: false },
+        ]);
+    });
+
+    it('treats a version absent from the aggregate as no campaign', async () => {
+        // A PUBLISHED version with zero assignments produces no GROUP BY row.
+        // It must annotate to zero/not-outstanding, never to `undefined`.
+        (PolicyRepository.list as jest.Mock).mockResolvedValue([
+            { id: 'p-1', status: 'PUBLISHED', currentVersion: { id: 'v-1' } },
+        ]);
+        (PolicyRepository.ackCountsByVersion as jest.Mock).mockResolvedValue([]);
+
+        const rows = await listPolicies(readerCtx);
+
+        expect(rows[0].acknowledgement).toEqual({
+            assignedCount: 0,
+            acknowledgedCount: 0,
+            outstanding: false,
+        });
+    });
+
+    it('forwards the outstandingAck filter to the repository', async () => {
+        (PolicyRepository.list as jest.Mock).mockResolvedValue([]);
+        await listPolicies(readerCtx, { outstandingAck: true });
+        expect(PolicyRepository.list).toHaveBeenCalledWith(
+            mockDb,
+            readerCtx,
+            { outstandingAck: true },
+            {},
+        );
     });
 });
 

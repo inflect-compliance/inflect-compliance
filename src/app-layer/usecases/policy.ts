@@ -34,47 +34,56 @@ export interface PolicyAcknowledgementSummary {
     outstanding: boolean;
 }
 
+const EMPTY_ACK_SUMMARY: PolicyAcknowledgementSummary = {
+    assignedCount: 0,
+    acknowledgedCount: 0,
+    outstanding: false,
+};
+
 /**
  * Batch-annotate list rows with their CURRENT-version acknowledgement rollup so
- * the library can show an "outstanding acknowledgements" KPI / column / filter
- * without an N+1. `acknowledgedCount` is the intersection of assigned ∧ acked
- * (voluntary acks by non-assigned users don't reduce the outstanding count, and
- * stale acks of a superseded version are excluded because we key on the current
- * version id). Only PUBLISHED policies with a current version can have a live
- * campaign; everything else annotates to zero / not-outstanding.
+ * the library can show its "outstanding acknowledgements" KPI / column / filter
+ * without an N+1.
+ *
+ * Backed by ONE JOIN'd aggregate (`PolicyRepository.ackCountsByVersion`) — it
+ * replaced a pair of `take: 20000` row fetches that were reduced in memory, so
+ * the rollup no longer silently truncates on a large campaign and costs two
+ * full table reads per list load.
+ *
+ * `acknowledgedCount` is the intersection of assigned ∧ acked (voluntary acks by
+ * non-assigned users don't reduce the outstanding count, and stale acks of a
+ * superseded version are excluded because we key on the current version id).
+ * Only PUBLISHED policies with a current version can have a live campaign;
+ * everything else annotates to zero / not-outstanding.
  */
 async function annotatePolicyAcknowledgements<
     T extends { status: string; currentVersion: { id: string } | null },
->(db: PrismaTx, policies: T[]): Promise<(T & { acknowledgement: PolicyAcknowledgementSummary })[]> {
+>(
+    db: PrismaTx,
+    ctx: RequestContext,
+    policies: T[],
+): Promise<(T & { acknowledgement: PolicyAcknowledgementSummary })[]> {
     const versionIds = policies
         .filter((p) => p.status === 'PUBLISHED' && p.currentVersion?.id)
         .map((p) => p.currentVersion!.id);
     if (versionIds.length === 0) {
-        return policies.map((p) => ({ ...p, acknowledgement: { assignedCount: 0, acknowledgedCount: 0, outstanding: false } }));
+        return policies.map((p) => ({ ...p, acknowledgement: EMPTY_ACK_SUMMARY }));
     }
-    const [assignments, acks] = await Promise.all([
-        db.policyAcknowledgementAssignment.findMany({ where: { policyVersionId: { in: versionIds } }, select: { policyVersionId: true, userId: true }, take: 20000 }),
-        db.policyAcknowledgement.findMany({ where: { policyVersionId: { in: versionIds } }, select: { policyVersionId: true, userId: true }, take: 20000 }),
-    ]);
-    const assignedByVer = new Map<string, Set<string>>();
-    for (const a of assignments) {
-        let s = assignedByVer.get(a.policyVersionId);
-        if (!s) { s = new Set(); assignedByVer.set(a.policyVersionId, s); }
-        s.add(a.userId);
-    }
-    const ackedByVer = new Map<string, Set<string>>();
-    for (const a of acks) {
-        let s = ackedByVer.get(a.policyVersionId);
-        if (!s) { s = new Set(); ackedByVer.set(a.policyVersionId, s); }
-        s.add(a.userId);
-    }
+    const counts = await PolicyRepository.ackCountsByVersion(db, ctx, versionIds);
+    const byVersion = new Map(counts.map((c) => [c.policyVersionId, c]));
     return policies.map((p) => {
         const vid = p.status === 'PUBLISHED' ? p.currentVersion?.id ?? null : null;
-        const assigned = vid ? assignedByVer.get(vid) : undefined;
-        const acked = vid ? ackedByVer.get(vid) : undefined;
-        const assignedCount = assigned?.size ?? 0;
-        const acknowledgedCount = assigned && acked ? [...assigned].filter((u) => acked.has(u)).length : 0;
-        return { ...p, acknowledgement: { assignedCount, acknowledgedCount, outstanding: hasOutstandingAcknowledgement({ assignedCount, acknowledgedCount }) } };
+        const row = vid ? byVersion.get(vid) : undefined;
+        if (!row) return { ...p, acknowledgement: EMPTY_ACK_SUMMARY };
+        const summary: PolicyAcknowledgementSummary = {
+            assignedCount: row.assigned,
+            acknowledgedCount: row.acked,
+            outstanding: hasOutstandingAcknowledgement({
+                assignedCount: row.assigned,
+                acknowledgedCount: row.acked,
+            }),
+        };
+        return { ...p, acknowledgement: summary };
     });
 }
 
@@ -86,7 +95,7 @@ export async function listPolicies(
     assertCanRead(ctx);
     return runInTenantContext(ctx, async (db) => {
         const rows = await PolicyRepository.list(db, ctx, filters, options);
-        return annotatePolicyAcknowledgements(db, rows);
+        return annotatePolicyAcknowledgements(db, ctx, rows);
     });
 }
 
@@ -96,6 +105,7 @@ export async function listPoliciesPaginated(ctx: RequestContext, params: PolicyL
         const page = await PolicyRepository.listPaginated(db, ctx, params);
         const items = await annotatePolicyAcknowledgements(
             db,
+            ctx,
             page.items as Array<{ status: string; currentVersion: { id: string } | null }>,
         );
         return { ...page, items };
@@ -707,6 +717,79 @@ export interface PublishPolicyOptions {
     bypassApprovalReason?: string;
 }
 
+/**
+ * Carry a required-acknowledgement campaign forward onto a newly-live version.
+ *
+ * A campaign is bound to a specific `policyVersionId`. Any operation that
+ * changes which version is LIVE — publishing a revision, or rolling back to a
+ * prior one — would otherwise leave the roster pointed at a version nobody was
+ * assigned to ("none required", assignedCount 0) while the previous campaign's
+ * assignments orphan against a version that is no longer live, and nobody is
+ * re-notified that the text they must follow has changed.
+ *
+ * Acks are deliberately NOT copied: the live content changed, so carried-forward
+ * users read as OUTSTANDING until they acknowledge the now-live version. That is
+ * the point of the campaign.
+ *
+ * Shared by `publishPolicy` and `rollbackPolicy` so the two can't drift — a
+ * rollback silently changing live content under an active campaign was the gap
+ * this helper closes.
+ *
+ * Returns the user ids to re-notify AFTER commit (empty when there is nothing
+ * to carry).
+ */
+async function carryForwardAckCampaign(
+    db: PrismaTx,
+    ctx: RequestContext,
+    args: {
+        fromVersionId: string | null | undefined;
+        toVersionId: string;
+        policyId: string;
+        policyTitle: string;
+        versionNumber: number;
+    },
+): Promise<string[]> {
+    const { fromVersionId, toVersionId, policyId, policyTitle, versionNumber } = args;
+    if (!fromVersionId || fromVersionId === toVersionId) return [];
+
+    const priorAssignments = await db.policyAcknowledgementAssignment.findMany({
+        where: { policyVersionId: fromVersionId },
+        // `assignedById` rides along so the ORIGINAL assigner is preserved —
+        // stamping the publisher would silently rewrite "requested by" on the
+        // roster at every revision, destroying audit attribution.
+        select: { userId: true, assignedById: true },
+        take: 5000,
+    });
+    if (priorAssignments.length === 0) return [];
+
+    // `@@unique([policyVersionId, userId])` guarantees one row per user, so a
+    // plain Map is a faithful userId → original-assigner index.
+    const assignerByUser = new Map(priorAssignments.map((a) => [a.userId, a.assignedById]));
+    const carriedAckUserIds = [...assignerByUser.keys()];
+
+    await db.policyAcknowledgementAssignment.createMany({
+        data: carriedAckUserIds.map((userId) => ({
+            policyVersionId: toVersionId,
+            userId,
+            assignedById: assignerByUser.get(userId) ?? ctx.userId,
+        })),
+        skipDuplicates: true,
+    });
+    await logEvent(db, ctx, {
+        action: 'POLICY_ACK_CARRIED_FORWARD',
+        entityType: 'Policy',
+        entityId: policyId,
+        details: `Carried acknowledgement requirement forward to version ${versionNumber} for ${carriedAckUserIds.length} user(s)`,
+        detailsJson: {
+            category: 'access',
+            entityName: 'Policy',
+            summary: `Re-requested acknowledgement of "${policyTitle}" from ${carriedAckUserIds.length} user(s)`,
+            after: { fromVersionId, toVersionId, assignedCount: carriedAckUserIds.length },
+        },
+    });
+    return carriedAckUserIds;
+}
+
 export async function publishPolicy(
     ctx: RequestContext,
     policyId: string,
@@ -796,33 +879,13 @@ export async function publishPolicy(
         // copied — the whole point is that the revised policy needs FRESH
         // acknowledgement, so carried-forward users read as outstanding until
         // they re-ack the new version.
-        let carriedAckUserIds: string[] = [];
-        if (outgoingVersionId && outgoingVersionId !== versionId) {
-            const priorAssignments = await db.policyAcknowledgementAssignment.findMany({
-                where: { policyVersionId: outgoingVersionId },
-                select: { userId: true },
-                take: 5000,
-            });
-            if (priorAssignments.length > 0) {
-                carriedAckUserIds = [...new Set(priorAssignments.map((a) => a.userId))];
-                await db.policyAcknowledgementAssignment.createMany({
-                    data: carriedAckUserIds.map((userId) => ({ policyVersionId: versionId, userId, assignedById: ctx.userId })),
-                    skipDuplicates: true,
-                });
-                await logEvent(db, ctx, {
-                    action: 'POLICY_ACK_CARRIED_FORWARD',
-                    entityType: 'Policy',
-                    entityId: policyId,
-                    details: `Carried acknowledgement requirement forward to version ${version.versionNumber} for ${carriedAckUserIds.length} user(s)`,
-                    detailsJson: {
-                        category: 'access',
-                        entityName: 'Policy',
-                        summary: `Re-requested acknowledgement of revised "${policy.title}" from ${carriedAckUserIds.length} user(s)`,
-                        after: { fromVersionId: outgoingVersionId, toVersionId: versionId, assignedCount: carriedAckUserIds.length },
-                    },
-                });
-            }
-        }
+        const carriedAckUserIds = await carryForwardAckCampaign(db, ctx, {
+            fromVersionId: outgoingVersionId,
+            toVersionId: versionId,
+            policyId,
+            policyTitle: policy.title,
+            versionNumber: version.versionNumber,
+        });
 
         // If we got here via the bypass path, emit the dedicated
         // audit row BEFORE the POLICY_PUBLISHED event so the timeline
@@ -969,6 +1032,8 @@ export async function rollbackPolicy(ctx: RequestContext, policyId: string) {
                 : withoutTarget
         ).slice(-MAX_LIFECYCLE_HISTORY);
 
+        const outgoingVersionId = policy.currentVersionId;
+
         await PolicyRepository.setCurrentVersion(db, ctx, policyId, target.versionId);
         await PolicyRepository.updateStatus(db, ctx, policyId, 'PUBLISHED');
         await db.policy.update({
@@ -977,6 +1042,20 @@ export async function rollbackPolicy(ctx: RequestContext, policyId: string) {
                 lifecycleVersion: policy.lifecycleVersion + 1,
                 lifecycleHistoryJson: nextHistory as unknown as Prisma.InputJsonValue,
             },
+        });
+
+        // A rollback changes which version is LIVE just as a publish does, so it
+        // carries the acknowledgement campaign with it. Without this, rolling
+        // back swapped the live text underneath an active campaign: the roster
+        // pointed at the restored version (assignedCount 0 — "none required")
+        // while everyone who had acknowledged the withdrawn revision stayed
+        // marked complete against content that is no longer in force.
+        const carriedAckUserIds = await carryForwardAckCampaign(db, ctx, {
+            fromVersionId: outgoingVersionId,
+            toVersionId: target.versionId,
+            policyId,
+            policyTitle: policy.title,
+            versionNumber: target.versionNumber,
         });
 
         await logEvent(db, ctx, {
@@ -994,8 +1073,37 @@ export async function rollbackPolicy(ctx: RequestContext, policyId: string) {
             metadata: { versionId: target.versionId, versionNumber: target.versionNumber },
         });
 
-        return PolicyRepository.getById(db, ctx, policyId);
+        const rolledBack = await PolicyRepository.getById(db, ctx, policyId);
+        return { rolledBack, carriedAckUserIds, policyTitle: policy.title, restoredVersionId: target.versionId };
     });
+
+    // Re-notify carried-forward assignees that the LIVE content changed and
+    // needs a fresh acknowledgement — outside the transaction, best-effort,
+    // exactly as publishPolicy does. The dedupeKey is scoped to the restored
+    // version so it fires once per rollback rather than once per policy.
+    if (result.carriedAckUserIds.length > 0) {
+        try {
+            await runInTenantContext(ctx, async (db) => {
+                const title = `Re-acknowledgement required: "${result.policyTitle}"`;
+                const message = `The policy "${result.policyTitle}" was rolled back to an earlier version. Please read and acknowledge the version now in force.`;
+                for (const userId of result.carriedAckUserIds) {
+                    await db.notification
+                        .create({
+                            data: {
+                                tenantId: ctx.tenantId,
+                                userId,
+                                type: 'GENERAL',
+                                title,
+                                message,
+                                linkUrl: `/policies/${policyId}`,
+                                dedupeKey: `POLICY_ACK_REQUIRED:${result.restoredVersionId}:${userId}`,
+                            },
+                        })
+                        .catch(() => { /* notification failure must not fail the rollback */ });
+                }
+            });
+        } catch { /* re-notify is best-effort */ }
+    }
 
     // Push the restored content to a linked SharePoint file exactly as
     // publishPolicy does, so the external doc doesn't go stale. Best-effort,
@@ -1012,7 +1120,9 @@ export async function rollbackPolicy(ctx: RequestContext, policyId: string) {
         });
     }
 
-    return result;
+    // The transaction now also carries the ack-campaign bookkeeping; callers
+    // still expect just the policy.
+    return result.rolledBack;
 }
 
 export async function archivePolicy(ctx: RequestContext, policyId: string) {

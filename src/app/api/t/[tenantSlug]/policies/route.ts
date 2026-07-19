@@ -18,6 +18,10 @@ const PolicyQuerySchema = z.object({
     language: z.string().optional(),
     q: z.string().optional().transform(normalizeQ),
     reviewBucket: z.enum(['overdue', 'upcoming']).optional(),
+    // Acknowledgement-completeness facet. Resolved server-side in the
+    // repository (a `currentVersionId IN (…)` narrowing), so it composes with
+    // the other filters and survives pagination.
+    outstanding: z.enum(['true']).optional(),
     includeDeleted: z.enum(['true', 'false']).optional(),
 }).strip();
 
@@ -42,6 +46,7 @@ export const GET = withApiErrorHandling(requirePermission<{ tenantSlug: string }
         language: query.language,
         q: query.q,
         reviewBucket: query.reviewBucket,
+        outstandingAck: query.outstanding === 'true',
       },
     });
     return jsonResponse(result);
@@ -56,6 +61,7 @@ export const GET = withApiErrorHandling(requirePermission<{ tenantSlug: string }
       language: query.language,
       q: query.q,
       reviewBucket: query.reviewBucket,
+      outstandingAck: query.outstanding === 'true',
     },
     { take: LIST_BACKFILL_CAP + 1 },
   );

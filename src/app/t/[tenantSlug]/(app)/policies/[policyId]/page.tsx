@@ -84,6 +84,24 @@ const RichTextEditor = dynamic(
 const APPROVAL_BADGE: Record<string, StatusBadgeVariant> = {
     PENDING: 'info', APPROVED: 'success', REJECTED: 'error',
 };
+
+/**
+ * Approval status → label, reusing the SAME `approval.*` keys the
+ * `<ApprovalBanner>` renders so the two surfaces speak with one vocabulary.
+ * Falls back to the raw value for an unmapped status rather than rendering
+ * blank.
+ */
+function approvalStatusLabel(
+    status: string,
+    tApproval: (key: string) => string,
+): string {
+    switch (status) {
+        case 'APPROVED': return tApproval('approved');
+        case 'REJECTED': return tApproval('rejected');
+        case 'PENDING': return tApproval('pendingReview');
+        default: return status;
+    }
+}
 // Real icon components (not string tokens) per event action. POLICY_REVIEWED
 // (fired by markPolicyReviewed) is now mapped.
 const EVENT_ICONS: Record<string, AppIconName> = {
@@ -112,6 +130,9 @@ type ContentMode = 'MARKDOWN' | 'EXTERNAL_LINK' | 'FILE';
 
 export default function PolicyDetailPage() {
     const t = useTranslations('policies');
+    // Same namespace the ApprovalBanner uses, so the per-version approval badge
+    // reads with identical vocabulary instead of the raw enum.
+    const tApproval = useTranslations('approval');
     const params = useParams();
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
@@ -499,8 +520,12 @@ export default function PolicyDetailPage() {
             requestedBy: pending.requestedBy ?? null,
             approvedBy: pending.approvedBy ?? null,
             decidedAt: pending.decidedAt ?? null,
-            comment: (pending as { comment?: string | null }).comment ?? null,
+            // `comment` is declared on the DTO now, so no cast.
+            comment: pending.comment ?? null,
             versionNumber: matchingVersion?.versionNumber ?? null,
+            // SoD: the banner must also block the version's AUTHOR from
+            // approving, exactly as the per-version card and the server do.
+            versionAuthor: matchingVersion?.createdBy ?? null,
         };
     })();
 
@@ -877,7 +902,7 @@ export default function PolicyDetailPage() {
                                         {vApprovals.map((a) => (
                                             <div key={a.id} className="flex items-center justify-between text-xs">
                                                 <div className="flex items-center gap-tight">
-                                                    <StatusBadge variant={APPROVAL_BADGE[a.status]}>{a.status}</StatusBadge>
+                                                    <StatusBadge variant={APPROVAL_BADGE[a.status]}>{approvalStatusLabel(a.status, tApproval)}</StatusBadge>
                                                     <span className="text-content-muted">
                                                         {t('detail.approvalBy', { name: a.requestedBy?.name || t('detail.unknown') })}
                                                         {a.decidedAt && ` · ${formatDate(a.decidedAt)}`}

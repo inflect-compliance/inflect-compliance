@@ -27,9 +27,11 @@ export const POLICY_COUNTS_STATUS = 'PUBLISHED' as const;
  * Acknowledgement refinement (2026-07-17): a policy still "counts" as ISSUED
  * the moment it is PUBLISHED, even before every assignee has acknowledged it —
  * this base predicate deliberately does NOT gate on acknowledgement. The
- * acknowledgement-completeness signal is instead SURFACED (policy-library KPI +
- * column + "outstanding acknowledgement" filter) via `hasOutstandingAcknowledgement`
- * below, so ack completion is no longer a leaf node. Auto-gating coverage /
+ * acknowledgement-completeness signal is instead SURFACED on the policy library
+ * via `hasOutstandingAcknowledgement` below — an "Outstanding acks" KPI card, an
+ * `acked/assigned` column, and an `outstanding=true` filter resolved server-side
+ * in `PolicyRepository.outstandingAckVersionIds` (so it survives pagination).
+ * Ack completion is therefore visible, not a leaf node. Auto-gating coverage /
  * readiness on unmet acknowledgement is a deliberate NON-change here: it would
  * materially move readiness scores and is a compliance-owner decision, not a
  * silent default. The helper is ready if that decision is taken.

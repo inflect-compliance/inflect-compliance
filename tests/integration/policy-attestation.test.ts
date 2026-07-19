@@ -14,7 +14,7 @@ import { randomUUID } from 'crypto';
 import { DB_URL, DB_AVAILABLE } from './db-helper';
 import { hashForLookup } from '@/lib/security/encryption';
 import { makeRequestContext } from '../helpers/make-context';
-import { createPolicy, getPolicy, publishPolicy, createPolicyVersion } from '@/app-layer/usecases/policy';
+import { createPolicy, getPolicy, publishPolicy, createPolicyVersion, listPolicies } from '@/app-layer/usecases/policy';
 import {
     attestPolicy,
     requirePolicyAcknowledgement,
@@ -171,5 +171,70 @@ describeFn('policy attestation loop (integration)', () => {
             where: { tenantId: TENANT_ID, userId: readerUserId, dedupeKey: `POLICY_ACK_REQUIRED:${v2.id}:${readerUserId}` },
         });
         expect(notif).not.toBeNull();
+    });
+
+    it('the list rollup counts the INTERSECTION — a voluntary ack by a non-assigned user does not count', async () => {
+        const p = await createPolicy(admin, { title: `Voluntary ${SUITE_TAG}`, content: '# v1' });
+        const full = await getPolicy(admin, p.id);
+        await publishPolicy(admin, p.id, full.currentVersion?.id ?? full.versions[0].id, { bypassApprovalReason: 'test' });
+
+        // Require the ADMIN only, then have the READER attest voluntarily.
+        // The reader is NOT assigned, so their ack must not reduce the
+        // outstanding count — this is what the LEFT JOIN on (version, user)
+        // buys over a plain groupBy of acknowledgements.
+        await requirePolicyAcknowledgement(admin, p.id, {
+            audience: { type: 'users', userIds: [adminUserId] },
+        });
+        await attestPolicy(reader, p.id);
+
+        const rows = (await listPolicies(admin)) as Array<{
+            id: string;
+            acknowledgement: { assignedCount: number; acknowledgedCount: number; outstanding: boolean };
+        }>;
+        const row = rows.find((r) => r.id === p.id);
+        expect(row?.acknowledgement).toEqual({
+            assignedCount: 1,
+            acknowledgedCount: 0,
+            outstanding: true,
+        });
+
+        // And once the ASSIGNED user acknowledges, the campaign closes.
+        await attestPolicy(admin, p.id);
+        const after = (await listPolicies(admin)) as Array<{ id: string; acknowledgement: { acknowledgedCount: number; outstanding: boolean } }>;
+        expect(after.find((r) => r.id === p.id)?.acknowledgement).toEqual({
+            assignedCount: 1,
+            acknowledgedCount: 1,
+            outstanding: false,
+        });
+    });
+
+    it('the outstandingAck filter narrows server-side, in the WHERE', async () => {
+        // Fully-acknowledged (closed in the previous test) vs still-outstanding.
+        const closedTitle = `Voluntary ${SUITE_TAG}`;
+        const openTitle = `Outstanding ${SUITE_TAG}`;
+
+        const open = await createPolicy(admin, { title: openTitle, content: '# v1' });
+        const openFull = await getPolicy(admin, open.id);
+        await publishPolicy(admin, open.id, openFull.currentVersion?.id ?? openFull.versions[0].id, { bypassApprovalReason: 'test' });
+        await requirePolicyAcknowledgement(admin, open.id, {
+            audience: { type: 'users', userIds: [readerUserId] },
+        });
+
+        const filtered = (await listPolicies(admin, { outstandingAck: true })) as Array<{
+            id: string;
+            title: string;
+            acknowledgement: { outstanding: boolean };
+        }>;
+        const titles = filtered.map((r) => r.title);
+        expect(titles).toContain(openTitle);
+        expect(titles).not.toContain(closedTitle);
+        // Every returned row genuinely has an unmet requirement — the filter is
+        // a `currentVersionId IN (…)` narrowing, not a post-fetch predicate.
+        for (const r of filtered) {
+            expect(r.acknowledgement.outstanding).toBe(true);
+        }
+
+        // A DRAFT policy is never outstanding (no published version to ack).
+        expect(filtered.map((r) => r.id)).not.toContain(draftPolicyId);
     });
 });

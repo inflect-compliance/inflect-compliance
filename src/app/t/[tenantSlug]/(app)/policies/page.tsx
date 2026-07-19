@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { getTenantCtx } from '@/app-layer/context';
 import { listPolicies } from '@/app-layer/usecases/policy';
+import type { PolicyFilters } from '@/app-layer/repositories/PolicyRepository';
 import { cachedSsrPayload } from '@/lib/cache/ssr-cache';
 import { PoliciesClient } from './PoliciesClient';
 
@@ -34,16 +35,28 @@ export default async function PoliciesPage({
         getTenantCtx({ tenantSlug }),
     ]);
 
-    // Build filters from searchParams for server-side data fetch
+    // Build filters from searchParams for server-side data fetch.
+    // `filters` is the STRING record handed to the client as its initial URL
+    // filter state; `queryFilters` is the typed shape the usecase takes. They
+    // diverge because `outstanding` is a URL string but a boolean server-side.
     const filters: Record<string, string> = {};
-    for (const key of ['q', 'status', 'category']) {
+    for (const key of ['q', 'status', 'category', 'reviewBucket', 'outstanding']) {
         const val = sp[key];
         if (typeof val === 'string' && val) filters[key] = val;
     }
+    const queryFilters: PolicyFilters = {
+        ...(filters.q ? { q: filters.q } : {}),
+        ...(filters.status ? { status: filters.status } : {}),
+        ...(filters.category ? { category: filters.category } : {}),
+        ...(filters.reviewBucket === 'overdue' || filters.reviewBucket === 'upcoming'
+            ? { reviewBucket: filters.reviewBucket }
+            : {}),
+        ...(filters.outstanding === 'true' ? { outstandingAck: true } : {}),
+    };
 
     // SSR payload cache — unfiltered load only; filtered bypasses (list-cache covers it).
     const fetchPolicies = () =>
-        listPolicies(ctx, Object.keys(filters).length > 0 ? filters : undefined, { take: SSR_PAGE_LIMIT });
+        listPolicies(ctx, Object.keys(queryFilters).length > 0 ? queryFilters : undefined, { take: SSR_PAGE_LIMIT });
     const policies =
         Object.keys(filters).length > 0
             ? await fetchPolicies()
