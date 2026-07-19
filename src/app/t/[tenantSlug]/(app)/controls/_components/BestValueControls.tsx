@@ -16,6 +16,7 @@ import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTenantContext, useTenantHref } from '@/lib/tenant-context-provider';
 import { formatCompactCurrency } from '@/lib/risk-coherence';
 import { SkeletonCard } from '@/components/ui/skeleton';
+import { StatusBadge } from '@/components/ui/status-badge';
 
 interface BestValueRow {
     controlId: string;
@@ -23,6 +24,9 @@ interface BestValueRow {
     name: string;
     annualCost: number;
     effectiveness: number;
+    /** Provenance of the effectiveness driving this rank — MEASURED test
+     *  pass rate vs a DECLARED analyst estimate. */
+    effectivenessSource: 'MEASURED' | 'DECLARED' | null;
     aleProtected: number;
     roiMultiple: number;
     quantifiedRiskCount: number;
@@ -78,11 +82,25 @@ export function BestValueControls({ limit = 5 }: { limit?: number }) {
                         >
                             {row.code ? `${row.code} — ${row.name}` : row.name}
                         </Link>
-                        <p className="text-xs text-content-subtle">
-                            {t('bestValue.savedLine', {
-                                saved: formatCompactCurrency(row.aleProtected, sym),
-                                cost: formatCompactCurrency(row.annualCost, sym),
-                            })}
+                        <p className="flex items-center gap-1.5 text-xs text-content-subtle">
+                            <span className="truncate">
+                                {t('bestValue.savedLine', {
+                                    saved: formatCompactCurrency(row.aleProtected, sym),
+                                    cost: formatCompactCurrency(row.annualCost, sym),
+                                })}
+                            </span>
+                            {/* Same provenance badge the single-control ROI card
+                                shows — a RANK must disclose whether it rests on
+                                measured tests or a declared guess. */}
+                            {row.effectivenessSource && (
+                                <StatusBadge
+                                    size="sm"
+                                    variant={row.effectivenessSource === 'MEASURED' ? 'success' : 'neutral'}
+                                    data-testid={`best-value-source-${row.controlId}`}
+                                >
+                                    {t(`roi.source.${row.effectivenessSource}` as Parameters<typeof t>[0])}
+                                </StatusBadge>
+                            )}
                         </p>
                     </div>
                     <span

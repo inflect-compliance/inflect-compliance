@@ -1963,7 +1963,9 @@
       "bestValueTitle": "Best-value controls",
       "controlHealthTitle": "Control health",
       "retry": "Retry",
-      "controlHealthTileAria": "{count} controls — {verdict}"
+      "controlHealthTileAria": "{count} controls — {verdict}",
+      "controlHealthMeasuredOnly": "Health reflects MEASURED test operating-effectiveness only. A declared effectiveness estimate informs valuation/ROI — not health — so a control with a declared score but no tests reads Unknown here.",
+      "controlHealthTruncated": "Showing health for the first {scanned} controls (scan cap {cap}). Controls beyond the cap have no verdict badge."
     },
     "templates": {
       "title": "Control Templates",

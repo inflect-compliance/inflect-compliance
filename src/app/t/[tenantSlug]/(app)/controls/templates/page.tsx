@@ -133,9 +133,7 @@ export default function ControlTemplatesPage() {
                 <InlineNotice variant="success" icon={null} id="install-success">{success}</InlineNotice>
             )}
 
-            {/* Install bar — R14-PR7 dropped the standalone search
-                input above this row. Find templates via ⌘K palette
-                or scan the list. */}
+            {/* Install bar — bulk-install the selected templates. */}
             {permissions.canWrite && (
                 <div className={cardVariants({ density: 'compact' })}>
                     <div className="flex items-center justify-end">

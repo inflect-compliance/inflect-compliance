@@ -155,24 +155,48 @@ export interface ControlHealthVerdictRow {
 export interface ControlHealthSummary {
     verdicts: ControlHealthVerdictRow[];
     counts: Record<ControlHealthVerdict, number>;
+    /** True when the tenant has MORE controls than `cap` — the verdicts/counts
+     *  cover only the first `cap` and some badges are therefore missing.
+     *  Surfaced in the UI; never silently truncated. */
+    truncated: boolean;
+    /** How many controls were actually scanned. */
+    scanned: number;
+    /** The scan cap that produced `truncated`. */
+    cap: number;
 }
+
+/** Upper bound on the tenant-wide health scan. Deliberately tenant-wide (not
+ *  per-page): the health FILTER facet resolves verdict → control-ids across the
+ *  whole tenant, so a page-scoped computation could not answer "which controls
+ *  are AT_RISK". The trade-off is this cap — reported via `truncated` so a large
+ *  tenant sees an explicit notice rather than silently missing badges. */
+export const HEALTH_VERDICT_SCAN_CAP = 5000;
 
 /**
  * Batched health verdict for EVERY (non-deleted) control — one groupBy for the
- * measured pass rate + one control read. Backs the control-list Health badge
- * and the controls-dashboard health summary. Uses the CHEAP signals (pass rate
- * + overdue + status/applicability); exceptions + evidence freshness are the
- * detail-only refinements, so the list verdict is a fast approximation of the
- * same gate (never a contradictory second notion).
+ * measured pass rate + one control read. Backs the control-list Health badge,
+ * the controls-dashboard health summary, AND the server-side health filter
+ * facet. Uses the CHEAP signals (pass rate + overdue + status/applicability);
+ * exceptions + evidence freshness are the detail-only refinements, so the list
+ * verdict is a fast approximation of the same gate (never a contradictory
+ * second notion).
+ *
+ * Bounded at `HEALTH_VERDICT_SCAN_CAP`; the result reports `truncated` +
+ * `scanned` so the UI can say so out loud (see `ControlHealthSummary` tile
+ * notice) instead of quietly dropping badges past the cap.
  */
 export async function getControlHealthVerdicts(ctx: RequestContext): Promise<ControlHealthSummary> {
     assertCanReadControls(ctx);
     return runInTenantContext(ctx, async (db) => {
-        const controls = await db.control.findMany({
+        // Ask for cap+1 so hitting the sentinel proves truncation (mirrors the
+        // list-page backfill-cap pattern), then slice back to the cap.
+        const scannedRows = await db.control.findMany({
             where: { tenantId: ctx.tenantId, deletedAt: null },
             select: { id: true, status: true, applicability: true, nextDueAt: true },
-            take: 5000,
+            take: HEALTH_VERDICT_SCAN_CAP + 1,
         });
+        const truncated = scannedRows.length > HEALTH_VERDICT_SCAN_CAP;
+        const controls = truncated ? scannedRows.slice(0, HEALTH_VERDICT_SCAN_CAP) : scannedRows;
         const effMap = await computeControlEffectivenessMap(
             db,
             ctx.tenantId,
@@ -195,6 +219,6 @@ export async function getControlHealthVerdicts(ctx: RequestContext): Promise<Con
             counts[verdict] += 1;
             return { controlId: c.id, verdict, passRate: eff?.passRate ?? null };
         });
-        return { verdicts, counts };
+        return { verdicts, counts, truncated, scanned: controls.length, cap: HEALTH_VERDICT_SCAN_CAP };
     });
 }

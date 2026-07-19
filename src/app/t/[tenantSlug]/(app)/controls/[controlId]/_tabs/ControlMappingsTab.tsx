@@ -32,15 +32,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Plus } from '@/components/ui/icons/nucleo';
 import type { FrameworkDTO, RequirementDTO, FrameworkMappingDTO } from '@/lib/dto';
 
-// Per-framework applicability override. The `applicability` /
-// `applicabilityJustification` fields live on the ControlRequirementLink
-// but are not yet surfaced by the mappings GET (see report) — extended
-// here locally so the row renders "Inherit" until the DTO/repo lands the
-// fields, then reflects the persisted override automatically.
+// Per-framework applicability override, stored on the ControlRequirementLink.
+// The mappings GET (`/controls/:id/requirements` →
+// `ControlRepository.listControlRequirementLinks`) returns both fields on every
+// row, so they're always PRESENT here — `null` means "inherit the control's
+// global applicability", not "the API didn't send it".
 type LinkApplicability = 'APPLICABLE' | 'NOT_APPLICABLE';
 type MappingRow = FrameworkMappingDTO & {
-    applicability?: LinkApplicability | null;
-    applicabilityJustification?: string | null;
+    applicability: LinkApplicability | null;
+    applicabilityJustification: string | null;
 };
 // Combobox uses 'INHERIT' as the sentinel for "no override" — it maps to
 // a null applicability on the wire (revert to the control's global value).

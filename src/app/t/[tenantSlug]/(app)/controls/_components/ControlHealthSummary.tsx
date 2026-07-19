@@ -20,6 +20,8 @@ import { Card } from '@/components/ui/card';
 import { Heading } from '@/components/ui/typography';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { SkeletonCard } from '@/components/ui/skeleton';
+import { InfoTooltip } from '@/components/ui/tooltip';
+import { InlineNotice } from '@/components/ui/inline-notice';
 import {
     CONTROL_HEALTH_VERDICT_VARIANT,
     CONTROL_HEALTH_VERDICTS,
@@ -28,6 +30,10 @@ import {
 
 interface HealthVerdictSummary {
     counts: Record<ControlHealthVerdict, number>;
+    /** Set when the tenant exceeds the health-scan cap — some badges are missing. */
+    truncated?: boolean;
+    scanned?: number;
+    cap?: number;
 }
 
 export function ControlHealthSummary() {
@@ -39,7 +45,21 @@ export function ControlHealthSummary() {
 
     return (
         <Card>
-            <Heading level={3} className="mb-4">{t('dashboard.controlHealthTitle')}</Heading>
+            <div className="mb-4 flex items-center gap-1.5">
+                <Heading level={3}>{t('dashboard.controlHealthTitle')}</Heading>
+                {/* Health is a MEASURED-only verdict — declared effectiveness
+                    informs valuation/ROI, never health. Without that note a
+                    control with declared 95 + no tests reads UNKNOWN here but
+                    95% on ROI, which looks like a contradiction. */}
+                <InfoTooltip content={t('dashboard.controlHealthMeasuredOnly')} />
+            </div>
+            {/* The verdict scan is capped; say so rather than silently dropping
+                badges for the controls past it. */}
+            {data?.truncated && (
+                <InlineNotice variant="warning" className="mb-4">
+                    {t('dashboard.controlHealthTruncated', { scanned: data.scanned ?? 0, cap: data.cap ?? 0 })}
+                </InlineNotice>
+            )}
             {isLoading && !data ? (
                 <SkeletonCard lines={2} />
             ) : (

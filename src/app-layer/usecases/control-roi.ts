@@ -128,6 +128,11 @@ export interface BestValueRow {
     name: string;
     annualCost: number;
     effectiveness: number;
+    /** Where `effectiveness` came from — a MEASURED test pass rate or a
+     *  DECLARED analyst estimate. Carried so a leaderboard RANK discloses
+     *  whether it rests on measured tests or a declared guess (the same
+     *  provenance the single-control ROI card shows). */
+    effectivenessSource: EffectivenessSource;
     aleProtected: number;
     roiMultiple: number;
     quantifiedRiskCount: number;
@@ -181,9 +186,17 @@ export async function getBestValueControls(
 
         const items = controls.map((c) => {
             const m = effMap.get(c.id);
-            const effectiveness = m && m.total > 0 && m.passRate !== null ? m.passRate : c.effectiveness;
+            const useMeasured = !!m && m.total > 0 && m.passRate !== null;
+            const effectiveness = useMeasured ? m!.passRate : c.effectiveness;
+            // Same MEASURED-beats-DECLARED reconciliation as the single-control
+            // path above — captured here so the rank can disclose its provenance.
+            const effectivenessSource: EffectivenessSource = useMeasured
+                ? 'MEASURED'
+                : c.effectiveness !== null
+                  ? 'DECLARED'
+                  : null;
             return {
-                control: { ...c, effectiveness },
+                control: { ...c, effectiveness, effectivenessSource },
                 verdict: computeControlRoi({
                     annualCost: c.annualCost,
                     effectiveness,
@@ -199,6 +212,7 @@ export async function getBestValueControls(
             // After rankByRoi the verdict is ok, so these are non-null.
             annualCost: control.annualCost as number,
             effectiveness: control.effectiveness as number,
+            effectivenessSource: control.effectivenessSource,
             aleProtected: result.aleProtected,
             roiMultiple: result.roiMultiple,
             quantifiedRiskCount: result.quantifiedRiskCount,
