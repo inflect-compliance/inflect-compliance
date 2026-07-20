@@ -2784,6 +2784,15 @@ exports[`API contract — per-schema snapshots schema: EvidenceUpdateRequest 1`]
         "string",
         "null"
       ]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 40
+      },
+      "maxItems": 50
     }
   },
   "description": "Partial update for an evidence record (metadata only — file content is immutable post-upload)."

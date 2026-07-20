@@ -219,6 +219,12 @@ export async function updateEvidence(ctx: RequestContext, id: string, data: z.in
 
         if (!evidence) throw notFound('Evidence not found');
 
+        // Tags reconcile to exactly the supplied set (three-state, like
+        // controlIds): omitted ⇒ untouched, [] ⇒ cleared.
+        if (data.tags !== undefined) {
+            await EvidenceRepository.setTags(db, ctx, id, data.tags);
+        }
+
         // EP-3 — reconcile control links to exactly `controlIds` when the
         // multi-select is present. Adds/removes join rows (never moves the
         // record). Omitted ⇒ links untouched.
@@ -813,6 +819,21 @@ export async function uploadEvidenceFile(
         // EP-3 — ONE Evidence + N join rows (no per-control clone, no
         // ControlEvidenceLink bridge for Evidence entities).
         await EvidenceRepository.createControlLinks(db, ctx, evidence.id, requestedControlIds);
+
+        // An upload started from a risk / asset creates the join row too —
+        // the singular FK above is provenance ("uploaded from"), the join
+        // is the association the tab reads. Without this an uploaded file
+        // would not appear on the very risk it was uploaded from.
+        if (riskId) {
+            await db.evidenceRiskLink.create({
+                data: { tenantId: ctx.tenantId, evidenceId: evidence.id, riskId, createdByUserId: ctx.userId },
+            });
+        }
+        if (assetId) {
+            await db.evidenceAssetLink.create({
+                data: { tenantId: ctx.tenantId, evidenceId: evidence.id, assetId, createdByUserId: ctx.userId },
+            });
+        }
 
         const eventAction = deduplicated ? 'FILE_DEDUP_REUSED' : 'EVIDENCE_FILE_UPLOADED';
         await logEvent(db, ctx, {

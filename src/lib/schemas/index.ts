@@ -403,6 +403,10 @@ export const UpdateEvidenceSchema = z.object({
     ownerUserId: z.string().optional().nullable(),    // Real user reference (preferred)
     reviewCycle: z.string().optional().nullable(),
     nextReviewDate: z.string().optional().nullable(),
+    // Tags — the second organisation dimension beside `folder`. When
+    // present the edit reconciles EvidenceTag rows to exactly this set;
+    // omitted ⇒ tags untouched (same three-state contract as controlIds).
+    tags: z.array(z.string().min(1).max(40)).max(50).optional(),
 }).strip().openapi('EvidenceUpdateRequest', {
     description: 'Partial update for an evidence record (metadata only — file content is immutable post-upload).',
 });

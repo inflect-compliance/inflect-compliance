@@ -148,6 +148,7 @@ model Risk {
   // Evidence attached directly to this risk (Evidence Library tag +
   // the risk Evidence tab). Mirrors Control/Task.
   evidence         Evidence[]
+  evidenceLinks    EvidenceRiskLink[]
   // RQ-2 — appetite breaches attributed to this risk.
   appetiteBreaches RiskAppetiteBreach[]
   // RQ-5 — hierarchy node memberships.

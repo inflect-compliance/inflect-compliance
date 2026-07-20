@@ -13,6 +13,8 @@ export interface EvidenceListFilters {
     controlId?: string;
     /** EP-3 Part 5 — category filter (exact match). */
     category?: string;
+    /** Tag filter — exact match on the normalised (lower-cased) tag. */
+    tag?: string;
     /**
      * B8 follow-up — folder filter. `__none__` is the sentinel for
      * "evidence with NULL or empty folder"; any other value is an
@@ -77,6 +79,8 @@ const evidenceListSelect = {
         select: { control: { select: { id: true, name: true, annexId: true, code: true } } },
     },
     fileRecord: { select: { id: true, mimeType: true } },
+    // Tag chips on the list row + the tag filter's client-side match.
+    tags: { select: { tag: true }, orderBy: { tag: 'asc' } },
 } as const;
 
 export class EvidenceRepository {
@@ -141,6 +145,11 @@ export class EvidenceRepository {
         if (filters?.category) {
             where.category = filters.category;
         }
+        if (filters?.tag) {
+            // Indexed join lookup on the normalised value — see
+            // EvidenceTag's @@index([tenantId, tag]).
+            where.tags = { some: { tag: filters.tag.trim().toLowerCase() } };
+        }
         if (filters?.folder) {
             // B8 follow-up — `__none__` matches rows with a NULL
             // or empty-string folder; any other value is exact.
@@ -194,6 +203,26 @@ export class EvidenceRepository {
                         },
                         orderBy: { createdAt: 'asc' },
                     },
+                    // The where-used footprint: one artifact can now be
+                    // reused across many controls, risks AND assets, so the
+                    // sheet reports all three rather than a single source.
+                    evidenceRiskLinks: {
+                        select: {
+                            id: true,
+                            riskId: true,
+                            risk: { select: { id: true, key: true, title: true } },
+                        },
+                        orderBy: { createdAt: 'asc' },
+                    },
+                    evidenceAssetLinks: {
+                        select: {
+                            id: true,
+                            assetId: true,
+                            asset: { select: { id: true, key: true, name: true } },
+                        },
+                        orderBy: { createdAt: 'asc' },
+                    },
+                    tags: { select: { id: true, tag: true }, orderBy: { tag: 'asc' } },
                     // Source task / risk / asset — powers the "uploaded
                     // from" back-reference on the evidence detail sheet.
                     task: { select: { id: true, key: true, title: true } },
@@ -505,5 +534,48 @@ export class EvidenceRepository {
             })),
             skipDuplicates: true,
         });
+    }
+
+    /**
+     * Reconcile an evidence row's tags to exactly `tags`.
+     *
+     * Tags are normalised (trimmed + lower-cased) so "SOC2", "soc2" and
+     * " soc2 " are one tag — the unique key is on the normalised value,
+     * and a filter that matched case-sensitively would be useless as an
+     * organisation dimension.
+     */
+    static async setTags(
+        db: PrismaTx,
+        ctx: RequestContext,
+        evidenceId: string,
+        tags: string[],
+    ): Promise<void> {
+        const normalised = [...new Set(
+            tags.map((t) => t.trim().toLowerCase()).filter(Boolean),
+        )];
+        await db.evidenceTag.deleteMany({
+            where: {
+                tenantId: ctx.tenantId,
+                evidenceId,
+                ...(normalised.length > 0 ? { tag: { notIn: normalised } } : {}),
+            },
+        });
+        if (normalised.length === 0) return;
+        await db.evidenceTag.createMany({
+            data: normalised.map((tag) => ({ tenantId: ctx.tenantId, evidenceId, tag })),
+            skipDuplicates: true,
+        });
+    }
+
+    /** Distinct tags in use, for the filter's option set. */
+    static async listTenantTags(db: PrismaTx, ctx: RequestContext): Promise<string[]> {
+        const rows = await db.evidenceTag.findMany({
+            where: { tenantId: ctx.tenantId },
+            select: { tag: true },
+            distinct: ['tag'],
+            orderBy: { tag: 'asc' },
+            take: 500,
+        });
+        return rows.map((r) => r.tag);
     }
 }

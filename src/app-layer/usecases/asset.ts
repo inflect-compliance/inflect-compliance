@@ -719,11 +719,17 @@ export async function getAssetEvidenceTab(ctx: RequestContext, assetId: string) 
             select: { id: true },
         });
         if (!asset) throw notFound('Asset not found');
-        const evidence = await db.evidence.findMany({
-            where: { assetId, tenantId: ctx.tenantId, deletedAt: null },
+        // Read through the join — mirrors the risk tab. `Evidence.assetId`
+        // survives as "uploaded from" provenance only; it could hold one
+        // asset, which forced a re-upload to attach the same document to a
+        // second one.
+        const links = await db.evidenceAssetLink.findMany({
+            where: { assetId, tenantId: ctx.tenantId, evidence: { deletedAt: null } },
             orderBy: { createdAt: 'desc' },
+            include: { evidence: true },
+            take: 500,
         });
-        return { links: [], evidence };
+        return { links: [], evidence: links.map((l) => l.evidence) };
     });
 }
 
@@ -745,12 +751,22 @@ export async function linkAssetEvidence(
         const evidence = await db.evidence.create({
             data: {
                 tenantId: ctx.tenantId,
+                // Kept as the "uploaded from" provenance stamp.
                 assetId,
                 type: 'LINK',
                 title: note || url,
                 content: url,
                 status: 'DRAFT',
                 ownerUserId: ctx.userId,
+            },
+        });
+        // The association itself lives in the join.
+        await db.evidenceAssetLink.create({
+            data: {
+                tenantId: ctx.tenantId,
+                evidenceId: evidence.id,
+                assetId,
+                createdByUserId: ctx.userId,
             },
         });
         await logEvent(db, ctx, {
@@ -774,13 +790,16 @@ export async function unlinkAssetEvidence(
 ) {
     assertCanWrite(ctx);
     const outcome = await runInTenantContext(ctx, async (db) => {
-        const evidence = await db.evidence.findFirst({
-            where: { id: evidenceId, assetId, tenantId: ctx.tenantId },
+        const link = await db.evidenceAssetLink.findFirst({
+            where: { evidenceId, assetId, tenantId: ctx.tenantId },
             select: { id: true },
         });
-        if (!evidence) throw notFound('Asset evidence not found');
-        await db.evidence.update({
-            where: { id: evidenceId },
+        if (!link) throw notFound('Asset evidence not found');
+        // Detach = drop the join row; the evidence survives in the library
+        // and stays attached to any OTHER assets it is linked to.
+        await db.evidenceAssetLink.delete({ where: { id: link.id } });
+        await db.evidence.updateMany({
+            where: { id: evidenceId, tenantId: ctx.tenantId, assetId },
             data: { assetId: null },
         });
         await logEvent(db, ctx, {
