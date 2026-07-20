@@ -23,7 +23,16 @@
 
 const mockDb = {
     asset: { findFirst: jest.fn(), findMany: jest.fn() },
-    evidence: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+    evidence: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
+    // Evidence↔Asset is a join now (one artifact reusable across many
+    // assets); the singular `Evidence.assetId` survives only as the
+    // "uploaded from" provenance stamp.
+    evidenceAssetLink: {
+        findMany: jest.fn().mockResolvedValue([]),
+        findFirst: jest.fn(),
+        create: jest.fn(),
+        delete: jest.fn(),
+    },
     // B7 — listAssets now folds in WorkItemRepository.countLinkedToEntities
     // (TaskLink count). Default to no links → taskTotal/taskDone = 0.
     taskLink: { findMany: jest.fn().mockResolvedValue([]) },
@@ -362,7 +371,10 @@ describe('listAssetsWithDeleted', () => {
 describe('getAssetEvidenceTab', () => {
     it('returns { links: [], evidence } shape', async () => {
         (mockDb.asset.findFirst as jest.Mock).mockResolvedValue({ id: 'a-1' });
-        (mockDb.evidence.findMany as jest.Mock).mockResolvedValue([{ id: 'e-1' }]);
+        // The tab reads through the join and flattens to the evidence rows.
+        (mockDb.evidenceAssetLink.findMany as jest.Mock).mockResolvedValue([
+            { id: 'l-1', evidence: { id: 'e-1' } },
+        ]);
 
         const res = await getAssetEvidenceTab(readerCtx, 'a-1');
 
@@ -372,7 +384,7 @@ describe('getAssetEvidenceTab', () => {
     it('throws notFound when the asset is missing (no evidence query fires)', async () => {
         (mockDb.asset.findFirst as jest.Mock).mockResolvedValue(null);
         await expect(getAssetEvidenceTab(readerCtx, 'missing')).rejects.toThrow(/Asset not found/i);
-        expect(mockDb.evidence.findMany).not.toHaveBeenCalled();
+        expect(mockDb.evidenceAssetLink.findMany).not.toHaveBeenCalled();
     });
 });
 
@@ -387,6 +399,13 @@ describe('linkAssetEvidence', () => {
         const createArgs = (mockDb.evidence.create as jest.Mock).mock.calls[0][0].data;
         expect(createArgs.type).toBe('LINK');
         expect(createArgs.content).toBe('https://example.com');
+        // The association itself lives in the join — without this row the
+        // upload would not appear on the asset it was attached from.
+        expect(mockDb.evidenceAssetLink.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: expect.objectContaining({ evidenceId: 'e-1', assetId: 'a-1' }),
+            }),
+        );
         expect(bumpEntityCacheVersion).toHaveBeenCalledWith(editorCtx, 'evidence');
         const payload = (logEvent as jest.Mock).mock.calls[0][2];
         expect(payload.action).toBe('ASSET_EVIDENCE_LINKED');
@@ -413,23 +432,29 @@ describe('linkAssetEvidence', () => {
 });
 
 describe('unlinkAssetEvidence', () => {
-    it('clears assetId on the Evidence row + emits unlink audit', async () => {
-        (mockDb.evidence.findFirst as jest.Mock).mockResolvedValue({ id: 'e-1' });
+    it('drops the join row + clears the provenance stamp + emits unlink audit', async () => {
+        (mockDb.evidenceAssetLink.findFirst as jest.Mock).mockResolvedValue({ id: 'l-1' });
 
         const res = await unlinkAssetEvidence(editorCtx, 'a-1', 'e-1');
 
         expect(res).toEqual({ success: true });
-        const updateArgs = (mockDb.evidence.update as jest.Mock).mock.calls[0][0];
-        expect(updateArgs.where.id).toBe('e-1');
+        // Detach = drop the join row. The evidence survives in the library
+        // and stays attached to any OTHER assets it links to.
+        expect(mockDb.evidenceAssetLink.delete).toHaveBeenCalledWith({ where: { id: 'l-1' } });
+        // …and the "uploaded from" stamp is cleared only when it pointed here.
+        const updateArgs = (mockDb.evidence.updateMany as jest.Mock).mock.calls[0][0];
+        expect(updateArgs.where).toEqual(
+            expect.objectContaining({ id: 'e-1', assetId: 'a-1' }),
+        );
         expect(updateArgs.data.assetId).toBeNull();
         const payload = (logEvent as jest.Mock).mock.calls[0][2];
         expect(payload.action).toBe('ASSET_EVIDENCE_UNLINKED');
     });
 
     it('throws notFound when the asset-evidence join row is missing', async () => {
-        (mockDb.evidence.findFirst as jest.Mock).mockResolvedValue(null);
+        (mockDb.evidenceAssetLink.findFirst as jest.Mock).mockResolvedValue(null);
         await expect(unlinkAssetEvidence(editorCtx, 'a-1', 'missing')).rejects.toThrow(/Asset evidence not found/i);
-        expect(mockDb.evidence.update).not.toHaveBeenCalled();
+        expect(mockDb.evidenceAssetLink.delete).not.toHaveBeenCalled();
     });
 
     it('rejects READER', async () => {
