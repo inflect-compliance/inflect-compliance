@@ -53,6 +53,7 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
     '/admin/members': { href: '/admin', label: 'Admin' },
     '/admin/notifications': { href: '/admin', label: 'Admin' },
     '/admin/personnel': { href: '/admin', label: 'Admin' },
+    '/admin/privacy': { href: '/admin', label: 'Admin' },
     '/admin/rbac': { href: '/admin', label: 'Admin' },
     '/admin/risk-appetite': { href: '/admin', label: 'Admin' },
     '/admin/risk-matrix': { href: '/admin', label: 'Admin' },
