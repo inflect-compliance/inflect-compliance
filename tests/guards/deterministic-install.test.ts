@@ -57,6 +57,25 @@ const stripComment = (line: string) => line.replace(/(^|\s)#.*$/, '');
 /** `npm install` and its aliases (`npm i`, `npm add`) — the verbs we ban. */
 const NPM_INSTALL = /\bnpm\s+(install|i|add)\b/;
 
+/**
+ * The one legitimate exception: installing a GLOBAL CLI at an EXACT
+ * pinned version, e.g. `npm install -g npm@12.0.1`.
+ *
+ * The rule above exists because `npm install` can mutate `package.json` /
+ * `package-lock.json` and drift from the lockfile. A `-g` install cannot:
+ * it writes outside the project entirely, touching no lockfile. And an
+ * exact `name@x.y.z` pin is deterministic by construction — the property
+ * this guard is protecting.
+ *
+ * The pin is required, not optional: `npm i -g npm@latest` still fails,
+ * because that reintroduces exactly the non-determinism the rule bans.
+ * (The runner stage upgrades the base image's bundled npm this way to
+ * clear CVEs in its vendored `tar` / `brace-expansion`, which no
+ * application dependency bump can reach.)
+ */
+const PINNED_GLOBAL_INSTALL =
+    /\bnpm\s+(install|i|add)\s+(-g|--global)\s+[@\w./-]+@\d+\.\d+\.\d+\b/;
+
 describe('deterministic install model', () => {
     it('every install path uses `npm ci`, never `npm install`', () => {
         const offenders: string[] = [];
@@ -64,12 +83,23 @@ describe('deterministic install model', () => {
             read(rel)
                 .split('\n')
                 .forEach((line, i) => {
-                    if (NPM_INSTALL.test(stripComment(line))) {
+                    const code = stripComment(line);
+                    if (NPM_INSTALL.test(code) && !PINNED_GLOBAL_INSTALL.test(code)) {
                         offenders.push(`${rel}:${i + 1}  ${line.trim()}`);
                     }
                 });
         }
         expect(offenders).toEqual([]);
+    });
+
+    it('an UNPINNED global install is still rejected', () => {
+        // The carve-out must not become a blanket escape hatch: only an
+        // exact pin qualifies, because that is what makes it deterministic.
+        expect(PINNED_GLOBAL_INSTALL.test('RUN npm install -g npm@latest')).toBe(false);
+        expect(PINNED_GLOBAL_INSTALL.test('RUN npm i -g prisma')).toBe(false);
+        expect(PINNED_GLOBAL_INSTALL.test('RUN npm install -g npm@12.0.1')).toBe(true);
+        // …and a project-local install is never exempt, pinned or not.
+        expect(PINNED_GLOBAL_INSTALL.test('RUN npm install prisma@7.8.0')).toBe(false);
     });
 
     it('the install surface actually invokes `npm ci` (guard is not vacuous)', () => {
