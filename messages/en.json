@@ -3781,7 +3781,8 @@
       "billing": "Billing",
       "apiKeys": "API keys",
       "emailNotifications": "Email Notifications",
-      "vendorTemplates": "Vendor Templates"
+      "vendorTemplates": "Vendor Templates",
+      "privacy": "Privacy & data protection"
     },
     "sso": {
       "crumbSelf": "SSO & Identity",
@@ -4632,7 +4633,8 @@
       "vendorTemplates": "Assessment Templates",
       "vendorReviews": "Assessment Reviews",
       "notifications": "Notifications",
-      "theme": "Theme"
+      "theme": "Theme",
+      "privacy": "Privacy & data protection"
     },
     "resourceLabels": {
       "controls": "Controls",
@@ -4670,7 +4672,8 @@
       "organization": "Organization",
       "security": "Security & governance",
       "risk": "Risk configuration",
-      "vendors": "Vendor assessments"
+      "vendors": "Vendor assessments",
+      "privacyData": "Privacy & data"
     },
     "identityNav": {
       "label": "Identity & access:",
@@ -4678,6 +4681,56 @@
       "scim": "SCIM provisioning",
       "entra": "Entra ID",
       "integrations": "Data connectors"
+    },
+    "privacy": {
+      "title": "Privacy & data protection",
+      "subtitle": "How this tenant's data is protected, retained, and located. This page reports posture only — each control is configured on the surface that owns it.",
+      "yes": "Configured",
+      "no": "Not configured",
+      "encryption": {
+        "title": "Encryption at rest",
+        "perTenantDek": "Per-tenant data-encryption key",
+        "active": "Active",
+        "globalKeyOnly": "Global key only",
+        "rotation": "Key rotation",
+        "rotationInFlight": "In progress",
+        "rotationIdle": "Idle",
+        "note": "Business-content fields are encrypted at rest under a per-tenant key wrapped by the master key. Rotation is triggered by an administrator through the key-rotation API."
+      },
+      "residency": {
+        "title": "Data residency",
+        "region": "Declared region",
+        "infrastructure": "Regional infrastructure",
+        "provisioned": "Provisioned",
+        "notProvisioned": "Not provisioned",
+        "declarativeNotice": "This records the residency commitment for the tenant, not where data physically resides. Production runs in a single region today, and the region is fixed at tenant creation — changing it requires an offline migration."
+      },
+      "retention": {
+        "title": "Retention & deletion",
+        "softDelete": "Soft-deleted records purged after",
+        "evidencePurge": "Expired evidence purged after",
+        "evidenceWithRule": "Evidence records with an explicit retention rule",
+        "days": "{count} days",
+        "platformDefaultNote": "These are platform-wide defaults, not tenant settings. Per-record retention can be set on individual evidence items.",
+        "configurableNote": "Retention windows are configured for this tenant."
+      },
+      "subProcessors": {
+        "title": "Sub-processors",
+        "flaggedVendors": "Vendors flagged as sub-processors",
+        "relationships": "Declared sub-processor relationships",
+        "note": "Sub-processor relationships, including purpose, data types, and country, are maintained on each vendor's detail page."
+      },
+      "auditStream": {
+        "title": "Audit streaming",
+        "destination": "External destination",
+        "note": "When configured, every committed audit event is signed and delivered to the tenant's SIEM endpoint. Streaming failures never block the audit write."
+      },
+      "dsar": {
+        "title": "Data subject requests",
+        "notEnabledTitle": "Intake is not enabled",
+        "notEnabledBody": "Data subject requests (GDPR Art. 15 export and Art. 17 erasure) are modelled but cannot be submitted or fulfilled from the application yet — the export and erasure pipelines are not wired. Handle requests through your existing manual process until this ships.",
+        "enabledNote": "Data subject requests can be submitted and tracked from this tenant."
+      }
     }
   },
   "riskManager": {

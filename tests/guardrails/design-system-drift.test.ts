@@ -356,10 +356,17 @@ describe('New page token discipline', () => {
         //     ListPageShell + DataTable + StatusBadge + formatDate primitives)
         //     in the unmigrated tally until promoted to MIGRATED_PAGES. Net +1:
         //     the same PR deleted the legacy World-A responder page.
+        //   - 131 (+1): Privacy posture — admin/privacy/page.tsx, the
+        //     read-only privacy & data-protection surface. Token-clean
+        //     (semantic content-*/bg-*/border-* only; Card + StatusBadge +
+        //     InlineNotice + Heading primitives, Nucleo icons, no legacy
+        //     `btn`/`badge`/`glass-card`); in the unmigrated tally only
+        //     because the surface is new and not yet promoted to
+        //     MIGRATED_PAGES.
         // Each increment names the epic + page + reason; promotion
         // to MIGRATED_PAGES is the path forward, never silent
         // floor-bumping.
-        expect(unmigrated.length).toBeLessThanOrEqual(130);
+        expect(unmigrated.length).toBeLessThanOrEqual(131);
     });
 
     it('migrated page count is at least 4', () => {
