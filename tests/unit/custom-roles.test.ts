@@ -370,3 +370,173 @@ describe('Custom Roles — Assign', () => {
         ).rejects.toThrow(/not found/i);
     });
 });
+
+// ─── Privilege escalation ────────────────────────────────────────────
+
+/**
+ * "You cannot grant what you do not hold."
+ *
+ * Custom roles are the one path where a permission set is authored by
+ * hand rather than derived from the Role enum, so it is the one path that
+ * can hand out MORE authority than its author has.
+ *
+ * Every entrypoint is gated on `assertCanAdmin`, which an ADMIN satisfies.
+ * But ADMIN deliberately lacks `admin.tenant_lifecycle` and
+ * `admin.owner_management` — the OWNER-only flags gating tenant deletion,
+ * tenant-DEK rotation and OWNER management. Before this guard an ADMIN
+ * could author (or simply assign) a role holding those and escalate to
+ * OWNER on the next request, bypassing a distinction the enum path
+ * enforces at compile time.
+ */
+describe('Custom Roles — privilege escalation', () => {
+    /** OWNER context: the base helper only sets canAdmin for 'ADMIN'. */
+    function ownerCtx(): RequestContext {
+        const base = makeCtx('ADMIN');
+        return {
+            ...base,
+            role: 'OWNER' as Role,
+            appPermissions: getPermissionsForRole('OWNER'),
+        };
+    }
+
+    /** A permission set holding the two OWNER-only admin flags. */
+    const OWNER_ONLY_PERMISSIONS = getPermissionsForRole('OWNER');
+
+    it('ADMIN cannot CREATE a role granting OWNER-only permissions', async () => {
+        mockTx.tenantCustomRole = { findFirst: jest.fn(async () => null), create: jest.fn() };
+
+        await expect(
+            createCustomRole(makeCtx('ADMIN'), {
+                name: 'Sneaky Owner',
+                baseRole: 'ADMIN',
+                permissionsJson: OWNER_ONLY_PERMISSIONS,
+            }),
+        ).rejects.toThrow(/cannot grant permissions you do not hold/i);
+
+        // The role must never reach the database.
+        expect(mockTx.tenantCustomRole.create).not.toHaveBeenCalled();
+    });
+
+    it('names the offending permissions so the admin can correct the input', async () => {
+        mockTx.tenantCustomRole = { findFirst: jest.fn(async () => null), create: jest.fn() };
+
+        await expect(
+            createCustomRole(makeCtx('ADMIN'), {
+                name: 'Sneaky Owner',
+                baseRole: 'ADMIN',
+                permissionsJson: OWNER_ONLY_PERMISSIONS,
+            }),
+        ).rejects.toThrow(/admin\.tenant_lifecycle|admin\.owner_management/);
+    });
+
+    it('ADMIN cannot UPDATE an existing role to add OWNER-only permissions', async () => {
+        mockTx.tenantCustomRole = {
+            findFirst: jest.fn(async () => ({
+                id: 'cr-1',
+                tenantId: 'tenant-1',
+                name: 'Compliance Lead',
+                baseRole: 'ADMIN',
+                permissionsJson: getPermissionsForRole('ADMIN'),
+                isActive: true,
+            })),
+            update: jest.fn(),
+        };
+
+        await expect(
+            updateCustomRole(makeCtx('ADMIN'), 'cr-1', {
+                permissionsJson: OWNER_ONLY_PERMISSIONS,
+            }),
+        ).rejects.toThrow(/cannot grant permissions you do not hold/i);
+        expect(mockTx.tenantCustomRole.update).not.toHaveBeenCalled();
+    });
+
+    it('ADMIN cannot ASSIGN an existing over-privileged role — the loophole', async () => {
+        // The role already exists (seeded, or authored by an OWNER), so
+        // blocking authorship alone would not close the escalation: the
+        // ADMIN just hands it to themselves.
+        mockTx.tenantMembership = {
+            findFirst: jest.fn(async () => ({
+                id: 'm-1',
+                tenantId: 'tenant-1',
+                userId: 'user-1',
+                role: 'ADMIN',
+                customRoleId: null,
+                status: 'ACTIVE',
+                user: { id: 'user-1', name: 'Self', email: 'admin@t.com' },
+            })),
+            update: jest.fn(),
+        };
+        mockTx.tenantCustomRole = {
+            findFirst: jest.fn(async () => ({
+                id: 'cr-owner',
+                tenantId: 'tenant-1',
+                isActive: true,
+                baseRole: 'ADMIN',
+                permissionsJson: OWNER_ONLY_PERMISSIONS,
+            })),
+        };
+
+        await expect(
+            assignCustomRole(makeCtx('ADMIN'), 'm-1', 'cr-owner'),
+        ).rejects.toThrow(/cannot grant permissions you do not hold/i);
+        expect(mockTx.tenantMembership.update).not.toHaveBeenCalled();
+    });
+
+    it('OWNER CAN create a role granting OWNER-only permissions (they hold them)', async () => {
+        mockTx.tenantCustomRole = {
+            findFirst: jest.fn(async () => null),
+            create: jest.fn(async () => ({ id: 'cr-2', name: 'Deputy Owner' })),
+        };
+
+        await expect(
+            createCustomRole(ownerCtx(), {
+                name: 'Deputy Owner',
+                baseRole: 'ADMIN',
+                permissionsJson: OWNER_ONLY_PERMISSIONS,
+            }),
+        ).resolves.toBeDefined();
+        expect(mockTx.tenantCustomRole.create).toHaveBeenCalled();
+    });
+
+    it('granting LESS than you hold is still allowed (no false positives)', async () => {
+        // Revoking is not escalation — the guard must not block an ADMIN
+        // from authoring an ordinary, narrower role.
+        mockTx.tenantCustomRole = {
+            findFirst: jest.fn(async () => null),
+            create: jest.fn(async () => ({ id: 'cr-3', name: 'Read Only Plus' })),
+        };
+
+        await expect(
+            createCustomRole(makeCtx('ADMIN'), {
+                name: 'Read Only Plus',
+                baseRole: 'READER',
+                permissionsJson: getPermissionsForRole('READER'),
+            }),
+        ).resolves.toBeDefined();
+    });
+
+    it('unassigning (null) is always allowed — it grants nothing', async () => {
+        mockTx.tenantMembership = {
+            findFirst: jest.fn(async () => ({
+                id: 'm-1',
+                tenantId: 'tenant-1',
+                userId: 'user-2',
+                role: 'READER',
+                customRoleId: 'cr-owner',
+                status: 'ACTIVE',
+                user: { id: 'user-2', name: 'T', email: 't@t.com' },
+            })),
+            update: jest.fn(async () => ({
+                id: 'm-1',
+                customRoleId: null,
+                role: 'READER',
+                user: { id: 'user-2', name: 'T', email: 't@t.com' },
+                customRole: null,
+            })),
+        };
+
+        await expect(
+            assignCustomRole(makeCtx('ADMIN'), 'm-1', null),
+        ).resolves.toBeDefined();
+    });
+});

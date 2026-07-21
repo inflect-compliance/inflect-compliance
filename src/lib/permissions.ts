@@ -397,3 +397,49 @@ export function parsePermissionsJson(json: unknown, baseRole: Role): PermissionS
 
     return result;
 }
+
+// ─── Privilege-escalation guard ──────────────────────────────────────
+
+/**
+ * A single permission the grantor does not itself hold.
+ * Shaped `domain.action` (e.g. `admin.tenant_lifecycle`).
+ */
+export type PermissionKey = string;
+
+/**
+ * Which permissions in `granted` exceed `held` — i.e. are `true` in the
+ * set being handed out while `false` for the person handing it out.
+ *
+ * ─── Why this exists ────────────────────────────────────────────────
+ *
+ * Custom roles resolve through `parsePermissionsJson`, which merges the
+ * role's JSON over its base-role defaults. `PERMISSION_SCHEMA.admin`
+ * includes `tenant_lifecycle` and `owner_management` — the two flags that
+ * separate OWNER from ADMIN and gate deleting the tenant, rotating the
+ * tenant DEK, and managing OWNERs.
+ *
+ * Every custom-role entrypoint is gated on `assertCanAdmin`, so an ADMIN
+ * could previously mint a role setting those two true, assign it to
+ * themselves, and hold OWNER-only powers on the next request. The enum
+ * path makes that impossible at compile time
+ * (`getPermissionsForRole('ADMIN').admin.tenant_lifecycle` is `false` by
+ * type); the custom-role path bypassed it entirely.
+ *
+ * The invariant is the ordinary one for delegated authority: you cannot
+ * grant what you do not hold. Revoking is always allowed — handing out
+ * LESS than you hold is not escalation.
+ */
+export function permissionsExceeding(
+    granted: PermissionSet,
+    held: PermissionSet,
+): PermissionKey[] {
+    const exceeded: PermissionKey[] = [];
+    for (const domain of Object.keys(PERMISSION_SCHEMA) as (keyof PermissionSet)[]) {
+        for (const action of PERMISSION_SCHEMA[domain]) {
+            const wants = (granted[domain] as Record<string, boolean> | undefined)?.[action];
+            const has = (held[domain] as Record<string, boolean> | undefined)?.[action];
+            if (wants === true && has !== true) exceeded.push(`${domain}.${action}`);
+        }
+    }
+    return exceeded;
+}
