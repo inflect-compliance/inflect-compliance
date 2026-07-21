@@ -61,6 +61,25 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # System deps for Prisma
 RUN apk add --no-cache openssl
 
+# Upgrade the npm CLI bundled in the base image.
+#
+# The image's vendored npm (under /usr/local/lib/node_modules/npm) ships
+# its own copies of `tar` and `brace-expansion`, and Trivy scans them as
+# part of the image. Those copies carried CVE-2026-59873 (tar, CRITICAL)
+# and CVE-2026-13149 (brace-expansion, HIGH) — neither reachable from
+# package-lock.json, so no application dependency bump clears them, and
+# `node:24-alpine` is already a floating tag.
+#
+# npm is NOT removable here: `scripts/entrypoint.sh` runs
+# `npx --yes prisma@… migrate deploy` on every container start, so the
+# CLI is load-bearing at runtime.
+#
+# Pinned rather than `@latest`, matching the entrypoint's rationale for
+# pinning Prisma — an unpinned CLI could ship a breaking change silently.
+# Bump this when a future advisory lands against the bundled tree.
+# npm 12.0.1 vendors tar 7.5.19 + brace-expansion 5.0.7 (both patched).
+RUN npm install -g npm@12.0.1 && npm cache clean --force
+
 # Non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
