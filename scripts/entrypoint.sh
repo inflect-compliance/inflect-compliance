@@ -21,7 +21,7 @@ echo "╚═══════════════════════�
 # to 7.8.0 in lockstep with the migration that landed in #140.
 echo ""
 echo "→ Applying database migrations..."
-npx --yes prisma@7.8.0 migrate deploy --schema=./prisma/schema
+npx --yes prisma@7.9.0 migrate deploy --schema=./prisma/schema
 echo "✓ Migrations applied"
 
 # ── 1b. Seed self-assessment library content (idempotent) ──
