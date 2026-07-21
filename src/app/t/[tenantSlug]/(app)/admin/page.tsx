@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { Shield, CreditCard, KeyRound, ShieldCheck, ShieldPlus, Users, UserCog, CloudCog, Plug, Palette, Grid3x3, Gauge, Bell, ScrollText, Globe, Laptop, GraduationCap, ClipboardList, ClipboardCheck } from 'lucide-react';
+import { Shield, CreditCard, KeyRound, ShieldCheck, ShieldPlus, Users, UserCog, CloudCog, Plug, Palette, Grid3x3, Gauge, Bell, ScrollText, Globe, Laptop, GraduationCap, ClipboardList, ClipboardCheck, Lock } from 'lucide-react';
 import { Robot } from '@/components/ui/icons/nucleo';
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button-variants';
@@ -74,6 +74,16 @@ export default async function AdminPage({
                 { href: '/admin/trust-center', id: 'trust-center-pill-btn', icon: <Globe className={iconCls} />, label: t('nav.trustCenter') },
                 { href: '/admin/audit-log', id: 'audit-log-pill-btn', icon: <ScrollText className={iconCls} />, label: t('auditLog') },
                 { href: '/admin/mcp', id: 'mcp-pill-btn', icon: <Robot className={iconCls} />, label: 'MCP' },
+            ],
+        },
+        {
+            // Privacy is its own domain rather than a Security pill: the page
+            // spans residency, retention, sub-processors and DSAR posture, and
+            // grouping it under Security would bury the data-protection story
+            // that a DPO or auditor comes looking for.
+            title: t('section.privacyData'),
+            pills: [
+                { href: '/admin/privacy', id: 'privacy-pill-btn', icon: <Lock className={iconCls} />, label: t('nav.privacy') },
             ],
         },
         {

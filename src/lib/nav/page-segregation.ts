@@ -161,6 +161,7 @@ export const SUBPAGES: readonly string[] = [
     '/admin/notifications',
     '/admin/personnel',
     '/admin/rbac',
+    '/admin/privacy',
     '/admin/risk-appetite',
     '/admin/risk-matrix',
     '/admin/roles',
