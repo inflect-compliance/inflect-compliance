@@ -101,6 +101,8 @@ describe('PermissionSet admin capabilities', () => {
             scim: true,
             tenant_lifecycle: true,
             owner_management: true,
+            compliance_dsar_view: true,
+            compliance_dsar_manage: true,
         });
     });
 
@@ -114,6 +116,8 @@ describe('PermissionSet admin capabilities', () => {
             scim: true,
             tenant_lifecycle: false,
             owner_management: false,
+            compliance_dsar_view: true,
+            compliance_dsar_manage: true,
         });
     });
 
@@ -127,10 +131,12 @@ describe('PermissionSet admin capabilities', () => {
             scim: false,
             tenant_lifecycle: false,
             owner_management: false,
+            compliance_dsar_view: false,
+            compliance_dsar_manage: false,
         });
     });
 
-    it('AUDITOR has no admin permissions', () => {
+    it('AUDITOR can READ the DSAR register but holds no other admin permission', () => {
         const perms = getPermissionsForRole('AUDITOR');
         expect(perms.admin).toEqual({
             view: false,
@@ -140,6 +146,8 @@ describe('PermissionSet admin capabilities', () => {
             scim: false,
             tenant_lifecycle: false,
             owner_management: false,
+            compliance_dsar_view: true,
+            compliance_dsar_manage: false,
         });
     });
 
@@ -153,6 +161,8 @@ describe('PermissionSet admin capabilities', () => {
             scim: false,
             tenant_lifecycle: false,
             owner_management: false,
+            compliance_dsar_view: false,
+            compliance_dsar_manage: false,
         });
     });
 });

@@ -84,6 +84,7 @@ export default async function AdminPage({
             title: t('section.privacyData'),
             pills: [
                 { href: '/admin/privacy', id: 'privacy-pill-btn', icon: <Lock className={iconCls} />, label: t('nav.privacy') },
+                { href: '/admin/dsar-requests', id: 'dsar-requests-pill-btn', icon: <ClipboardList className={iconCls} />, label: t('nav.dsarRequests') },
             ],
         },
         {

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import {
     ShieldCheck,
@@ -184,18 +185,46 @@ export default async function AdminPrivacyPage({
                 <p className="text-xs text-content-muted">{t('privacy.auditStream.note')}</p>
             </Card>
 
-            {/* ── DSAR — explicitly unavailable ── */}
+            {/* ── DSAR ── Intake and fulfilment are reported SEPARATELY: the
+                 register records requests, but nothing here exports or erases.
+                 A single "DSAR: enabled" line would imply a pipeline that does
+                 not exist. ── */}
             <Card className="space-y-default" id="privacy-dsar-card">
                 <div className="flex items-center gap-compact">
                     <UserFocus className={iconCls} />
                     <Heading level={2}>{t('privacy.dsar.title')}</Heading>
                 </div>
-                {posture.dsar.intakeEnabled ? (
-                    <p className="text-sm text-content-muted">{t('privacy.dsar.enabledNote')}</p>
-                ) : (
-                    <InlineNotice variant="warning" title={t('privacy.dsar.notEnabledTitle')}>
-                        {t('privacy.dsar.notEnabledBody')}
+                <dl className="space-y-tight text-sm">
+                    <div className="flex items-center justify-between gap-default">
+                        <dt className="text-content-muted">{t('privacy.dsar.register')}</dt>
+                        <dd>
+                            <StatusBadge variant={posture.dsar.intakeEnabled ? 'success' : 'neutral'}>
+                                {posture.dsar.intakeEnabled ? t('privacy.dsar.registerOn') : t('privacy.dsar.registerOff')}
+                            </StatusBadge>
+                        </dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-default">
+                        <dt className="text-content-muted">{t('privacy.dsar.fulfilment')}</dt>
+                        <dd>
+                            <StatusBadge variant={posture.dsar.automatedFulfilment ? 'success' : 'warning'}>
+                                {posture.dsar.automatedFulfilment ? t('privacy.dsar.fulfilmentAuto') : t('privacy.dsar.fulfilmentManual')}
+                            </StatusBadge>
+                        </dd>
+                    </div>
+                </dl>
+                {!posture.dsar.automatedFulfilment && (
+                    <InlineNotice variant="warning" title={t('privacy.dsar.manualTitle')}>
+                        {t('privacy.dsar.manualBody')}
                     </InlineNotice>
+                )}
+                {posture.dsar.intakeEnabled && (
+                    <Link
+                        href={tenantHref('/admin/dsar-requests')}
+                        className="text-sm text-content-accent hover:underline"
+                        id="privacy-dsar-register-link"
+                    >
+                        {t('privacy.dsar.openRegister')}
+                    </Link>
                 )}
             </Card>
         </div>

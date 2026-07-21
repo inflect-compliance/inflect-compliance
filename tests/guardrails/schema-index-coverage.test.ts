@@ -158,6 +158,11 @@ const FK_INDEX_EXEMPT: Record<string, string> = {
     'TenantApiKey.createdById': R_ACTOR,
     'TenantDeviceToken.createdById': R_ACTOR,
     'TenantMembership.invitedByUserId': R_ACTOR,
+    // Accountable staff member on a DSAR. The register is queried by status +
+    // by the subject, never "every DSAR handled by admin X" — and the table is
+    // small by nature (one row per rights request). No tenantId exists on this
+    // model, so the [tenantId, fk] composite escape is unavailable regardless.
+    'DataSubjectRequest.handledById': R_ACTOR,
     'AccessReview.createdByUserId': R_ACTOR,
     'AccessReview.closedByUserId': R_ACTOR,
     'AccessReview.deletedByUserId': R_ACTOR,

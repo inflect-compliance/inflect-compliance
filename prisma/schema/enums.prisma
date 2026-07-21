@@ -1163,14 +1163,24 @@ enum DataSubjectRequestType {
   ERASURE
 }
 
-/// DSAR workflow state. RECEIVED → VERIFIED (email click) → IN_PROGRESS
-/// (job running) → COMPLETED, or → REJECTED (see rejectionReason).
+/// DSAR workflow state. RECEIVED → VERIFIED (email click, or an admin
+/// recording out-of-band verification) → IN_PROGRESS → COMPLETED, or
+/// → REJECTED (see rejectionReason), or → CANCELED.
+///
+/// CANCELED is distinct from REJECTED on purpose: "the subject withdrew the
+/// request" and "we refused the request" are different facts to a regulator,
+/// and a register that conflates them answers the wrong question under audit.
+/// The row is always retained — nothing in this workflow deletes.
+///
+/// The authoritative transition graph is DSAR_TRANSITIONS in
+/// src/app-layer/domain/dsar-status.ts.
 enum DataSubjectRequestStatus {
   RECEIVED
   VERIFIED
   IN_PROGRESS
   COMPLETED
   REJECTED
+  CANCELED
 }
 
 /// NIS2 Article 23 incident severity. Four-level scale; HIGH/CRITICAL

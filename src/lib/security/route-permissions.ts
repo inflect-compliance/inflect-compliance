@@ -80,6 +80,27 @@ const T = String.raw`\/api\/t\/[^/]+`;
 // ─── The map ────────────────────────────────────────────────────────
 
 export const ROUTE_PERMISSIONS: readonly RoutePermissionRule[] = [
+    // ── DSAR register (manual-fulfilment queue) ─────────────────────
+    // Split view/manage: AUDITOR holds _view because reading the
+    // rights-request log IS the auditor's job, but must never advance a
+    // request. Two rules rather than one so the GET stays readable to a
+    // role that cannot mutate.
+    {
+        path: new RegExp(`^${T}\\/admin\\/dsar-requests(\\/.*)?$`),
+        methods: ['GET'],
+        permission: 'admin.compliance_dsar_view',
+        note:
+            'Reading the GDPR Art.15/17 rights-request register — includes ' +
+            'the identity of data subjects who exercised a right.',
+    },
+    {
+        path: new RegExp(`^${T}\\/admin\\/dsar-requests(\\/.*)?$`),
+        methods: ['POST', 'PATCH'],
+        permission: 'admin.compliance_dsar_manage',
+        note:
+            'Recording and advancing rights requests — a staff action with ' +
+            'legal consequence, so AUDITOR observes but never transitions.',
+    },
     // ── Member management ───────────────────────────────────────────
     {
         path: new RegExp(`^${T}\\/admin\\/members(\\/.*)?$`),

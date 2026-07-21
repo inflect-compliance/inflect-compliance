@@ -363,10 +363,17 @@ describe('New page token discipline', () => {
         //     `btn`/`badge`/`glass-card`); in the unmigrated tally only
         //     because the surface is new and not yet promoted to
         //     MIGRATED_PAGES.
+        //   - 133 (+2): DSAR manual register — admin/dsar-requests/page.tsx
+        //     + DsarRegisterClient.tsx, the GDPR Art.15/17 rights-request
+        //     log. Token-clean (semantic tokens only; ListPageShell +
+        //     DataTable + StatusBadge + InlineNotice + Nucleo icons, no
+        //     legacy btn/badge/glass-card); in the unmigrated tally only
+        //     because the surface is new and not yet promoted to
+        //     MIGRATED_PAGES.
         // Each increment names the epic + page + reason; promotion
         // to MIGRATED_PAGES is the path forward, never silent
         // floor-bumping.
-        expect(unmigrated.length).toBeLessThanOrEqual(131);
+        expect(unmigrated.length).toBeLessThanOrEqual(133);
     });
 
     it('migrated page count is at least 4', () => {

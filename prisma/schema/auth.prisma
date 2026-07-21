@@ -984,6 +984,8 @@ model User {
   processMapSnapshotsCreated    ProcessMapSnapshot[]            @relation("ProcessMapSnapshotCreatedBy")
   // DSAR (GDPR Art. 15/17) — data-subject export/erasure requests.
   dataSubjectRequests           DataSubjectRequest[]
+  /// DSARs this user has handled as staff (distinct from ones they filed).
+  dsarRequestsHandled           DataSubjectRequest[]         @relation("DsarHandler")
 }
 
 model Account {
@@ -1334,6 +1336,20 @@ model DataSubjectRequest {
   /// deleted after consumption or expiry, whichever is first.
   exportUrl       String?
   exportExpiresAt DateTime?
+  /// Staff member who last advanced this request. Fulfilment is MANUAL —
+  /// this is the accountable human, and a register without one is not
+  /// defensible under audit.
+  handledById     String?
+  handledBy       User?                    @relation("DsarHandler", fields: [handledById], references: [id])
+  /// Free-text record of what was actually done to fulfil the request.
+  ///
+  /// Deliberately NOT in the field-encryption manifest. DataSubjectRequest is
+  /// cross-tenant (no tenantId), but the encryption middleware keys on the
+  /// ACTING request's tenantId — so a note written by tenant A's admin would
+  /// be encrypted under tenant A's DEK, and tenant B's admin opening the same
+  /// request would hit `decryptWithKeyOrPrevious`, which THROWS on failure.
+  /// The read would crash rather than degrade. Sanitised on write instead.
+  fulfilmentNotes String?
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
 

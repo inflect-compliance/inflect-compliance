@@ -17,10 +17,12 @@
  *   • `retention.tenantConfigurable: false` — the sweep windows are module
  *     constants in `jobs/data-lifecycle.ts`, not per-tenant settings. Only
  *     per-record Evidence retention is user-controlled.
- *   • `dsar.intakeEnabled: false` — the `DataSubjectRequest` model exists but
- *     `jobs/dsar-export.ts` / `dsar-erasure.ts` throw unconditionally and are
- *     not registered. There is no write path. A page that offered a DSAR
- *     queue would imply a GDPR Art.15/17 capability that cannot run.
+ *   • `dsar.intakeEnabled: true` / `automatedFulfilment: false` — rights
+ *     requests can be RECORDED and tracked in the admin register, but nothing
+ *     exports or erases: `jobs/dsar-export.ts` / `dsar-erasure.ts` still throw
+ *     unconditionally and are unregistered. The two flags are deliberately
+ *     separate. Collapsing them into one "DSAR works" boolean is exactly the
+ *     overstatement this module exists to prevent.
  *
  * @module app-layer/usecases/privacy-posture
  */
@@ -68,8 +70,19 @@ export interface PrivacyPosture {
         configured: boolean;
     };
     dsar: {
-        /** False — see module doc. No intake or execution path exists. */
+        /**
+         * True — rights requests can be RECORDED and tracked in the admin
+         * register (`/admin/dsar-requests`).
+         */
         intakeEnabled: boolean;
+        /**
+         * False — fulfilment is MANUAL. The export bundle and erasure cascade
+         * (docs/dsar.md Stage 2/3) are not built; both jobs throw and are
+         * unregistered. Marking a request COMPLETED records that a human did
+         * the work out-of-band. These two flags are separate precisely so the
+         * page cannot imply execution just because intake exists.
+         */
+        automatedFulfilment: boolean;
         coolingOffHours: number;
         exportTtlDays: number;
     };
@@ -130,7 +143,8 @@ export async function getPrivacyPosture(ctx: RequestContext): Promise<PrivacyPos
             subProcessors: { flaggedVendorCount, relationshipCount },
             auditStream: { configured: Boolean(securitySettings?.auditStreamUrl) },
             dsar: {
-                intakeEnabled: false,
+                intakeEnabled: true,
+                automatedFulfilment: false,
                 coolingOffHours: DSAR_COOLING_OFF_HOURS,
                 exportTtlDays: DSAR_EXPORT_TTL_DAYS,
             },
