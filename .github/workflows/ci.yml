@@ -169,6 +169,13 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
+      # License gate — fails the build if a production dependency ever ships
+      # a network-copyleft or non-compete license (AGPL / SSPL / BUSL /
+      # Commons Clause) that would poison Inflect's own BUSL-1.1 / hosted
+      # distribution. See LICENSING.md.
+      - name: "Gate: dependency licenses"
+        run: npm run license:check
+
   # ═══════════════════════════════════════════════════════════════
   #  Job 2: Typecheck — TypeScript strict compilation
   #  Fast, no DB needed. Catches type errors early.
