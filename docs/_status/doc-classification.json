@@ -1714,6 +1714,9 @@
         },
         "docs/implementation-notes/2026-07-19-evidence-reuse-tags-and-polish.md": {
             "class": "historical"
+        },
+        "docs/implementation-notes/2026-07-21-custom-role-privilege-escalation.md": {
+            "class": "historical"
         }
     }
 }

@@ -2184,10 +2184,28 @@ Reviewed at least annually.` },
     // can navigate to a detail page.
     const existingPolicies = await prisma.policy.count({ where: { tenantId: tenant.id } });
     if (existingPolicies === 0) {
-        const toSeed = ['Information Security Policy', 'Access Control Policy', 'Incident Response Policy'];
+        // These titles MUST exist in one of the policy-template fixtures
+        // loaded above (ciso-toolkit / imported / original-gaps). They
+        // previously named templates that do not exist — 'Access Control
+        // Policy' and 'Incident Response Policy' are CONTROL titles, not
+        // policy templates — so the `continue` below silently skipped two
+        // of the three and every seeded tenant got ONE policy while this
+        // block claimed three. `tests/e2e/data-table-platform.spec.ts`
+        // documents "Seed provisions 3 published policies"; it was wrong.
+        const toSeed = [
+            'Information Security Policy',
+            'Access Management Policy',
+            'Incident Management Policy',
+        ];
+        const missingTemplates: string[] = [];
         for (const title of toSeed) {
             const template = await prisma.policyTemplate.findFirst({ where: { title } });
-            if (!template) continue;
+            if (!template) {
+                // Loudly, not silently: a renamed or removed fixture entry
+                // must surface here rather than quietly shrinking the seed.
+                missingTemplates.push(title);
+                continue;
+            }
             const policy = await prisma.policy.create({
                 data: {
                     tenantId: tenant.id,
@@ -2214,7 +2232,17 @@ Reviewed at least annually.` },
                 data: { currentVersionId: version.id },
             });
         }
-        console.log('✅ Policies seeded (3 published policies)');
+        // Report what ACTUALLY landed, not what was intended — the old
+        // hardcoded "(3 published policies)" is precisely what hid this.
+        const seededCount = await prisma.policy.count({ where: { tenantId: tenant.id } });
+        if (missingTemplates.length > 0) {
+            console.warn(
+                `⚠️  Policy seed: ${missingTemplates.length} template(s) not found and skipped: ` +
+                `${missingTemplates.join(', ')}. Check the policy-template fixtures — a rename ` +
+                `or removal silently shrinks the seeded policy set.`,
+            );
+        }
+        console.log(`✅ Policies seeded (${seededCount} published ${seededCount === 1 ? 'policy' : 'policies'})`);
     }
 
     // ─── ISO27001 pack install (E2E: coverage metrics + reports) ───

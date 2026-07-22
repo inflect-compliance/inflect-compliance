@@ -15,8 +15,12 @@ import { RequestContext } from '../types';
 import { assertCanManageMembers } from '../policies/admin.policies';
 import { logEvent } from '../events/audit';
 import { runInTenantContext } from '@/lib/db-context';
-import { notFound, badRequest } from '@/lib/errors/types';
-import { validatePermissionsJson } from '@/lib/permissions';
+import { notFound, badRequest, forbidden } from '@/lib/errors/types';
+import {
+    validatePermissionsJson,
+    parsePermissionsJson,
+    permissionsExceeding,
+} from '@/lib/permissions';
 import type { Role } from '@prisma/client';
 
 const VALID_BASE_ROLES: Role[] = ['ADMIN', 'EDITOR', 'AUDITOR', 'READER'];
@@ -64,6 +68,9 @@ export async function createCustomRole(ctx: RequestContext, input: CreateCustomR
     if (errors.length > 0) {
         throw badRequest(`Invalid permissions: ${errors.join('; ')}`);
     }
+
+    // A role may not contain more authority than its author holds.
+    assertGrantWithinOwnAuthority(ctx, input.permissionsJson, input.baseRole);
 
     return runInTenantContext(ctx, async (db) => {
         // Check for duplicate name within tenant
@@ -171,6 +178,18 @@ export async function updateCustomRole(
             throw badRequest('No fields to update.');
         }
 
+        // Guard the RESULTING role, not just the submitted field: a
+        // partial update can raise authority through either half —
+        // new permissionsJson over the old baseRole, or a higher
+        // baseRole under the old permissionsJson.
+        assertGrantWithinOwnAuthority(
+            ctx,
+            input.permissionsJson !== undefined
+                ? input.permissionsJson
+                : existing.permissionsJson,
+            input.baseRole !== undefined ? input.baseRole : existing.baseRole,
+        );
+
         const updated = await db.tenantCustomRole.update({
             where: { id: roleId },
             data,
@@ -238,6 +257,36 @@ export async function deleteCustomRole(ctx: RequestContext, roleId: string) {
     });
 }
 
+/**
+ * "You cannot grant what you do not hold."
+ *
+ * Custom roles are the one path where a permission set is authored by
+ * hand rather than derived from the Role enum, so it is the one path that
+ * can hand out MORE than the author has. Every entrypoint here is gated
+ * on `assertCanAdmin`, which an ADMIN satisfies — but ADMIN deliberately
+ * lacks `admin.tenant_lifecycle` and `admin.owner_management` (OWNER
+ * only: delete tenant, rotate the tenant DEK, manage OWNERs). Without
+ * this check an ADMIN could author a role holding those, assign it to
+ * themselves, and escalate to OWNER on the next request.
+ *
+ * Applied on create, update AND assign: create/update decide what a role
+ * CONTAINS, assign decides who RECEIVES it, and leaving any one unchecked
+ * leaves the escalation reachable.
+ */
+function assertGrantWithinOwnAuthority(
+    ctx: RequestContext,
+    permissionsJson: unknown,
+    baseRole: Role,
+): void {
+    const granted = parsePermissionsJson(permissionsJson, baseRole);
+    const exceeded = permissionsExceeding(granted, ctx.appPermissions);
+    if (exceeded.length > 0) {
+        throw forbidden(
+            `Cannot grant permissions you do not hold: ${exceeded.join(', ')}.`,
+        );
+    }
+}
+
 // ─── Assign Custom Role to Member ───
 
 export async function assignCustomRole(
@@ -274,6 +323,15 @@ export async function assignCustomRole(
             if (!customRole) {
                 throw notFound('Custom role not found or inactive.');
             }
+            // Handing an existing role to someone is a grant too. Without
+            // this, an ADMIN blocked from AUTHORING an over-privileged
+            // role could still assign one that already exists (seeded,
+            // or created by an OWNER) — including to themselves.
+            assertGrantWithinOwnAuthority(
+                ctx,
+                customRole.permissionsJson,
+                customRole.baseRole,
+            );
         }
 
         const oldCustomRoleId = membership.customRoleId;
