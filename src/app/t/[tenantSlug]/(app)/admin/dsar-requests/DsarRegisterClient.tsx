@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { UserFocus } from '@/components/ui/icons/nucleo';
 
+import type { ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/ui/table';
-import type { Column } from '@/components/ui/table';
-import { StatusBadge } from '@/components/ui/status-badge';
+import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
@@ -30,7 +30,7 @@ export interface DsarRow {
 
 /** Status → badge tone. CANCELED reads neutral, REJECTED reads error: a
  *  withdrawn request is not a refused one. */
-const STATUS_TONE: Record<DsarRow['status'], 'neutral' | 'info' | 'warning' | 'success' | 'error'> = {
+const STATUS_TONE: Record<DsarRow['status'], StatusBadgeVariant> = {
     RECEIVED: 'warning',
     VERIFIED: 'info',
     IN_PROGRESS: 'info',
@@ -54,43 +54,56 @@ export function DsarRegisterClient({
     const tenantHref = useTenantHref();
     const [rows] = useState<DsarRow[]>(initial);
 
-    const columns: Column<DsarRow>[] = [
-        {
-            key: 'subject',
-            header: t('dsar.col.subject'),
-            render: (r) => (
-                <span className="text-sm">{r.subject.name ?? r.subject.email ?? r.subject.id}</span>
-            ),
-        },
-        {
-            key: 'type',
-            header: t('dsar.col.type'),
-            render: (r) => (
-                <StatusBadge variant={r.type === 'ERASURE' ? 'warning' : 'info'}>
-                    {t(`dsar.type.${r.type}`)}
-                </StatusBadge>
-            ),
-        },
-        {
-            key: 'status',
-            header: t('dsar.col.status'),
-            render: (r) => (
-                <StatusBadge variant={STATUS_TONE[r.status]}>{t(`dsar.status.${r.status}`)}</StatusBadge>
-            ),
-        },
-        {
-            key: 'requestedAt',
-            header: t('dsar.col.requested'),
-            render: (r) => <span className="text-sm text-content-muted">{formatDate(r.requestedAt)}</span>,
-        },
-        {
-            key: 'handledBy',
-            header: t('dsar.col.handledBy'),
-            render: (r) => (
-                <span className="text-sm text-content-muted">{r.handledBy?.name ?? '—'}</span>
-            ),
-        },
-    ];
+    const columns = useMemo<ColumnDef<DsarRow>[]>(
+        () => [
+            {
+                id: 'subject',
+                header: t('dsar.col.subject'),
+                accessorKey: 'subject',
+                cell: ({ row }) => {
+                    const s = row.original.subject;
+                    return <span className="text-sm">{s.name ?? s.email ?? s.id}</span>;
+                },
+            },
+            {
+                id: 'type',
+                header: t('dsar.col.type'),
+                accessorKey: 'type',
+                cell: ({ row }) => (
+                    <StatusBadge variant={row.original.type === 'ERASURE' ? 'warning' : 'info'}>
+                        {t(`dsar.type.${row.original.type}`)}
+                    </StatusBadge>
+                ),
+            },
+            {
+                id: 'status',
+                header: t('dsar.col.status'),
+                accessorKey: 'status',
+                cell: ({ row }) => (
+                    <StatusBadge variant={STATUS_TONE[row.original.status]}>
+                        {t(`dsar.status.${row.original.status}`)}
+                    </StatusBadge>
+                ),
+            },
+            {
+                id: 'requestedAt',
+                header: t('dsar.col.requested'),
+                accessorKey: 'requestedAt',
+                cell: ({ row }) => (
+                    <span className="text-sm text-content-muted">{formatDate(row.original.requestedAt)}</span>
+                ),
+            },
+            {
+                id: 'handledBy',
+                header: t('dsar.col.handledBy'),
+                accessorKey: 'handledBy',
+                cell: ({ row }) => (
+                    <span className="text-sm text-content-muted">{row.original.handledBy?.name ?? '—'}</span>
+                ),
+            },
+        ],
+        [t],
+    );
 
     return (
         <ListPageShell>
@@ -129,10 +142,12 @@ export function DsarRegisterClient({
                     data={rows}
                     columns={columns}
                     getRowId={(r) => r.id}
-                    emptyState={{
-                        title: t('dsar.emptyTitle'),
-                        description: t('dsar.emptyDesc'),
-                    }}
+                    emptyState={
+                        <div className="space-y-tight text-center">
+                            <p className="text-sm font-medium text-content-emphasis">{t('dsar.emptyTitle')}</p>
+                            <p className="text-sm text-content-muted">{t('dsar.emptyDesc')}</p>
+                        </div>
+                    }
                 />
             </ListPageShell.Body>
         </ListPageShell>
