@@ -54,6 +54,8 @@ const EXEMPTIONS: Record<string, string> = {
     // hide/show needed), so the exemption follows the move.
     'admin/audit-log/AuditLogClient.tsx':
         '(a) sub-component — chronological audit log; parent page owns chrome.',
+    'admin/dsar-requests/DsarRegisterClient.tsx':
+        '(c) admin register still without a toolbar — small rights-request queue (GDPR Art.15/17); the gear lands when a toolbar does.',
     'admin/billing/BillingEventLog.tsx':
         '(a) sub-component — billing-page event log; parent decides chrome.',
     'admin/integrations/ConnectionHealthPanel.tsx':
