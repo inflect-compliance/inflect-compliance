@@ -4,8 +4,7 @@ import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { UserFocus } from '@/components/ui/icons/nucleo';
 
-import type { ColumnDef } from '@tanstack/react-table';
-import { DataTable } from '@/components/ui/table';
+import { DataTable, createColumns } from '@/components/ui/table';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { Heading } from '@/components/ui/typography';
@@ -54,15 +53,19 @@ export function DsarRegisterClient({
     const tenantHref = useTenantHref();
     const [rows] = useState<DsarRow[]>(initial);
 
-    const columns = useMemo<ColumnDef<DsarRow>[]>(
-        () => [
+    const columns = useMemo(
+        () => createColumns<DsarRow>([
             {
                 id: 'subject',
                 header: t('dsar.col.subject'),
                 accessorKey: 'subject',
                 cell: ({ row }) => {
                     const s = row.original.subject;
-                    return <span className="text-sm">{s.name ?? s.email ?? s.id}</span>;
+                    return (
+                        <span className="text-sm" data-testid={`dsar-subject-${row.original.id}`}>
+                            {s.name ?? s.email ?? s.id}
+                        </span>
+                    );
                 },
             },
             {
@@ -101,7 +104,7 @@ export function DsarRegisterClient({
                     <span className="text-sm text-content-muted">{row.original.handledBy?.name ?? '—'}</span>
                 ),
             },
-        ],
+        ]),
         [t],
     );
 
