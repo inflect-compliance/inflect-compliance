@@ -8165,6 +8165,8 @@
       "createRule": "Create rule",
       "saveFailed": "Save failed",
       "filterableFieldsHint": "This event has no filterable fields — the rule fires on every occurrence.",
+      "advancedFilterTitle": "Advanced filter",
+      "advancedFilterBody": "This rule's filter uses nested AND/OR grouping that the visual builder can't edit. It's shown here read-only and left unchanged — edit it on the process canvas. Saving from here keeps the filter exactly as it is.",
       "scheduleTargetLabel": "Runs relative to",
       "scheduleTargetHint": "The date field the schedule counts from. The rule fires when that date is reached, shifted by the offset below.",
       "scheduleOffsetLabel": "Offset (days)",
