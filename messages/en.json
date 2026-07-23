@@ -5893,6 +5893,21 @@
     "tabRules": "Rules",
     "tabAnalytics": "Analytics",
     "tabMonitor": "Monitor",
+    "templates": {
+      "title": "Start from a template",
+      "description": "Clone a built-in starter map — a common compliance process shape — into a new canvas, then tailor it.",
+      "use": "Use template",
+      "close": "Close",
+      "shape": "{steps, plural, one {# step} other {# steps}} · {links, plural, one {# link} other {# links}}",
+      "items": {
+        "accessReview.name": "Access provisioning & review",
+        "accessReview.summary": "Request → approval → provision, with periodic recertification and leaver revocation.",
+        "vendorOnboarding.name": "Vendor onboarding & due diligence",
+        "vendorOnboarding.summary": "Intake → risk tiering → security review → contract & DPA → approval → ongoing monitoring.",
+        "incidentResponse.name": "Incident response",
+        "incidentResponse.summary": "Detect → triage → contain → investigate → remediate → post-incident review, with a regulatory-notification branch."
+      }
+    },
     "governanceLink": "Automation graph →",
     "mobileHint": "Process maps are edited on a larger screen. Open this page on a desktop to design the canvas.",
     "mobileEmpty": "No process maps yet.",
@@ -5955,8 +5970,7 @@
       "topologyHeading": "Automation topology",
       "topologyDescription": "A system-of-record map of your automation flows — rule counts, 30-day success rates, and sub-flow calls between maps. This is not compliance coverage.",
       "canvasMode": {
-        "AUTOMATION": "Automation",
-        "DOCUMENT": "Document"
+        "AUTOMATION": "Automation"
       }
     },
     "ruleStatusLabels": {
@@ -6007,6 +6021,8 @@
       "stuckTimeout": "Stuck-execution timeout",
       "timeoutWindow": "Timeout window (minutes)",
       "breachAction": "On timeout",
+      "breachRecipients": "Notify recipients",
+      "breachMessage": "Notification message",
       "chain": "Chain",
       "nextRule": "Next rule",
       "delay": "Delay (minutes)",
@@ -8393,6 +8409,8 @@
       "cmdNewDesc": "Start an empty process map",
       "cmdNewAutomationLabel": "New automation workflow",
       "cmdNewAutomationDesc": "Start a visual rule editor (automation) canvas",
+      "cmdNewFromTemplateLabel": "New from template",
+      "cmdNewFromTemplateDesc": "Clone a built-in starter process map",
       "cmdArrangeLrLabel": "Arrange left-to-right",
       "cmdArrangeLrDesc": "Auto-layout the canvas with a left-to-right flow",
       "cmdArrangeTbLabel": "Arrange top-to-bottom",
@@ -8439,6 +8457,7 @@
       "emptyBody": "Capture the steps, mark the controls between them, and annotate the risks and assets each step touches.",
       "creating": "Creating…",
       "createFirstProcess": "Create your first process",
+      "startFromTemplate": "Start from a template",
       "ariaProcessCanvas": "Process canvas",
       "ariaZoomControls": "Zoom controls"
     },
