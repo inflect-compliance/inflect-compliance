@@ -58,6 +58,7 @@ const ADMIN_ONLY_ROUTES = [
     'admin/api-keys/[keyId]/route.ts',
     'admin/device-tokens/route.ts',
     'admin/device-tokens/[tokenId]/route.ts',
+    'admin/dsar-requests/route.ts',
     'admin/trust-center/documents/route.ts',
     'admin/trust-center/requests/route.ts',
     'admin/trust-center/requests/[requestId]/approve/route.ts',

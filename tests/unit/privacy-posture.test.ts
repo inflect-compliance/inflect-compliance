@@ -61,13 +61,17 @@ beforeEach(() => {
 });
 
 describe('getPrivacyPosture — capability flags stay honest', () => {
-    it('reports DSAR intake as NOT enabled', async () => {
+    it('reports the DSAR register as available but fulfilment as NOT automated', async () => {
         seed();
         const res = await getPrivacyPosture(makeRequestContext('ADMIN'));
-        // The model exists but both jobs throw and are unregistered. If this
-        // ever returns true, the page renders an intake surface — so the flag
-        // must only flip alongside a real export/erasure pipeline.
-        expect(res.dsar.intakeEnabled).toBe(false);
+        // Intake flipped true when the manual register landed. Fulfilment did
+        // NOT: jobs/dsar-export.ts and dsar-erasure.ts still throw and are
+        // unregistered. The two flags stay separate so the page cannot imply
+        // an export/erasure pipeline just because requests can be recorded —
+        // collapsing them into one "DSAR works" boolean is the exact
+        // overstatement this assertion exists to prevent.
+        expect(res.dsar.intakeEnabled).toBe(true);
+        expect(res.dsar.automatedFulfilment).toBe(false);
     });
 
     it('reports retention as NOT tenant-configurable', async () => {

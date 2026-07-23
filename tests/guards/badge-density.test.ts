@@ -120,6 +120,12 @@ const STATUS_BADGE_BUDGET: Record<string, number> = {
     // review's kind + criticality + liability + fine. The management-liability
     // lens (Prompt 1) deliberately surfaces liability/fine prominently.
     "src/app/t/[tenantSlug]/(app)/audits/nis2-gap/Nis2GapLifecycleClient.tsx": 9,
+    // Privacy posture — the DSAR card reports intake and fulfilment as TWO
+    // separate, decision-relevant signals (register on/off + fulfilment
+    // auto/manual), deliberately NOT collapsed into one "DSAR works" boolean
+    // — see usecases/privacy-posture.ts. +2 over the default for those two
+    // badges, on top of the four existing posture badges.
+    "src/app/t/[tenantSlug]/(app)/admin/privacy/page.tsx": 6,
     // Prompt 2 — the owner Assignments panel adds a per-assignment status badge
     // (PENDING/IN_PROGRESS/SUBMITTED). Delegation status is load-bearing here.
     // Files at exactly the default 4 are not listed (the test

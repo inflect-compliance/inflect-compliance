@@ -4634,7 +4634,8 @@
       "vendorReviews": "Assessment Reviews",
       "notifications": "Notifications",
       "theme": "Theme",
-      "privacy": "Privacy & data protection"
+      "privacy": "Privacy & data protection",
+      "dsarRequests": "Data subject requests"
     },
     "resourceLabels": {
       "controls": "Controls",
@@ -4727,9 +4728,42 @@
       },
       "dsar": {
         "title": "Data subject requests",
-        "notEnabledTitle": "Intake is not enabled",
-        "notEnabledBody": "Data subject requests (GDPR Art. 15 export and Art. 17 erasure) are modelled but cannot be submitted or fulfilled from the application yet — the export and erasure pipelines are not wired. Handle requests through your existing manual process until this ships.",
-        "enabledNote": "Data subject requests can be submitted and tracked from this tenant."
+        "register": "Request register",
+        "registerOn": "Available",
+        "registerOff": "Not available",
+        "fulfilment": "Fulfilment",
+        "fulfilmentAuto": "Automated",
+        "fulfilmentManual": "Manual",
+        "manualTitle": "Requests are fulfilled manually",
+        "manualBody": "Rights requests can be recorded and tracked, but the platform does not yet produce an export bundle or run an erasure. A person carries out each request and records what they did.",
+        "openRegister": "Open the request register →"
+      }
+    },
+    "dsar": {
+      "title": "Data subject requests",
+      "manualTitle": "Fulfilment is manual",
+      "manualBody": "This is a register, not an engine. Recording a request here does not export or erase any data — a person must carry out the request and then record what they did. Marking a request Completed asserts that the work was done out of band.",
+      "readOnlyNotice": "You can read this register but cannot record or advance requests.",
+      "emptyTitle": "No requests recorded",
+      "emptyDesc": "Rights requests that arrive by email, post or support ticket are recorded here so the register stays complete.",
+      "col": {
+        "subject": "Data subject",
+        "type": "Right",
+        "status": "Status",
+        "requested": "Requested",
+        "handledBy": "Handled by"
+      },
+      "type": {
+        "EXPORT": "Access (Art. 15)",
+        "ERASURE": "Erasure (Art. 17)"
+      },
+      "status": {
+        "RECEIVED": "Received",
+        "VERIFIED": "Verified",
+        "IN_PROGRESS": "In progress",
+        "COMPLETED": "Completed",
+        "REJECTED": "Rejected",
+        "CANCELED": "Withdrawn"
       }
     }
   },

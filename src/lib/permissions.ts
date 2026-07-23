@@ -38,6 +38,19 @@ export type PermissionSet = {
          * policy; ADMIN gets false (ADMIN can still invite ADMIN).
          */
         owner_management: boolean;
+        /**
+         * READ the DSAR register (GDPR Art. 15/16 rights requests).
+         * Granted to AUDITOR as well as OWNER/ADMIN — reading the
+         * rights-request log IS the auditor's job, and a register an
+         * auditor cannot see is not serving its purpose.
+         */
+        compliance_dsar_view: boolean;
+        /**
+         * RECORD and ADVANCE DSARs. Separate from _view because
+         * fulfilment is a staff action with legal consequence; AUDITOR
+         * observes the register but never moves a request through it.
+         */
+        compliance_dsar_manage: boolean;
     };
 };
 
@@ -59,7 +72,11 @@ const PERMISSION_SCHEMA: Record<keyof PermissionSet, string[]> = {
     frameworks: ['view', 'install'],
     audits: ['view', 'manage', 'freeze', 'share'],
     reports: ['view', 'export'],
-    admin: ['view', 'manage', 'members', 'sso', 'scim', 'tenant_lifecycle', 'owner_management'],
+    admin: [
+        'view', 'manage', 'members', 'sso', 'scim',
+        'tenant_lifecycle', 'owner_management',
+        'compliance_dsar_view', 'compliance_dsar_manage',
+    ],
 };
 
 /**
@@ -93,6 +110,7 @@ export function getPermissionsForRole(role: Role): PermissionSet {
                 admin: {
                     view: true, manage: true, members: true, sso: true, scim: true,
                     tenant_lifecycle: true, owner_management: true,
+                    compliance_dsar_view: true, compliance_dsar_manage: true,
                 },
             };
         case 'ADMIN':
@@ -115,6 +133,7 @@ export function getPermissionsForRole(role: Role): PermissionSet {
                     // Explicit false: ADMIN is NOT the tenant owner.
                     // Delete / DEK rotation / OWNER management require OWNER role.
                     tenant_lifecycle: false, owner_management: false,
+                    compliance_dsar_view: true, compliance_dsar_manage: true,
                 },
             };
         case 'EDITOR':
@@ -134,7 +153,7 @@ export function getPermissionsForRole(role: Role): PermissionSet {
                 frameworks: { view: true, install: false },
                 audits: { view: true, manage: false, freeze: false, share: false },
                 reports: { view: true, export: true },
-                admin: { view: false, manage: false, members: false, sso: false, scim: false, tenant_lifecycle: false, owner_management: false },
+                admin: { view: false, manage: false, members: false, sso: false, scim: false, tenant_lifecycle: false, owner_management: false, compliance_dsar_view: false, compliance_dsar_manage: false },
             };
         case 'AUDITOR':
             return {
@@ -154,7 +173,7 @@ export function getPermissionsForRole(role: Role): PermissionSet {
                 // Auditors can view and maybe export/share depending on policy, but let's keep view/share
                 audits: { view: true, manage: false, freeze: false, share: true },
                 reports: { view: true, export: true },
-                admin: { view: false, manage: false, members: false, sso: false, scim: false, tenant_lifecycle: false, owner_management: false },
+                admin: { view: false, manage: false, members: false, sso: false, scim: false, tenant_lifecycle: false, owner_management: false, compliance_dsar_view: true, compliance_dsar_manage: false },
             };
         case 'READER':
         default:
@@ -172,7 +191,7 @@ export function getPermissionsForRole(role: Role): PermissionSet {
                 frameworks: { view: true, install: false },
                 audits: { view: true, manage: false, freeze: false, share: false },
                 reports: { view: true, export: false },
-                admin: { view: false, manage: false, members: false, sso: false, scim: false, tenant_lifecycle: false, owner_management: false },
+                admin: { view: false, manage: false, members: false, sso: false, scim: false, tenant_lifecycle: false, owner_management: false, compliance_dsar_view: false, compliance_dsar_manage: false },
             };
     }
 }
