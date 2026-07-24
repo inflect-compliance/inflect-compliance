@@ -45,6 +45,15 @@ export interface ExpiryCalendarProps {
     className?: string;
     /** Optional test-id */
     id?: string;
+    /**
+     * Stretch to fill the parent's height (the card becomes a flex
+     * column and the item list grows to consume the remaining space,
+     * scrolling on overflow) instead of sizing to content with a fixed
+     * 280px scroll cap. Used on the dashboard so the card matches the
+     * height of its taller row sibling (the risk heatmap) rather than
+     * leaving empty space below.
+     */
+    fill?: boolean;
 }
 
 // ─── Urgency Helpers ────────────────────────────────────────────────
@@ -93,11 +102,15 @@ export default function ExpiryCalendar({
     items,
     className = '',
     id,
+    fill = false,
 }: ExpiryCalendarProps) {
     // Empty state
     if (!items || items.length === 0) {
         return (
-            <div id={id} className={cn(cardVariants(), className)}>
+            <div
+                id={id}
+                className={cn(cardVariants(), fill && 'h-full', className)}
+            >
                 <Heading level={3} className="mb-3">Evidence Expiry</Heading>
                 <p className="text-xs text-content-subtle">No upcoming evidence expirations.</p>
             </div>
@@ -116,13 +129,24 @@ export default function ExpiryCalendar({
     const orderedGroups: Urgency[] = ['overdue', 'urgent', 'upcoming', 'normal'];
 
     return (
-        <div id={id} className={cn(cardVariants(), className)}>
+        <div
+            id={id}
+            className={cn(cardVariants(), fill && 'flex h-full flex-col', className)}
+        >
             <div className="flex items-center justify-between mb-3">
                 <Heading level={3}>Evidence Expiry</Heading>
                 <span className="text-xs text-content-subtle tabular-nums">{items.length} item{items.length !== 1 ? 's' : ''}</span>
             </div>
 
-            <div className="space-y-compact max-h-[280px] overflow-y-auto">
+            <div
+                className={cn(
+                    'space-y-compact overflow-y-auto',
+                    // Fill mode: grow to consume the card's remaining height
+                    // (min-h-0 lets the flex child actually shrink so the
+                    // scroll kicks in). Default: the original 280px cap.
+                    fill ? 'min-h-0 flex-1' : 'max-h-[280px]',
+                )}
+            >
                 {orderedGroups.map((urgency) => {
                     const groupItems = groups.get(urgency);
                     if (!groupItems || groupItems.length === 0) return null;
