@@ -123,10 +123,8 @@ import {
 } from "./CanvasCommandPalette";
 import { CanvasDocumentBar } from "./CanvasDocumentBar";
 import { ProcessTemplateModal } from "./ProcessTemplateModal";
-import {
-    buildTemplateGraph,
-    getProcessMapTemplate,
-} from "./process-map-templates";
+import { getProcessMapTemplate } from "./process-map-templates";
+import { createMapFromTemplate } from "@/lib/processes/create-map-from-template";
 import { CanvasDrillBreadcrumb } from "./CanvasDrillBreadcrumb";
 import { useCanvasDrillStack } from "@/lib/processes/use-canvas-drill-stack";
 import {
@@ -999,10 +997,8 @@ function Inner({
     );
 
     // ─── Create new process FROM a starter template ─────────────────
-    // Clone a built-in DOCUMENT starter map: create a fresh map, then PUT the
-    // template's nodes/edges. Mirrors handleDuplicate's two round-trip shape;
-    // a failed graph save leaves a recoverable empty map behind, signposted by
-    // the selector jumping to the new map.
+    // The two-round-trip create+save lives in the helper module; the canvas
+    // just wires state + list splice (helper-module-per-feature pattern).
     const handleNewFromTemplate = useCallback(
         async (templateId: string) => {
             const template = getProcessMapTemplate(templateId);
@@ -1010,44 +1006,9 @@ function Inner({
             setCreating(true);
             setError(null);
             try {
-                const createRes = await fetch(`/api/t/${tenantSlug}/processes`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        name: template.defaultName,
-                        canvasMode: "DOCUMENT",
-                    }),
-                });
-                if (!createRes.ok)
-                    throw new Error(`Create failed (${createRes.status})`);
-                const newMap = await createRes.json();
-
-                const saveRes = await fetch(
-                    `/api/t/${tenantSlug}/processes/${newMap.id}`,
-                    {
-                        method: "PUT",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(buildTemplateGraph(template)),
-                    },
-                );
-                if (!saveRes.ok)
-                    throw new Error(`Template save failed (${saveRes.status})`);
-                const filled = await saveRes.json();
-
-                const summary: ProcessMapSummary = {
-                    id: filled.id,
-                    name: filled.name,
-                    description: filled.description,
-                    status: filled.status,
-                    version: filled.version,
-                    canvasMode: filled.canvasMode ?? "DOCUMENT",
-                    createdAt: filled.createdAt,
-                    updatedAt: filled.updatedAt,
-                    nodeCount: filled.nodes.length,
-                    edgeCount: filled.edges.length,
-                };
+                const summary = await createMapFromTemplate(tenantSlug, template);
                 onProcessesChange([summary, ...processes]);
-                onActiveIdChange(filled.id);
+                onActiveIdChange(summary.id);
             } catch (err) {
                 setError(
                     err instanceof Error ? err.message : "Template create failed",
