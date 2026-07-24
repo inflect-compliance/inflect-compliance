@@ -1222,11 +1222,11 @@ function ComplianceAlerts({ exec, t }: { exec: ExecutiveDashboardPayload; t: (ke
     if (stats.highRisks > 0)
         alerts.push({ color: 'bg-orange-500', text: t('highCriticalRisks', { count: stats.highRisks }) });
     if (taskSummary.overdue > 0)
-        alerts.push({ color: 'bg-bg-error-emphasis', text: `${taskSummary.overdue} overdue tasks` });
+        alerts.push({ color: 'bg-bg-error-emphasis', text: t('overdueTasksAlert', { count: taskSummary.overdue }) });
     if (policySummary.overdueReview > 0)
-        alerts.push({ color: 'bg-bg-warning-emphasis', text: `${policySummary.overdueReview} policies need review` });
+        alerts.push({ color: 'bg-bg-warning-emphasis', text: t('policiesNeedReview', { count: policySummary.overdueReview }) });
     if (vendorSummary.overdueReview > 0)
-        alerts.push({ color: 'bg-purple-500', text: `${vendorSummary.overdueReview} vendors need review` });
+        alerts.push({ color: 'bg-purple-500', text: t('vendorsNeedReview', { count: vendorSummary.overdueReview }) });
     if (stats.openFindings > 0)
         alerts.push({ color: 'bg-purple-500', text: t('openAuditFindings', { count: stats.openFindings }) });
 

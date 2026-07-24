@@ -23,6 +23,7 @@
 import { formatDateCompact } from '@/lib/format-date';
 import { urgencyFromDaysUntil, type UrgencyLevel } from '@/lib/urgency';
 import { Heading } from '@/components/ui/typography';
+import { Tooltip } from '@/components/ui/tooltip';
 import { cardVariants } from '@/components/ui/card-variants';
 import { cn } from '@/lib/cn';
 
@@ -169,21 +170,24 @@ export default function ExpiryCalendar({
                                 {groupItems.map((item) => {
                                     const itemConfig = urgencyConfig(getUrgency(item.daysUntil));
                                     return (
-                                        <div
+                                        <Tooltip
                                             key={item.id}
-                                            className={`flex items-center justify-between gap-tight px-2.5 py-1.5 rounded-lg ${itemConfig.bg}`}
-                                            title={`${item.title} — due ${item.nextReviewDate} (${formatDaysUntil(item.daysUntil)})`}
+                                            content={`${item.title} — due ${item.nextReviewDate} (${formatDaysUntil(item.daysUntil)})`}
                                         >
-                                            <div className="flex items-center gap-tight min-w-0 flex-1">
-                                                <span className="text-xs text-content-default truncate">{item.title}</span>
+                                            <div
+                                                className={`flex items-center justify-between gap-tight px-2.5 py-1.5 rounded-lg ${itemConfig.bg}`}
+                                            >
+                                                <div className="flex items-center gap-tight min-w-0 flex-1">
+                                                    <span className="text-xs text-content-default truncate">{item.title}</span>
+                                                </div>
+                                                <div className="flex items-center gap-tight shrink-0">
+                                                    <span className="text-[10px] text-content-subtle">{formatDate(item.nextReviewDate)}</span>
+                                                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${itemConfig.badge} tabular-nums`}>
+                                                        {formatDaysUntil(item.daysUntil)}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-tight shrink-0">
-                                                <span className="text-[10px] text-content-subtle">{formatDate(item.nextReviewDate)}</span>
-                                                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${itemConfig.badge} tabular-nums`}>
-                                                    {formatDaysUntil(item.daysUntil)}
-                                                </span>
-                                            </div>
-                                        </div>
+                                        </Tooltip>
                                     );
                                 })}
                             </div>
